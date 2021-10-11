@@ -11,9 +11,9 @@ const configRecommendation = "We recommend to define values of [step parameters]
 const (
 	headlineDescription     = "## Description\n\n"
 	headlineUsage           = "## Usage\n\n"
-	headlineJenkinsPipeline = "    === Jenkins\n\n"
-	headlineCommandLine     = "    === Command Line\n\n"
-	headlineAzure           = "    === Azure\n\n"
+	headlineJenkinsPipeline = "    === \"Jenkins\"\n\n"
+	headlineCommandLine     = "    === \"Command Line\"\n\n"
+	headlineAzure           = "    === \"Azure\"\n\n"
 	spacingTabBox           = "        "
 )
 
