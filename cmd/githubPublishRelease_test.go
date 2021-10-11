@@ -138,7 +138,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			ServerURL:             "https://github.com",
 			ReleaseBodyHeader:     "Header",
 			Version:               "1.0",
-			TagPrefix:		"v",
+			TagPrefix:             "v",
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 		assert.NoError(t, err, "Error occurred but none expected.")
