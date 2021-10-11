@@ -1,16 +1,20 @@
 package cmd
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -30,10 +34,10 @@ type cnbBuildUtilsBundle struct {
 	*docker.Client
 }
 
-func setCustomBuildpacks(bpacks []string, utils cnbutils.BuildUtils) (string, string, error) {
+func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, utils)
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dockerCreds, utils)
 	if err != nil {
 		return "", "", err
 	}
@@ -60,7 +64,9 @@ func newCnbBuildUtils() cnbutils.BuildUtils {
 func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) {
 	utils := newCnbBuildUtils()
 
-	err := runCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment)
+	client := &piperhttp.Client{}
+
+	err := runCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -88,7 +94,87 @@ func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
 	return true, nil
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
+func isZip(path string) bool {
+	r, err := zip.OpenReader(path)
+
+	switch {
+	case err == nil:
+		r.Close()
+		return true
+	case err == zip.ErrFormat:
+		return false
+	default:
+		return false
+	}
+}
+
+func copyProject(source, target string, utils cnbutils.BuildUtils) error {
+	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
+	for _, sourceFile := range sourceFiles {
+		if !isIgnored(sourceFile) {
+			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
+			dir, err := isDir(sourceFile)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorBuild)
+				return errors.Wrapf(err, "Checking file info '%s' failed", target)
+			}
+
+			if dir {
+				err = utils.MkdirAll(target, os.ModePerm)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorBuild)
+					return errors.Wrapf(err, "Creating directory '%s' failed", target)
+				}
+			} else {
+				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
+				_, err = utils.Copy(sourceFile, target)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorBuild)
+					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
+				}
+			}
+
+		} else {
+			log.Entry().Debugf("Filtered out '%s'", sourceFile)
+		}
+	}
+	return nil
+}
+
+func copyFile(source, target string, utils cnbutils.BuildUtils) error {
+
+	if isZip(source) {
+		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
+		_, err := piperutils.Unzip(source, target)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
+		}
+	} else {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.New("application path must be a directory or zip")
+	}
+
+	return nil
+}
+
+func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, error) {
+	if filepath.Base(source) != "config.json" {
+		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
+
+		newPath := filepath.Join(filepath.Dir(source), "config.json")
+		err := utils.FileRename(source, newPath)
+		if err != nil {
+			return "", err
+		}
+
+		return newPath, nil
+	}
+
+	return source, nil
+}
+
+func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
 	exists, err := isBuilder(utils)
@@ -102,10 +188,27 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("the provided dockerImage is not a valid builder")
 	}
 
+	platformPath := "/platform"
+	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
+		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
+		platformPath = "/tmp/platform"
+		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrap(err, "failed to write environment variables to files")
+		}
+	}
+
+	dockerConfigFile := ""
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
-		dockerConfigJSON, err = utils.FileRead(config.DockerConfigJSON)
+		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+		}
+		dockerConfigJSON, err = utils.FileRead(dockerConfigFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to read DockerConfigJSON file '%v'", config.DockerConfigJSON)
@@ -140,42 +243,32 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		source = config.Path
 	}
 
-	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
-	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile) {
-			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := isDir(sourceFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorBuild)
-				return errors.Wrapf(err, "Checking file info '%s' failed", target)
-			}
+	dir, err := isDir(source)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "Checking file info '%s' failed", target)
+	}
 
-			if dir {
-				err = utils.MkdirAll(target, os.ModePerm)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Creating directory '%s' failed", target)
-				}
-			} else {
-				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				_, err = utils.Copy(sourceFile, target)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
-				}
-			}
-
-		} else {
-			log.Entry().Debugf("Filtered out '%s'", sourceFile)
+	if dir {
+		err = copyProject(source, target, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
+		}
+	} else {
+		err = copyFile(source, target, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	}
 
 	var buildpacksPath = "/cnb/buildpacks"
 	var orderPath = "/cnb/order.toml"
 
-	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
+	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
 		defer utils.RemoveAll(buildpacksPath)
 		defer utils.RemoveAll(orderPath)
 		if err != nil {
@@ -208,23 +301,49 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", detectorPath))
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		caCertificates := "/tmp/ca-certificates.crt"
+		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy certificates")
+		}
+		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to update certificates")
+		}
+		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
+	} else {
+		log.Entry().Info("skipping updation of certificates")
 	}
 
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath)
+	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", builderPath))
+		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
+	}
+
+	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
+	}
+
+	targets := []string{
+		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+	}
+
+	for _, tag := range config.AdditionalTags {
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		if !piperutils.ContainsString(targets, target) {
+			targets = append(targets, target)
+		}
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable(exporterPath, fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
+	err = utils.RunExecutable(exporterPath, targets...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", exporterPath))
+		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
 	}
 
 	return nil

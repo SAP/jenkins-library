@@ -6,7 +6,30 @@ spec:
   inputs:
     secrets:
       - name: dockerConfigJsonCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        description: |
+          Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)) in the following format:
+
+          ```json
+          {
+              "auths": {
+                      "$server": {
+                              "auth": "base64($username + ':' + $password)"
+                      }
+              }
+          }
+          ```
+
+          Example:
+
+          ```json
+          {
+              "auths": {
+                      "example.com": {
+                              "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
+                      }
+              }
+          }
+          ```
         type: jenkins
     params:
       - name: containerImageName
@@ -55,9 +78,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: buildEnvVars
+        type: "[]string"
+        description: List of custom environment variables used during a build in the form of 'KEY=VALUE'.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: path
         type: string
-        description: The path should either point to your sources or an artifact build before.
+        description: The path should either point to a directory with your sources or an artifact in zip format.
         scope:
           - PARAMETERS
           - STAGES
@@ -79,6 +109,20 @@ spec:
               - $(vaultPath)/docker-config
               - $(vaultBasePath)/$(vaultPipelineName)/docker-config
               - $(vaultBasePath)/GROUP-SECRETS/docker-config
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: additionalTags
+        type: "[]string"
+        description: List of tags which will be additionally pushed to the registry, e.g. "latest".
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment

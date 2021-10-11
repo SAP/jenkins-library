@@ -135,6 +135,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'abapPackage',
         /** The code page of your ABAP system. E.g. UTF-8. */
         'codePage', //RFC
+        /** If unix style line endings should be accepted. Only for `RFC`.*/
         'acceptUnixStyleLineEndings', // RFC
         /** @see transportRequestCreate */
         'verbose', // RFC
@@ -211,10 +212,10 @@ void call(Map parameters = [:]) {
         def changeDocumentId = null
 
         if(backendType == BackendType.SOLMAN) {
-            changeDocumentId = getChangeDocumentId(cm, script, configuration)
+            changeDocumentId = getChangeDocumentId(script, configuration)
         }
 
-        def transportRequestId = getTransportRequestId(cm, script, configuration)
+        def transportRequestId = getTransportRequestId(script, configuration)
 
         configHelper
             .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
@@ -241,7 +242,6 @@ void call(Map parameters = [:]) {
 
                         Map paramsUpload = [
                             script: script,
-                            cmClientOpts: configuration.changeManagement.clientOpts?: [:],
                             filePath: configuration.filePath,
                             uploadCredentialsId: configuration.changeManagement.credentialsId,
                             endpoint: configuration.changeManagement.endpoint,
@@ -250,6 +250,9 @@ void call(Map parameters = [:]) {
                             transportRequestId: configuration.transportRequestId
                             ]
 
+                        if(configuration.changeManagement.clientOpts) {
+                            paramsUpload.cmClientOpts = configuration.changeManagement.clientOpts
+                        }
                         paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.solman?.docker)
 
                         transportRequestUploadSOLMAN(paramsUpload)

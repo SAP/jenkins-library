@@ -158,6 +158,7 @@ class StepHelpersTest extends BasePiperTest {
         assert transportRequestId == null
     }
 
+    @Test
     public void changeDocumentIdViaCommonPipelineEnvironmentTest() {
 
         nullScript.commonPipelineEnvironment.setChangeDocumentId('002')
@@ -208,5 +209,179 @@ class StepHelpersTest extends BasePiperTest {
         def changeDocumentId = StepHelpers.getChangeDocumentId(cm, nullScript, params)
 
         assert changeDocumentId == null
+    }
+
+    @Test
+    public void reqidViaConfigTest() {
+
+        nullScript.commonPipelineEnvironment.setValue('transportRequestId', 'unused')
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestReqIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+
+        def transportRequestId = StepHelpers.getTransportRequestId(nullScript, [transportRequestId: '100'])
+
+        assert transportRequestId == '100'
+        assert calledWithParameters == null
+    }
+
+    @Test
+    public void reqidViaCommonPipelineEnvironmentTest() {
+
+        nullScript.commonPipelineEnvironment.setValue('transportRequestId', '200')
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestReqIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+
+        def transportRequestId = StepHelpers.getTransportRequestId(nullScript, params)
+
+        assert transportRequestId == '200'
+        assert calledWithParameters == null
+    }
+
+    @Test
+    public void reqidViaCommitHistoryTest() {
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestReqIDFromGit")) {
+                        nullScript.commonPipelineEnvironment.setValue('transportRequestId', '300')
+                    }
+            }
+        )
+
+        def transportRequestId = StepHelpers.getTransportRequestId(nullScript, params)
+
+        assert transportRequestId == '300'
+        assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '300'
+    }
+
+    @Test
+    public void reqidNotProvidedTest() {
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestReqIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+
+        loggingRule.expect('[INFO] Retrieving transportRequestId from commit history')
+        loggingRule.expect('[WARN] Cannot retrieve transportRequestId from commit history')
+
+        def transportRequestId = StepHelpers.getTransportRequestId(nullScript, params)
+
+        assert transportRequestId == null
+        assert calledWithParameters != null
+    }
+
+    @Test
+    public void docidViaConfigTest() {
+
+        nullScript.commonPipelineEnvironment.setValue('changeDocumentId', 'unused')
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestDocIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+
+        def changeDocumentId = StepHelpers.getChangeDocumentId(nullScript, [changeDocumentId: '100'])
+
+        assert changeDocumentId == '100'
+        assert calledWithParameters == null
+    }
+
+    @Test
+    public void docidViaCommonPipelineEnvironmentTest() {
+
+        nullScript.commonPipelineEnvironment.setValue('changeDocumentId', '200')
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestDocIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+
+        def changeDocumentId = StepHelpers.getChangeDocumentId(nullScript, params)
+
+        assert changeDocumentId == '200'
+        assert calledWithParameters == null
+    }
+
+    @Test
+    public void docidViaCommitHistoryTest() {
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestDocIDFromGit")) {
+                        nullScript.commonPipelineEnvironment.setValue('changeDocumentId', '300')
+                    }
+            }
+        )
+
+        def changeDocumentId = StepHelpers.getChangeDocumentId(nullScript, params)
+
+        assert changeDocumentId == '300'
+        assert nullScript.commonPipelineEnvironment.getValue('changeDocumentId') == '300'
+    }
+
+    @Test
+    public void docidNotProvidedTest() {
+
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestDocIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+
+        loggingRule.expect('[INFO] Retrieving changeDocumentId from commit history')
+        loggingRule.expect('[WARN] Cannot retrieve changeDocumentId from commit history')
+
+        def changeDocumentId = StepHelpers.getChangeDocumentId(nullScript, params)
+
+        assert changeDocumentId == null
+        assert calledWithParameters != null
     }
 }

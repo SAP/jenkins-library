@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -44,9 +45,9 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Params, []string{"install", "-g", "@getgauge/cli", "--prefix=~/.npm-global"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Params, []string{"install", "java"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Params, []string{"run", "specs"})
 	})
 
@@ -86,7 +87,7 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Params, []string{"install", "-g", "@getgauge/cli", "--prefix=~/.npm-global"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Params, []string{"install", "wrong"})
 	})
 	t.Run("fail on gauge run", func(t *testing.T) {
@@ -104,9 +105,9 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Params, []string{"install", "-g", "@getgauge/cli", "--prefix=~/.npm-global"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Params, []string{"install", "java"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Params, []string{"run", "specs"})
 	})
 }
