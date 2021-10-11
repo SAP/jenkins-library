@@ -44,7 +44,7 @@ void call(parameters) {
                         stage('AUnit') {
                             when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                             steps {
-                                abapEnvonmentPipelineStageAUnit script: parameters.script
+                                abapEnvironmentPipelineStageAUnit script: parameters.script
                             }
                         }
                     }
