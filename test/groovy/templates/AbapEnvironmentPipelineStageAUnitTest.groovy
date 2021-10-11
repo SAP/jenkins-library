@@ -13,7 +13,7 @@ import util.Rules
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class abapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
+class AbapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -37,13 +37,26 @@ class abapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
     }
 
     @Test
-    void testAbapEnvironmentRunTests() {
+    void testAbapEnvironmentRunTestsWithoutHost() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'AUnit': true
         ]
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript,  host: '')
 
-        assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest','cloudFoundryCreateServiceKey'))
     }
+
+    @Test
+    void testAbapEnvironmentRunTestsWithHost() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'AUnit': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript,  host: 'abc.com')
+
+        assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest'))
+        assertThat(stepsCalled, not(hasItems('cloudFoundryCreateServiceKey')))
+    }
+
 }
