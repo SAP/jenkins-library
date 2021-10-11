@@ -9,6 +9,7 @@ import (
 )
 
 func TestCreateParameterOverview(t *testing.T) {
+
 	stepData := config.StepData{
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -17,20 +18,35 @@ func TestCreateParameterOverview(t *testing.T) {
 				},
 				Parameters: []config.StepParameters{
 					{Name: "param1"},
+					{Name: "dockerImage", Default: "testImage"},
 					{Name: "stashContent", Default: "testStash"},
 				},
 			},
 		},
 	}
+	stepParameterNames = []string{"param1"}
 
-	expected := `| Name | Mandatory | Additional information |
+	t.Run("Test Step Section", func(t *testing.T) {
+
+		expected := `| Name | Mandatory | Additional information |
 | ---- | --------- | ---------------------- |
 | [param1](#param1) | no |  |
+
+`
+
+		assert.Equal(t, expected, createParameterOverview(&stepData, false))
+	})
+
+	t.Run("Test Execution Section", func(t *testing.T) {
+		expected := `| Name | Mandatory | Additional information |
+| ---- | --------- | ---------------------- |
+| [dockerImage](#dockerimage) | no |  |
 | [stashContent](#stashcontent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
 
 `
-	stepParameterNames = []string{"param1"}
-	assert.Equal(t, expected, createParameterOverview(&stepData))
+		assert.Equal(t, expected, createParameterOverview(&stepData, true))
+	})
+
 	stepParameterNames = []string{}
 }
 
@@ -44,7 +60,6 @@ func TestParameterFurtherInfo(t *testing.T) {
 	}{
 		{paramName: "verbose", stepParams: []string{}, stepData: nil, contains: "activates debug output"},
 		{paramName: "script", stepParams: []string{}, stepData: nil, contains: "reference to Jenkins main pipeline script"},
-		{paramName: "contextTest", stepParams: []string{}, stepData: &config.StepData{}, contains: "Jenkins only", notContains: []string{"pipeline script", "id of credentials"}},
 		{paramName: "noop", stepParams: []string{"noop"}, stepData: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{}}}}, contains: ""},
 		{
 			paramName: "testCredentialId",
@@ -89,7 +104,8 @@ func TestParameterFurtherInfo(t *testing.T) {
 
 	for _, test := range tt {
 		stepParameterNames = test.stepParams
-		res := parameterFurtherInfo(test.paramName, test.stepData)
+		res, err := parameterFurtherInfo(test.paramName, test.stepData, false)
+		assert.NoError(t, err)
 		stepParameterNames = []string{}
 		if len(test.contains) == 0 {
 			assert.Equalf(t, test.contains, res, fmt.Sprintf("param %v", test.paramName))
@@ -100,6 +116,33 @@ func TestParameterFurtherInfo(t *testing.T) {
 			assert.NotContainsf(t, res, notThere, fmt.Sprintf("param %v", test.paramName))
 		}
 	}
+}
+
+func TestCheckParameterInfo(t *testing.T) {
+	t.Parallel()
+	tt := []struct {
+		info                 string
+		stepParam            bool
+		executionEnvironment bool
+		expected             string
+		expectedErr          error
+	}{
+		{info: "step param", stepParam: true, executionEnvironment: false, expected: "step param", expectedErr: nil},
+		{info: "execution param", stepParam: false, executionEnvironment: true, expected: "execution param", expectedErr: nil},
+		{info: "step param in execution", stepParam: true, executionEnvironment: true, expected: "", expectedErr: fmt.Errorf("step parameter not relevant as execution environment parameter")},
+		{info: "execution param in step", stepParam: false, executionEnvironment: false, expected: "", expectedErr: fmt.Errorf("execution environment parameter not relevant as step parameter")},
+	}
+
+	for _, test := range tt {
+		result, err := checkParameterInfo(test.info, test.stepParam, test.executionEnvironment)
+		if test.expectedErr == nil {
+			assert.NoError(t, err)
+		} else {
+			assert.EqualError(t, err, fmt.Sprint(test.expectedErr))
+		}
+		assert.Equal(t, test.expected, result)
+	}
+
 }
 
 func TestCreateParameterDetails(t *testing.T) {
