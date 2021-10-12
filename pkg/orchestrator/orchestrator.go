@@ -17,7 +17,7 @@ const (
 )
 
 type OrchestratorSpecificConfigProviding interface {
-	InitOrchestratorProvider()
+	InitOrchestratorProvider(username, token string)
 	OrchestratorType() string
 	OrchestratorVersion() string
 	GetStageName() string
@@ -40,17 +40,11 @@ type PullRequestConfig struct {
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
 	switch DetectOrchestrator() {
 	case AzureDevOps:
-		provider := &AzureDevOpsConfigProvider{}
-		provider.InitOrchestratorProvider()
-		return provider, nil
+		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
-		provider := &GitHubActionsConfigProvider{}
-		provider.InitOrchestratorProvider()
-		return provider, nil
+		return &GitHubActionsConfigProvider{}, nil
 	case Jenkins:
-		provider := &JenkinsConfigProvider{}
-		provider.InitOrchestratorProvider()
-		return provider, nil
+		return &JenkinsConfigProvider{}, nil
 	case Unknown:
 		fallthrough
 	default:

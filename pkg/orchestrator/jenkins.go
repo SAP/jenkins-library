@@ -10,15 +10,15 @@ import (
 )
 
 type JenkinsConfigProvider struct {
-	client  piperHttp.Client
-	options piperHttp.ClientOptions
+	client   piperHttp.Client
+	options  piperHttp.ClientOptions
 }
 
-func (j *JenkinsConfigProvider) InitOrchestratorProvider() {
+func (j *JenkinsConfigProvider) InitOrchestratorProvider(username, token string) {
 	j.client = piperHttp.Client{}
 	j.options = piperHttp.ClientOptions{
-		Username: getEnv("PIPER_jenkinsUser", "N/A"),
-		Password: getEnv("PIPER_jenkinsToken", "N/A"),
+		Username: username,
+		Password: token,
 	}
 	j.client.SetOptions(j.options)
 	log.Entry().Debug("Successfully initalized Jenkins config provider")
@@ -81,7 +81,7 @@ func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
 	}
 
 	myvar := responseInterface["timestamp"].(float64)
-	timestamp := time.Unix(int64(myvar) / 1000, 0)
+	timestamp := time.Unix(int64(myvar)/1000, 0)
 
 	log.Entry().Debugf("Pipeline start time: %v", timestamp.String())
 	defer response.Body.Close()
