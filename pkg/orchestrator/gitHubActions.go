@@ -4,9 +4,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"strings"
+	"time"
 )
 
 type GitHubActionsConfigProvider struct{}
+
+func (j *GitHubActionsConfigProvider) InitOrchestratorProvider() {
+	log.Entry().Debug("Successfully initalized GitHubActions config provider")
+}
 
 func (a *GitHubActionsConfigProvider) OrchestratorVersion() string {
 	return "n/a"
@@ -21,9 +26,10 @@ func (a *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	return nil, nil
 }
 
-func (a *GitHubActionsConfigProvider) GetPipelineStartTime() string {
+func (a *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
-	return "n/a"
+	timestamp, _ := time.Parse(time.UnixDate, "Wed Feb 25 11:06:39 PST 1970")
+	return timestamp
 }
 func (g *GitHubActionsConfigProvider) GetStageName() string {
 	return "GITHUB_WORKFLOW" //TODO: is there something like is "stage" in GH Actions?

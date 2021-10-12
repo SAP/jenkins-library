@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
+	"time"
 )
 
 type Orchestrator int
@@ -15,9 +16,8 @@ const (
 	Jenkins
 )
 
-// Orchestrator Specific error logs
-
 type OrchestratorSpecificConfigProviding interface {
+	InitOrchestratorProvider()
 	OrchestratorType() string
 	OrchestratorVersion() string
 	GetStageName() string
@@ -28,7 +28,7 @@ type OrchestratorSpecificConfigProviding interface {
 	GetRepoUrl() string
 	IsPullRequest() bool
 	GetLog() ([]byte, error)
-	GetPipelineStartTime() string
+	GetPipelineStartTime() time.Time
 }
 
 type PullRequestConfig struct {
@@ -40,11 +40,17 @@ type PullRequestConfig struct {
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
 	switch DetectOrchestrator() {
 	case AzureDevOps:
-		return &AzureDevOpsConfigProvider{}, nil
+		provider := &AzureDevOpsConfigProvider{}
+		provider.InitOrchestratorProvider()
+		return provider, nil
 	case GitHubActions:
-		return &GitHubActionsConfigProvider{}, nil
+		provider := &GitHubActionsConfigProvider{}
+		provider.InitOrchestratorProvider()
+		return provider, nil
 	case Jenkins:
-		return &JenkinsConfigProvider{}, nil
+		provider := &JenkinsConfigProvider{}
+		provider.InitOrchestratorProvider()
+		return provider, nil
 	case Unknown:
 		fallthrough
 	default:

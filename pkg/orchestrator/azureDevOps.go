@@ -8,9 +8,23 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
-type AzureDevOpsConfigProvider struct{}
+type AzureDevOpsConfigProvider struct {
+	client  piperHttp.Client
+	options piperHttp.ClientOptions
+}
+
+func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider() {
+	a.client = piperHttp.Client{}
+	a.options = piperHttp.ClientOptions{
+		Username: "",
+		Password: getEnv("PIPER_azureToken", "N/A"),
+	}
+	a.client.SetOptions(a.options)
+	log.Entry().Debug("Successfully initalized Azure config provider")
+}
 
 func (a *AzureDevOpsConfigProvider) OrchestratorVersion() string {
 	return getEnv("AGENT_VERSION", "n/a")
@@ -23,25 +37,19 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 
 	// Questions:
-	// How to handle tokens for users?
-	// How to get step specific logs, not only whole log?
+	// How to handle tokens for users? -> Vault: Add PAT using HyperSpace
+	// ToDo: How to get step specific logs, not only whole log?
 
 	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
+	// https://dev.azure.com/hyperspace-pipelines/8d6e7755-9b5a-4036-a67e-33b95cda3a3f/_apis/build/builds/10822/logs/
 
-	client := &piperHttp.Client{}
-	options := piperHttp.ClientOptions{
-		Username: "",
-		Password: getEnv("PIPER_azureToken", "N/A"),
-	}
-
-	client.SetOptions(options)
-	response, err := client.GetRequest(URL, nil, nil)
+	response, err := a.client.GetRequest(URL, nil, nil)
 	logs := []byte{}
 	if err != nil {
 		fmt.Println(err)
 	}
-	if response.StatusCode != 200 {
-		log.Entry().Errorf("Could not get log information from AzureDevOps. Returning with empty log.")
+	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
+		log.Entry().Errorf("Response-Code is %v . \n Could not get log information from AzureDevOps. Returning with empty log.", response.StatusCode)
 		return logs, nil
 	}
 	var responseInterface map[string]interface{}
@@ -57,7 +65,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 		logURL := URL + "/" + counter
 		fmt.Println("logURL: ", logURL)
 		log.Entry().Debugf("Getting log no.: %d  from %v", i, logURL)
-		response, err := client.GetRequest(logURL, nil, nil)
+		response, err := a.client.GetRequest(logURL, nil, nil)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -68,8 +76,16 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	return logs, nil
 }
 
-func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() string {
-	return getEnv("SYSTEM_PIPELINESTARTTIME", "n/a")
+func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
+	// "2021-10-11 13:49:09+00:00"
+	timestamp := getEnv("SYSTEM_PIPELINESTARTTIME", "n/a")
+	replaced := strings.Replace(timestamp, " ", "T", 1)
+	parsed, err := time.Parse(time.RFC3339, replaced)
+	if err != nil {
+		log.Entry().Errorf("Could not parse timestamp. %v", err)
+		// ToDo: return 1970 if time could not be parsed?
+	}
+	return parsed
 }
 
 func (a *AzureDevOpsConfigProvider) GetSystemCollectionURI() string {

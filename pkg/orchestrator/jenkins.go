@@ -6,15 +6,29 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
-type JenkinsConfigProvider struct{}
+type JenkinsConfigProvider struct {
+	client  piperHttp.Client
+	options piperHttp.ClientOptions
+}
 
-func (a *JenkinsConfigProvider) OrchestratorVersion() string {
+func (j *JenkinsConfigProvider) InitOrchestratorProvider() {
+	j.client = piperHttp.Client{}
+	j.options = piperHttp.ClientOptions{
+		Username: getEnv("PIPER_jenkinsUser", "N/A"),
+		Password: getEnv("PIPER_jenkinsToken", "N/A"),
+	}
+	j.client.SetOptions(j.options)
+	log.Entry().Debug("Successfully initalized Jenkins config provider")
+}
+
+func (j *JenkinsConfigProvider) OrchestratorVersion() string {
 	return getEnv("JENKINS_VERSION", "n/a")
 }
 
-func (a *JenkinsConfigProvider) OrchestratorType() string {
+func (j *JenkinsConfigProvider) OrchestratorType() string {
 	return "Jenkins"
 }
 
@@ -29,14 +43,7 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 
 	URL := j.GetBuildUrl() + "consoleText"
 
-	client := &piperHttp.Client{}
-	options := piperHttp.ClientOptions{
-		Username: getEnv("PIPER_jenkinsUser", "N/A"),
-		Password: getEnv("PIPER_jenkinsToken", "N/A"),
-	}
-
-	client.SetOptions(options)
-	response, err := client.GetRequest(URL, nil, nil)
+	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
 		return []byte{}, errors.Wrapf(err, "Could not read Jenkins logfile. %v", err)
 	}
@@ -55,9 +62,30 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	return logFile, nil
 }
 
-func (a *JenkinsConfigProvider) GetPipelineStartTime() string {
-	log.Entry().Infof("GetPipelineStartTime() for Jenkins not yet implemented.")
-	return "n/a"
+func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
+	URL := j.GetBuildUrl() + "api/json"
+
+	response, err := j.client.GetRequest(URL, nil, nil)
+	if err != nil {
+		log.Entry().Error(err)
+	}
+
+	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
+		log.Entry().Errorf("Response-Code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
+		return time.Unix(1, 0)
+	}
+	var responseInterface map[string]interface{}
+	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
+	if err != nil {
+		log.Entry().Error(err)
+	}
+
+	myvar := responseInterface["timestamp"].(float64)
+	timestamp := time.Unix(int64(myvar) / 1000, 0)
+
+	log.Entry().Debugf("Pipeline start time: %v", timestamp.String())
+	defer response.Body.Close()
+	return timestamp
 }
 
 func (j *JenkinsConfigProvider) GetJobName() string {
