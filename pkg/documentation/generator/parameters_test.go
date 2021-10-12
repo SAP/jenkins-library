@@ -18,19 +18,23 @@ func TestCreateParameterOverview(t *testing.T) {
 				},
 				Parameters: []config.StepParameters{
 					{Name: "param1"},
+					{Name: "param2", Mandatory: true},
+					{Name: "param3", MandatoryIf: []config.ParameterDependence{{Name: "param1", Value: "param3Necessary"}}},
 					{Name: "dockerImage", Default: "testImage"},
 					{Name: "stashContent", Default: "testStash"},
 				},
 			},
 		},
 	}
-	stepParameterNames = []string{"param1"}
+	stepParameterNames = []string{"param1", "param2", "param3"}
 
 	t.Run("Test Step Section", func(t *testing.T) {
 
 		expected := `| Name | Mandatory | Additional information |
 | ---- | --------- | ---------------------- |
 | [param1](#param1) | no |  |
+| [param2](#param2) | **yes** |  |
+| [param3](#param3) | **(yes)** | mandatory in case of:<br />- ` + "[`param1`](#param1)=`param3Necessary`" + ` |
 
 `
 
@@ -146,39 +150,62 @@ func TestCheckParameterInfo(t *testing.T) {
 }
 
 func TestCreateParameterDetails(t *testing.T) {
-	stepData := config.StepData{
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:            "param1",
-						Aliases:         []config.Alias{{Name: "param1Alias"}, {Name: "paramAliasDeprecated", Deprecated: true}},
-						Mandatory:       true,
-						Default:         "param1Default",
-						LongDescription: "long description",
-						PossibleValues:  []interface{}{"val1", "val2"},
-						Scope:           []string{"STEPS"},
-						Secret:          true,
-						Type:            "string",
+	t.Run("default", func(t *testing.T) {
+		stepData := config.StepData{
+			Spec: config.StepSpec{
+				Inputs: config.StepInputs{
+					Parameters: []config.StepParameters{
+						{
+							Name:            "param1",
+							Aliases:         []config.Alias{{Name: "param1Alias"}, {Name: "paramAliasDeprecated", Deprecated: true}},
+							Mandatory:       true,
+							Default:         "param1Default",
+							LongDescription: "long description",
+							PossibleValues:  []interface{}{"val1", "val2"},
+							Scope:           []string{"STEPS"},
+							Secret:          true,
+							Type:            "string",
+						},
 					},
 				},
 			},
-		},
-	}
+		}
 
-	res := createParameterDetails(&stepData)
+		res := createParameterDetails(&stepData)
 
-	assert.Contains(t, res, "#### param1")
-	assert.Contains(t, res, "long description")
-	assert.Contains(t, res, "`param1Alias`")
-	assert.Contains(t, res, "`paramAliasDeprecated` (**deprecated**)")
-	assert.Contains(t, res, "string")
-	assert.Contains(t, res, "param1Default")
-	assert.Contains(t, res, "val1")
-	assert.Contains(t, res, "val2")
-	assert.Contains(t, res, "no")
-	assert.Contains(t, res, "**yes**")
-	assert.Contains(t, res, "steps")
+		assert.Contains(t, res, "#### param1")
+		assert.Contains(t, res, "long description")
+		assert.Contains(t, res, "`param1Alias`")
+		assert.Contains(t, res, "`paramAliasDeprecated` (**deprecated**)")
+		assert.Contains(t, res, "string")
+		assert.Contains(t, res, "param1Default")
+		assert.Contains(t, res, "val1")
+		assert.Contains(t, res, "val2")
+		assert.Contains(t, res, "no")
+		assert.Contains(t, res, "**yes**")
+		assert.Contains(t, res, "steps")
+	})
+
+	t.Run("conditional mandatory parameters", func(t *testing.T) {
+		stepData := config.StepData{
+			Spec: config.StepSpec{
+				Inputs: config.StepInputs{
+					Parameters: []config.StepParameters{
+						{
+							Name:        "param2",
+							MandatoryIf: []config.ParameterDependence{{Name: "param1", Value: "param1Val"}},
+							Type:        "string",
+						},
+					},
+				},
+			},
+		}
+
+		res := createParameterDetails(&stepData)
+
+		assert.Contains(t, res, "mandatory in case of:<br />- [`param1`](#param1)=`param1Val`")
+	})
+
 }
 
 func TestFormatDefault(t *testing.T) {
@@ -339,6 +366,7 @@ func TestSortStepParameters(t *testing.T) {
 					{Name: "ab6", Mandatory: true},
 					{Name: "ab4", Mandatory: false},
 					{Name: "ab2", Mandatory: true},
+					{Name: "ab7", MandatoryIf: []config.ParameterDependence{{Name: "ab1", Value: "ab1Val1"}}},
 				},
 			},
 		},
@@ -353,6 +381,7 @@ func TestSortStepParameters(t *testing.T) {
 		assert.Equal(t, "ab4", stepData.Spec.Inputs.Parameters[3].Name)
 		assert.Equal(t, "ab5", stepData.Spec.Inputs.Parameters[4].Name)
 		assert.Equal(t, "ab6", stepData.Spec.Inputs.Parameters[5].Name)
+		assert.Equal(t, "ab7", stepData.Spec.Inputs.Parameters[6].Name)
 	})
 
 	t.Run("consider mandatory", func(t *testing.T) {
@@ -361,8 +390,9 @@ func TestSortStepParameters(t *testing.T) {
 		assert.Equal(t, "ab2", stepData.Spec.Inputs.Parameters[0].Name)
 		assert.Equal(t, "ab3", stepData.Spec.Inputs.Parameters[1].Name)
 		assert.Equal(t, "ab6", stepData.Spec.Inputs.Parameters[2].Name)
-		assert.Equal(t, "ab1", stepData.Spec.Inputs.Parameters[3].Name)
-		assert.Equal(t, "ab4", stepData.Spec.Inputs.Parameters[4].Name)
-		assert.Equal(t, "ab5", stepData.Spec.Inputs.Parameters[5].Name)
+		assert.Equal(t, "ab7", stepData.Spec.Inputs.Parameters[3].Name)
+		assert.Equal(t, "ab1", stepData.Spec.Inputs.Parameters[4].Name)
+		assert.Equal(t, "ab4", stepData.Spec.Inputs.Parameters[5].Name)
+		assert.Equal(t, "ab5", stepData.Spec.Inputs.Parameters[6].Name)
 	})
 }
