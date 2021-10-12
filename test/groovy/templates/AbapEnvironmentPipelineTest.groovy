@@ -271,6 +271,9 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStageATC',
             'abapEnvironmentPipelineStagePost'
         ))
+        assertThat(stepsCalled, not(hasItems(
+            'abapEnvironmentPipelineStageAUnit'
+        )))
     }
     @Test
     void testAbapEnvironmentPipelineAunitOnly() {
@@ -285,5 +288,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStageAUnit',
             'abapEnvironmentPipelineStagePost'
         ))
+        assertThat(stepsCalled, not(hasItems(
+            'abapEnvironmentPipelineStageATC'
+        )))
     }
 }
