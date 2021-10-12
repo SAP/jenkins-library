@@ -17,7 +17,7 @@ const (
 )
 
 type OrchestratorSpecificConfigProviding interface {
-	InitOrchestratorProvider(username, token string)
+	InitOrchestratorProvider(settings *OrchestratorSettings)
 	OrchestratorType() string
 	OrchestratorVersion() string
 	GetStageName() string
@@ -35,6 +35,12 @@ type PullRequestConfig struct {
 	Branch string
 	Base   string
 	Key    string
+}
+
+type OrchestratorSettings struct {
+	JenkinsUser  string
+	JenkinsToken string
+	AzureToken   string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {

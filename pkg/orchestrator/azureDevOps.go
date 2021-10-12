@@ -14,15 +14,13 @@ import (
 type AzureDevOpsConfigProvider struct {
 	client  piperHttp.Client
 	options piperHttp.ClientOptions
-	token   string
 }
 
-func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(username, token string) {
-	a.token = token
+func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	a.client = piperHttp.Client{}
 	a.options = piperHttp.ClientOptions{
 		Username: "",
-		Password: a.token,
+		Password: settings.AzureToken,
 	}
 	a.client.SetOptions(a.options)
 	log.Entry().Debug("Successfully initalized Azure config provider")

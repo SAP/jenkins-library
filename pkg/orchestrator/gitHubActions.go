@@ -9,7 +9,7 @@ import (
 
 type GitHubActionsConfigProvider struct{}
 
-func (j *GitHubActionsConfigProvider) InitOrchestratorProvider(username, token string) {
+func (j *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	log.Entry().Debug("Successfully initalized GitHubActions config provider")
 }
 
