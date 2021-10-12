@@ -31,6 +31,31 @@ func createParametersSection(stepData *config.StepData) string {
 	return parameters
 }
 
+func parameterMandatoryInformation(param config.StepParameters, furtherInfo string) (mandatory bool, mandatoryString string, mandatoryInfo string) {
+	mandatory = param.Mandatory
+	mandatoryInfo = furtherInfo
+
+	mandatoryIf := param.MandatoryIf
+	if len(mandatoryIf) > 0 {
+		mandatory = true
+		if len(mandatoryInfo) > 0 {
+			mandatoryInfo += "<br />"
+		}
+		furtherInfoConditions := []string{"mandatory in case of:"}
+		for _, mandatoryCondition := range mandatoryIf {
+			furtherInfoConditions = append(furtherInfoConditions, fmt.Sprintf("- [`%v`](#%v)=`%v`", mandatoryCondition.Name, strings.ToLower(mandatoryCondition.Name), mandatoryCondition.Value))
+		}
+
+		mandatoryInfo += strings.Join(furtherInfoConditions, "<br />")
+	}
+
+	mandatoryString = "**yes**"
+	if len(mandatoryInfo) > 0 {
+		mandatoryString = "**(yes)**"
+	}
+	return
+}
+
 func createParameterOverview(stepData *config.StepData, executionEnvironment bool) string {
 	var table = "| Name | Mandatory | Additional information |\n"
 	table += "| ---- | --------- | ---------------------- |\n"
@@ -38,7 +63,11 @@ func createParameterOverview(stepData *config.StepData, executionEnvironment boo
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		furtherInfo, err := parameterFurtherInfo(param.Name, stepData, executionEnvironment)
 		if err == nil {
-			table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(param.Mandatory, "**yes**", "no"), furtherInfo)
+
+			var mandatory bool
+			var mandatoryString string
+			mandatory, mandatoryString, furtherInfo = parameterMandatoryInformation(param, furtherInfo)
+			table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(mandatory, mandatoryString, "no"), furtherInfo)
 		}
 	}
 
@@ -132,7 +161,11 @@ func createParameterDetails(stepData *config.StepData) string {
 
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases))
 		details += fmt.Sprintf("| Type | `%v` |\n", param.Type)
-		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(param.Mandatory, "**yes**", "no"))
+		mandatory, mandatoryString, furtherInfo := parameterMandatoryInformation(param, "")
+		if mandatory && len(furtherInfo) > 0 {
+			mandatoryString = furtherInfo
+		}
+		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(mandatory, mandatoryString, "no"))
 		details += fmt.Sprintf("| Default | %v |\n", formatDefault(param, stepParameterNames))
 		if param.PossibleValues != nil {
 			details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(param.PossibleValues))
@@ -308,9 +341,9 @@ func sortStepParameters(stepData *config.StepData, considerMandatory bool) {
 
 		if considerMandatory {
 			sort.SliceStable(parameters[:], func(i, j int) bool {
-				if parameters[i].Mandatory == parameters[j].Mandatory {
+				if (parameters[i].Mandatory || len(parameters[i].MandatoryIf) > 0) == (parameters[j].Mandatory || len(parameters[j].MandatoryIf) > 0) {
 					return strings.Compare(parameters[i].Name, parameters[j].Name) < 0
-				} else if parameters[i].Mandatory {
+				} else if parameters[i].Mandatory || len(parameters[i].MandatoryIf) > 0 {
 					return true
 				}
 				return false
