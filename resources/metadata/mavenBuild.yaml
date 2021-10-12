@@ -176,6 +176,13 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/javaCaCertFilePath
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/createBom
+            type: bool
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

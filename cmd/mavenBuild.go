@@ -17,16 +17,16 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
-func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
+func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
 
-	err := runMavenBuild(&config, telemetryData, utils)
+	err := runMavenBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
 
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
@@ -48,6 +48,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		goals = append(goals, "flatten:flatten")
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
+
+	commonPipelineEnvironment.custom.createBom = config.CreateBOM
 
 	if config.CreateBOM {
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
