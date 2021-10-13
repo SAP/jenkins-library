@@ -92,6 +92,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: projectDescriptor
+        type: string
+        description: Path to the project.toml file (see https://buildpacks.io/docs/reference/config/project-descriptor/ for the reference). Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.
+        default: project.toml
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: dockerConfigJSON
         type: string
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
@@ -112,6 +120,13 @@ spec:
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: additionalTags
+        type: "[]string"
+        description: List of tags which will be additionally pushed to the registry, e.g. "latest".
         scope:
           - PARAMETERS
           - STAGES
