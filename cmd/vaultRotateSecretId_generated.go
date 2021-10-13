@@ -260,7 +260,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "adoPersonalAccessToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "azureVaultSecretName",
+								Name:    "azureDevOpsVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "azure-dev-ops",
 							},
