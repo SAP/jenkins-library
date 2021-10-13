@@ -48,7 +48,7 @@ spec:
         aliases:
           - name: extension
       - name: jobs
-        type: string
+        type: int
         description: "Configures the number of Make jobs that can run simultaneously"
         scope:
           - PARAMETERS
