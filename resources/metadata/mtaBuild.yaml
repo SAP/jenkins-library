@@ -57,7 +57,7 @@ spec:
         mandatory: false
         default:
         aliases:
-          - name: jobs          
+          - name: jobs
       - name: platform
         type: string
         description: "The target platform to which the mtar can be deployed."
