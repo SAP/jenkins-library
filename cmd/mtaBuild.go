@@ -208,7 +208,7 @@ func runMtaBuild(config mtaBuildOptions,
 		call = append(call, "--target", "./")
 	}
 
-	if config.Jobs != "" {
+	if config.Jobs > 0 {
 		call = append(call, "-m=verbose")
 		call = append(call, "-j="+config.Jobs)
 	}
