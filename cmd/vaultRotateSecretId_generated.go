@@ -262,7 +262,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 							{
 								Name:    "azureVaultSecretName",
 								Type:    "vaultSecret",
-								Default: "azure",
+								Default: "azure-dev-ops",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
