@@ -265,8 +265,9 @@ func cnbBuildMetadata() config.StepData {
 							},
 
 							{
-								Name: "",
-								Type: "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},

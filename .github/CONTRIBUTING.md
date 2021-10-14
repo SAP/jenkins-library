@@ -1,10 +1,10 @@
-# Guidance on how to contribute
+# Guidance on How to Contribute
 
-**Table of contents:**
+**Table of Contents:**
 
 1. [Using the issue tracker](#using-the-issue-tracker)
 1. [Changing the code-base](#changing-the-code-base)
-1. [Jenkins credential handling](#jenkins-credentials)
+1. [Jenkins credential handling](#jenkins-credential-handling)
 1. [Code Style](#code-style)
 1. [References](#references)
 
@@ -53,6 +53,10 @@ To ensure a common file format, there is a `.editorConfig` file [in place](../.e
 Write [meaningful commit messages](http://who-t.blogspot.de/2009/12/on-commit-messages.html) and [adhere to standard formatting](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
 
 Good commit messages speed up the review process and help to keep this project maintainable in the long term.
+
+## Developer Certificate of Origin (DCO)
+
+Due to legal reasons, contributors will be asked to accept a DCO when they create their first pull request to this project. This happens in an automated fashion during the submission process. SAP uses [the standard DCO text of the Linux Foundation](https://developercertificate.org/).
 
 ## Jenkins credential handling
 
