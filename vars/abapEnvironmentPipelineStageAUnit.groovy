@@ -30,7 +30,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         echo "checking host config"
         println config.host
-        if (!config.host) {
+        if (!config.host == null) {
             echo "host hasn't been set"
             cloudFoundryCreateServiceKey script: parameters.script
         }
