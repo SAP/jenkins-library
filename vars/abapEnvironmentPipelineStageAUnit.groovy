@@ -1,6 +1,5 @@
-import com.cloudbees.groovy.cps.NonCPS
-import com.sap.piper.GenerateStageDocumentation
 import groovy.transform.Field
+import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -22,14 +21,14 @@ void call(Map parameters = [:]) {
 
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults([:], stageName)
-        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        .loadStepDefaults()
+        .mixinStepConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        if (!config.host == null) {
+        if (!config.host) {
             cloudFoundryCreateServiceKey script: parameters.script
         }
         abapEnvironmentRunAUnitTest script: parameters.script
