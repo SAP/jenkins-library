@@ -87,6 +87,8 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 			Username:  details.User,
 			Password:  details.Password,
 			CookieJar: cookieJar,
+
+			//dummy comment
 		}
 		client.SetOptions(credentialsOptions)
 		details.XCsrfToken, err = fetchAUnitXcsrfToken("GET", details, nil, client)
