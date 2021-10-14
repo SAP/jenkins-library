@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -209,8 +210,8 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	if config.Jobs > 0 {
-		call = append(call, "-m=verbose")
-		call = append(call, "-j="+config.Jobs)
+		call = append(call, "--mode=verbose")
+		call = append(call, "--jobs="+strconv.Itoa(config.Jobs))
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
