@@ -35,19 +35,19 @@ class AbapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
         helper.registerAllowedMethod('abapEnvironmentRunAUnitTest', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunAUnitTest')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
     }
-
+    /*
     @Test
     void testAbapEnvironmentRunTestsWithoutHost() {
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        /*nullScript.commonPipelineEnvironment.configuration.runStage = [
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
             'AUnit': true
-        ]*/
+        ]
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
 
         //assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest','cloudFoundryCreateServiceKey'))
         assertThat(stepsCalled, hasItem('abapEnvironmentRunAUnitTest'))
         assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
-    }
+    }*/
 
     @Test
     void testAbapEnvironmentRunTestsWithHost() {

@@ -28,10 +28,7 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        echo "checking host config"
-        println config.host
         if (!config.host == null) {
-            echo "host hasn't been set"
             cloudFoundryCreateServiceKey script: parameters.script
         }
         abapEnvironmentRunAUnitTest script: parameters.script
