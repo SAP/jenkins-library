@@ -18,6 +18,7 @@ import (
 // FileUtils ...
 type FileUtils interface {
 	Abs(path string) (string, error)
+	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)

@@ -178,10 +178,15 @@ extra:
       code: 'Ubuntu Mono'
 markdown_extensions:
     - admonition
-    - codehilite(guess_lang=false)
-    - toc(permalink=true)
+    - attr_list
+    - codehilite:
+        guess_lang: false
+    - toc:
+        permalink: true
     - footnotes
     - pymdownx.superfences
+    - pymdownx.tabbed
+    - pymdownx.details
 extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
