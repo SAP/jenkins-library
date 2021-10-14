@@ -112,7 +112,4 @@ stages:
 #### aunitConfig.yml
 
 ```yaml
-atcobjects:
-  softwarecomponent:
-    - name: "/DMO/SWC"
 ```
