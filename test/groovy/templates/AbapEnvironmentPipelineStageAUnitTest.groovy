@@ -44,7 +44,8 @@ class AbapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
         ]
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
 
-        assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest','cloudFoundryCreateServiceKey'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest'))
+        assertThat(stepsCalled, hasItems('cloudFoundryCreateServiceKey'))
     }
 
     @Test
