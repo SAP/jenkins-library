@@ -29,7 +29,7 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        if (!config.host) {
+        if (!config.host == null) {
             cloudFoundryCreateServiceKey script: parameters.script
         }
         abapEnvironmentRunAUnitTest script: parameters.script
