@@ -64,9 +64,20 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
-	containerImageName, containerImageTag, err := splitFullImageName(config.Image)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+	//support either image or containerImageName and containerImageTag
+	containerImageName := ""
+	containerImageTag := ""
+
+	if len(config.Image) > 0 {
+		containerImageName, containerImageTag, err = splitFullImageName(config.Image)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+		}
+	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		containerImageName = config.ContainerImageName
+		containerImageTag = config.ContainerImageTag
+	} else {
+		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
 	helmLogFields := map[string]interface{}{}
 	helmLogFields["Chart Path"] = config.ChartPath
@@ -237,9 +248,20 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
 	}
 
+	//support either image or containerImageName and containerImageTag
+	fullImage := ""
+
+	if len(config.Image) > 0 {
+		fullImage = config.Image
+	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		fullImage = config.ContainerImageName + ":" + config.ContainerImageTag
+	} else {
+		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+	}
+
 	// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
-	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, config.Image)))
+	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, fullImage)))
 
 	err = ioutil.WriteFile(config.AppTemplate, appTemplate, 0700)
 	if err != nil {
