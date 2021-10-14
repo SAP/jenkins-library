@@ -349,7 +349,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 
 	requestURI := ""
 	var passedHeaders = map[string][]string{}
-	var multipartFile multipart.File
+	var reader io.Reader
 	var passedFileContents []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
@@ -365,15 +365,17 @@ func TestUploadScanFileSuccess(t *testing.T) {
 		response := new(ResultData)
 
 		err := req.ParseMultipartForm(4096)
-		if err != nil {
-			t.FailNow()
+		if err == nil {
+			reader, _, err = req.FormFile("file")
+			if err != nil {
+				t.FailNow()
+			}
+		} else {
+			reader = req.Body
 		}
-		multipartFile, _, err = req.FormFile("file")
-		if err != nil {
-			t.FailNow()
-		}
+		
 		defer req.Body.Close()
-		passedFileContents, err = ioutil.ReadAll(multipartFile)
+		passedFileContents, err = ioutil.ReadAll(reader)
 		if err != nil {
 			t.FailNow()
 		}
