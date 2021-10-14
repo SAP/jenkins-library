@@ -38,10 +38,10 @@ class AbapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
 
     @Test
     void testAbapEnvironmentRunTestsWithoutHost() {
-
-        nullScript.commonPipelineEnvironment.configuration.runStage = [
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
+        /*nullScript.commonPipelineEnvironment.configuration.runStage = [
             'AUnit': true
-        ]
+        ]*/
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
 
         //assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest','cloudFoundryCreateServiceKey'))
