@@ -104,9 +104,6 @@ general:
 stages:
   AUnit:
     aunitConfig: 'aunitConfig.yml'
-  ## Configure the ATC stage additionally if it should also be executed
-  #ATC:
-  #  atcConfig: 'atcConfig.yml'
 ```
 
 #### aunitConfig.yml
