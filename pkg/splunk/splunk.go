@@ -64,15 +64,15 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 	return nil
 }
 
-func (s *Splunk) Send(customTelemetryData *telemetry.CustomData, logCollector *log.CollectorHook) error {
+func (s *Splunk) Send(telemetryData telemetry.Data, logCollector *log.CollectorHook) error {
 	// Sends telemetry and or additionally logging data to Splunk
-	telemetryData := s.prepareTelemetry(*customTelemetryData)
+	preparedTelemetryData := s.prepareTelemetry(telemetryData)
 	messagesLen := len(logCollector.Messages)
 	// TODO: Logic for errorCategory (undefined, service, infrastructure)
 	if telemetryData.ErrorCode == "0" || (telemetryData.ErrorCode == "1" && !s.sendLogs) {
 		// Either Successful run, we only send the telemetry data, no logging information
 		// OR Failure run and we do not want to send the logs
-		err := s.tryPostMessages(telemetryData, []log.Message{})
+		err := s.tryPostMessages(preparedTelemetryData, []log.Message{})
 		if err != nil {
 			return errors.Wrap(err, "error while sending logs")
 		}
@@ -84,7 +84,7 @@ func (s *Splunk) Send(customTelemetryData *telemetry.CustomData, logCollector *l
 			if upperBound > messagesLen {
 				upperBound = messagesLen
 			}
-			err := s.tryPostMessages(telemetryData, logCollector.Messages[i:upperBound])
+			err := s.tryPostMessages(preparedTelemetryData, logCollector.Messages[i:upperBound])
 			if err != nil {
 				return errors.Wrap(err, "error while sending logs")
 			}
@@ -140,18 +140,17 @@ type PipelineData struct {
 	PipelineStartTime   string `json:"PipelineStartTime,omitempty"`
 }
 
-func (s *Splunk) prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
-	tData := telemetry.GetData(&customTelemetryData)
+func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 
 	return MonitoringData{
-		PipelineUrlHash: tData.PipelineURLHash,
-		BuildUrlHash:    tData.BuildURLHash,
-		StageName:       tData.StageName,
-		StepName:        tData.BaseData.StepName,
-		ExitCode:        tData.CustomData.ErrorCode,
-		Duration:        tData.CustomData.Duration,
-		ErrorCode:       tData.CustomData.ErrorCode,
-		ErrorCategory:   tData.CustomData.ErrorCategory,
+		PipelineUrlHash: telemetryData.PipelineURLHash,
+		BuildUrlHash:    telemetryData.BuildURLHash,
+		StageName:       telemetryData.StageName,
+		StepName:        telemetryData.BaseData.StepName,
+		ExitCode:        telemetryData.CustomData.ErrorCode,
+		Duration:        telemetryData.CustomData.Duration,
+		ErrorCode:       telemetryData.CustomData.ErrorCode,
+		ErrorCategory:   telemetryData.CustomData.ErrorCategory,
 		CorrelationID:   s.correlationID,
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
@@ -160,25 +159,24 @@ func (s *Splunk) prepareTelemetry(customTelemetryData telemetry.CustomData) Moni
 	}
 }
 
-func (s *Splunk) prepareTelemetryPipelineData(customTelemetryData telemetry.CustomData) PipelineData {
-	tData := telemetry.GetData(&customTelemetryData)
+func (s *Splunk) prepareTelemetryPipelineData(telemetryData telemetry.Data) PipelineData {
 
 	return PipelineData{
-		PipelineUrlHash:     tData.PipelineURLHash,
-		BuildUrlHash:        tData.BuildURLHash,
-		StepName:            tData.BaseData.StepName,
-		ExitCode:            tData.CustomData.ErrorCode,
-		Duration:            tData.CustomData.Duration,
-		ErrorCode:           tData.CustomData.ErrorCode,
-		ErrorCategory:       tData.CustomData.ErrorCategory,
+		PipelineUrlHash:     telemetryData.PipelineURLHash,
+		BuildUrlHash:        telemetryData.BuildURLHash,
+		StepName:            telemetryData.BaseData.StepName,
+		ExitCode:            telemetryData.CustomData.ErrorCode,
+		Duration:            telemetryData.CustomData.Duration,
+		ErrorCode:           telemetryData.CustomData.ErrorCode,
+		ErrorCategory:       telemetryData.CustomData.ErrorCategory,
 		CorrelationID:       s.correlationID,
 		CommitHash:          readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:              readCommonPipelineEnvironment("git/branch"),
 		GitOwner:            readCommonPipelineEnvironment("github/owner"),
 		GitRepository:       readCommonPipelineEnvironment("github/repository"),
-		Orchestrator:        tData.CustomData.Custom1,
-		OrchestratorVersion: tData.CustomData.Custom2,
-		PipelineStartTime:   tData.CustomData.Custom3,
+		Orchestrator:        telemetryData.CustomData.Custom1,
+		OrchestratorVersion: telemetryData.CustomData.Custom2,
+		PipelineStartTime:   telemetryData.CustomData.Custom3,
 	}
 }
 
@@ -194,9 +192,9 @@ type Details struct {
 	Event      Event  `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
-func (s *Splunk) SendPipelineStatus(customTelemetryData *telemetry.CustomData, logFile *[]byte) error {
+func (s *Splunk) SendPipelineStatus(customTelemetryData telemetry.Data, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
-	telemetryData := s.prepareTelemetryPipelineData(*customTelemetryData)
+	telemetryData := s.prepareTelemetryPipelineData(customTelemetryData)
 
 	readLogFile := string(*logFile)
 	splitted := strings.Split(readLogFile, "\n")

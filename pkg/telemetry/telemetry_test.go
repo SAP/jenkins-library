@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -29,53 +30,60 @@ func (c *clientMock) SendRequest(method, url string, body io.Reader, header http
 
 var mock clientMock
 
-func TestInitialise(t *testing.T) {
+func TestInitialize(t *testing.T) {
+
 	t.Run("with disabled telemetry", func(t *testing.T) {
+		telemetryClient := Telemetry{}
 		// init
 		client = nil
 		// test
-		Initialize(true, "testStep")
+		telemetryClient.Initialize(true, "testStep")
 		// assert
 		assert.Equal(t, nil, client)
-		assert.Equal(t, BaseData{}, baseData)
+		assert.Equal(t, BaseData{}, telemetryClient.baseData)
 	})
 
 	t.Run("", func(t *testing.T) {
+		telemetryClient := Telemetry{}
 		// init
 		client = nil
 		// test
-		Initialize(false, "testStep")
+		telemetryClient.Initialize(false, "testStep")
 		// assert
 		assert.NotEqual(t, nil, client)
-		assert.Equal(t, "testStep", baseData.StepName)
+		assert.Equal(t, "testStep", telemetryClient.baseData.StepName)
 	})
 }
 func TestSend(t *testing.T) {
 	t.Run("with disabled telemetry", func(t *testing.T) {
+		telemetryClient := Telemetry{}
 		// init
 		mock = clientMock{}
 		client = &mock
 		disabled = true
 		// test
-		Send(&CustomData{})
+		telemetryClient.SetData(&CustomData{})
+		telemetryClient.Send()
 		// assert
 		assert.Equal(t, 0, len(mock.httpMethod))
 		assert.Equal(t, 0, len(mock.urlsCalled))
 	})
 
 	t.Run("", func(t *testing.T) {
+		telemetryClient := Telemetry{}
 		// init
 		mock = clientMock{}
 		client = &mock
 		disabled = false
-		baseData = BaseData{
+		telemetryClient.baseData = BaseData{
 			ActionName: "testAction",
 		}
 		// test
-		Send(&CustomData{
+		telemetryClient.SetData(&CustomData{
 			Custom1:      "test",
 			Custom1Label: "label",
 		})
+		telemetryClient.Send()
 		// assert
 		assert.Equal(t, "GET", mock.httpMethod)
 		assert.Contains(t, mock.urlsCalled, baseURL)
@@ -85,33 +93,36 @@ func TestSend(t *testing.T) {
 	})
 }
 func TestEnvVars(t *testing.T) {
+
 	t.Run("without values", func(t *testing.T) {
+		telemetryClient := Telemetry{}
 		// init
 		client = nil
 		// test
-		Initialize(false, "testStep")
+		telemetryClient.Initialize(false, "testStep")
 		// assert
-		assert.Equal(t, "n/a", baseData.PipelineURLHash)
-		assert.Equal(t, "n/a", baseData.BuildURLHash)
+		assert.Equal(t, "n/a", telemetryClient.baseData.PipelineURLHash)
+		assert.Equal(t, "n/a", telemetryClient.baseData.BuildURLHash)
 	})
 
 	t.Run("", func(t *testing.T) {
+		telemetryClient := Telemetry{}
 		// init
 		os.Setenv("JOB_URL", "someValue")
 		os.Setenv("BUILD_URL", "someValue")
 		client = nil
 		// test
-		Initialize(false, "testStep")
+		telemetryClient.Initialize(false, "testStep")
 		// assert
-		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", baseData.PipelineURLHash)
-		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", baseData.BuildURLHash)
+		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", telemetryClient.baseData.PipelineURLHash)
+		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", telemetryClient.baseData.BuildURLHash)
 		// cleanup
 		os.Unsetenv("JOB_URL")
 		os.Unsetenv("BUILD_URL")
 	})
 }
 
-func TestGetData(t *testing.T) {
+func TestCreateDataObject(t *testing.T) {
 	type args struct {
 		customData *CustomData
 	}
@@ -130,12 +141,11 @@ func TestGetData(t *testing.T) {
 			},
 			Data{
 				BaseData: BaseData{
+					URL:             "",
 					ActionName:      "",
 					EventType:       "",
+					StepName:        "TestCreateDataObject",
 					SiteID:          "",
-					URL:             "",
-					StepName:        "",
-					StageName:       "",
 					PipelineURLHash: "",
 					BuildURLHash:    "",
 				},
@@ -168,18 +178,23 @@ func TestGetData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseData = BaseData{
+			telemetryClient := Telemetry{}
+			telemetryClient.Initialize(false, "TestCreateDataObject")
+			telemetryClient.baseData = BaseData{
+				URL:             "",
 				ActionName:      "",
 				EventType:       "",
+				StepName:        "TestCreateDataObject",
 				SiteID:          "",
-				URL:             "",
-				StepName:        "",
-				StageName:       "",
 				PipelineURLHash: "",
 				BuildURLHash:    "",
 			}
-			if got := GetData(tt.args.customData); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetData() = %v, want %v", got, tt.want)
+			telemetryClient.baseMetaData = baseMetaData
+			telemetryClient.SetData(tt.args.customData)
+			fmt.Println(telemetryClient.data)
+			fmt.Println(tt.want)
+			if !reflect.DeepEqual(telemetryClient.data, tt.want) {
+				t.Errorf("CreateDataObject() t.data= %v, want %v", telemetryClient.data, tt.want)
 			}
 		})
 	}

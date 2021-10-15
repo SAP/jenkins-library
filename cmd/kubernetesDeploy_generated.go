@@ -52,6 +52,7 @@ func KubernetesDeployCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	splunkClient := &splunk.Splunk{}
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createKubernetesDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -118,20 +119,21 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			customTelemetryData := telemetry.CustomData{}
+			customTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				customTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				customTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				telemetryClient.SetData(&customTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunkClient.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -139,8 +141,8 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			kubernetesDeploy(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			kubernetesDeploy(stepConfig, &customTelemetryData)
+			customTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}

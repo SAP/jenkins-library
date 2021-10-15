@@ -52,10 +52,10 @@ func TestInitialize(t *testing.T) {
 func TestSend(t *testing.T) {
 
 	type args struct {
-		customTelemetryData *telemetry.CustomData
-		logCollector        *log.CollectorHook
-		sendLogs            bool
-		maxBatchSize        int
+		telemetryData *telemetry.Data
+		logCollector  *log.CollectorHook
+		sendLogs      bool
+		maxBatchSize  int
 	}
 	tests := []struct {
 		name          string
@@ -66,10 +66,14 @@ func TestSend(t *testing.T) {
 	}{
 		{name: "Testing Success Step - Send Telemetry Only",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:      "100",
-					ErrorCode:     "0",
-					ErrorCategory: "DEBUG",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "0",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -94,10 +98,14 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing Success Step - Send Telemetry Only Although sendLogs Active",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:      "100",
-					ErrorCode:     "0",
-					ErrorCategory: "DEBUG",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "0",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -122,9 +130,14 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing Failure Step - Send Telemetry Only",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "0",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -150,9 +163,14 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing Failure Step - Send Telemetry and Logs",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "1",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -178,9 +196,13 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing len(maxBatchSize)==len(logMessages)",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:  "100",
+						ErrorCode: "1",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -206,9 +228,13 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing len(maxBatchSize)<len(logMessages)",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:  "100",
+						ErrorCode: "1",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -234,9 +260,10 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing len(maxBatchSize)>len(logMessages)",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData:   telemetry.CustomData{},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -304,7 +331,7 @@ func TestSend(t *testing.T) {
 				postMessagesBatchSize: tt.args.maxBatchSize,
 				sendLogs:              tt.args.sendLogs,
 			}
-			if err := splunkClient.Send(tt.args.customTelemetryData, tt.args.logCollector); (err != nil) != tt.wantErr {
+			if err := splunkClient.Send(*tt.args.telemetryData, tt.args.logCollector); (err != nil) != tt.wantErr {
 				t.Errorf("Send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if len(payloads) != tt.payloadLength {
@@ -322,7 +349,7 @@ func TestSend(t *testing.T) {
 
 func Test_prepareTelemetry(t *testing.T) {
 	type args struct {
-		customTelemetryData telemetry.CustomData
+		telemetryData telemetry.Data
 	}
 	tests := []struct {
 		name string
@@ -331,10 +358,14 @@ func Test_prepareTelemetry(t *testing.T) {
 	}{
 		{name: "Testing prepare telemetry information",
 			args: args{
-				customTelemetryData: telemetry.CustomData{
-					Duration:      "1234",
-					ErrorCode:     "0",
-					ErrorCategory: "Undefined",
+				telemetryData: telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "1234",
+						ErrorCode:     "0",
+						ErrorCategory: "Undefined",
+					},
 				},
 			},
 			want: MonitoringData{
@@ -362,7 +393,7 @@ func Test_prepareTelemetry(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error Initalizing Splunk. %v", err)
 			}
-			if got := splunkClient.prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
+			if got := splunkClient.prepareTelemetry(tt.args.telemetryData); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("prepareTelemetry() = %v, want %v", got, tt.want)
 			}
 		})

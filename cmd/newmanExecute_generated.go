@@ -71,6 +71,7 @@ func NewmanExecuteCommand() *cobra.Command {
 	var influx newmanExecuteInflux
 	var logCollector *log.CollectorHook
 	splunkClient := &splunk.Splunk{}
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createNewmanExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -115,21 +116,22 @@ func NewmanExecuteCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			customTelemetryData := telemetry.CustomData{}
+			customTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				customTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				customTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				telemetryClient.SetData(&customTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunkClient.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -137,8 +139,8 @@ func NewmanExecuteCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			newmanExecute(stepConfig, &telemetryData, &influx)
-			telemetryData.ErrorCode = "0"
+			newmanExecute(stepConfig, &customTelemetryData, &influx)
+			customTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
