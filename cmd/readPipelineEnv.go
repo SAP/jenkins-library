@@ -37,13 +37,9 @@ func runReadPipelineEnv() error {
 		return err
 	}
 
-	bytes, err := json.MarshalIndent(cpe, "", "\t")
-	if err != nil {
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "\t")
+	if err := encoder.Encode(cpe); err != nil {
 		return err
 	}
-	_, err = os.Stdout.Write(bytes)
-	if err != nil {
-		return err
-	}
-	return nil
 }
