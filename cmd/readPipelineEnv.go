@@ -42,4 +42,6 @@ func runReadPipelineEnv() error {
 	if err := encoder.Encode(cpe); err != nil {
 		return err
 	}
+
+	return nil
 }
