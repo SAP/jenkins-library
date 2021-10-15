@@ -104,7 +104,7 @@ general:
 stages:
   AUnit:
     aunitConfig: 'aunitConfig.yml'
-  ## Configure the ATC stage if it should also be executed
+  ## Configure the ATC stage additionally if it should also be executed
   #ATC:
   #  atcConfig: 'atcConfig.yml'
 ```
@@ -112,4 +112,32 @@ stages:
 #### aunitConfig.yml
 
 ```yaml
+title: My AUnit run
+context: AUnit test run
+options:
+  measurements: none
+  scope:
+    owntests: true
+    foreigntests: true
+  riskLevel:
+    harmless: true
+    dangerous: true
+    critical: true
+  duration:
+    short: true
+    medium: true
+    long: true
+objectset:
+  - type: unionSet
+    set:
+      - type: packageSet
+        package:
+          - name: MY_PACKAGE
+            includesubpackages: true
+      - type: flatObjectSet
+        object:
+        - name: CL_MY_CLASS
+          type: CLAS
+        - name: IF_MY_INTERFACE
+          type: INTF
 ```
