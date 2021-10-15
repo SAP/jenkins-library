@@ -93,6 +93,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 	var logCollector *log.CollectorHook
+	splunkClient := &splunk.Splunk{}
 
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
@@ -150,14 +151,14 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(&telemetryData, logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
+				splunkClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Token,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,

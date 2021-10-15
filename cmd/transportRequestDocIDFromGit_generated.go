@@ -60,6 +60,7 @@ func TransportRequestDocIDFromGitCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment transportRequestDocIDFromGitCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	splunkClient := &splunk.Splunk{}
 
 	var createTransportRequestDocIDFromGitCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -114,14 +115,14 @@ It is primarily made for the transportRequestUploadSOLMAN step to provide the ch
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(&telemetryData, logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,

@@ -42,6 +42,7 @@ func MavenBuildCommand() *cobra.Command {
 	var stepConfig mavenBuildOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	splunkClient := &splunk.Splunk{}
 
 	var createMavenBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -97,14 +98,14 @@ supports ci friendly versioning by flattening the pom before installing.`,
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(&telemetryData, logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,

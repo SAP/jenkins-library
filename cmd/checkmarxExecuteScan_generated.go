@@ -180,6 +180,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 	var startTime time.Time
 	var influx checkmarxExecuteScanInflux
 	var logCollector *log.CollectorHook
+	splunkClient := &splunk.Splunk{}
 
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -245,14 +246,14 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(&telemetryData, logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,

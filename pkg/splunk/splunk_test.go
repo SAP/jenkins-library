@@ -41,10 +41,10 @@ func TestInitialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Initialize(tt.args.correlationID, tt.args.dsn, tt.args.token, tt.args.index, tt.args.sendLogs); (err != nil) != tt.wantErr {
+			splunkClient := &Splunk{}
+			if err := splunkClient.Initialize(tt.args.correlationID, tt.args.dsn, tt.args.token, tt.args.index, tt.args.sendLogs); (err != nil) != tt.wantErr {
 				t.Errorf("Initialize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
 		})
 	}
 }
@@ -296,7 +296,7 @@ func TestSend(t *testing.T) {
 				MaxRetries:                -1,
 			})
 
-			SplunkClient = &Splunk{
+			splunkClient := &Splunk{
 				splunkClient:          client,
 				splunkDsn:             fakeUrl,
 				splunkIndex:           "index",
@@ -304,7 +304,7 @@ func TestSend(t *testing.T) {
 				postMessagesBatchSize: tt.args.maxBatchSize,
 				sendLogs:              tt.args.sendLogs,
 			}
-			if err := Send(tt.args.customTelemetryData, tt.args.logCollector); (err != nil) != tt.wantErr {
+			if err := splunkClient.Send(tt.args.customTelemetryData, tt.args.logCollector); (err != nil) != tt.wantErr {
 				t.Errorf("Send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if len(payloads) != tt.payloadLength {
@@ -315,7 +315,7 @@ func TestSend(t *testing.T) {
 			if len(payloads[0].Event.Messages) != tt.logLength {
 				t.Errorf("Send() error, wanted %v event messages, got %v.", tt.logLength, len(payloads[0].Event.Messages))
 			}
-			SplunkClient = nil
+			splunkClient = nil
 		})
 	}
 }
@@ -357,11 +357,12 @@ func Test_prepareTelemetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
+			splunkClient := &Splunk{}
+			err := splunkClient.Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
 			if err != nil {
 				t.Errorf("Error Initalizing Splunk. %v", err)
 			}
-			if got := prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
+			if got := splunkClient.prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("prepareTelemetry() = %v, want %v", got, tt.want)
 			}
 		})
@@ -459,14 +460,14 @@ func Test_tryPostMessages(t *testing.T) {
 				UseDefaultTransport:       true,
 				MaxRetries:                -1,
 			})
-			SplunkClient = &Splunk{
+			splunkClient := &Splunk{
 				splunkClient:          client,
 				splunkDsn:             fakeUrl,
 				splunkIndex:           "index",
 				correlationID:         "DEBUG",
 				postMessagesBatchSize: 1000,
 			}
-			if err := tryPostMessages(tt.args.telemetryData, tt.args.messages); (err != nil) != tt.wantErr {
+			if err := splunkClient.tryPostMessages(tt.args.telemetryData, tt.args.messages); (err != nil) != tt.wantErr {
 				t.Errorf("tryPostMessages() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

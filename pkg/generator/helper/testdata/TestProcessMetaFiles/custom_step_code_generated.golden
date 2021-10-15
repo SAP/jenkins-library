@@ -110,6 +110,7 @@ func TestStepCommand() *cobra.Command {
 	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
 	var logCollector *log.CollectorHook
+	splunkClient := &splunk.Splunk{}
 
 	var createTestStepCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -164,14 +165,14 @@ func TestStepCommand() *cobra.Command {
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 				if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(&telemetryData, logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(piperOsCmd.GeneralConfig.CorrelationID,
+				splunkClient.Initialize(piperOsCmd.GeneralConfig.CorrelationID,
 				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn,
 				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Token,
 				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Index,

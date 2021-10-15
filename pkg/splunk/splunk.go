@@ -35,9 +35,9 @@ type Splunk struct {
 	postMessagesBatchSize int
 }
 
-var SplunkClient *Splunk
+//var SplunkClient *Splunk
 
-func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
+func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 	log.Entry().Debugf("Initializing Splunk with DSN %v", dsn)
 
 	if !strings.HasPrefix(token, "Splunk ") {
@@ -54,38 +54,37 @@ func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 		MaxRetries:                -1,
 	})
 
-	SplunkClient = &Splunk{
-		splunkClient:          client,
-		splunkDsn:             dsn,
-		splunkIndex:           index,
-		correlationID:         correlationID,
-		postMessagesBatchSize: 10000,
-		sendLogs:              sendLogs,
-	}
+	s.splunkClient = client
+	s.splunkDsn = dsn
+	s.splunkIndex = index
+	s.correlationID = correlationID
+	s.postMessagesBatchSize = 10000
+	s.sendLogs = sendLogs
+
 	return nil
 }
 
-func Send(customTelemetryData *telemetry.CustomData, logCollector *log.CollectorHook) error {
+func (s *Splunk) Send(customTelemetryData *telemetry.CustomData, logCollector *log.CollectorHook) error {
 	// Sends telemetry and or additionally logging data to Splunk
-	telemetryData := prepareTelemetry(*customTelemetryData)
+	telemetryData := s.prepareTelemetry(*customTelemetryData)
 	messagesLen := len(logCollector.Messages)
 	// TODO: Logic for errorCategory (undefined, service, infrastructure)
-	if telemetryData.ErrorCode == "0" || (telemetryData.ErrorCode == "1" && !SplunkClient.sendLogs) {
+	if telemetryData.ErrorCode == "0" || (telemetryData.ErrorCode == "1" && !s.sendLogs) {
 		// Either Successful run, we only send the telemetry data, no logging information
 		// OR Failure run and we do not want to send the logs
-		err := tryPostMessages(telemetryData, []log.Message{})
+		err := s.tryPostMessages(telemetryData, []log.Message{})
 		if err != nil {
 			return errors.Wrap(err, "error while sending logs")
 		}
 		return nil
 	} else {
 		// ErrorCode indicates an error in the step, so we want to send all the logs with telemetry
-		for i := 0; i < messagesLen; i += SplunkClient.postMessagesBatchSize {
-			upperBound := i + SplunkClient.postMessagesBatchSize
+		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
+			upperBound := i + s.postMessagesBatchSize
 			if upperBound > messagesLen {
 				upperBound = messagesLen
 			}
-			err := tryPostMessages(telemetryData, logCollector.Messages[i:upperBound])
+			err := s.tryPostMessages(telemetryData, logCollector.Messages[i:upperBound])
 			if err != nil {
 				return errors.Wrap(err, "error while sending logs")
 			}
@@ -141,7 +140,7 @@ type PipelineData struct {
 	PipelineStartTime   string `json:"PipelineStartTime,omitempty"`
 }
 
-func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
+func (s *Splunk) prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 	tData := telemetry.GetData(&customTelemetryData)
 
 	return MonitoringData{
@@ -153,7 +152,7 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 		Duration:        tData.CustomData.Duration,
 		ErrorCode:       tData.CustomData.ErrorCode,
 		ErrorCategory:   tData.CustomData.ErrorCategory,
-		CorrelationID:   SplunkClient.correlationID,
+		CorrelationID:   s.correlationID,
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
 		GitOwner:        readCommonPipelineEnvironment("github/owner"),
@@ -161,7 +160,7 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 	}
 }
 
-func prepareTelemetryPipelineData(customTelemetryData telemetry.CustomData) PipelineData {
+func (s *Splunk) prepareTelemetryPipelineData(customTelemetryData telemetry.CustomData) PipelineData {
 	tData := telemetry.GetData(&customTelemetryData)
 
 	return PipelineData{
@@ -172,7 +171,7 @@ func prepareTelemetryPipelineData(customTelemetryData telemetry.CustomData) Pipe
 		Duration:            tData.CustomData.Duration,
 		ErrorCode:           tData.CustomData.ErrorCode,
 		ErrorCategory:       tData.CustomData.ErrorCategory,
-		CorrelationID:       SplunkClient.correlationID,
+		CorrelationID:       s.correlationID,
 		CommitHash:          readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:              readCommonPipelineEnvironment("git/branch"),
 		GitOwner:            readCommonPipelineEnvironment("github/owner"),
@@ -195,9 +194,9 @@ type Details struct {
 	Event      Event  `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
-func SendPipelineStatus(customTelemetryData *telemetry.CustomData, logFile *[]byte) error {
+func (s *Splunk) SendPipelineStatus(customTelemetryData *telemetry.CustomData, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
-	telemetryData := prepareTelemetryPipelineData(*customTelemetryData)
+	telemetryData := s.prepareTelemetryPipelineData(*customTelemetryData)
 
 	readLogFile := string(*logFile)
 	splitted := strings.Split(readLogFile, "\n")
@@ -205,12 +204,12 @@ func SendPipelineStatus(customTelemetryData *telemetry.CustomData, logFile *[]by
 
 	log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 	log.Entry().Debugf("Sending telemetry data to Splunk: %v", telemetryData)
-	for i := 0; i < messagesLen; i += SplunkClient.postMessagesBatchSize {
-		upperBound := i + SplunkClient.postMessagesBatchSize
+	for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
+		upperBound := i + s.postMessagesBatchSize
 		if upperBound > messagesLen {
 			upperBound = messagesLen
 		}
-		err := postLogFile(telemetryData, splitted[i:upperBound])
+		err := s.postLogFile(telemetryData, splitted[i:upperBound])
 		if err != nil {
 			return errors.Wrap(err, "error while sending logs")
 		}
@@ -230,16 +229,16 @@ type DetailsLog struct {
 	Event      LogFileEvents `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
-func postLogFile(telemetryData PipelineData, messages []string) error {
+func (s *Splunk) postLogFile(telemetryData PipelineData, messages []string) error {
 
 	event := LogFileEvents{
 		Messages:  messages,
 		Telemetry: telemetryData,
 	}
 	details := DetailsLog{
-		Host:       SplunkClient.correlationID,
+		Host:       s.correlationID,
 		SourceType: "_json",
-		Index:      SplunkClient.splunkIndex,
+		Index:      s.splunkIndex,
 		Event:      event,
 	}
 
@@ -248,7 +247,7 @@ func postLogFile(telemetryData PipelineData, messages []string) error {
 		return errors.Wrap(err, "error while marshalling Splunk message details")
 	}
 
-	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
+	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
@@ -277,16 +276,16 @@ func postLogFile(telemetryData PipelineData, messages []string) error {
 	return nil
 }
 
-func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error {
+func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Message) error {
 
 	event := Event{
 		Messages:  messages,
 		Telemetry: telemetryData,
 	}
 	details := Details{
-		Host:       SplunkClient.correlationID,
+		Host:       s.correlationID,
 		SourceType: "_json",
-		Index:      SplunkClient.splunkIndex,
+		Index:      s.splunkIndex,
 		Event:      event,
 	}
 
@@ -295,7 +294,7 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 		return errors.Wrap(err, "error while marshalling Splunk message details")
 	}
 
-	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
+	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
