@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6
+	github.com/boumenot/gocover-cobertura v1.2.0 // indirect
 	github.com/docker/cli v20.10.9+incompatible
 	github.com/elliotchance/orderedmap v1.4.0
 	github.com/evanphx/json-patch v4.11.0+incompatible
@@ -48,4 +49,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
 	gopkg.in/ini.v1 v1.63.2
 	gopkg.in/yaml.v2 v2.4.0
+	gotest.tools/gotestsum v1.7.0 // indirect
 )
