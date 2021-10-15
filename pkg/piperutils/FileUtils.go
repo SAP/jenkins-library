@@ -15,6 +15,7 @@ import (
 // FileUtils ...
 type FileUtils interface {
 	Abs(path string) (string, error)
+	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
@@ -23,6 +24,10 @@ type FileUtils interface {
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
 	Chdir(path string) error
+	TempDir(string, string) (string, error)
+	RemoveAll(string) error
+	FileRename(string, string) error
+	Getwd() (string, error)
 }
 
 // Files ...

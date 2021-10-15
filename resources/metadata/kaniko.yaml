@@ -91,6 +91,8 @@ spec:
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -98,10 +100,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: dockerfilePath
         aliases:
           - name: dockerfile
