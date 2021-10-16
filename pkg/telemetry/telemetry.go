@@ -3,7 +3,7 @@ package telemetry
 import (
 	"crypto/sha1"
 	"fmt"
-	"os"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"time"
 
 	"net/http"
@@ -38,6 +38,7 @@ type Telemetry struct {
 	baseData     BaseData
 	baseMetaData BaseMetaData
 	data         Data
+	provider     orchestrator.OrchestratorSpecificConfigProviding
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -48,6 +49,11 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		log.Entry().Info("Telemetry reporting deactivated")
 		return
 	}
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil || provider == nil {
+		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
+	}
+	t.provider = provider
 
 	if client == nil {
 		client = &piperhttp.Client{}
@@ -71,17 +77,20 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		SiteID:          SiteID,
 		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
+		// TODO: Discuss meaning of jobURL for ADO
 	}
 	t.baseMetaData = baseMetaData
 	//ToDo: register Logrus Hook
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	return t.toSha1OrNA(os.Getenv("JOB_URL"))
+	jobUrl := t.provider.GetJobUrl()
+	return t.toSha1OrNA(jobUrl)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	return t.toSha1OrNA(os.Getenv("BUILD_URL"))
+	buildUrl := t.provider.GetBuildUrl()
+	return t.toSha1OrNA(buildUrl)
 }
 
 func (t *Telemetry) toSha1OrNA(input string) string {
