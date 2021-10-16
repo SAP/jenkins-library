@@ -58,7 +58,7 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 	s.splunkDsn = dsn
 	s.splunkIndex = index
 	s.correlationID = correlationID
-	s.postMessagesBatchSize = 10000
+	s.postMessagesBatchSize = 20000
 	s.sendLogs = sendLogs
 
 	return nil
@@ -202,14 +202,18 @@ func (s *Splunk) SendPipelineStatus(customTelemetryData telemetry.Data, logFile 
 
 	log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 	log.Entry().Debugf("Sending telemetry data to Splunk: %v", telemetryData)
-	for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
-		upperBound := i + s.postMessagesBatchSize
-		if upperBound > messagesLen {
-			upperBound = messagesLen
-		}
-		err := s.postLogFile(telemetryData, splitted[i:upperBound])
-		if err != nil {
-			return errors.Wrap(err, "error while sending logs")
+	s.postTelemetry(telemetryData)
+
+	if s.sendLogs {
+		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
+			upperBound := i + s.postMessagesBatchSize
+			if upperBound > messagesLen {
+				upperBound = messagesLen
+			}
+			err := s.postLogFile(telemetryData, splitted[i:upperBound])
+			if err != nil {
+				return errors.Wrap(err, "error while sending logs")
+			}
 		}
 	}
 	return nil
@@ -225,6 +229,57 @@ type DetailsLog struct {
 	SourceType string        `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
 	Index      string        `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
 	Event      LogFileEvents `json:"event,omitempty"`      // throw any useful key/val pairs here}
+}
+
+type DetailsTelemetry struct {
+	Host       string       `json:"host"`                 // hostname
+	Source     string       `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string       `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string       `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      PipelineData `json:"event,omitempty"`      // throw any useful key/val pairs here}
+}
+
+func (s *Splunk) postTelemetry(telemetryData PipelineData) error {
+
+	details := DetailsTelemetry{
+		Host:       s.correlationID,
+		SourceType: "_json",
+		Index:      s.splunkIndex,
+		Event:      telemetryData,
+	}
+
+	payload, err := json.Marshal(details)
+	if err != nil {
+		return errors.Wrap(err, "error while marshalling Splunk message details")
+	}
+
+	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
+
+	if resp != nil {
+		if resp.StatusCode != http.StatusOK {
+			// log it to stdout
+			rdr := io.LimitReader(resp.Body, 1000)
+			body, errRead := ioutil.ReadAll(rdr)
+			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
+			if errRead != nil {
+				return errors.Wrap(errRead, "Error reading response body from Splunk.")
+			}
+			return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
+		}
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "error sending the requests to Splunk")
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			errors.Wrap(err, "closing response body failed")
+		}
+	}()
+
+	return nil
 }
 
 func (s *Splunk) postLogFile(telemetryData PipelineData, messages []string) error {
