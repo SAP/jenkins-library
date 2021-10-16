@@ -10,8 +10,8 @@ import (
 )
 
 type JenkinsConfigProvider struct {
-	client   piperHttp.Client
-	options  piperHttp.ClientOptions
+	client  piperHttp.Client
+	options piperHttp.ClientOptions
 }
 
 func (j *JenkinsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
@@ -90,6 +90,10 @@ func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
 
 func (j *JenkinsConfigProvider) GetJobName() string {
 	return getEnv("JOB_NAME", "n/a")
+}
+
+func (j *JenkinsConfigProvider) GetJobUrl() string {
+	return getEnv("JOB_URL", "n/a")
 }
 
 func (j *JenkinsConfigProvider) getJenkinsHome() string {

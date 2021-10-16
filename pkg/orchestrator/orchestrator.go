@@ -23,6 +23,7 @@ type OrchestratorSpecificConfigProviding interface {
 	GetStageName() string
 	GetBranch() string
 	GetBuildUrl() string
+	GetJobUrl() string
 	GetCommit() string
 	GetPullRequestConfig() PullRequestConfig
 	GetRepoUrl() string
@@ -54,7 +55,7 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case Unknown:
 		fallthrough
 	default:
-		return nil, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
+		return &UnknownOrchestratorConfigProvider{}, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	}
 }
 

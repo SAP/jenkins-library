@@ -23,7 +23,7 @@ func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *Orchestra
 		Password: settings.AzureToken,
 	}
 	a.client.SetOptions(a.options)
-	log.Entry().Debug("Successfully initalized Azure config provider")
+	log.Entry().Debug("Successfully initialized Azure config provider")
 }
 
 func (a *AzureDevOpsConfigProvider) OrchestratorVersion() string {
@@ -111,6 +111,11 @@ func (a *AzureDevOpsConfigProvider) GetBranch() string {
 
 func (a *AzureDevOpsConfigProvider) GetBuildUrl() string {
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + os.Getenv("BUILD_BUILDID")
+}
+
+func (a *AzureDevOpsConfigProvider) GetJobUrl() string {
+	// TODO: Check if thi is the correct URL
+	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT")
 }
 
 func (a *AzureDevOpsConfigProvider) GetCommit() string {

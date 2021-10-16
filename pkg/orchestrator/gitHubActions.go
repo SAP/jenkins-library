@@ -43,6 +43,11 @@ func (g *GitHubActionsConfigProvider) GetBuildUrl() string {
 	return g.GetRepoUrl() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
+func (g *GitHubActionsConfigProvider) GetJobUrl() string {
+	log.Entry().Debugf("Not yet implemented.")
+	return g.GetRepoUrl() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+}
+
 func (g *GitHubActionsConfigProvider) GetCommit() string {
 	return getEnv("GITHUB_SHA", "n/a")
 }
