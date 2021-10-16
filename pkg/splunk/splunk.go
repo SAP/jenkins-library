@@ -235,7 +235,7 @@ func (s *Splunk) postLogFile(telemetryData PipelineData, messages []string) erro
 	}
 	details := DetailsLog{
 		Host:       s.correlationID,
-		SourceType: "_json",
+		SourceType: "txt",
 		Index:      s.splunkIndex,
 		Event:      event,
 	}
