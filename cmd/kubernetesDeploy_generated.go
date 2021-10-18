@@ -257,7 +257,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Aliases:     []config.Alias{{Name: "dockerImageName", Deprecated: false}},
 						Default:     os.Getenv("PIPER_containerImageName"),
 					},
 					{
@@ -271,7 +271,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: false}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
 					{

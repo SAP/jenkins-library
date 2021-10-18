@@ -268,7 +268,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "token"}},
+						Aliases:   []config.Alias{{Name: "token", Deprecated: false}},
 						Default:   os.Getenv("PIPER_adoPersonalAccessToken"),
 					},
 					{
