@@ -51,7 +51,7 @@ spec:
         aliases:
           - name: helmDeploymentParameters
         type: "[]string"
-        description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
+        description: Defines additional parameters for "helm install" or "kubectl apply" command.
         scope:
           - PARAMETERS
           - STAGES
@@ -96,6 +96,29 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -234,7 +257,7 @@ spec:
           - STEPS
       - name: kubeConfig
         type: string
-        description: Defines the path to the \"kubeconfig\" file.
+        description: Defines the path to the "kubeconfig" file.
         scope:
           - GENERAL
           - PARAMETERS
@@ -249,7 +272,7 @@ spec:
             default: kube-config
       - name: kubeContext
         type: string
-        description: Defines the context to use from the \"kubeconfig\" file.
+        description: Defines the context to use from the "kubeconfig" file.
         scope:
           - PARAMETERS
           - STAGES

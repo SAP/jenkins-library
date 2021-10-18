@@ -48,8 +48,9 @@ func TestCreateDescriptionSection(t *testing.T) {
 			},
 			want: headlineDescription + "TestDescription" + "\n\n" +
 				headlineUsage + configRecommendation + "\n\n" +
-				headlineJenkinsPipeline + "```groovy\nlibrary('piper-lib-os')\n\nteststep script: this\n```" + "\n\n" +
-				headlineCommandLine + "```sh\npiper teststep\n```" + "\n\n",
+				"!!! tip \"\"" + "\n\n" +
+				headlineJenkinsPipeline + "        ```groovy\n        library('piper-lib-os')\n\n        teststep script: this\n        ```" + "\n\n" +
+				headlineCommandLine + "        ```sh\n        piper teststep\n        ```" + "\n\n",
 		},
 		{
 			name: "custom step description section",
@@ -58,8 +59,9 @@ func TestCreateDescriptionSection(t *testing.T) {
 			},
 			want: headlineDescription + "TestDescription" + "\n\n" +
 				headlineUsage + configRecommendation + "\n\n" +
-				headlineJenkinsPipeline + "```groovy\nlibrary('myLibrary')\n\nmyCustomStep script: this\n```" + "\n\n" +
-				headlineCommandLine + "```sh\nmyBinary myCustomStep\n```" + "\n\n",
+				"!!! tip \"\"" + "\n\n" +
+				headlineJenkinsPipeline + "        ```groovy\n        library('myLibrary')\n\n        myCustomStep script: this\n        ```" + "\n\n" +
+				headlineCommandLine + "        ```sh\n        myBinary myCustomStep\n        ```" + "\n\n",
 		},
 	}
 	for _, testcase := range tests {

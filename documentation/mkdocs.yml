@@ -43,7 +43,7 @@ nav:
         - 'Build and Deploy Hybrid Applications with SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAPUI5/SAP Fiori Applications on SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy SAP Cloud Application Programming Model Applications': scenarios/CAP_Scenario.md
-        - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
+        - 'Integrate SAP Cloud Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
         - 'Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model': scenarios/xsa-deploy/Readme.md
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System': scenarios/upload-to-transportrequest/Readme.md
         - 'Build and Publish Add-on Products on SAP BTP, ABAP Environment': scenarios/abapEnvironmentAddons.md
@@ -179,10 +179,15 @@ extra:
       code: 'Ubuntu Mono'
 markdown_extensions:
     - admonition
-    - codehilite(guess_lang=false)
-    - toc(permalink=true)
+    - attr_list
+    - codehilite:
+        guess_lang: false
+    - toc:
+        permalink: true
     - footnotes
     - pymdownx.superfences
+    - pymdownx.tabbed
+    - pymdownx.details
 extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
