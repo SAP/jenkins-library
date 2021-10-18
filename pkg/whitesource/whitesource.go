@@ -488,7 +488,7 @@ func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface
 			err = s.sendRequestAndDecodeJSONRecursive(req, result, count)
 			if err != nil {
 				if initial {
-					return errors.Wrapf(err, "%v retries failed", s.maxRetries)
+					return errors.Wrapf(err, "WhiteSource request failed after %v retries", s.maxRetries)
 				}
 				return err
 			}

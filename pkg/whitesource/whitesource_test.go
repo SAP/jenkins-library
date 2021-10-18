@@ -78,7 +78,7 @@ func TestCreateProduct(t *testing.T) {
 		// test
 		productToken, err := sys.CreateProduct("test_product_name")
 		// assert
-		assert.EqualError(t, err, "WhiteSource request failed: 3 retries failed: invalid request, error code 3000, message 'WhiteSource backend has a hickup'")
+		assert.EqualError(t, err, "WhiteSource request failed after 3 retries: invalid request, error code 3000, message 'WhiteSource backend has a hickup'")
 		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
 		require.NoError(t, err)
 		assert.Equal(t, "", productToken)
