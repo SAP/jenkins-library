@@ -162,6 +162,8 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+	correctWhitesourceDockerConfigEnvVar(config)
+
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
@@ -177,7 +179,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			if strings.Contains(fmt.Sprint(err), "no image found") {
 				log.SetErrorCategory(log.ErrorConfiguration)
 			}
-			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
+			return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
 		}
 
 	}
@@ -209,6 +211,19 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}
 	return nil
+}
+
+func correctWhitesourceDockerConfigEnvVar(config *ScanOptions) {
+	path := config.DockerConfigJSON
+	if len(path) > 0 {
+		log.Entry().Infof("Docker credentials configuration: %v", path)
+		path, _ := filepath.Abs(path)
+		// use parent directory
+		path = filepath.Dir(path)
+		os.Setenv("DOCKER_CONFIG", path)
+	} else {
+		log.Entry().Info("Docker credentials configuration: NONE")
+	}
 }
 
 func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {

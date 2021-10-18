@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type whitesourceUtilsMock struct {
@@ -126,6 +129,41 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		}
 		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
 		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+	})
+}
+
+func TestWhitesourceCorrectDockerConfigEnvVar(t *testing.T) {
+	t.Run("with credentials", func(t *testing.T) {
+		// init
+		testDirectory, _ := ioutil.TempDir(".", "")
+		require.DirExists(t, testDirectory)
+		defer os.RemoveAll(testDirectory)
+
+		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
+		os.Mkdir(dockerConfigDir, 0755)
+		require.DirExists(t, dockerConfigDir)
+
+		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
+		file, _ := os.Create(dockerConfigFile)
+		defer file.Close()
+		require.FileExists(t, dockerConfigFile)
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile})
+		// assert
+		absolutePath, _ := filepath.Abs(dockerConfigDir)
+		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
+	})
+	t.Run("without credentials", func(t *testing.T) {
+		// init
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{})
+		// assert
+		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
 }
 
