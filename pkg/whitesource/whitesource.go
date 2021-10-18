@@ -118,11 +118,11 @@ type Request struct {
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
 type System struct {
-	httpClient piperhttp.Sender
-	orgToken   string
-	serverURL  string
-	userToken  string
-	maxRetries int
+	httpClient    piperhttp.Sender
+	orgToken      string
+	serverURL     string
+	userToken     string
+	maxRetries    int
 	retryInterval time.Duration
 }
 
@@ -134,11 +134,11 @@ func NewSystem(serverURL, orgToken, userToken string, timeout time.Duration) *Sy
 	httpClient := &piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: timeout})
 	return &System{
-		serverURL:  serverURL,
-		orgToken:   orgToken,
-		userToken:  userToken,
-		httpClient: httpClient,
-		maxRetries: 10,
+		serverURL:     serverURL,
+		orgToken:      orgToken,
+		userToken:     userToken,
+		httpClient:    httpClient,
+		maxRetries:    10,
 		retryInterval: 3 * time.Second,
 	}
 }
