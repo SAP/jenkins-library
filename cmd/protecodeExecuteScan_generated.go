@@ -3,12 +3,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -35,10 +37,6 @@ type protecodeExecuteScanOptions struct {
 	Password                    string `json:"password,omitempty"`
 	Version                     string `json:"version,omitempty"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
-	UploadReportsToGCS          bool   `json:"uploadReportsToGCS,omitempty"`
-	GcpJSONKeyFilePath          string `json:"gcpJsonKeyFilePath,omitempty"`
-	GcsTargetFolder             string `json:"gcsTargetFolder,omitempty"`
-	GcsBucketID                 string `json:"gcsBucketId,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -128,7 +126,6 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
-			log.RegisterSecret(stepConfig.GcpJSONKeyFilePath)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -138,6 +135,23 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if GeneralConfig.UploadReportsToGCS {
+				gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
+				if gcpJsonKeyFilePath == "" {
+					return errors.New("GCP JSON Key file Path must not be empty")
+				}
+				var err error
+				envVars := []gcs.EnvVar{
+					{
+						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+						Value: gcpJsonKeyFilePath,
+					},
+				}
+				if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, GeneralConfig.GCSBucketId, GeneralConfig.GCSTargetFolder); err != nil {
+					return err
+				}
 			}
 
 			return nil
@@ -194,16 +208,11 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
-	cmd.Flags().BoolVar(&stepConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket.")
-	cmd.Flags().StringVar(&stepConfig.GcpJSONKeyFilePath, "gcpJsonKeyFilePath", os.Getenv("PIPER_gcpJsonKeyFilePath"), "File path to Google Cloud Platform JSON key file.")
-	cmd.Flags().StringVar(&stepConfig.GcsTargetFolder, "gcsTargetFolder", os.Getenv("PIPER_gcsTargetFolder"), "Target folder in the GCS. If the value is empty, the source path is used.")
-	cmd.Flags().StringVar(&stepConfig.GcsBucketID, "gcsBucketId", os.Getenv("PIPER_gcsBucketId"), "Bucket name for Google Cloud Storage.")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("gcsBucketId")
 }
 
 // retrieve step metadata
@@ -219,7 +228,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
-					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -433,59 +441,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pullRequestName"),
-					},
-					{
-						Name:        "uploadReportsToGCS",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name: "gcpJsonKeyFilePath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "gcpFileCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
-								Type:  "vaultSecretFile",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_gcpJsonKeyFilePath"),
-					},
-					{
-						Name:        "gcsTargetFolder",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_gcsTargetFolder"),
-					},
-					{
-						Name: "gcsBucketId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
-								Type:  "vaultSecret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_gcsBucketId"),
 					},
 				},
 			},

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/pkg/errors"
@@ -88,19 +87,7 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 	utils := newDetectUtils()
-	var gcsClient gcs.ClientInterface
-	if config.UploadReportsToGCS {
-		gcpJsonKeyFilePath := config.GcpJSONKeyFilePath
-		if gcpJsonKeyFilePath == "" {
-			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
-		}
-		var err error
-		envVars := []gcs.EnvVar{{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath}}
-		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, config.GcsBucketID, config.GcsTargetFolder); err != nil {
-			log.Entry().WithError(err).Fatal("Execution failed")
-		}
-	}
-	err := runDetect(config, utils, influx, gcsClient)
+	err := runDetect(config, utils, influx)
 
 	if err != nil {
 		log.Entry().
@@ -117,7 +104,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 	}
 }
 
-func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detectExecuteScanInflux, gcsClient gcs.ClientInterface) error {
+func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detectExecuteScanInflux) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 	err := getDetectScript(config, utils)
 	if err != nil {
@@ -159,7 +146,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	reportingErr := postScanChecksAndReporting(config, influx, utils, newBlackduckSystem(config), gcsClient)
+	reportingErr := postScanChecksAndReporting(config, influx, utils, newBlackduckSystem(config))
 	if reportingErr != nil {
 		log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
 	}
@@ -300,7 +287,7 @@ func getVersionName(config detectExecuteScanOptions) string {
 	return detectVersionName
 }
 
-func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem, gcsClient gcs.ClientInterface) error {
+func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
 	vulns, _, err := getVulnsAndComponents(config, influx, sys)
 	if err != nil {
 		return err

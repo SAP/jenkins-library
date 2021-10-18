@@ -3,12 +3,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -58,10 +60,6 @@ type whitesourceExecuteScanOptions struct {
 	M2Path                               string   `json:"m2Path,omitempty"`
 	InstallArtifacts                     bool     `json:"installArtifacts,omitempty"`
 	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty"`
-	UploadReportsToGCS                   bool     `json:"uploadReportsToGCS,omitempty"`
-	GcpJSONKeyFilePath                   string   `json:"gcpJsonKeyFilePath,omitempty"`
-	GcsTargetFolder                      string   `json:"gcsTargetFolder,omitempty"`
-	GcsBucketID                          string   `json:"gcsBucketId,omitempty"`
 }
 
 type whitesourceExecuteScanCommonPipelineEnvironment struct {
@@ -181,7 +179,6 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			}
 			log.RegisterSecret(stepConfig.OrgToken)
 			log.RegisterSecret(stepConfig.UserToken)
-			log.RegisterSecret(stepConfig.GcpJSONKeyFilePath)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -191,6 +188,23 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if GeneralConfig.UploadReportsToGCS {
+				gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
+				if gcpJsonKeyFilePath == "" {
+					return errors.New("GCP JSON Key file Path must not be empty")
+				}
+				var err error
+				envVars := []gcs.EnvVar{
+					{
+						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+						Value: gcpJsonKeyFilePath,
+					},
+				}
+				if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, GeneralConfig.GCSBucketId, GeneralConfig.GCSTargetFolder); err != nil {
+					return err
+				}
 			}
 
 			return nil
@@ -271,15 +285,10 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
-	cmd.Flags().BoolVar(&stepConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket.")
-	cmd.Flags().StringVar(&stepConfig.GcpJSONKeyFilePath, "gcpJsonKeyFilePath", os.Getenv("PIPER_gcpJsonKeyFilePath"), "File path to Google Cloud Platform JSON key file.")
-	cmd.Flags().StringVar(&stepConfig.GcsTargetFolder, "gcsTargetFolder", os.Getenv("PIPER_gcsTargetFolder"), "Target folder in the GCS. If the value is empty, the source path is used.")
-	cmd.Flags().StringVar(&stepConfig.GcsBucketID, "gcsBucketId", os.Getenv("PIPER_gcsBucketId"), "Bucket name for Google Cloud Storage.")
 
 	cmd.MarkFlagRequired("buildTool")
 	cmd.MarkFlagRequired("orgToken")
 	cmd.MarkFlagRequired("userToken")
-	cmd.MarkFlagRequired("gcsBucketId")
 }
 
 // retrieve step metadata
@@ -295,7 +304,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "userTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource user token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/userTokenCredentialsId", Deprecated: true}}},
 					{Name: "orgAdminUserTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource org admin token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceOrgAdminUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/orgAdminUserTokenCredentialsId", Deprecated: true}}},
-					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
@@ -707,59 +715,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
-					},
-					{
-						Name:        "uploadReportsToGCS",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name: "gcpJsonKeyFilePath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "gcpFileCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
-								Type:  "vaultSecretFile",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_gcpJsonKeyFilePath"),
-					},
-					{
-						Name:        "gcsTargetFolder",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_gcsTargetFolder"),
-					},
-					{
-						Name: "gcsBucketId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
-								Type:  "vaultSecret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_gcsBucketId"),
 					},
 				},
 			},

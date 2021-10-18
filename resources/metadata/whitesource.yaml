@@ -29,9 +29,6 @@ spec:
             deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
-      - name: gcpFileCredentialsId
-        description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform."
-        type: jenkins
     params:
       - name: agentDownloadUrl
         type: string
@@ -449,52 +446,6 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
-
-      # parameters for Google Cloud Platform settings. Need for uploading reports to GCS
-      - name: uploadReportsToGCS
-        type: bool
-        description: "Enables uploading reports to Google Cloud Storage bucket."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: gcpJsonKeyFilePath
-        type: string
-        description: "File path to Google Cloud Platform JSON key file."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - name: gcpFileCredentialsId
-            type: secret
-          - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/gcp
-              - $(vaultBasePath)/$(vaultPipelineName)/gcp
-              - $(vaultBasePath)/GROUP-SECRETS/gcp
-      - name: gcsTargetFolder
-        description: "Target folder in the GCS. If the value is empty, the source path is used."
-        type: string
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: gcsBucketId
-        description: "Bucket name for Google Cloud Storage."
-        type: string
-        mandatory: true
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - type: vaultSecret
-            paths:
-              - $(vaultPath)/gcp
-              - $(vaultBasePath)/$(vaultPipelineName)/gcp
-              - $(vaultBasePath)/GROUP-SECRETS/gcp
     resources:
       - name: buildDescriptor
         type: stash

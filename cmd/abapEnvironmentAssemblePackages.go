@@ -9,7 +9,6 @@ import (
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -32,26 +31,14 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	var autils = abaputils.AbapUtils{
 		Exec: &c,
 	}
-	var gcsClient gcs.ClientInterface
-	if config.UploadReportsToGCS {
-		gcpJsonKeyFilePath := config.GcpJSONKeyFilePath
-		if gcpJsonKeyFilePath == "" {
-			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
-		}
-		var err error
-		envVars := []gcs.EnvVar{{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath}}
-		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, config.GcsBucketID, config.GcsTargetFolder); err != nil {
-			log.Entry().WithError(err).Fatal("Execution failed")
-		}
-	}
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe, gcsClient)
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment, gcsClient gcs.ClientInterface) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint

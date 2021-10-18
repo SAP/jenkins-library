@@ -149,7 +149,7 @@ func TestRunSonar(t *testing.T) {
 			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
 		}()
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{}, nil)
+		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1")
@@ -181,7 +181,7 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{}, nil)
+		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
@@ -220,7 +220,7 @@ func TestRunSonar(t *testing.T) {
 			InferJavaBinaries: true,
 		}
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{}, nil)
+		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s,%s",
@@ -261,7 +261,7 @@ func TestRunSonar(t *testing.T) {
 			InferJavaBinaries: true,
 		}
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{}, nil)
+		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.NotContains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s",
@@ -292,7 +292,7 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{}, nil)
+		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=mock-project-key")

@@ -3,12 +3,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -93,6 +95,23 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if GeneralConfig.UploadReportsToGCS {
+				gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
+				if gcpJsonKeyFilePath == "" {
+					return errors.New("GCP JSON Key file Path must not be empty")
+				}
+				var err error
+				envVars := []gcs.EnvVar{
+					{
+						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+						Value: gcpJsonKeyFilePath,
+					},
+				}
+				if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, GeneralConfig.GCSBucketId, GeneralConfig.GCSTargetFolder); err != nil {
+					return err
+				}
 			}
 
 			return nil

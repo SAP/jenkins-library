@@ -170,7 +170,13 @@ func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 
 // GetParameterFilters retrieves all scope dependent parameter filters
 func (m *StepData) GetParameterFilters() StepFilters {
-	filters := StepFilters{All: []string{"verbose"}, General: []string{"verbose"}, Steps: []string{"verbose"}, Stages: []string{"verbose"}, Parameters: []string{"verbose"}}
+	filters := StepFilters{
+		All:        []string{"verbose", "uploadReportsToGCS", "gcpJsonKeyFilePath", "gcsTargetFolder", "gcsBucketId"},
+		General:    []string{"verbose", "uploadReportsToGCS", "gcpJsonKeyFilePath", "gcsTargetFolder", "gcsBucketId"},
+		Steps:      []string{"verbose", "uploadReportsToGCS", "gcpJsonKeyFilePath", "gcsTargetFolder", "gcsBucketId"},
+		Stages:     []string{"verbose", "uploadReportsToGCS", "gcpJsonKeyFilePath", "gcsTargetFolder", "gcsBucketId"},
+		Parameters: []string{"verbose", "uploadReportsToGCS", "gcpJsonKeyFilePath", "gcsTargetFolder", "gcsBucketId"},
+	}
 	for _, param := range m.Spec.Inputs.Parameters {
 		parameterKeys := []string{param.Name}
 		for _, condition := range param.Conditions {
