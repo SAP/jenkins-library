@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,137 @@ func newGolangBuildTestsUtils() golangBuildMockUtils {
 		FilesMock:      &mock.FilesMock{},
 	}
 	return utils
+}
+
+func TestRunGolangBuild(t *testing.T) {
+	t.Run("success - no tests", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - tests & ldflags", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests:            true,
+			LdflagsTemplate:     "test",
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"get", "gotest.tools/gotestsum"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"build", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - tests with coverage", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests:            true,
+			ReportCoverage:      true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"tool", "cover", "-html", coverageFile, "-o", "coverage.html"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - integration tests", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunIntegrationTests: true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"get", "gotest.tools/gotestsum"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("failure - install pre-requisites", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"go get gotest.tools/gotestsum": fmt.Errorf("install failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
+	})
+
+	t.Run("failure - test run failure", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"gotestsum --junitfile": fmt.Errorf("test failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "running tests failed - junit result missing: test failure")
+	})
+
+	t.Run("failure - test failure", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"gotestsum --junitfile": fmt.Errorf("test failure")}
+		utils.AddFile("TEST-go.xml", []byte("some content"))
+		utils.AddFile(coverageFile, []byte("some content"))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "some tests failed")
+	})
+
+	t.Run("failure - prepareLdflags", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests:            true,
+			LdflagsTemplate:     "{{.CPE.test",
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+	})
+
+	t.Run("failure - build failure", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunIntegrationTests: true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("build failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "failed to run build for linux.amd64: build failure")
+	})
 }
 
 func TestRunGolangTests(t *testing.T) {

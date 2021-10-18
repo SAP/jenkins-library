@@ -180,6 +180,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        mandatory: true
       - name: testOptions
         type: "[]string"
         description: Options to pass to test as per `go test` documentation (comprises e.g. flags, packages).
