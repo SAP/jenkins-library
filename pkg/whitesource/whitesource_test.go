@@ -2,13 +2,15 @@ package whitesource
 
 import (
 	"bytes"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type whitesourceMockClient struct {
@@ -59,6 +61,24 @@ func TestGetProductsMetaInfo(t *testing.T) {
 
 func TestCreateProduct(t *testing.T) {
 	t.Parallel()
+	t.Run("retryable error", func(t *testing.T) {
+		// init
+		myTestClient := whitesourceMockClient{
+			responseBody: `{"errorCode":3000,"errorMessage":"WhiteSource backend has a hickup"}`,
+		}
+		expectedRequestBody := `{"requestType":"createProduct","userKey":"test_user_token","productName":"test_product_name","orgToken":"test_org_token"}`
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+		sys.maxRetries = 3
+		sys.retryInterval = 1 * time.Microsecond
+		// test
+		productToken, err := sys.CreateProduct("test_product_name")
+		// assert
+		assert.EqualError(t, err, "WhiteSource request failed: 3 retries failed: invalid request, error code 3000, message 'WhiteSource backend has a hickup'")
+		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		require.NoError(t, err)
+		assert.Equal(t, "", productToken)
+		assert.Equal(t, expectedRequestBody, string(requestBody))
+	})
 	t.Run("not allowed error", func(t *testing.T) {
 		// init
 		myTestClient := whitesourceMockClient{
