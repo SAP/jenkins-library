@@ -13,13 +13,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/splunk"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type testStepOptions struct {
 	Param0 string `json:"param0,omitempty"`
-	Param1 string `json:"param1,omitempty"`
-	Param2 string `json:"param2,omitempty"`
+	Param1 string `json:"param1,omitempty" validate:"oneof=value1 value2 value3"`
+	Param2 string `json:"param2,omitempty" validate:"required_if=Param1 value1"`
+	Param3 string `json:"param3,omitempty" validate:"oneof=value1 value2 value3,required_if=Param1 value1 Param2 value2"`
 }
 
 
@@ -27,6 +30,7 @@ type testStepCommonPipelineEnvironment struct {
 	artifactVersion string
 	git struct {
 		commitID string
+		headCommitID string
 		branch string
 	}
 	custom struct {
@@ -42,6 +46,7 @@ func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "headCommitId", value: p.git.headCommitID},
 		{category: "git", name: "branch", value: p.git.branch},
 		{category: "custom", name: "customList", value: p.custom.customList},
 	}
@@ -104,6 +109,7 @@ func TestStepCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
+	var logCollector *log.CollectorHook
 
 	var createTestStepCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -113,6 +119,8 @@ func TestStepCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
+
+			piperOsCmd.GeneralConfig.GitHubAccessTokens = piperOsCmd.ResolveAccessTokens(piperOsCmd.GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID, Path: path}
@@ -129,6 +137,20 @@ func TestStepCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -141,10 +163,20 @@ func TestStepCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(piperOsCmd.GeneralConfig.CorrelationID,
+				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn,
+				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Token,
+				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Index,
+				piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			testStep(stepConfig, &telemetryData, &commonPipelineEnvironment, &influxTest)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -158,10 +190,10 @@ func TestStepCommand() *cobra.Command {
 func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 	cmd.Flags().StringVar(&stepConfig.Param0, "param0", `val0`, "param0 description")
 	cmd.Flags().StringVar(&stepConfig.Param1, "param1", os.Getenv("PIPER_param1"), "param1 description")
-	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param1 description")
+	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param2 description")
+	cmd.Flags().StringVar(&stepConfig.Param3, "param3", os.Getenv("PIPER_param3"), "param3 description")
 
 	cmd.MarkFlagRequired("param0")
-	cmd.MarkFlagRequired("param2")
 }
 
 // retrieve step metadata
@@ -174,6 +206,10 @@ func testStepMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "stashName",Type: "stash",
+					},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:      "param0",
@@ -182,6 +218,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   `val0`,
 					},
 					{
 						Name:      "param1",
@@ -190,14 +227,25 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param1"),
 					},
 					{
 						Name:      "param2",
 						ResourceRef: []config.ResourceReference{},
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param2"),
+					},
+					{
+						Name:      "param3",
+						ResourceRef: []config.ResourceReference{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param3"),
 					},
 				},
 			},
@@ -209,6 +257,7 @@ func testStepMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "artifactVersion"},
 							{"Name": "git/commitId"},
+							{"Name": "git/headCommitId"},
 							{"Name": "git/branch"},
 							{"Name": "custom/customList"},
 						},

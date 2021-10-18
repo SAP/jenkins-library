@@ -13,7 +13,16 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Kubernetes only:
@@ -78,10 +87,6 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'dockerPullImage',
-    /**
      * Kubernetes only:
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
@@ -106,10 +111,6 @@ import groovy.transform.Field
      * as `dockerVolumeBind` for the sidecar container
      */
     'sidecarVolumeBind',
-    /**
-     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'sidecarPullImage',
     /**
      * as `dockerWorkspace` for the sidecar container
      */

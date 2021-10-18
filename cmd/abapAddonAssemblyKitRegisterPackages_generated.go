@@ -11,7 +11,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +52,7 @@ func (p *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment) persist(
 	}
 }
 
-// AbapAddonAssemblyKitRegisterPackagesCommand This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.
+// AbapAddonAssemblyKitRegisterPackagesCommand This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.
 func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitRegisterPackages"
 
@@ -58,18 +60,23 @@ func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 	var stepConfig abapAddonAssemblyKitRegisterPackagesOptions
 	var startTime time.Time
 	var commonPipelineEnvironment abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createAbapAddonAssemblyKitRegisterPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
+		Short: "This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.",
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-For Packages in status "P"lanned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the Final Assembly system.
-and creates physical Delivery Packages. The Packages ares saved in the File Content Management System of SAP.
-The new status "L"ocked is written back to the addonDescriptor in the commonPipelineEnvironment.`,
+For Packages in status "P" = planned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the build system
+and creates physical Delivery Package in AAKaaS.
+The new status "L" = locked is written back to the addonDescriptor in the commonPipelineEnvironment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -88,6 +95,20 @@ The new status "L"ocked is written back to the addonDescriptor in the commonPipe
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -99,10 +120,20 @@ The new status "L"ocked is written back to the addonDescriptor in the commonPipe
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			abapAddonAssemblyKitRegisterPackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -131,10 +162,13 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapAddonAssemblyKitRegisterPackages",
 			Aliases:     []config.Alias{},
-			Description: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
+			Description: "This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -143,6 +177,7 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -151,6 +186,7 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -159,6 +195,7 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -172,6 +209,7 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

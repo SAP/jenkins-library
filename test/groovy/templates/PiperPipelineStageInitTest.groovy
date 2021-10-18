@@ -8,6 +8,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.is
@@ -19,12 +20,13 @@ import static org.junit.Assert.assertTrue
 class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     private ExpectedException thrown = new ExpectedException()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(new JenkinsReadYamlRule(this))
+        .around(jryr)
         .around(thrown)
         .around(jlr)
         .around(jsr)
@@ -102,7 +104,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testInitBuildToolDoesNotMatchProject() {
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(
             script: nullScript,
             juStabUtils: utils,
@@ -124,7 +126,24 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is([]))
+    }
 
+    @Test
+    void testCustomStashSettings() {
+        jryr.registerYaml('customStashSettings.yml',"Init: \n  unstash: source")
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            customStashSettings: 'customStashSettings.yml',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
+        )
+
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is("source"))
     }
 
     @Test
@@ -228,4 +247,79 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
     }
 
+    @Test
+    void "Parameter skipCheckout skips the checkout call"() {
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            stashContent: ['mystash'],
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
+
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItem('checkout')))
+    }
+
+    @Test
+    void "Try to skip checkout with parameter skipCheckout not boolean throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: "false"
+        )
+    }
+
+    @Test
+    void "Try to skip checkout without scmInfo parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Need am scmInfo map retrieved from a checkout. ' +
+            'If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, ' +
+            'for example as follows:\n' +
+            '  def scmInfo = checkout scm\n' +
+            '  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            stashContent: ['mystash'],
+            skipCheckout: true
+        )
+    }
+
+    @Test
+    void "Try to skip checkout without stashContent parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] needs stashes if you skip checkout')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
+    }
+
+    @Test
+    void "Try to skip checkout with empty stashContent parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] needs stashes if you skip checkout')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            stashContent: [],
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
+    }
 }

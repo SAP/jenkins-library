@@ -189,7 +189,116 @@ repositories:
 		expectedResult := `create-services:
 - broker: testService
   name: testName
-  parameters: '{"admin_email":"user@example.com","is_development_allowed":true,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4,"addon_product_name":"myProduct","addon_product_version":"1.2.3"}'
+  parameters: '{"admin_email":"user@example.com","is_development_allowed":true,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4,"addon_product_name":"myProduct","addon_product_version":"1.2.3","parent_saas_appname":"addon_test"}'
+  plan: testPlan
+`
+
+		resultBytes, err := generateManifestYAML(&config)
+
+		if assert.NoError(t, err) {
+			result := string(resultBytes)
+			assert.Equal(t, expectedResult, result, "Result not as expected")
+		}
+	})
+
+	t.Run("Test IsDevelopmentAllowed", func(t *testing.T) {
+		config := abapEnvironmentCreateSystemOptions{
+			CfAPIEndpoint:                  "https://api.endpoint.com",
+			CfOrg:                          "testOrg",
+			CfSpace:                        "testSpace",
+			Username:                       "testUser",
+			Password:                       "testPassword",
+			CfService:                      "testService",
+			CfServiceInstance:              "testName",
+			CfServicePlan:                  "testPlan",
+			AbapSystemAdminEmail:           "user@example.com",
+			AbapSystemID:                   "H02",
+			AbapSystemIsDevelopmentAllowed: true,
+			AbapSystemSizeOfPersistence:    4,
+			AbapSystemSizeOfRuntime:        4,
+			AddonDescriptorFileName:        "addon.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "test variable substitution")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		addonYML := `addonProduct: myProduct
+addonVersion: 1.2.3
+repositories:
+  - name: '/DMO/REPO'
+`
+
+		addonYMLBytes := []byte(addonYML)
+		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+
+		expectedResult := `create-services:
+- broker: testService
+  name: testName
+  parameters: '{"admin_email":"user@example.com","is_development_allowed":true,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4}'
+  plan: testPlan
+`
+
+		resultBytes, err := generateManifestYAML(&config)
+
+		if assert.NoError(t, err) {
+			result := string(resultBytes)
+			assert.Equal(t, expectedResult, result, "Result not as expected")
+		}
+	})
+
+	t.Run("Create service with generated manifest - with addon", func(t *testing.T) {
+		config := abapEnvironmentCreateSystemOptions{
+			CfAPIEndpoint:                  "https://api.endpoint.com",
+			CfOrg:                          "testOrg",
+			CfSpace:                        "testSpace",
+			Username:                       "testUser",
+			Password:                       "testPassword",
+			CfService:                      "testService",
+			CfServiceInstance:              "testName",
+			CfServicePlan:                  "testPlan",
+			AbapSystemAdminEmail:           "user@example.com",
+			AbapSystemID:                   "H02",
+			AbapSystemIsDevelopmentAllowed: false,
+			AbapSystemSizeOfPersistence:    4,
+			AbapSystemSizeOfRuntime:        4,
+			AddonDescriptorFileName:        "addon.yml",
+			IncludeAddon:                   true,
+		}
+
+		dir, err := ioutil.TempDir("", "test variable substitution")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		addonYML := `addonProduct: myProduct
+addonVersion: 1.2.3
+repositories:
+  - name: '/DMO/REPO'
+`
+
+		addonYMLBytes := []byte(addonYML)
+		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+
+		expectedResult := `create-services:
+- broker: testService
+  name: testName
+  parameters: '{"admin_email":"user@example.com","is_development_allowed":false,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4,"addon_product_name":"myProduct","addon_product_version":"1.2.3","parent_saas_appname":"addon_test"}'
   plan: testPlan
 `
 

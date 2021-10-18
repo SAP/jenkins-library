@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -19,8 +20,10 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
+	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
 	CorrelationID        string
 	CustomConfig         string
+	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
 	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	IgnoreCustomDefaults bool
 	ParametersJSON       string
@@ -34,17 +37,31 @@ type GeneralConfigOptions struct {
 	LogFormat            string
 	VaultRoleID          string
 	VaultRoleSecretID    string
+	VaultToken           string
+	VaultServerURL       string
+	VaultNamespace       string
+	VaultPath            string
 	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
 }
 
-// HookConfiguration contains the configuration for supported hooks, so far only Sentry is supported.
+// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
+	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
 type SentryConfiguration struct {
 	Dsn string `json:"dsn,omitempty"`
+}
+
+// SplunkConfiguration defines the configuration options for the Splunk logging system
+type SplunkConfiguration struct {
+	Dsn      string `json:"dsn,omitempty"`
+	Token    string `json:"token,omitempty"`
+	Index    string `json:"index,omitempty"`
+	SendLogs bool   `json:"sendLogs"`
 }
 
 var rootCmd = &cobra.Command{
@@ -70,10 +87,13 @@ func Execute() {
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(UiVeri5ExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
+	rootCmd.AddCommand(GithubCommentIssueCommand())
+	rootCmd.AddCommand(GithubCreateIssueCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
@@ -107,6 +127,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
+	rootCmd.AddCommand(CnbBuildCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
@@ -118,8 +139,36 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
+	rootCmd.AddCommand(IsChangeInDevelopmentCommand())
+	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
+	rootCmd.AddCommand(NewmanExecuteCommand())
+	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
+	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
+	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
+	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
+	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
+	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
+	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
+	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
+	rootCmd.AddCommand(IntegrationArtifactUnDeployCommand())
+	rootCmd.AddCommand(IntegrationArtifactResourceCommand())
+	rootCmd.AddCommand(TerraformExecuteCommand())
+	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(GaugeExecuteTestsCommand())
+	rootCmd.AddCommand(BatsExecuteTestsCommand())
+	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
+	rootCmd.AddCommand(TransportRequestDocIDFromGitCommand())
+	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
+	rootCmd.AddCommand(WritePipelineEnv())
+	rootCmd.AddCommand(ReadPipelineEnv())
+	rootCmd.AddCommand(InfluxWriteDataCommand())
+	rootCmd.AddCommand(AbapEnvironmentRunAUnitTestCommand())
+	rootCmd.AddCommand(CheckStepActiveCommand())
 
 	addRootFlags(rootCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		log.Entry().WithError(err).Fatal("configuration error")
@@ -130,6 +179,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", os.Getenv("PIPER_correlationID"), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", AccessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
@@ -139,13 +189,43 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.LogFormat, "logFormat", "default", "Log format to use. Options: default, timestamp, plain, full.")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The vault server which should be used to fetch credentials")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultNamespace, "vaultNamespace", "", "The vault namespace which should be used to fetch credentials")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultPath, "vaultPath", "", "The path which should be used to fetch credentials")
 
 }
 
-const stageNameEnvKey = "STAGE_NAME"
+// ResolveAccessTokens reads a list of tokens in format host:token passed via command line
+// and transfers this into a map as a more consumable format.
+func ResolveAccessTokens(tokenList []string) map[string]string {
+	tokenMap := map[string]string{}
+	for _, tokenEntry := range tokenList {
+		log.Entry().Debugf("processing token %v", tokenEntry)
+		parts := strings.Split(tokenEntry, ":")
+		if len(parts) != 2 {
+			log.Entry().Warningf("wrong format for access token %v", tokenEntry)
+		} else {
+			tokenMap[parts[0]] = parts[1]
+		}
+	}
+	return tokenMap
+}
+
+// AccessTokensFromEnvJSON resolves access tokens when passed as JSON in an environment variable
+func AccessTokensFromEnvJSON(env string) []string {
+	accessTokens := []string{}
+	if len(env) == 0 {
+		return accessTokens
+	}
+	err := json.Unmarshal([]byte(env), &accessTokens)
+	if err != nil {
+		log.Entry().Infof("Token json '%v' has wrong format.", env)
+	}
+	return accessTokens
+}
 
 // initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
-// or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
+// or the environment variable (orchestrator specific), unless it has been provided as command line option.
 // Log output needs to be suppressed via outputToLog by the getConfig step.
 func initStageName(outputToLog bool) {
 	var stageNameSource string
@@ -162,15 +242,20 @@ func initStageName(outputToLog bool) {
 	}
 
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
-	GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
-	stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
+	} else {
+		stageNameSource = "env variable"
+		GeneralConfig.StageName = provider.GetStageName()
+	}
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
 	}
 
 	var params map[string]interface{}
-	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
+	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
 	if err != nil {
 		if outputToLog {
 			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)
@@ -190,7 +275,7 @@ func initStageName(outputToLog bool) {
 }
 
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
-func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string) (io.ReadCloser, error)) error {
+func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
 
 	log.SetFormatter(GeneralConfig.LogFormat)
 
@@ -216,7 +301,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	if GeneralConfig.VaultRoleSecretID == "" {
 		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultAppRoleSecretID")
 	}
-	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
+	if GeneralConfig.VaultToken == "" {
+		GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
+	}
+	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
@@ -232,7 +320,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 			if exists, err := piperutils.FileExists(projectConfigFile); exists {
 				log.Entry().Infof("Project config: '%s'", projectConfigFile)
-				if customConfig, err = openFile(projectConfigFile); err != nil {
+				if customConfig, err = openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens); err != nil {
 					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
@@ -245,7 +333,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			log.Entry().Info("Project defaults: NONE")
 		}
 		for _, projectDefaultFile := range GeneralConfig.DefaultConfig {
-			fc, err := openFile(projectDefaultFile)
+			fc, err := openFile(projectDefaultFile, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil {
 				if projectDefaultFile != ".pipeline/defaults.yaml" {
@@ -258,6 +346,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+			log.SetVerbose(verbose)
+			GeneralConfig.Verbose = verbose
+		} else if !ok && stepConfig.Config["verbose"] != nil {
+			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+		}
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -278,10 +372,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
+func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
 	if source != nil {
 		log.Entry().Info("Retrieving hook configuration")
-		err := json.Unmarshal(*source, target)
+		b, err := json.Marshal(source)
+		if err != nil {
+			log.Entry().Warningf("Failed to marshal source hook configuration: %v", err)
+		}
+		err = json.Unmarshal(b, target)
 		if err != nil {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
 		}

@@ -4,9 +4,6 @@ on:
   # Allow to trigger this manually just in case updates are required outside of the schedule. See https://goobar.io/2019/12/07/manually-trigger-a-github-actions-workflow/ for info on how that works.
   repository_dispatch:
     types: update-dependencies
-  # Schedule once a month
-  schedule:
-    - cron:  '0 10 3 * *'
 
 jobs:
   build:

@@ -55,7 +55,18 @@ import groovy.transform.Field
 ]
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = TOOLS.plus(['archive'])
+@Field Set STEP_CONFIG_KEYS = TOOLS.plus([
+    /**
+     * If it is set to `true` the step will archive reports matching the tool specific pattern.
+     * @possibleValues `true`, `false`
+     */
+    'archive',
+    /**
+     * If it is set to `true` the step will fail the build if JUnit detected any failing tests.
+     * @possibleValues `true`, `false`
+     */
+    'failOnError'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
@@ -89,33 +100,49 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         // JAVA
-        report(pmdParser(createToolOptions(configuration.pmd)), configuration.pmd, configuration.archive)
-        report(cpd(createToolOptions(configuration.cpd)), configuration.cpd, configuration.archive)
-        report(findBugs(createToolOptions(configuration.findbugs, [useRankAsPriority: true])), configuration.findbugs, configuration.archive)
-        report(checkStyle(createToolOptions(configuration.checkstyle)), configuration.checkstyle, configuration.archive)
+        if(configuration.pmd.active) {
+          report(pmdParser(createToolOptions(configuration.pmd)), configuration.pmd, configuration.archive)
+        }
+        if(configuration.cpd.active) {
+          report(cpd(createToolOptions(configuration.cpd)), configuration.cpd, configuration.archive)
+        }
+        if(configuration.findbugs.active) {
+          report(findBugs(createToolOptions(configuration.findbugs, [useRankAsPriority: true])), configuration.findbugs, configuration.archive)
+        }
+        if(configuration.checkstyle.active) {
+          report(checkStyle(createToolOptions(configuration.checkstyle)), configuration.checkstyle, configuration.archive)
+        }
         // JAVA SCRIPT
-        report(esLint(createToolOptions(configuration.eslint)), configuration.eslint, configuration.archive)
+        if(configuration.eslint.active) {
+          report(esLint(createToolOptions(configuration.eslint)), configuration.eslint, configuration.archive)
+        }
         // PYTHON
-        report(pyLint(createToolOptions(configuration.pylint)), configuration.pylint, configuration.archive)
+        if(configuration.pylint.active) {
+          report(pyLint(createToolOptions(configuration.pylint)), configuration.pylint, configuration.archive)
+        }
         // GENERAL
-        report(taskScanner(createToolOptions(configuration.tasks, [
-            includePattern: configuration.tasks.get('pattern'),
-            highTags: configuration.tasks.get('high'),
-            normalTags: configuration.tasks.get('normal'),
-            lowTags: configuration.tasks.get('low'),
-        ]).minus([pattern: configuration.tasks.get('pattern')])), configuration.tasks, configuration.archive)
+        if(configuration.tasks.active) {
+          report(taskScanner(createToolOptions(configuration.tasks, [
+              includePattern: configuration.tasks.get('pattern'),
+              highTags: configuration.tasks.get('high'),
+              normalTags: configuration.tasks.get('normal'),
+              lowTags: configuration.tasks.get('low'),
+          ]).minus([pattern: configuration.tasks.get('pattern')])), configuration.tasks, configuration.archive)
+        }
+        if (configuration.failOnError && 'FAILURE' == script.currentBuild?.result){
+            script.currentBuild.result = 'FAILURE'
+            error "[${STEP_NAME}] Some checks failed!"
+        }
     }
 }
 
 def report(tool, settings, doArchive){
-    if (settings.active) {
-        def options = createOptions(settings).plus([tools: [tool]])
-        echo "recordIssues OPTIONS: ${options}"
-        // publish
-        recordIssues(options)
-        // archive check results
-        archiveResults(doArchive && settings.get('archive'), settings.get('pattern'), true)
-    }
+    def options = createOptions(settings).plus([tools: [tool]])
+    echo "recordIssues OPTIONS: ${options}"
+    // publish
+    recordIssues(options)
+    // archive check results
+    archiveResults(doArchive && settings.get('archive'), settings.get('pattern'), true)
 }
 
 def archiveResults(archive, pattern, allowEmpty){
@@ -172,7 +199,7 @@ def createOptions(settings){
 def createToolOptions(settings, additionalOptions = [:]){
     Map result = [pattern: settings.get('pattern')]
     if (settings.id)
-        result.put('id ', settings.id)
+        result.put('id', settings.id)
     if (settings.name)
         result.put('name', settings.name)
     result = result.plus(additionalOptions)

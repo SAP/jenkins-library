@@ -25,8 +25,8 @@ void call(Map parameters = [:]) {
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
-            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/abapStashSettings.yml')
+            .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapEnvironmentPipelineStages.yml')
+            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/abapEnvironmentPipelineStashSettings.yml')
             .withMandatoryProperty('stageConfigResource')
             .use()
 

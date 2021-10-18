@@ -53,6 +53,8 @@ class PiperExecuteBinTest extends BasePiperTest {
             return closure()
         })
 
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
         helper.registerAllowedMethod('fileExists', [Map.class], {m ->
             if (m.file == 'noDetailsStep_errorDetails.json') {
                 return false
@@ -153,12 +155,41 @@ class PiperExecuteBinTest extends BasePiperTest {
     }
 
     @Test
+    void testPiperExecuteBinDontResolveCredentialsAndNoCredId() {
+
+        // In case we have a credential entry without Id we drop that silenty.
+        // Maybe we should revisit that and fail in this case.
+
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"dockerImage":"my.Registry/my/image:latest"}')
+
+        List stepCredentials = [
+            [type: 'token', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
+        ]
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            stepCredentials
+        )
+        assertThat(credentials.size(), is(0))
+    }
+
+    @Test
     void testPiperExecuteBinSomeCredentials() {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "dockerImage":"my.Registry/my/image:latest"}')
 
         List stepCredentials = [
             [type: 'file', id: 'fileCredentialsId', env: ['PIPER_credFile']],
             [type: 'token', id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            // for the entry below we don't have a config lookup.
+            [type: 'token', id: 'tokenCredentialsIdNoResolve', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
+            [type: 'token', id: 'tokenCredentialsIdNotContainedInConfig', env: ['PIPER_credToken_doesNotMatter']],
             [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
         ]
         stepRule.step.piperExecuteBin(
@@ -173,9 +204,10 @@ class PiperExecuteBinTest extends BasePiperTest {
             stepCredentials
         )
         // asserts
-        assertThat(credentials.size(), is(2))
+        assertThat(credentials.size(), is(3))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_credFile')))
         assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
+        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'tokenCredentialsIdNoResolve'), hasEntry('variable', 'PIPER_credTokenNoResolve')))
     }
 
     @Test
@@ -376,6 +408,6 @@ class PiperExecuteBinTest extends BasePiperTest {
             []
         )
 
-        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin"]))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin", "pipelineStepReports"]))
     }
 }

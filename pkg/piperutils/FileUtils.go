@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 // FileUtils ...
 type FileUtils interface {
 	Abs(path string) (string, error)
+	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
@@ -23,6 +23,11 @@ type FileUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
+	Chdir(path string) error
+	TempDir(string, string) (string, error)
+	RemoveAll(string) error
+	FileRename(string, string) error
+	Getwd() (string, error)
 }
 
 // Files ...
@@ -91,7 +96,7 @@ func (f Files) Copy(src, dst string) (int64, error) {
 		return 0, err
 	}
 	defer func() { _ = destination.Close() }()
-	nBytes, err := io.Copy(destination, source)
+	nBytes, err := CopyData(destination, source)
 	return nBytes, err
 }
 
@@ -170,7 +175,7 @@ func Unzip(src, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc)
+		_, err = CopyData(outFile, rc)
 
 		// Close the file without defer to close before next iteration of loop
 		_ = outFile.Close()
@@ -226,6 +231,35 @@ func (f Files) RemoveAll(path string) error {
 // Glob is a wrapper for doublestar.Glob().
 func (f Files) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
+}
+
+// ExcludeFiles returns a slice of files, which contains only the sub-set of files that matched none
+// of the glob patterns in the provided excludes list.
+func ExcludeFiles(files, excludes []string) ([]string, error) {
+	if len(excludes) == 0 {
+		return files, nil
+	}
+
+	var filteredFiles []string
+	for _, file := range files {
+		includeFile := true
+		file = filepath.FromSlash(file)
+		for _, exclude := range excludes {
+			matched, err := doublestar.PathMatch(exclude, file)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
+			}
+			if matched {
+				includeFile = false
+				break
+			}
+		}
+		if includeFile {
+			filteredFiles = append(filteredFiles, file)
+		}
+	}
+
+	return filteredFiles, nil
 }
 
 // Getwd is a wrapper for os.Getwd().

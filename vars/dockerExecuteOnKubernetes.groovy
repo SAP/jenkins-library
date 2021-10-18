@@ -36,6 +36,16 @@ import hudson.AbortException
         'additionalPodProperties',
         'resources',
     /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
+    /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
      */
@@ -77,7 +87,7 @@ import hudson.AbortException
     'containerEnvVars',
     /**
      * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labelled based on the value field of each map entry.
-     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli': 'cloudfoundry']`
+     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli:6': 'cloudfoundry']`
      */
     'containerMap',
     /**
@@ -109,11 +119,6 @@ import hudson.AbortException
      */
     'dockerImage',
     /**
-     * Set this to 'false' to bypass a docker image pull.
-     * Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'dockerPullImage',
-    /**
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
@@ -126,11 +131,6 @@ import hudson.AbortException
      * Name of the container in local network.
      */
     'sidecarName',
-    /**
-     * Set this to 'false' to bypass a docker image pull.
-     * Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'sidecarPullImage',
     /**
      * Command executed inside the container which returns exit code 0 when the container is ready to be used.
      */
@@ -191,6 +191,22 @@ import hudson.AbortException
      * to the step call takes precedence.
      */
     'resources',
+    /**
+     * The path to which a volume should be mounted to. This volume will be available at the same
+     * mount path in each container of the provided containerMap. The volume is of type emptyDir
+     * and has the name 'volume'. With the additionalPodProperties parameter one can for example
+     * use this volume in an initContainer.
+     */
+    'containerMountPath',
+     /**
+     * The docker image to run as initContainer.
+     */
+    'initContainerImage',
+    /**
+     * Command executed inside the init container shell. Please enter command without providing any "sh -c" prefix. For example for an echo message, simply enter: echo `HelloWorld`
+     */
+    'initContainerCommand',
+
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -320,7 +336,6 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
 }
 
 private String generatePodSpec(Map config) {
-    def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
         kind      : "Pod",
@@ -330,12 +345,19 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
+    podSpec.spec.initContainers = getInitContainerList(config)
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
+    if (config.containerMountPath) {
+        podSpec.spec.volumes = [[
+                                    name    : "volume",
+                                    emptyDir: [:]
+                                ]]
+    }
+
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
-
 
 private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
     def stashName = "${prefix}-${config.uniqueId}"
@@ -393,14 +415,45 @@ private Map getSecurityContext(Map config) {
 private void unstashWorkspace(config, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"
-        echo "invalidate stash ${prefix}-${config.uniqueId}"
-        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
-        echo "${e.getMessage()}"
+        echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
+    } finally {
+        echo "invalidate stash ${prefix}-${config.uniqueId}"
+        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     }
+}
+
+private List getInitContainerList(config){
+    def initContainerSpecList = []
+    if (config.initContainerImage && config.containerMountPath) {
+        // regex [\W_] matches any non-word character equivalent to [^a-zA-Z0-9_]
+        def initContainerName = config.initContainerImage.toLowerCase().replaceAll(/[\W_]/,"-" )
+        def initContainerSpec = [
+            name           : initContainerName,
+            image          : config.initContainerImage
+            ]
+        if (config.containerMountPath) {
+            initContainerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
+        }
+        if (config.initContainerCommand == null) {
+            initContainerSpec['command'] = [
+                '/usr/bin/tail',
+                '-f',
+                '/dev/null'
+            ]
+        } else {
+            initContainerSpec['command'] = [
+                'sh',
+                '-c',
+                config.initContainerCommand
+            ]
+        }
+        initContainerSpecList.push(initContainerSpec)
+    }
+    return initContainerSpecList
 }
 
 private List getContainerList(config) {
@@ -433,6 +486,9 @@ private List getContainerList(config) {
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
+        if (config.containerMountPath) {
+            containerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
+        }
 
         def configuredCommand = config.containerCommands?.get(imageName)
         def shell = config.containerShell ?: '/bin/sh'
@@ -481,7 +537,6 @@ private List getContainerList(config) {
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
-
         def resources = getResources(sideCarContainerName, config)
         if(resources) {
             containerSpec.resources = resources

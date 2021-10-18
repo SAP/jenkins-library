@@ -7,8 +7,10 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
-    /** Creates a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
+    /** Creates a SAP Cloud Platform ABAP Environment system via the cloud foundry command line interface */
     'abapEnvironmentCreateSystem',
+    /** Deletes a SAP Cloud Platform ABAP Environment system via the cloud foundry command line interface */
+    'cloudFoundryDeleteService',
     /** If set to true, a confirmation is required to delete the system */
     'confirmDeletion'
 ]

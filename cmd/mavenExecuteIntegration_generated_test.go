@@ -7,6 +7,7 @@ import (
 )
 
 func TestMavenExecuteIntegrationCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := MavenExecuteIntegrationCommand()
 

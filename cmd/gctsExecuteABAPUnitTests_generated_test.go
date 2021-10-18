@@ -7,6 +7,7 @@ import (
 )
 
 func TestGctsExecuteABAPUnitTestsCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GctsExecuteABAPUnitTestsCommand()
 

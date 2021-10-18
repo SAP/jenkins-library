@@ -11,6 +11,7 @@ import util.BasePiperTest
 
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.containsInAnyOrder
+import static org.hamcrest.Matchers.empty
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.is
@@ -27,6 +28,7 @@ import util.JenkinsStepRule
 class ChecksPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
     List archiveStepPatterns
+    List invokedReportingTools
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
@@ -40,30 +42,49 @@ class ChecksPublishResultsTest extends BasePiperTest {
     void init() {
         publisherStepOptions = [:]
         archiveStepPatterns = []
+        invokedReportingTools = []
+
         // add handler for generic step call
         helper.registerAllowedMethod("recordIssues", [Map.class], {
-            parameters -> publisherStepOptions[parameters.tools[0].publisher] = parameters
+            parameters ->
+            if(parameters.tools[0] in Map && parameters.tools[0].containsKey('publisher')) {
+              publisherStepOptions[parameters.tools[0].publisher] = parameters;
+            }
         })
         helper.registerAllowedMethod("pmdParser", [Map.class], {
-            parameters -> return parameters.plus([publisher: "PmdPublisher"])
+            parameters ->
+                invokedReportingTools << "pmdParser";
+                return parameters.plus([publisher: "PmdPublisher"])
         })
         helper.registerAllowedMethod("cpd", [Map.class], {
-            parameters -> return parameters.plus([publisher: "DryPublisher"])
+            parameters ->
+                invokedReportingTools << "cpd";
+                return parameters.plus([publisher: "DryPublisher"])
         })
         helper.registerAllowedMethod("findBugs", [Map.class], {
-            parameters -> return parameters.plus([publisher: "FindBugsPublisher"])
+            parameters ->
+                invokedReportingTools << "findBugs";
+                return parameters.plus([publisher: "FindBugsPublisher"])
         })
         helper.registerAllowedMethod("checkStyle", [Map.class], {
-            parameters -> return parameters.plus([publisher: "CheckStylePublisher"])
+            parameters ->
+                invokedReportingTools << "checkStyle";
+                return parameters.plus([publisher: "CheckStylePublisher"])
         })
         helper.registerAllowedMethod("esLint", [Map.class], {
-            parameters -> return parameters.plus([publisher: "ESLintPublisher"])
+            parameters ->
+                invokedReportingTools << "esLint";
+                return parameters.plus([publisher: "ESLintPublisher"])
         })
         helper.registerAllowedMethod("pyLint", [Map.class], {
-            parameters -> return parameters.plus([publisher: "PyLintPublisher"])
+            parameters ->
+                invokedReportingTools << "pyLint";
+                return parameters.plus([publisher: "PyLintPublisher"])
         })
         helper.registerAllowedMethod("taskScanner", [Map.class], {
-            parameters -> return parameters.plus([publisher: "TaskPublisher"])
+            parameters ->
+                invokedReportingTools << "taskScanner";
+                return parameters.plus([publisher: "TaskPublisher"])
         })
         helper.registerAllowedMethod("archiveArtifacts", [Map.class], {
             parameters -> archiveStepPatterns.push(parameters.artifacts)
@@ -89,6 +110,8 @@ class ChecksPublishResultsTest extends BasePiperTest {
         assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
         assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
         assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
+
+        assertThat(invokedReportingTools, is(empty()))
     }
 
     @Test
@@ -182,9 +205,16 @@ class ChecksPublishResultsTest extends BasePiperTest {
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // init
         // pmd has been set to active: true in step configuration
-        def cpe = [configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]]
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                checksPublishResults: [
+                    pmd: [active: true]
+                ]
+            ]
+        ]
         // test
-        stepRule.step.checksPublishResults(script: [commonPipelineEnvironment: cpe])
+        stepRule.step.checksPublishResults(script: nullScript)
         // assert
         assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         // ensure nothing else is published
@@ -299,7 +329,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
     @Test
     void testPublishWithCustomThresholds() throws Exception {
         // test
-        stepRule.step.checksPublishResults(script: nullScript, pmd: [qualityGates: [[threshold: 20, type: 'TOTAL_LOW', unstable: false],[threshold: 10, type: 'TOTAL_NORMAL', unstable: false]]])
+        stepRule.step.checksPublishResults(script: nullScript, pmd: [active: true, qualityGates: [[threshold: 20, type: 'TOTAL_LOW', unstable: false],[threshold: 10, type: 'TOTAL_NORMAL', unstable: false]]])
         // assert
         assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))

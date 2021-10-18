@@ -46,6 +46,7 @@ func resolveString(str string, lookupMap map[string]interface{}, n int) (string,
 			str = strings.ReplaceAll(str, fmt.Sprintf("$(%s)", property), propVal.(string))
 		} else {
 			// value not found
+			log.Entry().Debugf("Can't interploate '%s'. Missing property '%s'", str, property)
 			return "", false
 		}
 	}

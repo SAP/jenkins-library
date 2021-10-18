@@ -7,6 +7,7 @@ import (
 )
 
 func TestSonarExecuteScanCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := SonarExecuteScanCommand()
 

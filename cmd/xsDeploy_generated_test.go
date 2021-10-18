@@ -7,6 +7,7 @@ import (
 )
 
 func TestXsDeployCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := XsDeployCommand()
 

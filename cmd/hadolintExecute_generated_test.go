@@ -7,6 +7,7 @@ import (
 )
 
 func TestHadolintExecuteCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := HadolintExecuteCommand()
 

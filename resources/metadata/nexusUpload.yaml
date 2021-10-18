@@ -15,6 +15,8 @@ metadata:
     To upload MTA projects, you need a mta.yaml in the project root and set the mavenRepository option.
     To upload npm projects, you need a package.json in the project root and set the npmRepository option.
 
+    If the 'format' option is set, the 'URL' can contain the full path including the repository ID. Providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.
+
     npm:
     Publishing npm projects makes use of npm's "publish" command.
     It requires a "package.json" file in the project's root directory which has "version" set and is not delared as "private".
@@ -45,9 +47,23 @@ spec:
           - nexus3
         aliases:
           - name: nexus/version
+      - name: format
+        type: string
+        description: The format/registry type. Currently supported are 'maven' and 'npm'.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - maven
+          - npm
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryFormat
+        default: maven
       - name: url
         type: string
-        description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
+        description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported. If the 'format' option is set, the 'URL' can contain the full path including the repository ID and providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.
         scope:
           - PARAMETERS
           - STAGES
@@ -55,6 +71,9 @@ spec:
         mandatory: true
         aliases:
           - name: nexus/url
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
       - name: mavenRepository
         type: string
         description: Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.
@@ -119,6 +138,8 @@ spec:
           - name: nexusCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: password
         type: string
         description: Password for accessing the Nexus endpoint.
@@ -129,6 +150,8 @@ spec:
           - name: nexusCredentialsId
             type: secret
             param: password
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
     resources:
       - name: buildDescriptor
         type: stash
@@ -137,4 +160,4 @@ spec:
   containers:
     # To allow both maven and mta we require an image that contains both tools. If the user configures an image for mavenExecute that also needs to contain both.
     - name: mvn-npm
-      image: devxci/mbtci:1.0.16.1
+      image: devxci/mbtci:1.1.1

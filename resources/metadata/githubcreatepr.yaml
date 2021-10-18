@@ -104,6 +104,7 @@ spec:
       - name: token
         aliases:
           - name: githubToken
+          - name: access_token
         description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
         scope:
           - GENERAL
@@ -116,6 +117,9 @@ spec:
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
       - name: labels
         description: Labels to be added to the pull request.
         scope:

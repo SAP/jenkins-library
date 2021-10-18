@@ -7,6 +7,7 @@ import (
 )
 
 func TestWhitesourceExecuteScanCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := WhitesourceExecuteScanCommand()
 

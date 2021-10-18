@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapAddonAssemblyKitCheckCVsCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapAddonAssemblyKitCheckCVsCommand()
 

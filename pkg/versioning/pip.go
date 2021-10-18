@@ -17,14 +17,6 @@ const (
 	VersionRegex = "(?s)(.*)version=['\"](.*?)['\"](.*)"
 )
 
-// PipDescriptor holds the unique identifier combination for pip built Python artifacts
-type PipDescriptor struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
-}
-
 // Pip utility to interact with Python specific versioning
 type Pip struct {
 	path                   string
@@ -60,9 +52,9 @@ func (p *Pip) GetVersion() (string, error) {
 	if strings.Contains(p.path, "setup.py") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, p.fileExists)
 		if err != nil {
-			err = p.init()
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to read file '%v'", p.path)
+			initErr := p.init()
+			if initErr != nil {
+				return "", errors.Wrapf(initErr, "failed to read file '%v'", p.path)
 			}
 			if evaluateResult(p.buildDescriptorContent, VersionRegex) {
 				compile := regexp.MustCompile(VersionRegex)
@@ -75,6 +67,7 @@ func (p *Pip) GetVersion() (string, error) {
 	artifact := &Versionfile{
 		path:             buildDescriptorFilePath,
 		versioningScheme: p.VersioningScheme(),
+		readFile:         p.readFile,
 	}
 	return artifact.GetVersion()
 }
@@ -86,9 +79,9 @@ func (p *Pip) SetVersion(v string) error {
 	if strings.Contains(p.path, "setup.py") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, p.fileExists)
 		if err != nil {
-			err = p.init()
-			if err != nil {
-				return errors.Wrapf(err, "failed to read file '%v'", p.path)
+			initErr := p.init()
+			if initErr != nil {
+				return errors.Wrapf(initErr, "failed to read file '%v'", p.path)
 			}
 			if evaluateResult(p.buildDescriptorContent, VersionRegex) {
 				compile := regexp.MustCompile(VersionRegex)
@@ -104,6 +97,7 @@ func (p *Pip) SetVersion(v string) error {
 	artifact := &Versionfile{
 		path:             buildDescriptorFilePath,
 		versioningScheme: p.VersioningScheme(),
+		writeFile:        p.writeFile,
 	}
 	return artifact.SetVersion(v)
 }
@@ -115,26 +109,26 @@ func (p *Pip) VersioningScheme() string {
 
 // GetCoordinates returns the pip build descriptor coordinates
 func (p *Pip) GetCoordinates() (Coordinates, error) {
+	result := Coordinates{}
 	err := p.init()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 
-	descriptor := &PipDescriptor{}
 	if evaluateResult(p.buildDescriptorContent, NameRegex) {
 		compile := regexp.MustCompile(NameRegex)
 		values := compile.FindStringSubmatch(p.buildDescriptorContent)
-		descriptor.ArtifactID = values[2]
+		result.ArtifactID = values[2]
 	} else {
-		descriptor.ArtifactID = ""
+		result.ArtifactID = ""
 	}
 
-	descriptor.Version, err = p.GetVersion()
+	result.Version, err = p.GetVersion()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve coordinates")
+		return result, errors.Wrap(err, "failed to retrieve coordinates")
 	}
 
-	return descriptor, nil
+	return result, nil
 }
 
 func evaluateResult(value, regex string) bool {

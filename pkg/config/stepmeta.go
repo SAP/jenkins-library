@@ -45,27 +45,33 @@ type StepInputs struct {
 
 // StepParameters defines the parameters for a step
 type StepParameters struct {
-	Name            string              `json:"name"`
-	Description     string              `json:"description"`
-	LongDescription string              `json:"longDescription,omitempty"`
-	ResourceRef     []ResourceReference `json:"resourceRef,omitempty"`
-	Scope           []string            `json:"scope"`
-	Type            string              `json:"type"`
-	Mandatory       bool                `json:"mandatory,omitempty"`
-	Default         interface{}         `json:"default,omitempty"`
-	PossibleValues  []interface{}       `json:"possibleValues,omitempty"`
-	Aliases         []Alias             `json:"aliases,omitempty"`
-	Conditions      []Condition         `json:"conditions,omitempty"`
-	Secret          bool                `json:"secret,omitempty"`
+	Name            string                `json:"name"`
+	Description     string                `json:"description"`
+	LongDescription string                `json:"longDescription,omitempty"`
+	ResourceRef     []ResourceReference   `json:"resourceRef,omitempty"`
+	Scope           []string              `json:"scope"`
+	Type            string                `json:"type"`
+	Mandatory       bool                  `json:"mandatory,omitempty"`
+	Default         interface{}           `json:"default,omitempty"`
+	PossibleValues  []interface{}         `json:"possibleValues,omitempty"`
+	Aliases         []Alias               `json:"aliases,omitempty"`
+	Conditions      []Condition           `json:"conditions,omitempty"`
+	Secret          bool                  `json:"secret,omitempty"`
+	MandatoryIf     []ParameterDependence `json:"mandatoryIf,omitempty"`
+}
+
+type ParameterDependence struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string   `json:"name"`
-	Type    string   `json:"type,omitempty"`
-	Param   string   `json:"param,omitempty"`
-	Paths   []string `json:"paths,omitempty"`
-	Aliases []Alias  `json:"aliases,omitempty"`
+	Name    string  `json:"name"`
+	Type    string  `json:"type,omitempty"`
+	Param   string  `json:"param,omitempty"`
+	Default string  `json:"default,omitempty"`
+	Aliases []Alias `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -232,9 +238,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
-	}
+	contextFilters = addVaultContextParametersFilter(m, contextFilters)
 
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
@@ -246,6 +250,12 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	}
 	return filters
+}
+
+func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
+	contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
+	return contextFilters
 }
 
 // GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
@@ -278,18 +288,13 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			if len(container.Command) > 0 {
 				p["containerCommand"] = container.Command[0]
 			}
-			p["containerName"] = container.Name
-			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = EnvVarsAsMap(container.EnvVars)
-			p["dockerImage"] = container.Image
-			p["dockerName"] = container.Name
-			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
-			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerOptions"] = OptionsAsStringSlice(container.Options)
-			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
+
+			putStringIfNotEmpty(p, "containerName", container.Name)
+			putStringIfNotEmpty(p, "containerShell", container.Shell)
+			container.commonConfiguration("docker", &p)
 
 			// Ready command not relevant for main runtime container so far
-			//p[] = container.ReadyCommand
+			//putStringIfNotEmpty(p, ..., container.ReadyCommand)
 		}
 
 	}
@@ -298,18 +303,12 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars)
-		root["sidecarImage"] = m.Spec.Sidecars[0].Image
-		root["sidecarName"] = m.Spec.Sidecars[0].Name
-		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
-		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarOptions"] = OptionsAsStringSlice(m.Spec.Sidecars[0].Options)
-		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
-	}
+		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
+		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
 
-	// not filled for now since this is not relevant in Kubernetes case
-	//root["containerPortMappings"] = m.Spec.Sidecars[0].
+		// not filled for now since this is not relevant in Kubernetes case
+		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
@@ -366,7 +365,9 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, res, param)
+				if val := getParameterValue(path, res, param); val != nil {
+					resourceParams[param.Name] = val
+				}
 			}
 		}
 	}
@@ -374,8 +375,25 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
+func (container *Container) commonConfiguration(keyPrefix string, config *map[string]interface{}) {
+	putMapIfNotEmpty(*config, keyPrefix+"EnvVars", EnvVarsAsMap(container.EnvVars))
+	putStringIfNotEmpty(*config, keyPrefix+"Image", container.Image)
+	putStringIfNotEmpty(*config, keyPrefix+"Name", container.Name)
+	if container.ImagePullPolicy != "" {
+		(*config)[keyPrefix+"PullImage"] = container.ImagePullPolicy != "Never"
+	}
+	putStringIfNotEmpty(*config, keyPrefix+"Workspace", container.WorkingDir)
+	putSliceIfNotEmpty(*config, keyPrefix+"Options", OptionsAsStringSlice(container.Options))
+	//putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
+
+}
+
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
+	paramName := res.Param
+	if param.Type != "string" {
+		paramName += ".json"
+	}
+	if val := piperenv.GetResourceParameter(path, res.Name, paramName); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
@@ -397,6 +415,23 @@ func (m *StepParameters) GetReference(refType string) *ResourceReference {
 		}
 	}
 	return nil
+}
+
+func getFilterForResourceReferences(params []StepParameters) []string {
+	var filter []string
+	for _, param := range params {
+		reference := param.GetReference("vaultSecret")
+		if reference == nil {
+			reference = param.GetReference("vaultSecretFile")
+		}
+		if reference == nil {
+			return filter
+		}
+		if reference.Name != "" {
+			filter = append(filter, reference.Name)
+		}
+	}
+	return filter
 }
 
 // HasReference checks whether StepData contains a parameter that has Reference with the given type
@@ -422,9 +457,32 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
-		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		if len(v.Value) != 0 {
+			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		} else {
+			e = append(e, fmt.Sprintf("%v=", v.Name))
+		}
+
 	}
 	return e
+}
+
+func putStringIfNotEmpty(config map[string]interface{}, key, value string) {
+	if value != "" {
+		config[key] = value
+	}
+}
+
+func putMapIfNotEmpty(config map[string]interface{}, key string, value map[string]string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
+}
+
+func putSliceIfNotEmpty(config map[string]interface{}, key string, value []string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
 }
 
 //ToDo: Enable this when the Volumes part is also implemented

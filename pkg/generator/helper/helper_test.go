@@ -30,6 +30,7 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/branch
           - name: custom/customList
             type: "[]string"
@@ -42,6 +43,9 @@ spec:
             tags:
               - name: t1
   inputs:
+    resources:
+      - name: stashName
+        type: stash
     params:
       - name: param0
         type: string
@@ -56,12 +60,32 @@ spec:
         description: param1 description
         scope:
         - PARAMETERS
+        possibleValues:
+        - value1
+        - value2
+        - value3
       - name: param2
         type: string
-        description: param1 description
+        description: param2 description
         scope:
         - PARAMETERS
-        mandatory: true
+        mandatoryIf:
+        - name: param1
+          value: value1
+      - name: param3
+        type: string
+        description: param3 description
+        scope:
+        - PARAMETERS
+        possibleValues:
+        - value1
+        - value2
+        - value3
+        mandatoryIf:
+        - name: param1
+          value: value1
+        - name: param2
+          value: value2
 `
 	var r string
 	switch name {
@@ -96,7 +120,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		t.Log(string(files[resultFilePath]))
+		//t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
@@ -120,7 +144,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		t.Log(string(files[resultFilePath]))
+		//t.Log(string(files[resultFilePath]))
 	})
 }
 

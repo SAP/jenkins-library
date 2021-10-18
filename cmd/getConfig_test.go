@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func configOpenFileMock(name string) (io.ReadCloser, error) {
+func configOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
 	switch name {
 	case "TestAddCustomDefaults_default1":
@@ -45,18 +45,19 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Required flags", func(t *testing.T) {
-		exp := []string{"stepMetadata"}
+		exp := []string{}
 		assert.Equal(t, exp, gotReq, "required flags incorrect")
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"contextConfig", "output", "parametersJSON"}
+		exp := []string{"contextConfig", "output", "parametersJSON", "stageConfig", "stageConfigAcceptedParams", "stepMetadata", "stepName"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
 			configOptions.openFile = configOpenFileMock
+			configOptions.stepName = "githubCreateIssue"
 			cmd.Run(cmd, []string{})
 		})
 	})
@@ -79,7 +80,7 @@ func TestDefaultsAndFilters(t *testing.T) {
 		defaults, filters, err := defaultsAndFilters(&metadata, "stepName")
 
 		assert.Equal(t, 1, len(defaults), "getting defaults failed")
-		assert.Equal(t, 0, len(filters.All), "wrong number of filter values")
+		assert.Equal(t, 3, len(filters.All), "wrong number of filter values")
 		assert.NoError(t, err, "error occurred but none expected")
 	})
 
@@ -309,4 +310,26 @@ func TestPrepareOutputEnvironment(t *testing.T) {
 	assert.NoDirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path2", "param2"))
 	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement0", "influx0_0"))
 	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement1", "influx0_1"))
+}
+
+func TestResolveMetadata(t *testing.T) {
+
+	t.Run("Succes - stepName", func(t *testing.T) {
+		configOptions.stepName = "githubCreateIssue"
+		stepData, err := resolveMetadata()
+		assert.NoError(t, err)
+		assert.Equal(t, "githubCreateIssue", stepData.Metadata.Name)
+	})
+
+	t.Run("Error - wrong stepName", func(t *testing.T) {
+		configOptions.stepName = "notExisting"
+		_, err := resolveMetadata()
+		assert.EqualError(t, err, "could not retrieve by stepName notExisting")
+	})
+
+	t.Run("Error - missing input", func(t *testing.T) {
+		configOptions.stepName = ""
+		_, err := resolveMetadata()
+		assert.EqualError(t, err, "either one of stepMetadata or stepName parameter has to be passed")
+	})
 }
