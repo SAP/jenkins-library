@@ -119,7 +119,7 @@ spec:
         description: Defines the content of -ldflags option in a golang template format.
         longDescription: |
           The template allows using commonPipelineEnvironment parameters in the form `.CPE["<paramName>"]`
-          
+
           Examples
 
               * `-X github.com/SAP/jenkins-library/pkg/log.Version={{.CPE["artifactVersion"]}}`.
