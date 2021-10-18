@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -20,6 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/pkg/errors"
+	ignore "github.com/sabhiram/go-gitignore"
 )
 
 const (
@@ -72,8 +74,29 @@ func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commo
 	}
 }
 
-func isIgnored(find string) bool {
-	return strings.HasSuffix(find, "piper") || strings.Contains(find, ".pipeline")
+func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
+	if exclude != nil {
+		filtered := exclude.MatchesPath(find)
+
+		if filtered {
+			log.Entry().Debugf("%s matches exclude pattern, ignoring", find)
+			return true
+		}
+	}
+
+	if include != nil {
+		filtered := !include.MatchesPath(find)
+
+		if filtered {
+			log.Entry().Debugf("%s doesn't match include pattern, ignoring", find)
+			return true
+		} else {
+			log.Entry().Debugf("%s matches include pattern", find)
+			return false
+		}
+	}
+
+	return false
 }
 
 func isDir(path string) (bool, error) {
@@ -108,10 +131,30 @@ func isZip(path string) bool {
 	}
 }
 
-func copyProject(source, target string, utils cnbutils.BuildUtils) error {
+func copyFile(source, target string, utils cnbutils.BuildUtils) error {
+	targetDir := filepath.Dir(target)
+
+	exists, err := utils.DirExists(targetDir)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		log.Entry().Debugf("Creating directory %s", targetDir)
+		err = utils.MkdirAll(targetDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = utils.Copy(source, target)
+	return err
+}
+
+func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
 	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
 	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile) {
+		if !isIgnored(sourceFile, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
 			dir, err := isDir(sourceFile)
 			if err != nil {
@@ -127,21 +170,19 @@ func copyProject(source, target string, utils cnbutils.BuildUtils) error {
 				}
 			} else {
 				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				_, err = utils.Copy(sourceFile, target)
+				err = copyFile(sourceFile, target, utils)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
 					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
 				}
 			}
 
-		} else {
-			log.Entry().Debugf("Filtered out '%s'", sourceFile)
 		}
 	}
 	return nil
 }
 
-func copyFile(source, target string, utils cnbutils.BuildUtils) error {
+func extractZip(source, target string, utils cnbutils.BuildUtils) error {
 
 	if isZip(source) {
 		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
@@ -181,11 +222,44 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to check if dockerImage is a valid builder")
+		return errors.Wrap(err, "failed to check if dockerImage is a valid builder")
 	}
 	if !exists {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("the provided dockerImage is not a valid builder")
+	}
+
+	include := ignore.CompileIgnoreLines("**/*")
+	exclude := ignore.CompileIgnoreLines("piper", ".pipeline")
+
+	projDescExists, err := utils.FileExists(config.ProjectDescriptor)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to check if project descriptor exists")
+	}
+
+	if projDescExists {
+		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
+		}
+
+		if (config.Buildpacks == nil || len(config.Buildpacks) == 0) && len(descriptor.Buildpacks) > 0 {
+			config.Buildpacks = descriptor.Buildpacks
+		}
+
+		if (config.BuildEnvVars == nil || len(config.BuildEnvVars) == 0) && len(descriptor.EnvVars) > 0 {
+			config.BuildEnvVars = descriptor.EnvVars
+		}
+
+		if descriptor.Exclude != nil {
+			exclude = descriptor.Exclude
+		}
+
+		if descriptor.Include != nil {
+			include = descriptor.Include
+		}
 	}
 
 	platformPath := "/platform"
@@ -250,13 +324,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if dir {
-		err = copyProject(source, target, utils)
+		err = copyProject(source, target, include, exclude, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	} else {
-		err = copyFile(source, target, utils)
+		err = extractZip(source, target, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -302,10 +376,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, "/etc/ssl/certs/ca-certificates.crt")
+		caCertificates := "/tmp/ca-certificates.crt"
+		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy certificates")
+		}
+		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, caCertificates)
 		if err != nil {
 			return errors.Wrap(err, "failed to update certificates")
 		}
+		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
 		log.Entry().Info("skipping updation of certificates")
 	}
@@ -322,8 +402,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
+	targets := []string{
+		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+	}
+
+	for _, tag := range config.AdditionalTags {
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		if !piperutils.ContainsString(targets, target) {
+			targets = append(targets, target)
+		}
+	}
+
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable(exporterPath, fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
+	err = utils.RunExecutable(exporterPath, targets...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
