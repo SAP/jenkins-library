@@ -12,6 +12,8 @@ stages:
     abapSystemIsDevelopmentAllowed: 'false'
     abapSystemSizeOfPersistence: 4
     abapSystemSizeOfRuntime: 1
+    cfServiceKeyName: 'sap_com_0510'
+    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
 
   'Clone Repositories':
     ordinal: 30
