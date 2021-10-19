@@ -68,8 +68,8 @@ spec:
 
           Examples
 
-              * `-X github.com/SAP/jenkins-library/pkg/log.Version={{.CPE["artifactVersion"]}}`.
-              * `-X github.com/SAP/jenkins-library/pkg/log.LibraryRepository={{.CPE["custom/repositoryId"]}}`
+              * `-X github.com/SAP/jenkins-library/pkg/log.Version={{index .CPE "artifactVersion"}}`.
+              * `-X github.com/SAP/jenkins-library/pkg/log.LibraryRepository={{index .CPE "custom/repositoryId"}}`
         scope:
           - PARAMETERS
           - STAGES
