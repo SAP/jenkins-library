@@ -68,7 +68,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
-		if err := utils.RunExecutable("go", "get", "gotest.tools/gotestsum"); err != nil {
+		if err := utils.RunExecutable("go", "install", "gotest.tools/gotestsum"); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -159,7 +159,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	if config.CoverageFormat == "cobertura" {
 		// execute gocover-cobertura in order to create cobertura report
 		// install pre-requisites
-		if err := utils.RunExecutable("go", "get", "github.com/boumenot/gocover-cobertura"); err != nil {
+		if err := utils.RunExecutable("go", "install", "github.com/boumenot/gocover-cobertura"); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 
