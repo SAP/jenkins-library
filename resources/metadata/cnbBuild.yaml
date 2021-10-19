@@ -73,7 +73,7 @@ spec:
             param: container/registryUrl
       - name: buildpacks
         type: "[]string"
-        description: List of custom buildpacks to use in the form of '<hostname>/<repo>[:<tag>]'.
+        description: List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.
         scope:
           - PARAMETERS
           - STAGES
@@ -94,7 +94,12 @@ spec:
           - STEPS
       - name: projectDescriptor
         type: string
-        description: Path to the project.toml file (see https://buildpacks.io/docs/reference/config/project-descriptor/ for the reference). Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.
+        description: |
+          Path to the project.toml file.
+          See [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.
+          Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.
+
+          Note: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
         default: project.toml
         scope:
           - PARAMETERS
