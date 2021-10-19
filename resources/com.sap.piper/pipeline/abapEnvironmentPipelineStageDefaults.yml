@@ -16,12 +16,12 @@ stages:
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
 
   'Clone Repositories':
+    cfServiceKeyName: 'sap_com_0510'
     ordinal: 30
 
   'ATC':
     ordinal: 40
     cfServiceKeyName: 'sap_com_0510'
-    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
 
   'AUnit':
     ordinal: 50
