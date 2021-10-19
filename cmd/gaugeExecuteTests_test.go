@@ -16,7 +16,7 @@ type gaugeExecuteTestsMockUtils struct {
 
 func (utils gaugeExecuteTestsMockUtils) Getenv(key string) string {
 	if key == "HOME" {
-		return "/home/node"
+		return filepath.FromSlash("/home/node")
 	}
 	return ""
 }
@@ -30,7 +30,7 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		RunCommand:     "run",
 		TestOptions:    "specs",
 	}
-	gaugeBin := "home/node/.npm-global/bin/gauge"
+	gaugeBinRegEx := "home.node..npm-global.bin.gauge"
 
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
@@ -76,7 +76,7 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		badInstallConfig.LanguageRunner = "wrong"
 
 		mockUtils := gaugeExecuteTestsMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBin + " install wrong": errors.New("error installing runner")}},
+			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBinRegEx + " install wrong": errors.New("error installing runner")}},
 			FilesMock:      &mock.FilesMock{},
 		}
 
@@ -94,7 +94,7 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		t.Parallel()
 
 		mockUtils := gaugeExecuteTestsMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBin + " run specs": errors.New("error running gauge")}},
+			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBinRegEx + " run specs": errors.New("error running gauge")}},
 			FilesMock:      &mock.FilesMock{},
 		}
 
