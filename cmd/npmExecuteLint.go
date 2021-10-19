@@ -80,14 +80,28 @@ func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.Custo
 
 func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExecuteLintOptions) error {
 	packageJSONFiles := npmExecutor.FindPackageJSONFiles()
-	packagesWithCiLint, _ := npmExecutor.FindPackageJSONFilesWithScript(packageJSONFiles, "ci-lint")
+	packagesWithLintScript, _ := npmExecutor.FindPackageJSONFilesWithScript(packageJSONFiles, config.RunScript)
 
-	if len(packagesWithCiLint) > 0 {
-		err := runCiLint(npmExecutor, config.FailOnError)
+	if len(packagesWithLintScript) > 0 {
+		if config.Install {
+			err := npmExecutor.InstallAllDependencies(packagesWithLintScript)
+			if err != nil {
+				return err
+			}
+		}
+
+		err := runLintScript(npmExecutor, config.RunScript, config.FailOnError)
 		if err != nil {
 			return err
 		}
 	} else {
+		if config.Install {
+			err := npmExecutor.InstallAllDependencies(packageJSONFiles)
+			if err != nil {
+				return err
+			}
+		}
+
 		err := runDefaultLint(npmExecutor, utils, config.FailOnError)
 		if err != nil {
 			return err
@@ -96,14 +110,14 @@ func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExe
 	return nil
 }
 
-func runCiLint(npmExecutor npm.Executor, failOnError bool) error {
-	runScripts := []string{"ci-lint"}
+func runLintScript(npmExecutor npm.Executor, runScript string, failOnError bool) error {
+	runScripts := []string{runScript}
 	runOptions := []string{"--silent"}
 
 	err := npmExecutor.RunScriptsInAllPackages(runScripts, runOptions, nil, false, nil, nil)
 	if err != nil {
 		if failOnError {
-			return fmt.Errorf("ci-lint script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the cilint.xml file, if available, or the log above. ", err)
+			return fmt.Errorf(runScript+" script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the cilint.xml file, if available, or the log above. ", err)
 		}
 	}
 	return nil
