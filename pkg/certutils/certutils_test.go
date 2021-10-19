@@ -3,11 +3,11 @@ package certutils
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,17 +16,16 @@ const (
 )
 
 func TestCertificateUpdate(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte("testCert"))
-	}))
-	// Close the server when test finishes
-	defer server.Close()
-	certLinks := []string{server.URL, server.URL}
+	certLinks := []string{"https://test-link-1.com/cert.crt", "https://test-link-2.com/cert.crt"}
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(http.MethodGet, "https://test-link-1.com/cert.crt", httpmock.NewStringResponder(200, "testCert"))
+	httpmock.RegisterResponder(http.MethodGet, "https://test-link-2.com/cert.crt", httpmock.NewStringResponder(200, "testCert"))
+	client := &piperhttp.Client{}
+	client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
 	t.Run("success case", func(t *testing.T) {
-		client := &piperhttp.Client{}
 		fileUtils := &mock.FilesMock{}
-
 		fileUtils.AddFile(caCertsFile, []byte("initial cert\n"))
 
 		err := CertificateUpdate(certLinks, client, fileUtils, caCertsFile)
@@ -46,7 +45,6 @@ func TestCertificateUpdate(t *testing.T) {
 	})
 
 	t.Run("error case - write certs", func(t *testing.T) {
-		client := &piperhttp.Client{}
 		fileUtils := &mock.FilesMock{
 			FileWriteErrors: map[string]error{
 				caCertsFile: fmt.Errorf("write error"),
@@ -59,13 +57,13 @@ func TestCertificateUpdate(t *testing.T) {
 	})
 
 	t.Run("error case - get cert via http", func(t *testing.T) {
-		client := &piperhttp.Client{}
+		httpmock.RegisterResponder(http.MethodGet, "http://non-existing-url", httpmock.NewStringResponder(404, "not found"))
 
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile(caCertsFile, []byte("initial cert\n"))
 
 		err := CertificateUpdate([]string{"http://non-existing-url"}, client, fileUtils, caCertsFile)
-		assert.Contains(t, err.Error(), "failed to load certificate from url: HTTP GET request to http://non-existing-url failed: Get \"http://non-existing-url\": dial tcp: lookup non-existing-url")
+		assert.Contains(t, err.Error(), "failed to load certificate from url: request to http://non-existing-url returned with response 404")
 	})
 
 }
