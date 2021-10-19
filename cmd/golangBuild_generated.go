@@ -301,7 +301,7 @@ func golangBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "golang", Image: "golang:1"},
+				{Name: "golang", Image: "golang:1", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}

@@ -148,3 +148,6 @@ spec:
   containers:
     - name: golang
       image: golang:1
+      options:
+        - name: -u
+          value: "0"
