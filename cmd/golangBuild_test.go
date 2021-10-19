@@ -51,7 +51,7 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "gotest.tools/gotestsum"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
@@ -84,7 +84,7 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "gotest.tools/gotestsum"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
@@ -96,7 +96,7 @@ func TestRunGolangBuild(t *testing.T) {
 			RunTests: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go get gotest.tools/gotestsum": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install gotest.tools/gotestsum": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils)
@@ -259,7 +259,7 @@ func TestReportGolangTestCoverage(t *testing.T) {
 		err := reportGolangTestCoverage(&config, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "github.com/boumenot/gocover-cobertura"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", "github.com/boumenot/gocover-cobertura@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gocover-cobertura", utils.ExecMockRunner.Calls[1].Exec)
 		exists, err := utils.FileExists("cobertura-coverage.xml")
 		assert.NoError(t, err)
@@ -282,7 +282,7 @@ func TestReportGolangTestCoverage(t *testing.T) {
 		t.Parallel()
 		config := golangBuildOptions{CoverageFormat: "cobertura", ExcludeGeneratedFromCoverage: true}
 		utils := newGolangBuildTestsUtils()
-		utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{"go get github.com/boumenot/gocover-cobertura": fmt.Errorf("install error")}
+		utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{"go install github.com/boumenot/gocover-cobertura": fmt.Errorf("install error")}
 
 		err := reportGolangTestCoverage(&config, utils)
 		assert.EqualError(t, err, "failed to install pre-requisite: install error")
