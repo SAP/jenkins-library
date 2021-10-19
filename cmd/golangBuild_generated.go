@@ -16,26 +16,22 @@ import (
 )
 
 type golangBuildOptions struct {
-	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
-	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
-	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
-	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
-	BuildFlags                      []string `json:"buildFlags,omitempty"`
-	CgoEnabled                      bool     `json:"cgoEnabled,omitempty"`
-	CoverageFormat                  string   `json:"coverageFormat,omitempty" validate:"oneof=cobertura html"`
-	CreateBOM                       bool     `json:"createBOM,omitempty"`
-	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
-	ExcludeGeneratedFromCoverage    bool     `json:"excludeGeneratedFromCoverage,omitempty"`
-	LdflagsTemplate                 string   `json:"ldflagsTemplate,omitempty"`
-	Output                          string   `json:"output,omitempty"`
-	Packages                        []string `json:"packages,omitempty"`
-	Publish                         bool     `json:"publish,omitempty"`
-	ReportCoverage                  bool     `json:"reportCoverage,omitempty"`
-	RunTests                        bool     `json:"runTests,omitempty"`
-	RunIntegrationTests             bool     `json:"runIntegrationTests,omitempty"`
-	TargetArchitectures             []string `json:"targetArchitectures,omitempty"`
-	TestOptions                     []string `json:"testOptions,omitempty"`
-	TestResultFormat                string   `json:"testResultFormat,omitempty" validate:"oneof=junit standard"`
+	BuildFlags                   []string `json:"buildFlags,omitempty"`
+	CgoEnabled                   bool     `json:"cgoEnabled,omitempty"`
+	CoverageFormat               string   `json:"coverageFormat,omitempty" validate:"oneof=cobertura html"`
+	CreateBOM                    bool     `json:"createBOM,omitempty"`
+	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
+	ExcludeGeneratedFromCoverage bool     `json:"excludeGeneratedFromCoverage,omitempty"`
+	LdflagsTemplate              string   `json:"ldflagsTemplate,omitempty"`
+	Output                       string   `json:"output,omitempty"`
+	Packages                     []string `json:"packages,omitempty"`
+	Publish                      bool     `json:"publish,omitempty"`
+	ReportCoverage               bool     `json:"reportCoverage,omitempty"`
+	RunTests                     bool     `json:"runTests,omitempty"`
+	RunIntegrationTests          bool     `json:"runIntegrationTests,omitempty"`
+	TargetArchitectures          []string `json:"targetArchitectures,omitempty"`
+	TestOptions                  []string `json:"testOptions,omitempty"`
+	TestResultFormat             string   `json:"testResultFormat,omitempty" validate:"oneof=junit standard"`
 }
 
 // GolangBuildCommand This step will execute a golang build.
@@ -72,7 +68,6 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.AltDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -128,10 +123,6 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 }
 
 func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryID, "altDeploymentRepositoryID", os.Getenv("PIPER_altDeploymentRepositoryID"), "Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag")
-	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryPassword, "altDeploymentRepositoryPassword", os.Getenv("PIPER_altDeploymentRepositoryPassword"), "Password for the alternative deployment repository to which the project artifacts should be deployed.")
-	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which the project artifacts should be deployed.")
-	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags to be used.")
 	cmd.Flags().BoolVar(&stepConfig.CgoEnabled, "cgoEnabled", false, "If active: enables the creation of Go packages that call C code.")
 	cmd.Flags().StringVar(&stepConfig.CoverageFormat, "coverageFormat", `html`, "Defines the format of the coverage repository.")
@@ -162,77 +153,7 @@ func golangBuildMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "altDeploymentRepositoryPasswordId", Description: "Jenkins credentials ID containing the artifact deployment repository password.", Type: "jenkins"},
-				},
 				Parameters: []config.StepParameters{
-					{
-						Name: "altDeploymentRepositoryID",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryId",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryID"),
-					},
-					{
-						Name: "altDeploymentRepositoryPassword",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryPassword",
-							},
-
-							{
-								Name: "altDeploymentRepositoryPasswordId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "altDeploymentRepositoryPasswordFileVaultSecretName",
-								Type:    "vaultSecretFile",
-								Default: "alt-deployment-repository-passowrd",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryPassword"),
-					},
-					{
-						Name: "altDeploymentRepositoryUrl",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUrl",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryUrl"),
-					},
-					{
-						Name: "altDeploymentRepositoryUser",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUsername",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryUser"),
-					},
 					{
 						Name:        "buildFlags",
 						ResourceRef: []config.ResourceReference{},

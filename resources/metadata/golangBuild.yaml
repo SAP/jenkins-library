@@ -10,61 +10,7 @@ metadata:
     If the build is successful the resulting artifact can be uploaded to e.g. a binary repository automatically.
 spec:
   inputs:
-    secrets:
-      - name: altDeploymentRepositoryPasswordId
-        description: Jenkins credentials ID containing the artifact deployment repository password.
-        type: jenkins
     params:
-      - name: altDeploymentRepositoryID
-        type: string
-        description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/repositoryId
-      - name: altDeploymentRepositoryPassword
-        type: string
-        description: Password for the alternative deployment repository to which the project artifacts should be deployed.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/repositoryPassword
-          - name: altDeploymentRepositoryPasswordId
-            type: secret
-          - type: vaultSecretFile
-            name: altDeploymentRepositoryPasswordFileVaultSecretName
-            default: alt-deployment-repository-passowrd
-      - name: altDeploymentRepositoryUrl
-        type: string
-        description: Url for the alternative deployment repository to which the project artifacts should be deployed.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/repositoryUrl
-      - name: altDeploymentRepositoryUser
-        type: string
-        description: User for the alternative deployment repository to which the project artifacts should be deployed.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/repositoryUsername
       - name: buildFlags
         type: "[]string"
         description: Defines list of build flags to be used.
