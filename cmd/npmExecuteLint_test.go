@@ -185,15 +185,10 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.Install = true
 
-		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}}}
+		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}, Install: true}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
-		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(lintUtils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, lintUtils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--slient"}}, lintUtils.execRunner.Calls[1])
-			}
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("Call with default and install", func(t *testing.T) {
@@ -207,7 +202,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.Install = true
 
-		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}}}
+		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}, Install: true}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
 		assert.NoError(t, err)
@@ -227,11 +222,6 @@ func TestNpmExecuteLint(t *testing.T) {
 		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"lint:ci"}, RunOptions: []string{"--silent"}}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
-		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(lintUtils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, lintUtils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "lint:ci", "--slient"}}, lintUtils.execRunner.Calls[1])
-			}
-		}
+		assert.NoError(t, err)
 	})
 }
