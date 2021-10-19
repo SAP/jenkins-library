@@ -50,6 +50,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	commonPipelineEnvironment.custom.createBom = config.CreateBOM
+	commonPipelineEnvironment.custom.logSuccessfulMavenTransfers = config.LogSuccessfulMavenTransfers
 
 	if config.CreateBOM {
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")

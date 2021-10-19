@@ -183,6 +183,8 @@ spec:
         params:
           - name: custom/createBom
             type: bool
+          - name: custom/logSuccessfulMavenTransfers
+            type: bool
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

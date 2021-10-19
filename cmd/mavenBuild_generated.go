@@ -38,7 +38,8 @@ type mavenBuildOptions struct {
 
 type mavenBuildCommonPipelineEnvironment struct {
 	custom struct {
-		createBom bool
+		createBom                   bool
+		logSuccessfulMavenTransfers bool
 	}
 }
 
@@ -49,6 +50,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		value    interface{}
 	}{
 		{category: "custom", name: "createBom", value: p.custom.createBom},
+		{category: "custom", name: "logSuccessfulMavenTransfers", value: p.custom.logSuccessfulMavenTransfers},
 	}
 
 	errCount := 0
@@ -378,6 +380,7 @@ func mavenBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"Name": "custom/createBom"},
+							{"Name": "custom/logSuccessfulMavenTransfers"},
 						},
 					},
 				},
