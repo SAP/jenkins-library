@@ -1,6 +1,7 @@
 package protecode
 
 import (
+	"io"
 	"strconv"
 	"testing"
 
@@ -8,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -373,7 +373,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 		} else {
 			reader = req.Body
 		}
-		
+
 		defer req.Body.Close()
 		passedFileContents, err = ioutil.ReadAll(reader)
 		if err != nil {
