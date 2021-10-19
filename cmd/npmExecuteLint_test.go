@@ -241,6 +241,6 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
-		assert.EqualError(t, err, "ci-lint script execution failed with error: runScript is not allowed to be empty!")
+		assert.EqualError(t, err, "runScript is not allowed to be empty!")
 	})
 }
