@@ -224,4 +224,23 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
+
+	t.Run("Call with empty runScript and failOnError", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
+		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm run ci-lint --silent": errors.New("exit 1")}}
+
+		config := defaultConfig
+		config.FailOnError = true
+		config.RunScript = ""
+
+		npmUtils := newNpmMockUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.EqualError(t, err, "ci-lint script execution failed with error: runScript is not allowed to be empty!")
+	})
 }
