@@ -137,7 +137,6 @@ spec:
           - STAGES
           - STEPS
         default: ""
-        mandatory: true
       - name: token
         aliases:
           - name: githubToken

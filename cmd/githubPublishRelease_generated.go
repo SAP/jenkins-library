@@ -149,7 +149,6 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("serverUrl")
-	cmd.MarkFlagRequired("tagPrefix")
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("uploadUrl")
 	cmd.MarkFlagRequired("version")
@@ -292,7 +291,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     ``,
 					},
