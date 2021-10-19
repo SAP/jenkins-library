@@ -65,9 +65,9 @@ spec:
         type: "[]string"
         default:
           - signature
-        #possibleValues:
-        #  - signature
-        #  - source
+        # possibleValues:
+        #   - signature
+        #   - source
         scope:
           - PARAMETERS
           - STAGES
@@ -146,13 +146,13 @@ spec:
         type: "[]string"
         default:
           - BLOCKER
-        #possibleValues:
-        #  - ALL
-        #  - BLOCKER
-        #  - CRITICAL
-        #  - MAJOR
-        #  - MINOR
-        #  - NONE
+        # possibleValues:
+        #   - ALL
+        #   - BLOCKER
+        #   - CRITICAL
+        #   - MAJOR
+        #   - MINOR
+        #   - NONE
         scope:
           - PARAMETERS
           - STAGES

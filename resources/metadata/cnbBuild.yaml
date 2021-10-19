@@ -113,10 +113,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
