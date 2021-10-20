@@ -1,11 +1,14 @@
 package piperutils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileExists(t *testing.T) {
@@ -146,5 +149,144 @@ func TestExcludeFiles(t *testing.T) {
 		filtered, err := ExcludeFiles(files, []string{"**/a", "**/b"})
 		assert.NoError(t, err)
 		assert.Len(t, filtered, 0)
+	})
+}
+
+func TestUntar(t *testing.T) {
+	runInTempDir(t, "untar a file at level 0", "dir", func(t *testing.T) {
+		//Create a temp file
+		file, err := ioutil.TempFile(".", "testFile")
+		filename := file.Name()
+		assert.NoError(t, err)
+		//Create an archive
+		cmd := exec.Command("tar", "-czf", "test.tgz", filename)
+		if err := cmd.Run(); err != nil {
+			t.Fatal("Failed to create dummy tar archive")
+		}
+		result, err := FileExists("test.tgz")
+		assert.NoError(t, err)
+		assert.True(t, result)
+		//Remove the temp file
+		if err := file.Close(); err != nil {
+			t.Fatal("Failed to close temp file")
+		}
+		os.Remove(filename)
+		result, err = FileExists(filename)
+		assert.NoError(t, err)
+		assert.False(t, result)
+		//Untar
+		err = Untar("test.tgz", ".", 0)
+		//Check presence of file
+		result, err = FileExists(filename)
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	runInTempDir(t, "untar a file in a folder at level 0", "dir", func(t *testing.T) {
+		//Create a temp dir
+		err := os.Mkdir("test", 0777)
+		if err != nil {
+			t.Fatal("failed to create test dir in temporary dir")
+		}
+		//Create a temp file
+		file, err := ioutil.TempFile("./test", "testFile")
+		filename := file.Name()
+		assert.NoError(t, err)
+		//Create an archive
+		cmd := exec.Command("tar", "-czf", "test.tgz", filename)
+		if err := cmd.Run(); err != nil {
+			t.Fatal("Failed to create dummy tar archive")
+		}
+		result, err := FileExists("test.tgz")
+		assert.NoError(t, err)
+		assert.True(t, result)
+		//Remove the temp file
+		if err := file.Close(); err != nil {
+			t.Fatal("Failed to close temp file")
+		}
+		os.Remove(filename)
+		result, err = FileExists(filename)
+		assert.NoError(t, err)
+		assert.False(t, result)
+		//Test dir has been removed
+		os.Remove("test")
+		_, err = os.Stat("test")
+		assert.True(t, os.IsNotExist(err))
+		//Untar
+		err = Untar("test.tgz", ".", 0)
+		//Check presence of file: filename has the whole path so should be true
+		result, err = FileExists(filename)
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	runInTempDir(t, "untar a file at level 1", "dir", func(t *testing.T) {
+		//Create a temp dir
+		err := os.Mkdir("test", 0777)
+		if err != nil {
+			t.Fatal("failed to create test dir in temporary dir")
+		}
+		//Create a temp file
+		file, err := ioutil.TempFile("./test", "testFile")
+		filename := file.Name()
+		assert.NoError(t, err)
+		//Create an archive
+		cmd := exec.Command("tar", "-czf", "test.tgz", filename)
+		if err := cmd.Run(); err != nil {
+			t.Fatal("Failed to create dummy tar archive")
+		}
+		result, err := FileExists("test.tgz")
+		assert.NoError(t, err)
+		assert.True(t, result)
+		//Remove the temp file
+		if err := file.Close(); err != nil {
+			t.Fatal("Failed to close temp file")
+		}
+		os.Remove(filename)
+		result, err = FileExists(filename)
+		assert.NoError(t, err)
+		assert.False(t, result)
+		//Test dir has been removed
+		os.Remove("test")
+		_, err = os.Stat("test")
+		assert.True(t, os.IsNotExist(err))
+		//Untar
+		err = Untar("test.tgz", ".", 1)
+		//Check presence of file: filename has the whole path so should be false
+		result, err = FileExists(filename)
+		assert.NoError(t, err)
+		assert.False(t, result)
+		//Split filename, retry
+		result, err = FileExists(strings.Split(filename, string(os.PathSeparator))[1])
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	runInTempDir(t, "untar a non-tar file: error", "dir", func(t *testing.T) {
+		//Create a temp file
+		file, err := ioutil.TempFile(".", "testFile")
+		assert.NoError(t, err)
+		//Untar
+		err = Untar(file.Name(), ".", 0)
+		assert.EqualError(t, err, "requires gzip-compressed body: EOF")
+	})
+
+	runInTempDir(t, "untar a level 0 file at level 1: error", "dir", func(t *testing.T) {
+		//Create a temp file
+		file, err := ioutil.TempFile(".", "testFile")
+		filename := file.Name()
+		assert.NoError(t, err)
+		//Create an archive
+		cmd := exec.Command("tar", "-czf", "test.tgz", filename)
+		if err := cmd.Run(); err != nil {
+			t.Fatal("Failed to create dummy tar archive")
+		}
+		result, err := FileExists("test.tgz")
+		assert.NoError(t, err)
+		assert.True(t, result)
+		//Untar
+		err = Untar("test.tgz", ".", 1)
+		//Check presence of file
+		assert.EqualError(t, err, "files \""+filename+"\" in tarball archive not under level 1")
 	})
 }
