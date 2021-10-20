@@ -185,6 +185,10 @@ spec:
             type: bool
           - name: custom/logSuccessfulMavenTransfers
             type: bool
+          - name: custom/publish
+            type: bool
+          - name: custom/globalSettingsFile
+            type: string
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

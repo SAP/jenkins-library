@@ -40,6 +40,8 @@ type mavenBuildCommonPipelineEnvironment struct {
 	custom struct {
 		createBom                   bool
 		logSuccessfulMavenTransfers bool
+		publish                     bool
+		globalSettingsFile          string
 	}
 }
 
@@ -51,6 +53,8 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 	}{
 		{category: "custom", name: "createBom", value: p.custom.createBom},
 		{category: "custom", name: "logSuccessfulMavenTransfers", value: p.custom.logSuccessfulMavenTransfers},
+		{category: "custom", name: "publish", value: p.custom.publish},
+		{category: "custom", name: "globalSettingsFile", value: p.custom.globalSettingsFile},
 	}
 
 	errCount := 0
@@ -381,6 +385,8 @@ func mavenBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "custom/createBom"},
 							{"Name": "custom/logSuccessfulMavenTransfers"},
+							{"Name": "custom/publish"},
+							{"Name": "custom/globalSettingsFile"},
 						},
 					},
 				},
