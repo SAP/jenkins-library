@@ -377,12 +377,13 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 	//Write Results
 	err = ioutil.WriteFile(aunitResultFileName, body, 0644)
 	if err == nil {
+		log.Entry().Infof("Writing %s file was successful.", aunitResultFileName)
 		//Return before processing empty results --> XML can still be written with response body
 		if len(parsedXML.Testsuite.Testcase) == 0 {
-			log.Entry().Info("There were no AUnit findings from this run")
+			log.Entry().Infof("There were no AUnit findings from this run. The response has been save in the %s file", aunitResultFileName)
 			return nil
 		}
-		log.Entry().Infof("Writing %s file was successful. Please find the results from the respective AUnit run in the %s file or in below logs", aunitResultFileName, aunitResultFileName)
+		log.Entry().Infof("Please find the results from the respective AUnit run in the %s file or in below logs", aunitResultFileName)
 		//Logging of findings
 		log.Entry().Infof(`Here are the results for the AUnit test run '%s' executed by User %s on System %s in Client %s at %s. The AUnit run took %s seconds and contains %s tests with %s failures, %s errors, %s skipped and %s assert findings`, parsedXML.Title, parsedXML.System, parsedXML.ExecutedBy, parsedXML.Client, parsedXML.Timestamp, parsedXML.Time, parsedXML.Tests, parsedXML.Failures, parsedXML.Errors, parsedXML.Skipped, parsedXML.Asserts)
 		for _, s := range parsedXML.Testsuite.Testcase {
