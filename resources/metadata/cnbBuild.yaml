@@ -87,7 +87,9 @@ spec:
           - STEPS
       - name: path
         type: string
-        description: The path should either point to a directory with your sources or an artifact in zip format.
+        description: |
+          The path should either point to a directory with your sources or an artifact in zip format.
+          This property determines the input to the buildpack.
         scope:
           - PARAMETERS
           - STAGES
@@ -111,7 +113,6 @@ spec:
         scope:
           - PARAMETERS
         secret: true
-        mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/dockerConfigJSON
@@ -129,7 +130,7 @@ spec:
           - STEPS
       - name: additionalTags
         type: "[]string"
-        description: List of tags which will be additionally pushed to the registry, e.g. "latest".
+        description: List of tags which will pushed to the registry (additionally to the provided `containerImageTag`), e.g. "latest".
         scope:
           - PARAMETERS
           - STAGES
