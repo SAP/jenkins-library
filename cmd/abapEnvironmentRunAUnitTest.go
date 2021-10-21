@@ -384,7 +384,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	log.Entry().Infof("Writing %s file was successful.", aunitResultFileName)
-	//Return before processing empty results --> XML can still be written with response body
+	//Return before processing empty AUnit results --> XML can still be written with response body
 	if len(parsedXML.Testsuite.Testcase) == 0 {
 		log.Entry().Infof("There were no AUnit findings from this run. The response has been saved in the %s file", aunitResultFileName)
 	} else {
