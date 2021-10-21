@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ type sonarExecuteScanOptions struct {
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
-	VersioningModel           string   `json:"versioningModel,omitempty"`
+	VersioningModel           string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
 	Version                   string   `json:"version,omitempty"`
 	CustomScanVersion         string   `json:"customScanVersion,omitempty"`
 	ProjectKey                string   `json:"projectKey,omitempty"`
@@ -36,7 +37,7 @@ type sonarExecuteScanOptions struct {
 	ChangeID                  string   `json:"changeId,omitempty"`
 	ChangeBranch              string   `json:"changeBranch,omitempty"`
 	ChangeTarget              string   `json:"changeTarget,omitempty"`
-	PullRequestProvider       string   `json:"pullRequestProvider,omitempty"`
+	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"oneof=GitHub"`
 	Owner                     string   `json:"owner,omitempty"`
 	Repository                string   `json:"repository,omitempty"`
 	GithubToken               string   `json:"githubToken,omitempty"`
@@ -136,6 +137,15 @@ func SonarExecuteScanCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -241,9 +251,9 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/sonar", "$(vaultBasePath)/$(vaultPipelineName)/sonar", "$(vaultBasePath)/GROUP-SECRETS/sonar"},
-								Type:  "vaultSecret",
+								Name:    "sonarSecretName",
+								Type:    "vaultSecret",
+								Default: "sonar",
 							},
 
 							{
@@ -452,9 +462,9 @@ func sonarExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
-								Type:  "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},

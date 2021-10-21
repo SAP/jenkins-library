@@ -24,6 +24,15 @@ spec:
         type: string
         default: https://api.github.com
         mandatory: true
+      - name: assignees
+        description: Defines the assignees for the Issue.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
+        mandatory: false
       - name: body
         description: Defines the content of the issue, e.g. using markdown syntax.
         scope:
@@ -89,7 +98,5 @@ spec:
           - name: githubTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/github
-              - $(vaultBasePath)/$(vaultPipelineName)/github
-              - $(vaultBasePath)/GROUP-SECRETS/github
+            default: github
+            name: githubVaultSecretName

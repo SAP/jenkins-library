@@ -13,25 +13,37 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type mtaBuildOptions struct {
-	MtarName            string `json:"mtarName,omitempty"`
-	Extensions          string `json:"extensions,omitempty"`
-	Platform            string `json:"platform,omitempty"`
-	ApplicationName     string `json:"applicationName,omitempty"`
-	Source              string `json:"source,omitempty"`
-	Target              string `json:"target,omitempty"`
-	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
-	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
-	M2Path              string `json:"m2Path,omitempty"`
-	InstallArtifacts    bool   `json:"installArtifacts,omitempty"`
+	MtarName                        string   `json:"mtarName,omitempty"`
+	MtarGroup                       string   `json:"mtarGroup,omitempty"`
+	Version                         string   `json:"version,omitempty"`
+	Extensions                      string   `json:"extensions,omitempty"`
+	Jobs                            int      `json:"jobs,omitempty"`
+	Platform                        string   `json:"platform,omitempty" validate:"oneof=CF NEO XSA"`
+	ApplicationName                 string   `json:"applicationName,omitempty"`
+	Source                          string   `json:"source,omitempty"`
+	Target                          string   `json:"target,omitempty"`
+	DefaultNpmRegistry              string   `json:"defaultNpmRegistry,omitempty"`
+	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
+	M2Path                          string   `json:"m2Path,omitempty"`
+	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
+	MtaDeploymentRepositoryPassword string   `json:"mtaDeploymentRepositoryPassword,omitempty"`
+	MtaDeploymentRepositoryUser     string   `json:"mtaDeploymentRepositoryUser,omitempty"`
+	MtaDeploymentRepositoryURL      string   `json:"mtaDeploymentRepositoryUrl,omitempty"`
+	Publish                         bool     `json:"publish,omitempty"`
+	Profiles                        []string `json:"profiles,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
 	mtarFilePath string
+	custom       struct {
+		mtarPublishedURL string
+	}
 }
 
 func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
@@ -41,6 +53,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		value    interface{}
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
+		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
 	}
 
 	errCount := 0
@@ -86,6 +99,7 @@ func MtaBuildCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.MtaDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -95,6 +109,15 @@ func MtaBuildCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -134,7 +157,10 @@ func MtaBuildCommand() *cobra.Command {
 
 func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtarName, "mtarName", os.Getenv("PIPER_mtarName"), "The name of the generated mtar file including its extension.")
+	cmd.Flags().StringVar(&stepConfig.MtarGroup, "mtarGroup", os.Getenv("PIPER_mtarGroup"), "The group to which the mtar artifact will be uploaded. Required when publish is True.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Version of the mtar artifact")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "The path to the extension descriptor file.")
+	cmd.Flags().IntVar(&stepConfig.Jobs, "jobs", 0, "Configures the number of Make jobs that can run simultaneously. Maximum value allowed is 8")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `CF`, "The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
 	cmd.Flags().StringVar(&stepConfig.Source, "source", `./`, "The path to the MTA project.")
@@ -144,6 +170,11 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, for npm packages this step will install all dependencies including dev dependencies. For maven it will install all artifacts to the local maven repository. Note: This happens _after_ mta build was done. The default mta build tool does not install dev-dependencies as part of the process. If you require dev-dependencies for building the mta, you will need to use a [custom builder](https://sap.github.io/cloud-mta-build-tool/configuration/#configuring-the-custom-builder)")
+	cmd.Flags().StringVar(&stepConfig.MtaDeploymentRepositoryPassword, "mtaDeploymentRepositoryPassword", os.Getenv("PIPER_mtaDeploymentRepositoryPassword"), "Password for the alternative deployment repository to which mtar artifacts will be publised")
+	cmd.Flags().StringVar(&stepConfig.MtaDeploymentRepositoryUser, "mtaDeploymentRepositoryUser", os.Getenv("PIPER_mtaDeploymentRepositoryUser"), "User for the alternative deployment repository to which which mtar artifacts will be publised")
+	cmd.Flags().StringVar(&stepConfig.MtaDeploymentRepositoryURL, "mtaDeploymentRepositoryUrl", os.Getenv("PIPER_mtaDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which mtar artifacts will be publised")
+	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml")
 
 }
 
@@ -168,6 +199,29 @@ func mtaBuildMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_mtarName"),
 					},
 					{
+						Name:        "mtarGroup",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_mtarGroup"),
+					},
+					{
+						Name: "version",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_version"),
+					},
+					{
 						Name:        "extensions",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -175,6 +229,15 @@ func mtaBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "extension"}},
 						Default:     os.Getenv("PIPER_extensions"),
+					},
+					{
+						Name:        "jobs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "jobs"}},
+						Default:     0,
 					},
 					{
 						Name:        "platform",
@@ -257,6 +320,77 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name: "mtaDeploymentRepositoryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
+
+							{
+								Name: "mtaDeploymentRepositoryPasswordId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "mtaDeploymentRepositoryPasswordFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "mta-deployment-repository-passowrd",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaDeploymentRepositoryPassword"),
+					},
+					{
+						Name: "mtaDeploymentRepositoryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaDeploymentRepositoryUser"),
+					},
+					{
+						Name: "mtaDeploymentRepositoryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaDeploymentRepositoryUrl"),
+					},
+					{
+						Name:        "publish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "mta/publish"}},
+						Default:     false,
+					},
+					{
+						Name:        "profiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -269,6 +403,7 @@ func mtaBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"Name": "mtarFilePath"},
+							{"Name": "custom/mtarPublishedUrl"},
 						},
 					},
 				},

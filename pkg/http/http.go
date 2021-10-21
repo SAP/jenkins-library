@@ -274,7 +274,7 @@ func (c *Client) initialize() *http.Client {
 			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
 		}
 	} else {
-		log.Entry().Info("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
+		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
 	}
 
 	var httpClient *http.Client

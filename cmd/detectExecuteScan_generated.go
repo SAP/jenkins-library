@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ type detectExecuteScanOptions struct {
 	ServerURL                  string   `json:"serverUrl,omitempty"`
 	Groups                     []string `json:"groups,omitempty"`
 	FailOn                     []string `json:"failOn,omitempty"`
-	VersioningModel            string   `json:"versioningModel,omitempty"`
+	VersioningModel            string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
 	Version                    string   `json:"version,omitempty"`
 	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
 	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
@@ -136,6 +137,15 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -229,9 +239,9 @@ func detectExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/detect", "$(vaultBasePath)/$(vaultPipelineName)/detect", "$(vaultBasePath)/GROUP-SECRETS/detect"},
-								Type:  "vaultSecret",
+								Name:    "detectVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "detect",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

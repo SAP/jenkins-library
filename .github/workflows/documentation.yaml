@@ -59,7 +59,7 @@ jobs:
           docker run \
             -u $(id -u):$(id -g) \
             -v ${GITHUB_WORKSPACE}/documentation:/docs \
-            squidfunk/mkdocs-material:3.0.4 build --clean --strict
+            squidfunk/mkdocs-material:latest build --clean --strict
 
       - name: Provide Docs Metadata
         run: |
