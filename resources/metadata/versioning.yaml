@@ -84,7 +84,7 @@ spec:
     params:
       - name: buildTool
         type: string
-        description: Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.
+        description: Defines the tool which is used for building the artifact.
         mandatory: true
         scope:
           - GENERAL
@@ -101,6 +101,7 @@ spec:
           - npm
           - pip
           - sbt
+          - yarn
       - name: commitUserName
         aliases:
           - name: gitUserName

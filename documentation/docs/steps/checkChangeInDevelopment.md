@@ -2,9 +2,34 @@
 
 ## ${docGenDescription}
 
-## Prerequisites
+## Migration Guide
 
-* No prerequisites
+**Note:** This step has been deprecated. Use the new step [isChangeInDevelopment](isChangeInDevelopment.md) instead.
+
+Adjust your parameters to the naming convention of the new step.
+Adjust the unsupported parameters as indicated in the table below:
+
+| Unsupported Parameter | New Parameter |
+| ------------- | ------------- |
+| changeManagement/type | This parameter has been removed. `SOLMAN` is the only backend type supported. |
+| changeManagement/`<type>`/docker/envVars | `dockerEnvVars` |
+| changeManagement/`<type>`/docker/image | `dockerImage` |
+| changeManagement/`<type>`/docker/options | `dockerOptions` |
+| changeManagement/`<type>`/docker/pullImage | `dockerPullImage` |
+| changeManagement/git/format | This parameter has been removed. Make sure that the IDS of your change document and transport request are part of the Git commit message body. |
+
+Your config.yml file should look as follows:
+
+```yaml
+general:
+
+# new naming convention
+steps:
+  isChangeInDevelopment:
+    dockerImage: 'ppiper/cm-client'
+```
+
+**Note:** The new step does not comprise the retrieval of the change document ID from the Git repository anymore. Use the step [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) instead.
 
 ## ${docGenParameters}
 
