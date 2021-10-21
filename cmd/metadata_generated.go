@@ -76,6 +76,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"pipelineCreateScanSummary":                 pipelineCreateScanSummaryMetadata(),
 		"protecodeExecuteScan":                      protecodeExecuteScanMetadata(),
 		"containerSaveImage":                        containerSaveImageMetadata(),
+		"shellExecute":                              shellExecuteMetadata(),
 		"sonarExecuteScan":                          sonarExecuteScanMetadata(),
 		"terraformExecute":                          terraformExecuteMetadata(),
 		"transportRequestDocIDFromGit":              transportRequestDocIDFromGitMetadata(),
