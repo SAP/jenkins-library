@@ -82,7 +82,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil, gcsClient)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil, gcsClient, GeneralConfig.GCSBucketId)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}

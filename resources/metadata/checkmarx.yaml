@@ -19,9 +19,6 @@ spec:
       - name: checkmarxCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.
         type: jenkins
-      - name: gcpFileCredentialsId
-        description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform."
-        type: jenkins
     resources:
       - name: checkmarx
         type: stash

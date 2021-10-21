@@ -3,14 +3,12 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -225,23 +223,6 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.RegisterHook(logCollector)
 			}
 
-			if GeneralConfig.UploadReportsToGCS {
-				gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
-				if gcpJsonKeyFilePath == "" {
-					return errors.New("GCP JSON Key file Path must not be empty")
-				}
-				var err error
-				envVars := []gcs.EnvVar{
-					{
-						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-						Value: gcpJsonKeyFilePath,
-					},
-				}
-				if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, GeneralConfig.GCSBucketId, GeneralConfig.GCSTargetFolder); err != nil {
-					return err
-				}
-			}
-
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -321,7 +302,6 @@ func checkmarxExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
-					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "checkmarx", Type: "stash"},

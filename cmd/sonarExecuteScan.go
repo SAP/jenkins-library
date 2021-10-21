@@ -198,7 +198,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		},
 	}
 
-	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links, gcsClient)
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links, gcsClient, GeneralConfig.GCSBucketId)
 
 	if len(config.Token) == 0 {
 		log.Entry().Warn("no measurements are fetched due to missing credentials")

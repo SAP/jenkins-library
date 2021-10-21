@@ -21,7 +21,7 @@ func TestPersistReportAndLinks(t *testing.T) {
 
 		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
 		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
-		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links, nil)
+		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links, nil, "")
 
 		reportsJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_reports.json")
 		assert.FileExists(t, reportsJSONPath)
@@ -70,7 +70,7 @@ func TestPersistReportAndLinks(t *testing.T) {
 		require.Empty(t, links)
 
 		// test
-		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links, nil)
+		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links, nil, "bucketID")
 		// assert
 		for _, reportFile := range []string{reportsJSONPath, linksJSONPath} {
 			assert.FileExists(t, reportFile)
@@ -89,11 +89,16 @@ func TestPersistReportAndLinks(t *testing.T) {
 		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
 		links := []Path{}
 
-		mockedGCSClient := &mocks.ClientInterface{}
+		mockedGCSClient := &mocks.Client{}
+		bucketID := "test-bucket"
 		for _, report := range reports {
-			mockedGCSClient.Mock.On("UploadFile", report.Target).Return(func(sourcePath string) error { return nil }).Once()
+			mockedGCSClient.Mock.On("UploadFile", bucketID, report.Target, report.Target).Return(
+				func(bucketID string, sourcePath string, targetPath string) error {
+					return nil
+				},
+			).Once()
 		}
-		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links, mockedGCSClient)
+		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links, mockedGCSClient, bucketID)
 		mockedGCSClient.Mock.AssertNumberOfCalls(t, "UploadFile", len(reports))
 		mockedGCSClient.Mock.AssertExpectations(t)
 	})

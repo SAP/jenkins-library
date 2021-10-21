@@ -294,7 +294,7 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	}
 	scanReport := createVulnerabilityReport(config, vulns, influx)
 	paths, err := writeVulnerabilityReports(scanReport, config, utils)
-	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil, gcsClient)
+	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil, gcsClient, GeneralConfig.GCSBucketId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}

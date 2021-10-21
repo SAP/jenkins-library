@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var gcsClient gcs.ClientInterface
+var gcsClient gcs.Client
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {

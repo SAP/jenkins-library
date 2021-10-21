@@ -241,7 +241,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		reports = append(reports, StepResults.Path{Target: toolRecordFileName})
 	}
 
-	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links, gcsClient)
+	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links, gcsClient, GeneralConfig.GCSBucketId)
 
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
 		log.SetErrorCategory(log.ErrorCompliance)

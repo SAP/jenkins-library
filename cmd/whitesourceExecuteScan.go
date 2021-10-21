@@ -203,7 +203,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	log.Entry().Info("-----------------------------------------------------")
 
 	paths, err := checkAndReportScanResults(config, scan, utils, sys, influx)
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil, gcsClient)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil, gcsClient, GeneralConfig.GCSBucketId)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
@@ -846,7 +846,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil, gcsClient)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil, gcsClient, GeneralConfig.GCSBucketId)
 	return nil
 }
 
@@ -908,7 +908,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 		return errors.Wrapf(err, "failed to write file: %s", fileName)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil, gcsClient)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil, gcsClient, GeneralConfig.GCSBucketId)
 	return nil
 }
 

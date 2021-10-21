@@ -88,7 +88,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 
 	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil, gcsClient)
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil, gcsClient, GeneralConfig.GCSBucketId)
 
 	var reposBackToCPE []abaputils.Repository
 	for _, b := range builds {

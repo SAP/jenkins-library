@@ -303,7 +303,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-
   outputs:
     resources:
       - name: influx
