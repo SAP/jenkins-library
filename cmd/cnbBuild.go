@@ -372,8 +372,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
 	containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-	commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-	commonPipelineEnvironment.container.imageNameTag = containerImage
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
@@ -402,9 +400,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
+	containerImageNameTag := fmt.Sprintf("%s:%s", containerImage, containerImageTag)
 	targets := []string{
-		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+		containerImageNameTag,
 	}
+
+	commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+	commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
