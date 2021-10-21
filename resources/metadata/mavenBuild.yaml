@@ -189,6 +189,8 @@ spec:
             type: bool
           - name: custom/globalSettingsFile
             type: string
+          - name: custom/profiles
+            type: string
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

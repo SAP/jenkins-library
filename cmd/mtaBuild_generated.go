@@ -41,7 +41,11 @@ type mtaBuildOptions struct {
 type mtaBuildCommonPipelineEnvironment struct {
 	mtarFilePath string
 	custom       struct {
-		mtarPublishedURL string
+		mtarPublishedURL   string
+		publish            bool
+		globalSettingsFile string
+		defaultNpmRegistry string
+		profiles           string
 	}
 }
 
@@ -53,6 +57,10 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
 		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
+		{category: "custom", name: "publish", value: p.custom.publish},
+		{category: "custom", name: "globalSettingsFile", value: p.custom.globalSettingsFile},
+		{category: "custom", name: "defaultNpmRegistry", value: p.custom.defaultNpmRegistry},
+		{category: "custom", name: "profiles", value: p.custom.profiles},
 	}
 
 	errCount := 0
@@ -393,6 +401,10 @@ func mtaBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "mtarFilePath"},
 							{"Name": "custom/mtarPublishedUrl"},
+							{"Name": "custom/publish"},
+							{"Name": "custom/globalSettingsFile"},
+							{"Name": "custom/defaultNpmRegistry"},
+							{"Name": "custom/profiles"},
 						},
 					},
 				},

@@ -204,5 +204,13 @@ spec:
         params:
           - name: mtarFilePath
           - name: custom/mtarPublishedUrl
+          - name: custom/publish
+            type: bool
+          - name: custom/globalSettingsFile
+            type: string
+          - name: custom/defaultNpmRegistry
+            type: string
+          - name: custom/profiles
+            type: string
   containers:
     - image: devxci/mbtci:1.1.1

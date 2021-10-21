@@ -42,6 +42,7 @@ type mavenBuildCommonPipelineEnvironment struct {
 		logSuccessfulMavenTransfers bool
 		publish                     bool
 		globalSettingsFile          string
+		profiles                    string
 	}
 }
 
@@ -55,6 +56,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		{category: "custom", name: "logSuccessfulMavenTransfers", value: p.custom.logSuccessfulMavenTransfers},
 		{category: "custom", name: "publish", value: p.custom.publish},
 		{category: "custom", name: "globalSettingsFile", value: p.custom.globalSettingsFile},
+		{category: "custom", name: "profiles", value: p.custom.profiles},
 	}
 
 	errCount := 0
@@ -387,6 +389,7 @@ func mavenBuildMetadata() config.StepData {
 							{"Name": "custom/logSuccessfulMavenTransfers"},
 							{"Name": "custom/publish"},
 							{"Name": "custom/globalSettingsFile"},
+							{"Name": "custom/profiles"},
 						},
 					},
 				},
