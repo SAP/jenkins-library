@@ -132,7 +132,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 	})
 }
 
-func TestWhitesourceCorrectDockerConfigEnvVar(t *testing.T) {
+func TestCorrectWhitesourceDockerConfigEnvVar(t *testing.T) {
 	t.Run("with credentials", func(t *testing.T) {
 		// init
 		testDirectory, _ := ioutil.TempDir(".", "")
