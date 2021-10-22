@@ -227,11 +227,11 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	// commonPipelineEnvironment.mtarFilePath = mtarName
-	// commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
-	// commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
-	// // commonPipelineEnvironment.custom.profiles = config.Profiles[]
-	// commonPipelineEnvironment.custom.publish = config.Publish
+	commonPipelineEnvironment.mtarFilePath = mtarName
+	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
+	commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
+	// commonPipelineEnvironment.custom.profiles = config.Profiles[]
+	commonPipelineEnvironment.custom.publish = config.Publish
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
