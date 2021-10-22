@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -59,7 +60,7 @@ type fortifyExecuteScanOptions struct {
 	DeltaMinutes                    int      `json:"deltaMinutes,omitempty"`
 	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty"`
 	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty"`
-	VersioningModel                 string   `json:"versioningModel,omitempty"`
+	VersioningModel                 string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
 	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty"`
 	ReportTemplateID                int      `json:"reportTemplateId,omitempty"`
 	FilterSetTitle                  string   `json:"filterSetTitle,omitempty"`
@@ -85,6 +86,7 @@ type fortifyExecuteScanInflux struct {
 		fields struct {
 			projectName       string
 			projectVersion    string
+			projectVersionID  int64
 			violations        int
 			corporateTotal    int
 			corporateAudited  int
@@ -112,6 +114,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
+		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersionId", value: i.fortify_data.fields.projectVersionID},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "violations", value: i.fortify_data.fields.violations},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "corporateTotal", value: i.fortify_data.fields.corporateTotal},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "corporateAudited", value: i.fortify_data.fields.corporateAudited},
@@ -190,6 +193,15 @@ Besides triggering a scan the step verifies the results after they have been upl
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -327,9 +339,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/fortify", "$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/GROUP-SECRETS/fortify"},
-								Type:  "vaultSecret",
+								Name:    "fortifyVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "fortify",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -365,9 +377,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
-								Type:  "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -865,7 +877,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
-							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 				},

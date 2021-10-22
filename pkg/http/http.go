@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -13,11 +14,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
@@ -38,6 +42,7 @@ type Client struct {
 	doLogRequestBodyOnDebug   bool
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
+	trustedCerts              []string
 }
 
 // ClientOptions defines the options to be set on the client
@@ -60,6 +65,7 @@ type ClientOptions struct {
 	DoLogRequestBodyOnDebug   bool
 	DoLogResponseBodyOnDebug  bool
 	UseDefaultTransport       bool
+	TrustedCerts              []string
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -85,6 +91,7 @@ type UploadRequestData struct {
 	FileContent io.Reader
 	Header      http.Header
 	Cookies     []*http.Cookie
+	UploadType  string
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -96,23 +103,24 @@ type Sender interface {
 // Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
 type Uploader interface {
 	Sender
-	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
-	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error)
+	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error)
 	Upload(data UploadRequestData) (*http.Response, error)
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
-func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies)
+func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies, uploadType)
 }
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
-func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	fileHandle, err := os.Open(file)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
 	}
 	defer fileHandle.Close()
+
 	return c.Upload(UploadRequestData{
 		Method:        method,
 		URL:           url,
@@ -121,51 +129,66 @@ func (c *Client) UploadRequest(method, url, file, fileFieldName string, header h
 		FileContent:   fileHandle,
 		Header:        header,
 		Cookies:       cookies,
+		UploadType:    uploadType,
 	})
 }
 
-// Upload uploads a file's content as multipart-form with given http method request to the specified URL
+// Upload uploads a file's content as multipart-form or pure binary with given http method request to the specified URL
 func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	if data.Method != http.MethodPost && data.Method != http.MethodPut {
 		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
 	}
 
-	bodyBuffer := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuffer)
+	// Binary upload :: other options ("binary" or "form").
+	if data.UploadType == "binary" {
+		request, err := c.createRequest(data.Method, data.URL, data.FileContent, &data.Header, data.Cookies)
+		if err != nil {
+			c.logger.Debugf("New %v request to %v (binary upload)", data.Method, data.URL)
+			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v (binary upload)", data.Method, data.URL)
+		}
+		request.Header.Add("Content-Type", "application/octet-stream")
+		request.Header.Add("Connection", "Keep-Alive")
 
-	if data.FormFields != nil {
-		for fieldName, fieldValue := range data.FormFields {
-			err := bodyWriter.WriteField(fieldName, fieldValue)
-			if err != nil {
-				return &http.Response{}, errors.Wrapf(err, "error writing form field %v with value %v", fieldName, fieldValue)
+		return c.Send(request)
+
+	} else { // For form upload
+
+		bodyBuffer := &bytes.Buffer{}
+		bodyWriter := multipart.NewWriter(bodyBuffer)
+
+		if data.FormFields != nil {
+			for fieldName, fieldValue := range data.FormFields {
+				err := bodyWriter.WriteField(fieldName, fieldValue)
+				if err != nil {
+					return &http.Response{}, errors.Wrapf(err, "error writing form field %v with value %v", fieldName, fieldValue)
+				}
 			}
 		}
+
+		fileWriter, err := bodyWriter.CreateFormFile(data.FileFieldName, data.File)
+		if err != nil {
+			return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
+		}
+
+		_, err = piperutils.CopyData(fileWriter, data.FileContent)
+		if err != nil {
+			return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
+		}
+		err = bodyWriter.Close()
+
+		request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
+		if err != nil {
+			c.logger.Debugf("New %v request to %v", data.Method, data.URL)
+			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
+		}
+
+		startBoundary := strings.Index(bodyWriter.FormDataContentType(), "=") + 1
+		boundary := bodyWriter.FormDataContentType()[startBoundary:]
+		request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
+		request.Header.Add("Connection", "Keep-Alive")
+
+		return c.Send(request)
 	}
-
-	fileWriter, err := bodyWriter.CreateFormFile(data.FileFieldName, data.File)
-	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
-	}
-
-	_, err = piperutils.CopyData(fileWriter, data.FileContent)
-	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
-	}
-	err = bodyWriter.Close()
-
-	request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
-	if err != nil {
-		c.logger.Debugf("New %v request to %v", data.Method, data.URL)
-		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
-	}
-
-	startBoundary := strings.Index(bodyWriter.FormDataContentType(), "=") + 1
-	boundary := bodyWriter.FormDataContentType()[startBoundary:]
-
-	request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
-	request.Header.Add("Connection", "Keep-Alive")
-
-	return c.Send(request)
 }
 
 // SendRequest sends an http request with a defined method
@@ -216,6 +239,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
 	c.cookieJar = options.CookieJar
+	c.trustedCerts = options.TrustedCerts
 }
 
 // StandardClient returns a stdlib *http.Client which respects the custom settings.
@@ -241,6 +265,16 @@ func (c *Client) initialize() *http.Client {
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+	}
+
+	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
+		log.Entry().Info("adding certs for tls to trust")
+		err := c.configureTLSToTrustCertificates(transport)
+		if err != nil {
+			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
+		}
+	} else {
+		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
 	}
 
 	var httpClient *http.Client
@@ -420,7 +454,7 @@ func (c *Client) handleResponse(response *http.Response, url string) (*http.Resp
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}
 
-	return response, fmt.Errorf("Request to %v returned with response %v", response.Request.URL, response.Status)
+	return response, fmt.Errorf("request to %v returned with response %v", response.Request.URL, response.Status)
 }
 
 func (c *Client) applyDefaults() {
@@ -430,6 +464,142 @@ func (c *Client) applyDefaults() {
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
+}
+
+func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) error {
+
+	trustStoreDir, err := getWorkingDirForTrustStore()
+	fileUtils := &piperutils.Files{}
+	if err != nil {
+		return errors.Wrap(err, "failed to create trust store directory")
+	}
+	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
+
+	for _, certificate := range c.trustedCerts {
+		rootCAs, _ := x509.SystemCertPool()
+
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+
+		filename := path.Base(certificate)
+		filename = strings.ReplaceAll(filename, " ", "")
+		target := filepath.Join(trustStoreDir, filename)
+		if exists, _ := fileUtils.FileExists(target); !exists {
+			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
+			request, err := http.NewRequest("GET", certificate, nil)
+			if err != nil {
+				return err
+			}
+
+			httpClient := &http.Client{}
+			httpClient.Timeout = c.maxRequestDuration
+			httpClient.Jar = c.cookieJar
+			if !c.useDefaultTransport {
+				httpClient.Transport = transport
+			}
+			response, err := httpClient.Do(request)
+			if err != nil {
+				return errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
+			}
+
+			if response.StatusCode >= 200 && response.StatusCode < 300 {
+				defer response.Body.Close()
+				parent := filepath.Dir(target)
+				if len(parent) > 0 {
+					if err = os.MkdirAll(parent, 0775); err != nil {
+						return err
+					}
+				}
+				fileHandler, err := os.Create(target)
+				if err != nil {
+					return errors.Wrapf(err, "unable to create file %v", filename)
+				}
+				defer fileHandler.Close()
+
+				_, err = io.Copy(fileHandler, response.Body)
+				if err != nil {
+					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
+				}
+
+				// Get the SystemCertPool, continue with an empty pool on error
+				certs, err := ioutil.ReadFile(target)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+				}
+
+				// Append our cert to the system pool
+				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+					log.Entry().Infof("cert not appended to root ca %v", certificate)
+					return fmt.Errorf("cert not appended to root ca %v", certificate)
+				}
+
+				*transport = TransportWrapper{
+					Transport: &http.Transport{
+						DialContext: (&net.Dialer{
+							Timeout: c.transportTimeout,
+						}).DialContext,
+						ResponseHeaderTimeout: c.transportTimeout,
+						ExpectContinueTimeout: c.transportTimeout,
+						TLSHandshakeTimeout:   c.transportTimeout,
+						TLSClientConfig: &tls.Config{
+							InsecureSkipVerify: false,
+							RootCAs:            rootCAs,
+						},
+					},
+					doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				}
+
+				log.Entry().Infof("%v appended to root CA successfully", certificate)
+
+			} else {
+				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
+			}
+		} else {
+			log.Entry().Infof("existing certs found, appending to rootCA")
+			certs, err := ioutil.ReadFile(target)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+			}
+
+			// Append our cert to the system pool
+			if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+				log.Entry().Infof("cert not appended to root ca %v", certificate)
+			}
+
+			*transport = TransportWrapper{
+				Transport: &http.Transport{
+					DialContext: (&net.Dialer{
+						Timeout: c.transportTimeout,
+					}).DialContext,
+					ResponseHeaderTimeout: c.transportTimeout,
+					ExpectContinueTimeout: c.transportTimeout,
+					TLSHandshakeTimeout:   c.transportTimeout,
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: false,
+						RootCAs:            rootCAs,
+					},
+				},
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+			}
+			log.Entry().Infof("%v appended to root CA successfully", certificate)
+		}
+
+	}
+	return nil
+}
+
+func getWorkingDirForTrustStore() (string, error) {
+	fileUtils := &piperutils.Files{}
+	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
+		err := fileUtils.MkdirAll(".pipeline/trustStore", 0777)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to create trust store directory")
+		}
+	}
+	return ".pipeline/trustStore", nil
 }
 
 // ParseHTTPResponseBodyXML parses a XML http response into a given interface

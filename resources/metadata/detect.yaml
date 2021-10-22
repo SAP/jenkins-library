@@ -35,10 +35,8 @@ spec:
           - name: detectTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/detect
-              - $(vaultBasePath)/$(vaultPipelineName)/detect
-              - $(vaultBasePath)/GROUP-SECRETS/detect
+            name: detectVaultSecretName
+            default: detect
         scope:
           - PARAMETERS
           - STAGES
@@ -67,9 +65,9 @@ spec:
         type: "[]string"
         default:
           - signature
-        possibleValues:
-          - signature
-          - source
+        # possibleValues:
+        #   - signature
+        #   - source
         scope:
           - PARAMETERS
           - STAGES
@@ -148,13 +146,13 @@ spec:
         type: "[]string"
         default:
           - BLOCKER
-        possibleValues:
-          - ALL
-          - BLOCKER
-          - CRITICAL
-          - MAJOR
-          - MINOR
-          - NONE
+        # possibleValues:
+        #   - ALL
+        #   - BLOCKER
+        #   - CRITICAL
+        #   - MAJOR
+        #   - MINOR
+        #   - NONE
         scope:
           - PARAMETERS
           - STAGES
@@ -303,6 +301,27 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: detect
+                type: bool
+          - name: detect_data
+            fields:
+              - name: vulnerabilities
+                type: int
+              - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: components
+                type: int
+              - name: policy_violations
+                type: int
   containers:
     - name: openjdk
       image: openjdk:11

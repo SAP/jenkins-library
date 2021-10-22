@@ -21,10 +21,8 @@ spec:
         type: string
         resourceRef:
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/terraformExecute
-              - $(vaultBasePath)/$(vaultPipelineName)/terraformExecute
-              - $(vaultBasePath)/GROUP-SECRETS/terraformExecute
+            name: terraformExecuteFileVaultSecret
+            default: terraformExecute
       - name: additionalArgs
         type: "[]string"
         scope:

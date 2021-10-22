@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,7 @@ type cloudFoundryDeployOptions struct {
 	APIEndpoint              string                 `json:"apiEndpoint,omitempty"`
 	AppName                  string                 `json:"appName,omitempty"`
 	ArtifactVersion          string                 `json:"artifactVersion,omitempty"`
+	CommitHash               string                 `json:"commitHash,omitempty"`
 	CfHome                   string                 `json:"cfHome,omitempty"`
 	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
 	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
@@ -51,6 +53,7 @@ type cloudFoundryDeployInflux struct {
 		fields struct {
 			artifactURL string
 			deployTime  string
+			commitHash  string
 			jobTrigger  string
 		}
 		tags struct {
@@ -73,6 +76,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 	}{
 		{valType: config.InfluxField, measurement: "deployment_data", name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "deployTime", value: i.deployment_data.fields.deployTime},
+		{valType: config.InfluxField, measurement: "deployment_data", name: "commitHash", value: i.deployment_data.fields.commitHash},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "jobTrigger", value: i.deployment_data.fields.jobTrigger},
 		{valType: config.InfluxTag, measurement: "deployment_data", name: "artifactVersion", value: i.deployment_data.tags.artifactVersion},
 		{valType: config.InfluxTag, measurement: "deployment_data", name: "deployUser", value: i.deployment_data.tags.deployUser},
@@ -140,6 +144,15 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -179,6 +192,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `https://api.cf.eu10.hana.ondemand.com`, "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.AppName, "appName", os.Getenv("PIPER_appName"), "Defines the name of the application to be deployed to the Cloud Foundry space")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The artifact version, used for influx reporting")
+	cmd.Flags().StringVar(&stepConfig.CommitHash, "commitHash", os.Getenv("PIPER_commitHash"), "The commit hash, used for influx reporting")
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
 	cmd.Flags().StringVar(&stepConfig.CfNativeDeployParameters, "cfNativeDeployParameters", os.Getenv("PIPER_cfNativeDeployParameters"), "Additional parameters passed to cf native deployment command")
 	cmd.Flags().StringVar(&stepConfig.CfPluginHome, "cfPluginHome", os.Getenv("PIPER_cfPluginHome"), "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
@@ -257,6 +271,20 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_artifactVersion"),
+					},
+					{
+						Name: "commitHash",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "git/headCommitId",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_commitHash"),
 					},
 					{
 						Name:        "cfHome",
@@ -460,9 +488,9 @@ func cloudFoundryDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -508,9 +536,9 @@ func cloudFoundryDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -530,7 +558,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "deployment_data"}, {"fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "jobTrigger"}}}, {"tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
+							{"Name": "deployment_data"}, {"fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}}, {"tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
 						},
 					},
 				},

@@ -5,12 +5,15 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +29,7 @@ type detectExecuteScanOptions struct {
 	ServerURL                  string   `json:"serverUrl,omitempty"`
 	Groups                     []string `json:"groups,omitempty"`
 	FailOn                     []string `json:"failOn,omitempty"`
-	VersioningModel            string   `json:"versioningModel,omitempty"`
+	VersioningModel            string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
 	Version                    string   `json:"version,omitempty"`
 	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
 	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
@@ -41,6 +44,55 @@ type detectExecuteScanOptions struct {
 	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty"`
 }
 
+type detectExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			detect bool
+		}
+		tags struct {
+		}
+	}
+	detect_data struct {
+		fields struct {
+			vulnerabilities       int
+			major_vulnerabilities int
+			minor_vulnerabilities int
+			components            int
+			policy_violations     int
+		}
+		tags struct {
+		}
+	}
+}
+
+func (i *detectExecuteScanInflux) persist(path, resourceName string) {
+	measurementContent := []struct {
+		measurement string
+		valType     string
+		name        string
+		value       interface{}
+	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "detect", value: i.step_data.fields.detect},
+		{valType: config.InfluxField, measurement: "detect_data", name: "vulnerabilities", value: i.detect_data.fields.vulnerabilities},
+		{valType: config.InfluxField, measurement: "detect_data", name: "major_vulnerabilities", value: i.detect_data.fields.major_vulnerabilities},
+		{valType: config.InfluxField, measurement: "detect_data", name: "minor_vulnerabilities", value: i.detect_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "detect_data", name: "components", value: i.detect_data.fields.components},
+		{valType: config.InfluxField, measurement: "detect_data", name: "policy_violations", value: i.detect_data.fields.policy_violations},
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Influx environment")
+	}
+}
+
 // DetectExecuteScanCommand Executes Synopsys Detect scan
 func DetectExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "detectExecuteScan"
@@ -48,6 +100,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 	metadata := detectExecuteScanMetadata()
 	var stepConfig detectExecuteScanOptions
 	var startTime time.Time
+	var influx detectExecuteScanInflux
 	var logCollector *log.CollectorHook
 
 	var createDetectExecuteScanCmd = &cobra.Command{
@@ -84,6 +137,15 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -91,6 +153,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -108,7 +171,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			detectExecuteScan(stepConfig, &telemetryData)
+			detectExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -176,9 +239,9 @@ func detectExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/detect", "$(vaultBasePath)/$(vaultPipelineName)/detect", "$(vaultBasePath)/GROUP-SECRETS/detect"},
-								Type:  "vaultSecret",
+								Name:    "detectVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "detect",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -403,6 +466,18 @@ func detectExecuteScanMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "detect"}}},
+							{"Name": "detect_data"}, {"fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "components"}, {"name": "policy_violations"}}},
+						},
+					},
+				},
 			},
 		},
 	}

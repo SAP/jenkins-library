@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -23,8 +24,8 @@ type integrationArtifactGetMplStatusOptions struct {
 
 type integrationArtifactGetMplStatusCommonPipelineEnvironment struct {
 	custom struct {
-		iFlowMplStatus string
-		iFlowMplError  string
+		integrationFlowMplStatus string
+		integrationFlowMplError  string
 	}
 }
 
@@ -34,8 +35,8 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 		name     string
 		value    interface{}
 	}{
-		{category: "custom", name: "iFlowMplStatus", value: p.custom.iFlowMplStatus},
-		{category: "custom", name: "iFlowMplError", value: p.custom.iFlowMplError},
+		{category: "custom", name: "integrationFlowMplStatus", value: p.custom.integrationFlowMplStatus},
+		{category: "custom", name: "integrationFlowMplError", value: p.custom.integrationFlowMplError},
 	}
 
 	errCount := 0
@@ -91,6 +92,15 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -182,8 +192,8 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/iFlowMplStatus"},
-							{"Name": "custom/iFlowMplError"},
+							{"Name": "custom/integrationFlowMplStatus"},
+							{"Name": "custom/integrationFlowMplError"},
 						},
 					},
 				},

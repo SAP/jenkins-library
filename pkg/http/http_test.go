@@ -2,6 +2,8 @@ package http
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -269,7 +271,7 @@ func TestUploadRequest(t *testing.T) {
 	for key, test := range tt {
 		t.Run(fmt.Sprintf("UploadFile Row %v", key+1), func(t *testing.T) {
 			client.SetOptions(test.clientOptions)
-			response, err := client.UploadFile(server.URL, testFile.Name(), "Field1", test.header, test.cookies)
+			response, err := client.UploadFile(server.URL, testFile.Name(), "Field1", test.header, test.cookies, "form")
 			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
 			assert.NoError(t, err, "Error occurred but none expected")
@@ -298,7 +300,7 @@ func TestUploadRequest(t *testing.T) {
 		})
 		t.Run(fmt.Sprintf("UploadRequest Row %v", key+1), func(t *testing.T) {
 			client.SetOptions(test.clientOptions)
-			response, err := client.UploadRequest(test.method, server.URL, testFile.Name(), "Field1", test.header, test.cookies)
+			response, err := client.UploadRequest(test.method, server.URL, testFile.Name(), "Field1", test.header, test.cookies, "form")
 			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
 			assert.NoError(t, err, "Error occurred but none expected")
@@ -330,7 +332,7 @@ func TestUploadRequest(t *testing.T) {
 
 func TestUploadRequestWrongMethod(t *testing.T) {
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
-	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
+	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil, "form")
 	assert.Error(t, err, "No error occurred but was expected")
 }
 
@@ -393,6 +395,28 @@ func TestTransportSkipVerification(t *testing.T) {
 			assert.NoError(t, err)
 		}
 	}
+}
+
+func TestTransportWithCertifacteAdded(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello")
+	}))
+	defer server.Close()
+
+	certs := x509.NewCertPool()
+	for _, c := range server.TLS.Certificates {
+		roots, err := x509.ParseCertificates(c.Certificate[len(c.Certificate)-1])
+		if err != nil {
+			println("error parsing server's root cert: %v", err)
+		}
+		for _, root := range roots {
+			certs.AddCert(root)
+		}
+	}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: certs, InsecureSkipVerify: false}}}
+	_, err := client.Get(server.URL)
+	// assert
+	assert.NoError(t, err)
 }
 
 func TestMaxRetries(t *testing.T) {
