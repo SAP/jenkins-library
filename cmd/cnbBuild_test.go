@@ -3,13 +3,13 @@ package cmd
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -120,11 +120,11 @@ func TestRunCnbBuild(t *testing.T) {
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {
 		t.Parallel()
 
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Write([]byte("testCert"))
-		}))
-		// Close the server when test finishes
-		defer server.Close()
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, "https://test-cert.com/cert.crt", httpmock.NewStringResponder(200, "testCert"))
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
 		caCertsFile := "/etc/ssl/certs/ca-certificates.crt"
 		caCertsTmpFile := "/tmp/ca-certificates.crt"
@@ -135,7 +135,7 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerRegistryURL:      registry,
 			DockerConfigJSON:          "/path/to/config.json",
 			Buildpacks:                []string{"test"},
-			CustomTLSCertificateLinks: []string{server.URL, server.URL},
+			CustomTLSCertificateLinks: []string{"https://test-cert.com/cert.crt", "https://test-cert.com/cert.crt"},
 		}
 
 		utils := newCnbBuildTestsUtils()
@@ -143,7 +143,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, client)
 		assert.NoError(t, err)
 
 		result, err := utils.FilesMock.FileRead(caCertsTmpFile)

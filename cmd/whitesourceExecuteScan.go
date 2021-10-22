@@ -15,7 +15,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
@@ -25,6 +24,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
+	"github.com/xuri/excelize/v2"
 )
 
 // ScanOptions is just used to make the lines less long
