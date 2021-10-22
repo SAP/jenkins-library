@@ -106,7 +106,7 @@ func ApiProxyDownloadCommand() *cobra.Command {
 }
 
 func addApiProxyDownloadFlags(cmd *cobra.Command, stepConfig *apiProxyDownloadOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.APIProxyName, "apiProxyName", os.Getenv("PIPER_apiProxyName"), "Specifies the name of the API Proxy")
 	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies api proxy download location.")
 
@@ -126,7 +126,7 @@ func apiProxyDownloadMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

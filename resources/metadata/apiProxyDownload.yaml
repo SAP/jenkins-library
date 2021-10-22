@@ -8,12 +8,12 @@ spec:
   inputs:
     secrets:
       - name: apimApiServiceKeyCredentialsId
-        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'
+        description: Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'
         type: jenkins
     params:
       - name: apiServiceKey
         type: string
-        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'api'
+        description: Service key JSON string to access the API Management Runtime service instance of plan 'api'
         scope:
           - PARAMETERS
         mandatory: true
@@ -24,7 +24,7 @@ spec:
             param: apiServiceKey
       - name: apiProxyName
         type: string
-        description: Specifies the name of the API Proxy
+        description: Specifies the name of the API Proxy.
         scope:
           - PARAMETERS
           - STAGES
