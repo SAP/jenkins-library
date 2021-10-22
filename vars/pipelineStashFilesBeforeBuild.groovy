@@ -53,7 +53,7 @@ void call(Map parameters = [:]) {
 
         config.stashIncludes.each {stashKey, stashIncludes ->
             def useDefaultExcludes = !config.noDefaultExludes.contains(stashKey)
-            utils.stashWithMessage(stashKey, "[${STEP_NAME}] no files detected for stash '${stashKey}': ", stashIncludes, config.stashExcludes[stashKey]?:'', useDefaultExcludes)
+            utils.stash(stashKey, stashIncludes, config.stashExcludes[stashKey]?:'', useDefaultExcludes, true);
         }
     }
 }

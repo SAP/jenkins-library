@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 
-def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
+def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true, allowEmpty = false) {
     echo "Stash content: ${name} (include: ${include}, exclude: ${exclude}, useDefaultExcludes: ${useDefaultExcludes})"
 
     Map stashParams = [
@@ -19,6 +19,10 @@ def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     //only set the optional parameter if default excludes should not be applied
     if (!useDefaultExcludes) {
         stashParams.useDefaultExcludes = useDefaultExcludes
+    }
+    //only set the optional parameter if allowEmpty should be allowed
+    if (allowEmpty) {
+        stashParams.allowEmpty = allowEmpty
     }
     steps.stash stashParams
 }
