@@ -43,6 +43,7 @@ type mavenBuildCommonPipelineEnvironment struct {
 		publish                     bool
 		globalSettingsFile          string
 		profiles                    string
+		dockerImage                 string
 	}
 }
 
@@ -57,6 +58,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		{category: "custom", name: "publish", value: p.custom.publish},
 		{category: "custom", name: "globalSettingsFile", value: p.custom.globalSettingsFile},
 		{category: "custom", name: "profiles", value: p.custom.profiles},
+		{category: "custom", name: "dockerImage", value: p.custom.dockerImage},
 	}
 
 	errCount := 0
@@ -390,6 +392,7 @@ func mavenBuildMetadata() config.StepData {
 							{"Name": "custom/publish"},
 							{"Name": "custom/globalSettingsFile"},
 							{"Name": "custom/profiles"},
+							{"Name": "custom/dockerImage"},
 						},
 					},
 				},
