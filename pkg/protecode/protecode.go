@@ -337,7 +337,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 
-	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil)
+	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil, "binary")
 	if err != nil {
 		//TODO: bubble up error
 		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
