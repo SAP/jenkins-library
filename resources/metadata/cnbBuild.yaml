@@ -130,7 +130,7 @@ spec:
           - STEPS
       - name: additionalTags
         type: "[]string"
-        description: List of tags which will pushed to the registry (additionally to the provided `containerImageTag`), e.g. "latest".
+        description: List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. "latest".
         scope:
           - PARAMETERS
           - STAGES
