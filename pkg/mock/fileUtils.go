@@ -54,6 +54,7 @@ type FilesMock struct {
 	CurrentDir       string
 	Separator        string
 	FileExistsErrors map[string]error
+	FileReadErrors   map[string]error
 	FileWriteError   error
 	FileWriteErrors  map[string]error
 }
@@ -212,6 +213,9 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	f.init()
+	if err := f.FileReadErrors[path]; err != nil {
+		return nil, err
+	}
 	props, exists := f.files[f.toAbsPath(path)]
 	if !exists {
 		return nil, fmt.Errorf("could not read '%s'", path)
