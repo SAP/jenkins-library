@@ -41,14 +41,16 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 		Exec: &c,
 	}
 
-	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe, reader)
+	clientAbap := piperhttp.Client{}
+	clientAak := piperhttp.Client{}
+
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &clientAbap, &clientAak, cpe, reader)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment, fileReader readFile) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, clientAbap abapbuild.HTTPSendLoader, clientAak piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment, fileReader readFile) error {
 	addonDescriptor := new(abaputils.AddonDescriptor)
 	if err := addonDescriptor.InitFromJSON([]byte(config.AddonDescriptor)); err != nil {
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
@@ -57,7 +59,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if config.PerformAssemblePackages == true {
 
 		connBuild := new(abapbuild.Connector)
-		if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
+		if errConBuild := initAssemblePackagesConnection(connBuild, config, com, clientAbap); errConBuild != nil {
 			return errConBuild
 		}
 
@@ -98,7 +100,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if config.PerformRegisterPackages == true {
 
 		connUpload := new(abapbuild.Connector)
-		connUpload.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, client)
+		connUpload.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, clientAak)
 
 		err := uploadSarFiles(addonDescriptor.Repositories, *connUpload, fileReader)
 		if err != nil {
@@ -106,7 +108,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		}
 
 		connRegister := new(abapbuild.Connector) // we need a second connector without the added Header
-		connRegister.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, client)
+		connRegister.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, clientAak)
 
 		addonDescriptor.Repositories, err = registerPackages(addonDescriptor.Repositories, *connRegister)
 		if err != nil {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -104,7 +105,7 @@ func TestStep(t *testing.T) {
 			PerformAssemblePackages:     true,
 		}
 
-		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe, mockReader)
+		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, nil, cpe, mockReader)
 		assert.NoError(t, err)
 	})
 	t.Run("abapEnvironmentAssemblePackages: build", func(t *testing.T) {
@@ -116,13 +117,12 @@ func TestStep(t *testing.T) {
 			PerformAssemblePackages:     true,
 		}
 
-		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe, mockReader)
+		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, nil, cpe, mockReader)
 		assert.NoError(t, err)
 		assert.Contains(t, cpe.abap.addonDescriptor, `SAPK-001AAINITAPC1.SAR`)
 	})
 }
 
-/*
 // Wait for Download Method available on github
 func OldTestRegisterPackagesStep(t *testing.T) {
 	//var config abapAddonAssemblyKitRegisterPackagesOptions
@@ -151,7 +151,7 @@ func OldTestRegisterPackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 		//err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
-		err := runAbapEnvironmentAssemblePackages(config, nil, nil, &client, cpe, mockReader)
+		err := runAbapEnvironmentAssemblePackages(config, nil, nil, nil, client, cpe, mockReader)
 
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
@@ -174,7 +174,7 @@ func OldTestRegisterPackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 		//err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
-		err := runAbapEnvironmentAssemblePackages(config, nil, nil, &client, cpe, mockReader)
+		err := runAbapEnvironmentAssemblePackages(config, nil, nil, nil, client, cpe, mockReader)
 
 		assert.Error(t, err, "Did expect error")
 	})
@@ -196,7 +196,7 @@ func OldTestRegisterPackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 		//err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
-		err := runAbapEnvironmentAssemblePackages(config, nil, nil, &client, cpe, mockReader)
+		err := runAbapEnvironmentAssemblePackages(config, nil, nil, nil, client, cpe, mockReader)
 		assert.Error(t, err, "Did expect error")
 	})
 	t.Run("step error - registerPackages - invalid input", func(t *testing.T) {
@@ -214,10 +214,10 @@ func OldTestRegisterPackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 		//err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
-		err := runAbapEnvironmentAssemblePackages(config, nil, nil, &client, cpe, mockReader)
+		err := runAbapEnvironmentAssemblePackages(config, nil, nil, nil, client, cpe, mockReader)
 		assert.Error(t, err, "Did expect error")
 	})
-} */
+}
 
 var cpeAbapAddonDescriptorPackageLocked = `{
 	"addonProduct":"/ITAPC1/I_CURRENCZPRODUCT",
