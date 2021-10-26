@@ -48,7 +48,7 @@ type whitesource interface {
 
 type whitesourceUtils interface {
 	ws.Utils
-	DirExists(path string) (bool, error)
+	piperutils.FileUtils
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
@@ -162,7 +162,7 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
-	correctWhitesourceDockerConfigEnvVar(config)
+	correctWhitesourceDockerConfigEnvVar(config, utils)
 
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
@@ -213,11 +213,12 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	return nil
 }
 
-func correctWhitesourceDockerConfigEnvVar(config *ScanOptions) {
+func correctWhitesourceDockerConfigEnvVar(config *ScanOptions, utils whitesourceUtils) {
 	path := config.DockerConfigJSON
 	if len(path) > 0 {
 		log.Entry().Infof("Docker credentials configuration: %v", path)
-		path, _ := filepath.Abs(path)
+		path, _ := utils.Abs(path)
+		piperDocker.CreateDockerConfigJSON(config.ScanImageRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, config.DockerConfigJSON, utils)
 		// use parent directory
 		path = filepath.Dir(path)
 		os.Setenv("DOCKER_CONFIG", path)

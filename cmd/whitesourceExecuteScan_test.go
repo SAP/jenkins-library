@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +14,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type whitesourceUtilsMock struct {
@@ -135,33 +133,28 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 func TestCorrectWhitesourceDockerConfigEnvVar(t *testing.T) {
 	t.Run("with credentials", func(t *testing.T) {
 		// init
-		testDirectory, _ := ioutil.TempDir(".", "")
-		require.DirExists(t, testDirectory)
-		defer os.RemoveAll(testDirectory)
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.CurrentDir = "/tmp/test"
 
-		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
-		os.Mkdir(dockerConfigDir, 0755)
-		require.DirExists(t, dockerConfigDir)
-
-		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
-		file, _ := os.Create(dockerConfigFile)
-		defer file.Close()
-		require.FileExists(t, dockerConfigFile)
+		dockerConfigFile := "myConfig/docker.json"
+		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
 
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
+
 		// test
-		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile})
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile}, utilsMock)
 		// assert
-		absolutePath, _ := filepath.Abs(dockerConfigDir)
+		absolutePath, _ := utilsMock.Abs(filepath.Dir(dockerConfigFile))
 		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
 	})
 	t.Run("without credentials", func(t *testing.T) {
 		// init
+		utilsMock := newWhitesourceUtilsMock()
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctWhitesourceDockerConfigEnvVar(&ScanOptions{})
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{}, utilsMock)
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
