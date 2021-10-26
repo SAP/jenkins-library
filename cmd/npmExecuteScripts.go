@@ -1,23 +1,25 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
+func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
 	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
-	err := runNpmExecuteScripts(npmExecutor, &config)
+	err := runNpmExecuteScripts(npmExecutor, &config, commonPipelineEnvironment)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
+func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
 	if config.Install {
 		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 		if err != nil {
@@ -57,6 +59,14 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 			return err
 		}
 	}
+
+	commonPipelineEnvironment.custom.createBom = config.CreateBOM
+	commonPipelineEnvironment.custom.publish = config.Publish
+	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
+
+	var dataParametersJSON map[string]interface{}
+	json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
 
 	return nil
 }

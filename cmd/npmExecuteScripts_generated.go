@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -30,6 +32,40 @@ type npmExecuteScriptsOptions struct {
 	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
 }
 
+type npmExecuteScriptsCommonPipelineEnvironment struct {
+	custom struct {
+		createBom          bool
+		publish            bool
+		defaultNpmRegistry string
+		dockerImage        string
+	}
+}
+
+func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "createBom", value: p.custom.createBom},
+		{category: "custom", name: "publish", value: p.custom.publish},
+		{category: "custom", name: "defaultNpmRegistry", value: p.custom.defaultNpmRegistry},
+		{category: "custom", name: "dockerImage", value: p.custom.dockerImage},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
+}
+
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
 func NpmExecuteScriptsCommand() *cobra.Command {
 	const STEP_NAME = "npmExecuteScripts"
@@ -37,6 +73,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	metadata := npmExecuteScriptsMetadata()
 	var stepConfig npmExecuteScriptsOptions
 	var startTime time.Time
+	var commonPipelineEnvironment npmExecuteScriptsCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
@@ -88,6 +125,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -105,7 +143,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			npmExecuteScripts(stepConfig, &telemetryData)
+			npmExecuteScripts(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -272,6 +310,20 @@ func npmExecuteScriptsMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Name: "node", Image: "node:lts-stretch"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "custom/createBom"},
+							{"Name": "custom/publish"},
+							{"Name": "custom/defaultNpmRegistry"},
+							{"Name": "custom/dockerImage"},
+						},
+					},
+				},
 			},
 		},
 	}

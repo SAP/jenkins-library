@@ -116,19 +116,19 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-  # outputs:
-  #   resources:
-  #     - name: commonPipelineEnvironment
-  #       type: piperEnvironment
-  #       params:
-  #         - name: custom/createBom
-  #           type: bool
-  #         - name: custom/publish
-  #           type: bool
-  #         - name: custom/defaultNpmRegistry
-  #           type: string
-  #         - name: custom/dockerImage
-  #           type: string
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/createBom
+            type: bool
+          - name: custom/publish
+            type: bool
+          - name: custom/defaultNpmRegistry
+            type: string
+          - name: custom/dockerImage
+            type: string
   containers:
     - name: node
       image: node:lts-stretch
