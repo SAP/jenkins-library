@@ -60,6 +60,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
+	log.Entry().Info("Creating files for build-setting.json")
 	commonPipelineEnvironment.custom.createBom = config.CreateBOM
 	commonPipelineEnvironment.custom.publish = config.Publish
 	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
