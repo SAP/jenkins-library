@@ -28,7 +28,6 @@ void call(Map parameters = [:]) {
         cloudFoundryCreateServiceKey script: parameters.script
         abapAddonAssemblyKitReserveNextPackages script: parameters.script
         abapEnvironmentAssemblePackages script: parameters.script
-        abapAddonAssemblyKitRegisterPackages script: parameters.script
         abapEnvironmentAssembleConfirm script: parameters.script
         abapAddonAssemblyKitReleasePackages script: parameters.script
         abapAddonAssemblyKitCreateTargetVector script: parameters.script

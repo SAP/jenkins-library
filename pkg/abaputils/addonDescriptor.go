@@ -67,7 +67,7 @@ func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 // ConstructAddonDescriptorFromJSON : Create new AddonDescriptor filled with data from JSON
 func ConstructAddonDescriptorFromJSON(JSON []byte) (AddonDescriptor, error) {
 	var addonDescriptor AddonDescriptor
-	err := addonDescriptor.initFromJSON(JSON)
+	err := addonDescriptor.InitFromJSON(JSON)
 	return addonDescriptor, err
 }
 
@@ -104,7 +104,7 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFun
 		return errors.New(fmt.Sprintf("Could not parse %v", FileName))
 	}
 
-	err = me.initFromJSON(jsonBytes)
+	err = me.InitFromJSON(jsonBytes)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
 	}
@@ -131,8 +131,8 @@ func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error 
 	return nil
 }
 
-// initFromJSON : Init from json
-func (me *AddonDescriptor) initFromJSON(JSON []byte) error {
+// InitFromJSON : Init from json
+func (me *AddonDescriptor) InitFromJSON(JSON []byte) error {
 	return json.Unmarshal(JSON, me)
 }
 

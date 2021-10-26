@@ -300,6 +300,11 @@ type ClientMock struct {
 	Error      error
 }
 
+// DownloadFile : Empty file download
+func (c *ClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return nil
+}
+
 // SetOptions sets clientOptions for a client mock
 func (c *ClientMock) SetOptions(opts piperhttp.ClientOptions) {}
 

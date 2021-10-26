@@ -9,7 +9,6 @@ The following steps are executed in this stage:
 - [cloudFoundryCreateServiceKey](../../../steps/cloudFoundryCreateServiceKey.md)
 - [abapAddonAssemblyKitReserveNextPackages](../../../steps/abapAddonAssemblyKitReserveNextPackages.md)
 - [abapEnvironmentAssemblePackages](../../../steps/abapEnvironmentAssemblePackages.md)
-- [abapAddonAssemblyKitRegisterPackages](../../../steps/abapAddonAssemblyKitRegisterPackages.md)
 - [abapEnvironmentAssembleConfirm](../../../steps/abapEnvironmentAssembleConfirm.md)
 - [abapAddonAssemblyKitReleasePackages](../../../steps/abapAddonAssemblyKitReleasePackages.md)
 - [abapAddonAssemblyKitCreateTargetVector](../../../steps/abapAddonAssemblyKitCreateTargetVector.md)

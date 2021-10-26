@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"path"
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -21,6 +23,13 @@ type buildWithRepository struct {
 	repo  abaputils.Repository
 }
 
+// for moocking
+type readFile func(path string) ([]byte, error)
+
+func reader(path string) ([]byte, error) {
+	return ioutil.ReadFile(path)
+}
+
 func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) {
 	// for command execution use Command
 	c := command.Command{}
@@ -33,71 +42,82 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	}
 
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe, reader)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
-	conn := new(abapbuild.Connector)
-	var connConfig abapbuild.ConnectorConfiguration
-	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
-	connConfig.CfOrg = config.CfOrg
-	connConfig.CfSpace = config.CfSpace
-	connConfig.CfServiceInstance = config.CfServiceInstance
-	connConfig.CfServiceKeyName = config.CfServiceKeyName
-	connConfig.Host = config.Host
-	connConfig.Username = config.Username
-	connConfig.Password = config.Password
-	connConfig.AddonDescriptor = config.AddonDescriptor
-	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
-
-	err := conn.InitBuildFramework(connConfig, com, client)
-	if err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
-	}
-
-	var addonDescriptor abaputils.AddonDescriptor
-	err = json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
-	if err != nil {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment, fileReader readFile) error {
+	addonDescriptor := new(abaputils.AddonDescriptor)
+	if err := addonDescriptor.InitFromJSON([]byte(config.AddonDescriptor)); err != nil {
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
 	}
 
-	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
-	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
-	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
-	if err != nil {
-		return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
+	if config.PerformAssemblePackages == true {
+
+		connBuild := new(abapbuild.Connector)
+		if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
+			return errConBuild
+		}
+
+		builds, err := executeBuilds(addonDescriptor.Repositories, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond)
+		if err != nil {
+			return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
+		}
+
+		err = checkIfFailedAndPrintLogs(builds)
+		if err != nil {
+			return errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
+		}
+
+		var filesToPublish []piperutils.Path
+		filesToPublish, err = downloadResultToFile(builds, "SAR_XML", filesToPublish)
+		if err != nil {
+			return errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
+		}
+
+		filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
+		if err != nil {
+			//changed result storage with 2105, thus ignore errors for now
+			log.Entry().Error(errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed"))
+		}
+
+		log.Entry().Infof("Publsihing %v files", len(filesToPublish))
+		piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+
+		var reposBackToCPE []abaputils.Repository
+		for _, b := range builds {
+			reposBackToCPE = append(reposBackToCPE, b.repo)
+		}
+		addonDescriptor.Repositories = reposBackToCPE
+		backToCPE, _ := json.Marshal(addonDescriptor)
+		cpe.abap.addonDescriptor = string(backToCPE)
 	}
 
-	err = checkIfFailedAndPrintLogs(builds)
-	if err != nil {
-		return errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
-	}
+	if config.PerformRegisterPackages == true {
 
-	var filesToPublish []piperutils.Path
-	filesToPublish, err = downloadResultToFile(builds, "SAR_XML", filesToPublish)
-	if err != nil {
-		return errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
-	}
+		connUpload := new(abapbuild.Connector)
+		connUpload.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, client)
 
-	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
-	if err != nil {
-		//changed result storage with 2105, thus ignore errors for now
-		log.Entry().Error(errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed"))
-	}
+		err := uploadSarFiles(addonDescriptor.Repositories, *connUpload, fileReader)
+		if err != nil {
+			return err
+		}
 
-	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+		connRegister := new(abapbuild.Connector) // we need a second connector without the added Header
+		connRegister.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, client)
 
-	var reposBackToCPE []abaputils.Repository
-	for _, b := range builds {
-		reposBackToCPE = append(reposBackToCPE, b.repo)
+		addonDescriptor.Repositories, err = registerPackages(addonDescriptor.Repositories, *connRegister)
+		if err != nil {
+			return err
+		}
+
+		log.Entry().Info("Writing package status to CommonPipelineEnvironment")
+		backToCPE, _ := json.Marshal(addonDescriptor)
+		cpe.abap.addonDescriptor = string(backToCPE)
+
 	}
-	addonDescriptor.Repositories = reposBackToCPE
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
 
 	return nil
 }
@@ -272,4 +292,74 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
 	}
 	return reposBackToCPE, nil
+}
+
+func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvironmentAssemblePackagesOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
+	var connConfig abapbuild.ConnectorConfiguration
+	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
+	connConfig.CfOrg = config.CfOrg
+	connConfig.CfSpace = config.CfSpace
+	connConfig.CfServiceInstance = config.CfServiceInstance
+	connConfig.CfServiceKeyName = config.CfServiceKeyName
+	connConfig.Host = config.Host
+	connConfig.Username = config.Username
+	connConfig.Password = config.Password
+	connConfig.AddonDescriptor = config.AddonDescriptor
+	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+
+	err := conn.InitBuildFramework(connConfig, com, client)
+	if err != nil {
+		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+	}
+
+	return nil
+}
+
+func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, readFileFunc readFile) error {
+	for i := range repos {
+		if repos[i].Status == string(aakaas.PackageStatusPlanned) {
+			if repos[i].SarXMLFilePath == "" {
+				return errors.New("Parameter missing. Please provide the path to the SAR file")
+			}
+			filename := filepath.Base(repos[i].SarXMLFilePath)
+			log.Entry().Infof("Trying to read file %s", repos[i].SarXMLFilePath)
+			sarFile, err := readFileFunc(repos[i].SarXMLFilePath)
+			if err != nil {
+				return err
+			}
+			log.Entry().Infof("... %d bytes read", len(sarFile))
+			if len(sarFile) == 0 {
+				return errors.New("File has no content - 0 bytes")
+			}
+			log.Entry().Infof("Upload SAR file %s in chunks", filename)
+			err = conn.UploadSarFileInChunks("/odata/aas_file_upload", filename, sarFile)
+			if err != nil {
+				return err
+			}
+			log.Entry().Info("...done")
+		} else {
+			log.Entry().Infof("Package %s has status %s, cannot upload the SAR file of this package", repos[i].PackageName, repos[i].Status)
+		}
+	}
+	return nil
+}
+
+func registerPackages(repos []abaputils.Repository, conn abapbuild.Connector) ([]abaputils.Repository, error) {
+	for i := range repos {
+		var pack aakaas.Package
+		pack.InitPackage(repos[i], conn)
+		if repos[i].Status == string(aakaas.PackageStatusPlanned) {
+			log.Entry().Infof("Trying to Register Package %s", pack.PackageName)
+			err := pack.Register()
+			if err != nil {
+				return repos, err
+			}
+			log.Entry().Info("...done, take over new status")
+			pack.ChangeStatus(&repos[i])
+			log.Entry().Info("...done")
+		} else {
+			log.Entry().Infof("Package %s has status %s, cannot register this package", pack.PackageName, pack.Status)
+		}
+	}
+	return repos, nil
 }

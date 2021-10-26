@@ -18,17 +18,22 @@ import (
 )
 
 type abapEnvironmentAssemblePackagesOptions struct {
-	CfAPIEndpoint               string `json:"cfApiEndpoint,omitempty"`
-	CfOrg                       string `json:"cfOrg,omitempty"`
-	CfSpace                     string `json:"cfSpace,omitempty"`
-	CfServiceInstance           string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName            string `json:"cfServiceKeyName,omitempty"`
-	Host                        string `json:"host,omitempty"`
-	Username                    string `json:"username,omitempty"`
-	Password                    string `json:"password,omitempty"`
-	AddonDescriptor             string `json:"addonDescriptor,omitempty"`
-	MaxRuntimeInMinutes         int    `json:"maxRuntimeInMinutes,omitempty"`
-	PollIntervalsInMilliseconds int    `json:"pollIntervalsInMilliseconds,omitempty"`
+	CfAPIEndpoint                string `json:"cfApiEndpoint,omitempty"`
+	CfOrg                        string `json:"cfOrg,omitempty"`
+	CfSpace                      string `json:"cfSpace,omitempty"`
+	CfServiceInstance            string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName             string `json:"cfServiceKeyName,omitempty"`
+	Host                         string `json:"host,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollIntervalsInMilliseconds  int    `json:"pollIntervalsInMilliseconds,omitempty"`
+	PerformAssemblePackages      bool   `json:"performAssemblePackages,omitempty"`
+	PerformRegisterPackages      bool   `json:"performRegisterPackages,omitempty"`
+	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	AakUsername                  string `json:"aakUsername,omitempty"`
+	AakPassword                  string `json:"aakPassword,omitempty"`
 }
 
 type abapEnvironmentAssemblePackagesCommonPipelineEnvironment struct {
@@ -92,6 +97,8 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.AakUsername)
+			log.RegisterSecret(stepConfig.AakPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -159,12 +166,20 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollIntervalsInMilliseconds, "pollIntervalsInMilliseconds", 60000, "wait time in milliseconds till next status request in the backend system")
+	cmd.Flags().BoolVar(&stepConfig.PerformAssemblePackages, "performAssemblePackages", true, "Defines if packages should be assembled in the build system")
+	cmd.Flags().BoolVar(&stepConfig.PerformRegisterPackages, "performRegisterPackages", true, "Defines if packages should be registered in AAKaaS")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
+	cmd.Flags().StringVar(&stepConfig.AakUsername, "aakUsername", os.Getenv("PIPER_aakUsername"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
+	cmd.Flags().StringVar(&stepConfig.AakPassword, "aakPassword", os.Getenv("PIPER_aakPassword"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
 	cmd.MarkFlagRequired("pollIntervalsInMilliseconds")
+	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
+	cmd.MarkFlagRequired("aakUsername")
+	cmd.MarkFlagRequired("aakPassword")
 }
 
 // retrieve step metadata
@@ -179,6 +194,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -236,22 +252,34 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_host"),
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_username"),
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_password"),
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -284,6 +312,63 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     60000,
+					},
+					{
+						Name:        "performAssemblePackages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "performRegisterPackages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "abapAddonAssemblyKitEndpoint",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
+					},
+					{
+						Name: "aakUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_aakUsername"),
+					},
+					{
+						Name: "aakPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_aakPassword"),
 					},
 				},
 			},

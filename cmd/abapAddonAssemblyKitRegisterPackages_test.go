@@ -4,21 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
-	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
-
-func mockReader(path string) ([]byte, error) {
-	if path == "exists" {
-		return []byte("test"), nil
-	} else if path == "null" {
-		return []byte(""), nil
-	}
-	return nil, errors.New("error reading the file")
-}
 
 func TestRegisterPackagesStep(t *testing.T) {
 	var config abapAddonAssemblyKitRegisterPackagesOptions
@@ -105,101 +94,3 @@ func TestRegisterPackagesStep(t *testing.T) {
 		assert.Error(t, err, "Did expect error")
 	})
 }
-
-// ********************* Test uploadSarFiles *******************
-func TestUploadSarFiles(t *testing.T) {
-	t.Run("test uploadSarFiles - success", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body: "dummy",
-		}
-		repositories, conn := setupRepos("exists", aakaas.PackageStatusPlanned, client)
-		err := uploadSarFiles(repositories, conn, mockReader)
-		assert.NoError(t, err)
-	})
-	t.Run("test uploadSarFiles - error due to missing file path", func(t *testing.T) {
-		repositories, conn := setupRepos("", aakaas.PackageStatusPlanned, abaputils.ClientMock{})
-		err := uploadSarFiles(repositories, conn, mockReader)
-		assert.Error(t, err)
-	})
-	t.Run("test uploadSarFiles - error due to missing file", func(t *testing.T) {
-		repositories, conn := setupRepos("does_not_exist", aakaas.PackageStatusPlanned, abaputils.ClientMock{})
-		err := uploadSarFiles(repositories, conn, mockReader)
-		assert.Error(t, err)
-	})
-	t.Run("test uploadSarFiles - error during upload", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body:  "ErrorBody",
-			Error: errors.New("Failure during upload of SAR file"),
-		}
-		repositories, conn := setupRepos("exists", aakaas.PackageStatusPlanned, client)
-		err := uploadSarFiles(repositories, conn, mockReader)
-		assert.Error(t, err)
-	})
-}
-
-// ********************* Test registerPackages *******************
-func TestRegisterPackages(t *testing.T) {
-	t.Run("test registerPackages - planned", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body: responseRegisterPackagesPost,
-		}
-		repositories, conn := setupRepos("Filepath", aakaas.PackageStatusPlanned, client)
-		repos, err := registerPackages(repositories, conn)
-		assert.NoError(t, err)
-		assert.Equal(t, string(aakaas.PackageStatusLocked), repos[0].Status)
-	})
-	t.Run("test registerPackages - released", func(t *testing.T) {
-		repositories, conn := setupRepos("Filepath", aakaas.PackageStatusReleased, abaputils.ClientMock{})
-		repos, err := registerPackages(repositories, conn)
-		assert.NoError(t, err)
-		assert.Equal(t, string(aakaas.PackageStatusReleased), repos[0].Status)
-	})
-	t.Run("test registerPackages - with error", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body:  "ErrorBody",
-			Error: errors.New("Failure during registration"),
-		}
-		repositories, conn := setupRepos("Filepath", aakaas.PackageStatusPlanned, client)
-		repos, err := registerPackages(repositories, conn)
-		assert.Error(t, err)
-		assert.Equal(t, string(aakaas.PackageStatusPlanned), repos[0].Status)
-	})
-}
-
-// ********************* Test Setup *******************
-func setupRepos(filePath string, status aakaas.PackageStatus, cl abaputils.ClientMock) ([]abaputils.Repository, abapbuild.Connector) {
-	repositories := []abaputils.Repository{
-		{
-			Name:           "/DRNMSPC/COMP01",
-			VersionYAML:    "1.0.0",
-			PackageName:    "SAPK-001AAINDRNMSPC",
-			Status:         string(status),
-			SarXMLFilePath: filePath,
-		},
-	}
-	conn := new(abapbuild.Connector)
-	conn.Client = &cl
-	conn.Header = make(map[string][]string)
-	return repositories, *conn
-}
-
-// ********************* Testdata *******************
-
-var responseRegisterPackagesPost = `{
-    "d": {
-        "__metadata": {
-            "id": "https://W7Q.DMZWDF.SAP.CORP:443/odata/aas_ocs_package/OcsPackageSet('SAPK-001AAINDRNMSPC')",
-            "uri": "https://W7Q.DMZWDF.SAP.CORP:443/odata/aas_ocs_package/OcsPackageSet('SAPK-001AAINDRNMSPC')",
-            "type": "SSDA.AAS_ODATA_PACKAGE_SRV.OcsPackage"
-        },
-        "Name": "SAPK-001AAINDRNMSPC",
-        "Type": "AOI",
-        "Component": "/DRNMSPC/COMP01",
-        "Release": "0001",
-        "Level": "0000",
-        "Status": "L",
-        "Operation": "",
-        "Namespace": "/DRNMSPC/",
-        "Vendorid": "0000203069"
-    }
-}`

@@ -1,9 +1,14 @@
 metadata:
   name: abapEnvironmentAssemblePackages
-  description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system"
+  description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system including upload to AAKaaS"
   longDescription: |
-    This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
-    Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.
+    This step takes the list of Software Component Versions (SCVs) from the addonDescriptor in the commonPipelineEnvironment. If for any of the SCVs a package has to be build (status "P" = planned)
+    it runs the assembly of the corresponding [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in the SAP Cloud
+    Platform ABAP Environment system. For each package this results in a [SAR archive](https://launchpad.support.sap.com/#/notes/212876) with the data file and metadata XML.
+    After all assemblies have been finished the upload into AAKaaS takes place which creates physical Delivery Packages from the composed and exported files of the build system.
+    The physical Delivery Packages are created with status "L" = locked in AAKaaS which in turn is written back to the addonDescriptor in the commonPipelineEnvironment.
+    <br />
+    For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 spec:
   inputs:
     secrets:
@@ -13,6 +18,9 @@ spec:
         aliases:
           - name: cfCredentialsId
           - name: credentialsId
+      - name: abapAddonAssemblyKitCredentialsId
+        description: Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        type: jenkins
     params:
       - name: cfApiEndpoint
         type: string
@@ -88,6 +96,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
@@ -97,6 +109,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: password
       - name: addonDescriptor
         type: string
         description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
@@ -126,6 +142,56 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: performAssemblePackages
+        type: bool
+        description: Defines if packages should be assembled in the build system 
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: performRegisterPackages
+        type: bool
+        description: Defines if packages should be registered in AAKaaS
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: abapAddonAssemblyKitEndpoint
+        type: string
+        description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        default: https://apps.support.sap.com
+      - name: aakUsername
+        type: string
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: abapAddonAssemblyKitCredentialsId
+            type: secret
+            param: username
+      - name: aakPassword
+        type: string
+        description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: abapAddonAssemblyKitCredentialsId
+            type: secret
+            param: password
   outputs:
     resources:
       - name: commonPipelineEnvironment

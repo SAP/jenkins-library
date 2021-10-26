@@ -26,6 +26,14 @@
   * This can be done manually through the respective applications on the SAP BTP, ABAP environment system.
   * In a pipeline, you can do this, for example, with the step [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/).
 * The packages to be assembled need to be reserved in AAKaaS and the corresponding information needs to be present in CommonPipelineEnvironment. To do so run step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/) prior this step.
+* The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
+* This step needs the names of the packages which should be registered. For each package a SAR archive with the data file and metadata XML must be provided.
+* The package names and their status are taken from the addonDescriptor in the commonPipelineEnvironment, as well as the SarXMLFilePath with the path to the SAR file.
+* The information will be written to the commonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages)
+* The SAR archive is produced if you run the step [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages)
+
+A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+
 
 ## ${docGenParameters}
 
@@ -49,6 +57,7 @@ If you want to provide the host and credentials of the Communication Arrangement
 steps:
   abapEnvironmentAssemblePackages:
     abapCredentialsId: 'abapCredentialsId',
+    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId'
     host: 'https://myABAPendpoint.com',
 ```
 
@@ -58,6 +67,7 @@ Or by authenticating against Cloud Foundry and reading the Service Key details f
 steps:
   abapEnvironmentAssemblePackages:
     abapCredentialsId: 'cfCredentialsId',
+    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId'
     cfApiEndpoint : 'https://test.server.com',
     cfOrg : 'cfOrg',
     cfSpace: 'cfSpace',
