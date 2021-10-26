@@ -20,6 +20,7 @@ type AuthEntry struct {
 	Auth string `json:"auth,omitempty"`
 }
 
+// CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials
 func CreateDockerConfigJSON(registryURL, username, password, configPath string, utils piperutils.FileUtils) (string, error) {
 
 	filePath := ".pipeline/dockerConfig.json"
