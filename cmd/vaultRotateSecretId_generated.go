@@ -164,7 +164,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUrl",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "jenkinsVaultSecret",
+								Name:    "jenkinsVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "jenkins",
 							},
@@ -188,7 +188,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUsername",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "jenkinsVaultSecret",
+								Name:    "jenkinsVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "jenkins",
 							},
@@ -203,7 +203,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "jenkinsVaultSecret",
+								Name:    "jenkinsVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "jenkins",
 							},
@@ -263,14 +263,15 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "adoPersonalAccessToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "",
-								Type: "vaultSecret",
+								Name:    "azureDevOpsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "azure-dev-ops",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "token"}},
 						Default:   os.Getenv("PIPER_adoPersonalAccessToken"),
 					},
 					{

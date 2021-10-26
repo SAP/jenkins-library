@@ -1,0 +1,31 @@
+[project]
+id = "io.buildpacks.my-app"
+version = "0.1"
+
+[build]
+include = [
+    "*.js",
+    "package.json"
+]
+
+[[build.env]]
+name = "BP_NODE_VERSION"
+value = "15.14.0"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/ca-certificates"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/node-engine"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/npm-install"
+version = "0.4.0"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/node-module-bom"
+version = "0.1.2"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/npm-start"
+version = "0.4.0"

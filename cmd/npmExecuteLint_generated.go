@@ -16,6 +16,8 @@ import (
 )
 
 type npmExecuteLintOptions struct {
+	Install            bool   `json:"install,omitempty"`
+	RunScript          string `json:"runScript,omitempty"`
 	FailOnError        bool   `json:"failOnError,omitempty"`
 	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
 }
@@ -108,6 +110,8 @@ either use ESLint configurations present in the project or use the provided gene
 }
 
 func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOptions) {
+	cmd.Flags().BoolVar(&stepConfig.Install, "install", false, "Run npm install or similar commands depending on the project structure.")
+	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `ci-lint`, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", false, "Defines the behavior in case linting errors are found.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
 
@@ -124,6 +128,24 @@ func npmExecuteLintMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "install",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "runScript",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `ci-lint`,
+					},
 					{
 						Name:        "failOnError",
 						ResourceRef: []config.ResourceReference{},
