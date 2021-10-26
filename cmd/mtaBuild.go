@@ -235,7 +235,6 @@ func runMtaBuild(config mtaBuildOptions,
 	var dataParametersJSON map[string]interface{}
 	json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
-	commonPipelineEnvironment.custom.buildTool = dataParametersJSON["buildTool"].(string)
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
