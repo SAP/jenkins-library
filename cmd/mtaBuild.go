@@ -230,11 +230,16 @@ func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment.mtarFilePath = mtarName
 	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
 	commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
-	// commonPipelineEnvironment.custom.profiles = config.Profiles[]
+	commonPipelineEnvironment.custom.profiles = config.Profiles
 	commonPipelineEnvironment.custom.publish = config.Publish
 	var dataParametersJSON map[string]interface{}
-	json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
-	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		commonPipelineEnvironment.custom.dockerImage = value.(string)
+	}
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`

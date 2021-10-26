@@ -45,7 +45,7 @@ type mtaBuildCommonPipelineEnvironment struct {
 		publish            bool
 		globalSettingsFile string
 		defaultNpmRegistry string
-		profiles           string
+		profiles           []string
 		dockerImage        string
 	}
 }

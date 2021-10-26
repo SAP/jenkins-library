@@ -211,7 +211,7 @@ spec:
           - name: custom/defaultNpmRegistry
             type: string
           - name: custom/profiles
-            type: string
+            type: "[]string"
           - name: custom/dockerImage
             type: string
   containers:

@@ -6,7 +6,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
@@ -61,20 +60,16 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	log.Entry().Info("Creating files for build-setting.json")
 	commonPipelineEnvironment.custom.createBom = config.CreateBOM
 	commonPipelineEnvironment.custom.publish = config.Publish
 	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
-
 	var dataParametersJSON map[string]interface{}
-	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
-	if err != nil {
-		return errors.Wrap(err, "Reading ParametersJSON is failed")
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
 	}
 	if value, ok := dataParametersJSON["dockerImage"]; ok {
 		commonPipelineEnvironment.custom.dockerImage = value.(string)
-	} else {
-		log.Entry().Info("Value dockerImage doesn;t exist")
 	}
 
 	return nil

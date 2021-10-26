@@ -54,10 +54,14 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	commonPipelineEnvironment.custom.logSuccessfulMavenTransfers = config.LogSuccessfulMavenTransfers
 	commonPipelineEnvironment.custom.publish = config.Publish
 	commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
-
 	var dataParametersJSON map[string]interface{}
-	json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
-	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		commonPipelineEnvironment.custom.dockerImage = value.(string)
+	}
 
 	if config.CreateBOM {
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
