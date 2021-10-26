@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
@@ -66,10 +67,15 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
 
 	var dataParametersJSON map[string]interface{}
-	json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
-	log.Entry().Info(dataParametersJSON)
-	log.Entry().Info("Creating file is finished")
-	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
+	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if err != nil {
+		return errors.Wrap(err, "Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		commonPipelineEnvironment.custom.dockerImage = value.(string)
+	} else {
+		log.Entry().Info("Value dockerImage doesn;t exist")
+	}
 
 	return nil
 }
