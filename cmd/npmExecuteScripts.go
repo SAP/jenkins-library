@@ -67,9 +67,9 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	var dataParametersJSON map[string]interface{}
 	json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
-	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
 	log.Entry().Info(dataParametersJSON)
 	log.Entry().Info("Creating file is finished")
+	commonPipelineEnvironment.custom.dockerImage = dataParametersJSON["dockerImage"].(string)
 
 	return nil
 }
