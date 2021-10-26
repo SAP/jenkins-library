@@ -764,6 +764,15 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerExecuteOnKubernetesAnnotations(){
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            annotations: ['testAnnotation':'testValue']
+        )
+        assertEquals(['testAnnotation':'testValue'], podSpec.metadata.annotations)
+    }
+
+    @Test
     void testStashIncludesAndExcludes() {
         nullScript.commonPipelineEnvironment.configuration = [
             steps: [
@@ -860,6 +869,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(bodyExecuted)
         assertThat(initContainer.command, is(equalTo(expectedCommandOutput)))
     }
+
 
     private container(options, body) {
         containerName = options.name
