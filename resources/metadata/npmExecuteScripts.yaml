@@ -127,6 +127,8 @@ spec:
   #           type: bool
   #         - name: custom/defaultNpmRegistry
   #           type: string
+  #         - name: custom/dockerImage
+  #           type: string
   containers:
     - name: node
       image: node:lts-stretch

@@ -44,6 +44,7 @@ type mavenBuildCommonPipelineEnvironment struct {
 		globalSettingsFile          string
 		profiles                    string
 		dockerImage                 string
+		buildTool                   string
 	}
 }
 
@@ -59,6 +60,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		{category: "custom", name: "globalSettingsFile", value: p.custom.globalSettingsFile},
 		{category: "custom", name: "profiles", value: p.custom.profiles},
 		{category: "custom", name: "dockerImage", value: p.custom.dockerImage},
+		{category: "custom", name: "buildTool", value: p.custom.buildTool},
 	}
 
 	errCount := 0
@@ -393,6 +395,7 @@ func mavenBuildMetadata() config.StepData {
 							{"Name": "custom/globalSettingsFile"},
 							{"Name": "custom/profiles"},
 							{"Name": "custom/dockerImage"},
+							{"Name": "custom/buildTool"},
 						},
 					},
 				},

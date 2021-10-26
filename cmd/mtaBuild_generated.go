@@ -46,6 +46,8 @@ type mtaBuildCommonPipelineEnvironment struct {
 		globalSettingsFile string
 		defaultNpmRegistry string
 		profiles           string
+		dockerImage        string
+		buildTool          string
 	}
 }
 
@@ -61,6 +63,8 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		{category: "custom", name: "globalSettingsFile", value: p.custom.globalSettingsFile},
 		{category: "custom", name: "defaultNpmRegistry", value: p.custom.defaultNpmRegistry},
 		{category: "custom", name: "profiles", value: p.custom.profiles},
+		{category: "custom", name: "dockerImage", value: p.custom.dockerImage},
+		{category: "custom", name: "buildTool", value: p.custom.buildTool},
 	}
 
 	errCount := 0
@@ -405,6 +409,8 @@ func mtaBuildMetadata() config.StepData {
 							{"Name": "custom/globalSettingsFile"},
 							{"Name": "custom/defaultNpmRegistry"},
 							{"Name": "custom/profiles"},
+							{"Name": "custom/dockerImage"},
+							{"Name": "custom/buildTool"},
 						},
 					},
 				},
