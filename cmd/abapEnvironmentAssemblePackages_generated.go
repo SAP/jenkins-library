@@ -64,7 +64,7 @@ func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path,
 	}
 }
 
-// AbapEnvironmentAssemblePackagesCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
+// AbapEnvironmentAssemblePackagesCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system including upload to AAKaaS
 func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentAssemblePackages"
 
@@ -76,9 +76,14 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
-		Long: `This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
-Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.`,
+		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system including upload to AAKaaS",
+		Long: `This step takes the list of Software Component Versions (SCVs) from the addonDescriptor in the commonPipelineEnvironment. If for any of the SCVs a package has to be build (status "P" = planned)
+it runs the assembly of the corresponding [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in the SAP Cloud
+Platform ABAP Environment system. For each package this results in a [SAR archive](https://launchpad.support.sap.com/#/notes/212876) with the data file and metadata XML.
+After all assemblies have been finished the upload into AAKaaS takes place which creates physical Delivery Packages from the composed and exported files of the build system.
+The physical Delivery Packages are created with status "L" = locked in AAKaaS which in turn is written back to the addonDescriptor in the commonPipelineEnvironment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -188,7 +193,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentAssemblePackages",
 			Aliases:     []config.Alias{},
-			Description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+			Description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system including upload to AAKaaS",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -364,7 +369,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},

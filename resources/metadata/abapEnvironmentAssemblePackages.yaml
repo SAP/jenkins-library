@@ -186,6 +186,8 @@ spec:
         description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
         resourceRef:

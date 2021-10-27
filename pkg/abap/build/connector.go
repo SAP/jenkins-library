@@ -82,7 +82,7 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
-	log.Entry().Info("Body: " + string(body))
+	//log.Entry().Info("Body: " + string(body))
 	return body, err
 }
 
