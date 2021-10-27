@@ -123,9 +123,10 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 
 	cookieJar, _ := cookiejar.New(nil)
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  username,
-		Password:  password,
-		CookieJar: cookieJar,
+		Username:                  username,
+		Password:                  password,
+		CookieJar:                 cookieJar,
+		TransportSkipVerification: true,
 	})
 	conn.Baseurl = aAKaaSEndpoint
 }
