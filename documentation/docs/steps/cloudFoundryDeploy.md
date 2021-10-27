@@ -18,9 +18,9 @@ Deployment can be done
 !!! note "Blue-Green Deployment with MTA CF CLI Plugin"
     The Multiapps Plugin offers 2 different strategies:
 
-    * [Blue-Green Deployment Strategy](https://github.com/SAP-samples/cf-mta-examples/tree/main/blue-green-deploy-strategy) - where the production environments are called “live” and “idle” during deployment. This strategy is activated with `mtaDeployParameters: --strategy blue-green --skip-testing-phase` and `deployType=standard`
-    * [Legacy Blue-Green Deployment](https://github.com/SAP-samples/cf-mta-examples/tree/main/blue-green-deploy-legacy) - where the productive environments are called “blue” and “green. Activated by `deployType=blue-green`
-    
+    * [Blue-Green Deployment Strategy](https://github.com/SAP-samples/cf-mta-examples/tree/main/blue-green-deploy-strategy) - where the production environments are called “live” and “idle” during deployment. This strategy is activated with `mtaDeployParameters: --strategy blue-green --skip-testing-phase` and `deployType=standard`. After deployment, appnames are not appeneded by any suffix like `-live` or `-idle`.
+    * [Legacy Blue-Green Deployment](https://github.com/SAP-samples/cf-mta-examples/tree/main/blue-green-deploy-legacy) - where the productive environments are called “blue” and “green. Activated by `deployType=blue-green`. After deployment, appnames are appeneded by suffix like `-blue` or `-green`
+
 !!! note
     Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
     If your `application` contains a list of `buildpacks` instead of a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
