@@ -137,7 +137,6 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 		return nil
 	}
 	responseBody, readErr := ioutil.ReadAll(response.Body)
-
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", response.StatusCode)
 	}
