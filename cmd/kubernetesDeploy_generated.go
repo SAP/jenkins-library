@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -20,12 +21,14 @@ type kubernetesDeployOptions struct {
 	AppTemplate                string   `json:"appTemplate,omitempty"`
 	ChartPath                  string   `json:"chartPath,omitempty"`
 	ContainerRegistryPassword  string   `json:"containerRegistryPassword,omitempty"`
+	ContainerImageName         string   `json:"containerImageName,omitempty"`
+	ContainerImageTag          string   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL       string   `json:"containerRegistryUrl,omitempty"`
 	ContainerRegistryUser      string   `json:"containerRegistryUser,omitempty"`
 	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string   `json:"deploymentName,omitempty"`
-	DeployTool                 string   `json:"deployTool,omitempty"`
+	DeployTool                 string   `json:"deployTool,omitempty" validate:"oneof=kubectl helm helm3"`
 	ForceUpdates               bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                 []string `json:"helmValues,omitempty"`
@@ -102,6 +105,15 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -142,6 +154,8 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
@@ -236,6 +250,29 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
+						Name:        "containerImageName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Default:     os.Getenv("PIPER_containerImageName"),
+					},
+					{
+						Name: "containerImageTag",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -370,9 +407,9 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/kube-config", "$(vaultBasePath)/$(vaultPipelineName)/kube-config", "$(vaultBasePath)/GROUP-SECRETS/kube-config"},
-								Type:  "vaultSecretFile",
+								Name:    "kubeConfigFileSecretName",
+								Type:    "vaultSecretFile",
+								Default: "kube-config",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -436,12 +473,12 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},

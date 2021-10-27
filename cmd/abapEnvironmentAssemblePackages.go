@@ -31,6 +31,7 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	var autils = abaputils.AbapUtils{
 		Exec: &c,
 	}
+
 	client := piperhttp.Client{}
 	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
@@ -171,6 +172,10 @@ func (br *buildWithRepository) start() error {
 			{
 				ValueID: "NAMESPACE",
 				Value:   br.repo.Namespace,
+			},
+			{
+				ValueID: "PACKAGE_TYPE",
+				Value:   br.repo.PackageType,
 			},
 			{
 				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,

@@ -13,16 +13,21 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type cnbBuildOptions struct {
-	ContainerImage       string `json:"containerImage,omitempty"`
-	ContainerImageName   string `json:"containerImageName,omitempty"`
-	ContainerImageTag    string `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL string `json:"containerRegistryUrl,omitempty"`
-	Path                 string `json:"path,omitempty"`
-	DockerConfigJSON     string `json:"dockerConfigJSON,omitempty"`
+	ContainerImageName        string   `json:"containerImageName,omitempty"`
+	ContainerImageTag         string   `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
+	Buildpacks                []string `json:"buildpacks,omitempty"`
+	BuildEnvVars              []string `json:"buildEnvVars,omitempty"`
+	Path                      string   `json:"path,omitempty"`
+	ProjectDescriptor         string   `json:"projectDescriptor,omitempty"`
+	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalTags            []string `json:"additionalTags,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -97,6 +102,15 @@ func CnbBuildCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -133,13 +147,20 @@ func CnbBuildCommand() *cobra.Command {
 }
 
 func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.")
-	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`")
-	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used instead of parameter `containerImage`")
-	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
-	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to your sources or an artifact build before.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
+	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '<hostname>/<repo>[:<tag>]'.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildEnvVars, "buildEnvVars", []string{}, "List of custom environment variables used during a build in the form of 'KEY=VALUE'.")
+	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.")
+	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Path to the project.toml file (see https://buildpacks.io/docs/reference/config/project-descriptor/ for the reference). Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be additionally pushed to the registry, e.g. \"latest\".")
 
+	cmd.MarkFlagRequired("containerImageName")
+	cmd.MarkFlagRequired("containerImageTag")
+	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("dockerConfigJSON")
 }
 
@@ -154,24 +175,15 @@ func cnbBuildMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)) in the following format:\n\n```json\n{\n    \"auths\": {\n            \"$server\": {\n                    \"auth\": \"base64($username + ':' + $password)\"\n            }\n    }\n}\n```\n\nExample:\n\n```json\n{\n    \"auths\": {\n            \"example.com\": {\n                    \"auth\": \"dXNlcm5hbWU6cGFzc3dvcmQ=\"\n            }\n    }\n}\n```\n", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
-					{
-						Name:        "containerImage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_containerImage"),
-					},
 					{
 						Name:        "containerImageName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 						Default:     os.Getenv("PIPER_containerImageName"),
 					},
@@ -185,7 +197,7 @@ func cnbBuildMetadata() config.StepData {
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
@@ -199,9 +211,27 @@ func cnbBuildMetadata() config.StepData {
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
+					},
+					{
+						Name:        "buildpacks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "buildEnvVars",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "path",
@@ -211,6 +241,15 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_path"),
+					},
+					{
+						Name:        "projectDescriptor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `project.toml`,
 					},
 					{
 						Name: "dockerConfigJSON",
@@ -226,9 +265,9 @@ func cnbBuildMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
@@ -236,6 +275,24 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerConfigJSON"),
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "additionalTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

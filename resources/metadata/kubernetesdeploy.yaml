@@ -51,7 +51,7 @@ spec:
         aliases:
           - name: helmDeploymentParameters
         type: "[]string"
-        description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
+        description: Defines additional parameters for "helm install" or "kubectl apply" command.
         scope:
           - PARAMETERS
           - STAGES
@@ -96,6 +96,29 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -234,7 +257,7 @@ spec:
           - STEPS
       - name: kubeConfig
         type: string
-        description: Defines the path to the \"kubeconfig\" file.
+        description: Defines the path to the "kubeconfig" file.
         scope:
           - GENERAL
           - PARAMETERS
@@ -245,13 +268,11 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/kube-config
-              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
-              - $(vaultBasePath)/GROUP-SECRETS/kube-config
+            name: kubeConfigFileSecretName
+            default: kube-config
       - name: kubeContext
         type: string
-        description: Defines the context to use from the \"kubeconfig\" file.
+        description: Defines the context to use from the "kubeconfig" file.
         scope:
           - PARAMETERS
           - STAGES
@@ -293,6 +314,8 @@ spec:
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -300,10 +323,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
