@@ -8,6 +8,7 @@ import util.BasePiperTest
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.PipelineWhenException
+import org.junit.rules.ExpectedException
 import util.Rules
 
 import static org.hamcrest.Matchers.*
@@ -19,11 +20,13 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultsYaml() )
     private List stepsCalled = []
     private List activeStages = []
+    private ExpectedException thrown = new ExpectedException()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(readYamlRule)
+        .around(thrown)
         .around(jsr)
 
     @Before
@@ -56,11 +59,28 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     }
 
     @Test
-    void testStageConfiguration() {
-
-        jsr.step.abapEnvironmentPipelineStageInit(script: nullScript)
+    void testStageConfigurationToggleFalse() {
+        jsr.step.abapEnvironmentPipelineStageInit(script: nullScript, skipCheckout: false)
         assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'checkout'))
+    }
 
+    @Test
+    void testSkipCheckoutToggleTrue() {
+        jsr.step.abapEnvironmentPipelineStageInit(script: nullScript,  skipCheckout: true)
+        assertThat(stepsCalled, not(hasItems('checkout')))
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment'))
+    }
+
+    @Test
+    void testSkipCheckoutToggleNull() {
+        jsr.step.abapEnvironmentPipelineStageInit(script: nullScript,  skipCheckout: null)
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'checkout'))
+    }
+
+    @Test
+    void testSkipCheckoutToggleString() {
+        thrown.expectMessage('[abapEnvironmentPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
+        jsr.step.abapEnvironmentPipelineStageInit(script: nullScript,  skipCheckout: 'string')
     }
 
     private defaultsYaml() {
