@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"reflect"
 	"testing"
 
@@ -90,35 +89,6 @@ func TestSend(t *testing.T) {
 		assert.Contains(t, mock.urlsCalled, "custom26=label")
 		assert.Contains(t, mock.urlsCalled, "e_26=test")
 		assert.Contains(t, mock.urlsCalled, "action_name=testAction")
-	})
-}
-func TestEnvVars(t *testing.T) {
-
-	t.Run("without values", func(t *testing.T) {
-		telemetryClient := Telemetry{}
-		// init
-		client = nil
-		// test
-		telemetryClient.Initialize(false, "testStep")
-		// assert
-		assert.Equal(t, "n/a", telemetryClient.baseData.PipelineURLHash)
-		assert.Equal(t, "n/a", telemetryClient.baseData.BuildURLHash)
-	})
-
-	t.Run("", func(t *testing.T) {
-		telemetryClient := Telemetry{}
-		// init
-		os.Setenv("JOB_URL", "someValue")
-		os.Setenv("BUILD_URL", "someValue")
-		client = nil
-		// test
-		telemetryClient.Initialize(false, "testStep")
-		// assert
-		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", telemetryClient.baseData.PipelineURLHash)
-		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", telemetryClient.baseData.BuildURLHash)
-		// cleanup
-		os.Unsetenv("JOB_URL")
-		os.Unsetenv("BUILD_URL")
 	})
 }
 
