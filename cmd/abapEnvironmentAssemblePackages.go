@@ -101,6 +101,11 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 
 		connUpload := new(abapbuild.Connector)
 		connUpload.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.AakUsername, config.AakPassword, clientAak)
+		if config.AakPassword == "" || config.AakUsername == "" {
+			log.Entry().Info("User / PW inital")
+		} else {
+			log.Entry().Info("User / PW total: ", len(config.AakUsername)+len(config.AakPassword))
+		}
 
 		err := uploadSarFiles(addonDescriptor.Repositories, *connUpload, fileReader)
 		if err != nil {
