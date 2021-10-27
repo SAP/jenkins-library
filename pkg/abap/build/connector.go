@@ -49,13 +49,6 @@ func (conn *Connector) GetToken(appendum string) error {
 	url := conn.Baseurl + appendum
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
 	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
-	if response != nil {
-		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
-		if response.ContentLength >= 0 {
-			body, _ := ioutil.ReadAll(response.Body)
-			log.Entry().Info(body)
-		}
-	}
 	if err != nil {
 		if response == nil {
 			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
@@ -77,10 +70,6 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
 	if response != nil {
 		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
-		if response.ContentLength >= 0 {
-			body, _ := ioutil.ReadAll(response.Body)
-			log.Entry().Info(body)
-		}
 	}
 	if err != nil {
 		if response == nil || response.Body == nil {
@@ -93,6 +82,7 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
+	log.Entry().Info("Body: " + string(body))
 	return body, err
 }
 
@@ -108,10 +98,6 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 	}
 	if response != nil { //For error analysis
 		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
-		if response.ContentLength >= 0 {
-			body, _ := ioutil.ReadAll(response.Body)
-			log.Entry().Info(body)
-		}
 	}
 	if err != nil {
 		if response == nil {
@@ -124,6 +110,7 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
+	log.Entry().Info("Body: " + string(body))
 	return body, err
 }
 
@@ -201,7 +188,7 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
 		if response.ContentLength >= 0 {
 			body, _ := ioutil.ReadAll(response.Body)
-			log.Entry().Info(body)
+			log.Entry().Info(string(body))
 		}
 	}
 	if err != nil {
@@ -243,7 +230,7 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 			log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
 			if response.ContentLength >= 0 {
 				body, _ := ioutil.ReadAll(response.Body)
-				log.Entry().Info(body)
+				log.Entry().Info(string(body))
 			}
 		}
 
