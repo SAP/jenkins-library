@@ -767,6 +767,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     void testDockerExecuteOnKubernetesAnnotations(){
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
+            juStabUtils: utils,
             annotations: ['testAnnotation':'testValue']
         )
         assertEquals(['testAnnotation':'testValue'], podSpec.metadata.annotations)
