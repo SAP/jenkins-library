@@ -217,8 +217,14 @@ func correctWhitesourceDockerConfigEnvVar(config *ScanOptions, utils whitesource
 	path := config.DockerConfigJSON
 	if len(path) > 0 {
 		log.Entry().Infof("Docker credentials configuration: %v", path)
+		if len(config.ScanImageRegistryURL) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
+			var err error
+			path, err = piperDocker.CreateDockerConfigJSON(config.ScanImageRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			if err != nil {
+				log.Entry().Warningf("failed to update Docker config.json: %v", err)
+			}
+		}
 		path, _ := utils.Abs(path)
-		piperDocker.CreateDockerConfigJSON(config.ScanImageRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, config.DockerConfigJSON, utils)
 		// use parent directory
 		path = filepath.Dir(path)
 		os.Setenv("DOCKER_CONFIG", path)

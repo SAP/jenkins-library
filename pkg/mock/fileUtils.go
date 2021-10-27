@@ -80,7 +80,11 @@ func (f *FilesMock) toAbsPath(path string) string {
 		return f.Separator + f.CurrentDir
 	}
 	if !strings.HasPrefix(path, f.Separator) {
-		path = f.Separator + filepath.Join(f.CurrentDir, path)
+		if !strings.HasPrefix(f.CurrentDir, "/") {
+			path = f.Separator + filepath.Join(f.CurrentDir, path)
+		} else {
+			path = filepath.Join(f.CurrentDir, path)
+		}
 	}
 	return path
 }

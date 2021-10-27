@@ -13,8 +13,9 @@ func TestCreateDockerConfigJSON(t *testing.T) {
 	t.Parallel()
 	t.Run("success - new file", func(t *testing.T) {
 		utilsMock := mock.FilesMock{}
-		configFile, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", &utilsMock)
+		configFile, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "test/config.json", "", &utilsMock)
 		assert.NoError(t, err)
+		assert.Equal(t, "test/config.json", configFile)
 
 		configFileContent, err := utilsMock.FileRead(configFile)
 		assert.NoError(t, err)
@@ -35,7 +36,7 @@ func TestCreateDockerConfigJSON(t *testing.T) {
 }`
 		existingConfigFilePath := ".docker/config.json"
 		utilsMock.AddFile(existingConfigFilePath, []byte(existingConfig))
-		configFile, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", existingConfigFilePath, &utilsMock)
+		configFile, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", existingConfigFilePath, &utilsMock)
 		assert.NoError(t, err)
 
 		configFileContent, err := utilsMock.FileRead(configFile)
@@ -57,7 +58,7 @@ func TestCreateDockerConfigJSON(t *testing.T) {
 }`
 		existingConfigFilePath := ".docker/config.json"
 		utilsMock.AddFile(existingConfigFilePath, []byte(existingConfig))
-		configFile, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", existingConfigFilePath, &utilsMock)
+		configFile, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", existingConfigFilePath, &utilsMock)
 		assert.NoError(t, err)
 
 		configFileContent, err := utilsMock.FileRead(configFile)
@@ -73,7 +74,7 @@ func TestCreateDockerConfigJSON(t *testing.T) {
 		existingConfigFilePath := ".docker/config.json"
 		utilsMock.AddFile(existingConfigFilePath, []byte("{}"))
 
-		_, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", existingConfigFilePath, &utilsMock)
+		_, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", existingConfigFilePath, &utilsMock)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to read file '.docker/config.json'")
@@ -85,7 +86,7 @@ func TestCreateDockerConfigJSON(t *testing.T) {
 		existingConfig := `{`
 		existingConfigFilePath := ".docker/config.json"
 		utilsMock.AddFile(existingConfigFilePath, []byte(existingConfig))
-		_, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", existingConfigFilePath, &utilsMock)
+		_, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", existingConfigFilePath, &utilsMock)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to unmarshal json file '.docker/config.json'")
@@ -94,7 +95,7 @@ func TestCreateDockerConfigJSON(t *testing.T) {
 	t.Run("error - config file write", func(t *testing.T) {
 		utilsMock := mock.FilesMock{}
 		utilsMock.FileWriteError = fmt.Errorf("write error")
-		_, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", &utilsMock)
+		_, err := CreateDockerConfigJSON("https://test.server.url", "testUser", "testPassword", "", "", &utilsMock)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to write Docker config.json")

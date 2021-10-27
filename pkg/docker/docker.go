@@ -21,9 +21,11 @@ type AuthEntry struct {
 }
 
 // CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials
-func CreateDockerConfigJSON(registryURL, username, password, configPath string, utils piperutils.FileUtils) (string, error) {
+func CreateDockerConfigJSON(registryURL, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
 
-	filePath := ".pipeline/dockerConfig.json"
+	if len(targetPath) == 0 {
+		targetPath = configPath
+	}
 
 	dockerConfig := map[string]interface{}{}
 	if exists, _ := utils.FileExists(configPath); exists {
@@ -57,12 +59,12 @@ func CreateDockerConfigJSON(registryURL, username, password, configPath string, 
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	err = utils.FileWrite(filePath, jsonResult, 0666)
+	err = utils.FileWrite(targetPath, jsonResult, 0666)
 	if err != nil {
 		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
 	}
 
-	return filePath, nil
+	return targetPath, nil
 }
 
 // Client defines an docker client object
