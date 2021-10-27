@@ -49,6 +49,13 @@ func (conn *Connector) GetToken(appendum string) error {
 	url := conn.Baseurl + appendum
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
 	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
+	if response != nil {
+		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
+		if response.ContentLength >= 0 {
+			body, _ := ioutil.ReadAll(response.Body)
+			log.Entry().Info(body)
+		}
+	}
 	if err != nil {
 		if response == nil {
 			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
@@ -68,6 +75,13 @@ func (conn *Connector) GetToken(appendum string) error {
 func (conn Connector) Get(appendum string) ([]byte, error) {
 	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
+	if response != nil {
+		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
+		if response.ContentLength >= 0 {
+			body, _ := ioutil.ReadAll(response.Body)
+			log.Entry().Info(body)
+		}
+	}
 	if err != nil {
 		if response == nil || response.Body == nil {
 			return nil, errors.Wrap(err, "Get failed")
@@ -91,6 +105,13 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 		response, err = conn.Client.SendRequest("POST", url, nil, conn.Header, nil)
 	} else {
 		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
+	}
+	if response != nil { //For error analysis
+		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
+		if response.ContentLength >= 0 {
+			body, _ := ioutil.ReadAll(response.Body)
+			log.Entry().Info(body)
+		}
 	}
 	if err != nil {
 		if response == nil {
@@ -176,6 +197,13 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
+	if response != nil {
+		log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
+		if response.ContentLength >= 0 {
+			body, _ := ioutil.ReadAll(response.Body)
+			log.Entry().Info(body)
+		}
+	}
 	if err != nil {
 		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
@@ -211,6 +239,14 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 		log.Entry().Info(header["Content-Range"])
 
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
+		if response != nil {
+			log.Entry().Info(response.Status + " -> " + strconv.FormatInt(response.ContentLength, 10))
+			if response.ContentLength >= 0 {
+				body, _ := ioutil.ReadAll(response.Body)
+				log.Entry().Info(body)
+			}
+		}
+
 		if err != nil {
 			if response != nil && response.Body != nil {
 				errorbody, _ := ioutil.ReadAll(response.Body)
