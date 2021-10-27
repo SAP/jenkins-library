@@ -3,9 +3,14 @@ package cpi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
+	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -17,10 +22,21 @@ type CommonUtils interface {
 	GetBearerToken() (string, error)
 }
 
+//HttpCPIUtils for CPI
+type HttpCPIUtils interface {
+	HandleHTTPFileDownloadResponse() error
+}
+
 //TokenParameters struct
 type TokenParameters struct {
 	TokenURL, Username, Password string
 	Client                       piperhttp.Sender
+}
+
+//HttpParameters struct
+type HttpFileDownloadRequestParameters struct {
+	ErrMessage, FileDownloadPath string
+	Response                     *http.Response
 }
 
 // ServiceKey contains information about a CPI service key
@@ -90,4 +106,41 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
+}
+
+// HandleHTTPFileDownloadResponse - handle the file download response for http multipart response
+func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) HandleHTTPFileDownloadResponse() error {
+	response := httpFileDownloadRequestParameters.Response
+	contentDisposition := response.Header.Get("Content-Disposition")
+	disposition, params, err := mime.ParseMediaType(contentDisposition)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition "+disposition)
+	}
+	filename := params["filename"]
+
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
+
+	if response.StatusCode == 200 {
+		workspaceRelativePath := httpFileDownloadRequestParameters.FileDownloadPath
+		err = os.MkdirAll(workspaceRelativePath, 0755)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create workspace directory")
+		}
+		zipFileName := filepath.Join(workspaceRelativePath, filename)
+		file, err := os.Create(zipFileName)
+		if err != nil {
+			return errors.Wrapf(err, httpFileDownloadRequestParameters.ErrMessage)
+		}
+		io.Copy(file, response.Body)
+		return nil
+	}
+	responseBody, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", response.StatusCode)
+	}
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, response.StatusCode)
+	return errors.Errorf("%s, Response Status code: %v", httpFileDownloadRequestParameters.ErrMessage, response.StatusCode)
 }

@@ -2,12 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"mime"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -57,37 +52,7 @@ func runApiProxyDownload(config *apiProxyDownloadOptions, telemetryData *telemet
 	if downloadResp == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
-	contentDisposition := downloadResp.Header.Get("Content-Disposition")
-	disposition, params, err := mime.ParseMediaType(contentDisposition)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition "+disposition)
-	}
-	filename := params["filename"]
-
-	if downloadResp != nil && downloadResp.Body != nil {
-		defer downloadResp.Body.Close()
-	}
-
-	if downloadResp.StatusCode == 200 {
-		workspaceRelativePath := config.DownloadPath
-		err = os.MkdirAll(workspaceRelativePath, 0755)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to create workspace directory")
-		}
-		zipFileName := filepath.Join(workspaceRelativePath, filename)
-		file, err := os.Create(zipFileName)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to create api proxy artifact file")
-		}
-		io.Copy(file, downloadResp.Body)
-		return nil
-	}
-	responseBody, readErr := ioutil.ReadAll(downloadResp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)
-	}
-
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, downloadResp.StatusCode)
-	return errors.Errorf("API Proxy download failed, Response Status code: %v", downloadResp.StatusCode)
+	failureMessage := "Failed to create a new resource file in the integration flow artefact"
+	httpFileDownloadRequestParameters := cpi.HttpFileDownloadRequestParameters{ErrMessage: failureMessage, FileDownloadPath: config.DownloadPath, Response: downloadResp}
+	return cpi.HttpCPIUtils.HandleHTTPFileDownloadResponse(httpFileDownloadRequestParameters)
 }
