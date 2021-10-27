@@ -114,7 +114,7 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 	contentDisposition := response.Header.Get("Content-Disposition")
 	disposition, params, err := mime.ParseMediaType(contentDisposition)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition "+disposition)
+		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition %s", disposition)
 	}
 	filename := params["filename"]
 
@@ -125,11 +125,13 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 	if response.StatusCode == 200 {
 		workspaceRelativePath := httpFileDownloadRequestParameters.FileDownloadPath
 		err = os.MkdirAll(workspaceRelativePath, 0755)
+		// handling error while creating a workspce directoy for file download, if one not exist already!
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create workspace directory")
 		}
 		zipFileName := filepath.Join(workspaceRelativePath, filename)
 		file, err := os.Create(zipFileName)
+		// handling error while creating a file in the filesystem
 		if err != nil {
 			return errors.Wrapf(err, httpFileDownloadRequestParameters.ErrMessage)
 		}
@@ -138,7 +140,7 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 	}
 	responseBody, readErr := ioutil.ReadAll(response.Body)
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", response.StatusCode)
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, response.StatusCode)
 	return errors.Errorf("%s, Response Status code: %v", httpFileDownloadRequestParameters.ErrMessage, response.StatusCode)

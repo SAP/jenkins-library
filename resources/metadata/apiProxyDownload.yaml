@@ -32,7 +32,7 @@ spec:
         mandatory: true
       - name: downloadPath
         type: string
-        description: Specifies api proxy download location.
+        description: Specifies api proxy download location.this should be a directory path, and file name should not be included as path suffix.
         scope:
           - PARAMETERS
           - STAGES

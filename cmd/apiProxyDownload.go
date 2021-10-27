@@ -37,14 +37,15 @@ func runApiProxyDownload(config *apiProxyDownloadOptions, telemetryData *telemet
 		return err
 	}
 	downloadArtifactURL := fmt.Sprintf("%s/apiportal/api/1.0/Transport.svc/APIProxies?name=%s", serviceKey.OAuth.Host, config.APIProxyName)
-	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL,
+		Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
-	httpMethod := "GET"
+	httpMethod := http.MethodGet
 	downloadResp, httpErr := httpClient.SendRequest(httpMethod, downloadArtifactURL, nil, header, nil)
 	if httpErr != nil {
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, downloadArtifactURL)
