@@ -770,6 +770,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             juStabUtils: utils,
             annotations: ['testAnnotation':'testValue']
         )
+        {
+            bodyExecuted = true
+        }
         assertEquals(['testAnnotation':'testValue'], podSpec.metadata.annotations)
     }
 
