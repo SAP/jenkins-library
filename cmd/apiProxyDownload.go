@@ -52,7 +52,7 @@ func runApiProxyDownload(config *apiProxyDownloadOptions, telemetryData *telemet
 	if downloadResp == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
-	failureMessage := "Failed to create a new resource file in the integration flow artefact"
+	failureMessage := "Failed to download API Proxy artefact"
 	httpFileDownloadRequestParameters := cpi.HttpFileDownloadRequestParameters{ErrMessage: failureMessage, FileDownloadPath: config.DownloadPath, Response: downloadResp}
 	return cpi.HttpCPIUtils.HandleHTTPFileDownloadResponse(httpFileDownloadRequestParameters)
 }
