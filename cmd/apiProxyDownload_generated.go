@@ -108,7 +108,7 @@ func ApiProxyDownloadCommand() *cobra.Command {
 func addApiProxyDownloadFlags(cmd *cobra.Command, stepConfig *apiProxyDownloadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.APIProxyName, "apiProxyName", os.Getenv("PIPER_apiProxyName"), "Specifies the name of the API Proxy.")
-	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies api proxy download location.")
+	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies api proxy download location.this should be a directory path, and file name should not be included as path suffix.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("apiProxyName")
