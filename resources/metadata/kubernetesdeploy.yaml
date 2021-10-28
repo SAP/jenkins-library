@@ -325,6 +325,14 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: replace
+        type: bool
+        description: Defines whether to run `replace --force` instead of `apply` kubectl command.
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config

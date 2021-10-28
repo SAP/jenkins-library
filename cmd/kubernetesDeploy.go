@@ -268,13 +268,18 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", config.AppTemplate)
 	}
 
-	kubeApplyParams := append(kubeParams, "apply", "--filename", config.AppTemplate)
-	if len(config.AdditionalParameters) > 0 {
-		kubeApplyParams = append(kubeApplyParams, config.AdditionalParameters...)
+	if config.Replace == false {
+		kubeParams = append(kubeParams, "apply", "--filename", config.AppTemplate)
+	} else {
+		kubeParams = append(kubeParams, "replace", "--force", "--filename", config.AppTemplate)
 	}
 
-	if err := command.RunExecutable("kubectl", kubeApplyParams...); err != nil {
-		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
+	if len(config.AdditionalParameters) > 0 {
+		kubeParams = append(kubeParams, config.AdditionalParameters...)
+	}
+
+	if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
+		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil
