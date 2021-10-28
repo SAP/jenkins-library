@@ -14,18 +14,29 @@ func readFileMock(FileName string) ([]byte, error) {
 }
 
 func TestAddonDescriptorNew(t *testing.T) {
-	t.Run("Import addon.yml", func(t *testing.T) {
-		var addonDescriptor AddonDescriptor
-		err := addonDescriptor.initFromYmlFile(TestAddonDescriptorYAML, readFileMock)
-		CheckAddonDescriptorForRepositories(addonDescriptor)
+	var addonDescriptor AddonDescriptor
+	err := addonDescriptor.initFromYmlFile(TestAddonDescriptorYAML, readFileMock)
+	assert.NoError(t, err)
+	err = CheckAddonDescriptorForRepositories(addonDescriptor)
+	assert.NoError(t, err)
 
-		assert.NoError(t, err)
+	t.Run("Import addon.yml", func(t *testing.T) {
 		assert.Equal(t, "/DMO/myAddonProduct", addonDescriptor.AddonProduct)
 		assert.Equal(t, "/DMO/REPO_A", addonDescriptor.Repositories[0].Name)
 		assert.Equal(t, "JEK8S273S", addonDescriptor.Repositories[1].CommitID)
 		assert.Equal(t, "FR", addonDescriptor.Repositories[1].Languages[2])
 		assert.Equal(t, `ISO-DEENFR`, addonDescriptor.Repositories[1].GetAakAasLanguageVector())
 	})
+
+	t.Run("getRepositoriesInBuildScope", func(t *testing.T) {
+		assert.Equal(t, 2, len(addonDescriptor.Repositories))
+		addonDescriptor.Repositories[1].InBuildScope = true
+
+		repos := addonDescriptor.GetRepositoriesInBuildScope()
+		assert.Equal(t, 1, len(repos))
+		assert.Equal(t, "/DMO/REPO_B", repos[0].Name)
+	})
+
 }
 
 var TestAddonDescriptorYAML = `---
@@ -130,6 +141,7 @@ func TestReadAddonDescriptor(t *testing.T) {
       - repo: 'testRepo2'`
 
 		err = ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+		assert.NoError(t, err)
 
 		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")
 
