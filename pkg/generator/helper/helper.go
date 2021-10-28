@@ -157,9 +157,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				customTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				customTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				customTelemetryData.Custom1Label = "PiperCommitHash"
-				customTelemetryData.Custom1 = GitCommit
+				customTelemetryData.Custom1 = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitCommit
 				customTelemetryData.Custom2Label = "PiperTag"
-				customTelemetryData.Custom2 = GitTag
+				customTelemetryData.Custom2 = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitTag
 				customTelemetryData.Custom3Label = "Stage"
 				customTelemetryData.Custom3 = provider.GetStageName()
 				telemetryClient.SetData(&customTelemetryData)
