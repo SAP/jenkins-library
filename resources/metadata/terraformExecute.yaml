@@ -47,7 +47,6 @@ spec:
           - type: vaultSecretFile
             name: terraformConfigFileVaultSecretName
             default: terraform
-        required: false
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
