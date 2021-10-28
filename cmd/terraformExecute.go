@@ -54,6 +54,10 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 		args = append(args, config.AdditionalArgs...)
 	}
 
+	if config.GlobalOptions != nil {
+		args = append(config.GlobalOptions, args...)
+	}
+
 	utils.RunExecutable("terraform", args...)
 
 	return nil
