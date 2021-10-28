@@ -53,7 +53,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 	})
 
 	t.Run("Required flags", func(t *testing.T) {
-		exp := []string{"stage", "step"}
+		exp := []string{"step"}
 		assert.Equal(t, exp, gotReq, "required flags incorrect")
 	})
 
@@ -65,7 +65,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
 			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
-			checkStepActiveOptions.stageName = "testStage"
+			GeneralConfig.StageName = "testStage"
 			checkStepActiveOptions.stepName = "testStep"
 			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
 			GeneralConfig.CustomConfig = ".pipeline/config.yml"
