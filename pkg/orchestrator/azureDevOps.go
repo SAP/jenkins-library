@@ -36,12 +36,9 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 
-	// Questions:
-	// How to handle tokens for users? -> Vault: Add PAT using HyperSpace
 	// ToDo: How to get step specific logs, not only whole log?
 
 	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
-	// https://dev.azure.com/hyperspace-pipelines/8d6e7755-9b5a-4036-a67e-33b95cda3a3f/_apis/build/builds/10822/logs/
 
 	response, err := a.client.GetRequest(URL, nil, nil)
 	logs := []byte{}
@@ -101,7 +98,7 @@ func (a *AzureDevOpsConfigProvider) GetBuildId() string {
 }
 
 func (a *AzureDevOpsConfigProvider) GetStageName() string {
-	return os.Getenv("SYSTEM_STAGEDISPLAYNAME")
+	return getEnv("SYSTEM_STAGEDISPLAYNAME", "n/a")
 }
 
 func (a *AzureDevOpsConfigProvider) GetBranch() string {

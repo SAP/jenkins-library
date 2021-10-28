@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"io/ioutil"
-	"os"
 	"time"
 )
 
@@ -21,7 +20,7 @@ func (j *JenkinsConfigProvider) InitOrchestratorProvider(settings *OrchestratorS
 		Password: settings.JenkinsToken,
 	}
 	j.client.SetOptions(j.options)
-	log.Entry().Debug("Successfully initalized Jenkins config provider")
+	log.Entry().Debug("Successfully initialized Jenkins config provider")
 }
 
 func (j *JenkinsConfigProvider) OrchestratorVersion() string {
@@ -105,7 +104,7 @@ func (j *JenkinsConfigProvider) GetBuildNumber() string {
 }
 
 func (a *JenkinsConfigProvider) GetStageName() string {
-	return os.Getenv("STAGE_NAME")
+	return getEnv("STAGE_NAME", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetBranch() string {

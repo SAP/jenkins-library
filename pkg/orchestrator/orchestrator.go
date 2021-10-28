@@ -52,8 +52,6 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 		return &GitHubActionsConfigProvider{}, nil
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
-	case Unknown:
-		fallthrough
 	default:
 		return &UnknownOrchestratorConfigProvider{}, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	}
