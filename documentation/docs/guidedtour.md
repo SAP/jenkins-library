@@ -73,33 +73,30 @@ Copy the sources of the application into your own Git repository. While we will 
 1. Save your changes to your remote repository.
 
 1. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. Per default, the `cx-server` starts Jenkins on HTTP port `80`. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
-   <p align="center">
+
    ![Clicke New Item](images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
-   </p>
 
 1. Provide a name for your new item (for example, *My First Pipeline*) and select **Multibranch Pipeline**.
-   <p align="center">
+
    ![Create Pipeline Job](images/JenkinsNewItemPipeline.png "Jenkins New Item")
-   </p>
+
    **Note:** The ready-made continuous delivery pipelines of project "Piper" must run as **Multibranch Pipeline**.
 
 1. For **Branch Sources**, choose **Add source**, select **Git** as source repository.
-   <p align="center">
+
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-AddSource.png "Branch Sources - Add source")
-   </p>
 
 1. For **Project Repository** in the **Git** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in **Credentials**.
 
 1. For **Discover branches**, choose **Add** and **Filter by name (with wildcards)**.
-   <p align="center">
+
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
-   </p>
+
    A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only.
 
 1. For **Include** in the **Filter by name** section, enter the branch name `1_REST_persist_in_Memory`.
-   <p align="center">
+
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-FilterByName.png "Discover Branches - Filter By Name")
-   </p>
 
 1. Choose **Save**. **Result:** Jenkins scans the repository for branches and filters them according to the specified **Includes**. If the branch is detected, it is built.
 
@@ -172,27 +169,24 @@ The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to de
 
    **Note:** look after the indentation of the step within the YAML. Specify the `organisation` and `space` properties. For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
 1. The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
-   <p align="center">
+
    ![Add Credentials](images/JenkinsCredentials-1.png "Add Credentials")
-   </p>
 
 1. Save the Credential
 
 1. Save your changes to your remote repository.
 
 1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the three stages "prepare", "build" and "deploy".
-   <p align="center">
+
    ![Build Now](images/JenkinsPipelineJob.png "Stage View")
-   </p>
 
 If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config], and the [mta.yaml][guidedtour-sample.mta]. **Note**: YAML files are surprisingly sensitive regarding indentation.
 
 ## Open Application
 
 Your application has been deployed into your space in the Cloud Foundry space on SAP BTP. Login to SAP BTP and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
-   <p align="center">
+
   ![Deployed Application](images/SCPDeployApp-1.png "SAP Business Technology Platform")
-   </p>
 
 Open the application name to get into the `Application Overview`. Open the **Application Route** and add `/users` to the URL. **Result:** The application returns a list of user data.
 
