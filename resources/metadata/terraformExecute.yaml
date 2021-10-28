@@ -5,6 +5,10 @@ metadata:
     This step executes the terraform binary with the given command, and is able to fetch additional variables from vault.
 spec:
   inputs:
+    secrets:
+      - name: terraformConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing terraform CLI configuration. You can find more details about it in the [Terraform documentation](https://www.terraform.io/docs/cli/config/config-file.html#credentials).
+        type: jenkins
     params:
       - name: command
         type: string
@@ -29,6 +33,21 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: terraformConfigFile
+        type: string
+        description: Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: terraformConfigFileCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: terraformConfigFileVaultSecretName
+            default: terraform
+        required: false
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
