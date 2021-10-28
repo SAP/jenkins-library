@@ -40,3 +40,6 @@ spec:
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
+      options:
+        - name: --entrypoint
+          value: ''
