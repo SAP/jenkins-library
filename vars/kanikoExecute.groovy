@@ -1,7 +1,7 @@
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/kaniko.yaml'
+@Field String METADATA_FILE = 'metadata/kanikoExecute.yaml'
 
 void call(Map parameters = [:]) {
     List credentials = [[type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']]]
