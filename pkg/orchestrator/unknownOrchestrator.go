@@ -18,7 +18,7 @@ func (a *UnknownOrchestratorConfigProvider) OrchestratorVersion() string {
 
 func (a *UnknownOrchestratorConfigProvider) OrchestratorType() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
-	return "N/A"
+	return "Unknown"
 }
 
 func (a *UnknownOrchestratorConfigProvider) GetLog() ([]byte, error) {
