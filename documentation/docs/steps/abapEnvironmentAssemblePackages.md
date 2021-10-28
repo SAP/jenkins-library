@@ -34,7 +34,6 @@
 
 A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}

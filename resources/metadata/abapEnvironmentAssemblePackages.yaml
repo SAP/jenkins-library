@@ -144,7 +144,7 @@ spec:
           - STEPS
       - name: performAssemblePackages
         type: bool
-        description: Defines if packages should be assembled in the build system 
+        description: Defines if packages should be assembled in the build system
         scope:
           - PARAMETERS
           - STAGES
