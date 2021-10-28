@@ -23,6 +23,12 @@ spec:
           - type: vaultSecretFile
             name: terraformExecuteFileVaultSecret
             default: terraformExecute
+      - name: globalOptions
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: additionalArgs
         type: "[]string"
         scope:
@@ -32,3 +38,6 @@ spec:
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
+      options:
+        - name: --entrypoint
+          value: ''
