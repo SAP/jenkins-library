@@ -116,6 +116,8 @@ The result looks like
 				customTelemetryData.Custom2 = GitTag
 				customTelemetryData.Custom3Label = "Stage"
 				customTelemetryData.Custom3 = provider.GetStageName()
+				customTelemetryData.Custom4Label = "Orchestrator"
+				customTelemetryData.Custom4 = provider.OrchestratorType()
 				telemetryClient.SetData(&customTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {

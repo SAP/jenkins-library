@@ -162,6 +162,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				customTelemetryData.Custom2 = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitTag
 				customTelemetryData.Custom3Label = "Stage"
 				customTelemetryData.Custom3 = provider.GetStageName()
+				customTelemetryData.Custom4Label = "Orchestrator"
+                                customTelemetryData.Custom4 = provider.OrchestratorType()
 				telemetryClient.SetData(&customTelemetryData)
 				telemetryClient.Send()
 				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
