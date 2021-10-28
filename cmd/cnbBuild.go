@@ -354,26 +354,24 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	var containerImage string
 	var containerImageTag string
 
-	if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		var containerRegistry string
-		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-			containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-			}
-		} else {
-			containerRegistry = config.ContainerRegistryURL
-		}
-
-		containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
-		containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.imageNameTag = containerImage
-	} else {
+	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
+
+	var containerRegistry string
+	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
+		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
+		}
+	} else {
+		containerRegistry = config.ContainerRegistryURL
+	}
+
+	containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
+	containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
@@ -402,9 +400,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
+	containerImageNameTag := fmt.Sprintf("%s:%s", containerImage, containerImageTag)
 	targets := []string{
-		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+		containerImageNameTag,
 	}
+
+	commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+	commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
