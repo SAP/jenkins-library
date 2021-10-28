@@ -56,19 +56,11 @@ type CustomData struct {
 	Custom3Label  string `json:"custom28,omitempty"`
 	Custom4Label  string `json:"custom29,omitempty"`
 	Custom5Label  string `json:"custom30,omitempty"`
-	Custom6Label  string `json:"custom31,omitempty"`
-	Custom7Label  string `json:"custom32,omitempty"`
-	Custom8Label  string `json:"custom33,omitempty"`
-	Custom9Label  string `json:"custom34,omitempty"`
 	Custom1       string `json:"e_26,omitempty"`
 	Custom2       string `json:"e_27,omitempty"`
 	Custom3       string `json:"e_28,omitempty"`
 	Custom4       string `json:"e_29,omitempty"`
 	Custom5       string `json:"e_30,omitempty"`
-	Custom6       string `json:"e_31,omitempty"`
-	Custom7       string `json:"e_32,omitempty"`
-	Custom8       string `json:"e_33,omitempty"`
-	Custom9       string `json:"e_34,omitempty"`
 }
 
 // Data object definition containing all telemetry data
