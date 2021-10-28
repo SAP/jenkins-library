@@ -30,6 +30,11 @@ func IntegrationArtifactDeployCommand() *cobra.Command {
 	var logCollector *log.CollectorHook
 	splunkClient := &splunk.Splunk{}
 	telemetryClient := &telemetry.Telemetry{}
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().Error(err)
+		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
+	}
 
 	var createIntegrationArtifactDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -81,6 +86,12 @@ func IntegrationArtifactDeployCommand() *cobra.Command {
 				config.RemoveVaultSecretFiles()
 				customTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				customTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				customTelemetryData.Custom1Label = "PiperCommitHash"
+				customTelemetryData.Custom1 = GitCommit
+				customTelemetryData.Custom2Label = "PiperTag"
+				customTelemetryData.Custom2 = GitTag
+				customTelemetryData.Custom3Label = "Stage"
+				customTelemetryData.Custom3 = provider.GetStageName()
 				telemetryClient.SetData(&customTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
