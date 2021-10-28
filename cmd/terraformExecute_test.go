@@ -30,7 +30,6 @@ func TestRunTerraformExecute(t *testing.T) {
 		{
 			terraformExecuteOptions{
 				Command: "apply",
-				Init:    false,
 			}, []string{"apply", "-auto-approve"},
 		},
 		{
