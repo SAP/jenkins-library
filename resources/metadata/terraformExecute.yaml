@@ -35,3 +35,6 @@ spec:
       options:
         - name: --entrypoint
           value: ''
+      env:
+        - name: TF_IN_AUTOMATION
+          value: piper
