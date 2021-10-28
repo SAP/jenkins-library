@@ -195,8 +195,10 @@ spec:
           - helm
           - helm3
       - name: forceUpdates
+        aliases:
+          - name: force
         type: bool
-        description: "Helm only: force resource updates with helm parameter `--force`"
+        description: "add `--force` flag to a helm resource update or kubectl replace command"
         mandatory: false
         scope:
           - PARAMETERS
@@ -325,14 +327,18 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
-      - name: replace
-        type: bool
-        description: Defines whether to run `replace --force` instead of `apply` kubectl command.
-        default: false
+      - name: deployCommand
+        type: string
+        description: "kubectl only: defines the command apply or replace. default is apply"
+        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: apply
+        possibleValues:
+          - apply
+          - replace
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config

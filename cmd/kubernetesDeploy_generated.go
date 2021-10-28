@@ -41,7 +41,7 @@ type kubernetesDeployOptions struct {
 	Namespace                  string   `json:"namespace,omitempty"`
 	TillerNamespace            string   `json:"tillerNamespace,omitempty"`
 	DockerConfigJSON           string   `json:"dockerConfigJSON,omitempty"`
-	Replace                    bool     `json:"replace,omitempty"`
+	DeployCommand              string   `json:"deployCommand,omitempty" validate:"oneof=apply replace"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -163,7 +163,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
-	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Helm only: force resource updates with helm parameter `--force`")
+	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "add `--force` flag to a helm resource update or kubectl replace command")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -175,7 +175,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
-	cmd.Flags().BoolVar(&stepConfig.Replace, "replace", false, "Defines whether to run `replace --force` instead of `apply` kubectl command.")
+	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "kubectl only: defines the command apply or replace. default is apply")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -347,7 +347,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "force"}},
 						Default:     true,
 					},
 					{
@@ -487,13 +487,13 @@ func kubernetesDeployMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 					{
-						Name:        "replace",
+						Name:        "deployCommand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     `apply`,
 					},
 				},
 			},

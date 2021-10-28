@@ -587,6 +587,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			KubeConfig:                 "This is my kubeconfig",
 			KubeContext:                "testCluster",
 			Namespace:                  "deploymentNamespace",
+			DeployCommand:              "apply",
 		}
 
 		kubeYaml := `kind: Deployment
@@ -666,6 +667,7 @@ spec:
 			KubeConfig:                 "This is my kubeconfig",
 			KubeContext:                "testCluster",
 			Namespace:                  "deploymentNamespace",
+			DeployCommand:              "apply",
 		}
 
 		kubeYaml := `kind: Deployment
@@ -715,6 +717,7 @@ spec:
 			Image:                      "path/to/Image:latest",
 			KubeConfig:                 "This is my kubeconfig",
 			Namespace:                  "deploymentNamespace",
+			DeployCommand:              "apply",
 		}
 
 		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
@@ -759,6 +762,7 @@ spec:
 			Image:                     "path/to/Image:latest",
 			KubeToken:                 "testToken",
 			Namespace:                 "deploymentNamespace",
+			DeployCommand:             "apply",
 		}
 
 		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
@@ -798,6 +802,7 @@ spec:
 			ContainerImageName:        "path/to/Image",
 			KubeConfig:                "This is my kubeconfig",
 			Namespace:                 "deploymentNamespace",
+			DeployCommand:             "apply",
 		}
 
 		ioutil.WriteFile(opts.AppTemplate, []byte("image: <image-name>"), 0755)
@@ -829,6 +834,7 @@ spec:
 			DeployTool:                "kubectl",
 			KubeConfig:                "This is my kubeconfig",
 			Namespace:                 "deploymentNamespace",
+			DeployCommand:             "apply",
 		}
 
 		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
@@ -840,7 +846,7 @@ spec:
 		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
-	t.Run("test kubectl - use replace --force", func(t *testing.T) {
+	t.Run("test kubectl - use replace deploy command", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "")
 		defer os.RemoveAll(dir) // clean up
 		assert.NoError(t, err, "Error when creating temp dir")
@@ -858,7 +864,7 @@ spec:
 			KubeConfig:                 "This is my kubeconfig",
 			KubeContext:                "testCluster",
 			Namespace:                  "deploymentNamespace",
-			Replace:                    true,
+			DeployCommand:              "replace",
 		}
 
 		kubeYaml := `kind: Deployment
@@ -883,9 +889,63 @@ spec:
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
 			fmt.Sprintf("--context=%v", opts.KubeContext),
 			"replace",
-			"--force",
 			"--filename",
 			opts.AppTemplate,
+			"--testParam",
+			"testValue",
+		}, e.Calls[1].Params, "kubectl parameters incorrect")
+
+		appTemplate, err := ioutil.ReadFile(opts.AppTemplate)
+		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
+	})
+
+	t.Run("test kubectl - use replace --force deploy command", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		defer os.RemoveAll(dir) // clean up
+		assert.NoError(t, err, "Error when creating temp dir")
+
+		opts := kubernetesDeployOptions{
+			AppTemplate:                filepath.Join(dir, "test.yaml"),
+			ContainerRegistryURL:       "https://my.registry:55555",
+			ContainerRegistryUser:      "registryUser",
+			ContainerRegistryPassword:  "********",
+			ContainerRegistrySecret:    "regSecret",
+			CreateDockerRegistrySecret: true,
+			DeployTool:                 "kubectl",
+			Image:                      "path/to/Image:latest",
+			AdditionalParameters:       []string{"--testParam", "testValue"},
+			KubeConfig:                 "This is my kubeconfig",
+			KubeContext:                "testCluster",
+			Namespace:                  "deploymentNamespace",
+			DeployCommand:              "replace",
+			ForceUpdates:               true,
+		}
+
+		kubeYaml := `kind: Deployment
+metadata:
+spec:
+  spec:
+    image: <image-name>`
+
+		err = ioutil.WriteFile(opts.AppTemplate, []byte(kubeYaml), 0755)
+		assert.NoError(t, err, "Error when writing app template file")
+
+		e := mock.ExecMockRunner{}
+		var stdout bytes.Buffer
+		err = runKubernetesDeploy(opts, &e, &stdout)
+		assert.NoError(t, err, "Command should not fail")
+
+		assert.Equal(t, e.Env, []string{"KUBECONFIG=This is my kubeconfig"})
+
+		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong replace command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"replace",
+			"--filename",
+			opts.AppTemplate,
+			"--force",
 			"--testParam",
 			"testValue",
 		}, e.Calls[1].Params, "kubectl parameters incorrect")

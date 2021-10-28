@@ -268,10 +268,13 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", config.AppTemplate)
 	}
 
-	if config.Replace == false {
-		kubeParams = append(kubeParams, "apply", "--filename", config.AppTemplate)
-	} else {
-		kubeParams = append(kubeParams, "replace", "--force", "--filename", config.AppTemplate)
+	kubeParams = append(kubeParams, config.DeployCommand, "--filename", config.AppTemplate)
+	if config.ForceUpdates == true {
+		if config.DeployCommand == "replace" {
+			kubeParams = append(kubeParams, "--force")
+		} else {
+			log.Entry().Warn("Ignoring --force flag as it is only applicable for deployCommand replace")
+		}
 	}
 
 	if len(config.AdditionalParameters) > 0 {
