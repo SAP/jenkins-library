@@ -29,6 +29,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: init
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
