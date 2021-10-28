@@ -47,6 +47,7 @@ func TestStartingConfirm(t *testing.T) {
 		}
 		repos = append(repos, repo)
 		repo.Status = "R"
+		repo.InBuildScope = true
 		repos = append(repos, repo)
 
 		builds, err := startingConfirm(repos, *conn, time.Duration(0*time.Second))
@@ -66,8 +67,8 @@ func TestStartingConfirmInvalidInput(t *testing.T) {
 		conn.Header = make(map[string][]string)
 		var repos []abaputils.Repository
 		repo := abaputils.Repository{
-			Name:   "RepoA",
-			Status: "P",
+			Name:         "RepoA",
+			InBuildScope: true,
 		}
 		repos = append(repos, repo)
 		_, err := startingConfirm(repos, *conn, time.Duration(0*time.Second))
