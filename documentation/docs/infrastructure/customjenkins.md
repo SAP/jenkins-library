@@ -46,11 +46,11 @@ Shared libraries extending the Jenkins pipeline are defined within the Jenkins s
 
 1. Open the Jenkins UI under `http://<jenkins-server-address>:<http-port>`, login with administration privileges, and choose **Manage Jenkins > Configure System**.
 
-   ![Configure System](../images/JenkinsHomeMenuManageConfig.png "Configure System")
+    ![Configure System](../images/JenkinsHomeMenuManageConfig.png "Configure System")
 
 1. Scroll down to section **Global Pipeline Libraries** and choose the **Add** button. A new library is created.
 
-   ![Add Library](../images/JenkinsConfigSystemLibrary-Add.png "Add Library")
+    ![Add Library](../images/JenkinsConfigSystemLibrary-Add.png "Add Library")
 
 1. For **Library Name**, enter `piper-lib-os`.
 
@@ -62,7 +62,7 @@ Shared libraries extending the Jenkins pipeline are defined within the Jenkins s
 
 1. For **Project Repository**, enter the GitHub URL of the project Piper shared library `https://github.com/SAP/jenkins-library`.
 
-   ![Library Setup](../images/JenkinsConfigSystemLibrary-Edit.png "Library Setup")
+    ![Library Setup](../images/JenkinsConfigSystemLibrary-Edit.png "Library Setup")
 
 1. Save your changes.
 
