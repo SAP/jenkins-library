@@ -52,6 +52,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil || provider == nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
+		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
 	t.provider = provider
 
@@ -80,7 +81,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		// TODO: Discuss meaning of jobURL for ADO
 	}
 	t.baseMetaData = baseMetaData
-	//ToDo: register Logrus Hook
+	//ToDo: register logrus Hook
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
