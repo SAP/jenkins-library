@@ -18,11 +18,11 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool              string `json:"buildTool,omitempty" validate:"oneof=custom docker dub golang maven mta npm pip sbt yarn"`
+	BuildTool              string `json:"buildTool,omitempty" validate:"oneof-custom=custom docker dub golang maven mta npm pip sbt yarn"`
 	CommitUserName         string `json:"commitUserName,omitempty"`
 	CustomVersionField     string `json:"customVersionField,omitempty"`
 	CustomVersionSection   string `json:"customVersionSection,omitempty"`
-	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"oneof=maven pep440 semver2"`
+	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"oneof-custom=maven pep440 semver2"`
 	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
 	FilePath               string `json:"filePath,omitempty"`
@@ -36,7 +36,7 @@ type artifactPrepareVersionOptions struct {
 	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
 	Username               string `json:"username,omitempty"`
 	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
-	VersioningType         string `json:"versioningType,omitempty" validate:"oneof=cloud cloud_noTag library"`
+	VersioningType         string `json:"versioningType,omitempty" validate:"oneof-custom=cloud cloud_noTag library"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {

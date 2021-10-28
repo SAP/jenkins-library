@@ -21,8 +21,8 @@ type xsDeployOptions struct {
 	DeployOpts            string `json:"deployOpts,omitempty"`
 	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty"`
 	MtaPath               string `json:"mtaPath,omitempty"`
-	Action                string `json:"action,omitempty" validate:"oneof=NONE Resume Abort Retry"`
-	Mode                  string `json:"mode,omitempty" validate:"oneof=NONE DEPLOY BG_DEPLOY"`
+	Action                string `json:"action,omitempty" validate:"oneof-custom=NONE Resume Abort Retry"`
+	Mode                  string `json:"mode,omitempty" validate:"oneof-custom=NONE DEPLOY BG_DEPLOY"`
 	OperationID           string `json:"operationId,omitempty"`
 	APIURL                string `json:"apiUrl,omitempty"`
 	Username              string `json:"username,omitempty"`

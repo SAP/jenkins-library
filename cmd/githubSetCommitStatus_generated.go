@@ -22,7 +22,7 @@ type githubSetCommitStatusOptions struct {
 	Description string `json:"description,omitempty"`
 	Owner       string `json:"owner,omitempty"`
 	Repository  string `json:"repository,omitempty"`
-	Status      string `json:"status,omitempty" validate:"oneof=failure pending success"`
+	Status      string `json:"status,omitempty" validate:"oneof-custom=failure pending success"`
 	TargetURL   string `json:"targetUrl,omitempty"`
 	Token       string `json:"token,omitempty"`
 }

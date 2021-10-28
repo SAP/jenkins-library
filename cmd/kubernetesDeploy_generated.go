@@ -28,7 +28,7 @@ type kubernetesDeployOptions struct {
 	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string   `json:"deploymentName,omitempty"`
-	DeployTool                 string   `json:"deployTool,omitempty" validate:"oneof=kubectl helm helm3"`
+	DeployTool                 string   `json:"deployTool,omitempty" validate:"oneof-custom=kubectl helm helm3"`
 	ForceUpdates               bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                 []string `json:"helmValues,omitempty"`

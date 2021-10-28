@@ -18,7 +18,7 @@ import (
 )
 
 type batsExecuteTestsOptions struct {
-	OutputFormat string   `json:"outputFormat,omitempty" validate:"oneof=tap junit"`
+	OutputFormat string   `json:"outputFormat,omitempty" validate:"oneof-custom=tap junit"`
 	Repository   string   `json:"repository,omitempty"`
 	TestPackage  string   `json:"testPackage,omitempty"`
 	TestPath     string   `json:"testPath,omitempty"`

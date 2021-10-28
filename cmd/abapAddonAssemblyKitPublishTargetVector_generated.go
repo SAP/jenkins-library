@@ -19,7 +19,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"oneof=T P"`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"oneof-custom=T P"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
