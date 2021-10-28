@@ -198,7 +198,7 @@ spec:
         aliases:
           - name: force
         type: bool
-        description: "add `--force` flag to a helm resource update or kubectl replace command"
+        description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
         mandatory: false
         scope:
           - PARAMETERS
