@@ -17,7 +17,7 @@ import (
 
 type nexusUploadOptions struct {
 	Version            string `json:"version,omitempty" validate:"oneof=nexus2 nexus3"`
-	Format             string `json:"format,omitempty" validate:"oneof=maven npm"`
+	Format             string `json:"format,omitempty" validate:"oneof=maven npm mta"`
 	Url                string `json:"url,omitempty"`
 	MavenRepository    string `json:"mavenRepository,omitempty"`
 	NpmRepository      string `json:"npmRepository,omitempty"`

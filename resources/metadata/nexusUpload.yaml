@@ -57,6 +57,7 @@ spec:
         possibleValues:
           - maven
           - npm
+          - mta
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryFormat
