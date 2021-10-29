@@ -63,9 +63,10 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	log.Entry().Info("Wrote addonDescriptor to CommonPipelineEnvironment")
 
 	var filesToPublish []piperutils.Path
+	log.Entry().Infof("Add %s to be published", config.AddonDescriptorFileName)
 	filesToPublish = append(filesToPublish, piperutils.Path{Target: config.AddonDescriptorFileName, Name: "AddonDescriptor", Mandatory: true})
 	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+	piperutils.PersistReportsAndLinks("abapAddonAssemblyKitCheckPV", "", filesToPublish, nil)
 
 	return nil
 }
