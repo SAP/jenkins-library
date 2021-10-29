@@ -42,12 +42,16 @@ func terraformExecute(config terraformExecuteOptions, telemetryData *telemetry.C
 func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemetry.CustomData, utils terraformExecuteUtils) error {
 	args := []string{}
 
-	if config.Command == "apply" {
+	if piperutils.ContainsString([]string{"apply", "destroy"}, config.Command) {
 		args = append(args, "-auto-approve")
 	}
 
-	if (config.Command == "apply" || config.Command == "plan") && config.TerraformSecrets != "" {
+	if piperutils.ContainsString([]string{"apply", "plan"}, config.Command) && config.TerraformSecrets != "" {
 		args = append(args, fmt.Sprintf("-var-file=%s", config.TerraformSecrets))
+	}
+
+	if piperutils.ContainsString([]string{"init", "validate", "plan", "apply", "destroy"}, config.Command) {
+		args = append(args, "-no-color")
 	}
 
 	if config.AdditionalArgs != nil {

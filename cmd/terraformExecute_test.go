@@ -41,27 +41,27 @@ func TestRunTerraformExecute(t *testing.T) {
 		{
 			terraformExecuteOptions{
 				Command: "plan",
-			}, []string{"plan"},
+			}, []string{"plan", "-no-color"},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "plan",
 				TerraformSecrets: "/tmp/test",
-			}, []string{"plan", "-var-file=/tmp/test"},
+			}, []string{"plan", "-var-file=/tmp/test", "-no-color"},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "plan",
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
-			}, []string{"plan", "-var-file=/tmp/test", "-arg1"},
+			}, []string{"plan", "-var-file=/tmp/test", "-no-color", "-arg1"},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "apply",
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
-			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"},
+			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-no-color", "-arg1"},
 		},
 		{
 			terraformExecuteOptions{
@@ -69,20 +69,20 @@ func TestRunTerraformExecute(t *testing.T) {
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
 				GlobalOptions:    []string{"-chgdir=src"},
-			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"},
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-no-color", "-arg1"},
 		},
 		{
 			terraformExecuteOptions{
 				Command: "apply",
 				Init:    true,
-			}, []string{"apply", "-auto-approve"},
+			}, []string{"apply", "-auto-approve", "-no-color"},
 		},
 		{
 			terraformExecuteOptions{
 				Command:       "apply",
 				GlobalOptions: []string{"-chgdir=src"},
 				Init:          true,
-			}, []string{"-chgdir=src", "apply", "-auto-approve"},
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-no-color"},
 		},
 	}
 
