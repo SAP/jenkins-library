@@ -20,6 +20,7 @@ type terraformExecuteOptions struct {
 	TerraformSecrets string   `json:"terraformSecrets,omitempty"`
 	GlobalOptions    []string `json:"globalOptions,omitempty"`
 	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
+	Init             bool     `json:"init,omitempty"`
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -110,6 +111,7 @@ func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOp
 	cmd.Flags().StringVar(&stepConfig.TerraformSecrets, "terraformSecrets", os.Getenv("PIPER_terraformSecrets"), "")
 	cmd.Flags().StringSliceVar(&stepConfig.GlobalOptions, "globalOptions", []string{}, "")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
+	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
 
 }
 
@@ -165,6 +167,15 @@ func terraformExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "init",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
