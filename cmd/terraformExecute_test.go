@@ -42,7 +42,7 @@ func TestRunTerraformExecute(t *testing.T) {
 		{
 			terraformExecuteOptions{
 				Command: "plan",
-			}, []string{"plan"}, []string{},
+			}, []string{"plan", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
