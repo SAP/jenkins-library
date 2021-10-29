@@ -35,6 +35,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: init
+        type: bool
+        descriptions: Executes terraform init prior to the configured command.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - name: terraform
       image: hashicorp/terraform:1.0.10
