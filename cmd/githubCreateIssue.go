@@ -49,6 +49,12 @@ func runGithubCreateIssue(ctx context.Context, config *githubCreateIssueOptions,
 		issue.Body = &body
 	}
 
+	if len(config.Assignees) > 0 {
+		issue.Assignees = &config.Assignees
+	} else {
+		issue.Assignees = &[]string{}
+	}
+
 	newIssue, resp, err := ghCreateIssueService.Create(ctx, config.Owner, config.Repository, &issue)
 	if err != nil {
 		if resp != nil {

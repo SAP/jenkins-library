@@ -65,8 +65,8 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
-	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
-	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+	pollInterval := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
+	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollInterval)
 	if err != nil {
 		return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
 	}
@@ -102,7 +102,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	return nil
 }
 
-func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) ([]buildWithRepository, error) {
+func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollInterval time.Duration) ([]buildWithRepository, error) {
 	var builds []buildWithRepository
 
 	for _, repo := range repos {
@@ -115,13 +115,14 @@ func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRu
 		}
 
 		if repo.Status == "P" {
+			buildRepo.repo.InBuildScope = true
 			err := buildRepo.start()
 			if err != nil {
 				buildRepo.build.RunState = abapbuild.Failed
 				log.Entry().Error(err)
 				log.Entry().Info("Continueing with other builds (if any)")
 			} else {
-				err = buildRepo.waitToBeFinished(maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+				err = buildRepo.waitToBeFinished(maxRuntimeInMinutes, pollInterval)
 				if err != nil {
 					buildRepo.build.RunState = abapbuild.Failed
 					log.Entry().Error(err)
@@ -137,9 +138,9 @@ func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRu
 	return builds, nil
 }
 
-func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) error {
+func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duration, pollInterval time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInMilliseconds)
+	ticker := time.Tick(pollInterval)
 	for {
 		select {
 		case <-timeout:
@@ -147,7 +148,7 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 		case <-ticker:
 			br.build.Get()
 			if !br.build.IsFinished() {
-				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollIntervalsInMilliseconds)
+				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollInterval)
 			} else {
 				return nil
 			}
@@ -172,6 +173,10 @@ func (br *buildWithRepository) start() error {
 			{
 				ValueID: "NAMESPACE",
 				Value:   br.repo.Namespace,
+			},
+			{
+				ValueID: "PACKAGE_TYPE",
+				Value:   br.repo.PackageType,
 			},
 			{
 				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
@@ -246,26 +251,4 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 		return errors.New("At least the assembly of one package failed")
 	}
 	return nil
-}
-
-func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error) {
-	var reposBackToCPE []abaputils.Repository
-	resultName := "SAR_XML"
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
-	for i, b := range builds {
-		resultSARXML, err := b.build.GetResult(resultName)
-		if err != nil {
-			return reposBackToCPE, err
-		}
-		sarPackage := resultSARXML.AdditionalInfo
-		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
-		log.Entry().Infof("Downloading SAR file %s to %s", path.Base(sarPackage), downloadPath)
-		err = resultSARXML.Download(downloadPath)
-		if err != nil {
-			return reposBackToCPE, err
-		}
-		builds[i].repo.SarXMLFilePath = downloadPath
-		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
-	}
-	return reposBackToCPE, nil
 }

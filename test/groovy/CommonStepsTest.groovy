@@ -120,6 +120,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPipeline', // special step (infrastructure)
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
+        'abapEnvironmentRunAUnitTest', //implementing new golang pattern without fields
         'abapEnvironmentCreateSystem', //implementing new golang pattern without fields
         'artifactPrepareVersion',
         'cloudFoundryCreateService', //implementing new golang pattern without fields
@@ -198,6 +199,7 @@ public class CommonStepsTest extends BasePiperTest{
         'writePipelineEnv', //implementing new golang pattern without fields
         'readPipelineEnv', //implementing new golang pattern without fields
         'transportRequestUploadCTS', //implementing new golang pattern without fields
+        'isChangeInDevelopment', //implementing new golang pattern without fields
     ]
 
     @Test

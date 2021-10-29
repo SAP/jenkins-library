@@ -7,6 +7,10 @@ import (
 
 type AzureDevOpsConfigProvider struct{}
 
+func (a *AzureDevOpsConfigProvider) GetStageName() string {
+	return os.Getenv("SYSTEM_STAGEDISPLAYNAME")
+}
+
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	tmp := os.Getenv("BUILD_SOURCEBRANCH")
 	return strings.TrimPrefix(tmp, "refs/heads/")

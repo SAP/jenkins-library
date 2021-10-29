@@ -129,6 +129,14 @@ spec:
         type: string
         default: https://github.com
         mandatory: true
+      - name: tagPrefix
+        type: string
+        description: "Defines a prefix to be added to the tag."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ""
       - name: token
         aliases:
           - name: githubToken
@@ -146,10 +154,8 @@ spec:
           - name: githubTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/github
-              - $(vaultBasePath)/$(vaultPipelineName)/github
-              - $(vaultBasePath)/GROUP-SECRETS/github
+            default: github
+            name: githubVaultSecretName
       - name: uploadUrl
         aliases:
           - name: githubUploadUrl

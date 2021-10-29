@@ -19,12 +19,14 @@ type ghCreateIssueMock struct {
 	owner      string
 	repo       string
 	number     int
+	assignees  []string
 }
 
 func (g *ghCreateIssueMock) Create(ctx context.Context, owner string, repo string, issue *github.IssueRequest) (*github.Issue, *github.Response, error) {
 	g.issue = issue
 	g.owner = owner
 	g.repo = repo
+	g.assignees = *issue.Assignees
 
 	issueResponse := github.Issue{ID: &g.issueID, Title: issue.Title, Body: issue.Body}
 
@@ -51,6 +53,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 			Repository: "test",
 			Body:       "This is my test body",
 			Title:      "This is my title",
+			Assignees:  []string{"userIdOne", "userIdTwo"},
 		}
 
 		// test
@@ -62,6 +65,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		assert.Equal(t, config.Repository, ghCreateIssueService.repo)
 		assert.Equal(t, config.Body, ghCreateIssueService.issue.GetBody())
 		assert.Equal(t, config.Title, ghCreateIssueService.issue.GetTitle())
+		assert.Equal(t, config.Assignees, ghCreateIssueService.issue.GetAssignees())
 	})
 
 	t.Run("Success - body from file", func(t *testing.T) {
@@ -87,6 +91,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		assert.Equal(t, config.Repository, ghCreateIssueService.repo)
 		assert.Equal(t, "Test markdown", ghCreateIssueService.issue.GetBody())
 		assert.Equal(t, config.Title, ghCreateIssueService.issue.GetTitle())
+		assert.Empty(t, ghCreateIssueService.issue.GetAssignees())
 	})
 
 	t.Run("Error", func(t *testing.T) {

@@ -29,6 +29,12 @@ spec:
             deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        type: jenkins
+        aliases:
+          - name: dockerCredentialsId
+            deprecated: true
     params:
       - name: agentDownloadUrl
         type: string
@@ -144,6 +150,22 @@ spec:
           - STAGES
           - STEPS
         default: "."
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
@@ -360,10 +382,8 @@ spec:
           - name: userTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/whitesource
-              - $(vaultBasePath)/$(vaultPipelineName)/whitesource
-              - $(vaultBasePath)/GROUP-SECRETS/whitesource
+            name: whitesourceVaultSecret
+            default: whitesource
       - name: versioningModel
         type: string
         description: "The default project versioning model used in case `projectVersion` parameter is

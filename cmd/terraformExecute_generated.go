@@ -11,13 +11,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type terraformExecuteOptions struct {
 	Command          string   `json:"command,omitempty"`
 	TerraformSecrets string   `json:"terraformSecrets,omitempty"`
+	GlobalOptions    []string `json:"globalOptions,omitempty"`
 	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
+	Init             bool     `json:"init,omitempty"`
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -60,6 +63,15 @@ func TerraformExecuteCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -97,7 +109,9 @@ func TerraformExecuteCommand() *cobra.Command {
 func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.Command, "command", `plan`, "")
 	cmd.Flags().StringVar(&stepConfig.TerraformSecrets, "terraformSecrets", os.Getenv("PIPER_terraformSecrets"), "")
+	cmd.Flags().StringSliceVar(&stepConfig.GlobalOptions, "globalOptions", []string{}, "")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
+	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
 
 }
 
@@ -125,9 +139,9 @@ func terraformExecuteMetadata() config.StepData {
 						Name: "terraformSecrets",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/terraformExecute", "$(vaultBasePath)/$(vaultPipelineName)/terraformExecute", "$(vaultBasePath)/GROUP-SECRETS/terraformExecute"},
-								Type:  "vaultSecretFile",
+								Name:    "terraformExecuteFileVaultSecret",
+								Type:    "vaultSecretFile",
+								Default: "terraformExecute",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -135,6 +149,15 @@ func terraformExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_terraformSecrets"),
+					},
+					{
+						Name:        "globalOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "additionalArgs",
@@ -145,10 +168,19 @@ func terraformExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name:        "init",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:0.14.7"},
+				{Name: "terraform", Image: "hashicorp/terraform:0.14.7", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
 			},
 		},
 	}

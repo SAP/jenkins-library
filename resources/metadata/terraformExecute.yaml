@@ -21,16 +21,34 @@ spec:
         type: string
         resourceRef:
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/terraformExecute
-              - $(vaultBasePath)/$(vaultPipelineName)/terraformExecute
-              - $(vaultBasePath)/GROUP-SECRETS/terraformExecute
+            name: terraformExecuteFileVaultSecret
+            default: terraformExecute
+      - name: globalOptions
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: additionalArgs
         type: "[]string"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: init
+        type: bool
+        descriptions: Executes terraform init prior to the configured command.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
+      options:
+        - name: --entrypoint
+          value: ''
+      env:
+        - name: TF_IN_AUTOMATION
+          value: piper

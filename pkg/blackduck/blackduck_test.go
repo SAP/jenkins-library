@@ -362,6 +362,73 @@ func TestGetComponents(t *testing.T) {
 	})
 }
 
+func TestGetComponentsWithLicensePolicyRule(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?filter=policyCategory%3Alicense&limit=999&offset=0": `{
+					"totalCount": 2,
+					"items" : [
+						{
+							"componentName": "Spring Framework",
+							"componentVersionName": "5.3.9",
+							"policyStatus": "IN_VIOLATION"
+						}, {
+							"componentName": "Apache Tomcat",
+							"componentVersionName": "9.0.52",
+							"policyStatus": "NOT_IN_VIOLATION"
+						}
+					]
+				}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		components, err := bdClient.GetComponentsWithLicensePolicyRule("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, components.TotalCount, 2)
+		assert.Equal(t, components.Items[0].PolicyStatus, "IN_VIOLATION")
+	})
+
+	t.Run("Failure - 0 components", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?filter=policyCategory%3Alicense&limit=999&offset=0": `{
+					"totalCount": 0,
+					"items" : []}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		components, err := bdClient.GetComponentsWithLicensePolicyRule("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.NotNil(t, components)
+		assert.Equal(t, components.TotalCount, 0)
+	})
+
+	t.Run("Failure - unmarshalling", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?filter=policyCategory%3Alicense&limit=999&offset=0": "",
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		components, err := bdClient.GetComponentsWithLicensePolicyRule("SHC-PiperTest", "1.0")
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve component details for project version 'SHC-PiperTest:1.0'")
+		assert.Nilf(t, components, "Expected Components to be nil")
+	})
+}
+
 func TestGetPolicyStatus(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		myTestClient := httpMockClient{
@@ -409,6 +476,23 @@ func TestGetPolicyStatus(t *testing.T) {
 		policyStatus, err := bdClient.GetPolicyStatus("SHC-PiperTest", "1.0")
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve Policy violation details for project version 'SHC-PiperTest:1.0'")
 		assert.Nilf(t, policyStatus, "Expected Components to be nil")
+	})
+}
+
+func TestGetProjectVersionLink(t *testing.T) {
+	t.Run("Success Case", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		link, err := bdClient.GetProjectVersionLink("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.Equal(t, link, "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36")
 	})
 }
 

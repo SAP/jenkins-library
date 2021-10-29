@@ -19,10 +19,17 @@ type ServersType struct {
 	ServerType []Server `xml:"server,omitempty"`
 }
 
+type ActiveProfilesType struct {
+	XMLName       xml.Name `xml:"activeProfiles"`
+	Text          string   `xml:",chardata"`
+	ActiveProfile []string `xml:"activeProfile"`
+}
+
 type Settings struct {
 	XMLName xml.Name `xml:"http://maven.apache.org/SETTINGS/1.0.0 settings"`
 	Text    string   `xml:",chardata"`
-	//Xmlns           xml.Attr `xml:"xmlns,attr"`
+	// Xmlns           xml.Attr `xml:"xmlns,attr"`
+	//Xmlns           string `xml:"xmlns,attr"`
 	Xsi             string `xml:"xmlns:xsi,attr"`
 	SchemaLocation  string `xml:"xsi:schemaLocation,attr"`
 	LocalRepository string `xml:"localRepository,omitempty"`
@@ -60,30 +67,30 @@ type Settings struct {
 	Profiles struct {
 		Text    string `xml:",chardata"`
 		Profile []struct {
-			Text       string `xml:",chardata"`
-			ID         string `xml:"id,omitempty"`
-			Activation struct {
-				Text            string `xml:",chardata"`
-				ActiveByDefault string `xml:"activeByDefault,omitempty"`
-				Jdk             string `xml:"jdk,omitempty"`
-				Os              struct {
-					Text    string `xml:",chardata"`
-					Name    string `xml:"name,omitempty"`
-					Family  string `xml:"family,omitempty"`
-					Arch    string `xml:"arch,omitempty"`
-					Version string `xml:"version,omitempty"`
-				} `xml:"os,omitempty"`
-				Property struct {
-					Text  string `xml:",chardata"`
-					Name  string `xml:"name,omitempty"`
-					Value string `xml:"value,omitempty"`
-				} `xml:"property,omitempty"`
-				File struct {
-					Text    string `xml:",chardata"`
-					Exists  string `xml:"exists,omitempty"`
-					Missing string `xml:"missing,omitempty"`
-				} `xml:"file,omitempty"`
-			} `xml:"activation,omitempty"`
+			Text string `xml:",chardata"`
+			ID   string `xml:"id,omitempty"`
+			// Activation struct {
+			// 	Text            string `xml:",chardata"`
+			// 	ActiveByDefault string `xml:"activeByDefault,omitempty"`
+			// 	Jdk             string `xml:"jdk,omitempty"`
+			// 	Os              struct {
+			// 		Text    string `xml:",chardata"`
+			// 		Name    string `xml:"name,omitempty"`
+			// 		Family  string `xml:"family,omitempty"`
+			// 		Arch    string `xml:"arch,omitempty"`
+			// 		Version string `xml:"version,omitempty"`
+			// 	} `xml:"os,omitempty"`
+			// 	Property struct {
+			// 		Text  string `xml:",chardata"`
+			// 		Name  string `xml:"name,omitempty"`
+			// 		Value string `xml:"value,omitempty"`
+			// 	} `xml:"property,omitempty"`
+			// 	File struct {
+			// 		Text    string `xml:",chardata"`
+			// 		Exists  string `xml:"exists,omitempty"`
+			// 		Missing string `xml:"missing,omitempty"`
+			// 	} `xml:"file,omitempty"`
+			// } `xml:"activation,omitempty"`
 			Repositories struct {
 				Text       string `xml:",chardata"`
 				Repository []struct {
@@ -125,8 +132,5 @@ type Settings struct {
 			} `xml:"pluginRepositories,omitempty"`
 		} `xml:"profile,omitempty"`
 	} `xml:"profiles,omitempty"`
-	ActiveProfiles struct {
-		Text          string   `xml:",chardata"`
-		ActiveProfile []string `xml:"activeProfile,omitempty"`
-	} `xml:"activeProfiles,omitempty"`
+	ActiveProfiles ActiveProfilesType `xml:"activeProfiles,omitempty"`
 }

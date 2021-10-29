@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -62,6 +63,15 @@ func InfluxWriteDataCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -143,9 +153,9 @@ func influxWriteDataMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/influxdb", "$(vaultBasePath)/$(vaultPipelineName)/influxdb", "$(vaultBasePath)/GROUP-SECRETS/influxdb"},
-								Type:  "vaultSecret",
+								Name:    "influxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "influxdb",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
