@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -60,6 +61,11 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	addonDescriptor.SetRepositories(addonDescriptorCPE.Repositories)
 	cpe.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 	log.Entry().Info("Wrote addonDescriptor to CommonPipelineEnvironment")
+
+	var filesToPublish []piperutils.Path
+	filesToPublish = append(filesToPublish, piperutils.Path{Target: config.AddonDescriptorFileName, Name: "AddonDescriptor", Mandatory: true})
+	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
 
 	return nil
 }
