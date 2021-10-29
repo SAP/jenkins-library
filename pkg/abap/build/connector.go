@@ -115,9 +115,6 @@ func (conn Connector) Download(appendum string, downloadPath string) error {
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
 func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) error {
-	if username == "" || password == "" {
-		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
-	}
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
@@ -132,7 +129,11 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 	})
 	conn.Baseurl = aAKaaSEndpoint
 
-	return nil
+	if username == "" || password == "" {
+		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
+	} else {
+		return nil
+	}
 }
 
 // InitBuildFramework : initialize Connector for communication with ABAP SCP instance

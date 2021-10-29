@@ -59,13 +59,13 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
 	}
 
-	var filesToPublish []piperutils.Path
-	_, err = downloadResultToFile(builds, "SAR_XML", nil) //File is present in ABAP build system and uploaded to AAKaaS, no need to fill up jenkins with it
+	_, err = downloadResultToFile(builds, "SAR_XML", false) //File is present in ABAP build system and uploaded to AAKaaS, no need to fill up jenkins with it
 	if err != nil {
 		return errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
 	}
 
-	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
+	var filesToPublish []piperutils.Path
+	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", true)
 	if err != nil {
 		return errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed")
 	}
@@ -186,8 +186,9 @@ func (br *buildWithRepository) start() error {
 	return br.build.Start(phase, valuesInput)
 }
 
-func downloadResultToFile(builds []buildWithRepository, resultName string, filesToPublish []piperutils.Path) ([]piperutils.Path, error) {
+func downloadResultToFile(builds []buildWithRepository, resultName string, publish bool) ([]piperutils.Path, error) {
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "abapBuild")
+	var filesToPublish []piperutils.Path
 
 	for i, b := range builds {
 		if b.repo.Status != "P" {
@@ -212,7 +213,7 @@ func downloadResultToFile(builds []buildWithRepository, resultName string, files
 		if resultName == "SAR_XML" {
 			builds[i].repo.SarXMLFilePath = downloadPath
 		}
-		if filesToPublish != nil {
+		if publish {
 			log.Entry().Infof("Add %s to be published", resultName)
 			filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
 		}
