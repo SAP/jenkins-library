@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -28,6 +29,7 @@ const (
 	detectorPath = "/cnb/lifecycle/detector"
 	builderPath  = "/cnb/lifecycle/builder"
 	exporterPath = "/cnb/lifecycle/exporter"
+	platformPath = "/tmp/platform"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -262,15 +264,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	platformPath := "/platform"
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
-		platformPath = "/tmp/platform"
 		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to write environment variables to files")
 		}
+	}
+
+	err = bindings.ProcessBindings(utils, platformPath, config.Bindings)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed process bindings")
 	}
 
 	dockerConfigFile := ""

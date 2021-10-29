@@ -56,7 +56,7 @@ func TestZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
 	container.assertHasOutput(t, "Installing Go")

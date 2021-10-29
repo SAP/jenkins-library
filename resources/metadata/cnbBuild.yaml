@@ -135,6 +135,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: bindings
+        type: "map[string]interface{}"
+        description: List buildpack bindings.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
