@@ -40,6 +40,10 @@ func terraformExecute(config terraformExecuteOptions, telemetryData *telemetry.C
 }
 
 func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemetry.CustomData, utils terraformExecuteUtils) error {
+	if len(config.CliConfigFile) > 0 {
+		utils.AppendEnv([]string{fmt.Sprintf("TF_CLI_CONFIG_FILE=%s", config.CliConfigFile)})
+	}
+
 	args := []string{}
 
 	if piperutils.ContainsString([]string{"apply", "destroy"}, config.Command) {
