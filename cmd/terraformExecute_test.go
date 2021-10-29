@@ -91,19 +91,6 @@ func TestRunTerraformExecute(t *testing.T) {
 				CliConfigFile: ".pipeline/.terraformrc",
 			}, []string{"apply", "-auto-approve"}, []string{"TF_CLI_CONFIG_FILE=.pipeline/.terraformrc"},
 		},
-		{
-			terraformExecuteOptions{
-				Command: "apply",
-				Init:    true,
-			}, []string{"apply", "-auto-approve"},
-		},
-		{
-			terraformExecuteOptions{
-				Command:       "apply",
-				GlobalOptions: []string{"-chgdir=src"},
-				Init:          true,
-			}, []string{"-chgdir=src", "apply", "-auto-approve"},
-		},
 	}
 
 	for i, test := range tt {
