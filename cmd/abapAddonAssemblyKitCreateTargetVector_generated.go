@@ -62,9 +62,11 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	var provider orchestrator.OrchestratorSpecificConfigProviding
+	var err error
 	splunkClient := &splunk.Splunk{}
 	telemetryClient := &telemetry.Telemetry{}
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err = orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil {
 		log.Entry().Error(err)
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}

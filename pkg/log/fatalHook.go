@@ -42,14 +42,17 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		// ToDo: If step is called x times and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
-
+	filePathCPE := filepath.Join(f.Path + "/commonPipelineEnvironment", fileName)
 	_, err := ioutil.ReadFile(filePath)
+	errDetails, _ := json.Marshal(&details)
+	ioutil.WriteFile(filePathCPE, errDetails, 0666)
 
 	if err != nil {
 		// ignore errors, since we don't want to break the logging flow
-		errDetails, _ := json.Marshal(&details)
 		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
+
+
 
 	return nil
 }
@@ -65,12 +68,13 @@ type ErrorDetails struct {
 func GetErrorsJson() ([]ErrorDetails, error) {
 	fileName := "errorDetails.json"
 	path, err := os.Getwd()
+	pathCPE := path + "/commonPipelineEnvironment"
 	if err != nil {
 		fmt.Errorf("can not get current working dir")
 		return []ErrorDetails{}, err
 	}
 
-	matches, err := filepath.Glob(path + "/*" + fileName)
+	matches, err := filepath.Glob(pathCPE + "/*" + fileName)
 	if err != nil {
 		Entry().Debugf("could not find any *errorDetails.json files")
 	}
