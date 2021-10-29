@@ -23,7 +23,7 @@ type protecodeExecuteScanOptions struct {
 	ScanImage                   string `json:"scanImage,omitempty"`
 	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
 	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
-	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"oneof-custom=none binary complete"`
+	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"possible-values=none binary complete"`
 	FilePath                    string `json:"filePath,omitempty"`
 	IncludeLayers               bool   `json:"includeLayers,omitempty"`
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`

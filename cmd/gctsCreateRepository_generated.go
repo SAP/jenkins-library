@@ -22,9 +22,9 @@ type gctsCreateRepositoryOptions struct {
 	Host                string `json:"host,omitempty"`
 	Client              string `json:"client,omitempty"`
 	RemoteRepositoryURL string `json:"remoteRepositoryURL,omitempty"`
-	Role                string `json:"role,omitempty" validate:"oneof-custom=SOURCE TARGET"`
+	Role                string `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
 	VSID                string `json:"vSID,omitempty"`
-	Type                string `json:"type,omitempty" validate:"oneof-custom=GIT"`
+	Type                string `json:"type,omitempty" validate:"possible-values=GIT"`
 }
 
 // GctsCreateRepositoryCommand Creates a Git repository on an ABAP system

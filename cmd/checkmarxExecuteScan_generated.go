@@ -39,7 +39,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
 	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
 	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
-	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty" validate:"oneof-custom=FAILURE"`
+	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
 	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
 	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
 }

@@ -23,7 +23,7 @@ type mtaBuildOptions struct {
 	Version                         string   `json:"version,omitempty"`
 	Extensions                      string   `json:"extensions,omitempty"`
 	Jobs                            int      `json:"jobs,omitempty"`
-	Platform                        string   `json:"platform,omitempty" validate:"oneof-custom=CF NEO XSA"`
+	Platform                        string   `json:"platform,omitempty" validate:"possible-values=CF NEO XSA"`
 	ApplicationName                 string   `json:"applicationName,omitempty"`
 	Source                          string   `json:"source,omitempty"`
 	Target                          string   `json:"target,omitempty"`

@@ -28,7 +28,7 @@ type gitopsUpdateDeploymentOptions struct {
 	ChartPath             string   `json:"chartPath,omitempty"`
 	HelmValues            []string `json:"helmValues,omitempty"`
 	DeploymentName        string   `json:"deploymentName,omitempty"`
-	Tool                  string   `json:"tool,omitempty" validate:"oneof-custom=kubectl helm"`
+	Tool                  string   `json:"tool,omitempty" validate:"possible-values=kubectl helm"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository

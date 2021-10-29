@@ -16,7 +16,7 @@ import (
 )
 
 type vaultRotateSecretIdOptions struct {
-	SecretStore                          string `json:"secretStore,omitempty" validate:"oneof-custom=jenkins ado"`
+	SecretStore                          string `json:"secretStore,omitempty" validate:"possible-values=jenkins ado"`
 	JenkinsURL                           string `json:"jenkinsUrl,omitempty"`
 	JenkinsCredentialDomain              string `json:"jenkinsCredentialDomain,omitempty"`
 	JenkinsUsername                      string `json:"jenkinsUsername,omitempty"`

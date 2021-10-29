@@ -10,10 +10,10 @@ import (
 
 type testStruct struct {
 	Field1 int      `json:"field1,omitempty" validate:"eq=1"`
-	Field2 string   `json:"field2,omitempty" validate:"oneof-custom=value1 value2 value3"`
+	Field2 string   `json:"field2,omitempty" validate:"possible-values=value1 value2 value3"`
 	Field3 string   `json:"field3,omitempty" validate:"required_if=Field1 1 Field4 test"`
 	Field4 string   `json:"field4,omitempty"`
-	Field5 []string `json:"field5,omitempty" validate:"oneof-custom=val1 val2 val3 val4"`
+	Field5 []string `json:"field5,omitempty" validate:"possible-values=val1 val2 val3 val4"`
 }
 
 func TestValidateStruct(t *testing.T) {
@@ -54,9 +54,9 @@ func TestValidateStruct(t *testing.T) {
 		}
 		err = validation.ValidateStruct(testStruct)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Key: 'testStruct.Field2' Error:Field validation for 'Field2' failed on the 'oneof-custom' tag.")
+		assert.Contains(t, err.Error(), "Key: 'testStruct.Field2' Error:Field validation for 'Field2' failed on the 'possible-values' tag.")
 		assert.Contains(t, err.Error(), "Key: 'testStruct.Field3' Error:Field validation for 'Field3' failed on the 'required_if' tag.")
-		assert.Contains(t, err.Error(), "Key: 'testStruct.Field5' Error:Field validation for 'Field5' failed on the 'oneof-custom' tag.")
+		assert.Contains(t, err.Error(), "Key: 'testStruct.Field5' Error:Field validation for 'Field5' failed on the 'possible-values' tag.")
 	})
 
 	t.Run("error case - predefined error messages without naming fields from json tags", func(t *testing.T) {
@@ -94,12 +94,12 @@ func TestValidateStruct(t *testing.T) {
 	t.Run("failed case - custom error messages", func(t *testing.T) {
 		translations := []Translation{
 			{
-				Tag: "oneof-custom",
+				Tag: "possible-values",
 				RegisterFn: func(ut ut.Translator) error {
-					return ut.Add("oneof-custom", "Custom error message for {0}", true)
+					return ut.Add("possible-values", "Custom error message for {0}", true)
 				},
 				TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-					t, _ := ut.T("oneof-custom", fe.Field())
+					t, _ := ut.T("possible-values", fe.Field())
 					return t
 				},
 			}, {

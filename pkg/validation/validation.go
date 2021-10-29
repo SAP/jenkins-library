@@ -28,7 +28,7 @@ type validationOption func(*validation) error
 
 func New(opts ...validationOption) (*validation, error) {
 	validator := valid.New()
-	validator.RegisterValidation("oneof-custom", isOneOfCustom)
+	validator.RegisterValidation("possible-values", isPossibleValues)
 	enTranslator := en.New()
 	universalTranslator := ut.New(enTranslator, enTranslator)
 	translator, found := universalTranslator.GetTranslator("en")
@@ -63,12 +63,12 @@ func WithJSONNamesForStructFields() validationOption {
 func WithPredefinedErrorMessages() validationOption {
 	translations := []Translation{
 		{
-			Tag: "oneof-custom",
+			Tag: "possible-values",
 			RegisterFn: func(ut ut.Translator) error {
-				return ut.Add("oneof-custom", "The {0} must use the following values: {1}", true)
+				return ut.Add("possible-values", "The {0} must use the following values: {1}", true)
 			},
 			TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-				t, _ := ut.T("oneof-custom", fe.Field(), fe.Param())
+				t, _ := ut.T("possible-values", fe.Field(), fe.Param())
 				return t
 			},
 		}, {
@@ -130,7 +130,7 @@ func registerTranslations(translations []Translation, validator *valid.Validate,
 	return nil
 }
 
-func isOneOfCustom(fl valid.FieldLevel) bool {
+func isPossibleValues(fl valid.FieldLevel) bool {
 	vals := strings.Split(strings.TrimSpace(fl.Param()), " ")
 
 	field := fl.Field()
