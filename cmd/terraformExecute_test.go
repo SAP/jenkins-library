@@ -87,8 +87,8 @@ func TestRunTerraformExecute(t *testing.T) {
 		},
 		{
 			terraformExecuteOptions{
-				Command:             "apply",
-				TerraformConfigFile: ".pipeline/.terraformrc",
+				Command:       "apply",
+				CliConfigFile: ".pipeline/.terraformrc",
 			}, []string{"apply", "-auto-approve"}, []string{"TF_CLI_CONFIG_FILE=.pipeline/.terraformrc"},
 		},
 	}

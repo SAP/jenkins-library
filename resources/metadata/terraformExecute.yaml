@@ -26,7 +26,7 @@ spec:
         resourceRef:
           - type: vaultSecretFile
             name: terraformExecuteFileVaultSecret
-            default: terraformExecute
+            default: terraform
       - name: globalOptions
         type: "[]string"
         scope:
@@ -47,7 +47,7 @@ spec:
           - STAGES
           - STEPS
         default: false
-      - name: terraformConfigFile
+      - name: cliConfigFile
         type: string
         description: Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).
         scope:

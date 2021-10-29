@@ -16,12 +16,12 @@ import (
 )
 
 type terraformExecuteOptions struct {
-	Command             string   `json:"command,omitempty"`
-	TerraformSecrets    string   `json:"terraformSecrets,omitempty"`
-	GlobalOptions       []string `json:"globalOptions,omitempty"`
-	AdditionalArgs      []string `json:"additionalArgs,omitempty"`
-	Init                bool     `json:"init,omitempty"`
-	TerraformConfigFile string   `json:"terraformConfigFile,omitempty"`
+	Command          string   `json:"command,omitempty"`
+	TerraformSecrets string   `json:"terraformSecrets,omitempty"`
+	GlobalOptions    []string `json:"globalOptions,omitempty"`
+	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
+	Init             bool     `json:"init,omitempty"`
+	CliConfigFile    string   `json:"cliConfigFile,omitempty"`
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -53,7 +53,7 @@ func TerraformExecuteCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.TerraformConfigFile)
+			log.RegisterSecret(stepConfig.CliConfigFile)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -114,7 +114,7 @@ func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOp
 	cmd.Flags().StringSliceVar(&stepConfig.GlobalOptions, "globalOptions", []string{}, "")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
 	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
-	cmd.Flags().StringVar(&stepConfig.TerraformConfigFile, "terraformConfigFile", os.Getenv("PIPER_terraformConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
+	cmd.Flags().StringVar(&stepConfig.CliConfigFile, "cliConfigFile", os.Getenv("PIPER_cliConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
 
 }
 
@@ -147,7 +147,7 @@ func terraformExecuteMetadata() config.StepData {
 							{
 								Name:    "terraformExecuteFileVaultSecret",
 								Type:    "vaultSecretFile",
-								Default: "terraformExecute",
+								Default: "terraform",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -184,7 +184,7 @@ func terraformExecuteMetadata() config.StepData {
 						Default:     false,
 					},
 					{
-						Name: "terraformConfigFile",
+						Name: "cliConfigFile",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name: "terraformConfigFileCredentialsId",
@@ -201,7 +201,7 @@ func terraformExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_terraformConfigFile"),
+						Default:   os.Getenv("PIPER_cliConfigFile"),
 					},
 				},
 			},
