@@ -63,6 +63,14 @@ func TestRunTerraformExecute(t *testing.T) {
 				AdditionalArgs:   []string{"-arg1"},
 			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"},
 		},
+		{
+			terraformExecuteOptions{
+				Command:          "apply",
+				TerraformSecrets: "/tmp/test",
+				AdditionalArgs:   []string{"-arg1"},
+				GlobalOptions:    []string{"-chgdir=src"},
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"},
+		},
 	}
 
 	for i, test := range tt {
