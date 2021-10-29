@@ -70,7 +70,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed")
 	}
 
-	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
+	log.Entry().Infof("Publishing %v files", len(filesToPublish))
 	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
 
 	var reposBackToCPE []abaputils.Repository
