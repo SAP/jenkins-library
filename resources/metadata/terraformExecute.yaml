@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: terraformConfigFileCredentialsId
+      - name: cliConfigFileCredentialsId
         description: Jenkins 'Secret file' credentials ID containing terraform CLI configuration. You can find more details about it in the [Terraform documentation](https://www.terraform.io/docs/cli/config/config-file.html#credentials).
         type: jenkins
     params:
@@ -56,10 +56,10 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: terraformConfigFileCredentialsId
+          - name: cliConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            name: terraformConfigFileVaultSecretName
+            name: cliConfigFileVaultSecretName
             default: terraform
   containers:
     - name: terraform

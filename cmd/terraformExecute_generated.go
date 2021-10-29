@@ -129,7 +129,7 @@ func terraformExecuteMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "terraformConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing terraform CLI configuration. You can find more details about it in the [Terraform documentation](https://www.terraform.io/docs/cli/config/config-file.html#credentials).", Type: "jenkins"},
+					{Name: "cliConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing terraform CLI configuration. You can find more details about it in the [Terraform documentation](https://www.terraform.io/docs/cli/config/config-file.html#credentials).", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -187,12 +187,12 @@ func terraformExecuteMetadata() config.StepData {
 						Name: "cliConfigFile",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "terraformConfigFileCredentialsId",
+								Name: "cliConfigFileCredentialsId",
 								Type: "secret",
 							},
 
 							{
-								Name:    "terraformConfigFileVaultSecretName",
+								Name:    "cliConfigFileVaultSecretName",
 								Type:    "vaultSecretFile",
 								Default: "terraform",
 							},
