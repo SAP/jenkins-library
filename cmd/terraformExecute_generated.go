@@ -18,7 +18,9 @@ import (
 type terraformExecuteOptions struct {
 	Command             string   `json:"command,omitempty"`
 	TerraformSecrets    string   `json:"terraformSecrets,omitempty"`
+	GlobalOptions       []string `json:"globalOptions,omitempty"`
 	AdditionalArgs      []string `json:"additionalArgs,omitempty"`
+	Init                bool     `json:"init,omitempty"`
 	TerraformConfigFile string   `json:"terraformConfigFile,omitempty"`
 }
 
@@ -109,7 +111,9 @@ func TerraformExecuteCommand() *cobra.Command {
 func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.Command, "command", `plan`, "")
 	cmd.Flags().StringVar(&stepConfig.TerraformSecrets, "terraformSecrets", os.Getenv("PIPER_terraformSecrets"), "")
+	cmd.Flags().StringSliceVar(&stepConfig.GlobalOptions, "globalOptions", []string{}, "")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
+	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
 	cmd.Flags().StringVar(&stepConfig.TerraformConfigFile, "terraformConfigFile", os.Getenv("PIPER_terraformConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
 
 }
@@ -153,6 +157,15 @@ func terraformExecuteMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_terraformSecrets"),
 					},
 					{
+						Name:        "globalOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
 						Name:        "additionalArgs",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -160,6 +173,15 @@ func terraformExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "init",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "terraformConfigFile",
@@ -184,7 +206,7 @@ func terraformExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:0.14.7", Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
+				{Name: "terraform", Image: "hashicorp/terraform:0.14.7", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
 			},
 		},
 	}

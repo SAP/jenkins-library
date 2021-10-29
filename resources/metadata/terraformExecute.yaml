@@ -27,12 +27,26 @@ spec:
           - type: vaultSecretFile
             name: terraformExecuteFileVaultSecret
             default: terraformExecute
+      - name: globalOptions
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: additionalArgs
         type: "[]string"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: init
+        type: bool
+        descriptions: Executes terraform init prior to the configured command.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: terraformConfigFile
         type: string
         description: Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).
@@ -53,3 +67,6 @@ spec:
       options:
         - name: --entrypoint
           value: ''
+      env:
+        - name: TF_IN_AUTOMATION
+          value: piper
