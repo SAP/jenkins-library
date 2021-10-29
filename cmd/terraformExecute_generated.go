@@ -22,6 +22,7 @@ type terraformExecuteOptions struct {
 	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
 	Init             bool     `json:"init,omitempty"`
 	CliConfigFile    string   `json:"cliConfigFile,omitempty"`
+	Workspace        string   `json:"workspace,omitempty"`
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -115,6 +116,7 @@ func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOp
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
 	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
 	cmd.Flags().StringVar(&stepConfig.CliConfigFile, "cliConfigFile", os.Getenv("PIPER_cliConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "")
 
 }
 
@@ -202,6 +204,15 @@ func terraformExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_cliConfigFile"),
+					},
+					{
+						Name:        "workspace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_workspace"),
 					},
 				},
 			},

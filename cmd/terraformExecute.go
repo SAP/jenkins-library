@@ -44,6 +44,10 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 		utils.AppendEnv([]string{fmt.Sprintf("TF_CLI_CONFIG_FILE=%s", config.CliConfigFile)})
 	}
 
+	if len(config.Workspace) > 0 {
+		utils.AppendEnv([]string{fmt.Sprintf("TF_WORKSPACE=%s", config.Workspace)})
+	}
+
 	args := []string{}
 
 	if config.Command == "apply" {

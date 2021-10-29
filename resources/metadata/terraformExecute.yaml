@@ -61,6 +61,13 @@ spec:
           - type: vaultSecretFile
             name: cliConfigFileVaultSecretName
             default: terraform
+      - name: workspace
+        type: string
+        descriptions: Name of the terraform workspace to operate on.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: terraform
       image: hashicorp/terraform:0.14.7
