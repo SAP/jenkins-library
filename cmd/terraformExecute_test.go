@@ -65,9 +65,24 @@ func TestRunTerraformExecute(t *testing.T) {
 		},
 		{
 			terraformExecuteOptions{
+				Command:          "apply",
+				TerraformSecrets: "/tmp/test",
+				AdditionalArgs:   []string{"-arg1"},
+				GlobalOptions:    []string{"-chgdir=src"},
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"},
+		},
+		{
+			terraformExecuteOptions{
 				Command: "apply",
 				Init:    true,
 			}, []string{"apply", "-auto-approve"},
+		},
+		{
+			terraformExecuteOptions{
+				Command:       "apply",
+				GlobalOptions: []string{"-chgdir=src"},
+				Init:          true,
+			}, []string{"-chgdir=src", "apply", "-auto-approve"},
 		},
 	}
 
@@ -85,7 +100,7 @@ func TestRunTerraformExecute(t *testing.T) {
 			assert.NoError(t, err)
 
 			if config.Init {
-				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: []string{"init"}}, utils.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: append(config.GlobalOptions, "init")}, utils.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: test.expectedArgs}, utils.Calls[1])
 			} else {
 				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: test.expectedArgs}, utils.Calls[0])

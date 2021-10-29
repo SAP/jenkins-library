@@ -23,6 +23,12 @@ spec:
           - type: vaultSecretFile
             name: terraformExecuteFileVaultSecret
             default: terraformExecute
+      - name: globalOptions
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: additionalArgs
         type: "[]string"
         scope:
@@ -43,3 +49,6 @@ spec:
       options:
         - name: --entrypoint
           value: ''
+      env:
+        - name: TF_IN_AUTOMATION
+          value: piper
