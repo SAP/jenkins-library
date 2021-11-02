@@ -20,9 +20,10 @@ func TestRunApiProxyDownload(t *testing.T) {
 
 	t.Run("Successfull Download of API Proxy", func(t *testing.T) {
 		tempDir, tmpErr := ioutil.TempDir("", "")
-		assert.DirExists(t, tempDir)
 		defer os.RemoveAll(tempDir) // clean up
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
+		if tmpErr != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
 		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",

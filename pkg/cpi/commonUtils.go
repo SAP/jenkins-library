@@ -135,7 +135,10 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 		if err != nil {
 			return errors.Wrapf(err, httpFileDownloadRequestParameters.ErrMessage)
 		}
-		io.Copy(file, response.Body)
+		_, err = io.Copy(file, response.Body)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 	responseBody, readErr := ioutil.ReadAll(response.Body)
