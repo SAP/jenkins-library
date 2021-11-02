@@ -18,7 +18,10 @@ import (
 type terraformExecuteOptions struct {
 	Command          string   `json:"command,omitempty"`
 	TerraformSecrets string   `json:"terraformSecrets,omitempty"`
+	GlobalOptions    []string `json:"globalOptions,omitempty"`
 	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
+	Init             bool     `json:"init,omitempty"`
+	CliConfigFile    string   `json:"cliConfigFile,omitempty"`
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -50,6 +53,7 @@ func TerraformExecuteCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.CliConfigFile)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -107,7 +111,10 @@ func TerraformExecuteCommand() *cobra.Command {
 func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.Command, "command", `plan`, "")
 	cmd.Flags().StringVar(&stepConfig.TerraformSecrets, "terraformSecrets", os.Getenv("PIPER_terraformSecrets"), "")
+	cmd.Flags().StringSliceVar(&stepConfig.GlobalOptions, "globalOptions", []string{}, "")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
+	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
+	cmd.Flags().StringVar(&stepConfig.CliConfigFile, "cliConfigFile", os.Getenv("PIPER_cliConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
 
 }
 
@@ -121,6 +128,9 @@ func terraformExecuteMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cliConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing terraform CLI configuration. You can find more details about it in the [Terraform documentation](https://www.terraform.io/docs/cli/config/config-file.html#credentials).", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "command",
@@ -137,7 +147,7 @@ func terraformExecuteMetadata() config.StepData {
 							{
 								Name:    "terraformExecuteFileVaultSecret",
 								Type:    "vaultSecretFile",
-								Default: "terraformExecute",
+								Default: "terraform",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -145,6 +155,15 @@ func terraformExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_terraformSecrets"),
+					},
+					{
+						Name:        "globalOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "additionalArgs",
@@ -155,10 +174,39 @@ func terraformExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name:        "init",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "cliConfigFile",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "cliConfigFileCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "cliConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "terraform",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_cliConfigFile"),
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:0.14.7"},
+				{Name: "terraform", Image: "hashicorp/terraform:0.14.7", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
 			},
 		},
 	}

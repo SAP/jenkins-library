@@ -92,6 +92,7 @@ func TestStep(t *testing.T) {
 
 		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
 		assert.NoError(t, err)
+		assert.Contains(t, cpe.abap.addonDescriptor, `"InBuildScope":false`)
 	})
 	t.Run("abapEnvironmentAssemblePackages: build", func(t *testing.T) {
 
@@ -104,6 +105,7 @@ func TestStep(t *testing.T) {
 		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
 		assert.NoError(t, err)
 		assert.Contains(t, cpe.abap.addonDescriptor, `SAPK-001AAINITAPC1.SAR`)
+		assert.Contains(t, cpe.abap.addonDescriptor, `"InBuildScope":true`)
 	})
 }
 
