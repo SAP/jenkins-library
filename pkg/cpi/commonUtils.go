@@ -133,7 +133,7 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 		file, err := os.Create(zipFileName)
 		// handling error while creating a file in the filesystem
 		if err != nil {
-			return errors.Wrapf(err, httpFileDownloadRequestParameters.ErrMessage)
+			return errors.Wrap(err, "failed to create zip archive of api proxy")
 		}
 		_, err = io.Copy(file, response.Body)
 		if err != nil {

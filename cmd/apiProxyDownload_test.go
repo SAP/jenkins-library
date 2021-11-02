@@ -40,8 +40,8 @@ func TestRunApiProxyDownload(t *testing.T) {
 		httpClient := httpMockCpis{CPIFunction: "APIProxyDownload", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactDownloadResBody"}
 		err := runApiProxyDownload(&config, nil, &httpClient)
 		absolutePath := filepath.Join(tempDir, "flow1.zip")
-		assert.Equal(t, fileExists(absolutePath), true)
 		if assert.NoError(t, err) {
+			assert.Equal(t, fileExists(absolutePath), true)
 			t.Run("check url", func(t *testing.T) {
 				assert.Equal(t, "https://demo/apiportal/api/1.0/Transport.svc/APIProxies?name=flow1", httpClient.URL)
 			})
