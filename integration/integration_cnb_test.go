@@ -56,7 +56,7 @@ func TestZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
 	container.assertHasOutput(t, "Installing Go")
@@ -123,4 +123,19 @@ func TestWrongBuilderProject(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
+}
+
+func TestBindings(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata"},
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "TestMtaIntegration/maven")
+
+	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
+	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/type")
+	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/dummy.yml")
 }

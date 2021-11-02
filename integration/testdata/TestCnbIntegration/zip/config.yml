@@ -1,6 +1,0 @@
-steps:
-  cnbBuild:
-    bindings:
-      maven-settings:
-        type: maven
-        secret: settings.xml
