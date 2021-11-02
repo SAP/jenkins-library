@@ -132,6 +132,8 @@ func mtaBuild(config mtaBuildOptions,
 	log.Entry().Debugf("Launching mta build")
 	utils := newMtaBuildUtilsBundle()
 
+	log.Entry().Infof("INFO: print telemetry %v", telemetryData.Custom1Label)
+
 	err := runMtaBuild(config, commonPipelineEnvironment, utils)
 	if err != nil {
 		log.Entry().
@@ -243,8 +245,6 @@ func runMtaBuild(config mtaBuildOptions,
 		dataStepMetadata := GetAllStepMetadata()
 		commonPipelineEnvironment.custom.dockerImage = dataStepMetadata["mtaBuild"].Spec.Containers[0].Image
 	}
-
-	log.Entry().Infof("INFO: Print ParametersJSON %v", dataParametersJSON)
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
