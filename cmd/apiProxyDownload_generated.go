@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -29,6 +30,15 @@ func ApiProxyDownloadCommand() *cobra.Command {
 	var stepConfig apiProxyDownloadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	var provider orchestrator.OrchestratorSpecificConfigProviding
+	var err error
+	splunkClient := &splunk.Splunk{}
+	telemetryClient := &telemetry.Telemetry{}
+	provider, err = orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().Error(err)
+		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
+	}
 
 	var createApiProxyDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -74,29 +84,38 @@ func ApiProxyDownloadCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			customTelemetryData := telemetry.CustomData{}
+			customTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				customTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				customTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				customTelemetryData.Custom1Label = "PiperCommitHash"
+				customTelemetryData.Custom1 = GitCommit
+				customTelemetryData.Custom2Label = "PiperTag"
+				customTelemetryData.Custom2 = GitTag
+				customTelemetryData.Custom3Label = "Stage"
+				customTelemetryData.Custom3 = provider.GetStageName()
+				customTelemetryData.Custom4Label = "Orchestrator"
+				customTelemetryData.Custom4 = provider.OrchestratorType()
+				telemetryClient.SetData(&customTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			apiProxyDownload(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			apiProxyDownload(stepConfig, &customTelemetryData)
+			customTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}

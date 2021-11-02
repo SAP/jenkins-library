@@ -42,7 +42,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		// ToDo: If step is called x times and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
-	filePathCPE := filepath.Join(f.Path + "/commonPipelineEnvironment", fileName)
+	filePathCPE := filepath.Join(f.Path+"/commonPipelineEnvironment", fileName)
 	_, err := ioutil.ReadFile(filePath)
 	errDetails, _ := json.Marshal(&details)
 	ioutil.WriteFile(filePathCPE, errDetails, 0666)
@@ -51,8 +51,6 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		// ignore errors, since we don't want to break the logging flow
 		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
-
-
 
 	return nil
 }
