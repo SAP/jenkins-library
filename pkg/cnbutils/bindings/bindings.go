@@ -11,13 +11,16 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type Binding struct {
+type binding struct {
 	Type    string  `json:"type"`
 	Secret  string  `json:"secret"`
 	Content *string `json:"content,omitempty"`
 	File    *string `json:"file,omitempty"`
 }
 
+type bindings map[string]binding
+
+// ProcessBindings creates the given bindings in the platform directory
 func ProcessBindings(utils cnbutils.BuildUtils, platformPath string, bindings map[string]interface{}) error {
 
 	typedBindings, err := toTyped(bindings)
@@ -26,48 +29,63 @@ func ProcessBindings(utils cnbutils.BuildUtils, platformPath string, bindings ma
 	}
 
 	for name, binding := range typedBindings {
-		if !validName(name) {
-			return fmt.Errorf("invalid binding name: %s", name)
-		}
-
-		if !validName(binding.Secret) {
-			return fmt.Errorf("invalid secret name: %s", binding.Secret)
-		}
-
-		if (binding.Content == nil && binding.File == nil) || (binding.Content != nil && binding.File != nil) {
-			return errors.New("either 'file' or 'content' property must be specified for binding")
-		}
-
-		bindingDir := filepath.Join(platformPath, "bindings", name)
-		err = utils.MkdirAll(bindingDir, 0755)
+		err = processBinding(utils, platformPath, name, binding)
 		if err != nil {
 			return err
 		}
-
-		err = utils.FileWrite(filepath.Join(bindingDir, "type"), []byte(binding.Type), 0644)
-		if err != nil {
-			return err
-		}
-
-		if binding.Content != nil {
-			err = utils.FileWrite(filepath.Join(bindingDir, binding.Secret), []byte(*binding.Content), 0644)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = utils.Copy(*binding.File, filepath.Join(bindingDir, binding.Secret))
-			if err != nil {
-				return err
-			}
-		}
-
 	}
 
 	return nil
 }
 
-func toTyped(rawData interface{}) (map[string]Binding, error) {
-	var typedBindings map[string]Binding
+func processBinding(utils cnbutils.BuildUtils, platformPath string, name string, binding binding) error {
+	err := validateBinding(name, binding)
+	if err != nil {
+		return err
+	}
+
+	bindingDir := filepath.Join(platformPath, "bindings", name)
+	err = utils.MkdirAll(bindingDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	err = utils.FileWrite(filepath.Join(bindingDir, "type"), []byte(binding.Type), 0644)
+	if err != nil {
+		return err
+	}
+
+	if binding.Content != nil {
+		err = utils.FileWrite(filepath.Join(bindingDir, binding.Secret), []byte(*binding.Content), 0644)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = utils.Copy(*binding.File, filepath.Join(bindingDir, binding.Secret))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateBinding(name string, binding binding) error {
+	if !validName(name) {
+		return fmt.Errorf("invalid binding name: %s", name)
+	}
+
+	if !validName(binding.Secret) {
+		return fmt.Errorf("invalid secret name: %s", binding.Secret)
+	}
+
+	if (binding.Content == nil && binding.File == nil) || (binding.Content != nil && binding.File != nil) {
+		return errors.New("either 'file' or 'content' property must be specified for binding")
+	}
+	return nil
+}
+
+func toTyped(rawData interface{}) (bindings, error) {
+	var typedBindings bindings
 
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		ErrorUnused: true,
