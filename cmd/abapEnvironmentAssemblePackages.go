@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"path"
 	"path/filepath"
 	"time"
@@ -40,33 +39,17 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 }
 
 func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
-	conn := new(abapbuild.Connector)
-	var connConfig abapbuild.ConnectorConfiguration
-	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
-	connConfig.CfOrg = config.CfOrg
-	connConfig.CfSpace = config.CfSpace
-	connConfig.CfServiceInstance = config.CfServiceInstance
-	connConfig.CfServiceKeyName = config.CfServiceKeyName
-	connConfig.Host = config.Host
-	connConfig.Username = config.Username
-	connConfig.Password = config.Password
-	connConfig.AddonDescriptor = config.AddonDescriptor
-	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
-
-	err := conn.InitBuildFramework(connConfig, com, client)
-	if err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+	connBuild := new(abapbuild.Connector)
+	if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
+		return errConBuild
 	}
 
-	var addonDescriptor abaputils.AddonDescriptor
-	err = json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
-	if err != nil {
+	addonDescriptor := new(abaputils.AddonDescriptor)
+	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
 	}
 
-	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
-	pollInterval := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
-	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollInterval)
+	builds, err := executeBuilds(addonDescriptor.Repositories, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond)
 	if err != nil {
 		return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
 	}
@@ -76,28 +59,26 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
 	}
 
-	var filesToPublish []piperutils.Path
-	filesToPublish, err = downloadResultToFile(builds, "SAR_XML", filesToPublish)
+	_, err = downloadResultToFile(builds, "SAR_XML", false) //File is present in ABAP build system and uploaded to AAKaaS, no need to fill up jenkins with it
 	if err != nil {
 		return errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
 	}
 
-	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
+	var filesToPublish []piperutils.Path
+	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", true)
 	if err != nil {
-		//changed result storage with 2105, thus ignore errors for now
-		log.Entry().Error(errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed"))
+		return errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed")
 	}
 
-	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
+	log.Entry().Infof("Publishing %v files", len(filesToPublish))
 	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
 
 	var reposBackToCPE []abaputils.Repository
 	for _, b := range builds {
 		reposBackToCPE = append(reposBackToCPE, b.repo)
 	}
-	addonDescriptor.Repositories = reposBackToCPE
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
+	addonDescriptor.SetRepositories(reposBackToCPE)
+	cpe.abap.addonDescriptor = addonDescriptor.AsJSONstring()
 
 	return nil
 }
@@ -205,8 +186,9 @@ func (br *buildWithRepository) start() error {
 	return br.build.Start(phase, valuesInput)
 }
 
-func downloadResultToFile(builds []buildWithRepository, resultName string, filesToPublish []piperutils.Path) ([]piperutils.Path, error) {
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+func downloadResultToFile(builds []buildWithRepository, resultName string, publish bool) ([]piperutils.Path, error) {
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "abapBuild")
+	var filesToPublish []piperutils.Path
 
 	for i, b := range builds {
 		if b.repo.Status != "P" {
@@ -231,9 +213,10 @@ func downloadResultToFile(builds []buildWithRepository, resultName string, files
 		if resultName == "SAR_XML" {
 			builds[i].repo.SarXMLFilePath = downloadPath
 		}
-
-		log.Entry().Infof("Add %s to be published", resultName)
-		filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
+		if publish {
+			log.Entry().Infof("Add %s to be published", resultName)
+			filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
+		}
 	}
 	return filesToPublish, nil
 }
@@ -250,5 +233,26 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
 	}
+	return nil
+}
+
+func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvironmentAssemblePackagesOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
+	var connConfig abapbuild.ConnectorConfiguration
+	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
+	connConfig.CfOrg = config.CfOrg
+	connConfig.CfSpace = config.CfSpace
+	connConfig.CfServiceInstance = config.CfServiceInstance
+	connConfig.CfServiceKeyName = config.CfServiceKeyName
+	connConfig.Host = config.Host
+	connConfig.Username = config.Username
+	connConfig.Password = config.Password
+	connConfig.AddonDescriptor = config.AddonDescriptor
+	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+
+	err := conn.InitBuildFramework(connConfig, com, client)
+	if err != nil {
+		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+	}
+
 	return nil
 }
