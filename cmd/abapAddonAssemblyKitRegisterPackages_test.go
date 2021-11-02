@@ -22,6 +22,8 @@ func mockReader(path string) ([]byte, error) {
 
 func TestRegisterPackagesStep(t *testing.T) {
 	var config abapAddonAssemblyKitRegisterPackagesOptions
+	config.Username = "dummy"
+	config.Password = "dummy"
 	var cpe abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment
 	t.Run("step success", func(t *testing.T) {
 		client := &abaputils.ClientMock{
