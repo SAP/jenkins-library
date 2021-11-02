@@ -214,5 +214,7 @@ spec:
             type: "[]string"
           - name: custom/dockerImage
             type: string
+          - name: custom/buildTool
+            type: string
   containers:
     - image: devxci/mbtci:1.1.1

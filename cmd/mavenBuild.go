@@ -54,6 +54,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	commonPipelineEnvironment.custom.logSuccessfulMavenTransfers = config.LogSuccessfulMavenTransfers
 	commonPipelineEnvironment.custom.publish = config.Publish
 	commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
+	commonPipelineEnvironment.custom.buildTool = "maven"
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {

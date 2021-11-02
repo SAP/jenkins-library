@@ -132,8 +132,6 @@ func mtaBuild(config mtaBuildOptions,
 	log.Entry().Debugf("Launching mta build")
 	utils := newMtaBuildUtilsBundle()
 
-	log.Entry().Infof("INFO: print telemetry %v", telemetryData.Custom1Label)
-
 	err := runMtaBuild(config, commonPipelineEnvironment, utils)
 	if err != nil {
 		log.Entry().
@@ -234,6 +232,7 @@ func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
 	commonPipelineEnvironment.custom.profiles = config.Profiles
 	commonPipelineEnvironment.custom.publish = config.Publish
+	commonPipelineEnvironment.custom.buildTool = "mta"
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {
