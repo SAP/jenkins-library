@@ -108,7 +108,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	return token, nil
 }
 
-// HandleHTTPFileDownloadResponse - handle the file download response for http multipart response
+// HandleHTTPFileDownloadResponse - Handle the file download response for http multipart response
 func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) HandleHTTPFileDownloadResponse() error {
 	response := httpFileDownloadRequestParameters.Response
 	contentDisposition := response.Header.Get("Content-Disposition")
