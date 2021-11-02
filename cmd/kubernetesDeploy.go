@@ -269,12 +269,8 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	}
 
 	kubeParams = append(kubeParams, config.DeployCommand, "--filename", config.AppTemplate)
-	if config.ForceUpdates == true {
-		if config.DeployCommand == "replace" {
-			kubeParams = append(kubeParams, "--force")
-		} else {
-			log.Entry().Warn("Ignoring --force flag as it is only applicable for deployCommand replace")
-		}
+	if config.ForceUpdates == true && config.DeployCommand == "replace" {
+		kubeParams = append(kubeParams, "--force")
 	}
 
 	if len(config.AdditionalParameters) > 0 {
