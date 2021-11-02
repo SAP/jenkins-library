@@ -61,6 +61,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 	if value, ok := dataParametersJSON["dockerImage"]; ok {
 		commonPipelineEnvironment.custom.dockerImage = value.(string)
+	} else {
+		dataStepMetadata := GetAllStepMetadata()
+		commonPipelineEnvironment.custom.dockerImage = dataStepMetadata["mavenBuild"].Spec.Containers[0].Image
 	}
 
 	if config.CreateBOM {

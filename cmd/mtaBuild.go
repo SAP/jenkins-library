@@ -240,8 +240,8 @@ func runMtaBuild(config mtaBuildOptions,
 	if value, ok := dataParametersJSON["dockerImage"]; ok {
 		commonPipelineEnvironment.custom.dockerImage = value.(string)
 	} else {
-		dataConfig := GetAllStepMetadata()
-		commonPipelineEnvironment.custom.dockerImage = dataConfig["mtaBuild"].Spec.Containers[0].Image
+		dataStepMetadata := GetAllStepMetadata()
+		commonPipelineEnvironment.custom.dockerImage = dataStepMetadata["mtaBuild"].Spec.Containers[0].Image
 	}
 
 	if config.InstallArtifacts {

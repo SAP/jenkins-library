@@ -70,6 +70,9 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 	if value, ok := dataParametersJSON["dockerImage"]; ok {
 		commonPipelineEnvironment.custom.dockerImage = value.(string)
+	} else {
+		dataStepMetadata := GetAllStepMetadata()
+		commonPipelineEnvironment.custom.dockerImage = dataStepMetadata["npmExecuteScripts"].Spec.Containers[0].Image
 	}
 
 	return nil
