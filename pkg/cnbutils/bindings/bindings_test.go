@@ -127,7 +127,22 @@ func TestProcessBindings(t *testing.T) {
 		})
 
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "cannot unmarshal")
+			assert.Equal(t, "1 error(s) decoding:\n\n* '[binding]' expected a map, got 'int'", err.Error())
+
+		}
+	})
+
+	t.Run("fails with invalid map", func(t *testing.T) {
+		var utils = mockUtils()
+		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
+			"test": map[string]interface{}{
+				"secret": "test.yaml",
+				"typo":   "test",
+			},
+		})
+
+		if assert.Error(t, err) {
+			assert.Equal(t, "1 error(s) decoding:\n\n* '[test]' has invalid keys: typo", err.Error())
 		}
 	})
 }

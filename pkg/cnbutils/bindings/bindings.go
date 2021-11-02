@@ -2,13 +2,13 @@
 package bindings
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Binding struct {
@@ -19,14 +19,15 @@ type Binding struct {
 }
 
 func ProcessBindings(utils cnbutils.BuildUtils, platformPath string, bindings map[string]interface{}) error {
-	for n, v := range bindings {
-		if !validName(n) {
-			return fmt.Errorf("invalid binding name: %s", n)
-		}
 
-		binding, err := toStruct(v)
-		if err != nil {
-			return err
+	typedBindings, err := toTyped(bindings)
+	if err != nil {
+		return err
+	}
+
+	for name, binding := range typedBindings {
+		if !validName(name) {
+			return fmt.Errorf("invalid binding name: %s", name)
 		}
 
 		if !validName(binding.Secret) {
@@ -37,7 +38,7 @@ func ProcessBindings(utils cnbutils.BuildUtils, platformPath string, bindings ma
 			return errors.New("either 'file' or 'content' property must be specified for binding")
 		}
 
-		bindingDir := filepath.Join(platformPath, "bindings", n)
+		bindingDir := filepath.Join(platformPath, "bindings", name)
 		err = utils.MkdirAll(bindingDir, 0755)
 		if err != nil {
 			return err
@@ -65,19 +66,22 @@ func ProcessBindings(utils cnbutils.BuildUtils, platformPath string, bindings ma
 	return nil
 }
 
-func toStruct(rawData interface{}) (Binding, error) {
-	var b Binding
-	byteData, err := json.Marshal(rawData)
+func toTyped(rawData interface{}) (map[string]Binding, error) {
+	var typedBindings map[string]Binding
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		ErrorUnused: true,
+		Result:      &typedBindings,
+	})
 	if err != nil {
-		return Binding{}, err
+		return nil, err
+	}
+	err = decoder.Decode(rawData)
+	if err != nil {
+		return nil, err
 	}
 
-	err = json.Unmarshal(byteData, &b)
-	if err != nil {
-		return Binding{}, err
-	}
-
-	return b, nil
+	return typedBindings, nil
 }
 
 func validName(name string) bool {
