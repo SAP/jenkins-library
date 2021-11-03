@@ -307,24 +307,6 @@ func TestGetResultAUnitRun(t *testing.T) {
 func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-		/*
-			t.Parallel()
-			// init
-			config := abapEnvironmentRunAUnitTestOptions{}
-
-			utils := newAbapEnvironmentRunAUnitTestTestsUtils()
-			utils.AddFile("file.txt", []byte("dummy content"))
-
-			// test
-			err := runAbapEnvironmentRunAUnitTest(&config, nil, nil, utils)
-
-			// assert
-			assert.NoError(t, err)
-		*/
-	})
-
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
 		t.Parallel()
 
