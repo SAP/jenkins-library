@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -90,6 +91,18 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
+	}
+
+	var dataParametersJSON map[string]interface{}
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		commonPipelineEnvironment.custom.dockerImage = value.(string)
+	} else {
+		dataStepMetadata := GetAllStepMetadata()
+		commonPipelineEnvironment.custom.dockerImage = dataStepMetadata["kanikoExecute"].Spec.Containers[0].Image
 	}
 
 	dockerConfig := []byte(`{"auths":{}}`)
