@@ -138,6 +138,7 @@ type PipelineData struct {
 	Orchestrator        string `json:"Orchestrator,omitempty"`
 	OrchestratorVersion string `json:"OrchestratorVersion,omitempty"`
 	PipelineStartTime   string `json:"PipelineStartTime,omitempty"`
+	LastErrorCode       string `json:"LastErrorCode,omitempty"`
 }
 
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
@@ -177,6 +178,7 @@ func (s *Splunk) prepareTelemetryPipelineData(telemetryData telemetry.Data) Pipe
 		Orchestrator:        telemetryData.CustomData.Custom1,
 		OrchestratorVersion: telemetryData.CustomData.Custom2,
 		PipelineStartTime:   telemetryData.CustomData.Custom3,
+		LastErrorCode:       telemetryData.CustomData.Custom4,
 	}
 }
 
