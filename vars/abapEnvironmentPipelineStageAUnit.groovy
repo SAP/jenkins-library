@@ -28,6 +28,8 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+        echo "CONFIG ECHO"
+        echo config
         echo "HOST CONFIG ECHO"
         echo config.host
         if (!config.host) {
