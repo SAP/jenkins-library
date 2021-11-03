@@ -166,22 +166,22 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			customTelemetryData := telemetry.CustomData{}
-			customTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				customTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				customTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				customTelemetryData.Custom1Label = "PiperCommitHash"
-				customTelemetryData.Custom1 = GitCommit
-				customTelemetryData.Custom2Label = "PiperTag"
-				customTelemetryData.Custom2 = GitTag
-				customTelemetryData.Custom3Label = "Stage"
-				customTelemetryData.Custom3 = provider.GetStageName()
-				customTelemetryData.Custom4Label = "Orchestrator"
-				customTelemetryData.Custom4 = provider.OrchestratorType()
-				telemetryClient.SetData(&customTelemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.Custom1Label = "PiperCommitHash"
+				stepTelemetryData.Custom1 = GitCommit
+				stepTelemetryData.Custom2Label = "PiperTag"
+				stepTelemetryData.Custom2 = GitTag
+				stepTelemetryData.Custom3Label = "Stage"
+				stepTelemetryData.Custom3 = provider.GetStageName()
+				stepTelemetryData.Custom4Label = "Orchestrator"
+				stepTelemetryData.Custom4 = provider.OrchestratorType()
+				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
@@ -197,8 +197,8 @@ func CloudFoundryDeployCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			cloudFoundryDeploy(stepConfig, &customTelemetryData, &influx)
-			customTelemetryData.ErrorCode = "0"
+			cloudFoundryDeploy(stepConfig, &stepTelemetryData, &influx)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
