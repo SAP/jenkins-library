@@ -20,11 +20,13 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
-
+    
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults()
-        .mixinStepConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .loadStepDefaults([:], stageName)
+        .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .use()
