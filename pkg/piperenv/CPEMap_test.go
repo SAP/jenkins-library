@@ -74,7 +74,7 @@ func TestCPEMap_LoadFromDisk(t *testing.T) {
 	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(subPath, "Bruce"), []byte("Wayne"), 0644)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(path.Join(subPath, "Robin"), []byte(""), 0644)
+	err = ioutil.WriteFile(path.Join(subPath, "Robin"), []byte("toBeEmptied"), 0644)
 	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(subPath, "Test.json"), []byte("54"), 0644)
 	require.NoError(t, err)
