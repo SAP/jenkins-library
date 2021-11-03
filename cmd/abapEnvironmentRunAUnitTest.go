@@ -373,10 +373,6 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 	//Optional checks before writing the Results
 	parsedXML := new(AUnitResult)
 	xml.Unmarshal([]byte(body), &parsedXML)
-	if len(parsedXML.Testsuite.Testcase) == 0 {
-		log.Entry().Info("There were no AUnit findings from this run")
-		return nil
-	}
 
 	//Write Results
 	err = ioutil.WriteFile(aunitResultFileName, body, 0644)
