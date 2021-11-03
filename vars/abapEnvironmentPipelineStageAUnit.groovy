@@ -33,8 +33,6 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        echo "HOST CONFIG ECHO"
-        echo config.host
         if (!config.host) {
             cloudFoundryCreateServiceKey script: parameters.script
         }
