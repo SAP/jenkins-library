@@ -10,7 +10,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Starts an AUnit test run on the ABAP Environment instance */
     'abapEnvironmentRunAUnitTest',
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
-    'cloudFoundryCreateServiceKey'
+    'cloudFoundryCreateServiceKey',
+    /** Parameter for host config */
+    'host'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -28,8 +30,6 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        echo "CONFIG ECHO"
-        echo config
         echo "HOST CONFIG ECHO"
         echo config.host
         if (!config.host) {
