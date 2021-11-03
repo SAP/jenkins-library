@@ -19,16 +19,17 @@ import (
 )
 
 type cnbBuildOptions struct {
-	ContainerImageName        string   `json:"containerImageName,omitempty"`
-	ContainerImageTag         string   `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
-	Buildpacks                []string `json:"buildpacks,omitempty"`
-	BuildEnvVars              []string `json:"buildEnvVars,omitempty"`
-	Path                      string   `json:"path,omitempty"`
-	ProjectDescriptor         string   `json:"projectDescriptor,omitempty"`
-	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
-	AdditionalTags            []string `json:"additionalTags,omitempty"`
+	ContainerImageName        string                 `json:"containerImageName,omitempty"`
+	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
+	Buildpacks                []string               `json:"buildpacks,omitempty"`
+	BuildEnvVars              []string               `json:"buildEnvVars,omitempty"`
+	Path                      string                 `json:"path,omitempty"`
+	ProjectDescriptor         string                 `json:"projectDescriptor,omitempty"`
+	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
+	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalTags            []string               `json:"additionalTags,omitempty"`
+	Bindings                  map[string]interface{} `json:"bindings,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -311,6 +312,14 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "bindings",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

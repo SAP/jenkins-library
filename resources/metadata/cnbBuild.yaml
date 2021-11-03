@@ -135,6 +135,34 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: bindings
+        type: "map[string]interface{}"
+        description: |
+          Map of bindings that should be offered to the buildpack. The type of bindings depend on the buildpack. For documentation about bindings in general see [the paketo documentation](https://paketo.io/docs/howto/configuration/#bindings).
+
+          Example: Custom maven settings.xml for the Java Buildpack
+
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              file: path/to/settings.xml
+          ```
+
+          or inline
+
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              content: "inline settings.xml"
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
