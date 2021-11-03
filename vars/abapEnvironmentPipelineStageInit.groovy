@@ -7,6 +7,11 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
+    /**
+     * The map returned from a Jenkins git checkout. Used to set the git information in the
+     * common pipeline environment.
+     */
+    'scmInfo',
     /**  If set to true, the default scm checkout is skipped */
     'skipCheckout'
 ]
@@ -26,10 +31,18 @@ void call(Map parameters = [:]) {
         if (skipCheckout != null && !(skipCheckout instanceof Boolean)) {
             error "[${STEP_NAME}] Parameter skipCheckout has to be of type boolean. Instead got '${skipCheckout.class.getName()}'"
         }
-        if (!skipCheckout) {
-            checkout scm
+        def scmInfo = parameters.scmInfo
+        if (skipCheckout && !scmInfo) {
+            error "[${STEP_NAME}] Need an scmInfo map retrieved from a checkout. " +
+                "If you want to skip the checkout the scm info needs to be provided by you as parameter scmInfo, " +
+                "for example as follows:\n" +
+                "  def scmInfo = checkout scm\n" +
+                "  abapEnvironmentPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo"
         }
-        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
+        if (!skipCheckout) {
+            scmInfo = checkout scm
+        }
+        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
