@@ -42,27 +42,43 @@ func TestRunTerraformExecute(t *testing.T) {
 		{
 			terraformExecuteOptions{
 				Command: "plan",
+<<<<<<< HEAD
+			}, []string{"plan", "-no-color"},
+=======
 			}, []string{"plan"}, []string{},
+>>>>>>> upstream/master
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "plan",
 				TerraformSecrets: "/tmp/test",
+<<<<<<< HEAD
+			}, []string{"plan", "-var-file=/tmp/test", "-no-color"},
+=======
 			}, []string{"plan", "-var-file=/tmp/test"}, []string{},
+>>>>>>> upstream/master
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "plan",
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
+<<<<<<< HEAD
+			}, []string{"plan", "-var-file=/tmp/test", "-no-color", "-arg1"},
+=======
 			}, []string{"plan", "-var-file=/tmp/test", "-arg1"}, []string{},
+>>>>>>> upstream/master
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "apply",
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
+<<<<<<< HEAD
+			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-no-color", "-arg1"},
+=======
 			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"}, []string{},
+>>>>>>> upstream/master
 		},
 		{
 			terraformExecuteOptions{
@@ -70,19 +86,30 @@ func TestRunTerraformExecute(t *testing.T) {
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
 				GlobalOptions:    []string{"-chgdir=src"},
+<<<<<<< HEAD
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-no-color", "-arg1"},
+=======
 			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"}, []string{},
+>>>>>>> upstream/master
 		},
 		{
 			terraformExecuteOptions{
 				Command: "apply",
 				Init:    true,
+<<<<<<< HEAD
+			}, []string{"apply", "-auto-approve", "-no-color"},
+=======
 			}, []string{"apply", "-auto-approve"}, []string{},
+>>>>>>> upstream/master
 		},
 		{
 			terraformExecuteOptions{
 				Command:       "apply",
 				GlobalOptions: []string{"-chgdir=src"},
 				Init:          true,
+<<<<<<< HEAD
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-no-color"},
+=======
 			}, []string{"-chgdir=src", "apply", "-auto-approve"}, []string{},
 		},
 		{
@@ -90,23 +117,20 @@ func TestRunTerraformExecute(t *testing.T) {
 				Command:       "apply",
 				CliConfigFile: ".pipeline/.terraformrc",
 			}, []string{"apply", "-auto-approve"}, []string{"TF_CLI_CONFIG_FILE=.pipeline/.terraformrc"},
+>>>>>>> upstream/master
 		},
 	}
 
 	for i, test := range tt {
-		t.Run(fmt.Sprintf("That arguments are correct %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("That arguemtns are correct %d", i), func(t *testing.T) {
 			t.Parallel()
 			// init
 			config := test.terraformExecuteOptions
 			utils := newTerraformExecuteTestsUtils()
-			utils.StdoutReturn = map[string]string{}
-			utils.StdoutReturn["terraform output -json"] = "{}"
-			utils.StdoutReturn["terraform -chgdir=src output -json"] = "{}"
-
 			runner := utils.ExecMockRunner
 
 			// test
-			err := runTerraformExecute(&config, nil, utils, &terraformExecuteCommonPipelineEnvironment{})
+			err := runTerraformExecute(&config, nil, utils)
 
 			// assert
 			assert.NoError(t, err)
@@ -121,32 +145,4 @@ func TestRunTerraformExecute(t *testing.T) {
 			assert.Subset(t, runner.Env, test.expectedEnvVars)
 		})
 	}
-
-	t.Run("Outputs get injected into CPE", func(t *testing.T) {
-		t.Parallel()
-
-		cpe := terraformExecuteCommonPipelineEnvironment{}
-
-		config := terraformExecuteOptions{
-			Command: "plan",
-		}
-		utils := newTerraformExecuteTestsUtils()
-		utils.StdoutReturn = map[string]string{}
-		utils.StdoutReturn["terraform output -json"] = `{
-			"sample_var": {
-				"sensitive": true,
-				"value": "a secret value",
-				"type": "string"
-			}
-}
-		`
-
-		// test
-		err := runTerraformExecute(&config, nil, utils, &cpe)
-
-		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(cpe.custom.terraformOutputs))
-		assert.Equal(t, "a secret value", cpe.custom.terraformOutputs["sample_var"])
-	})
 }
