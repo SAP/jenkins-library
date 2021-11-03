@@ -65,6 +65,7 @@ nav:
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - abapEnvironmentRunAUnitTest: steps/abapEnvironmentRunAUnitTest.md
+        - apiProxyDownload: steps/apiProxyDownload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
