@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // CPEMap represents the common pipeline environment map
@@ -82,19 +83,40 @@ func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 			continue
 		}
 		// load file content and unmarshal it if needed
-		mapKey, value, err := readFileContent(path.Join(dirPath, dirItem.Name()))
+		mapKey, value, toBeEmptied, err := readFileContent(path.Join(dirPath, dirItem.Name()))
 		if err != nil {
 			return err
 		}
-		m[path.Join(prefix, mapKey)] = value
+		if toBeEmptied {
+			err := addEmptyValueToFile(path.Join(dirPath, dirItem.Name()))
+			if err != nil {
+				return err
+			}
+			log.Entry().Debugf("Writing empty contents to file on disk: %v", dirPath)
+
+			m[path.Join(prefix, mapKey)] = ""
+
+		} else {
+			m[path.Join(prefix, mapKey)] = value
+		}
 	}
 	return nil
 }
 
-func readFileContent(fullPath string) (string, interface{}, error) {
+func addEmptyValueToFile(fullPath string) error {
+	err := ioutil.WriteFile(fullPath, []byte(""), 0666)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func readFileContent(fullPath string) (string, interface{}, bool, error) {
+	toBeEmptied := false
+
 	fileContent, err := ioutil.ReadFile(fullPath)
 	if err != nil {
-		return "", nil, err
+		return "", nil, toBeEmptied, err
 	}
 	fileName := filepath.Base(fullPath)
 
@@ -105,9 +127,12 @@ func readFileContent(fullPath string) (string, interface{}, error) {
 		decoder.UseNumber()
 		err = decoder.Decode(&value)
 		if err != nil {
-			return "", nil, err
+			return "", nil, toBeEmptied, err
 		}
-		return strings.TrimSuffix(fileName, ".json"), value, nil
+		return strings.TrimSuffix(fileName, ".json"), value, toBeEmptied, nil
 	}
-	return fileName, string(fileContent), nil
+	if string(fileContent) == "toBeEmptied" {
+		toBeEmptied = true
+	}
+	return fileName, string(fileContent), toBeEmptied, nil
 }
