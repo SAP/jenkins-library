@@ -92,7 +92,7 @@ func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 			if err != nil {
 				return err
 			}
-			log.Entry().Debugf("Writing empty contents to file on disk: %v", dirPath)
+			log.Entry().Infof("Writing empty contents to file on disk: %v", dirPath)
 
 			m[path.Join(prefix, mapKey)] = ""
 
