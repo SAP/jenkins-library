@@ -131,7 +131,7 @@ func readFileContent(fullPath string) (string, interface{}, bool, error) {
 		}
 		return strings.TrimSuffix(fileName, ".json"), value, toBeEmptied, nil
 	}
-	if string(fileContent) == "toBeEmptied" {
+	if string(fileContent) == "" {
 		toBeEmptied = true
 	}
 	return fileName, string(fileContent), toBeEmptied, nil
