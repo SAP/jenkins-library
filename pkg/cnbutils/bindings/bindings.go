@@ -13,7 +13,7 @@ import (
 
 type binding struct {
 	Type    string  `json:"type"`
-	Secret  string  `json:"secret"`
+	Key     string  `json:"key"`
 	Content *string `json:"content,omitempty"`
 	File    *string `json:"file,omitempty"`
 }
@@ -56,12 +56,12 @@ func processBinding(utils cnbutils.BuildUtils, platformPath string, name string,
 	}
 
 	if binding.Content != nil {
-		err = utils.FileWrite(filepath.Join(bindingDir, binding.Secret), []byte(*binding.Content), 0644)
+		err = utils.FileWrite(filepath.Join(bindingDir, binding.Key), []byte(*binding.Content), 0644)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = utils.Copy(*binding.File, filepath.Join(bindingDir, binding.Secret))
+		_, err = utils.Copy(*binding.File, filepath.Join(bindingDir, binding.Key))
 		if err != nil {
 			return err
 		}
@@ -71,11 +71,11 @@ func processBinding(utils cnbutils.BuildUtils, platformPath string, name string,
 
 func validateBinding(name string, binding binding) error {
 	if !validName(name) {
-		return fmt.Errorf("invalid binding name: %s", name)
+		return fmt.Errorf("invalid binding name: '%s'", name)
 	}
 
-	if !validName(binding.Secret) {
-		return fmt.Errorf("invalid secret name: %s", binding.Secret)
+	if !validName(binding.Key) {
+		return fmt.Errorf("invalid key: '%s'", binding.Key)
 	}
 
 	if (binding.Content == nil && binding.File == nil) || (binding.Content != nil && binding.File != nil) {

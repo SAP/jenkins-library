@@ -23,14 +23,14 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
 			"a": map[string]interface{}{
-				"secret":  "inline.yaml",
+				"key":     "inline.yaml",
 				"type":    "inline",
 				"content": "my inline content",
 			},
 			"b": map[string]interface{}{
-				"secret": "from-file.yaml",
-				"type":   "file",
-				"file":   "/tmp/somefile.yaml",
+				"key":  "from-file.yaml",
+				"type": "file",
+				"file": "/tmp/somefile.yaml",
 			},
 		})
 
@@ -64,29 +64,29 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
 			"..": map[string]interface{}{
-				"secret":  "inline.yaml",
+				"key":     "inline.yaml",
 				"type":    "inline",
 				"content": "my inline content",
 			},
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "invalid binding name: ..", err.Error())
+			assert.Equal(t, "invalid binding name: '..'", err.Error())
 		}
 	})
 
-	t.Run("fails with the secret being invalid", func(t *testing.T) {
+	t.Run("fails with the key being invalid", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
 			"binding": map[string]interface{}{
-				"secret":  "test/test.yaml",
+				"key":     "test/test.yaml",
 				"type":    "inline",
 				"content": "my inline content",
 			},
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "invalid secret name: test/test.yaml", err.Error())
+			assert.Equal(t, "invalid key: 'test/test.yaml'", err.Error())
 		}
 	})
 
@@ -94,7 +94,7 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
 			"binding": map[string]interface{}{
-				"secret":  "test.yaml",
+				"key":     "test.yaml",
 				"type":    "both",
 				"content": "my inline content",
 				"file":    "/tmp/somefile.yaml",
@@ -110,8 +110,8 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
 			"binding": map[string]interface{}{
-				"secret": "test.yaml",
-				"type":   "none",
+				"key":  "test.yaml",
+				"type": "none",
 			},
 		})
 
@@ -136,8 +136,8 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, "/tmp/platform", map[string]interface{}{
 			"test": map[string]interface{}{
-				"secret": "test.yaml",
-				"typo":   "test",
+				"key":  "test.yaml",
+				"typo": "test",
 			},
 		})
 
