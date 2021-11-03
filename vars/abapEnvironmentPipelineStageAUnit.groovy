@@ -1,6 +1,7 @@
 import groovy.transform.Field
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.ConfigurationLoader
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -20,7 +21,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
-    
+
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults([:], stageName)
