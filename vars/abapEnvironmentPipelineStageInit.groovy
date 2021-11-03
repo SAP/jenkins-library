@@ -29,7 +29,9 @@ void call(Map parameters = [:]) {
         if (!skipCheckout) {
             checkout scm
         }
-        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
+        setupCommonPipelineEnvironment script: script,
+            customDefaults: parameters.customDefaults,
+            customDefaultsFromFiles: parameters.customDefaultsFromFiles
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
