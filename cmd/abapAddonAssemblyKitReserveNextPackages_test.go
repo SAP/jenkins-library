@@ -115,11 +115,12 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 				},
 			},
 		}
-		repos := copyFieldsToRepositories(pckgWR)
+		repos, err := checkAndCopyFieldsToRepositories(pckgWR)
 		assert.Equal(t, "SAPK-001AAINDRNMSPC", repos[0].PackageName)
 		assert.Equal(t, "AOI", repos[0].PackageType)
 		assert.Equal(t, string(aakaas.PackageStatusPlanned), repos[0].Status)
 		assert.Equal(t, "/DRNMSPC/", repos[0].Namespace)
+		assert.NoError(t, err)
 	})
 }
 

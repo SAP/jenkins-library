@@ -49,20 +49,43 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	if err != nil {
 		return err
 	}
-	addonDescriptor.Repositories = copyFieldsToRepositories(packagesWithRepos)
+
+	addonDescriptor.Repositories, err = checkAndCopyFieldsToRepositories(packagesWithRepos)
+	if err != nil {
+		return err
+	}
 	log.Entry().Info("Writing package names, types, status, namespace and predecessorCommitID to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
 
-func copyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) []abaputils.Repository {
+func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]abaputils.Repository, error) {
 	var repos []abaputils.Repository
 	for i := range pckgWR {
+		if pckgWR[i].Package.Status == aakaas.PackageStatusReleased {
+			//Check for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml
+			addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
+			packageCommitIDsubsting := pckgWR[i].Package.CommitID[0:addonYAMLcommitIDLength]
+			if pckgWR[i].Repo.CommitID == packageCommitIDsubsting {
+				log.Entry().Error("package " + pckgWR[i].Package.PackageName + " was already build but with commit " + pckgWR[i].Package.CommitID + ", not with " + pckgWR[i].Repo.CommitID)
+				log.Entry().Error("If you want to build a new package make sure to increase the dotted-version-string in addon.yml")
+				log.Entry().Error("If you do NOT want to build a new package enter the commitID" + pckgWR[i].Package.CommitID + " for software component " + pckgWR[i].Repo.Name + " in addon.yml")
+				return repos, errors.New("commit of released package does not match with addon.yml")
+			}
+		} else {
+			//Check for newly reserved packages which are to be build that CommitID from addon.yml != PreviousCommitID [this will result in an error as no delta can be calculated]
+			addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
+			packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
+			if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
+				return repos, errors.New("CommitID of package" + pckgWR[i].Package.PackageName + "is the same as the on of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
+			}
+		}
+
 		pckgWR[i].Package.CopyFieldsToRepo(&pckgWR[i].Repo)
 		repos = append(repos, pckgWR[i].Repo)
 	}
-	return repos
+	return repos, nil
 }
 
 func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
