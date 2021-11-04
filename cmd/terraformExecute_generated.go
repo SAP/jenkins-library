@@ -5,11 +5,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -23,6 +25,35 @@ type terraformExecuteOptions struct {
 	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
 	Init             bool     `json:"init,omitempty"`
 	CliConfigFile    string   `json:"cliConfigFile,omitempty"`
+	Workspace        string   `json:"workspace,omitempty"`
+}
+
+type terraformExecuteCommonPipelineEnvironment struct {
+	custom struct {
+		terraformOutputs map[string]interface{}
+	}
+}
+
+func (p *terraformExecuteCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "terraformOutputs", value: p.custom.terraformOutputs},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -32,6 +63,7 @@ func TerraformExecuteCommand() *cobra.Command {
 	metadata := terraformExecuteMetadata()
 	var stepConfig terraformExecuteOptions
 	var startTime time.Time
+	var commonPipelineEnvironment terraformExecuteCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var provider orchestrator.OrchestratorSpecificConfigProviding
 	var err error
@@ -91,6 +123,7 @@ func TerraformExecuteCommand() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.Custom1Label = "PiperCommitHash"
@@ -117,7 +150,7 @@ func TerraformExecuteCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			terraformExecute(stepConfig, &stepTelemetryData)
+			terraformExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -134,6 +167,7 @@ func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOp
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalArgs, "additionalArgs", []string{}, "")
 	cmd.Flags().BoolVar(&stepConfig.Init, "init", false, "")
 	cmd.Flags().StringVar(&stepConfig.CliConfigFile, "cliConfigFile", os.Getenv("PIPER_cliConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "")
 
 }
 
@@ -222,10 +256,30 @@ func terraformExecuteMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_cliConfigFile"),
 					},
+					{
+						Name:        "workspace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_workspace"),
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:0.14.7", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
+				{Name: "terraform", Image: "hashicorp/terraform:1.0.10", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "custom/terraformOutputs"},
+						},
+					},
+				},
 			},
 		},
 	}

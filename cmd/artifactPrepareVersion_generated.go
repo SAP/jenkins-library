@@ -23,7 +23,7 @@ type artifactPrepareVersionOptions struct {
 	CommitUserName         string `json:"commitUserName,omitempty"`
 	CustomVersionField     string `json:"customVersionField,omitempty"`
 	CustomVersionSection   string `json:"customVersionSection,omitempty"`
-	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"oneof=maven pep440 semver2"`
+	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"oneof=docker maven pep440 semver2"`
 	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
 	FilePath               string `json:"filePath,omitempty"`
