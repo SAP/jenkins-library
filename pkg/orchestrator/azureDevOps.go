@@ -34,6 +34,11 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 	return "Azure"
 }
 
+func (a *AzureDevOpsConfigProvider) GetJobName() string {
+	log.Entry().Debugf("GetJobName() for Azure not yet implemented.")
+	return "n/a"
+}
+
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 
 	// ToDo: How to get step specific logs, not only whole log?

@@ -7,61 +7,71 @@ import (
 
 type UnknownOrchestratorConfigProvider struct{}
 
-func (j *UnknownOrchestratorConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
+func (u *UnknownOrchestratorConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 }
 
-func (a *UnknownOrchestratorConfigProvider) OrchestratorVersion() string {
+func (u *UnknownOrchestratorConfigProvider) OrchestratorVersion() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (a *UnknownOrchestratorConfigProvider) OrchestratorType() string {
+func (u *UnknownOrchestratorConfigProvider) GetBuildId() string {
+	log.Entry().Warning("Unknown orchestrator - returning default values.")
+	return "N/A"
+}
+
+func (u *UnknownOrchestratorConfigProvider) GetJobName() string {
+	log.Entry().Warning("Unknown orchestrator - returning default values.")
+	return "N/A"
+}
+
+func (u *UnknownOrchestratorConfigProvider) OrchestratorType() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "Unknown"
 }
 
-func (a *UnknownOrchestratorConfigProvider) GetLog() ([]byte, error) {
+func (u *UnknownOrchestratorConfigProvider) GetLog() ([]byte, error) {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return nil, nil
 }
 
-func (a *UnknownOrchestratorConfigProvider) GetPipelineStartTime() time.Time {
+func (u *UnknownOrchestratorConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	timestamp, _ := time.Parse(time.UnixDate, "Wed Feb 25 11:06:39 PST 1970")
 	return timestamp
 }
-func (g *UnknownOrchestratorConfigProvider) GetStageName() string {
+func (u *UnknownOrchestratorConfigProvider) GetStageName() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (g *UnknownOrchestratorConfigProvider) GetBranch() string {
+func (u *UnknownOrchestratorConfigProvider) GetBranch() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (g *UnknownOrchestratorConfigProvider) GetBuildUrl() string {
+func (u *UnknownOrchestratorConfigProvider) GetBuildUrl() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (g *UnknownOrchestratorConfigProvider) GetJobUrl() string {
+func (u *UnknownOrchestratorConfigProvider) GetJobUrl() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (g *UnknownOrchestratorConfigProvider) GetCommit() string {
+func (u *UnknownOrchestratorConfigProvider) GetCommit() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (g *UnknownOrchestratorConfigProvider) GetRepoUrl() string {
+func (u *UnknownOrchestratorConfigProvider) GetRepoUrl() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "N/A"
 }
 
-func (g *UnknownOrchestratorConfigProvider) GetPullRequestConfig() PullRequestConfig {
+func (u *UnknownOrchestratorConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return PullRequestConfig{
 		Branch: "N/A",
@@ -70,7 +80,7 @@ func (g *UnknownOrchestratorConfigProvider) GetPullRequestConfig() PullRequestCo
 	}
 }
 
-func (g *UnknownOrchestratorConfigProvider) IsPullRequest() bool {
+func (u *UnknownOrchestratorConfigProvider) IsPullRequest() bool {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return false
 }

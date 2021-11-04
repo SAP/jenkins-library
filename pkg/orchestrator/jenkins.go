@@ -99,8 +99,8 @@ func (j *JenkinsConfigProvider) getJenkinsHome() string {
 	return getEnv("JENKINS_HOME", "n/a")
 }
 
-func (j *JenkinsConfigProvider) GetBuildNumber() string {
-	return getEnv("BUILD_NUMBER", "n/a")
+func (j *JenkinsConfigProvider) GetBuildId() string {
+	return getEnv("BUILD_ID", "n/a")
 }
 
 func (a *JenkinsConfigProvider) GetStageName() string {

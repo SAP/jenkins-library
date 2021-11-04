@@ -9,24 +9,29 @@ import (
 
 type GitHubActionsConfigProvider struct{}
 
-func (j *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
+func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	log.Entry().Debug("Successfully initalized GitHubActions config provider")
 }
 
-func (a *GitHubActionsConfigProvider) OrchestratorVersion() string {
+func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
 	return "n/a"
 }
 
-func (a *GitHubActionsConfigProvider) OrchestratorType() string {
+func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 	return "GitHub"
 }
 
-func (a *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
+func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	log.Entry().Infof("GetLog() for GitHub Actions not yet implemented.")
 	return nil, nil
 }
 
-func (a *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
+func (g *GitHubActionsConfigProvider) GetBuildId() string {
+	log.Entry().Infof("GetBuildId() for GitHub Actions not yet implemented.")
+	return "n/a"
+}
+
+func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
 	timestamp, _ := time.Parse(time.UnixDate, "Wed Feb 25 11:06:39 PST 1970")
 	return timestamp
@@ -46,6 +51,11 @@ func (g *GitHubActionsConfigProvider) GetBuildUrl() string {
 func (g *GitHubActionsConfigProvider) GetJobUrl() string {
 	log.Entry().Debugf("Not yet implemented.")
 	return g.GetRepoUrl() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+}
+
+func (g *GitHubActionsConfigProvider) GetJobName() string {
+	log.Entry().Debugf("GetJobName() for GitHubActions not yet implemented.")
+	return "N/A"
 }
 
 func (g *GitHubActionsConfigProvider) GetCommit() string {
