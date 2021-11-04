@@ -329,7 +329,7 @@ spec:
             default: docker-config
       - name: deployCommand
         type: string
-        description: "kubectl only: defines the command apply or replace. default is apply"
+        description: "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`."
         mandatory: false
         scope:
           - PARAMETERS
