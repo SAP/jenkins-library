@@ -91,6 +91,12 @@ func TestRunTerraformExecute(t *testing.T) {
 				CliConfigFile: ".pipeline/.terraformrc",
 			}, []string{"apply", "-auto-approve", "-no-color"}, []string{"TF_CLI_CONFIG_FILE=.pipeline/.terraformrc"},
 		},
+		{
+			terraformExecuteOptions{
+				Command:   "plan",
+				Workspace: "any-workspace",
+			}, []string{"plan"}, []string{"TF_WORKSPACE=any-workspace"},
+		},
 	}
 
 	for i, test := range tt {
