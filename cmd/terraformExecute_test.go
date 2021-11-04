@@ -95,7 +95,7 @@ func TestRunTerraformExecute(t *testing.T) {
 			terraformExecuteOptions{
 				Command:   "plan",
 				Workspace: "any-workspace",
-			}, []string{"plan"}, []string{"TF_WORKSPACE=any-workspace"},
+			}, []string{"plan", "-no-color"}, []string{"TF_WORKSPACE=any-workspace"},
 		},
 	}
 
