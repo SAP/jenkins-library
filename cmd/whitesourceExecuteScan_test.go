@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type whitesourceUtilsMock struct {
@@ -133,48 +135,33 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 func TestCorrectWhitesourceDockerConfigEnvVar(t *testing.T) {
 	t.Run("with credentials", func(t *testing.T) {
 		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.CurrentDir = "/tmp/test"
+		testDirectory, _ := ioutil.TempDir(".", "")
+		require.DirExists(t, testDirectory)
+		defer os.RemoveAll(testDirectory)
 
-		dockerConfigFile := "myConfig/docker.json"
-		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
+		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
+		os.Mkdir(dockerConfigDir, 0755)
+		require.DirExists(t, dockerConfigDir)
+
+		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
+		file, _ := os.Create(dockerConfigFile)
+		defer file.Close()
+		require.FileExists(t, dockerConfigFile)
 
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
-
 		// test
-		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile}, utilsMock)
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile})
 		// assert
-		absolutePath, _ := utilsMock.Abs(filepath.Dir(dockerConfigFile))
+		absolutePath, _ := filepath.Abs(dockerConfigDir)
 		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
-	})
-	t.Run("with added credentials", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.CurrentDir = "/tmp/test"
-
-		dockerConfigFile := "myConfig/docker.json"
-		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
-
-		resetValue := os.Getenv("DOCKER_CONFIG")
-		defer os.Setenv("DOCKER_CONFIG", resetValue)
-
-		// test
-		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile, ScanImageRegistryURL: "https://test.registry", ContainerRegistryUser: "testuser", ContainerRegistryPassword: "testPassword"}, utilsMock)
-		// assert
-		absoluteDirPath, _ := utilsMock.Abs(filepath.Dir(dockerConfigFile))
-		absoluteFilePath, _ := utilsMock.Abs(dockerConfigFile)
-		assert.Equal(t, absoluteDirPath, os.Getenv("DOCKER_CONFIG"))
-		content, _ := utilsMock.FileRead(absoluteFilePath)
-		assert.Contains(t, string(content), "https://test.registry")
 	})
 	t.Run("without credentials", func(t *testing.T) {
 		// init
-		utilsMock := newWhitesourceUtilsMock()
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctWhitesourceDockerConfigEnvVar(&ScanOptions{}, utilsMock)
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{})
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
