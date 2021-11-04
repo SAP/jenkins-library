@@ -2,8 +2,8 @@ package telemetry
 
 import (
 	"encoding/json"
-	"net/url"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"net/url"
 )
 
 // BaseData object definition containing the base data and it's mapping information
