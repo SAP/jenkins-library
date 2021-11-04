@@ -323,6 +323,11 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	}, c.Error
 }
 
+// DownloadFile : Empty file download
+func (c *ClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return nil
+}
+
 // AUtilsMock mock
 type AUtilsMock struct {
 	ReturnedConnectionDetailsHTTP ConnectionDetailsHTTP
