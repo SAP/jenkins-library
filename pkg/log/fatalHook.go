@@ -66,7 +66,7 @@ type ErrorDetails struct {
 func GetErrorsJson() ([]ErrorDetails, error) {
 	fileName := "errorDetails.json"
 	path, err := os.Getwd()
-	pathCPE := path + "/commonPipelineEnvironment"
+	pathCPE := path + "/.pipeline/commonPipelineEnvironment"
 	if err != nil {
 		fmt.Errorf("can not get current working dir")
 		return []ErrorDetails{}, err
