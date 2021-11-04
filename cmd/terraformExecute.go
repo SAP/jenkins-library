@@ -40,7 +40,11 @@ func terraformExecute(config terraformExecuteOptions, telemetryData *telemetry.C
 }
 
 func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemetry.CustomData, utils terraformExecuteUtils) error {
-	args := []string{config.Command}
+	if len(config.CliConfigFile) > 0 {
+		utils.AppendEnv([]string{fmt.Sprintf("TF_CLI_CONFIG_FILE=%s", config.CliConfigFile)})
+	}
+
+	args := []string{}
 
 	if config.Command == "apply" {
 		args = append(args, "-auto-approve")
@@ -54,7 +58,29 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 		args = append(args, config.AdditionalArgs...)
 	}
 
-	utils.RunExecutable("terraform", args...)
+	if config.Init {
+		err := runTerraform(utils, "init", []string{}, config.GlobalOptions)
 
-	return nil
+		if err != nil {
+			return err
+		}
+	}
+
+	return runTerraform(utils, config.Command, args, config.GlobalOptions)
+}
+
+func runTerraform(utils terraformExecuteUtils, command string, args []string, globalOptions []string) error {
+	cliArgs := []string{}
+
+	if globalOptions != nil {
+		cliArgs = append(cliArgs, globalOptions...)
+	}
+
+	cliArgs = append(cliArgs, command)
+
+	if args != nil {
+		cliArgs = append(cliArgs, args...)
+	}
+
+	return utils.RunExecutable("terraform", cliArgs...)
 }
