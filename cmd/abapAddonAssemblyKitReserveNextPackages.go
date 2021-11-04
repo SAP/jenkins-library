@@ -67,17 +67,17 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]abaputils.Repository, error) {
 	var repos []abaputils.Repository
 
-	log.Entry().Infof("Software Component   | Package              | Status | CommitID (from addon.yml)                | PredecessorCommitID (from AAKaaS)")
+	log.Entry().Infof("%30v | %20v | %6v | %40v | %40v", "Software Component", "Package", "Status", "CommitID (from addon.yml)", "PredecessorCommitID (from AAKaaS)")
 
 	for i := range pckgWR {
 
-		log.Entry().Infof("%30v | %20v | %6v | %40v | %40v", pckgWR[i].Repo.Name, pckgWR[i].Package.PackageName, pckgWR[i].Package.Status, pckgWR[i].Repo.CommitID, pckgWR[i].Package.PredecessorCommitID)
+		log.Entry().Infof("%-30v | %20v | %-6v | %40v | %40v", pckgWR[i].Repo.Name, pckgWR[i].Package.PackageName, pckgWR[i].Package.Status, pckgWR[i].Repo.CommitID, pckgWR[i].Package.PredecessorCommitID)
 
 		if pckgWR[i].Package.Status == aakaas.PackageStatusReleased {
-			//Check for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml
+			//Ensure for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml
 			addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
 			packageCommitIDsubsting := pckgWR[i].Package.CommitID[0:addonYAMLcommitIDLength]
-			if pckgWR[i].Repo.CommitID == packageCommitIDsubsting {
+			if pckgWR[i].Repo.CommitID != packageCommitIDsubsting {
 				log.Entry().Error("package " + pckgWR[i].Package.PackageName + " was already build but with commit " + pckgWR[i].Package.CommitID + ", not with " + pckgWR[i].Repo.CommitID)
 				log.Entry().Error("If you want to build a new package make sure to increase the dotted-version-string in addon.yml")
 				log.Entry().Error("If you do NOT want to build a new package enter the commitID " + pckgWR[i].Package.CommitID + " for software component " + pckgWR[i].Repo.Name + " in addon.yml")
