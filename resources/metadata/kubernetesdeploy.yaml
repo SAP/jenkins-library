@@ -70,7 +70,7 @@ spec:
         aliases:
           - name: k8sAppTemplate
         type: string
-        description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)
+        description: 'Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.'
         scope:
           - PARAMETERS
           - STAGES
