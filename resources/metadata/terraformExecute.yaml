@@ -70,3 +70,10 @@ spec:
       env:
         - name: TF_IN_AUTOMATION
           value: piper
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/terraformOutputs
+            type: 'map[string]interface{}'
