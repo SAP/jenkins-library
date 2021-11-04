@@ -63,7 +63,7 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 	}
 
 	if config.Init {
-		err := runTerraform(utils, "init", []string{}, config.GlobalOptions)
+		err := runTerraform(utils, "init", []string{"-no-color"}, config.GlobalOptions)
 
 		if err != nil {
 			return err
