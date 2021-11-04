@@ -249,7 +249,7 @@ func terraformExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:0.14.7", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
+				{Name: "terraform", Image: "hashicorp/terraform:1.0.10", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
