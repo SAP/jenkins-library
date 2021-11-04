@@ -100,15 +100,19 @@ func TestRunTerraformExecute(t *testing.T) {
 	}
 
 	for i, test := range tt {
-		t.Run(fmt.Sprintf("That arguemtns are correct %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("That arguments are correct %d", i), func(t *testing.T) {
 			t.Parallel()
 			// init
 			config := test.terraformExecuteOptions
 			utils := newTerraformExecuteTestsUtils()
+			utils.StdoutReturn = map[string]string{}
+			utils.StdoutReturn["terraform output -json"] = "{}"
+			utils.StdoutReturn["terraform -chgdir=src output -json"] = "{}"
+
 			runner := utils.ExecMockRunner
 
 			// test
-			err := runTerraformExecute(&config, nil, utils)
+			err := runTerraformExecute(&config, nil, utils, &terraformExecuteCommonPipelineEnvironment{})
 
 			// assert
 			assert.NoError(t, err)
@@ -123,4 +127,32 @@ func TestRunTerraformExecute(t *testing.T) {
 			assert.Subset(t, runner.Env, test.expectedEnvVars)
 		})
 	}
+
+	t.Run("Outputs get injected into CPE", func(t *testing.T) {
+		t.Parallel()
+
+		cpe := terraformExecuteCommonPipelineEnvironment{}
+
+		config := terraformExecuteOptions{
+			Command: "plan",
+		}
+		utils := newTerraformExecuteTestsUtils()
+		utils.StdoutReturn = map[string]string{}
+		utils.StdoutReturn["terraform output -json"] = `{
+			"sample_var": {
+				"sensitive": true,
+				"value": "a secret value",
+				"type": "string"
+			}
+}
+		`
+
+		// test
+		err := runTerraformExecute(&config, nil, utils, &cpe)
+
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(cpe.custom.terraformOutputs))
+		assert.Equal(t, "a secret value", cpe.custom.terraformOutputs["sample_var"])
+	})
 }

@@ -137,11 +137,21 @@ func (me *AddonDescriptor) initFromJSON(JSON []byte) error {
 	return json.Unmarshal(JSON, me)
 }
 
+// initFromJSON : Init from json string
+func (me *AddonDescriptor) InitFromJSONstring(JSONstring string) error {
+	return me.initFromJSON([]byte(JSONstring))
+}
+
 // AsJSON : dito
 func (me *AddonDescriptor) AsJSON() []byte {
 	//hopefully no errors should happen here or they are covered by the users unit tests
 	jsonBytes, _ := json.Marshal(me)
 	return jsonBytes
+}
+
+// AsJSONstring : dito
+func (me *AddonDescriptor) AsJSONstring() string {
+	return string(me.AsJSON())
 }
 
 // SetRepositories : dito
