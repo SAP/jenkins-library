@@ -42,11 +42,13 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		// ToDo: If step is called x times and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
-	filePathCPE := filepath.Join(f.Path+"/commonPipelineEnvironment", fileName)
+	filePathCPE := filepath.Join(f.Path+"/.pipeline/commonPipelineEnvironment", fileName)
+
 	_, err := ioutil.ReadFile(filePath)
 	errDetails, _ := json.Marshal(&details)
 	ioutil.WriteFile(filePathCPE, errDetails, 0666)
 
+	Entry().Debugf("persisted error information in %v", filePathCPE)
 	if err != nil {
 		// ignore errors, since we don't want to break the logging flow
 		ioutil.WriteFile(filePath, errDetails, 0666)
@@ -73,6 +75,7 @@ func GetErrorsJson() ([]ErrorDetails, error) {
 	}
 
 	matches, err := filepath.Glob(pathCPE + "/*" + fileName)
+	Entry().Debugf("found the following errorDetails files: %v", matches)
 	if err != nil {
 		Entry().Debugf("could not find any *errorDetails.json files")
 	}
