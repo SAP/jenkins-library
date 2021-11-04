@@ -3,6 +3,7 @@ package telemetry
 import (
 	"encoding/json"
 	"net/url"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // BaseData object definition containing the base data and it's mapping information
@@ -88,4 +89,22 @@ func (d *Data) toPayloadString() string {
 	}
 
 	return parameters.Encode()
+}
+
+type PipelineTelemetry struct {
+	CorrelationId       string             `json:"CorrelationId"`       // CorrelationId
+	Duration            string             `json:"PipelineDuration"`    // Duration of the pipeline in milliseconds
+	Orchestrator        string             `json:"Orchestrator"`        // Orchestrator, e.g. Jenkins or Azure
+	OrchestratorVersion string             `json:"OrchestratorVersion"` // OrchestratorVersion
+	PipelineStartTime   string             `json:"PipelineStartTime"`   // Pipeline start time
+	Errors              []log.ErrorDetails `json:"ErrorDetails"`        // Error Codes found in errorsJson
+	BuildId             string             `json:"BuildId"`             // BuildId of the pipeline run
+	JobName             string             `json:"JobName"`
+	PipelineStatus      string             `json:"PipelineStatus"`
+	GitInstance         string             `json:"GitInstance"`
+	JobURL              string             `json:"JobURL"`
+	CommitHash          string             `json:"CommitHash"`
+	Branch              string             `json:"Branch"`
+	GitOwner            string             `json:"GitOwner"`
+	GitRepository       string             `json:"GitRepository"`
 }

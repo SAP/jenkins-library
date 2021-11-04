@@ -98,7 +98,7 @@ func readCommonPipelineEnvironment(filePath string) string {
 	// TODO: Dependent on a groovy step, which creates the folder.
 	contentFile, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
 	if err != nil {
-		log.Entry().Warnf("Could not read commitId file. %v", err)
+		log.Entry().Warnf("Could not read %v file. %v", filePath, err)
 		contentFile = []byte("N/A")
 	}
 	return string(contentFile)
@@ -121,25 +121,25 @@ type MonitoringData struct {
 	GitRepository   string `json:"GitRepository,omitempty"`
 }
 
-// MonitoringData definition for monitoring
-type PipelineData struct {
-	PipelineUrlHash     string `json:"PipelineUrlHash,omitempty"`
-	BuildUrlHash        string `json:"BuildUrlHash,omitempty"`
-	StepName            string `json:"StepName,omitempty"`
-	ExitCode            string `json:"ExitCode,omitempty"`
-	Duration            string `json:"Duration,omitempty"`
-	ErrorCode           string `json:"ErrorCode,omitempty"`
-	ErrorCategory       string `json:"ErrorCategory,omitempty"`
-	CorrelationID       string `json:"CorrelationID,omitempty"`
-	CommitHash          string `json:"CommitHash,omitempty"`
-	Branch              string `json:"Branch,omitempty"`
-	GitOwner            string `json:"GitOwner,omitempty"`
-	GitRepository       string `json:"GitRepository,omitempty"`
-	Orchestrator        string `json:"Orchestrator,omitempty"`
-	OrchestratorVersion string `json:"OrchestratorVersion,omitempty"`
-	PipelineStartTime   string `json:"PipelineStartTime,omitempty"`
-	LastErrorCode       string `json:"LastErrorCode,omitempty"`
-}
+//// MonitoringData definition for monitoring
+//type PipelineData struct {
+//	PipelineUrlHash     string `json:"PipelineUrlHash,omitempty"`
+//	BuildUrlHash        string `json:"BuildUrlHash,omitempty"`
+//	StepName            string `json:"StepName,omitempty"`
+//	ExitCode            string `json:"ExitCode,omitempty"`
+//	Duration            string `json:"Duration,omitempty"`
+//	ErrorCode           string `json:"ErrorCode,omitempty"`
+//	ErrorCategory       string `json:"ErrorCategory,omitempty"`
+//	CorrelationID       string `json:"CorrelationID,omitempty"`
+//	CommitHash          string `json:"CommitHash,omitempty"`
+//	Branch              string `json:"Branch,omitempty"`
+//	GitOwner            string `json:"GitOwner,omitempty"`
+//	GitRepository       string `json:"GitRepository,omitempty"`
+//	Orchestrator        string `json:"Orchestrator,omitempty"`
+//	OrchestratorVersion string `json:"OrchestratorVersion,omitempty"`
+//	PipelineStartTime   string `json:"PipelineStartTime,omitempty"`
+//	LastErrorCode       string `json:"LastErrorCode,omitempty"`
+//}
 
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 
@@ -160,27 +160,27 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	}
 }
 
-func (s *Splunk) prepareTelemetryPipelineData(telemetryData telemetry.Data) PipelineData {
-
-	return PipelineData{
-		PipelineUrlHash:     telemetryData.PipelineURLHash,
-		BuildUrlHash:        telemetryData.BuildURLHash,
-		StepName:            telemetryData.BaseData.StepName,
-		ExitCode:            telemetryData.CustomData.ErrorCode,
-		Duration:            telemetryData.CustomData.Duration,
-		ErrorCode:           telemetryData.CustomData.ErrorCode,
-		ErrorCategory:       telemetryData.CustomData.ErrorCategory,
-		CorrelationID:       s.correlationID,
-		CommitHash:          readCommonPipelineEnvironment("git/headCommitId"),
-		Branch:              readCommonPipelineEnvironment("git/branch"),
-		GitOwner:            readCommonPipelineEnvironment("github/owner"),
-		GitRepository:       readCommonPipelineEnvironment("github/repository"),
-		Orchestrator:        telemetryData.CustomData.Custom1,
-		OrchestratorVersion: telemetryData.CustomData.Custom2,
-		PipelineStartTime:   telemetryData.CustomData.Custom3,
-		LastErrorCode:       telemetryData.CustomData.Custom4,
-	}
-}
+//func (s *Splunk) prepareTelemetryPipelineData(telemetryData telemetry.Data) PipelineData {
+//
+//	return PipelineData{
+//		PipelineUrlHash:     telemetryData.PipelineURLHash,
+//		BuildUrlHash:        telemetryData.BuildURLHash,
+//		StepName:            telemetryData.BaseData.StepName,
+//		ExitCode:            telemetryData.CustomData.ErrorCode,
+//		Duration:            telemetryData.CustomData.Duration,
+//		ErrorCode:           telemetryData.CustomData.ErrorCode,
+//		ErrorCategory:       telemetryData.CustomData.ErrorCategory,
+//		CorrelationID:       s.correlationID,
+//		CommitHash:          readCommonPipelineEnvironment("git/headCommitId"),
+//		Branch:              readCommonPipelineEnvironment("git/branch"),
+//		GitOwner:            readCommonPipelineEnvironment("github/owner"),
+//		GitRepository:       readCommonPipelineEnvironment("github/repository"),
+//		Orchestrator:        telemetryData.CustomData.Custom1,
+//		OrchestratorVersion: telemetryData.CustomData.Custom2,
+//		PipelineStartTime:   telemetryData.CustomData.Custom3,
+//		LastErrorCode:       telemetryData.CustomData.Custom4,
+//	}
+//}
 
 type Event struct {
 	Messages  []log.Message  `json:"messages,omitempty"`  // messages
@@ -194,17 +194,17 @@ type Details struct {
 	Event      Event  `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
-func (s *Splunk) SendPipelineStatus(customTelemetryData telemetry.Data, logFile *[]byte) error {
+func (s *Splunk) SendPipelineStatus(pipelineTelemetryData telemetry.PipelineTelemetry, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
-	telemetryData := s.prepareTelemetryPipelineData(customTelemetryData)
+	//telemetryData := s.prepareTelemetryPipelineData(pipelineTelemetryData)
 
 	readLogFile := string(*logFile)
 	splitted := strings.Split(readLogFile, "\n")
 	messagesLen := len(splitted)
 
 	log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
-	log.Entry().Debugf("Sending telemetry data to Splunk: %v", telemetryData)
-	s.postTelemetry(telemetryData)
+	log.Entry().Debugf("Sending pipeline telemetry data to Splunk: %v", pipelineTelemetryData)
+	s.postTelemetry(pipelineTelemetryData)
 
 	if s.sendLogs {
 		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
@@ -212,7 +212,7 @@ func (s *Splunk) SendPipelineStatus(customTelemetryData telemetry.Data, logFile 
 			if upperBound > messagesLen {
 				upperBound = messagesLen
 			}
-			err := s.postLogFile(telemetryData, splitted[i:upperBound])
+			err := s.postLogFile(pipelineTelemetryData, splitted[i:upperBound])
 			if err != nil {
 				return errors.Wrap(err, "error while sending logs")
 			}
@@ -222,8 +222,8 @@ func (s *Splunk) SendPipelineStatus(customTelemetryData telemetry.Data, logFile 
 }
 
 type LogFileEvents struct {
-	Messages  []string     `json:"messages,omitempty"`  // messages
-	Telemetry PipelineData `json:"telemetry,omitempty"` // telemetryData
+	Messages  []string                    `json:"messages,omitempty"`  // messages
+	Telemetry telemetry.PipelineTelemetry `json:"telemetry,omitempty"` // telemetryData
 }
 type DetailsLog struct {
 	Host       string        `json:"host"`                 // hostname
@@ -234,14 +234,14 @@ type DetailsLog struct {
 }
 
 type DetailsTelemetry struct {
-	Host       string       `json:"host"`                 // hostname
-	Source     string       `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string       `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string       `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      PipelineData `json:"event,omitempty"`      // throw any useful key/val pairs here}
+	Host       string                      `json:"host"`                 // hostname
+	Source     string                      `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string                      `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string                      `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      telemetry.PipelineTelemetry `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
-func (s *Splunk) postTelemetry(telemetryData PipelineData) error {
+func (s *Splunk) postTelemetry(telemetryData telemetry.PipelineTelemetry) error {
 
 	details := DetailsTelemetry{
 		Host:       s.correlationID,
@@ -284,7 +284,7 @@ func (s *Splunk) postTelemetry(telemetryData PipelineData) error {
 	return nil
 }
 
-func (s *Splunk) postLogFile(telemetryData PipelineData, messages []string) error {
+func (s *Splunk) postLogFile(telemetryData telemetry.PipelineTelemetry, messages []string) error {
 
 	event := LogFileEvents{
 		Messages:  messages,
