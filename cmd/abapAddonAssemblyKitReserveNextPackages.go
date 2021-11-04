@@ -67,11 +67,11 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]abaputils.Repository, error) {
 	var repos []abaputils.Repository
 
-	log.Entry().Infof("%30v | %20v | %6v | %40v | %40v", "Software Component", "Package", "Status", "CommitID (from addon.yml)", "PredecessorCommitID (from AAKaaS)")
+	log.Entry().Infof("%-30v | %-20v | %-6v | %-40v | %-40v", "Software Component", "Package", "Status", "CommitID (from addon.yml)", "PredecessorCommitID (from AAKaaS)")
 
 	for i := range pckgWR {
 
-		log.Entry().Infof("%-30v | %20v | %-6v | %40v | %40v", pckgWR[i].Repo.Name, pckgWR[i].Package.PackageName, pckgWR[i].Package.Status, pckgWR[i].Repo.CommitID, pckgWR[i].Package.PredecessorCommitID)
+		log.Entry().Infof("%-30v | %-20v | %-6v | %-40v | %-40v", pckgWR[i].Repo.Name, pckgWR[i].Package.PackageName, pckgWR[i].Package.Status, pckgWR[i].Repo.CommitID, pckgWR[i].Package.PredecessorCommitID)
 
 		if pckgWR[i].Package.Status == aakaas.PackageStatusReleased {
 			//Ensure for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml
