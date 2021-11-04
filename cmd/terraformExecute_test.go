@@ -31,38 +31,38 @@ func TestRunTerraformExecute(t *testing.T) {
 		{
 			terraformExecuteOptions{
 				Command: "apply",
-			}, []string{"apply", "-auto-approve"}, []string{},
+			}, []string{"apply", "-auto-approve", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "apply",
 				TerraformSecrets: "/tmp/test",
-			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test"}, []string{},
+			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command: "plan",
-			}, []string{"plan"}, []string{},
+			}, []string{"plan", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "plan",
 				TerraformSecrets: "/tmp/test",
-			}, []string{"plan", "-var-file=/tmp/test"}, []string{},
+			}, []string{"plan", "-var-file=/tmp/test", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "plan",
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
-			}, []string{"plan", "-var-file=/tmp/test", "-arg1"}, []string{},
+			}, []string{"plan", "-var-file=/tmp/test", "-no-color", "-arg1"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command:          "apply",
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
-			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"}, []string{},
+			}, []string{"apply", "-auto-approve", "-var-file=/tmp/test", "-no-color", "-arg1"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
@@ -70,32 +70,32 @@ func TestRunTerraformExecute(t *testing.T) {
 				TerraformSecrets: "/tmp/test",
 				AdditionalArgs:   []string{"-arg1"},
 				GlobalOptions:    []string{"-chgdir=src"},
-			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-arg1"}, []string{},
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-var-file=/tmp/test", "-no-color", "-arg1"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command: "apply",
 				Init:    true,
-			}, []string{"apply", "-auto-approve"}, []string{},
+			}, []string{"apply", "-auto-approve", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command:       "apply",
 				GlobalOptions: []string{"-chgdir=src"},
 				Init:          true,
-			}, []string{"-chgdir=src", "apply", "-auto-approve"}, []string{},
+			}, []string{"-chgdir=src", "apply", "-auto-approve", "-no-color"}, []string{},
 		},
 		{
 			terraformExecuteOptions{
 				Command:       "apply",
 				CliConfigFile: ".pipeline/.terraformrc",
-			}, []string{"apply", "-auto-approve"}, []string{"TF_CLI_CONFIG_FILE=.pipeline/.terraformrc"},
+			}, []string{"apply", "-auto-approve", "-no-color"}, []string{"TF_CLI_CONFIG_FILE=.pipeline/.terraformrc"},
 		},
 		{
 			terraformExecuteOptions{
 				Command:   "plan",
 				Workspace: "any-workspace",
-			}, []string{"plan"}, []string{"TF_WORKSPACE=any-workspace"},
+			}, []string{"plan", "-no-color"}, []string{"TF_WORKSPACE=any-workspace"},
 		},
 	}
 
@@ -118,7 +118,7 @@ func TestRunTerraformExecute(t *testing.T) {
 			assert.NoError(t, err)
 
 			if config.Init {
-				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: append(config.GlobalOptions, "init")}, utils.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: append(config.GlobalOptions, "init", "-no-color")}, utils.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: test.expectedArgs}, utils.Calls[1])
 			} else {
 				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: test.expectedArgs}, utils.Calls[0])
