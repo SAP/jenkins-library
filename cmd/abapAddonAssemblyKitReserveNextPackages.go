@@ -76,6 +76,9 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 		if pckgWR[i].Package.Status == aakaas.PackageStatusReleased {
 			//Ensure for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml
 			addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
+			if len(pckgWR[i].Package.CommitID) < addonYAMLcommitIDLength {
+				return repos, errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
+			}
 			packageCommitIDsubsting := pckgWR[i].Package.CommitID[0:addonYAMLcommitIDLength]
 			if pckgWR[i].Repo.CommitID != packageCommitIDsubsting {
 				log.Entry().Error("package " + pckgWR[i].Package.PackageName + " was already build but with commit " + pckgWR[i].Package.CommitID + ", not with " + pckgWR[i].Repo.CommitID)
@@ -83,9 +86,12 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 				log.Entry().Error("If you do NOT want to build a new package enter the commitID " + pckgWR[i].Package.CommitID + " for software component " + pckgWR[i].Repo.Name + " in addon.yml")
 				return repos, errors.New("commit of released package does not match with addon.yml")
 			}
-		} else {
+		} else if pckgWR[i].Package.PredecessorCommitID != "" {
 			//Check for newly reserved packages which are to be build that CommitID from addon.yml != PreviousCommitID [this will result in an error as no delta can be calculated]
 			addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
+			if len(pckgWR[i].Package.PredecessorCommitID) < addonYAMLcommitIDLength {
+				return repos, errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
+			}
 			packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
 			if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
 				return repos, errors.New("CommitID of package" + pckgWR[i].Package.PackageName + "is the same as the on of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")

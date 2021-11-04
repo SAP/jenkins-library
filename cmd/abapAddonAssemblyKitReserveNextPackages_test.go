@@ -14,6 +14,8 @@ import (
 
 func TestReserveNextPackagesStep(t *testing.T) {
 	var config abapAddonAssemblyKitReserveNextPackagesOptions
+	config.Username = "dummy"
+	config.Password = "dummy"
 	var cpe abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
 	timeout := time.Duration(5 * time.Second)
 	pollInterval := time.Duration(1 * time.Second)
@@ -23,10 +25,12 @@ func TestReserveNextPackagesStep(t *testing.T) {
 				{
 					Name:        "/DRNMSPC/COMP01",
 					VersionYAML: "1.0.0.",
+					CommitID:    "hugo",
 				},
 				{
 					Name:        "/DRNMSPC/COMP02",
 					VersionYAML: "1.0.0.",
+					CommitID:    "something40charslongxxxxxxxxxxxxxxxxxxxx",
 				},
 			},
 		}
@@ -98,29 +102,87 @@ func TestInitPackage(t *testing.T) {
 
 // ********************* Test copyFieldsToRepositories *******************
 func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
-	t.Run("test copyFieldsToRepositories", func(t *testing.T) {
-		pckgWR := []aakaas.PackageWithRepository{
-			{
-				Package: aakaas.Package{
-					ComponentName: "/DRNMSPC/COMP01",
-					VersionYAML:   "1.0.0",
-					PackageName:   "SAPK-001AAINDRNMSPC",
-					Type:          "AOI",
-					Status:        aakaas.PackageStatusPlanned,
-					Namespace:     "/DRNMSPC/",
-				},
-				Repo: abaputils.Repository{
-					Name:        "/DRNMSPC/COMP01",
-					VersionYAML: "1.0.0",
-				},
+	pckgWR := []aakaas.PackageWithRepository{
+		{
+			Package: aakaas.Package{
+				ComponentName: "/DRNMSPC/COMP01",
+				VersionYAML:   "1.0.0",
+				PackageName:   "SAPK-001AAINDRNMSPC",
+				Type:          "AOI",
+				Namespace:     "/DRNMSPC/",
 			},
-		}
+			Repo: abaputils.Repository{
+				Name:        "/DRNMSPC/COMP01",
+				VersionYAML: "1.0.0",
+			},
+		},
+	}
+
+	t.Run("test copyFieldsToRepositories Planned success w/o predecessorcommitID", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = ""
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
 		repos, err := checkAndCopyFieldsToRepositories(pckgWR)
 		assert.Equal(t, "SAPK-001AAINDRNMSPC", repos[0].PackageName)
 		assert.Equal(t, "AOI", repos[0].PackageType)
 		assert.Equal(t, string(aakaas.PackageStatusPlanned), repos[0].Status)
 		assert.Equal(t, "/DRNMSPC/", repos[0].Namespace)
 		assert.NoError(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Planned success with predecessorcommitID", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = "something40charslongPREDECESSORyyyyyyyyy"
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.NoError(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Planned error with predecessorcommitID same as commitID", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = pckgWR[0].Repo.CommitID
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.Error(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Planned error with too long commitID in addon.yml", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = "something40charslongPREDECESSORyyyyyyyyy"
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxxtoolong"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.Error(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Released success", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
+		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.NoError(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Released error, different commitIDs", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
+		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxO"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.Error(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Released error with too long commitID in addon.yml", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
+		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxxtoolong"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxO"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.Error(t, err)
 	})
 }
 
@@ -321,6 +383,7 @@ var responseReserveNextPackagePostReleased = `{
             "PatchLevel": "0000",
             "Predecessor": "",
             "PredecessorCommitId": "",
+			"CommitId": "something40charslongxxxxxxxxxxxxxxxxxxxx",
             "Status": "R"
         }
     }
