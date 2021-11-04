@@ -108,7 +108,7 @@ func TestRunTerraformExecute(t *testing.T) {
 			assert.NoError(t, err)
 
 			if config.Init {
-				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: append(config.GlobalOptions, "init")}, utils.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: append(config.GlobalOptions, "init", "-no-color")}, utils.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: test.expectedArgs}, utils.Calls[1])
 			} else {
 				assert.Equal(t, mock.ExecCall{Exec: "terraform", Params: test.expectedArgs}, utils.Calls[0])
