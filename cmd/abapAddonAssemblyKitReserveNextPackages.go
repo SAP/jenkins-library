@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -34,11 +33,16 @@ func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveN
 
 func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
 	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	conn := new(abapbuild.Connector)
-	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
-	var addonDescriptor abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+	conn := new(abapbuild.Connector)
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+		return err
+	}
+
+	addonDescriptor := new(abaputils.AddonDescriptor)
+	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
+		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV steps have been run before]")
+	}
 
 	packagesWithRepos, err := reservePackages(addonDescriptor.Repositories, *conn)
 	if err != nil {
@@ -54,9 +58,9 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	if err != nil {
 		return err
 	}
+
 	log.Entry().Info("Writing package names, types, status, namespace and predecessorCommitID to CommonPipelineEnvironment")
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
+	cpe.abap.addonDescriptor = addonDescriptor.AsJSONstring()
 	return nil
 }
 
