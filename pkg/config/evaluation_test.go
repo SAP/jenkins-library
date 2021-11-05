@@ -45,6 +45,76 @@ func evaluateConditionsOpenFileMock(name string, _ map[string]string) (io.ReadCl
 }
 
 func TestEvaluateConditionsV1(t *testing.T) {
+	filesMock := mock.FilesMock{}
+
+	runConfig := RunConfigV1{
+		PipelineConfig: PipelineDefinitionV1{
+			Spec: Spec{
+				Stages: []Stage{
+					{
+						Name:        "stage1",
+						DisplayName: "Test Stage 1",
+						Steps: []Step{
+							{
+								Name:          "step1_1",
+								Conditions:    []StepCondition{},
+								Orchestrators: []string{"Jenkins"},
+							},
+							{
+								Name: "step1_2",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKey"},
+								},
+							},
+							{
+								Name:       "step1_3",
+								Conditions: []StepCondition{},
+							},
+						},
+					},
+					{
+						Name:        "stage2",
+						DisplayName: "Test Stage 2",
+						Steps: []Step{
+							{
+								Name: "step2_1",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
+							},
+							{
+								Name: "step2_2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	config := Config{Stages: map[string]map[string]interface{}{
+		"Test Stage 1": {"step1_3": false, "testKey": "testVal"},
+		"Test Stage 2": {"testKey": "testVal"},
+	}}
+
+	expected := map[string]map[string]bool{
+		"Test Stage 1": {
+			"step1_2": true,
+			"step1_3": false,
+		},
+		"Test Stage 2": {
+			"step2_1": true,
+			"step2_2": true,
+		},
+	}
+
+	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, runConfig.RunSteps)
+
+}
+
+func TestEvaluateV1(t *testing.T) {
 	tt := []struct {
 		name          string
 		config        StepConfig
@@ -63,9 +133,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		{
 			name: "Config condition - false",
 			config: StepConfig{Config: map[string]interface{}{
-				"deployTool":        "notsupported",
-				"dockerRegistryUrl": "https://my.docker.registry.url",
-				"newmanCollection":  "**/*.postman_collection.json",
+				"deployTool": "notsupported",
 			}},
 			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}}},
 			expected:      false,
@@ -73,9 +141,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		{
 			name: "Config condition - integer - true",
 			config: StepConfig{Config: map[string]interface{}{
-				"executors":         1,
-				"dockerRegistryUrl": "https://my.docker.registry.url",
-				"newmanCollection":  "**/*.postman_collection.json",
+				"executors": 1,
 			}},
 			stepCondition: StepCondition{Config: map[string][]interface{}{"executors": {1}}},
 			expected:      true,
@@ -83,9 +149,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		{
 			name: "Config condition - wrong condition definition",
 			config: StepConfig{Config: map[string]interface{}{
-				"deployTool":        "helm3",
-				"dockerRegistryUrl": "https://my.docker.registry.url",
-				"newmanCollection":  "**/*.postman_collection.json",
+				"deployTool": "helm3",
 			}},
 			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}, "deployTool2": {"myTool"}}},
 			expectedError: fmt.Errorf("only one config key allowed per condition but 2 provided"),
@@ -133,10 +197,36 @@ func TestEvaluateConditionsV1(t *testing.T) {
 			expected:      false,
 		},
 		{
+			name: "FilePatternFromConfig condition - false, empty value",
+			config: StepConfig{Config: map[string]interface{}{
+				"newmanCollection": "",
+			}},
+			stepCondition: StepCondition{FilePatternFromConfig: "newmanCollection"},
+			expected:      false,
+		},
+		{
+			name:          "NpmScript condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{NpmScript: "testScript"},
+			expected:      true,
+		},
+		{
+			name:          "NpmScript condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{NpmScript: "missingScript"},
+			expected:      false,
+		},
+		{
 			name:          "Inactive condition - false",
 			config:        StepConfig{Config: map[string]interface{}{}},
 			stepCondition: StepCondition{Inactive: true},
 			expected:      false,
+		},
+		{
+			name:          "Inactive condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{Inactive: false},
+			expected:      true,
 		},
 		{
 			name:     "No condition - true",
@@ -145,9 +235,16 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		},
 	}
 
+	packageJson := `{
+	"scripts": {
+		"testScript": "whatever"
+	}
+}`
+
 	filesMock := mock.FilesMock{}
 	filesMock.AddFile("conf.js", []byte("//test"))
 	filesMock.AddFile("my.postman_collection.json", []byte("{}"))
+	filesMock.AddFile("package.json", []byte(packageJson))
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
@@ -162,7 +259,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 	}
 }
 
-func Test_evaluateConditions(t *testing.T) {
+func TestEvaluateConditions(t *testing.T) {
 	tests := []struct {
 		name             string
 		customConfig     *Config

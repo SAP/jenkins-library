@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/pkg/errors"
@@ -21,15 +22,29 @@ const (
 )
 
 // EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
-/*
 func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error)) error {
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
+
+	// initialize in case not initialized
+	if r.RunConfig.RunSteps == nil {
+		r.RunConfig.RunSteps = map[string]map[string]bool{}
+	}
+
 	for _, stage := range r.PipelineConfig.Spec.Stages {
 		runStep := map[string]bool{}
+
+		// currently displayName is used, may need to consider to use technical name as well
+		stageName := stage.DisplayName
+
 		for _, step := range stage.Steps {
+			// Only consider orchestrator-specific steps in case orchestrator limitation is set
+			currentOrchestrator := orchestrator.DetectOrchestrator().String()
+			if len(step.Orchestrators) > 0 && !piperutils.ContainsString(step.Orchestrators, currentOrchestrator) {
+				continue
+			}
+
 			stepActive := false
-			//ToDo: check which stage name to use: name or displayName?
-			stepConfig, err := r.getStepConfig(config, stage.DisplayName, step.Name, filters, parameters, secrets, stepAliases)
+			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
 			if err != nil {
 				return err
 			}
@@ -38,61 +53,33 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 				// respect explicit activation/de-activation if available
 				stepActive = active
 			} else {
-				for _, condition := range step.Conditions {
-					if condition.Config != nil {
-
-					}
-
-					if condition.ConfigKey != nil {
-
-					}
-
-					if condition.Default != nil {
-
-					}
-					var err error
-					switch condition {
-					case configCondition:
-						if stepActive, err = checkConfig(condition, stepConfig, stepName); err != nil {
-							return errors.Wrapf(err, "error: check config condition failed")
+				if step.Conditions == nil || len(step.Conditions) == 0 {
+					// if no condition is available, step will be active by default
+					stepActive = true
+				} else {
+					for _, condition := range step.Conditions {
+						stepActive, err = condition.evaluateV1(stepConfig, utils)
+						if err != nil {
+							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
 						}
-					case configKeysCondition:
-						if stepActive, err = checkConfigKeys(condition, stepConfig, stepName); err != nil {
-							return errors.Wrapf(err, "error: check configKeys condition failed")
+						if stepActive {
+							// first condition which matches will be considered to activate the step
+							break
 						}
-					case filePatternFromConfigCondition:
-						if stepActive, err = checkForFilesWithPatternFromConfig(condition, stepConfig, stepName, glob); err != nil {
-							return errors.Wrapf(err, "error: check filePatternFromConfig condition failed")
-						}
-					case filePatternCondition:
-						if stepActive, err = checkForFilesWithPattern(condition, stepConfig, stepName, glob); err != nil {
-							return errors.Wrapf(err, "error: check filePattern condition failed")
-						}
-					case npmScriptsCondition:
-						if stepActive, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
-							return errors.Wrapf(err, "error: check npmScripts condition failed")
-						}
-					default:
-						return errors.Errorf("unknown condition %s", conditionName)
-					}
-					if stepActive {
-						break
 					}
 				}
 			}
-			runStep[stepName] = stepActive
+			runStep[step.Name] = stepActive
 			r.RunSteps[stageName] = runStep
 		}
 	}
 	return nil
 }
-*/
 
 func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
 
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
-	// ToDo: perform error handling to check that only one condition is allowed?
 	if s.Config != nil {
 
 		if len(s.Config) > 1 {
@@ -145,7 +132,7 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	}
 
 	if len(s.NpmScript) > 0 {
-		//ToDo: add logic for NpmScript condition
+		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
 	}
 
 	// needs to be checked last:
@@ -378,6 +365,47 @@ func checkForNpmScriptsInPackages(condition interface{}, config StepConfig, step
 			}
 		default:
 			return false, errors.Errorf("error: condidiion type invalid: %T, possible types: string, []interface{}", condition)
+		}
+	}
+	return false, nil
+}
+
+func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils piperutils.FileUtils) (bool, error) {
+	packages, err := utils.Glob("**/package.json")
+	if err != nil {
+		return false, errors.Wrap(err, "failed to check if file-exists")
+	}
+	for _, pack := range packages {
+		packDirs := strings.Split(path.Dir(pack), "/")
+		isNodeModules := false
+		for _, dir := range packDirs {
+			if dir == "node_modules" {
+				isNodeModules = true
+				break
+			}
+		}
+		if isNodeModules {
+			continue
+		}
+
+		jsonFile, err := utils.FileRead(pack)
+		if err != nil {
+			return false, errors.Errorf("failed to open file %s: %v", pack, err)
+		}
+		packageJSON := map[string]interface{}{}
+		if err := json.Unmarshal(jsonFile, &packageJSON); err != nil {
+			return false, errors.Errorf("failed to unmarshal json file %s: %v", pack, err)
+		}
+		npmScripts, ok := packageJSON["scripts"]
+		if !ok {
+			continue
+		}
+		scriptsMap, ok := npmScripts.(map[string]interface{})
+		if !ok {
+			return false, errors.Errorf("failed to read scripts from package.json: %T", npmScripts)
+		}
+		if _, ok := scriptsMap[npmScript]; ok {
+			return true, nil
 		}
 	}
 	return false, nil
