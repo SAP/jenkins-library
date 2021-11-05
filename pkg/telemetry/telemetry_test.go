@@ -92,7 +92,7 @@ func TestSend(t *testing.T) {
 	})
 }
 
-func TestCreateDataObject(t *testing.T) {
+func TestSetData(t *testing.T) {
 	type args struct {
 		customData *CustomData
 	}
@@ -102,14 +102,15 @@ func TestCreateDataObject(t *testing.T) {
 		want Data
 	}{
 		{
-			"Test",
-			args{customData: &CustomData{
-				Duration:      "100",
-				ErrorCode:     "0",
-				ErrorCategory: "Undefined",
+			name: "Test",
+			args: args{customData: &CustomData{
+				Duration:        "100",
+				ErrorCode:       "0",
+				ErrorCategory:   "Undefined",
+				PiperCommitHash: "abcd12345",
 			},
 			},
-			Data{
+			want: Data{
 				BaseData: BaseData{
 					URL:             "",
 					ActionName:      "",
@@ -118,6 +119,7 @@ func TestCreateDataObject(t *testing.T) {
 					SiteID:          "",
 					PipelineURLHash: "",
 					BuildURLHash:    "",
+					Orchestrator:    "Unknown",
 				},
 				BaseMetaData: BaseMetaData{
 					StepNameLabel:        "stepName",
@@ -127,21 +129,24 @@ func TestCreateDataObject(t *testing.T) {
 					DurationLabel:        "duration",
 					ExitCodeLabel:        "exitCode",
 					ErrorCategoryLabel:   "errorCategory",
+					OrchestratorLabel:    "orchestrator",
+					PiperCommitHashLabel: "piperCommitHash",
 				},
 				CustomData: CustomData{
-					Duration:      "100",
-					ErrorCode:     "0",
-					ErrorCategory: "Undefined",
-					Custom1Label:  "",
-					Custom2Label:  "",
-					Custom3Label:  "",
-					Custom4Label:  "",
-					Custom5Label:  "",
-					Custom1:       "",
-					Custom2:       "",
-					Custom3:       "",
-					Custom4:       "",
-					Custom5:       "",
+					Duration:        "100",
+					ErrorCode:       "0",
+					ErrorCategory:   "Undefined",
+					PiperCommitHash: "abcd12345",
+					Custom1Label:    "",
+					Custom2Label:    "",
+					Custom3Label:    "",
+					Custom4Label:    "",
+					Custom5Label:    "",
+					Custom1:         "",
+					Custom2:         "",
+					Custom3:         "",
+					Custom4:         "",
+					Custom5:         "",
 				},
 			},
 		},
@@ -158,6 +163,7 @@ func TestCreateDataObject(t *testing.T) {
 				SiteID:          "",
 				PipelineURLHash: "",
 				BuildURLHash:    "",
+				Orchestrator:    "Unknown",
 			}
 			telemetryClient.baseMetaData = baseMetaData
 			telemetryClient.SetData(tt.args.customData)
