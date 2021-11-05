@@ -7,7 +7,6 @@ This stage is responsible for building an ABAP add-on for the SAP BTP, ABAP envi
 The following steps are executed in this stage:
 
 - [cloudFoundryCreateServiceKey](../../../steps/cloudFoundryCreateServiceKey.md)
-- [abapAddonAssemblyKitReserveNextPackages](../../../steps/abapAddonAssemblyKitReserveNextPackages.md)
 - [abapEnvironmentAssemblePackages](../../../steps/abapEnvironmentAssemblePackages.md)
 - [abapAddonAssemblyKitRegisterPackages](../../../steps/abapAddonAssemblyKitRegisterPackages.md)
 - [abapAddonAssemblyKitReleasePackages](../../../steps/abapAddonAssemblyKitReleasePackages.md)
