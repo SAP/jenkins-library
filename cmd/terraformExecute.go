@@ -52,12 +52,16 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 
 	args := []string{}
 
-	if config.Command == "apply" {
+	if piperutils.ContainsString([]string{"apply", "destroy"}, config.Command) {
 		args = append(args, "-auto-approve")
 	}
 
-	if (config.Command == "apply" || config.Command == "plan") && config.TerraformSecrets != "" {
+	if piperutils.ContainsString([]string{"apply", "plan"}, config.Command) && config.TerraformSecrets != "" {
 		args = append(args, fmt.Sprintf("-var-file=%s", config.TerraformSecrets))
+	}
+
+	if piperutils.ContainsString([]string{"init", "validate", "plan", "apply", "destroy"}, config.Command) {
+		args = append(args, "-no-color")
 	}
 
 	if config.AdditionalArgs != nil {
@@ -65,7 +69,7 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 	}
 
 	if config.Init {
-		err := runTerraform(utils, "init", []string{}, config.GlobalOptions)
+		err := runTerraform(utils, "init", []string{"-no-color"}, config.GlobalOptions)
 
 		if err != nil {
 			return err
