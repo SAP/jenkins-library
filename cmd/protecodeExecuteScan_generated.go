@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ type protecodeExecuteScanOptions struct {
 	ScanImage                   string `json:"scanImage,omitempty"`
 	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
 	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
-	CleanupMode                 string `json:"cleanupMode,omitempty"`
+	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"oneof=none binary complete"`
 	FilePath                    string `json:"filePath,omitempty"`
 	IncludeLayers               bool   `json:"includeLayers,omitempty"`
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
@@ -136,6 +137,15 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -186,7 +196,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file or image to scan with Protecode.")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
-	cmd.Flags().IntVar(&stepConfig.ReplaceProductID, "replaceProductId", 0, "Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds.")
+	cmd.Flags().IntVar(&stepConfig.ReplaceProductID, "replaceProductId", 0, "Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds. If product id is not specified, then Piper starts auto detection mechanism, more precisely it searches a product id with scanned product name in that specified group, if there are several scans have been done with the same product name then the latest scan id will be fetched from BDBA backend. After obtaining product id, Piper re-uploads / replaces new binary without affecting already existing product id.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")

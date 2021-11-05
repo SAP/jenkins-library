@@ -84,7 +84,7 @@ spec:
     params:
       - name: buildTool
         type: string
-        description: Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.
+        description: Defines the tool which is used for building the artifact.
         mandatory: true
         scope:
           - GENERAL
@@ -101,6 +101,7 @@ spec:
           - npm
           - pip
           - sbt
+          - yarn
       - name: commitUserName
         aliases:
           - name: gitUserName
@@ -133,9 +134,11 @@ spec:
           - STAGES
           - STEPS
         possibleValues:
+          - docker
           - maven
           - pep440
           - semver2
+        default: maven
       - name: dockerVersionSource
         type: string
         description: "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name."

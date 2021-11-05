@@ -119,6 +119,33 @@ func TestRunGithubPublishRelease(t *testing.T) {
 
 		assert.Equal(t, "Header\n", ghRepoClient.release.GetBody())
 		assert.Equal(t, true, ghRepoClient.release.GetPrerelease())
+		assert.Equal(t, "1.0", ghRepoClient.release.GetTagName())
+	})
+
+	t.Run("Success - first release with tag prefix set & no body", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{
+			latestStatusCode: 404,
+			latestErr:        fmt.Errorf("not found"),
+		}
+
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			AddDeltaToLastRelease: true,
+			Commitish:             "master",
+			Owner:                 "TEST",
+			PreRelease:            true,
+			Repository:            "test",
+			ServerURL:             "https://github.com",
+			ReleaseBodyHeader:     "Header",
+			Version:               "1.0",
+			TagPrefix:             "v",
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+		assert.NoError(t, err, "Error occurred but none expected.")
+
+		assert.Equal(t, "Header\n", ghRepoClient.release.GetBody())
+		assert.Equal(t, true, ghRepoClient.release.GetPrerelease())
+		assert.Equal(t, "v1.0", ghRepoClient.release.GetTagName())
 	})
 
 	t.Run("Success - subsequent releases & with body", func(t *testing.T) {

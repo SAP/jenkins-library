@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,8 @@ type mtaBuildOptions struct {
 	MtarGroup                       string   `json:"mtarGroup,omitempty"`
 	Version                         string   `json:"version,omitempty"`
 	Extensions                      string   `json:"extensions,omitempty"`
-	Platform                        string   `json:"platform,omitempty"`
+	Jobs                            int      `json:"jobs,omitempty"`
+	Platform                        string   `json:"platform,omitempty" validate:"oneof=CF NEO XSA"`
 	ApplicationName                 string   `json:"applicationName,omitempty"`
 	Source                          string   `json:"source,omitempty"`
 	Target                          string   `json:"target,omitempty"`
@@ -109,6 +111,15 @@ func MtaBuildCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -149,6 +160,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtarGroup, "mtarGroup", os.Getenv("PIPER_mtarGroup"), "The group to which the mtar artifact will be uploaded. Required when publish is True.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Version of the mtar artifact")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "The path to the extension descriptor file.")
+	cmd.Flags().IntVar(&stepConfig.Jobs, "jobs", 0, "Configures the number of Make jobs that can run simultaneously. Maximum value allowed is 8")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `CF`, "The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
 	cmd.Flags().StringVar(&stepConfig.Source, "source", `./`, "The path to the MTA project.")
@@ -217,6 +229,15 @@ func mtaBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "extension"}},
 						Default:     os.Getenv("PIPER_extensions"),
+					},
+					{
+						Name:        "jobs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "jobs"}},
+						Default:     0,
 					},
 					{
 						Name:        "platform",
