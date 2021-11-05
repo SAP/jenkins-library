@@ -209,21 +209,28 @@ spec:
           - name: cloudFoundry/manifest
       - name: manifestVariables
         type: "[]string"
-        description:
-          "Defines a list of variables as key-value Map objects used for variable substitution
-          within the file given by manifest. Defaults to an empty list, if not specified otherwise.
+        description: Defines a list of variables in the form `key=value` which are used for variable substitution within the file given by manifest.
+        longDescription: |
+          Defines a list of variables in the form `key=value` which are used for variable substitution
+          within the file given by manifest.
+
           This can be used to set variables like it is provided by 'cf push --var key=value'.
-          The order of the maps of variables given in the list is relevant in case there are conflicting
-          variable names and value between maps contained within the list. In case of conflicts, the last
-          specified map in the list will win. Though each map entry in the list can contain more than one
-          key-value pair for variable substitution, it is recommended to stick to one entry per map,
-          and rather declare more maps within the list. The reason is that if a map in the list contains
-          more than one key-value entry, and the entries are conflicting, the conflict resolution behavior
-          is undefined (since map entries have no sequence).
-          Note: variables defined via 'manifestVariables' always win over conflicting variables defined
+
+          **Note:** variables defined via 'manifestVariables' always win over conflicting variables defined
           via any file given by 'manifestVariablesFiles' - no matter what is declared before.
           This is the same behavior as can be observed when using 'cf push --var' in combination
           with 'cf push --vars-file'."
+
+          Example:
+          
+          ```
+          ...
+          cloudFoundryDeploy:
+            manifestVariables:
+              - 'key1=value1'
+              - 'key2=value2'
+          ...
+          ```
         scope:
           - PARAMETERS
           - STAGES
