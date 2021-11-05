@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
@@ -13,6 +14,8 @@ func TestPublishTargetVectorStep(t *testing.T) {
 	//setup
 	config := abapAddonAssemblyKitPublishTargetVectorOptions{
 		TargetVectorScope: "P",
+		Username:          "dummy",
+		Password:          "dummy",
 	}
 	addonDescriptor := abaputils.AddonDescriptor{
 		TargetVectorID: "dummy",
@@ -28,7 +31,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 
 	t.Run("step success prod", func(t *testing.T) {
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
@@ -37,7 +40,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		//arrange
 		config.TargetVectorScope = "T"
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
@@ -49,7 +52,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 			Error: errors.New("dummy"),
 		}
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})
@@ -58,7 +61,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		//arrange
 		config := abapAddonAssemblyKitPublishTargetVectorOptions{}
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})
