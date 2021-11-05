@@ -16,6 +16,7 @@ type AzureDevOpsConfigProvider struct {
 	options piperHttp.ClientOptions
 }
 
+//InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
 func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	a.client = piperHttp.Client{}
 	a.options = piperHttp.ClientOptions{
@@ -26,19 +27,23 @@ func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *Orchestra
 	log.Entry().Debug("Successfully initialized Azure config provider")
 }
 
+// OrchestratorVersion returns the agent version on ADO
 func (a *AzureDevOpsConfigProvider) OrchestratorVersion() string {
 	return getEnv("AGENT_VERSION", "n/a")
 }
 
+// OrchestratorType returns the orchestrator name e.g. Azure/GitHubActions/Jenkins
 func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 	return "Azure"
 }
 
+// GetJobName returns the pipeline job name
 func (a *AzureDevOpsConfigProvider) GetJobName() string {
 	log.Entry().Debugf("GetJobName() for Azure not yet implemented.")
 	return "n/a"
 }
 
+// GetLog returns the logfile of the pipeline run so far
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 
 	// ToDo: How to get step specific logs, not only whole log?
@@ -78,6 +83,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	return logs, nil
 }
 
+// GetPipelineStartTime returns the pipeline start time
 func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 	// "2021-10-11 13:49:09+00:00"
 	timestamp := getEnv("SYSTEM_PIPELINESTARTTIME", "n/a")
@@ -85,7 +91,8 @@ func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 	parsed, err := time.Parse(time.RFC3339, replaced)
 	if err != nil {
 		log.Entry().Errorf("Could not parse timestamp. %v", err)
-		// ToDo: return 1970 if time could not be parsed?
+		// Return 1970 in case parsing goes wrong
+		parsed = time.Date(1970, time.January, 01, 0, 0, 0, 0, time.UTC)
 	}
 	return parsed
 }

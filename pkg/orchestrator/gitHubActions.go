@@ -18,7 +18,7 @@ func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorType() string {
-	return "GitHub"
+	return "GitHubActions"
 }
 
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
