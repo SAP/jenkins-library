@@ -33,7 +33,8 @@ func ApiKeyValueMapDownloadCommand() *cobra.Command {
 	var createApiKeyValueMapDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Download a specific Key Value Map from the API Portal",
-		Long:  `With this step you can download a specific Key Value Map from the API Portal, which returns a zip file with the Key Value Map contents in to current workspace using the OData API. Learn more about the SAP API Management API for downloading an Key Value Map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
+		Long: `With this step you can download a specific Key Value Map from the API Portal, which returns a zip file with the Key Value Map contents in to current workspace using the OData API.
+Learn more about the SAP API Management API for downloading an Key Value Map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
