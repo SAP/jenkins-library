@@ -9,7 +9,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -32,15 +31,11 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 	var stepConfig uiVeri5ExecuteTestsOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
-	var provider orchestrator.OrchestratorSpecificConfigProviding
-	var err error
-	splunkClient := &splunk.Splunk{}
-	telemetryClient := &telemetry.Telemetry{}
-	provider, err = orchestrator.NewOrchestratorSpecificConfigProvider()
-	if err != nil {
-		log.Entry().Error(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
+	var splunkClient *splunk.Splunk
+	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+		splunkClient = &splunk.Splunk{}
 	}
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createUiVeri5ExecuteTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -91,14 +86,7 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.Custom1Label = "PiperCommitHash"
-				stepTelemetryData.Custom1 = GitCommit
-				stepTelemetryData.Custom2Label = "PiperTag"
-				stepTelemetryData.Custom2 = GitTag
-				stepTelemetryData.Custom3Label = "Stage"
-				stepTelemetryData.Custom3 = provider.GetStageName()
-				stepTelemetryData.Custom4Label = "Orchestrator"
-				stepTelemetryData.Custom4 = provider.OrchestratorType()
+				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {

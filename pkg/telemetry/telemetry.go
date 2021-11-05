@@ -34,6 +34,7 @@ const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
 // SWA endpoint
 const endpoint = "/tracker/log"
 
+// Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
 	baseData     BaseData
 	baseMetaData BaseMetaData
@@ -71,6 +72,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	}
 
 	t.baseData = BaseData{
+		Orchestrator:    provider.OrchestratorType(),
+		StageName:       provider.GetStageName(),
 		URL:             LibraryRepository,
 		ActionName:      actionName,
 		EventType:       eventType,
@@ -78,10 +81,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		SiteID:          SiteID,
 		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
-		// TODO: Discuss meaning of jobURL for ADO
 	}
 	t.baseMetaData = baseMetaData
-	//ToDo: register logrus Hook
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -101,6 +102,7 @@ func (t *Telemetry) toSha1OrNA(input string) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(input)))
 }
 
+// SetData sets the custom telemetry data and base data into the Data object
 func (t *Telemetry) SetData(customData *CustomData) {
 	t.data = Data{
 		BaseData:     t.baseData,
@@ -109,11 +111,12 @@ func (t *Telemetry) SetData(customData *CustomData) {
 	}
 }
 
+// GetData returns telemetryData
 func (t *Telemetry) GetData() Data {
 	return t.data
 }
 
-// Send ...
+// Send telemetry information to SWA
 func (t *Telemetry) Send() {
 
 	// skip if telemetry is disabled
