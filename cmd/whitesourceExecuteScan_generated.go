@@ -148,9 +148,6 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 	var influx whitesourceExecuteScanInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
@@ -192,6 +189,7 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

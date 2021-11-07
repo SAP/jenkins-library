@@ -30,9 +30,6 @@ func PipelineCreateScanSummaryCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createPipelineCreateScanSummaryCmd = &cobra.Command{
@@ -64,6 +61,7 @@ It is for example used to create a markdown file which can be used to create a G
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

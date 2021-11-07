@@ -65,9 +65,6 @@ func TerraformExecuteCommand() *cobra.Command {
 	var commonPipelineEnvironment terraformExecuteCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTerraformExecuteCmd = &cobra.Command{
@@ -98,6 +95,7 @@ func TerraformExecuteCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

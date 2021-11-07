@@ -53,9 +53,6 @@ func KubernetesDeployCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createKubernetesDeployCmd = &cobra.Command{
@@ -107,6 +104,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

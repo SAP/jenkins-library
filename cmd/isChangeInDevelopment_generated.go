@@ -64,9 +64,6 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 	var commonPipelineEnvironment isChangeInDevelopmentCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createIsChangeInDevelopmentCmd = &cobra.Command{
@@ -98,6 +95,7 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

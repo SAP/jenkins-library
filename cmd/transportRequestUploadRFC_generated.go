@@ -71,9 +71,6 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 	var commonPipelineEnvironment transportRequestUploadRFCCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadRFCCmd = &cobra.Command{
@@ -105,6 +102,7 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

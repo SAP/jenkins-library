@@ -62,9 +62,6 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 	var commonPipelineEnvironment abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapAddonAssemblyKitCreateTargetVectorCmd = &cobra.Command{
@@ -100,6 +97,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

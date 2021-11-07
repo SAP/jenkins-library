@@ -103,9 +103,6 @@ func DetectExecuteScanCommand() *cobra.Command {
 	var influx detectExecuteScanInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createDetectExecuteScanCmd = &cobra.Command{
@@ -138,6 +135,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

@@ -68,9 +68,6 @@ func TransportRequestUploadSOLMANCommand() *cobra.Command {
 	var commonPipelineEnvironment transportRequestUploadSOLMANCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadSOLMANCmd = &cobra.Command{
@@ -104,6 +101,7 @@ The application ID specifies how the file needs to be handled on server side.`,
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

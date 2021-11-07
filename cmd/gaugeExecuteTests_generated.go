@@ -67,9 +67,6 @@ func GaugeExecuteTestsCommand() *cobra.Command {
 	var influx gaugeExecuteTestsInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGaugeExecuteTestsCmd = &cobra.Command{
@@ -109,6 +106,7 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

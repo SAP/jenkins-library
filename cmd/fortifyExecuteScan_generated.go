@@ -151,9 +151,6 @@ func FortifyExecuteScanCommand() *cobra.Command {
 	var influx fortifyExecuteScanInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createFortifyExecuteScanCmd = &cobra.Command{
@@ -196,6 +193,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}

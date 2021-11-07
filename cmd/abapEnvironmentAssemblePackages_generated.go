@@ -69,9 +69,6 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	var commonPipelineEnvironment abapEnvironmentAssemblePackagesCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-		splunkClient = &splunk.Splunk{}
-	}
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
@@ -104,6 +101,7 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
