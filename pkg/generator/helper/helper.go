@@ -126,7 +126,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				r
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
