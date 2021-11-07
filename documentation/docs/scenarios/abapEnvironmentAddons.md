@@ -4,6 +4,11 @@
 
       - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
+!!! Required project "Piper" library version
+
+    SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
+
+
 ## Introduction
 
 This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
@@ -28,8 +33,6 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
 - The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
-**Note:** Changing the version string of the add-on product does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on product/version, the existing delivery packages are reused for the new add-on product version.
-
 ### Software Component Version
 
 !!! note "Development on SAP BTP, ABAP environment"
@@ -43,9 +46,9 @@ A software component version is defined by a name and a version string. The name
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type [“Component Support Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
 - The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
 
-The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
+The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
-**Note:** Only by changing the **version string** of of a software component, the build of a new delivery package with the latest changes is created.
+Software Component Versions are uniquely created and independent from the add-on product versions where they are included. This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
 
 ### Target Vector
 
@@ -92,7 +95,7 @@ With these SAP tools the assembled add-on deliveries are deployed to ABAP system
 
 #### Installation Test System
 
-In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of [service plan `saas_oem`](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1697387c02e74e66a55cf21a05678167.html) is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter `is_development_allowed = false` to prevent local changes.
+In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service plan `saas_oem` is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter `is_development_allowed = false` to prevent local changes.
 
 ### Prerequisites
 
@@ -130,15 +133,14 @@ Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
 
 This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in the global account.
 
-#### Project "Piper" Library Version to SAP BTP, ABAP Environment Dependency
-
-SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
-
 ### Configuration
 
 In the following subsections, the pipeline configuration for this scenario is explained. To get a general overview on the ABAP environment pipeline configuration, have a look [here](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/configuration/). In addition to the following sections explaining the configuration, there will be an example repository including all required files.
 
 #### Jenkinsfile
+
+!!! note "Jenkins Library Version"
+    If desired, a specific release of this library can be requested: e.g. release 1.93.0 with `@Library('piper-lib-os@v1.93.0') _`. As the library is an Open Source project, it is possible that incompatible changes are introduced. If you want to avoid this, it is recommended to use such a specific release. If no release is specified, the newest version of the Jenkins-library will be used (pulled from the master branch).
 
 This file is the entry point of the pipeline. It should look like this:
 
@@ -149,9 +151,6 @@ abapEnvironmentPipeline script: this
 ```
 
 The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of project "Piper".
-
-!!! note "Jenkins Library Version"
-    If desired, a specific release of this library can be requested: e.g. release 1.93.0 with `@Library('piper-lib-os@v1.93.0') _`. As the library is an Open Source project, it is possible that incompatible changes are introduced. If you want to avoid this, it is recommended to use such a specific release. If no release is specified, the newest version of the Jenkins-library will be used (pulled from the master branch).
 
 The second line `abapEnvironmentPipeline script: this` defines that the predefined “ABAP environment pipeline” will be executed.
 
@@ -193,10 +192,17 @@ Explanation of the keys:
 The section “repositories” contains one or multiple software component versions:
 
 - `name`: the technical name of the software component
-- `branch`: this is the release branch from the git repository
+- `branch`: this is the branch from the git repository
 - `version`: this is the technical software component version `<software component version>.<support package level>.<patch level>`
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
+
+Changing the `addonVersion` string does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on `addonVersion`, the existing delivery packages are reused for the new add-on product version.
+Only by changing the `version` of  a software component, the build of a new delivery package with the latest changes is triggered.
+
+`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component
+
+The `branch` should only be changed while also changing release version or support package level of a software component. During creation of a patch version (CPK) the `branch` should remain the same as before, so that previous and current commit of the software component can be found in the same branch for comparison.
 
 ##### Versioning Rules
 
