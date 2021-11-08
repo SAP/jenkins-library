@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -241,6 +242,9 @@ func TestUploadRequest(t *testing.T) {
 	defer server.Close()
 
 	testFile, err := ioutil.TempFile("", "testFileUpload")
+	testFileDirName := strings.Split(testFile.Name(), "/")
+	testFileName := testFileDirName[len(testFileDirName)-1]
+
 	if err != nil {
 		t.FailNow()
 	}
@@ -277,8 +281,7 @@ func TestUploadRequest(t *testing.T) {
 			assert.NoError(t, err, "Error occurred but none expected")
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
-
-			assert.Equal(t, testFile.Name(), multipartHeader.Filename, "Uploaded file incorrect")
+			assert.Equal(t, testFileName, multipartHeader.Filename, "Uploaded file incorrect")
 			assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
 
 			for k, h := range test.header {
@@ -307,7 +310,7 @@ func TestUploadRequest(t *testing.T) {
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
 
-			assert.Equal(t, testFile.Name(), multipartHeader.Filename, "Uploaded file incorrect")
+			assert.Equal(t, testFileName, multipartHeader.Filename, "Uploaded file incorrect")
 			assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
 
 			for k, h := range test.header {
