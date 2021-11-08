@@ -25,7 +25,6 @@ var LibraryRepository string
 // SiteID ...
 var SiteID string
 
-var disabled bool
 var client piperhttp.Sender
 
 // SWA baseURL
