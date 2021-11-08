@@ -26,7 +26,6 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         cloudFoundryCreateServiceKey script: parameters.script
-        abapAddonAssemblyKitReserveNextPackages script: parameters.script
         abapEnvironmentAssemblePackages script: parameters.script
         abapAddonAssemblyKitRegisterPackages script: parameters.script
         abapAddonAssemblyKitReleasePackages script: parameters.script
