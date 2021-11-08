@@ -92,7 +92,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	response, err := a.client.GetRequest(URL, nil, nil)
 	logs := []byte{}
 	if err != nil {
-		log.Entry().Errorf("failed to get http response", err)
+		log.Entry().Error("failed to get http response", err)
 		return logs, nil
 	}
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
