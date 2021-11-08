@@ -44,13 +44,14 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	filePath := filepath.Join(f.Path, fileName)
 	filePathCPE := filepath.Join(f.Path, ".pipeline", "commonPipelineEnvironment", fileName)
 
-	_, err := ioutil.ReadFile(filePath)
 	errDetails, _ := json.Marshal(&details)
 	ioutil.WriteFile(filePathCPE, errDetails, 0666)
-
 	Entry().Debugf("persisted error information in %v", filePathCPE)
+
+	_, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		// ignore errors, since we don't want to break the logging flow
+		// do not overwrite file in case it already exists
+		// this helps to report the first error which occured - instead of the last one
 		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
 
