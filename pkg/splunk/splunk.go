@@ -35,7 +35,6 @@ type Splunk struct {
 	postMessagesBatchSize int
 }
 
-//var SplunkClient *Splunk
 
 func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 	log.Entry().Debugf("Initializing Splunk with DSN %v", dsn)
