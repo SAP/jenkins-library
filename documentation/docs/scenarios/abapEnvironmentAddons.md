@@ -41,9 +41,9 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries are planned and contain the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type [“Installation Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
-- The second number denotes the Support Package level. Support Package deliveries are planned and contain a larger collection of corrections or smaller functional enhancements. They are delivered with delivery packages of type [“Component Support Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
-- The third number denotes the Patch level. Patch deliveries are unplanned, usually urgent and shall only contain small corrections that are required to keep the software up-and-running. They are shipped with delivery packages of type “Correction Package”.
+- The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
+- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
+- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
@@ -86,7 +86,7 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP Service & Support systems (thus access is granted via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA), packs the delivery into an importable package format.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP Service & Support systems (thus access is granted via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA) as part of the [SAP Add-On Assembly Kit](https://help.sap.com/viewer/product/SAP_ADD-ON_ASSEMBLY_KIT/), packs the delivery into an importable package format.
 
 ### Deployment Tools
 
