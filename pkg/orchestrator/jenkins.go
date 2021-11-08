@@ -40,7 +40,7 @@ func (j *JenkinsConfigProvider) getAPIInformation() map[string]interface{} {
 		return map[string]interface{}{}
 	}
 
-	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
+	if response.StatusCode != 200 { //http.StatusNoContent
 		log.Entry().Errorf("Response-Code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
 		return map[string]interface{}{}
 	}
@@ -82,7 +82,7 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 		return []byte{}, errors.Wrapf(err, "Could not read Jenkins logfile. %v", err)
 	}
 	if response.StatusCode != 200 {
-		log.Entry().Errorf("Could not get log information from Jenkins. Returning with empty log.")
+		log.Entry().Error("Could not get log information from Jenkins. Returning with empty log.")
 		return []byte{}, nil
 	}
 	defer response.Body.Close()

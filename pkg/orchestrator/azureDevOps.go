@@ -58,7 +58,7 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() map[string]interface{} {
 	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/"
 	response, err := a.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		log.Entry().Errorf("failed to get http response, using default values", err)
+		log.Entry().Error("failed to get http response, using default values", err)
 		return map[string]interface{}{}
 	}
 
@@ -69,7 +69,7 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() map[string]interface{} {
 	var responseInterface map[string]interface{}
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
 	if err != nil {
-		log.Entry().Errorf("failed to parse http response, returning with empty interface", err)
+		log.Entry().Error("failed to parse http response, returning with empty interface", err)
 		return map[string]interface{}{}
 	}
 	return responseInterface
@@ -102,7 +102,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	var responseInterface map[string]interface{}
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
 	if err != nil {
-		log.Entry().Errorf("failed to parse http response", err)
+		log.Entry().Error("failed to parse http response", err)
 		return logs, nil
 	}
 	// check if response interface is empty or non-existent
