@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-// BaseData object definition containing the base data, and it's mapping information
+// BaseData object definition containing the base data and it's mapping information
 type BaseData struct {
 	// SWA receives the fields custom1 - custom30 and e_a, e_2 - e_30 for custom values.
 	ActionName      string `json:"action_name"`
