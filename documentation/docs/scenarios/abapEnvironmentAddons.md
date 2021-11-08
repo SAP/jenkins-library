@@ -117,7 +117,7 @@ The communication with the AAKaaS needs a technical communication user. The crea
 ABAP environment systems are created in the SAP BTP cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry command line interface: [cf CLI](https://docs.cloudfoundry.org/cf-cli/). For this to work, two things need to be configured:
 
 - Cloud Foundry needs to be enabled on subaccount level. This can be done on the Subaccount Overview page. The subaccount is then mapped to a “Cloud Foundry Organization”, for which you must provide a suitable name during the creation. Have a look at the [documentation](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/dc18bac42270468d84b6c030a668e003.html) for more details.
-- A (technical) user is required to access the SAP BTP via the cf CLI. The user needs to be a [member of the global account](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/4a0491330a164f5a873fa630c7f45f06.html) and has to have the [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role. The user and password need to be stored in the Jenkins Credentials Store.
+- A (technical) user is required to access the SAP BTP via the cf CLI. The user needs to be assigned as space member including [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role in order to create/read service instances and service keys. The user and password need to be stored in the Jenkins Credentials Store.
 
 Later, during the pipeline configuration, you will specify the Service Plan, which will be used for the creation of an ABAP environment system. Please make sure, that there are enough entitlements for this [Service Plan in the Subaccount](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html).
 
@@ -134,28 +134,8 @@ This step can be triggered by you or by SAP partner management (governance proce
 
 ### Configuration
 
-In the following subsections, the pipeline configuration for this scenario is explained. To get a general overview on the ABAP environment pipeline configuration, have a look [here](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/configuration/). In addition to the following sections explaining the configuration, there will be an example repository including all required files.
-
-#### Jenkinsfile
-
-!!! note "Jenkins Library Version"
-    If desired, a specific release of this library can be requested: e.g. release 1.93.0 with `@Library('piper-lib-os@v1.93.0') _`. As the library is an Open Source project, it is possible that incompatible changes are introduced. If you want to avoid this, it is recommended to use such a specific release. If no release is specified, the newest version of the Jenkins-library will be used (pulled from the master branch).
-
-This file is the entry point of the pipeline. It should look like this:
-
-```Groovy
-@Library('piper-lib-os') _
-
-abapEnvironmentPipeline script: this
-```
-
-The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of project "Piper".
-
-The second line `abapEnvironmentPipeline script: this` defines that the predefined “ABAP environment pipeline” will be executed.
-
-#### Pipeline configuration file
-
-A configuration file `.pipeline/config.yml` is used to provide all required values to run the pipeline. This includes - for example - different endpoints or credential IDs of user and password values stored in the [Jenkins Credentials Store](https://www.jenkins.io/doc/book/using/using-credentials/). If a complex configuration is necessary, a separate configuration file is required, which will also be referenced in the `config.yml` file.
+In the following subsections, the pipeline configuration for this scenario is explained.
+Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md).
 
 #### Add-on descriptor file
 
@@ -225,11 +205,6 @@ Invalid increase:
 - 2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)
 - 2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)
 
-#### Jenkins Job
-
-Once the configuration in the git repository is completed, the pipeline on the Jenkins Server can be created. On your Jenkins server click on “New Item” to create a new pipeline. Provide a name and select the type “Pipeline”. On the creation screen for the pipeline, scroll to the section Pipeline and select “Pipeline script from SCM”. Provide the URL (and credentials - if required) of the repository in which you configured the pipeline. Make sure the “Script Path” points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
-Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent add-on build processes for the same version.
-
 ### Example
 
 Please have a look at the configuration example to [build and publish add-on products using a transient assembly system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build).
@@ -257,3 +232,5 @@ If the pipelines receives the error from a backend system during execeution of t
 | Post                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)| BC-CP-ABA |
 
 *Note:* Always attach the pipeline execution log ouput to the support incident, if possible including timestamps by using the [Timestamper Jenkins plugin](https://plugins.jenkins.io/timestamper/).
+
+For troubleshooting purposes, the add-on descriptor file as well as build logs are archived as pipeline artifacts in the [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/) step.
