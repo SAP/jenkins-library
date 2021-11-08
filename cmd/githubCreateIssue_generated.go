@@ -121,7 +121,7 @@ func addGithubCreateIssueFlags(cmd *cobra.Command, stepConfig *githubCreateIssue
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Defines the title for the Issue.")
-	cmd.Flags().BoolVar(&stepConfig.UpdateExisting, "updateExisting", false, "Whether to update an existing issue with the same name instead of creating a new one.")
+	cmd.Flags().BoolVar(&stepConfig.UpdateExisting, "updateExisting", false, "Whether to update an existing open issue with the same title by adding a comment instead of creating a new one.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
