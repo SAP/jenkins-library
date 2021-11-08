@@ -16,14 +16,15 @@ import (
 )
 
 type githubCreateIssueOptions struct {
-	APIURL       string   `json:"apiUrl,omitempty"`
-	Assignees    []string `json:"assignees,omitempty"`
-	Body         string   `json:"body,omitempty"`
-	BodyFilePath string   `json:"bodyFilePath,omitempty"`
-	Owner        string   `json:"owner,omitempty"`
-	Repository   string   `json:"repository,omitempty"`
-	Title        string   `json:"title,omitempty"`
-	Token        string   `json:"token,omitempty"`
+	APIURL         string   `json:"apiUrl,omitempty"`
+	Assignees      []string `json:"assignees,omitempty"`
+	Body           string   `json:"body,omitempty"`
+	BodyFilePath   string   `json:"bodyFilePath,omitempty"`
+	Owner          string   `json:"owner,omitempty"`
+	Repository     string   `json:"repository,omitempty"`
+	Title          string   `json:"title,omitempty"`
+	UpdateExisting bool     `json:"updateExisting,omitempty"`
+	Token          string   `json:"token,omitempty"`
 }
 
 // GithubCreateIssueCommand Create a new GitHub issue.
@@ -125,6 +126,7 @@ func addGithubCreateIssueFlags(cmd *cobra.Command, stepConfig *githubCreateIssue
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Defines the title for the Issue.")
+	cmd.Flags().BoolVar(&stepConfig.UpdateExisting, "updateExisting", false, "Whether to update an existing open issue with the same title by adding a comment instead of creating a new one.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
@@ -220,6 +222,15 @@ func githubCreateIssueMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_title"),
+					},
+					{
+						Name:        "updateExisting",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "token",
