@@ -73,7 +73,7 @@ func TestSend(t *testing.T) {
 		// init
 		mock = clientMock{}
 		client = &mock
-		disabled = false
+		telemetryClient.disabled = false
 		telemetryClient.baseData = BaseData{
 			ActionName: "testAction",
 		}
