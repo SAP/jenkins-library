@@ -38,7 +38,6 @@ class AbapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
     
     @Test
     void testAbapEnvironmentRunTestsWithoutHost() {
-        nullScript.commonPipelineEnvironment.configuration.runStage = []
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'AUnit': true
         ]
