@@ -37,23 +37,63 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 	return "Azure"
 }
 
+func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
+	responseInterface := a.getAPIInformation()
+	if _, ok := responseInterface["result"]; ok {
+		// cases in Jenkins: SUCCESS, FAILURE, NOT_BUILD, ABORTED
+		switch result := responseInterface["result"]; result {
+		case "SUCCESS":
+			return "SUCCESS"
+		case "ABORTED":
+			return "ABORTED"
+		default:
+			// FAILURE, NOT_BUILT
+			return "FAILURE"
+		}
+	}
+	return "FAILURE"
+}
+
+func (a *AzureDevOpsConfigProvider) getAPIInformation() map[string]interface{} {
+	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/"
+	response, err := a.client.GetRequest(URL, nil, nil)
+	if err != nil {
+		log.Entry().Errorf("failed to get http response, using default values", err)
+		return map[string]interface{}{}
+	}
+
+	if response.StatusCode != 200 { //http.StatusNoContent
+		log.Entry().Errorf("Response-Code is %v . \n Could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
+		return map[string]interface{}{}
+	}
+	var responseInterface map[string]interface{}
+	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
+	if err != nil {
+		log.Entry().Errorf("failed to parse http response, returning with empty interface", err)
+		return map[string]interface{}{}
+	}
+	return responseInterface
+}
+
 // GetJobName returns the pipeline job name
 func (a *AzureDevOpsConfigProvider) GetJobName() string {
-	log.Entry().Debugf("GetJobName() for Azure not yet implemented.")
+	responseInterface := a.getAPIInformation()
+	if val, ok := responseInterface["project"]; ok {
+		return val.(map[string]interface{})["name"].(string)
+	}
 	return "n/a"
 }
 
 // GetLog returns the logfile of the pipeline run so far
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
-
 	// ToDo: How to get step specific logs, not only whole log?
-
 	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
 
 	response, err := a.client.GetRequest(URL, nil, nil)
 	logs := []byte{}
 	if err != nil {
-		fmt.Println(err)
+		log.Entry().Errorf("failed to get http response", err)
+		return logs, nil
 	}
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
 		log.Entry().Errorf("Response-Code is %v . \n Could not get log information from AzureDevOps. Returning with empty log.", response.StatusCode)
@@ -62,7 +102,8 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	var responseInterface map[string]interface{}
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
 	if err != nil {
-		fmt.Println(err)
+		log.Entry().Errorf("failed to parse http response", err)
+		return logs, nil
 	}
 	// check if response interface is empty or non-existent
 	logCount := int(responseInterface["count"].(float64))

@@ -32,6 +32,7 @@ type OrchestratorSpecificConfigProviding interface {
 	IsPullRequest() bool
 	GetLog() ([]byte, error)
 	GetPipelineStartTime() time.Time
+	GetBuildStatus() string
 }
 
 type PullRequestConfig struct {

@@ -31,15 +31,50 @@ func (j *JenkinsConfigProvider) OrchestratorType() string {
 	return "Jenkins"
 }
 
-func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
-	// Questions:
-	// How to get the data from jenkins?
-	// (a) Getting it from local file systems, difficulties with mounted volumes on Google Cloud
-	// (b) Getting data via API ->
-	//	* Problem of authentication, do we have credentials available in vault?
-	//	* ...
-	// How to get step specific data? As it is shown in Blue Ocean?
+func (j *JenkinsConfigProvider) getAPIInformation() map[string]interface{} {
+	URL := j.GetBuildUrl() + "api/json"
 
+	response, err := j.client.GetRequest(URL, nil, nil)
+	if err != nil {
+		log.Entry().Error(err)
+		return map[string]interface{}{}
+	}
+
+	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
+		log.Entry().Errorf("Response-Code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
+		return map[string]interface{}{}
+	}
+	var responseInterface map[string]interface{}
+	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
+	if err != nil {
+		log.Entry().Error(err)
+		return map[string]interface{}{}
+	}
+	return responseInterface
+}
+
+// GetBuildInformation
+func (j *JenkinsConfigProvider) GetBuildStatus() string {
+	responseInterface := j.getAPIInformation()
+
+	if val, ok := responseInterface["result"]; ok {
+		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
+		switch result := responseInterface["result"]; result {
+		case "SUCCESS":
+			return "SUCCESS"
+		case "ABORTED":
+			return "ABORTED"
+		default:
+			// FAILURE, NOT_BUILT
+			return "FAILURE"
+		}
+		return val.(string)
+	}
+
+	return "FAILURE"
+}
+
+func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	URL := j.GetBuildUrl() + "consoleText"
 
 	response, err := j.client.GetRequest(URL, nil, nil)
@@ -79,12 +114,12 @@ func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
 		log.Entry().Error(err)
 	}
 
-	myvar := responseInterface["timestamp"].(float64)
-	timestamp := time.Unix(int64(myvar)/1000, 0)
+	rawTimeStamp := responseInterface["timestamp"].(float64)
+	timeStamp := time.Unix(int64(rawTimeStamp)/1000, 0)
 
-	log.Entry().Debugf("Pipeline start time: %v", timestamp.String())
+	log.Entry().Debugf("Pipeline start time: %v", timeStamp.String())
 	defer response.Body.Close()
-	return timestamp
+	return timeStamp
 }
 
 func (j *JenkinsConfigProvider) GetJobName() string {

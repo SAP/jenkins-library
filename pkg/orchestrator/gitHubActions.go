@@ -21,6 +21,11 @@ func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 	return "GitHubActions"
 }
 
+func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
+	log.Entry().Infof("GetBuildStatus() for GitHub Actions not yet implemented.")
+	return "SUCCESS"
+}
+
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	log.Entry().Infof("GetLog() for GitHub Actions not yet implemented.")
 	return nil, nil

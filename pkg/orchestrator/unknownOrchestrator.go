@@ -16,6 +16,11 @@ func (u *UnknownOrchestratorConfigProvider) OrchestratorVersion() string {
 	return "N/A"
 }
 
+func (u *UnknownOrchestratorConfigProvider) GetBuildStatus() string {
+	log.Entry().Warning("Unknown orchestrator - returning default values.")
+	return "SUCCESS"
+}
+
 func (u *UnknownOrchestratorConfigProvider) GetBuildId() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "n/a"
