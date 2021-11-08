@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -28,6 +29,7 @@ const (
 	detectorPath = "/cnb/lifecycle/detector"
 	builderPath  = "/cnb/lifecycle/builder"
 	exporterPath = "/cnb/lifecycle/exporter"
+	platformPath = "/tmp/platform"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -262,15 +264,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	platformPath := "/platform"
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
-		platformPath = "/tmp/platform"
 		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to write environment variables to files")
 		}
+	}
+
+	err = bindings.ProcessBindings(utils, platformPath, config.Bindings)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed process bindings")
 	}
 
 	dockerConfigFile := ""
@@ -354,26 +360,24 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	var containerImage string
 	var containerImageTag string
 
-	if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		var containerRegistry string
-		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-			containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-			}
-		} else {
-			containerRegistry = config.ContainerRegistryURL
-		}
-
-		containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
-		containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.imageNameTag = containerImage
-	} else {
+	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
+
+	var containerRegistry string
+	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
+		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
+		}
+	} else {
+		containerRegistry = config.ContainerRegistryURL
+	}
+
+	containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
+	containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
@@ -402,9 +406,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
+	containerImageNameTag := fmt.Sprintf("%s:%s", containerImage, containerImageTag)
 	targets := []string{
-		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+		containerImageNameTag,
 	}
+
+	commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+	commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
