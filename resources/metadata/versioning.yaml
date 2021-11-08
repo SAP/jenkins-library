@@ -134,6 +134,7 @@ spec:
           - STAGES
           - STEPS
         possibleValues:
+          - docker
           - maven
           - pep440
           - semver2
