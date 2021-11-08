@@ -6,6 +6,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ type checkStepActiveCommandOptions struct {
 	stageConfigFile string
 	stepName        string
 	stageName       string
+	v1Active        bool
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
@@ -35,7 +37,8 @@ func CheckStepActiveCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
-			err := checkIfStepActive()
+			utils := &piperutils.Files{}
+			err := checkIfStepActive(utils)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("Checking for an active step failed")
@@ -46,7 +49,7 @@ func CheckStepActiveCommand() *cobra.Command {
 	return checkStepActiveCmd
 }
 
-func checkIfStepActive() error {
+func checkIfStepActive(utils piperutils.FileUtils) error {
 	var pConfig config.Config
 
 	// load project config and defaults
@@ -61,16 +64,33 @@ func checkIfStepActive() error {
 	}
 	defer stageConfigFile.Close()
 
+	runSteps := map[string]map[string]bool{}
+	runStages := map[string]bool{}
+
 	// load and evaluate step conditions
-	stageConditions := &config.RunConfig{StageConfigFile: stageConfigFile}
-	err = stageConditions.InitRunConfig(projectConfig, nil, nil, nil, nil, doublestar.Glob, checkStepActiveOptions.openFile)
-	if err != nil {
-		return err
+	if checkStepActiveOptions.v1Active {
+		runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
+		runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
+		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils)
+		if err != nil {
+			return err
+		}
+		runSteps = runConfigV1.RunSteps
+		runStages = runConfigV1.RunStages
+	} else {
+		runConfig := &config.RunConfig{StageConfigFile: stageConfigFile}
+		err = runConfig.InitRunConfig(projectConfig, nil, nil, nil, nil, doublestar.Glob, checkStepActiveOptions.openFile)
+		if err != nil {
+			return err
+		}
+		runSteps = runConfig.RunSteps
+		runStages = runConfig.RunStages
 	}
 
-	log.Entry().Debugf("RunSteps: %v", stageConditions.RunSteps)
+	log.Entry().Debugf("RunSteps: %v", runSteps)
+	log.Entry().Debugf("RunStages: %v", runStages)
 
-	if !stageConditions.RunSteps[checkStepActiveOptions.stageName][checkStepActiveOptions.stepName] {
+	if !runSteps[checkStepActiveOptions.stageName][checkStepActiveOptions.stepName] {
 		return errors.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
 	}
 	log.Entry().Infof("Step %s in stage %s is active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
@@ -82,7 +102,8 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageConfigFile, "stageConfig", ".resources/piper-stage-config.yml",
 		"Default config of piper pipeline stages")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepName, "step", "", "Name of the step being checked")
-	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", "", "Name of the stage in which the step being checked is")
+	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", "", "Name of the stage in which contains the step being checked")
+	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
 	cmd.MarkFlagRequired("step")
 	cmd.MarkFlagRequired("stage")
 }

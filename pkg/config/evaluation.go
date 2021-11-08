@@ -29,9 +29,13 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 	if r.RunConfig.RunSteps == nil {
 		r.RunConfig.RunSteps = map[string]map[string]bool{}
 	}
+	if r.RunConfig.RunStages == nil {
+		r.RunConfig.RunStages = map[string]bool{}
+	}
 
 	for _, stage := range r.PipelineConfig.Spec.Stages {
 		runStep := map[string]bool{}
+		stageActive := false
 
 		// currently displayName is used, may need to consider to use technical name as well
 		stageName := stage.DisplayName
@@ -69,9 +73,13 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					}
 				}
 			}
+			if stepActive {
+				stageActive = true
+			}
 			runStep[step.Name] = stepActive
 			r.RunSteps[stageName] = runStep
 		}
+		r.RunStages[stageName] = stageActive
 	}
 	return nil
 }

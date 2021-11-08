@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -13,6 +14,7 @@ import (
 type RunConfig struct {
 	StageConfigFile io.ReadCloser
 	StageConfig     StageConfig
+	RunStages       map[string]bool
 	RunSteps        map[string]map[string]bool
 	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
 	FileUtils       *piperutils.Files
@@ -60,7 +62,7 @@ type Stage struct {
 type Step struct {
 	Name          string          `json:"name,omitempty"`
 	Description   string          `json:"description,omitempty"`
-	Conditions    []StepCondition `json:"condition,omitempty"`
+	Conditions    []StepCondition `json:"conditions,omitempty"`
 	Orchestrators []string        `json:"orchestrators,omitempty"`
 }
 
@@ -74,21 +76,18 @@ type StepCondition struct {
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error),
-	openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
-	r.OpenFile = openFile
-	r.RunSteps = map[string]map[string]bool{}
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
 
 	if len(r.PipelineConfig.Spec.Stages) == 0 {
-		if err := r.loadConditions(); err != nil {
-			return errors.Wrap(err, "failed to load pipeline run conditions")
+		if err := r.loadConditionsV1(); err != nil {
+			return fmt.Errorf("failed to load pipeline run conditions: %w", err)
 		}
 	}
 
-	//err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, glob)
-	//if err != nil {
-	//	return errors.Wrap(err, "failed to evaluate step conditions: %v")
-	//}
+	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate step conditions: %w", err)
+	}
 
 	return nil
 }
@@ -140,6 +139,20 @@ func (r *RunConfig) loadConditions() error {
 	}
 
 	err = yaml.Unmarshal(content, &r.StageConfig)
+	if err != nil {
+		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
+	}
+	return nil
+}
+
+func (r *RunConfigV1) loadConditionsV1() error {
+	defer r.StageConfigFile.Close()
+	content, err := ioutil.ReadAll(r.StageConfigFile)
+	if err != nil {
+		return errors.Wrapf(err, "error: failed to read the stageConfig file")
+	}
+
+	err = yaml.Unmarshal(content, &r.PipelineConfig)
 	if err != nil {
 		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
 	}

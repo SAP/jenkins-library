@@ -88,6 +88,19 @@ func TestEvaluateConditionsV1(t *testing.T) {
 							},
 						},
 					},
+					{
+						Name:        "stage3",
+						DisplayName: "Test Stage 3",
+						Steps: []Step{
+							{
+								Name: "step3_1",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -97,7 +110,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 2": {"testKey": "testVal"},
 	}}
 
-	expected := map[string]map[string]bool{
+	expectedSteps := map[string]map[string]bool{
 		"Test Stage 1": {
 			"step1_2": true,
 			"step1_3": false,
@@ -106,11 +119,21 @@ func TestEvaluateConditionsV1(t *testing.T) {
 			"step2_1": true,
 			"step2_2": true,
 		},
+		"Test Stage 3": {
+			"step3_1": false,
+		},
+	}
+
+	expectedStages := map[string]bool{
+		"Test Stage 1": true,
+		"Test Stage 2": true,
+		"Test Stage 3": false,
 	}
 
 	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, runConfig.RunSteps)
+	assert.Equal(t, expectedSteps, runConfig.RunSteps)
+	assert.Equal(t, expectedStages, runConfig.RunStages)
 
 }
 
