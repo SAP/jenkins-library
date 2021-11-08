@@ -222,7 +222,7 @@ spec:
           with 'cf push --vars-file'."
 
           Example:
-          
+
           ```
           ...
           cloudFoundryDeploy:
