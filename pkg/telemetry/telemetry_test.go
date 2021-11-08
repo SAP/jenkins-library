@@ -59,7 +59,7 @@ func TestSend(t *testing.T) {
 		// init
 		mock = clientMock{}
 		client = &mock
-		disabled = true
+		telemetryClient.disabled = true
 		// test
 		telemetryClient.SetData(&CustomData{})
 		telemetryClient.Send()

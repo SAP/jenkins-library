@@ -40,11 +40,12 @@ type Telemetry struct {
 	baseMetaData BaseMetaData
 	data         Data
 	provider     orchestrator.OrchestratorSpecificConfigProviding
+	disabled     bool
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
-
+	t.disabled = telemetryDisabled
 	// skip if telemetry is disabled
 	if telemetryDisabled {
 		log.Entry().Info("Telemetry reporting deactivated")
@@ -120,7 +121,7 @@ func (t *Telemetry) GetData() Data {
 func (t *Telemetry) Send() {
 
 	// skip if telemetry is disabled
-	if disabled {
+	if t.disabled {
 		return
 	}
 
