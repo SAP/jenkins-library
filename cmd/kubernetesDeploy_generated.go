@@ -41,7 +41,7 @@ type kubernetesDeployOptions struct {
 	Namespace                  string   `json:"namespace,omitempty"`
 	TillerNamespace            string   `json:"tillerNamespace,omitempty"`
 	DockerConfigJSON           string   `json:"dockerConfigJSON,omitempty"`
-	DeployCommand              string   `json:"deployCommand,omitempty" validate:"oneof=apply replace"`
+	DeployCommand              string   `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
