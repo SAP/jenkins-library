@@ -41,13 +41,14 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
-- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
-- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
+- The first number denotes the release. Release deliverie contains the whole software component and deliver planned, new functionalities or feature enhancements. They are delivered with delivery packages of type “Add-on Installation Package”.
+- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contain smaller, planned functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
+- The third number denotes the Patch level. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are shipped with delivery packages of type “Correction Package”.
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
-Software Component Versions are uniquely created and independent from the add-on product versions where they are included. This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
+Software Component Versions are uniquely created and independent from the add-on product versions where they are included. 
+This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
 
 ### Target Vector
 
@@ -177,11 +178,11 @@ The section “repositories” contains one or multiple software component versi
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
 Changing the `addonVersion` string does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on `addonVersion`, the existing delivery packages are reused for the new add-on product version.
-Only by changing the `version` of  a software component, the build of a new delivery package with the latest changes is triggered.
+Only by changing the `version` of a software component, the build of a new delivery package with the latest changes is triggered.
 
 The `addonVersion` should be determined by synchronously to how the software components bundle is changed: In case the release version of a software component is changed, the release of the `addonVersion` should be changed. If the support package version of a software component is changed, support package version of the add-on should be changed. And if patch version of a software component, the patch version of the add-on should be adjusted.
 
-`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component
+`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component.
 
 The `branch` should only be changed while also changing release version or support package level of a software component. During creation of a patch version (CPK) the `branch` should remain the same as before, so that previous and current commit of the software component can be found in the same branch for comparison.
 
