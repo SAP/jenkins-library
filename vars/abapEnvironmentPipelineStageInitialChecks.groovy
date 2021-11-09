@@ -21,6 +21,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         abapAddonAssemblyKitCheckPV script: parameters.script
         abapAddonAssemblyKitCheckCVs script: parameters.script
+        abapAddonAssemblyKitReserveNextPackages script: parameters.script
     }
 
 }

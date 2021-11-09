@@ -91,6 +91,7 @@ type UploadRequestData struct {
 	FileContent io.Reader
 	Header      http.Header
 	Cookies     []*http.Cookie
+	UploadType  string
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -102,23 +103,24 @@ type Sender interface {
 // Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
 type Uploader interface {
 	Sender
-	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
-	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error)
+	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error)
 	Upload(data UploadRequestData) (*http.Response, error)
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
-func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies)
+func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies, uploadType)
 }
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
-func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	fileHandle, err := os.Open(file)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
 	}
 	defer fileHandle.Close()
+
 	return c.Upload(UploadRequestData{
 		Method:        method,
 		URL:           url,
@@ -127,51 +129,66 @@ func (c *Client) UploadRequest(method, url, file, fileFieldName string, header h
 		FileContent:   fileHandle,
 		Header:        header,
 		Cookies:       cookies,
+		UploadType:    uploadType,
 	})
 }
 
-// Upload uploads a file's content as multipart-form with given http method request to the specified URL
+// Upload uploads a file's content as multipart-form or pure binary with given http method request to the specified URL
 func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	if data.Method != http.MethodPost && data.Method != http.MethodPut {
 		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
 	}
 
-	bodyBuffer := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuffer)
+	// Binary upload :: other options ("binary" or "form").
+	if data.UploadType == "binary" {
+		request, err := c.createRequest(data.Method, data.URL, data.FileContent, &data.Header, data.Cookies)
+		if err != nil {
+			c.logger.Debugf("New %v request to %v (binary upload)", data.Method, data.URL)
+			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v (binary upload)", data.Method, data.URL)
+		}
+		request.Header.Add("Content-Type", "application/octet-stream")
+		request.Header.Add("Connection", "Keep-Alive")
 
-	if data.FormFields != nil {
-		for fieldName, fieldValue := range data.FormFields {
-			err := bodyWriter.WriteField(fieldName, fieldValue)
-			if err != nil {
-				return &http.Response{}, errors.Wrapf(err, "error writing form field %v with value %v", fieldName, fieldValue)
+		return c.Send(request)
+
+	} else { // For form upload
+
+		bodyBuffer := &bytes.Buffer{}
+		bodyWriter := multipart.NewWriter(bodyBuffer)
+
+		if data.FormFields != nil {
+			for fieldName, fieldValue := range data.FormFields {
+				err := bodyWriter.WriteField(fieldName, fieldValue)
+				if err != nil {
+					return &http.Response{}, errors.Wrapf(err, "error writing form field %v with value %v", fieldName, fieldValue)
+				}
 			}
 		}
+
+		fileWriter, err := bodyWriter.CreateFormFile(data.FileFieldName, data.File)
+		if err != nil {
+			return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
+		}
+
+		_, err = piperutils.CopyData(fileWriter, data.FileContent)
+		if err != nil {
+			return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
+		}
+		err = bodyWriter.Close()
+
+		request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
+		if err != nil {
+			c.logger.Debugf("New %v request to %v", data.Method, data.URL)
+			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
+		}
+
+		startBoundary := strings.Index(bodyWriter.FormDataContentType(), "=") + 1
+		boundary := bodyWriter.FormDataContentType()[startBoundary:]
+		request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
+		request.Header.Add("Connection", "Keep-Alive")
+
+		return c.Send(request)
 	}
-
-	fileWriter, err := bodyWriter.CreateFormFile(data.FileFieldName, data.File)
-	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
-	}
-
-	_, err = piperutils.CopyData(fileWriter, data.FileContent)
-	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
-	}
-	err = bodyWriter.Close()
-
-	request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
-	if err != nil {
-		c.logger.Debugf("New %v request to %v", data.Method, data.URL)
-		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
-	}
-
-	startBoundary := strings.Index(bodyWriter.FormDataContentType(), "=") + 1
-	boundary := bodyWriter.FormDataContentType()[startBoundary:]
-
-	request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
-	request.Header.Add("Connection", "Keep-Alive")
-
-	return c.Send(request)
 }
 
 // SendRequest sends an http request with a defined method

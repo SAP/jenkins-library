@@ -414,7 +414,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	header := http.Header{}
 	header.Add("Accept-Encoding", "gzip,deflate")
 	header.Add("Accept", "text/plain")
-	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/cxrestapi/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil)
+	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/cxrestapi/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil, "form")
 	if err != nil {
 		return errors.Wrap(err, "failed to uploaded zipped sources")
 	}
