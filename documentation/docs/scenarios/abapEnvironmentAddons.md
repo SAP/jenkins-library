@@ -47,7 +47,7 @@ A software component version is defined by a name and a version string. The name
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
-Software Component Versions are uniquely created and independent from the add-on product versions where they are included. 
+Software Component Versions are uniquely created and independent from the add-on product versions where they are included.
 This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
 
 ### Target Vector
