@@ -39,12 +39,13 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	fileName := "errorDetails.json"
 	if details["stepName"] != nil {
 		fileName = fmt.Sprintf("%v_%v", fmt.Sprint(details["stepName"]), fileName)
-		// ToDo: If step is called x times and it fails multiple times the error is overwritten
+		// ToDo: If step is called x times, and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	filePathCPE := filepath.Join(f.Path, ".pipeline", "commonPipelineEnvironment", fileName)
 
 	errDetails, _ := json.Marshal(&details)
+	Entry().Infof("fatal error: errorDetails{correlationId:\"%v\",stepName:\"%v\",category:\"%v\",error:\"%v\",result:\"%v\",message:\"%v\"}", details["correlationId"], details["stepName"], details["category"], details["error"], details["result"], details["message"])
 	ioutil.WriteFile(filePathCPE, errDetails, 0666)
 	Entry().Debugf("persisted error information in %v", filePathCPE)
 
@@ -64,6 +65,7 @@ type ErrorDetails struct {
 	Category      string
 	Result        string
 	CorrelationId string
+	StepName      string
 }
 
 func GetErrorsJson() ([]ErrorDetails, error) {
