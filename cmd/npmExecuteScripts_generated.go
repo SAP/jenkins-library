@@ -38,7 +38,6 @@ type npmExecuteScriptsCommonPipelineEnvironment struct {
 		publish            bool
 		defaultNpmRegistry string
 		dockerImage        string
-		buildTool          string
 	}
 }
 
@@ -52,7 +51,6 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 		{category: "custom", name: "publish", value: p.custom.publish},
 		{category: "custom", name: "defaultNpmRegistry", value: p.custom.defaultNpmRegistry},
 		{category: "custom", name: "dockerImage", value: p.custom.dockerImage},
-		{category: "custom", name: "buildTool", value: p.custom.buildTool},
 	}
 
 	errCount := 0
@@ -323,7 +321,6 @@ func npmExecuteScriptsMetadata() config.StepData {
 							{"Name": "custom/publish"},
 							{"Name": "custom/defaultNpmRegistry"},
 							{"Name": "custom/dockerImage"},
-							{"Name": "custom/buildTool"},
 						},
 					},
 				},

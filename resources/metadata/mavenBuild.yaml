@@ -193,8 +193,6 @@ spec:
             type: string
           - name: custom/dockerImage
             type: string
-          - name: custom/buildTool
-            type: string
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

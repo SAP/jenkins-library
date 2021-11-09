@@ -63,7 +63,6 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	commonPipelineEnvironment.custom.createBom = config.CreateBOM
 	commonPipelineEnvironment.custom.publish = config.Publish
 	commonPipelineEnvironment.custom.defaultNpmRegistry = config.DefaultNpmRegistry
-	commonPipelineEnvironment.custom.buildTool = "npm"
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {

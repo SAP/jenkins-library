@@ -37,7 +37,6 @@ type kanikoExecuteCommonPipelineEnvironment struct {
 	}
 	custom struct {
 		dockerImage string
-		buildTool   string
 	}
 }
 
@@ -50,7 +49,6 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
 		{category: "custom", name: "dockerImage", value: p.custom.dockerImage},
-		{category: "custom", name: "buildTool", value: p.custom.buildTool},
 	}
 
 	errCount := 0
@@ -310,7 +308,6 @@ func kanikoExecuteMetadata() config.StepData {
 							{"Name": "container/registryUrl"},
 							{"Name": "container/imageNameTag"},
 							{"Name": "custom/dockerImage"},
-							{"Name": "custom/buildTool"},
 						},
 					},
 				},

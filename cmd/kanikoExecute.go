@@ -93,7 +93,6 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	}
 
-	commonPipelineEnvironment.custom.buildTool = "docker"
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {

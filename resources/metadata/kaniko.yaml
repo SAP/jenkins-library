@@ -121,8 +121,6 @@ spec:
           - name: container/imageNameTag
           - name: custom/dockerImage
             type: string
-          - name: custom/buildTool
-            type: string
   containers:
     # https://github.com/GoogleContainerTools/kaniko/issues/1586
     - image: gcr.io/kaniko-project/executor:v1.3.0-debug
