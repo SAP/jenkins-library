@@ -42,7 +42,7 @@ type mavenBuildCommonPipelineEnvironment struct {
 		logSuccessfulMavenTransfers bool
 		publish                     bool
 		globalSettingsFile          string
-		profiles                    string
+		profiles                    []string
 		dockerImage                 string
 	}
 }
