@@ -171,6 +171,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			ContainerImage:       config.ScanImage,
 			ContainerRegistryURL: config.ScanImageRegistryURL,
 			IncludeLayers:        config.ScanImageIncludeLayers,
+			FilePath:             config.ProjectName,
 		}
 		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
 		dClient := &piperDocker.Client{}
