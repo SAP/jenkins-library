@@ -232,7 +232,6 @@ func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment.custom.globalSettingsFile = config.GlobalSettingsFile
 	commonPipelineEnvironment.custom.profiles = config.Profiles
 	commonPipelineEnvironment.custom.publish = config.Publish
-	commonPipelineEnvironment.custom.buildTool = "mta"
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {
