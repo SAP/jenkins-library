@@ -347,7 +347,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "force"}},
+						Aliases:     []config.Alias{{Name: "force", Deprecated: false}},
 						Default:     true,
 					},
 					{
