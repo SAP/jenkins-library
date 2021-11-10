@@ -8,7 +8,13 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     /**  If set to true, the default scm checkout is skipped */
-    'skipCheckout'
+    'skipCheckout',
+    /**
+     * Optional list of file paths or URLs, which must point to YAML content. These work exactly like
+     * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
+     * take precedence over `customDefaults`.
+     */
+    'customDefaultsFromFiles'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -29,7 +35,9 @@ void call(Map parameters = [:]) {
         if (!skipCheckout) {
             checkout scm
         }
-        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
+        setupCommonPipelineEnvironment script: script,
+            customDefaults: parameters.customDefaults,
+            customDefaultsFromFiles: parameters.customDefaultsFromFiles
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
