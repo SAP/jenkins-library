@@ -147,7 +147,7 @@ If you want to configure a build trigger, this can be done in the section of the
 H H(3-4) * * *
 ```
 
-Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent add-on build processes
+Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent build processes.
 
 ### Stage Names
 
