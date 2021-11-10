@@ -301,6 +301,17 @@ func TestDownloadAgent(t *testing.T) {
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "unable to copy content from url to file")
 	})
+	t.Run("error - download with retry forbidden", func(t *testing.T) {
+		config := ScanOptions{
+			AgentDownloadURL: "error403Forbidden", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error
+			AgentFileName:    "unified-agent.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("returned with response 403 Forbidden")}
+
+		err := downloadAgent(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "returned with response 403 Forbidden")
+	})
 	t.Run("error - download with retry not found 404", func(t *testing.T) {
 		config := ScanOptions{
 			AgentDownloadURL: "error404NotFound", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error

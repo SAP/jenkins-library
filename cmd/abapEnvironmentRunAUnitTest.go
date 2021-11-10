@@ -373,35 +373,34 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 	//Optional checks before writing the Results
 	parsedXML := new(AUnitResult)
 	xml.Unmarshal([]byte(body), &parsedXML)
-	if len(parsedXML.Testsuite.Testcase) == 0 {
-		log.Entry().Info("There were no AUnit findings from this run")
-		return nil
-	}
 
 	//Write Results
 	err = ioutil.WriteFile(aunitResultFileName, body, 0644)
-	if err == nil {
-		log.Entry().Infof("Writing %s file was successful. Please find the results from the respective AUnit run in the %s file or in below logs", aunitResultFileName, aunitResultFileName)
-		//Logging of findings
+	if err != nil {
+		return fmt.Errorf("Writing results failed: %w", err)
+	}
+	log.Entry().Infof("Writing %s file was successful.", aunitResultFileName)
+	//Return before processing empty AUnit results --> XML can still be written with response body
+	if len(parsedXML.Testsuite.Testcase) == 0 {
+		log.Entry().Infof("There were no AUnit findings from this run. The response has been saved in the %s file", aunitResultFileName)
+	} else {
+		log.Entry().Infof("Please find the results from the respective AUnit run in the %s file or in below logs", aunitResultFileName)
+		//Logging of AUnit findings
 		log.Entry().Infof(`Here are the results for the AUnit test run '%s' executed by User %s on System %s in Client %s at %s. The AUnit run took %s seconds and contains %s tests with %s failures, %s errors, %s skipped and %s assert findings`, parsedXML.Title, parsedXML.System, parsedXML.ExecutedBy, parsedXML.Client, parsedXML.Timestamp, parsedXML.Time, parsedXML.Tests, parsedXML.Failures, parsedXML.Errors, parsedXML.Skipped, parsedXML.Asserts)
 		for _, s := range parsedXML.Testsuite.Testcase {
-			//Log Info for testcase
+			//Log Infos for testcase
 			for _, failure := range s.Failure {
 				log.Entry().Debugf("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
 			}
-
 			for _, skipped := range s.Skipped {
 				log.Entry().Debugf("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
-		//Persist findings afterwards
-		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
-		piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
 	}
-	if err != nil {
-		return fmt.Errorf("Writing results failed: %w", err)
-	}
+	//Persist findings afterwards
+	var reports []piperutils.Path
+	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
+	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
 	return nil
 }
 
