@@ -774,7 +774,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 
 func toEnvVarKey(key string) string {
 	key = regexp.MustCompile(`[^A-Za-z0-9]`).ReplaceAllString(key, "_")
-	return strings.ToUpper(regexp.MustCompile(`([a-z])([A-Z])`).ReplaceAllString(key, "${1}_${2}"))
+	return strings.ToUpper(regexp.MustCompile(`([a-z0-9])([A-Z])`).ReplaceAllString(key, "${1}_${2}"))
 }
 
 func toMap(keyValue []string, separator string) (map[string]string, error) {
