@@ -1,8 +1,8 @@
 # Test
 
-This stage contains of two sub stages, `ATC` and `AUnit` which can execute ATC checks and AUnit test runs in parallel on an SAP BTP ABAP Environment systen.
+This stage contains two sub stages, `ATC` and `AUnit` which can execute ATC checks and AUnit test runs in parallel on an SAP BTP ABAP environment systen.
 By default this stage will not run any of the two sub stages `ATC` and `AUnit` if they are not configured. Please keep in mind that the `ATC` and `AUnit` stages need to be configured independently.
-Below sections contain more information on the usage and configuration of the `ATC` and `AUnit` stages.
+The below sections contain more information on the usage and configuration of the `ATC` and `AUnit` stages.
 
 ## ATC
 
@@ -20,8 +20,7 @@ There are no specifc stage parameters.
 
 ### Stage Activation
 
-This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
-Please keep in mind that the configuration for the `ATC` stage needs to be subsequent to the `Test` stages hirarchy.
+This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage..
 
 ### Configuration Example
 
@@ -87,7 +86,6 @@ There are no specifc stage parameters.
 ### Stage Activation
 
 This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
-Please keep in mind that the configuration for the `AUnit` stage needs to be subsequent to the `Test` stages hirarchy.
 
 ### Configuration Example
 
