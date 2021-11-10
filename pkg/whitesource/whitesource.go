@@ -118,10 +118,12 @@ type Request struct {
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
 type System struct {
-	httpClient piperhttp.Sender
-	orgToken   string
-	serverURL  string
-	userToken  string
+	httpClient    piperhttp.Sender
+	orgToken      string
+	serverURL     string
+	userToken     string
+	maxRetries    int
+	retryInterval time.Duration
 }
 
 // DateTimeLayout is the layout of the time format used by the WhiteSource API.
@@ -132,10 +134,12 @@ func NewSystem(serverURL, orgToken, userToken string, timeout time.Duration) *Sy
 	httpClient := &piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: timeout})
 	return &System{
-		serverURL:  serverURL,
-		orgToken:   orgToken,
-		userToken:  userToken,
-		httpClient: httpClient,
+		serverURL:     serverURL,
+		orgToken:      orgToken,
+		userToken:     userToken,
+		httpClient:    httpClient,
+		maxRetries:    10,
+		retryInterval: 3 * time.Second,
 	}
 }
 
@@ -454,6 +458,11 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 }
 
 func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
+	var count int
+	return s.sendRequestAndDecodeJSONRecursive(req, result, &count)
+}
+
+func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface{}, count *int) error {
 	respBody, err := s.sendRequest(req)
 	if err != nil {
 		return errors.Wrap(err, "sending whiteSource request failed")
@@ -468,6 +477,22 @@ func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error
 
 	err = json.Unmarshal(respBody, &errorResponse)
 	if err == nil && errorResponse.ErrorCode != 0 {
+		if *count < s.maxRetries && errorResponse.ErrorCode == 3000 {
+			var initial bool
+			if *count == 0 {
+				initial = true
+			}
+			log.Entry().Warnf("backend returned error 3000, retrying in %v", s.retryInterval)
+			time.Sleep(s.retryInterval)
+			*count = *count + 1
+			err = s.sendRequestAndDecodeJSONRecursive(req, result, count)
+			if err != nil {
+				if initial {
+					return errors.Wrapf(err, "WhiteSource request failed after %v retries", s.maxRetries)
+				}
+				return err
+			}
+		}
 		return fmt.Errorf("invalid request, error code %v, message '%s'",
 			errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}

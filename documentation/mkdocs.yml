@@ -64,10 +64,10 @@ nav:
         - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
+        - apiProxyDownload: steps/apiProxyDownload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
-        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
@@ -112,6 +112,7 @@ nav:
         - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
+        - isChangeInDevelopment: steps/isChangeInDevelopment.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
@@ -161,6 +162,7 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - npmExecute: steps/npmExecute.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Command line tool': cli/index.md

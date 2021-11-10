@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ import (
 
 type configCommandOptions struct {
 	output                        string //output format, so far only JSON
+	outputFile                    string //if set: path to file where the output should be written to
 	parametersJSON                string //parameters to be considered in JSON format
 	stageConfig                   bool
 	stageConfigAcceptedParameters []string
@@ -27,6 +29,23 @@ type configCommandOptions struct {
 }
 
 var configOptions configCommandOptions
+
+type getConfigUtils interface {
+	FileExists(filename string) (bool, error)
+	DirExists(path string) (bool, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+}
+
+type getConfigUtilsBundle struct {
+	*piperutils.Files
+}
+
+func newGetConfigUtilsUtils() getConfigUtils {
+	utils := getConfigUtilsBundle{
+		Files: &piperutils.Files{},
+	}
+	return &utils
+}
 
 // ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
@@ -43,7 +62,8 @@ func ConfigCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
-			err := generateConfig()
+			utils := newGetConfigUtilsUtils()
+			err := generateConfig(utils)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
@@ -55,7 +75,7 @@ func ConfigCommand() *cobra.Command {
 	return createConfigCmd
 }
 
-func generateConfig() error {
+func generateConfig(utils getConfigUtils) error {
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
@@ -149,6 +169,13 @@ func generateConfig() error {
 
 	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
 
+	if len(configOptions.outputFile) > 0 {
+		err := utils.FileWrite(configOptions.outputFile, []byte(myConfigJSON), 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write output file %v: %w", configOptions.outputFile, err)
+		}
+		return nil
+	}
 	fmt.Println(myConfigJSON)
 
 	return nil
@@ -158,6 +185,7 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	//ToDo: support more output options, like https://kubernetes.io/docs/reference/kubectl/overview/#formatting-output
 	cmd.Flags().StringVar(&configOptions.output, "output", "json", "Defines the output format")
+	cmd.Flags().StringVar(&configOptions.outputFile, "outputFile", "", "Defines a file path. f set, the output will be written to the defines file")
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().BoolVar(&configOptions.stageConfig, "stageConfig", false, "Defines if step stage configuration should be loaded and no step-specific config")

@@ -54,7 +54,7 @@ func (p *isChangeInDevelopmentCommonPipelineEnvironment) persist(path, resourceN
 	}
 }
 
-// IsChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
+// IsChangeInDevelopmentCommand This step checks if a certain change is in status 'in development'
 func IsChangeInDevelopmentCommand() *cobra.Command {
 	const STEP_NAME = "isChangeInDevelopment"
 
@@ -66,8 +66,8 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 
 	var createIsChangeInDevelopmentCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Checks if a certain change is in status 'in development'",
-		Long:  `"Checks if a certain change is in status 'in development'"`,
+		Short: "This step checks if a certain change is in status 'in development'",
+		Long:  `This step checks if a certain change is in status 'in development'`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -161,7 +161,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "isChangeInDevelopment",
 			Aliases:     []config.Alias{},
-			Description: "Checks if a certain change is in status 'in development'",
+			Description: "This step checks if a certain change is in status 'in development'",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
