@@ -2,9 +2,11 @@ package sonar
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	sonargo "github.com/magicsong/sonargo/sonar"
+	"github.com/pkg/errors"
 )
 
 // EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/issues/search
@@ -15,6 +17,12 @@ type ComponentService struct {
 	Organization string
 	Project      string
 	apiClient    *Requester
+}
+
+type SonarCoverage struct {
+	Coverage       float32
+	LineCoverage   float32
+	BranchCoverage float32
 }
 
 // GetCoverage ...
@@ -42,21 +50,40 @@ func (service *ComponentService) Component(options *sonargo.MeasuresComponentOpt
 	return result, response, nil
 }
 
-func (service *ComponentService) GetCoverage() string {
+func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 	options := sonargo.MeasuresComponentOption{
 		Component:  service.Project,
-		MetricKeys: "coverage",
+		MetricKeys: "coverage,branch_coverage,line_coverage",
 	}
-	component, response, err := service.Component(&options)
+	component, response, _ := service.Component(&options)
 
 	// reuse response verification from sonargo
-	err = sonargo.CheckResponse(response)
+	err := sonargo.CheckResponse(response)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to get coverage from Sonar")
-		return ""
+		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
 	}
+	measures := component.Component.Measures
 
-	return component.Component.Measures[0].Value
+	cov := &SonarCoverage{}
+
+	for _, element := range measures {
+		val, err := parseMeasureValuef32(*element)
+		if err != nil {
+			return nil, err
+		}
+
+		switch element.Metric {
+		case "coverage":
+			cov.Coverage = val
+		case "branch_coverage":
+			cov.BranchCoverage = val
+		case "line_coverage":
+			cov.LineCoverage = val
+		default:
+			log.Entry().Debugf("Received unhandled coverage metric from Sonar measures/component API. (Metric: %s, Value: %s)", element.Metric, element.Value)
+		}
+	}
+	return cov, nil
 }
 
 // NewMeasuresComponentService returns a new instance of a service for the measures/component endpoint.
@@ -66,4 +93,13 @@ func NewMeasuresComponentService(host, token, project, organization string, clie
 		Project:      project,
 		apiClient:    NewAPIClient(host, token, client),
 	}
+}
+
+func parseMeasureValuef32(measure sonargo.SonarMeasure) (float32, error) {
+	str := measure.Value
+	f64, err := strconv.ParseFloat(str, 32)
+	if err != nil {
+		return 0.0, errors.Wrap(err, "Invalid value found in measure "+measure.Metric+": "+measure.Value)
+	}
+	return float32(f64), nil
 }

@@ -10,14 +10,14 @@ const reportFileName = "sonarscan.json"
 
 //ReportData is representing the data of the step report JSON
 type ReportData struct {
-	ServerURL      string `json:"serverUrl"`
-	ProjectKey     string `json:"projectKey"`
-	TaskID         string `json:"taskId"`
-	ChangeID       string `json:"changeID,omitempty"`
-	BranchName     string `json:"branchName,omitempty"`
-	Organization   string `json:"organization,omitempty"`
-	NumberOfIssues Issues `json:"numberOfIssues"`
-	Coverage       string `json:"coverage"`
+	ServerURL      string        `json:"serverUrl"`
+	ProjectKey     string        `json:"projectKey"`
+	TaskID         string        `json:"taskId"`
+	ChangeID       string        `json:"changeID,omitempty"`
+	BranchName     string        `json:"branchName,omitempty"`
+	Organization   string        `json:"organization,omitempty"`
+	NumberOfIssues Issues        `json:"numberOfIssues"`
+	Coverage       SonarCoverage `json:"coverage"`
 }
 
 // Issues ...
