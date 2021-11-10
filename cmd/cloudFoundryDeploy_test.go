@@ -1377,6 +1377,6 @@ func TestMtaExtensionCredentials(t *testing.T) {
 }
 
 func TestEnvVarKeyModification(t *testing.T) {
-	envVarCompatibleKey := toEnvVarKey("Mta.EXtensionCredential~Credential_Id1")
-	assert.Equal(t, "MTA_EXTENSION_CREDENTIAL_CREDENTIAL_ID1", envVarCompatibleKey)
+	envVarCompatibleKey := toEnvVarKey("Mta.EXtensionCredential~Credential_Id1Abc")
+	assert.Equal(t, "MTA_EXTENSION_CREDENTIAL_CREDENTIAL_ID1_ABC", envVarCompatibleKey)
 }
