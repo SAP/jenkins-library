@@ -38,10 +38,11 @@ type jsonPackage struct {
 type Package struct {
 	abapbuild.Connector
 	ComponentName       string
-	PackageName         string `json:"Name"`
 	VersionYAML         string
+	PackageName         string        `json:"Name"`
 	Type                string        `json:"Type"`
 	PredecessorCommitID string        `json:"PredecessorCommitId"`
+	CommitID            string        `json:"CommitId"`
 	Status              PackageStatus `json:"Status"`
 	Namespace           string        `json:"Namespace"`
 }
@@ -90,6 +91,7 @@ func (p *Package) ReserveNext() error {
 	p.PredecessorCommitID = jPck.DeterminePackage.Package.PredecessorCommitID
 	p.Status = jPck.DeterminePackage.Package.Status
 	p.Namespace = jPck.DeterminePackage.Package.Namespace
+	p.CommitID = jPck.DeterminePackage.Package.CommitID
 	log.Entry().Infof("Reservation of package %s started", p.PackageName)
 	return nil
 }

@@ -380,7 +380,7 @@ steps:
   pipelineStashFilesBeforeBuild:
     stashIncludes:
       buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, **/Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
-      deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, **/*.y*ml, **/*.tpl'
+      deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, **/*.y*ml, **/*.tpl, **/*.tgz'
       git: '.git/**'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
