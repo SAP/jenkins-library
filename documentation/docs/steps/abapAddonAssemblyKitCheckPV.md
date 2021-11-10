@@ -2,6 +2,11 @@
 
 ## ${docGenDescription}
 
+### Artifacts
+
+- addonDescriptorFile (addon.yml)
+    The addonDescriptorFile as specified in parameter addonDescriptorFileName is archived as artifact. This is done as this file is the main configuration and usually changed with every run. Thus it simplifies support if the corresponding configuration file is directly accessible in the pipeline.
+
 ## Prerequisites
 
 * The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
