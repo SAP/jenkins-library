@@ -54,6 +54,7 @@ type FilesMock struct {
 	CurrentDir       string
 	Separator        string
 	FileExistsErrors map[string]error
+	FileReadErrors   map[string]error
 	FileWriteError   error
 	FileWriteErrors  map[string]error
 }
@@ -79,7 +80,11 @@ func (f *FilesMock) toAbsPath(path string) string {
 		return f.Separator + f.CurrentDir
 	}
 	if !strings.HasPrefix(path, f.Separator) {
-		path = f.Separator + filepath.Join(f.CurrentDir, path)
+		if !strings.HasPrefix(f.CurrentDir, "/") {
+			path = f.Separator + filepath.Join(f.CurrentDir, path)
+		} else {
+			path = filepath.Join(f.CurrentDir, path)
+		}
 	}
 	return path
 }
@@ -212,6 +217,9 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	f.init()
+	if err := f.FileReadErrors[path]; err != nil {
+		return nil, err
+	}
 	props, exists := f.files[f.toAbsPath(path)]
 	if !exists {
 		return nil, fmt.Errorf("could not read '%s'", path)
@@ -235,6 +243,11 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
+}
+
+// RemoveAll is a proxy for FileRemove
+func (f *FilesMock) RemoveAll(path string) error {
+	return f.FileRemove(path)
 }
 
 // FileRemove deletes the association of the given path with any content and records the removal of the file.
@@ -308,6 +321,21 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 	delete(f.files, oldAbsPath)
 	f.files[newAbsPath] = props
 	return nil
+}
+
+// TempDir create a temp-styled directory in the in-memory, so that this path is established to exist.
+func (f *FilesMock) TempDir(_, pattern string) (string, error) {
+	tmpDir := "/tmp/test"
+
+	if pattern != "" {
+		tmpDir = fmt.Sprintf("/tmp/%stest", pattern)
+	}
+
+	err := f.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return tmpDir, nil
 }
 
 // MkdirAll creates a directory in the in-memory file system, so that this path is established to exist.

@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ type sonarExecuteScanOptions struct {
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
-	VersioningModel           string   `json:"versioningModel,omitempty"`
+	VersioningModel           string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
 	Version                   string   `json:"version,omitempty"`
 	CustomScanVersion         string   `json:"customScanVersion,omitempty"`
 	ProjectKey                string   `json:"projectKey,omitempty"`
@@ -36,7 +37,7 @@ type sonarExecuteScanOptions struct {
 	ChangeID                  string   `json:"changeId,omitempty"`
 	ChangeBranch              string   `json:"changeBranch,omitempty"`
 	ChangeTarget              string   `json:"changeTarget,omitempty"`
-	PullRequestProvider       string   `json:"pullRequestProvider,omitempty"`
+	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"oneof=GitHub"`
 	Owner                     string   `json:"owner,omitempty"`
 	Repository                string   `json:"repository,omitempty"`
 	GithubToken               string   `json:"githubToken,omitempty"`
@@ -144,6 +145,15 @@ func SonarExecuteScanCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -185,7 +195,7 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
-	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip`, "URL to the sonar-scanner-cli archive.")
+	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip`, "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for the version when reporting the results for the project.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The project version that is reported to SonarQube.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
@@ -247,9 +257,9 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/sonar", "$(vaultBasePath)/$(vaultPipelineName)/sonar", "$(vaultBasePath)/GROUP-SECRETS/sonar"},
-								Type:  "vaultSecret",
+								Name:    "sonarSecretName",
+								Type:    "vaultSecret",
+								Default: "sonar",
 							},
 
 							{
@@ -288,7 +298,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip`,
+						Default:     `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip`,
 					},
 					{
 						Name:        "versioningModel",
@@ -458,9 +468,9 @@ func sonarExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
-								Type:  "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
@@ -508,7 +518,7 @@ func sonarExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.5"},
+				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.6"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

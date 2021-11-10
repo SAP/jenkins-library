@@ -90,7 +90,7 @@ func installGauge(gaugeInstallCommand string, utils gaugeExecuteTestsUtils) erro
 
 func installLanguageRunner(languageRunner string, utils gaugeExecuteTestsUtils) error {
 	installParams := []string{"install", languageRunner}
-	gaugePath := filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/gauge")
+	gaugePath := filepath.FromSlash(filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/gauge"))
 	err := utils.RunExecutable(gaugePath, installParams...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -105,7 +105,7 @@ func runGauge(config *gaugeExecuteTestsOptions, utils gaugeExecuteTestsUtils) er
 	if config.TestOptions != "" {
 		runCommandTokens = append(runCommandTokens, strings.Split(config.TestOptions, " ")...)
 	}
-	gaugePath := filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/gauge")
+	gaugePath := filepath.FromSlash(filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/gauge"))
 	err := utils.RunExecutable(gaugePath, runCommandTokens...)
 	if err != nil {
 		return errors.Wrap(ErrorGaugeRun, err.Error())

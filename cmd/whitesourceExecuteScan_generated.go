@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,7 @@ type whitesourceExecuteScanOptions struct {
 	CustomScanVersion                    string   `json:"customScanVersion,omitempty"`
 	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty"`
 	ScanPath                             string   `json:"scanPath,omitempty"`
+	DockerConfigJSON                     string   `json:"dockerConfigJSON,omitempty"`
 	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	Excludes                             []string `json:"excludes,omitempty"`
 	Includes                             []string `json:"includes,omitempty"`
@@ -51,7 +53,7 @@ type whitesourceExecuteScanOptions struct {
 	Timeout                              int      `json:"timeout,omitempty"`
 	UserToken                            string   `json:"userToken,omitempty"`
 	VersioningModel                      string   `json:"versioningModel,omitempty"`
-	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty"`
+	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"oneof=xlsx json xml"`
 	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty"`
 	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
@@ -175,6 +177,7 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.OrgToken)
 			log.RegisterSecret(stepConfig.UserToken)
 
@@ -186,6 +189,15 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -238,6 +250,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the WhiteSource project used as source.")
 	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build.")
 	cmd.Flags().StringVar(&stepConfig.ScanPath, "scanPath", `.`, "Directory where to start WhiteSource scan.")
+	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "List of file path patterns to exclude in the scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.Includes, "includes", []string{}, "List of file path patterns to include in the scan.")
@@ -285,6 +298,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "userTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource user token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/userTokenCredentialsId", Deprecated: true}}},
 					{Name: "orgAdminUserTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource org admin token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceOrgAdminUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/orgAdminUserTokenCredentialsId", Deprecated: true}}},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
@@ -413,6 +427,31 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `.`,
+					},
+					{
+						Name: "dockerConfigJSON",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/dockerConfigJSON",
+							},
+
+							{
+								Name: "dockerConfigJsonCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 					{
 						Name:        "emailAddressesOfInitialProductAdmins",
@@ -614,9 +653,9 @@ func whitesourceExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/whitesource", "$(vaultBasePath)/$(vaultPipelineName)/whitesource", "$(vaultBasePath)/GROUP-SECRETS/whitesource"},
-								Type:  "vaultSecret",
+								Name:    "whitesourceVaultSecret",
+								Type:    "vaultSecret",
+								Default: "whitesource",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

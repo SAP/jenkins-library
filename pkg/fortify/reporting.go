@@ -2,8 +2,10 @@ package fortify
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,19 +18,31 @@ import (
 )
 
 type FortifyReportData struct {
-	ProjectName       string
-	ProjectVersion    string
-	Violations        int
-	CorporateTotal    int
-	CorporateAudited  int
-	AuditAllTotal     int
-	AuditAllAudited   int
-	SpotChecksTotal   int
-	SpotChecksAudited int
-	SpotChecksGap     int
-	Suspicious        int
-	Exploitable       int
-	Suppressed        int
+	ToolName                            string                  `json:"toolName"`
+	ToolInstance                        string                  `json:"toolInstance"`
+	ProjectName                         string                  `json:"projectName"`
+	ProjectVersion                      string                  `json:"projectVersion"`
+	ProjectVersionID                    int64                   `json:"projectVersionID"`
+	Violations                          int                     `json:"violations"`
+	CorporateTotal                      int                     `json:"corporateTotal"`
+	CorporateAudited                    int                     `json:"corporateAudited"`
+	AuditAllTotal                       int                     `json:"auditAllTotal"`
+	AuditAllAudited                     int                     `json:"auditAllAudited"`
+	SpotChecksTotal                     int                     `json:"spotChecksTotal"`
+	SpotChecksAudited                   int                     `json:"spotChecksAudited"`
+	SpotChecksGap                       int                     `json:"spotChecksGap"`
+	Suspicious                          int                     `json:"suspicious"`
+	Exploitable                         int                     `json:"exploitable"`
+	Suppressed                          int                     `json:"suppressed"`
+	AtleastOneSpotChecksCategoryAudited bool                    `json:"atleastOneSpotChecksCategoryAudited"`
+	URL                                 string                  `json:"url"`
+	SpotChecksCategories                *[]SpotChecksAuditCount `json:"spotChecksCategories"`
+}
+
+type SpotChecksAuditCount struct {
+	Audited int    `json:"spotChecksCategories"`
+	Total   int    `json:"total"`
+	Type    string `json:"type"`
 }
 
 func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVersionIssueGroup) reporting.ScanReport {
@@ -70,12 +84,52 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 
 		detailTable.Rows = append(detailTable.Rows, row)
 	}
+
 	scanReport.DetailTable = detailTable
+	scanReport.SuccessfulScan = data.Violations == 0
 
 	return scanReport
 }
 
-func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectVersion string) ([]piperutils.Path, error) {
+func CreateJSONReport(reportData FortifyReportData, spotChecksCountByCategory []SpotChecksAuditCount, serverURL string) FortifyReportData {
+	reportData.AtleastOneSpotChecksCategoryAudited = true
+	for _, spotChecksElement := range spotChecksCountByCategory {
+		if spotChecksElement.Total > 0 && spotChecksElement.Audited == 0 {
+			reportData.AtleastOneSpotChecksCategoryAudited = false
+			break
+		}
+	}
+
+	reportData.SpotChecksCategories = &spotChecksCountByCategory
+	reportData.URL = serverURL + "/html/ssc/version/" + strconv.FormatInt(reportData.ProjectVersionID, 10)
+	reportData.ToolInstance = serverURL
+	reportData.ToolName = "fortify"
+
+	return reportData
+}
+
+func WriteJSONReport(jsonReport FortifyReportData) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	// Standard JSON Report
+	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_fortify_report.json")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	file, _ := json.Marshal(jsonReport)
+	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write fortify json compliance report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify JSON Compliance Report", Target: jsonComplianceReportPath})
+
+	return reportPaths, nil
+}
+
+func WriteCustomReports(scanReport reporting.ScanReport, projectName string, projectVersion string) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
@@ -107,7 +161,6 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectVer
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
 	// and there does not seem to be real benefit in archiving it.
-
 	return reportPaths, nil
 }
 

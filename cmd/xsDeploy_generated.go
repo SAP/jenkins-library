@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -20,8 +21,8 @@ type xsDeployOptions struct {
 	DeployOpts            string `json:"deployOpts,omitempty"`
 	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty"`
 	MtaPath               string `json:"mtaPath,omitempty"`
-	Action                string `json:"action,omitempty"`
-	Mode                  string `json:"mode,omitempty"`
+	Action                string `json:"action,omitempty" validate:"oneof=NONE Resume Abort Retry"`
+	Mode                  string `json:"mode,omitempty" validate:"oneof=NONE DEPLOY BG_DEPLOY"`
 	OperationID           string `json:"operationId,omitempty"`
 	APIURL                string `json:"apiUrl,omitempty"`
 	Username              string `json:"username,omitempty"`
@@ -99,6 +100,15 @@ func XsDeployCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil

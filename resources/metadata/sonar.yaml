@@ -42,10 +42,8 @@ spec:
         secret: true
         resourceRef:
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/sonar
-              - $(vaultBasePath)/$(vaultPipelineName)/sonar
-              - $(vaultBasePath)/GROUP-SECRETS/sonar
+            name: sonarSecretName
+            default: sonar
           - name: sonarTokenCredentialsId
             type: secret
         aliases:
@@ -68,7 +66,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip"
         scope:
           - PARAMETERS
           - STAGES
@@ -226,10 +224,8 @@ spec:
           - name: githubTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/github
-              - $(vaultBasePath)/$(vaultPipelineName)/github
-              - $(vaultBasePath)/GROUP-SECRETS/github
+            name: githubVaultSecretName
+            default: github
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments.
@@ -300,4 +296,4 @@ spec:
                 type: float32
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:4.5
+      image: sonarsource/sonar-scanner-cli:4.6
