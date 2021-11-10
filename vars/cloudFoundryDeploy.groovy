@@ -34,6 +34,6 @@ void call(Map parameters = [:]) {
  */
 private static String toEnvVarKey(String key) {
     key = key.replaceAll(/[^A-Za-z0-9]/, "_")
-    key = key.replaceAll(/([a-z])([A-Z])/, /$1_$2/)
+    key = key.replaceAll(/([a-z0-9])([A-Z])/, /$1_$2/)
     return key.toUpperCase()
 }
