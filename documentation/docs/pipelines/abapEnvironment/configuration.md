@@ -147,6 +147,8 @@ If you want to configure a build trigger, this can be done in the section of the
 H H(3-4) * * *
 ```
 
+Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent add-on build processes
+
 ### Stage Names
 
 The stage name for the extension is usually the displayed name, e.g. `ATC.groovy` or `Prepare System.groovy`. One exception is the generated `Post` stage. While the displayed name is "Declarative: Post Actions", you can extend this stage using `Post.groovy`.
