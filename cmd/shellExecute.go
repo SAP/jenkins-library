@@ -2,10 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/hashicorp/vault/api"
+	"net/url"
 	"os/exec"
+	"strings"
+
+	"github.com/hashicorp/vault/api"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -58,39 +62,78 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	}
 	defer client.MustRevokeToken()
 
-	// check if all scripts are present
-	for _, script := range config.Script {
-		exists, err := utils.FileExists(script)
+	// piper http client for downloading scripts
+	httpClient := piperhttp.Client{}
+
+	// scripts for running locally
+	var e []string
+
+	// check input data
+	// example for script: sources: ["./script.sh"]
+	for _, source := range config.Sources {
+		// check it's a local script or remote
+		_, err := url.ParseRequestURI(source)
 		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return fmt.Errorf("failed to check for defined script: %w", err)
-		}
-		if !exists {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return fmt.Errorf("the specified script could not be found: %w", err)
+			// err means that it's not a remote script
+			// check if the script is physically present (for local scripts)
+			exists, err := utils.FileExists(source)
+			if err != nil {
+				log.Entry().WithError(err).Errorf("failed to check for defined script")
+			}
+			if !exists {
+				log.Entry().WithError(err).Errorf("the specified script could not be found")
+			}
+			e = append(e, source)
+		} else {
+			// this block means that it's a remote script
+			// so, need to download it before
+			// get script name at first
+			path := strings.Split(source, "/")
+			err = httpClient.DownloadFile(source, path[len(path)-1], nil, nil)
+			if err != nil {
+				log.Entry().WithError(err).Errorf("the specified script could not be downloaded")
+			}
+			// make script executable
+			exec.Command("/bin/sh", "chmod +x "+path[len(path)-1])
+
+			e = append(e, path[len(path)-1])
+
 		}
 	}
 
 	// if all ok - try to run them one by one
-	for _, script := range config.Script {
-		_, err := exec.Command(script).Output()
+	for _, script := range e {
+		log.Entry().Info("starting running script:", script)
+		output, err := exec.Command(script).Output()
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		// if it's an exit error, then check the exit code
 		// according to the requirements
 		// 0 - success
 		// 1 - fails the build (or > 2)
 		// 2 - build unstable - unsupported now
+		if config.IsOutputNeed {
+			//log.Entry().Println(string(output))
+			fmt.Println(string(output))
+		}
 		if ee, ok := err.(*exec.ExitError); ok {
 			switch ee.ExitCode() {
 			case 0:
 				// success
 				return nil
 			case 1:
+				fmt.Println(err)
 				// build was failed
 				return fmt.Errorf("build was failed: %w", err)
 			default:
 				// exit code 2 or >2 - build unstable
 				return fmt.Errorf("build unstable or something went wrong: %w", err)
 			}
+		} else if err != nil {
+			fmt.Println(err)
+			return err
 		}
 	}
 

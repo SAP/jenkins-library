@@ -1,12 +1,14 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type shellExecuteMockUtils struct {
+	t      *testing.T
+	config *shellExecuteOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
 }
@@ -19,35 +21,20 @@ func newShellExecuteTestsUtils() shellExecuteMockUtils {
 	return utils
 }
 
+func newShellExecuteMockUtils() *shellExecuteOptions {
+	return &shellExecuteOptions{
+		VaultServerURL: "",
+		VaultNamespace: "",
+		IsOutputNeed:   true,
+		Sources:        nil,
+	}
+}
+
+func (v *shellExecuteMockUtils) GetConfig() *shellExecuteOptions {
+	return v.config
+}
+
 func TestRunShellExecute(t *testing.T) {
+	// todo
 	t.Parallel()
-
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := shellExecuteOptions{}
-
-		utils := newShellExecuteTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
-
-		// test
-		err := runShellExecute(&config, nil, utils)
-
-		// assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("error path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := shellExecuteOptions{}
-
-		utils := newShellExecuteTestsUtils()
-
-		// test
-		err := runShellExecute(&config, nil, utils)
-
-		// assert
-		assert.EqualError(t, err, "cannot run without important file")
-	})
 }
