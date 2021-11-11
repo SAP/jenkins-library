@@ -216,7 +216,7 @@ spec:
           - STAGES
           - PARAMETERS
         aliases:
-          - name: maven/buildSettingsInfo
+          - name: mta/buildSettingsInfo
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo

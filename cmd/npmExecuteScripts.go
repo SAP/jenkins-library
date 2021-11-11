@@ -1,23 +1,27 @@
 package cmd
 
 import (
+	"encoding/json"
+	"reflect"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
-func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
+func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
 	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
-	err := runNpmExecuteScripts(npmExecutor, &config)
+	err := runNpmExecuteScripts(npmExecutor, &config, commonPipelineEnvironment)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
+func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
 	if config.Install {
 		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 		if err != nil {
@@ -46,6 +50,13 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		return err
 	}
 
+	log.Entry().Infof("creating build settings information...")
+	builSettingsErr := createNpmBuildSettingsInfo(config, commonPipelineEnvironment)
+
+	if builSettingsErr != nil {
+		log.Entry().Warnf("failed to create build settings info : ''%v", builSettingsErr)
+	}
+
 	if config.Publish {
 		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 		if err != nil {
@@ -59,4 +70,54 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 
 	return nil
+}
+
+func createNpmBuildSettingsInfo(config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
+	currentBuildSettingsInfo := BuildSettingsInfo{
+		Publish:            config.Publish,
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+	}
+	var jsonMap map[string][]interface{}
+
+	if len(config.BuildSettingsInfo) > 0 {
+
+		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
+		if err != nil {
+			return errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
+		}
+
+		if mavenBuild, exist := jsonMap["npmBuild"]; exist {
+			if reflect.TypeOf(mavenBuild).Kind() == reflect.Slice {
+				jsonMap["npmBuild"] = append(mavenBuild, currentBuildSettingsInfo)
+			}
+		} else {
+			var settings []interface{}
+			settings = append(settings, currentBuildSettingsInfo)
+			jsonMap["npmBuild"] = settings
+		}
+
+		newJsonMap, err := json.Marshal(&jsonMap)
+		if err != nil {
+			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
+		}
+
+		commonPipelineEnvironment.custom.buildSettingsInfo = string(newJsonMap)
+
+	} else {
+		var settings []BuildSettingsInfo
+		settings = append(settings, currentBuildSettingsInfo)
+		jsonResult, err := json.Marshal(BuildSettings{
+			NpmBuild: settings,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
+		} else {
+			commonPipelineEnvironment.custom.buildSettingsInfo = string(jsonResult)
+		}
+	}
+
+	log.Entry().Infof("build settings infomration successfully created with '%v", commonPipelineEnvironment.custom.buildSettingsInfo)
+
+	return nil
+
 }
