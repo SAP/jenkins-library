@@ -25,7 +25,6 @@ func newShellExecuteMockUtils() *shellExecuteOptions {
 	return &shellExecuteOptions{
 		VaultServerURL: "",
 		VaultNamespace: "",
-		IsOutputNeed:   true,
 		Sources:        nil,
 	}
 }
