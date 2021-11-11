@@ -303,7 +303,7 @@ func runMtaBuild(config mtaBuildOptions,
 	return err
 }
 
-func createMtaBuildSettingsInfo(config *mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
+func createMtaBuildSettingsInfo(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
 	currentBuildSettingsInfo := BuildSettingsInfo{
 		GlobalSettingsFile: config.GlobalSettingsFile,
 		Profiles:           config.Profiles,
