@@ -167,6 +167,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentRunAUnitTestCommand())
 	rootCmd.AddCommand(CheckStepActiveCommand())
 	rootCmd.AddCommand(ShellExecuteCommand())
+	rootCmd.AddCommand(ApiProxyDownloadCommand())
 
 	addRootFlags(rootCmd)
 
