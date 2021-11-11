@@ -114,8 +114,8 @@ context: AUnit test run
 options:
   measurements: none
   scope:
-    owntests: true
-    foreigntests: true
+    ownTests: true
+    foreignTests: true
   riskLevel:
     harmless: true
     dangerous: true
@@ -124,11 +124,11 @@ options:
     short: true
     medium: true
     long: true
-objectset:
+objectSet:
   - type: unionSet
     set:
       - type: packageSet
         package:
           - name: MY_PACKAGE
-            includesubpackages: false
+            includeSubpackages: false
 ```

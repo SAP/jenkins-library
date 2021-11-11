@@ -95,8 +95,8 @@ context: My unit tests
 options:
   measurements: none
   scope:
-    owntests: true
-    foreigntests: true
+    ownTests: true
+    foreignTests: true
   riskLevel:
     harmless: true
     dangerous: true
@@ -105,13 +105,13 @@ options:
     short: true
     medium: true
     long: true
-objectset:
+objectSet:
   - type: unionSet
     set:
       - type: packageSet
         package:
           - name: my_package
-            includesubpackages: false
+            includeSubpackages: false
 ```
 
 The following example of an `aUnitConfig.yml` file containing one class and one interface to be checked:
@@ -122,8 +122,8 @@ context: My unit tests
 options:
   measurements: none
   scope:
-    owntests: true
-    foreigntests: true
+    ownTests: true
+    foreignTests: true
   riskLevel:
     harmless: true
     dangerous: true
@@ -132,7 +132,7 @@ options:
     short: true
     medium: true
     long: true
-objectset:
+objectSet:
   - type: unionSet
     set:
       - type: flatObjectSet
