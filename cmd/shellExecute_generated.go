@@ -18,7 +18,6 @@ import (
 type shellExecuteOptions struct {
 	VaultServerURL string   `json:"vaultServerUrl,omitempty"`
 	VaultNamespace string   `json:"vaultNamespace,omitempty"`
-	IsOutputNeed   bool     `json:"isOutputNeed,omitempty"`
 	Sources        []string `json:"sources,omitempty"`
 }
 
@@ -107,8 +106,7 @@ func ShellExecuteCommand() *cobra.Command {
 
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
-	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The vault namespace that should be used (optional)")
-	cmd.Flags().BoolVar(&stepConfig.IsOutputNeed, "isOutputNeed", true, "The flag indicates whether to output the script stream into output")
+	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", `true`, "The vault namespace that should be used (optional)")
 	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
 
 	cmd.MarkFlagRequired("vaultServerUrl")
@@ -141,16 +139,7 @@ func shellExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultNamespace"),
-					},
-					{
-						Name:        "isOutputNeed",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
+						Default:     `true`,
 					},
 					{
 						Name:        "sources",

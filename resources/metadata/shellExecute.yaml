@@ -22,13 +22,6 @@ spec:
           - STAGES
           - STEPS
         description: The vault namespace that should be used (optional)
-      - name: isOutputNeed
-        type: bool
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        description: The flag indicates whether to output the script stream into output
         default: true
       - name: sources
         type: "[]string"

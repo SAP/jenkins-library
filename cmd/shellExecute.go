@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"net/url"
 	"os/exec"
 	"strings"
 
 	"github.com/hashicorp/vault/api"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -58,7 +58,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	}
 	client, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("could not create vault client")
+		log.Entry().Info("could not create vault client:", err)
 	}
 	defer client.MustRevokeToken()
 
@@ -104,9 +104,9 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	// if all ok - try to run them one by one
 	for _, script := range e {
 		log.Entry().Info("starting running script:", script)
-		output, err := exec.Command(script).Output()
+		err = utils.RunExecutable(script)
 		if err != nil {
-			fmt.Println(err)
+			log.Entry().Errorln("starting running script:", script)
 		}
 
 		// if it's an exit error, then check the exit code
@@ -114,26 +114,19 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		// 0 - success
 		// 1 - fails the build (or > 2)
 		// 2 - build unstable - unsupported now
-		if config.IsOutputNeed {
-			//log.Entry().Println(string(output))
-			fmt.Println(string(output))
-		}
 		if ee, ok := err.(*exec.ExitError); ok {
 			switch ee.ExitCode() {
 			case 0:
 				// success
 				return nil
 			case 1:
-				fmt.Println(err)
-				// build was failed
-				return fmt.Errorf("build was failed: %w", err)
+				return errors.Wrap(err, "an error occurred while executing the script")
 			default:
-				// exit code 2 or >2 - build unstable
-				return fmt.Errorf("build unstable or something went wrong: %w", err)
+				// exit code 2 or >2 - unstable
+				return errors.Wrap(err, "script execution unstable or something went wrong")
 			}
 		} else if err != nil {
-			fmt.Println(err)
-			return err
+			return errors.Wrap(err, "script execution error occurred")
 		}
 	}
 
