@@ -2,11 +2,13 @@ package aakaas
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -33,14 +35,14 @@ type jsonTargetVector struct {
 
 // TargetVector : TargetVector desribes a deployble state of an ABAP product version
 type TargetVector struct {
-	ID             string             `json:"Id"`
-	ProductName    string             `json:"ProductName"`
-	ProductVersion string             `json:"ProductVersion"`
-	SpsLevel       string             `json:"SpsLevel"`
-	PatchLevel     string             `json:"PatchLevel"`
-	Status         TargetVectorStatus `json:"Status"`
-	PublishStatus  TargetVectorStatus `json:"PublishStatus"`
-	Content        TargetVectorCVs    `json:"Content"`
+	ID             string          `json:"Id"`
+	ProductName    string          `json:"ProductName"`
+	ProductVersion string          `json:"ProductVersion"`
+	SpsLevel       string          `json:"SpsLevel"`
+	PatchLevel     string          `json:"PatchLevel"`
+	Status         string          `json:"Status"`
+	PublishStatus  string          `json:"PublishStatus"`
+	Content        TargetVectorCVs `json:"Content"`
 }
 
 // TargetVectorCV : deployable state of an software Component Version as part of an TargetVector
@@ -154,14 +156,18 @@ func (tv *TargetVector) GetTargetVector(conn *abapbuild.Connector) error {
 
 // PollForStatus : Poll AAKaaS until final PublishStatus reached and check if desired Status was reached
 func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus TargetVectorStatus) error {
-	timeout := time.After(conn.MaxRuntimeInMinutes)
-	ticker := time.Tick(conn.PollIntervalsInSeconds)
+	timeout := time.After(conn.MaxRuntime)
+	ticker := time.Tick(conn.PollInterval)
 	for {
 		select {
 		case <-timeout:
 			return errors.New("Timed out (AAKaaS target Vector Status change)")
 		case <-ticker:
-			tv.GetTargetVector(conn)
+			log.Entry().Info("tick")
+			if err := tv.GetTargetVector(conn); err != nil {
+				return errors.Wrap(err, "Getting TargetVector status during polling resulted in an error")
+			}
+			log.Entry().Info("TV PS > " + string(tv.PublishStatus))
 			switch TargetVectorStatus(tv.PublishStatus) {
 			case TargetVectorPublishStatusRunning:
 				continue
@@ -173,7 +179,148 @@ func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus Ta
 				}
 			case TargetVectorPublishStatusError:
 				return errors.New("Publishing of Targetvector " + tv.ID + " failed in AAKaaS")
+			default:
+				return errors.New("Polling returned invalid TargetVectorPublishStatus: " + string(tv.PublishStatus))
 			}
 		}
 	}
+}
+
+/****************
+ Mock Client Data
+****************/
+
+var AAKaaSHead = abapbuild.MockData{
+	Method: `HEAD`,
+	Url:    `/odata/aas_ocs_package`,
+	Body: `<?xml version="1.0"?>
+	<HTTP_BODY/>`,
+	StatusCode: 200,
+	Header:     http.Header{"x-csrf-token": {"HRfJP0OhB9C9mHs2RRqUzw=="}},
+}
+
+var AAKaaSTVPublishTestPost = abapbuild.MockData{
+	Method: `POST`,
+	Url:    `/odata/aas_ocs_package/PublishTargetVector?Id='W7Q00207512600000353'&Scope='T'`,
+	Body: `{
+		"d": {
+			"Id": "W7Q00207512600000353",
+			"Vendor": "0000029218",
+			"ProductName": "/DRNMSPC/PRD01",
+			"ProductVersion": "0001",
+			"SpsLevel": "0000",
+			"PatchLevel": "0000",
+			"Status": "G",
+			"PublishStatus": "R"
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var AAKaaSTVPublishProdPost = abapbuild.MockData{
+	Method: `POST`,
+	Url:    `/odata/aas_ocs_package/PublishTargetVector?Id='W7Q00207512600000353'&Scope='P'`,
+	Body: `{
+		"d": {
+			"Id": "W7Q00207512600000353",
+			"Vendor": "0000029218",
+			"ProductName": "/DRNMSPC/PRD01",
+			"ProductVersion": "0001",
+			"SpsLevel": "0000",
+			"PatchLevel": "0000",
+			"Status": "G",
+			"PublishStatus": "R"
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var AAKaaSGetTVPublishRunning = abapbuild.MockData{
+	Method: `GET`,
+	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
+	Body: `{
+		"d": {
+			"Id": "W7Q00207512600000353",
+			"Vendor": "0000029218",
+			"ProductName": "/DRNMSPC/PRD01",
+			"ProductVersion": "0001",
+			"SpsLevel": "0000",
+			"PatchLevel": "0000",
+			"Status": "G",
+			"PublishStatus": "R"
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var AAKaaSGetTVPublishTestSuccess = abapbuild.MockData{
+	Method: `GET`,
+	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
+	Body: `{
+		"d": {
+			"Id": "W7Q00207512600000353",
+			"Vendor": "0000029218",
+			"ProductName": "/DRNMSPC/PRD01",
+			"ProductVersion": "0001",
+			"SpsLevel": "0000",
+			"PatchLevel": "0000",
+			"Status": "T",
+			"PublishStatus": "S"
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var AAKaaSGetTVPublishProdSuccess = abapbuild.MockData{
+	Method: `GET`,
+	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
+	Body: `{
+		"d": {
+			"Id": "W7Q00207512600000353",
+			"Vendor": "0000029218",
+			"ProductName": "/DRNMSPC/PRD01",
+			"ProductVersion": "0001",
+			"SpsLevel": "0000",
+			"PatchLevel": "0000",
+			"Status": "P",
+			"PublishStatus": "S"
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var AAKaaSTVCreatePost = abapbuild.MockData{
+	Method: `POST`,
+	Url:    `/odata/aas_ocs_package/TargetVectorSet`,
+	Body: `{
+		"d": {
+			"Id": "W7Q00207512600000262",
+			"Vendor": "0000203069",
+			"ProductName": "/DRNMSPC/PRD01",
+			"ProductVersion": "0001",
+			"SpsLevel": "0000",
+			"PatchLevel": "0000",
+			"Status": "G",
+			"Content": {
+				"results": [
+					{
+						"Id": "W7Q00207512600000262",
+						"ScName": "/DRNMSPC/COMP01",
+						"ScVersion": "0001",
+						"DeliveryPackage": "SAPK-001AAINDRNMSPC",
+						"SpLevel": "0000",
+						"PatchLevel": "0000"
+					}
+				]
+			}
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var templateMockData = abapbuild.MockData{
+	Method:     `GET`,
+	Url:        ``,
+	Body:       ``,
+	StatusCode: 200,
 }

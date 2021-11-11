@@ -1,7 +1,6 @@
 package aakaas
 
 import (
-	"net/http"
 	"testing"
 	"time"
 
@@ -82,8 +81,8 @@ func TestTargetVectorGet(t *testing.T) {
 		err := targetVector.GetTargetVector(conn)
 		//assert
 		assert.NoError(t, err)
-		assert.Equal(t, TargetVectorPublishStatusSuccess, targetVector.PublishStatus)
-		assert.Equal(t, TargetVectorStatusTest, targetVector.Status)
+		assert.Equal(t, TargetVectorPublishStatusSuccess, TargetVectorStatus(targetVector.PublishStatus))
+		assert.Equal(t, TargetVectorStatusTest, TargetVectorStatus(targetVector.Status))
 	})
 	t.Run("Error Get", func(t *testing.T) {
 		//arrange
@@ -101,11 +100,12 @@ func TestTargetVectorPollForStatus(t *testing.T) {
 	//arrange global
 	targetVector := new(TargetVector)
 	conn := new(abapbuild.Connector)
-	conn.MaxRuntimeInMinutes = time.Duration(1 * time.Second)
-	conn.PollIntervalsInSeconds = time.Duration(50 * time.Microsecond)
+	conn.MaxRuntime = time.Duration(1 * time.Second)
+	conn.PollInterval = time.Duration(1 * time.Microsecond)
 
 	t.Run("Normal Poll", func(t *testing.T) {
 		//arrange
+		targetVector.ID = "W7Q00207512600000353"
 		mc := abapbuild.NewMockClient()
 		mc.AddData(AAKaaSGetTVPublishRunning)
 		mc.AddData(AAKaaSGetTVPublishTestSuccess)
@@ -117,112 +117,64 @@ func TestTargetVectorPollForStatus(t *testing.T) {
 	})
 }
 
-/****************
- Mock Client Data
-****************/
+func TestTargetVectorCreate(t *testing.T) {
+	//arrange global
+	targetVector := new(TargetVector)
+	conn := new(abapbuild.Connector)
 
-var AAKaaSHead = abapbuild.MockData{
-	Method: `HEAD`,
-	Url:    `/odata/aas_ocs_package`,
-	Body: `<?xml version="1.0"?>
-	<HTTP_BODY/>`,
-	StatusCode: 200,
-	Header:     http.Header{"x-csrf-token": {"HRfJP0OhB9C9mHs2RRqUzw=="}},
+	addonDescriptor := abaputils.AddonDescriptor{
+		AddonProduct:    "dummy",
+		AddonVersion:    "dummy",
+		AddonSpsLevel:   "dummy",
+		AddonPatchLevel: "dummy",
+		TargetVectorID:  "dummy",
+		Repositories: []abaputils.Repository{
+			{
+				Name:        "dummy",
+				Version:     "dummy",
+				SpLevel:     "dummy",
+				PatchLevel:  "dummy",
+				PackageName: "dummy",
+			},
+		},
+	}
+
+	t.Run("Create Success", func(t *testing.T) {
+		//arrange
+		mc := abapbuild.NewMockClient()
+		mc.AddData(AAKaaSHead)
+		mc.AddData(AAKaaSTVCreatePost)
+		errInitConn := conn.InitAAKaaS("", "dummyUser", "dummyPassword", &mc)
+		assert.NoError(t, errInitConn)
+
+		errInitTV := targetVector.InitNew(&addonDescriptor)
+		assert.NoError(t, errInitTV)
+		//act
+		err := targetVector.CreateTargetVector(conn)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "W7Q00207512600000262", targetVector.ID)
+	})
 }
 
-var AAKaaSPublishTestPost = abapbuild.MockData{
-	Method: `POST`,
-	Url:    `/odata/aas_ocs_package/PublishTargetVector?Id='W7Q00207512600000353'&Scope='T'`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "G",
-			"PublishStatus": "R"
-		}
-	}`,
-	StatusCode: 200,
-}
+func TestTargetVectorPublish(t *testing.T) {
+	//arrange global
+	targetVector := new(TargetVector)
+	conn := new(abapbuild.Connector)
 
-var AAKaaSPublishProdPost = abapbuild.MockData{
-	Method: `POST`,
-	Url:    `/odata/aas_ocs_package/PublishTargetVector?Id='W7Q00207512600000353'&Scope='P'`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "G",
-			"PublishStatus": "R"
-		}
-	}`,
-	StatusCode: 200,
-}
+	t.Run("Publish Test", func(t *testing.T) {
+		//arrange
+		targetVector.ID = "W7Q00207512600000353"
+		mc := abapbuild.NewMockClient()
+		mc.AddData(AAKaaSHead)
+		mc.AddData(AAKaaSTVPublishTestPost)
+		errInitConn := conn.InitAAKaaS("", "dummyUser", "dummyPassword", &mc)
+		assert.NoError(t, errInitConn)
 
-var AAKaaSGetTVPublishRunning = abapbuild.MockData{
-	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "G",
-			"PublishStatus": "R"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var AAKaaSGetTVPublishTestSuccess = abapbuild.MockData{
-	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "T",
-			"PublishStatus": "S"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var AAKaaSGetTVPublishProdSuccess = abapbuild.MockData{
-	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "P",
-			"PublishStatus": "S"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var templateMockData = abapbuild.MockData{
-	Method:     `GET`,
-	Url:        ``,
-	Body:       ``,
-	StatusCode: 200,
+		//act
+		err := targetVector.PublishTargetVector(conn, TargetVectorStatusTest)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, string(TargetVectorPublishStatusRunning), targetVector.PublishStatus)
+	})
 }

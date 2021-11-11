@@ -38,8 +38,8 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
 		return err
 	}
-	conn.MaxRuntimeInMinutes = maxRuntimeInMinutes
-	conn.PollIntervalsInSeconds = pollIntervalsInSeconds
+	conn.MaxRuntime = maxRuntimeInMinutes
+	conn.PollInterval = pollIntervalsInSeconds
 
 	addonDescriptor := new(abaputils.AddonDescriptor)
 	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {

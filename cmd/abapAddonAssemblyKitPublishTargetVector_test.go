@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"encoding/json"
-	"net/http"
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
@@ -28,10 +28,10 @@ func TestPublishTargetVectorStep(t *testing.T) {
 	t.Run("step success prod", func(t *testing.T) {
 		//arrange
 		mc := abapbuild.NewMockClient()
-		mc.AddData(AAKaaSHead)
-		mc.AddData(AAKaaSPublishProdPost)
-		mc.AddData(AAKaaSGetTVPublishRunning)
-		mc.AddData(AAKaaSGetTVPublishProdSuccess)
+		mc.AddData(aakaas.AAKaaSHead)
+		mc.AddData(aakaas.AAKaaSTVPublishProdPost)
+		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
+		mc.AddData(aakaas.AAKaaSGetTVPublishProdSuccess)
 
 		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
@@ -43,10 +43,10 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		//arrange
 		config.TargetVectorScope = "T"
 		mc := abapbuild.NewMockClient()
-		mc.AddData(AAKaaSHead)
-		mc.AddData(AAKaaSPublishTestPost)
-		mc.AddData(AAKaaSGetTVPublishRunning)
-		mc.AddData(AAKaaSGetTVPublishTestSuccess)
+		mc.AddData(aakaas.AAKaaSHead)
+		mc.AddData(aakaas.AAKaaSTVPublishTestPost)
+		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
+		mc.AddData(aakaas.AAKaaSGetTVPublishTestSuccess)
 		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
 		//assert
@@ -74,114 +74,4 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})
-}
-
-/************
- Mock Client
-************/
-
-var AAKaaSHead = abapbuild.MockData{
-	Method: `HEAD`,
-	Url:    `/odata/aas_ocs_package`,
-	Body: `<?xml version="1.0"?>
-	<HTTP_BODY/>`,
-	StatusCode: 200,
-	Header:     http.Header{"x-csrf-token": {"HRfJP0OhB9C9mHs2RRqUzw=="}},
-}
-
-var AAKaaSPublishTestPost = abapbuild.MockData{
-	Method: `POST`,
-	Url:    `/odata/aas_ocs_package/PublishTargetVector?Id='W7Q00207512600000353'&Scope='T'`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "G",
-			"PublishStatus": "R"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var AAKaaSPublishProdPost = abapbuild.MockData{
-	Method: `POST`,
-	Url:    `/odata/aas_ocs_package/PublishTargetVector?Id='W7Q00207512600000353'&Scope='P'`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "G",
-			"PublishStatus": "R"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var AAKaaSGetTVPublishRunning = abapbuild.MockData{
-	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "G",
-			"PublishStatus": "R"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var AAKaaSGetTVPublishTestSuccess = abapbuild.MockData{
-	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "T",
-			"PublishStatus": "S"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var AAKaaSGetTVPublishProdSuccess = abapbuild.MockData{
-	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/TargetVectorSet('W7Q00207512600000353')`,
-	Body: `{
-		"d": {
-			"Id": "W7Q00207512600000353",
-			"Vendor": "0000029218",
-			"ProductName": "/DRNMSPC/PRD01",
-			"ProductVersion": "0001",
-			"SpsLevel": "0000",
-			"PatchLevel": "0000",
-			"Status": "P",
-			"PublishStatus": "S"
-		}
-	}`,
-	StatusCode: 200,
-}
-
-var templateMockData = abapbuild.MockData{
-	Method:     `GET`,
-	Url:        ``,
-	Body:       ``,
-	StatusCode: 200,
 }
