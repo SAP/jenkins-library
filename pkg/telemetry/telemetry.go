@@ -166,6 +166,7 @@ func (t *Telemetry) sendCustom() {
 			}
 		}
 
+		log.Entry().Debugf("Sending the following payload: %v", payload)
 		resp, err := customClient.SendRequest(http.MethodPost, t.CustomReportingDsn, bytes.NewBuffer(payload), nil, nil)
 
 		if resp != nil {
