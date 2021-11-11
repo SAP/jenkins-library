@@ -135,6 +135,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		}
 	}
 
+	log.Entry().Infof("creating build settings information")
 	builSettingsErr := createMavenBuildSettingsInfo(config, commonPipelineEnvironment)
 
 	if builSettingsErr != nil {
@@ -191,6 +192,8 @@ func createMavenBuildSettingsInfo(config *mavenBuildOptions, commonPipelineEnvir
 			commonPipelineEnvironment.custom.buildSettingsInfo = string(jsonResult)
 		}
 	}
+
+	log.Entry().Infof("build settings infomration successfully created at '%v", commonPipelineEnvironment.custom.buildSettingsInfo)
 
 	return nil
 
