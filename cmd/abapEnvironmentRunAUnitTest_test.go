@@ -53,7 +53,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="testSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:set xsi:type="testSet"><osl:package name="TestPackage" includeSubpackages="false"/><osl:package name="TestObject" includeSubpackages="CLAS"/></osl:set></osl:objectSet>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="testSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:set xsi:type="testSet"><osl:package name="TestPackage" includeSubpackages="false"/><osl:object name="TestObject" type="CLAS"/></osl:set></osl:objectSet>`
 
 		var err error
 		var config AUnitConfig
@@ -306,24 +306,6 @@ func TestGetResultAUnitRun(t *testing.T) {
 
 func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 	t.Parallel()
-
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-		/*
-			t.Parallel()
-			// init
-			config := abapEnvironmentRunAUnitTestOptions{}
-
-			utils := newAbapEnvironmentRunAUnitTestTestsUtils()
-			utils.AddFile("file.txt", []byte("dummy content"))
-
-			// test
-			err := runAbapEnvironmentRunAUnitTest(&config, nil, nil, utils)
-
-			// assert
-			assert.NoError(t, err)
-		*/
-	})
 
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
 		t.Parallel()
