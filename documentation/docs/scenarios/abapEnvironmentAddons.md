@@ -3,8 +3,7 @@
 !!! caution "Current limitations"
     gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
-
-!!! caution Required project "Piper" library version
+!!! caution "Required project "Piper" library version"
     SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
 
 ## Introduction
