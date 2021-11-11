@@ -131,10 +131,4 @@ objectset:
         package:
           - name: MY_PACKAGE
             includesubpackages: false
-      - type: flatObjectSet
-        object:
-        - name: CL_MY_CLASS
-          type: CLAS
-        - name: IF_MY_INTERFACE
-          type: INTF
 ```
