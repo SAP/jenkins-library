@@ -12,7 +12,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Deletes a SAP Cloud Platform ABAP Environment system via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
     /** If set to true, a confirmation is required to delete the system */
-    'confirmDeletion'
+    'confirmDeletion',
+    /** If set to true, the system is never deleted */
+    'debug'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -29,6 +31,7 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('confirmDeletion', true)
+        .addIfEmpty('debug', false)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
@@ -40,7 +43,9 @@ void call(Map parameters = [:]) {
         if (config.confirmDeletion) {
             input message: "Add-on product was installed successfully? Once you proceed, the test system will be deleted."
         }
-        cloudFoundryDeleteService script: parameters.script
+        if (!config.debug) {
+            cloudFoundryDeleteService script: parameters.script
+        }
     }
 
 }
