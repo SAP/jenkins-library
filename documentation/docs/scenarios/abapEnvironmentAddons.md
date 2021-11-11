@@ -3,7 +3,7 @@
 !!! caution "Current limitations"
     gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
-!!! caution Required project "Piper" library version
+!!! caution "Required project "Piper" library version"
     SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
 
 ## Introduction
@@ -203,6 +203,11 @@ Invalid increase:
 - 2.0.0 to 2.0.2 (version 2.0.1 is missing; therefore, a patch level is missing)
 - 2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)
 - 2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)
+
+Technically, the allowed number range for add-on product version and software component version is 1.0.0 to 9999.9999.9999.
+
+The support package level of software component version can only go up until 369 because of technical limitations.
+For the patch level, there is a technical limit of 36³, limited to 9999.
 
 ### Example
 
