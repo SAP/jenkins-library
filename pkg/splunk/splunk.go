@@ -119,26 +119,6 @@ type MonitoringData struct {
 	GitRepository   string `json:"GitRepository,omitempty"`
 }
 
-//// MonitoringData definition for monitoring
-//type PipelineData struct {
-//	PipelineUrlHash     string `json:"PipelineUrlHash,omitempty"`
-//	BuildUrlHash        string `json:"BuildUrlHash,omitempty"`
-//	StepName            string `json:"StepName,omitempty"`
-//	ExitCode            string `json:"ExitCode,omitempty"`
-//	Duration            string `json:"Duration,omitempty"`
-//	ErrorCode           string `json:"ErrorCode,omitempty"`
-//	ErrorCategory       string `json:"ErrorCategory,omitempty"`
-//	CorrelationID       string `json:"CorrelationID,omitempty"`
-//	CommitHash          string `json:"CommitHash,omitempty"`
-//	Branch              string `json:"Branch,omitempty"`
-//	GitOwner            string `json:"GitOwner,omitempty"`
-//	GitRepository       string `json:"GitRepository,omitempty"`
-//	Orchestrator        string `json:"Orchestrator,omitempty"`
-//	OrchestratorVersion string `json:"OrchestratorVersion,omitempty"`
-//	PipelineStartTime   string `json:"PipelineStartTime,omitempty"`
-//	LastErrorCode       string `json:"LastErrorCode,omitempty"`
-//}
-
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 
 	return MonitoringData{
@@ -158,28 +138,6 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	}
 }
 
-//func (s *Splunk) prepareTelemetryPipelineData(telemetryData telemetry.Data) PipelineData {
-//
-//	return PipelineData{
-//		PipelineUrlHash:     telemetryData.PipelineURLHash,
-//		BuildUrlHash:        telemetryData.BuildURLHash,
-//		StepName:            telemetryData.BaseData.StepName,
-//		ExitCode:            telemetryData.CustomData.ErrorCode,
-//		Duration:            telemetryData.CustomData.Duration,
-//		ErrorCode:           telemetryData.CustomData.ErrorCode,
-//		ErrorCategory:       telemetryData.CustomData.ErrorCategory,
-//		CorrelationID:       s.correlationID,
-//		CommitHash:          readCommonPipelineEnvironment("git/headCommitId"),
-//		Branch:              readCommonPipelineEnvironment("git/branch"),
-//		GitOwner:            readCommonPipelineEnvironment("github/owner"),
-//		GitRepository:       readCommonPipelineEnvironment("github/repository"),
-//		Orchestrator:        telemetryData.CustomData.Custom1,
-//		OrchestratorVersion: telemetryData.CustomData.Custom2,
-//		PipelineStartTime:   telemetryData.CustomData.Custom3,
-//		LastErrorCode:       telemetryData.CustomData.Custom4,
-//	}
-//}
-
 type Event struct {
 	Messages  []log.Message  `json:"messages,omitempty"`  // messages
 	Telemetry MonitoringData `json:"telemetry,omitempty"` // telemetryData
@@ -194,7 +152,6 @@ type Details struct {
 
 func (s *Splunk) SendPipelineStatus(pipelineTelemetryData telemetry.PipelineTelemetry, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
-	//telemetryData := s.prepareTelemetryPipelineData(pipelineTelemetryData)
 
 	readLogFile := string(*logFile)
 	splitted := strings.Split(readLogFile, "\n")
