@@ -44,9 +44,11 @@ func main() {
 	var generateStageConfig bool
 	var stageMetadataPath string
 	var stageTargetPath string
+	var relativeStepsPath string
 	flag.BoolVar(&generateStageConfig, "generateStageConfig", false, "Create stage documentation instead of step documentation.")
 	flag.StringVar(&stageMetadataPath, "stageMetadataPath", "./resources/com.sap.piper/pipeline/stageDefaults.yml", "The file containing the stage metadata. Default points to \\'./resources/com.sap.piper/pipeline/stageDefaults.yml\\'.")
 	flag.StringVar(&stageTargetPath, "stageTargetPath", "./documentation/docs/stages/", "The target path for the generated stage documentation. Default points to \\'./documentation/docs/stages/\\'.")
+	flag.StringVar(&relativeStepsPath, "relativeStepsPath", "../../steps", "The relative path from stages to steps")
 
 	flag.Parse()
 
@@ -55,9 +57,10 @@ func main() {
 		fmt.Println("Generating STAGE documentation")
 		fmt.Println("using Metadata:", stageMetadataPath)
 		fmt.Println("using stage target directory:", stageTargetPath)
+		fmt.Println("using relative steps path:", relativeStepsPath)
 
 		utils := &piperutils.Files{}
-		err := generator.GenerateStageDocumentation(stageMetadataPath, stageTargetPath, utils)
+		err := generator.GenerateStageDocumentation(stageMetadataPath, stageTargetPath, relativeStepsPath, utils)
 		checkError(err)
 
 	} else {
