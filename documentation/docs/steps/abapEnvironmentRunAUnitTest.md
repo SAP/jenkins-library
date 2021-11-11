@@ -85,7 +85,7 @@ The following section contains an example of an `aUnitConfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This repository containing the `Jenkinsfile` must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
 You can specify an object set containing the objects that should be checked. These can be for example packages, classes or transport requests containing test classes that can be executed. This must be in the same format as below example for a `aUnitConfig.yml` file.
-Note that if you specify a package inside a packageSet to be checked for each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
+Note that if you specify a package inside a packageSet to be checked for each package that has to be checked you can configure if you want the subpackages to be included in checks or not. We recommend you to specify each development package you want to be checked as it is not possible to specify structure packages within the `aUnitConfig.yml` file. You can specify complete development packages using the `includesubpackages: false` parameter.
 
 See below example for an `aUnitConfig.yml` file containing a package to be checked:
 
