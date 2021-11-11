@@ -19,6 +19,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
+// ToDo : move the struct to a slim new buildSettings Package in future
 type BuildSettingsInfo struct {
 	Profiles                    []string `json:"profiles,omitempty"`
 	Publish                     bool     `json:"publish,omitempty"`
@@ -27,11 +28,12 @@ type BuildSettingsInfo struct {
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 }
 
+// ToDo : move the struct to a slim new buildSettings Package in future
 type BuildSettings struct {
 	MavenBuild  []BuildSettingsInfo `json:"mavenBuild,omitempty"`
 	NpmBuild    []BuildSettingsInfo `json:"npmBuild,omitempty"`
-	DockerBuild []BuildSettingsInfo `json:"npmBuild,omitempty"`
-	MtaBuild    []BuildSettingsInfo `json:"npmBuild,omitempty"`
+	DockerBuild []BuildSettingsInfo `json:"dockerBuild,omitempty"`
+	MtaBuild    []BuildSettingsInfo `json:"mtaBuild,omitempty"`
 }
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
