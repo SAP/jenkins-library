@@ -32,6 +32,7 @@ type mavenBuildOptions struct {
 	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
 	Publish                         bool     `json:"publish,omitempty"`
 	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty"`
+	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 }
 
 // MavenBuildCommand This step will install the maven project into the local maven repository.
@@ -137,6 +138,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures maven to run the deploy plugin to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.JavaCaCertFilePath, "javaCaCertFilePath", os.Getenv("PIPER_javaCaCertFilePath"), "path to the cacerts file used by Java. When maven publish is set to True and customTlsCertificateLinks (to deploy the artifact to a repository with a self signed cert) are provided to trust the self signed certs, Piper will extend the existing Java cacerts to include the new self signed certs. if not provided Piper will search for the cacerts in $JAVA_HOME/jre/lib/security/cacerts")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that can be later used for compliance related processes.")
 
 }
 
@@ -333,6 +335,20 @@ func mavenBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/javaCaCertFilePath"}},
 						Default:     os.Getenv("PIPER_javaCaCertFilePath"),
+					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "maven/buildSettingsInfo"}},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 				},
 			},

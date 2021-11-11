@@ -176,6 +176,18 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/javaCaCertFilePath
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes. 
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/buildSettingsInfo
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

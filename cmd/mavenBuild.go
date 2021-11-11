@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path"
@@ -16,6 +17,14 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
+
+type mavenBuildSettingsInfo struct {
+	Profiles                    []string `json:"profiles,omitempty"`
+	Publish                     bool     `json:"publish,omitempty"`
+	CreateBOM                   bool     `json:"createBOM,omitempty"`
+	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+}
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	utils := maven.NewUtilsBundle()
@@ -120,7 +129,43 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
 	}
+
+	createMavenBuildSettingsInfo(config)
+
 	return err
+}
+
+func createMavenBuildSettingsInfo(config *mavenBuildOptions) error {
+	currentBuildSettingsInfo := mavenBuildSettingsInfo{
+		CreateBOM:                   config.CreateBOM,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		Profiles:                    config.Profiles,
+		Publish:                     config.Publish,
+	}
+	var jsonMap map[string]interface{}
+
+	if len(config.BuildSettingsInfo) > 0 {
+
+		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
+		if err != nil {
+			return errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
+		}
+
+		if mavenBuild, exist := jsonMap["mavenBuild"]; exist {
+			if _, ok := mavenBuild.([]interface{}); ok {
+				mavenBuild = append(mavenBuild, currentBuildSettingsInfo)
+			}
+		}
+
+	} else {
+		settings := jsonMap{
+			"mavenBuild" : [crecurrentBuildSettingsInfo]
+		}
+	}
+
+	return nil
+
 }
 
 func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils maven.Utils) (string, error) {
