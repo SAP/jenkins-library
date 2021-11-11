@@ -1,84 +1,125 @@
-package cmd
+package aakaas
 
 import (
-	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPublishTargetVectorStep(t *testing.T) {
-	//setup
-	config := abapAddonAssemblyKitPublishTargetVectorOptions{
-		TargetVectorScope: "P",
-		Username:          "dummy",
-		Password:          "dummy",
-	}
-	addonDescriptor := abaputils.AddonDescriptor{
-		TargetVectorID: "W7Q00207512600000353",
-	}
-	adoDesc, _ := json.Marshal(addonDescriptor)
-	config.AddonDescriptor = string(adoDesc)
-
-	t.Run("step success prod", func(t *testing.T) {
+func TestTargetVectorInitExisting(t *testing.T) {
+	t.Run("ID is set", func(t *testing.T) {
 		//arrange
-		mc := abapbuild.NewMockClient()
-		mc.AddData(AAKaaSHead)
-		mc.AddData(AAKaaSPublishProdPost)
-		mc.AddData(AAKaaSGetTVPublishRunning)
-		mc.AddData(AAKaaSGetTVPublishProdSuccess)
-
+		id := "dummyID"
+		targetVector := new(TargetVector)
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		targetVector.InitExisting(id)
 		//assert
-		assert.NoError(t, err, "Did not expect error")
-	})
-
-	t.Run("step success test", func(t *testing.T) {
-		//arrange
-		config.TargetVectorScope = "T"
-		mc := abapbuild.NewMockClient()
-		mc.AddData(AAKaaSHead)
-		mc.AddData(AAKaaSPublishTestPost)
-		mc.AddData(AAKaaSGetTVPublishRunning)
-		mc.AddData(AAKaaSGetTVPublishTestSuccess)
-		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
-		//assert
-		assert.NoError(t, err, "Did not expect error")
-	})
-
-	t.Run("step fail http", func(t *testing.T) {
-		//arrange
-		client := &abaputils.ClientMock{
-			Body:  "dummy",
-			Error: errors.New("dummy"),
-		}
-		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
-		//assert
-		assert.Error(t, err, "Must end with error")
-	})
-
-	t.Run("step fail no id", func(t *testing.T) {
-		//arrange
-		config := abapAddonAssemblyKitPublishTargetVectorOptions{}
-		mc := abapbuild.NewMockClient()
-		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
-		//assert
-		assert.Error(t, err, "Must end with error")
+		assert.Equal(t, id, targetVector.ID)
 	})
 }
 
-/************
- Mock Client
-************/
+func TestTargetVectorInitNew(t *testing.T) {
+	t.Run("Ensure values not initial", func(t *testing.T) {
+		//arrange
+		addonDescriptor := abaputils.AddonDescriptor{
+			AddonProduct:    "dummy",
+			AddonVersion:    "dummy",
+			AddonSpsLevel:   "dummy",
+			AddonPatchLevel: "dummy",
+			TargetVectorID:  "dummy",
+			Repositories: []abaputils.Repository{
+				{
+					Name:        "dummy",
+					Version:     "dummy",
+					SpLevel:     "dummy",
+					PatchLevel:  "dummy",
+					PackageName: "dummy",
+				},
+			},
+		}
+		targetVector := new(TargetVector)
+		//act
+		err := targetVector.InitNew(&addonDescriptor)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "dummy", targetVector.ProductVersion)
+	})
+	t.Run("Fail if values initial", func(t *testing.T) {
+		//arrange
+		addonDescriptor := abaputils.AddonDescriptor{}
+		targetVector := new(TargetVector)
+		//act
+		err := targetVector.InitNew(&addonDescriptor)
+		//assert
+		assert.Error(t, err)
+	})
+}
+
+func TestTargetVectorGet(t *testing.T) {
+	//arrange global
+	targetVector := new(TargetVector)
+	conn := new(abapbuild.Connector)
+
+	t.Run("Ensure error if ID is initial", func(t *testing.T) {
+		//arrange
+		targetVector.ID = ""
+		//act
+		err := targetVector.GetTargetVector(conn)
+		//assert
+		assert.Error(t, err)
+	})
+	t.Run("Normal Get Test Success", func(t *testing.T) {
+		//arrange
+		targetVector.ID = "W7Q00207512600000353"
+		mc := abapbuild.NewMockClient()
+		mc.AddData(AAKaaSGetTVPublishTestSuccess)
+		conn.Client = &mc
+		//act
+		err := targetVector.GetTargetVector(conn)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, TargetVectorPublishStatusSuccess, targetVector.PublishStatus)
+		assert.Equal(t, TargetVectorStatusTest, targetVector.Status)
+	})
+	t.Run("Error Get", func(t *testing.T) {
+		//arrange
+		targetVector.ID = "W7Q00207512600000353"
+		mc := abapbuild.NewMockClient()
+		conn.Client = &mc
+		//act
+		err := targetVector.GetTargetVector(conn)
+		//assert
+		assert.Error(t, err)
+	})
+}
+
+func TestTargetVectorPollForStatus(t *testing.T) {
+	//arrange global
+	targetVector := new(TargetVector)
+	conn := new(abapbuild.Connector)
+	conn.MaxRuntimeInMinutes = time.Duration(1 * time.Second)
+	conn.PollIntervalsInSeconds = time.Duration(50 * time.Microsecond)
+
+	t.Run("Normal Poll", func(t *testing.T) {
+		//arrange
+		mc := abapbuild.NewMockClient()
+		mc.AddData(AAKaaSGetTVPublishRunning)
+		mc.AddData(AAKaaSGetTVPublishTestSuccess)
+		conn.Client = &mc
+		//act
+		err := targetVector.PollForStatus(conn, TargetVectorStatusTest)
+		//assert
+		assert.NoError(t, err)
+	})
+}
+
+/****************
+ Mock Client Data
+****************/
 
 var AAKaaSHead = abapbuild.MockData{
 	Method: `HEAD`,

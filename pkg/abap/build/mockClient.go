@@ -12,16 +12,17 @@ import (
 
 // MockClient : use NewMockClient for construction
 type MockClient struct {
-	//Key = HTTP-Method + url
+	//Key = HTTP-Method + Url
 	Data map[string][]http.Response
 }
 
-type mockData struct {
-	method     string
-	url        string
-	body       string
-	statusCode int
-	header     http.Header
+// MockData: data for the mockClient
+type MockData struct {
+	Method     string
+	Url        string
+	Body       string
+	StatusCode int
+	Header     http.Header
 }
 
 // NewMockClient : Constructs a new Mock Client implementing piperhttp.Sender
@@ -32,52 +33,53 @@ func NewMockClient() MockClient {
 }
 
 // AddResponse : adds a response object to the mock lib
-func (mc *MockClient) AddResponse(method, url string, response http.Response) {
-	responseList, ok := mc.Data[method+url]
+func (mc *MockClient) AddResponse(Method, Url string, response http.Response) {
+	responseList, ok := mc.Data[Method+Url]
 	if !ok {
 		responseList = make([]http.Response, 0)
 	}
 	responseList = append(responseList, response)
 
-	mc.Data[method+url] = responseList
+	mc.Data[Method+Url] = responseList
 }
 
-// Add : adds a response with the given body and statusOK to the mock lib
-func (mc *MockClient) Add(method, url, body string) {
-	mc.AddResponse(method, url, http.Response{
+// Add : adds a response with the given Body and statusOK to the mock lib
+func (mc *MockClient) Add(Method, Url, Body string) {
+	mc.AddResponse(Method, Url, http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{},
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(Body))),
 	})
 }
 
 // AddBody : adds a response with the given data to the mock lib
-func (mc *MockClient) AddBody(method, url, body string, statusCode int, header http.Header) {
-	mc.AddResponse(method, url, http.Response{
-		StatusCode: statusCode,
+func (mc *MockClient) AddBody(Method, Url, Body string, StatusCode int, header http.Header) {
+	mc.AddResponse(Method, Url, http.Response{
+		StatusCode: StatusCode,
 		Header:     header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(Body))),
 	})
 }
 
-func (mc *MockClient) addData(data mockData) {
-	mc.AddResponse(data.method, data.url, http.Response{
-		StatusCode: data.statusCode,
-		Header:     data.header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(data.body))),
+// AddData : add the mock Data as response to the mock lib
+func (mc *MockClient) AddData(data MockData) {
+	mc.AddResponse(data.Method, data.Url, http.Response{
+		StatusCode: data.StatusCode,
+		Header:     data.Header,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(data.Body))),
 	})
 }
 
-func (mc *MockClient) getResponse(method, url string) (http.Response, bool) {
-	responseList, ok := mc.Data[method+url]
+func (mc *MockClient) getResponse(Method, Url string) (http.Response, bool) {
+	responseList, ok := mc.Data[Method+Url]
 	if !ok {
 		return http.Response{}, false
 	}
 	response := responseList[0]
 	if len(responseList) > 1 {
-		mc.Data[method+url] = responseList[1:]
+		mc.Data[Method+Url] = responseList[1:]
 	} else {
-		delete(mc.Data, method+url)
+		delete(mc.Data, Method+Url)
 	}
 
 	return response, true
@@ -87,17 +89,17 @@ func (mc *MockClient) getResponse(method, url string) (http.Response, bool) {
 func (mc *MockClient) SetOptions(opts piperhttp.ClientOptions) {}
 
 // SendRequest sets a HTTP response for a client mock
-func (mc *MockClient) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	response, ok := mc.getResponse(method, url)
+func (mc *MockClient) SendRequest(Method, Url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	response, ok := mc.getResponse(Method, Url)
 	if !ok {
-		//return nil, errors.New("No Mock data for given Method+URL")
-		return nil, fmt.Errorf("No Mock data for %s", method+url)
+		//return nil, errors.New("No Mock data for given Method+Url")
+		return nil, fmt.Errorf("No Mock data for %s", Method+Url)
 	}
 	return &response, nil
 }
 
 // DownloadFile : Empty file download
-func (mc *MockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (mc *MockClient) DownloadFile(Url, filename string, header http.Header, cookies []*http.Cookie) error {
 	return nil
 }
 
@@ -109,55 +111,55 @@ func (mc *MockClient) DownloadFile(url, filename string, header http.Header, coo
 func GetBuildMockClient() MockClient {
 	mc := NewMockClient()
 
-	mc.addData(buildHead)
-	mc.addData(buildPost)
-	mc.addData(buildGet1)
-	mc.addData(buildGet2)
-	mc.addData(buildGetTasks)
-	mc.addData(buildGetTask0Logs)
-	mc.addData(buildGetTask1Logs)
-	mc.addData(buildGetTask2Logs)
-	mc.addData(buildGetTask3Logs)
-	mc.addData(buildGetTask4Logs)
-	mc.addData(buildGetTask5Logs)
-	mc.addData(buildGetTask6Logs)
-	mc.addData(buildGetTask7Logs)
-	mc.addData(buildGetTask8Logs)
-	mc.addData(buildGetTask9Logs)
-	mc.addData(buildGetTask10Logs)
-	mc.addData(buildGetTask11Logs)
-	mc.addData(buildGetTask12Logs)
-	mc.addData(buildGetTask0Result)
-	mc.addData(buildGetTask1Result)
-	mc.addData(buildGetTask2Result)
-	mc.addData(buildGetTask3Result)
-	mc.addData(buildGetTask4Result)
-	mc.addData(buildGetTask5Result)
-	mc.addData(buildGetTask6Result)
-	mc.addData(buildGetTask7Result)
-	mc.addData(buildGetTask8Result)
-	mc.addData(buildGetTask9Result)
-	mc.addData(buildGetTask10Result)
-	mc.addData(buildGetTask11Result)
-	mc.addData(buildGetTask12Result)
-	mc.addData(buildGetTask11ResultMedia)
+	mc.AddData(buildHead)
+	mc.AddData(buildPost)
+	mc.AddData(buildGet1)
+	mc.AddData(buildGet2)
+	mc.AddData(buildGetTasks)
+	mc.AddData(buildGetTask0Logs)
+	mc.AddData(buildGetTask1Logs)
+	mc.AddData(buildGetTask2Logs)
+	mc.AddData(buildGetTask3Logs)
+	mc.AddData(buildGetTask4Logs)
+	mc.AddData(buildGetTask5Logs)
+	mc.AddData(buildGetTask6Logs)
+	mc.AddData(buildGetTask7Logs)
+	mc.AddData(buildGetTask8Logs)
+	mc.AddData(buildGetTask9Logs)
+	mc.AddData(buildGetTask10Logs)
+	mc.AddData(buildGetTask11Logs)
+	mc.AddData(buildGetTask12Logs)
+	mc.AddData(buildGetTask0Result)
+	mc.AddData(buildGetTask1Result)
+	mc.AddData(buildGetTask2Result)
+	mc.AddData(buildGetTask3Result)
+	mc.AddData(buildGetTask4Result)
+	mc.AddData(buildGetTask5Result)
+	mc.AddData(buildGetTask6Result)
+	mc.AddData(buildGetTask7Result)
+	mc.AddData(buildGetTask8Result)
+	mc.AddData(buildGetTask9Result)
+	mc.AddData(buildGetTask10Result)
+	mc.AddData(buildGetTask11Result)
+	mc.AddData(buildGetTask12Result)
+	mc.AddData(buildGetTask11ResultMedia)
 
 	return mc
 }
 
-var buildHead = mockData{
-	method: `HEAD`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV`,
-	body: `<?xml version="1.0"?>
-	<HTTP_BODY/>`,
-	statusCode: 200,
-	header:     http.Header{"x-csrf-token": {"HRfJP0OhB9C9mHs2RRqUzw=="}},
+var buildHead = MockData{
+	Method: `HEAD`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV`,
+	Body: `<?xml version="1.0"?>
+	<HTTP_Body/>`,
+	StatusCode: 200,
+	Header:     http.Header{"x-csrf-token": {"HRfJP0OhB9C9mHs2RRqUzw=="}},
 }
 
-var buildPost = mockData{
-	method: `POST`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/builds`,
-	body: `{
+var buildPost = MockData{
+	Method: `POST`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds`,
+	Body: `{
 	"d" : {
 		"__metadata" : {
 			"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
@@ -183,13 +185,13 @@ var buildPost = mockData{
 		}
 	}
 }`,
-	statusCode: 201,
+	StatusCode: 201,
 }
 
-var buildGet1 = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')`,
-	body: `{
+var buildGet1 = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')`,
+	Body: `{
 	"d" : {
 		"__metadata" : {
 			"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
@@ -216,13 +218,13 @@ var buildGet1 = mockData{
 		}
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGet2 = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')`,
-	body: `{
+var buildGet2 = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')`,
+	Body: `{
 	"d" : {
 		"__metadata" : {
 			"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
@@ -249,13 +251,13 @@ var buildGet2 = mockData{
 		}
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTasks = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks`,
-	body: `{
+var buildGetTasks = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks`,
+	Body: `{
 	"d" : {
 		"results" : [
 		{
@@ -573,13 +575,13 @@ var buildGetTasks = mockData{
 	]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask0Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/logs`,
-	body: `{
+var buildGetTask0Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/logs`,
+	Body: `{
 		"d" : {
 			"results" : [
 			{
@@ -907,13 +909,13 @@ var buildGetTask0Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask1Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=1)/logs`,
-	body: `{
+var buildGetTask1Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=1)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -933,25 +935,25 @@ var buildGetTask1Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask2Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=2)/logs`,
-	body: `{
+var buildGetTask2Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=2)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask3Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=3)/logs`,
-	body: `{
+var buildGetTask3Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=3)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -971,13 +973,13 @@ var buildGetTask3Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask4Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=4)/logs`,
-	body: `{
+var buildGetTask4Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=4)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1053,13 +1055,13 @@ var buildGetTask4Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask5Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=5)/logs`,
-	body: `{
+var buildGetTask5Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=5)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1093,13 +1095,13 @@ var buildGetTask5Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask6Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=6)/logs`,
-	body: `{
+var buildGetTask6Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=6)/logs`,
+	Body: `{
 	"d" : {
 			"results" : [
 			{
@@ -1133,13 +1135,13 @@ var buildGetTask6Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask7Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=7)/logs`,
-	body: `{
+var buildGetTask7Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=7)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1159,13 +1161,13 @@ var buildGetTask7Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask8Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=8)/logs`,
-	body: `{
+var buildGetTask8Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=8)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1185,13 +1187,13 @@ var buildGetTask8Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask9Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=9)/logs`,
-	body: `{
+var buildGetTask9Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=9)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1211,13 +1213,13 @@ var buildGetTask9Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask10Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=10)/logs`,
-	body: `{
+var buildGetTask10Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=10)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1251,13 +1253,13 @@ var buildGetTask10Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask11Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11)/logs`,
-	body: `{
+var buildGetTask11Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1277,13 +1279,13 @@ var buildGetTask11Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask12Logs = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/logs`,
-	body: `{
+var buildGetTask12Logs = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/logs`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1303,134 +1305,134 @@ var buildGetTask12Logs = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask0Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/results`,
-	body: `{
+var buildGetTask0Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/results`,
+	Body: `{
 	"d" : {
 		"results" : [
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask1Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=1)/results`,
-	body: `{
+var buildGetTask1Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=1)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask2Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=2)/results`,
-	body: `{
+var buildGetTask2Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=2)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask3Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=3)/results`,
-	body: `{
+var buildGetTask3Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=3)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask4Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=4)/results`,
-	body: `{
+var buildGetTask4Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=4)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask5Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=5)/results`,
-	body: `{
+var buildGetTask5Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=5)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask6Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=6)/results`,
-	body: `{
+var buildGetTask6Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=6)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask7Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=7)/results`,
-	body: `{
+var buildGetTask7Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=7)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask8Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=8)/results`,
-	body: `{
+var buildGetTask8Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=8)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask9Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=9)/results`,
-	body: `{
+var buildGetTask9Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=9)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask10Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=10)/results`,
-	body: `{
+var buildGetTask10Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=10)/results`,
+	Body: `{
 		"d" : {
 			"results" : [
 			]
 		}
 	}`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask11Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11)/results`,
-	body: `{
+var buildGetTask11Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11)/results`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1450,12 +1452,12 @@ var buildGetTask11Result = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
-var buildGetTask12Result = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
-	body: `{
+var buildGetTask12Result = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1475,13 +1477,13 @@ var buildGetTask12Result = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask12ResultOrig = mockData{
-	method: `GET`,
-	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
-	body: `{
+var buildGetTask12ResultOrig = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
+	Body: `{
 	"d" : {
 		"results" : [
 			{
@@ -1501,19 +1503,19 @@ var buildGetTask12ResultOrig = mockData{
 		]
 	}
 }`,
-	statusCode: 200,
+	StatusCode: 200,
 }
 
-var buildGetTask11ResultMedia = mockData{
-	method:     `GET`,
-	url:        `/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11,name='SAR_XML')/$value`,
-	body:       ``,
-	statusCode: 200,
+var buildGetTask11ResultMedia = MockData{
+	Method:     `GET`,
+	Url:        `/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11,name='SAR_XML')/$value`,
+	Body:       ``,
+	StatusCode: 200,
 }
 
-var template = mockData{
-	method:     `GET`,
-	url:        ``,
-	body:       ``,
-	statusCode: 200,
+var template = MockData{
+	Method:     `GET`,
+	Url:        ``,
+	Body:       ``,
+	StatusCode: 200,
 }
