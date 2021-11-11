@@ -274,7 +274,7 @@ func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string)
 				objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
 			}
 			for _, flatObjectSet := range t.FlatObjectSet {
-				objectSetString += `<osl:package name="` + flatObjectSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *&flatObjectSet.Type) + `"/>`
+				objectSetString += `<osl:object name="` + flatObjectSet.Name + `" type="` + fmt.Sprintf("%v", *&flatObjectSet.Type) + `"/>`
 			}
 			objectSetString += `</osl:set>`
 		}
