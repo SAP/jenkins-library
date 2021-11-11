@@ -453,9 +453,11 @@ type ObjectSet struct {
 //Set in form of packages and software components to be checked
 type Set struct {
 	//Set  []Set  `json:"set,omitempty"`
-	Type          string         `json:"type,omitempty"`
-	PackageSet    []AUnitPackage `json:"package,omitempty"`
-	FlatObjectSet []AUnitObject  `json:"object,omitempty"`
+	Type          string              `json:"type,omitempty"`
+	PackageSet    []AUnitPackage      `json:"package,omitempty"`
+	FlatObjectSet []AUnitFlatObject   `json:"object,omitempty"`
+	ComponentSet  []AUnitComponentSet `json:"component,omitempty"` // TO implement
+
 	/*FlatSet       []FlatObjectSet `json:"flatobjectset,omitempty"`
 	ObjectTypeSet []ObjectTypeSet `json:"objecttypeset,omitempty"`
 	ComponentSet  []ComponentSet  `json:"componentset,omitempty"`
@@ -469,9 +471,14 @@ type AUnitPackage struct {
 }
 
 //AUnitObject in form of packages and software components to be checked
-type AUnitObject struct {
+type AUnitFlatObject struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
+}
+
+//AUnitPackage in form of packages and software components to be checked
+type AUnitComponentSet struct {
+	Name string `json:"name,omitempty"`
 }
 
 //
