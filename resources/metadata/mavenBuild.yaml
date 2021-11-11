@@ -188,6 +188,13 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
+            type: "string"
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
