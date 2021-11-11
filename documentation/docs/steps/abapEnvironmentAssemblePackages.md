@@ -2,6 +2,11 @@
 
 ## ${docGenDescription}
 
+### Artifacts
+
+- package logs ({packagename}.zip)
+    This archive contains all relevant transport logs per assembled package which might be needed for detailed analysis in case of support requests or for audit purpose. For productive builds it might be advisable to store this file as well as the overall pipeline run logs in a revision proof manner. For every assembled package an respective zip archive with its related logs are created and archived as artifact.
+
 ## Prerequisites
 
 * A SAP BTP, ABAP environment system is available.
