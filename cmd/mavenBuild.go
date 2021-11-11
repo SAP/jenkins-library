@@ -19,7 +19,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
-type mavenBuildSettingsInfo struct {
+type BuildSettingsInfo struct {
 	Profiles                    []string `json:"profiles,omitempty"`
 	Publish                     bool     `json:"publish,omitempty"`
 	CreateBOM                   bool     `json:"createBOM,omitempty"`
@@ -27,8 +27,11 @@ type mavenBuildSettingsInfo struct {
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 }
 
-type buildSettings struct {
-	MavenBuild []mavenBuildSettingsInfo `json:mavenBuild`
+type BuildSettings struct {
+	MavenBuild  []BuildSettingsInfo `json:"mavenBuild,omitempty"`
+	NpmBuild    []BuildSettingsInfo `json:"npmBuild,omitempty"`
+	DockerBuild []BuildSettingsInfo `json:"npmBuild,omitempty"`
+	MtaBuild    []BuildSettingsInfo `json:"npmBuild,omitempty"`
 }
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
@@ -98,7 +101,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
-	log.Entry().Infof("creating build settings information")
+	log.Entry().Infof("creating build settings information...")
 	builSettingsErr := createMavenBuildSettingsInfo(config, commonPipelineEnvironment)
 
 	if builSettingsErr != nil {
@@ -146,7 +149,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 }
 
 func createMavenBuildSettingsInfo(config *mavenBuildOptions, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
-	currentBuildSettingsInfo := mavenBuildSettingsInfo{
+	currentBuildSettingsInfo := BuildSettingsInfo{
 		CreateBOM:                   config.CreateBOM,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
@@ -173,7 +176,6 @@ func createMavenBuildSettingsInfo(config *mavenBuildOptions, commonPipelineEnvir
 		}
 
 		newJsonMap, err := json.Marshal(&jsonMap)
-
 		if err != nil {
 			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
 		}
@@ -181,9 +183,9 @@ func createMavenBuildSettingsInfo(config *mavenBuildOptions, commonPipelineEnvir
 		commonPipelineEnvironment.custom.buildSettingsInfo = string(newJsonMap)
 
 	} else {
-		var settings []mavenBuildSettingsInfo
+		var settings []BuildSettingsInfo
 		settings = append(settings, currentBuildSettingsInfo)
-		jsonResult, err := json.Marshal(buildSettings{
+		jsonResult, err := json.Marshal(BuildSettings{
 			MavenBuild: settings,
 		})
 		if err != nil {
@@ -193,7 +195,7 @@ func createMavenBuildSettingsInfo(config *mavenBuildOptions, commonPipelineEnvir
 		}
 	}
 
-	log.Entry().Infof("build settings infomration successfully created at '%v", commonPipelineEnvironment.custom.buildSettingsInfo)
+	log.Entry().Infof("build settings infomration successfully created with '%v", commonPipelineEnvironment.custom.buildSettingsInfo)
 
 	return nil
 
