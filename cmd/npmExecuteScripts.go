@@ -75,6 +75,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 func createNpmBuildSettingsInfo(config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
 	currentBuildSettingsInfo := BuildSettingsInfo{
 		Publish:            config.Publish,
+		CreateBOM:          config.CreateBOM,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
 	}
 	var jsonMap map[string][]interface{}
@@ -86,9 +87,9 @@ func createNpmBuildSettingsInfo(config *npmExecuteScriptsOptions, commonPipeline
 			return errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
 		}
 
-		if mavenBuild, exist := jsonMap["npmBuild"]; exist {
-			if reflect.TypeOf(mavenBuild).Kind() == reflect.Slice {
-				jsonMap["npmBuild"] = append(mavenBuild, currentBuildSettingsInfo)
+		if npmBuild, exist := jsonMap["npmBuild"]; exist {
+			if reflect.TypeOf(npmBuild).Kind() == reflect.Slice {
+				jsonMap["npmBuild"] = append(npmBuild, currentBuildSettingsInfo)
 			}
 		} else {
 			var settings []interface{}

@@ -319,9 +319,9 @@ func createMtaBuildSettingsInfo(config mtaBuildOptions, commonPipelineEnvironmen
 			return errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
 		}
 
-		if mavenBuild, exist := jsonMap["mtaBuild"]; exist {
-			if reflect.TypeOf(mavenBuild).Kind() == reflect.Slice {
-				jsonMap["mtaBuild"] = append(mavenBuild, currentBuildSettingsInfo)
+		if mtaBuild, exist := jsonMap["mtaBuild"]; exist {
+			if reflect.TypeOf(mtaBuild).Kind() == reflect.Slice {
+				jsonMap["mtaBuild"] = append(mtaBuild, currentBuildSettingsInfo)
 			}
 		} else {
 			var settings []interface{}
