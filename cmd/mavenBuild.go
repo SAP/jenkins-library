@@ -98,6 +98,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
+	log.Entry().Infof("creating build settings information")
+	builSettingsErr := createMavenBuildSettingsInfo(config, commonPipelineEnvironment)
+
+	if builSettingsErr != nil {
+		log.Entry().Warnf("failed to create build settings info : ''%v", builSettingsErr)
+	}
+
 	if err == nil {
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")
@@ -133,13 +140,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
-	}
-
-	log.Entry().Infof("creating build settings information")
-	builSettingsErr := createMavenBuildSettingsInfo(config, commonPipelineEnvironment)
-
-	if builSettingsErr != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", builSettingsErr)
 	}
 
 	return err
