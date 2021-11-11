@@ -4,10 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/ghodss/yaml"
 )
 
 // DocuHelperData is used to transport the needed parameters and functions from the step generator to the docu generation.
@@ -224,4 +230,166 @@ func appendGeneralOptionsToParameters(stepData *config.StepData) {
 		Description: "verbose output",
 	}
 	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, verbose)
+}
+
+// GenerateStepDocumentation generates pipeline stage documentation based on pipeline configuration provided in a yaml file
+func GenerateStageDocumentation(stageMetadataPath, stageTargetPath string, utils piperutils.FileUtils) error {
+	if len(stageTargetPath) == 0 {
+		return fmt.Errorf("stageTargetPath cannot be empty")
+	}
+	if len(stageMetadataPath) == 0 {
+		return fmt.Errorf("stageMetadataPath cannot be empty")
+	}
+
+	if err := utils.MkdirAll(stageTargetPath, 0777); err != nil {
+		return fmt.Errorf("failed to create directory '%v': %w", stageTargetPath, err)
+	}
+
+	stageMetadataContent, err := utils.FileRead(stageMetadataPath)
+	if err != nil {
+		return fmt.Errorf("failed to read stage metadata file '%v': %w", stageMetadataPath, err)
+	}
+
+	stageRunConfig := config.RunConfigV1{}
+
+	err = yaml.Unmarshal(stageMetadataContent, &stageRunConfig.PipelineConfig)
+	if err != nil {
+		return fmt.Errorf("format of configuration is invalid %q: %w", stageMetadataContent, err)
+	}
+
+	err = createPipelineDocumentation(&stageRunConfig, stageTargetPath, utils)
+	if err != nil {
+		return fmt.Errorf("failed to create pipeline documentation: %w", err)
+	}
+
+	return nil
+}
+
+func createPipelineDocumentation(stageRunConfig *config.RunConfigV1, stageTargetPath string, utils piperutils.FileUtils) error {
+	if err := createPipelineOverviewDocumentation(stageRunConfig, stageTargetPath, utils); err != nil {
+		return fmt.Errorf("failed to create pipeline overview: %w", err)
+	}
+
+	if err := createPipelineStageDocumentation(stageRunConfig, stageTargetPath, utils); err != nil {
+		return fmt.Errorf("failed to create pipeline stage details: %w", err)
+	}
+
+	return nil
+}
+
+func createPipelineOverviewDocumentation(stageRunConfig *config.RunConfigV1, stageTargetPath string, utils piperutils.FileUtils) error {
+	overviewFileName := "overview.md"
+	overviewDoc := fmt.Sprintf("# %v\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName)
+	overviewDoc += fmt.Sprintf("%v\n\n", stageRunConfig.PipelineConfig.Metadata.Description)
+	overviewDoc += fmt.Sprintf("The %v comprises following stages\n\n", stageRunConfig.PipelineConfig.Metadata.Description)
+	for _, stage := range stageRunConfig.PipelineConfig.Spec.Stages {
+		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
+		overviewDoc += fmt.Sprintf("* [%v Stage](%v)", stage.DisplayName, stageFilePath)
+	}
+	overviewFilePath := filepath.Join(stageTargetPath, overviewFileName)
+	return utils.FileWrite(overviewFilePath, []byte(overviewDoc), 0666)
+}
+
+const stepConditionDetails = `
+`
+const overrulingStepActivation = `
+`
+
+func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageTargetPath string, utils piperutils.FileUtils) error {
+	for _, stage := range stageRunConfig.PipelineConfig.Spec.Stages {
+		stageDoc := fmt.Sprintf("# %v\n\n", stage.DisplayName)
+		stageDoc += fmt.Sprintf("%v\n\n", stage.Description)
+		stageDoc += "## Stage Content\n\nThis stage comprises following steps which are activated depending on your use-case/configuration:\n\n"
+
+		for i, step := range stage.Steps {
+			if i == 0 {
+				stageDoc += "| step | step description |"
+				stageDoc += "| ---- | ---------------- |"
+			}
+
+			orchestratorBadges := ""
+			for _, orchestrator := range step.Orchestrators {
+				orchestratorBadges += getBadge(orchestrator) + " "
+			}
+
+			stageDoc += fmt.Sprintf("| %v | %v%v |", step.Name, orchestratorBadges, step.Description)
+		}
+
+		stageDoc += "## Stage & Step Activation\n\nThis stage will be active in case one of following conditions are met:\n\n"
+		stageDoc += "* One of the steps is explicitly activated by using `<stepName>: true` in the stage configuration\n"
+		stageDoc += "* At least one of the step conditions is met and steps are not explicitly deactivated by using `<stepName>: false` in the stage configuration\n\n"
+
+		stageDoc += stepConditionDetails
+		stageDoc += overrulingStepActivation
+
+		stageDoc += "Following conditions apply for activation of steps contained in the stage:\n\n"
+
+		stageDoc += "| step | active if one of following conditions is met |\n"
+		stageDoc += "| ---- | -------------------------------------------- |\n"
+
+		// add step condition details
+		for _, step := range stage.Steps {
+			stageDoc += fmt.Sprintf("| %v | %v |\n", step.Name, getStepConditionDetails(step))
+		}
+
+		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
+		if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
+			return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
+		}
+
+	}
+	return nil
+}
+
+func getBadge(orchestrator string) string {
+	orchestratorOnly := strings.Title(strings.ToLower(orchestrator)) + " only"
+	urlPath := &url.URL{Path: orchestratorOnly}
+	orchestratorOnlyString := urlPath.String()
+
+	return fmt.Sprintf("[![%v](https://img.shields.io/badge/-%v-yellowgreen)](#)", orchestratorOnly, orchestratorOnlyString)
+}
+
+func getStepConditionDetails(step config.Step) string {
+	stepConditions := ""
+	for _, condition := range step.Conditions {
+		if condition.Config != nil && len(condition.Config) > 0 {
+			stepConditions += "<i>config:</i><ul>"
+			for param, activationValues := range condition.Config {
+				for _, activationValue := range activationValues {
+					stepConditions += fmt.Sprintf("<li>`%v`: `%v`</li>", param, activationValue)
+				}
+				// config condition only covers first entry
+				break
+			}
+			stepConditions += "</ul>"
+			continue
+		}
+
+		if len(condition.ConfigKey) > 0 {
+			stepConditions += fmt.Sprintf("<i>config key:</i><ul><li>`%v`</li></ul>", condition.ConfigKey)
+			continue
+		}
+
+		if len(condition.FilePattern) > 0 {
+			stepConditions += fmt.Sprintf("<i>file pattern:</i><ul><li>`%v`</li></ul>", condition.FilePattern)
+			continue
+		}
+
+		if len(condition.FilePatternFromConfig) > 0 {
+			stepConditions += fmt.Sprintf("<i>file pattern from config:</i><ul><li>`%v`</li></ul>", condition.FilePatternFromConfig)
+			continue
+		}
+
+		if condition.Inactive {
+			stepConditions += "<i>inactive by default</i> - activate explicitly"
+			continue
+		}
+
+		if len(condition.NpmScript) > 0 {
+			stepConditions += fmt.Sprintf("<i>npm script:</i><ul><li>`%v`</li></ul>", condition.NpmScript)
+			continue
+		}
+	}
+
+	return stepConditions
 }

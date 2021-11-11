@@ -94,13 +94,13 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 			return false, errors.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
 		}
 
+		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
 		for param, activationValues := range s.Config {
 			for _, activationValue := range activationValues {
 				if activationValue == config.Config[param] {
 					return true, nil
 				}
 			}
-			// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
 			return false, nil
 		}
 	}
