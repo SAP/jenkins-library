@@ -26,6 +26,7 @@ type BuildSettingsInfo struct {
 	CreateBOM                   bool     `json:"createBOM,omitempty"`
 	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	DefaultNpmRegistry          string   `json:"defaultNpmRegistry,omitempty"`
 }
 
 // ToDo : move the struct to a slim new buildSettings Package in future
