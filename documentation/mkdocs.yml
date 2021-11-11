@@ -51,7 +51,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
-        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckPV.md
+        - abapAddonAssemblyKitCheckPV: steps/abapAddonAssemblyKitCheckPV.md
         - abapAddonAssemblyKitCreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
         - abapAddonAssemblyKitPublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
         - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
