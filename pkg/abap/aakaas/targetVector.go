@@ -157,7 +157,7 @@ func (tv *TargetVector) GetTargetVector(conn *abapbuild.Connector) error {
 // PollForStatus : Poll AAKaaS until final PublishStatus reached and check if desired Status was reached
 func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus TargetVectorStatus) error {
 	timeout := time.After(conn.MaxRuntime)
-	ticker := time.Tick(conn.PollInterval)
+	ticker := time.Tick(conn.PollingInterval)
 	for {
 		select {
 		case <-timeout:

@@ -101,7 +101,7 @@ func TestTargetVectorPollForStatus(t *testing.T) {
 	targetVector := new(TargetVector)
 	conn := new(abapbuild.Connector)
 	conn.MaxRuntime = time.Duration(1 * time.Second)
-	conn.PollInterval = time.Duration(1 * time.Microsecond)
+	conn.PollingInterval = time.Duration(1 * time.Microsecond)
 
 	t.Run("Normal Poll", func(t *testing.T) {
 		//arrange

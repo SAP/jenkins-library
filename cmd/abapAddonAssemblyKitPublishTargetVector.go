@@ -21,25 +21,23 @@ func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishT
 	c.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
-	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
-	pollIntervalsInSeconds := time.Duration(30 * time.Second)
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitPublishTargetVector(&config, telemetryData, &client, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	err := runAbapAddonAssemblyKitPublishTargetVector(&config, telemetryData, &client, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervalInSeconds)*time.Second)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
 func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	maxRuntime time.Duration, pollingInterval time.Duration) error {
 
 	conn := new(abapbuild.Connector)
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
 		return err
 	}
-	conn.MaxRuntime = maxRuntimeInMinutes
-	conn.PollInterval = pollIntervalsInSeconds
+	conn.MaxRuntime = maxRuntime
+	conn.PollingInterval = pollingInterval
 
 	addonDescriptor := new(abaputils.AddonDescriptor)
 	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
