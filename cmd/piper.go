@@ -47,13 +47,19 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
-	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
+	SentryConfig          SentryConfiguration          `json:"sentry,omitempty"`
+	SplunkConfig          SplunkConfiguration          `json:"splunk,omitempty"`
+	CustomReportingConfig CustomReportingConfiguration `json:"customreporting,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
 type SentryConfiguration struct {
 	Dsn string `json:"dsn,omitempty"`
+}
+
+type CustomReportingConfiguration struct {
+	CustomReportingURL   string `json:"dsn,omitempty"`
+	CustomReportingToken string `json:"token,omitempty"`
 }
 
 // SplunkConfiguration defines the configuration options for the Splunk logging system
