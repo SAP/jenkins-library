@@ -178,11 +178,10 @@ The section “repositories” contains one or multiple software component versi
 Changing the `addonVersion` string does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on `addonVersion`, the existing delivery packages are reused for the new add-on product version.
 Only by changing the `version` of a software component, the build of a new delivery package with the latest changes is triggered.
 
-The `addonVersion` should be determined by synchronously to how the software components bundle is changed: In case the release version of a software component is changed, the release of the `addonVersion` should be changed. If the support package version of a software component is changed, support package version of the add-on should be changed. And if patch version of a software component, the patch version of the add-on should be adjusted.
+The `addonVersion` should be determined synchronously to how the software components bundle is changed: In case the release version of a software component is changed, the release of the `addonVersion` should be changed. If the support package version of a software component is changed, support package version of the add-on should be changed. And if patch version of a software component is changed, the patch version of the add-on should be adjusted.
 
 `branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component.
-
-The `branch` should only be changed while also changing release version or support package level of a software component. During creation of a patch version (CPK) the `branch` should remain the same as before, so that previous and current commit of the software component can be found in the same branch for comparison.
+The `branch` should only be changed while also changing release version or support package level of a software component.
 
 ##### Versioning Rules
 
