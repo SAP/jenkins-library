@@ -46,16 +46,16 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 	var jsonMap map[string][]interface{}
 	var jsonResult []byte
 
-	if len(config.BuildSettingsInfo) > 0 {
+	if config.BuildSettingsInfo != "" {
 
 		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
 		}
 
-		if mavenBuild, exist := jsonMap[buildTool]; exist {
-			if reflect.TypeOf(mavenBuild).Kind() == reflect.Slice {
-				jsonMap[buildTool] = append(mavenBuild, currentBuildSettingsInfo)
+		if build, exist := jsonMap[buildTool]; exist {
+			if reflect.TypeOf(build).Kind() == reflect.Slice {
+				jsonMap[buildTool] = append(build, currentBuildSettingsInfo)
 			}
 		} else {
 			var settings []interface{}
@@ -71,9 +71,24 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		var settings []BuildSettingsInfo
 		settings = append(settings, currentBuildSettingsInfo)
 		var err error
-		jsonResult, err = json.Marshal(BuildSettings{
-			MavenBuild: settings,
-		})
+		switch buildTool {
+		case "mavenBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				MavenBuild: settings,
+			})
+		case "npmBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				NpmBuild: settings,
+			})
+		case "dockerBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				DockerBuild: settings,
+			})
+		case "mtaBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				MtaBuild: settings,
+			})
+		}
 		if err != nil {
 			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
 		}
