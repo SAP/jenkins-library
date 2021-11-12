@@ -76,11 +76,15 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 		descriptor.EnvVars = rawDescriptor.Build.envToStringSlice()
 	}
 
-	if rawDescriptor.Build.Exclude != nil && len(rawDescriptor.Build.Exclude) > 0 {
+	if len(rawDescriptor.Build.Exclude) > 0 && len(rawDescriptor.Build.Include) > 0 {
+		return Descriptor{}, errors.New("project descriptor options 'exclude' and 'include' are mutually exclusive")
+	}
+
+	if len(rawDescriptor.Build.Exclude) > 0 {
 		descriptor.Exclude = ignore.CompileIgnoreLines(rawDescriptor.Build.Exclude...)
 	}
 
-	if rawDescriptor.Build.Include != nil && len(rawDescriptor.Build.Include) > 0 {
+	if len(rawDescriptor.Build.Include) > 0 {
 		descriptor.Include = ignore.CompileIgnoreLines(rawDescriptor.Build.Include...)
 	}
 
