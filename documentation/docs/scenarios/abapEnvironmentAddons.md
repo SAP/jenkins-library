@@ -178,6 +178,7 @@ The section “repositories” contains one or multiple software component versi
 `addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple addon products).
 
 The `version`of software components influcences two aspects:
+
 - The given version will be used as part of the target vector
 - If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
 
