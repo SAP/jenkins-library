@@ -14,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -304,7 +305,7 @@ func runMtaBuild(config mtaBuildOptions,
 }
 
 func createMtaBuildSettingsInfo(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
-	currentBuildSettingsInfo := BuildSettingsInfo{
+	currentBuildSettingsInfo := buildsettings.BuildSettingsInfo{
 		GlobalSettingsFile: config.GlobalSettingsFile,
 		Profiles:           config.Profiles,
 		Publish:            config.Publish,
@@ -337,9 +338,9 @@ func createMtaBuildSettingsInfo(config mtaBuildOptions, commonPipelineEnvironmen
 		commonPipelineEnvironment.custom.buildSettingsInfo = string(newJsonMap)
 
 	} else {
-		var settings []BuildSettingsInfo
+		var settings []buildsettings.BuildSettingsInfo
 		settings = append(settings, currentBuildSettingsInfo)
-		jsonResult, err := json.Marshal(BuildSettings{
+		jsonResult, err := json.Marshal(buildsettings.BuildSettings{
 			MtaBuild: settings,
 		})
 		if err != nil {

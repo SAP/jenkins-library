@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -73,7 +74,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 }
 
 func createNpmBuildSettingsInfo(config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
-	currentBuildSettingsInfo := BuildSettingsInfo{
+	currentBuildSettingsInfo := buildsettings.BuildSettingsInfo{
 		Publish:            config.Publish,
 		CreateBOM:          config.CreateBOM,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
@@ -105,9 +106,9 @@ func createNpmBuildSettingsInfo(config *npmExecuteScriptsOptions, commonPipeline
 		commonPipelineEnvironment.custom.buildSettingsInfo = string(newJsonMap)
 
 	} else {
-		var settings []BuildSettingsInfo
+		var settings []buildsettings.BuildSettingsInfo
 		settings = append(settings, currentBuildSettingsInfo)
-		jsonResult, err := json.Marshal(BuildSettings{
+		jsonResult, err := json.Marshal(buildsettings.BuildSettings{
 			NpmBuild: settings,
 		})
 		if err != nil {
