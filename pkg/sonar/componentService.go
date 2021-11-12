@@ -20,9 +20,9 @@ type ComponentService struct {
 }
 
 type SonarCoverage struct {
-	Coverage       float32
-	LineCoverage   float32
-	BranchCoverage float32
+	Coverage       float32 `json:"coverage,omitempty"`
+	LineCoverage   float32 `json:"lineCoverage,omitempty"`
+	BranchCoverage float32 `json:"branchCoverage,omitempty"`
 }
 
 // GetCoverage ...
