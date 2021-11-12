@@ -31,6 +31,7 @@ type BuildOptions struct {
 	CreateBOM                   bool     `json:"createBOM,omitempty"`
 	Publish                     bool     `json:"publish,omitempty"`
 	BuildSettingsInfo           string   `json:"buildSettingsInfo,omitempty"`
+	DefaultNpmRegistry          string   `json:"defaultNpmRegistry,omitempty"`
 }
 
 func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, error) {
@@ -40,6 +41,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		Profiles:                    config.Profiles,
 		Publish:                     config.Publish,
+		DefaultNpmRegistry:          config.DefaultNpmRegistry,
 	}
 	var jsonMap map[string][]interface{}
 	var jsonResult []byte

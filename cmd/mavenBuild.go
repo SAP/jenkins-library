@@ -95,7 +95,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		Publish:                     config.Publish,
 		BuildSettingsInfo:           config.BuildSettingsInfo,
 	}
-
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, buildTool)
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info : ''%v", err)
@@ -141,59 +140,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	return err
 }
-
-// func createMavenBuildSettingsInfo(config *mavenBuildOptions, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
-// 	currentBuildSettingsInfo := BuildSettingsInfo{
-// 		CreateBOM:                   config.CreateBOM,
-// 		GlobalSettingsFile:          config.GlobalSettingsFile,
-// 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
-// 		Profiles:                    config.Profiles,
-// 		Publish:                     config.Publish,
-// 	}
-// 	var jsonMap map[string][]interface{}
-
-// 	if len(config.BuildSettingsInfo) > 0 {
-
-// 		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
-// 		if err != nil {
-// 			return errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
-// 		}
-
-// 		if mavenBuild, exist := jsonMap["mavenBuild"]; exist {
-// 			if reflect.TypeOf(mavenBuild).Kind() == reflect.Slice {
-// 				jsonMap["mavenBuild"] = append(mavenBuild, currentBuildSettingsInfo)
-// 			}
-// 		} else {
-// 			var settings []interface{}
-// 			settings = append(settings, currentBuildSettingsInfo)
-// 			jsonMap["mavenBuild"] = settings
-// 		}
-
-// 		newJsonMap, err := json.Marshal(&jsonMap)
-// 		if err != nil {
-// 			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
-// 		}
-
-// 		commonPipelineEnvironment.custom.buildSettingsInfo = string(newJsonMap)
-
-// 	} else {
-// 		var settings []BuildSettingsInfo
-// 		settings = append(settings, currentBuildSettingsInfo)
-// 		jsonResult, err := json.Marshal(BuildSettings{
-// 			MavenBuild: settings,
-// 		})
-// 		if err != nil {
-// 			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
-// 		} else {
-// 			commonPipelineEnvironment.custom.buildSettingsInfo = string(jsonResult)
-// 		}
-// 	}
-
-// 	log.Entry().Infof("build settings infomration successfully created with '%v", commonPipelineEnvironment.custom.buildSettingsInfo)
-
-// 	return nil
-
-// }
 
 func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils maven.Utils) (string, error) {
 	if len(projectSettingsFile) > 0 {
