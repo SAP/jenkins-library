@@ -53,7 +53,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="testSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:set xsi:type="testSet"><osl:package name="TestPackage" includeSubpackages="false"/><osl:object name="TestObject" type="CLAS"/></osl:set></osl:objectSet>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="testSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:set xsi:type="testBaseSet"><osl:baseSet xsi:type="testAUnitTransportSet"><osl:transport number="TR123Test"/></osl:baseSet></osl:set><osl:set xsi:type="testBaseSet"><osl:baseSet xsi:type="testAUnitComponentSet"><osl:component name="TestComponent"/></osl:baseSet><osl:exclusionSet xsi:type="testAUnitPackageSet"><osl:package name="TestPackage" includeSubpackages="false"/></osl:exclusionSet></osl:set><osl:set xsi:type="testSet"><osl:set xsi:type="testSet"><osl:object name="TestObject" type="CLAS"/></osl:set><osl:set xsi:type="testSet"><osl:objectType name="TestObjectType"/></osl:set></osl:set></osl:objectSet>`
 
 		var err error
 		var config AUnitConfig
@@ -80,17 +80,49 @@ func TestBuildAUnitTestBody(t *testing.T) {
 			},
 			ObjectSet: []ObjectSet{{
 				Type: "testSet",
-				Set: []Set{{
-					Type: "testSet",
-					PackageSet: []AUnitPackage{{
-						Name:               "TestPackage",
-						IncludeSubpackages: new(bool),
+				Set: []Set{
+					{
+						Type: "testBaseSet",
+						BaseSet: []BaseSet{{
+							Type: "testAUnitTransportSet",
+							TransportSet: []AUnitTransportSet{{
+								Number: "TR123Test",
+							}},
+						}},
+					},
+					{
+						Type: "testBaseSet",
+						BaseSet: []BaseSet{{
+							Type: "testAUnitComponentSet",
+							ComponentSet: []AUnitComponentSet{{
+								Name: "TestComponent",
+							}},
+						}},
+						ExclusionSet: []ExclusionSet{{
+							Type: "testAUnitPackageSet",
+							PackageSet: []AUnitPackageSet{{
+								Name:               "TestPackage",
+								IncludeSubpackages: new(bool),
+							}},
+						}},
+					},
+					{
+						Type: "testSet",
+						Set: []Set{
+							{
+								Type: "testSet",
+								FlatObjectSet: []AUnitFlatObjectSet{{
+									Name: "TestObject",
+									Type: "CLAS",
+								}},
+							},
+							{
+								Type: "testSet",
+								ObjectTypeSet: []AUnitObjectTypeSet{{
+									Name: "TestObjectType",
+								}},
+							}},
 					}},
-					FlatObjectSet: []AUnitObject{{
-						Name: "TestObject",
-						Type: "CLAS",
-					}},
-				}},
 			}},
 		}
 

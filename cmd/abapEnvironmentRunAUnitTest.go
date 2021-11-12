@@ -262,6 +262,75 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	return optionsString
 }
 
+//This function checks recursively if there any subsequent packages in any Set and converts them to the AUnit body
+func checkObjectSetsRecursive(set Set, baseSet BaseSet, exclusionSet ExclusionSet) (objectSetString string) {
+	if (len(set.Set) != 0) || (len(baseSet.Set) != 0) || (len(exclusionSet.Set) != 0) {
+		for _, set := range set.Set {
+			objectSetString += `<osl:set xsi:type="` + set.Type + `">`
+			objectSetString += writeObjectSets(set)                                     //If there are no subsequent sets we can print here
+			objectSetString += checkObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}) //If there have been no prints we can check if there are subsequent sets
+			objectSetString += `</osl:set>`
+		}
+	}
+	if (len(set.BaseSet) != 0) || (len(baseSet.BaseSet) != 0) || (len(exclusionSet.BaseSet) != 0) {
+		for _, baseSet := range set.BaseSet {
+			objectSetString += `<osl:baseSet xsi:type="` + baseSet.Type + `">`
+			objectSetString += writeObjectSets(parseRecursiveSetsToSet(baseSet, ExclusionSet{})) //If there are no subsequent sets we can print here
+			objectSetString += checkObjectSetsRecursive(Set{}, baseSet, ExclusionSet{})          //If there have been no prints we can check if there are subsequent sets
+			objectSetString += `</osl:baseSet>`
+		}
+	}
+	if (len(set.ExclusionSet) != 0) || (len(baseSet.ExclusionSet) != 0) || (len(exclusionSet.ExclusionSet) != 0) {
+		for _, exclusionSet := range set.ExclusionSet {
+			objectSetString += `<osl:exclusionSet xsi:type="` + exclusionSet.Type + `">`
+			objectSetString += writeObjectSets(parseRecursiveSetsToSet(BaseSet{}, exclusionSet)) //If there are no subsequent sets we can print here
+			objectSetString += checkObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet)          //If there have been no prints we can check if there are subsequent sets
+			objectSetString += `</osl:exclusionSet>`
+		}
+	}
+	return objectSetString
+}
+
+func parseRecursiveSetsToSet(baseSet BaseSet, exclusionSet ExclusionSet) (set Set) {
+
+	if !(reflect.DeepEqual(baseSet, BaseSet{})) {
+		set.ComponentSet = baseSet.ComponentSet
+		set.FlatObjectSet = baseSet.FlatObjectSet
+		set.ObjectTypeSet = baseSet.ObjectTypeSet
+		set.PackageSet = baseSet.PackageSet
+		set.TransportSet = baseSet.TransportSet
+		set.Type = baseSet.Type
+	}
+	if !(reflect.DeepEqual(exclusionSet, ExclusionSet{})) {
+		set.ComponentSet = exclusionSet.ComponentSet
+		set.FlatObjectSet = exclusionSet.FlatObjectSet
+		set.ObjectTypeSet = exclusionSet.ObjectTypeSet
+		set.PackageSet = exclusionSet.PackageSet
+		set.TransportSet = exclusionSet.TransportSet
+		set.Type = exclusionSet.Type
+	}
+	return set
+}
+
+func writeObjectSets(set Set) (objectSetString string) {
+	for _, packageSet := range set.PackageSet {
+		objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
+	}
+	for _, flatObjectSet := range set.FlatObjectSet {
+		objectSetString += `<osl:object name="` + flatObjectSet.Name + `" type="` + flatObjectSet.Type + `"/>`
+	}
+	for _, transportSet := range set.TransportSet {
+		objectSetString += `<osl:transport number="` + transportSet.Number + `"/>`
+	}
+	for _, componentSet := range set.ComponentSet {
+		objectSetString += `<osl:component name="` + componentSet.Name + `"/>`
+	}
+	for _, objectTypeSet := range set.ObjectTypeSet {
+		objectSetString += `<osl:objectType name="` + objectTypeSet.Name + `"/>`
+	}
+	return objectSetString
+}
+
 func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string) {
 
 	//Build ObjectSets {
@@ -270,15 +339,9 @@ func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string)
 		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
 		for _, t := range s.Set {
 			objectSetString += `<osl:set xsi:type="` + t.Type + `">`
-			for _, packageSet := range t.PackageSet {
-				objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
-			}
-			for _, flatObjectSet := range t.FlatObjectSet {
-				objectSetString += `<osl:object name="` + flatObjectSet.Name + `" type="` + fmt.Sprintf("%v", *&flatObjectSet.Type) + `"/>`
-			}
+			objectSetString += checkObjectSetsRecursive(t, BaseSet{}, ExclusionSet{})
 			objectSetString += `</osl:set>`
 		}
-
 		objectSetString += `</osl:objectSet>`
 	}
 	return objectSetString
@@ -452,32 +515,69 @@ type ObjectSet struct {
 
 //Set in form of packages and software components to be checked
 type Set struct {
-	//Set  []Set  `json:"set,omitempty"`
-	Type          string              `json:"type,omitempty"`
-	PackageSet    []AUnitPackage      `json:"package,omitempty"`
-	FlatObjectSet []AUnitFlatObject   `json:"object,omitempty"`
-	ComponentSet  []AUnitComponentSet `json:"component,omitempty"` // TO implement
-
-	/*FlatSet       []FlatObjectSet `json:"flatobjectset,omitempty"`
-	ObjectTypeSet []ObjectTypeSet `json:"objecttypeset,omitempty"`
-	ComponentSet  []ComponentSet  `json:"componentset,omitempty"`
-	TransportSet  []TransportSet  `json:"transportset,omitempty"`*/
+	Type          string               `json:"type,omitempty"`
+	Set           []Set                `json:"set,omitempty"`
+	BaseSet       []BaseSet            `json:"baseset,omitempty"`
+	ExclusionSet  []ExclusionSet       `json:"exclusionset,omitempty"`
+	PackageSet    []AUnitPackageSet    `json:"package,omitempty"`
+	FlatObjectSet []AUnitFlatObjectSet `json:"object,omitempty"`
+	ComponentSet  []AUnitComponentSet  `json:"component,omitempty"`
+	TransportSet  []AUnitTransportSet  `json:"transport,omitempty"`
+	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//AUnitPackage in form of packages and software components to be checked
-type AUnitPackage struct {
+//BaseSet in form of packages and software components to be checked
+type BaseSet struct {
+	//Set  []Set  `json:"set,omitempty"`
+	Type          string               `json:"type,omitempty"`
+	Set           []Set                `json:"set,omitempty"`
+	BaseSet       []BaseSet            `json:"baseset,omitempty"`
+	ExclusionSet  []ExclusionSet       `json:"exclusionset,omitempty"`
+	PackageSet    []AUnitPackageSet    `json:"package,omitempty"`
+	FlatObjectSet []AUnitFlatObjectSet `json:"object,omitempty"`
+	ComponentSet  []AUnitComponentSet  `json:"component,omitempty"`
+	TransportSet  []AUnitTransportSet  `json:"transport,omitempty"`
+	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
+}
+
+//ExclusionSet in form of packages and software components to be checked
+type ExclusionSet struct {
+	//Set  []Set  `json:"set,omitempty"`
+	Type          string               `json:"type,omitempty"`
+	Set           []Set                `json:"set,omitempty"`
+	BaseSet       []BaseSet            `json:"baseset,omitempty"`
+	ExclusionSet  []ExclusionSet       `json:"exclusionset,omitempty"`
+	PackageSet    []AUnitPackageSet    `json:"package,omitempty"`
+	FlatObjectSet []AUnitFlatObjectSet `json:"object,omitempty"`
+	ComponentSet  []AUnitComponentSet  `json:"component,omitempty"`
+	TransportSet  []AUnitTransportSet  `json:"transport,omitempty"`
+	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
+}
+
+//AUnitPackageSet in form of packages and software components to be checked
+type AUnitPackageSet struct {
 	Name               string `json:"name,omitempty"`
 	IncludeSubpackages *bool  `json:"includesubpackages,omitempty"`
 }
 
-//AUnitObject in form of packages and software components to be checked
-type AUnitFlatObject struct {
+//AUnitFlatObjectSet in form of packages and software components to be checked
+type AUnitFlatObjectSet struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
 }
 
-//AUnitPackage in form of packages and software components to be checked
+//AUnitComponentSet in form of packages and software components to be checked
 type AUnitComponentSet struct {
+	Name string `json:"name,omitempty"`
+}
+
+//AUnitTransportSet in form of packages and software components to be checked
+type AUnitTransportSet struct {
+	Number string `json:"number,omitempty"`
+}
+
+//AUnitObjectTypeSet in form of packages and software components to be checked
+type AUnitObjectTypeSet struct {
 	Name string `json:"name,omitempty"`
 }
 
