@@ -8,7 +8,6 @@ import (
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -163,11 +162,9 @@ func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus Ta
 		case <-timeout:
 			return errors.New("Timed out (AAKaaS target Vector Status change)")
 		case <-ticker:
-			log.Entry().Info("tick")
 			if err := tv.GetTargetVector(conn); err != nil {
 				return errors.Wrap(err, "Getting TargetVector status during polling resulted in an error")
 			}
-			log.Entry().Info("TV PS > " + string(tv.PublishStatus))
 			switch TargetVectorStatus(tv.PublishStatus) {
 			case TargetVectorPublishStatusRunning:
 				continue
