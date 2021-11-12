@@ -12,20 +12,29 @@ stages:
     abapSystemIsDevelopmentAllowed: 'false'
     abapSystemSizeOfPersistence: 4
     abapSystemSizeOfRuntime: 1
+    cfServiceKeyName: 'sap_com_0510'
+    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
 
   'Clone Repositories':
+    cfServiceKeyName: 'sap_com_0510'
     ordinal: 30
 
-  ATC:
+  'ATC':
     ordinal: 40
+    cfServiceKeyName: 'sap_com_0510'
+
+  'AUnit':
+    ordinal: 50
+    cfServiceKeyName: 'sap_com_0735'
+    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0735","type":"basic"}'
 
   Build:
-    ordinal: 50
+    ordinal: 60
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
 
   'Integration Tests':
-    ordinal: 60
+    ordinal: 70
     cfService: 'abap'
     cfServicePlan: 'saas_oem'
     abapSystemIsDevelopmentAllowed: 'false'
@@ -35,12 +44,12 @@ stages:
     includeAddon: 'true'
 
   Confirm:
-    ordinal: 70
+    ordinal: 80
 
   Publish:
-    ordinal: 80
+    ordinal: 90
     targetVectorScope: 'P'
 
   Post:
-    ordinal: 90
+    ordinal: 100
     cfDeleteServiceKeys: true
