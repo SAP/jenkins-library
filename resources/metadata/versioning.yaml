@@ -96,6 +96,7 @@ spec:
           - docker
           - dub
           - golang
+          - gradle
           - maven
           - mta
           - npm
