@@ -4,7 +4,10 @@ import com.sap.piper.ConfigurationHelper
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    /** If set to true, the system is never deleted */
+    'debug'
+]
 @Field STAGE_STEP_KEYS = [
     /** Deletes a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
@@ -28,6 +31,7 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('confirmDeletion', false)
+        .addIfEmpty('debug', false)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
@@ -36,7 +40,9 @@ void call(Map parameters = [:]) {
             if (config.confirmDeletion && script.currentBuild.result != 'SUCCESS') {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
-            cloudFoundryDeleteService script: parameters.script
+            if (!config.debug) {
+                cloudFoundryDeleteService script: parameters.script
+            }
         }
     }
 }
