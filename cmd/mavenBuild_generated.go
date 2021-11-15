@@ -379,7 +379,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/buildSettingsInfo"}},
+						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 				},

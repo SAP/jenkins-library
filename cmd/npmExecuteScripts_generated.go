@@ -313,7 +313,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "npm/buildSettingsInfo"}},
+						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 				},

@@ -48,13 +48,12 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 
 	log.Entry().Infof("creating build settings information...")
-	buildTool := "npmBuild"
 	npmConfig := buildsettings.BuildOptions{
 		Publish:            config.Publish,
 		CreateBOM:          config.CreateBOM,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, buildTool)
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, "npmExecuteScripts")
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info : ''%v", err)
 	}

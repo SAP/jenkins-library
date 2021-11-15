@@ -9,10 +9,10 @@ import (
 )
 
 type BuildSettings struct {
-	MavenBuild  []BuildOptions `json:"mavenBuild,omitempty"`
-	NpmBuild    []BuildOptions `json:"executeNpmScripts,omitempty"`
-	DockerBuild []BuildOptions `json:"kanikoExecute,omitempty"`
-	MtaBuild    []BuildOptions `json:"mtaBuild,omitempty"`
+	MavenBuild        []BuildOptions `json:"mavenBuild,omitempty"`
+	NpmExecuteScripts []BuildOptions `json:"executeNpmScripts,omitempty"`
+	KanikoExecute     []BuildOptions `json:"kanikoExecute,omitempty"`
+	MtaBuild          []BuildOptions `json:"mtaBuild,omitempty"`
 }
 
 type BuildOptions struct {
@@ -77,13 +77,13 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			jsonResult, err = json.Marshal(BuildSettings{
 				MavenBuild: settings,
 			})
-		case "npmBuild":
+		case "npmExecuteScripts":
 			jsonResult, err = json.Marshal(BuildSettings{
-				NpmBuild: settings,
+				NpmExecuteScripts: settings,
 			})
-		case "dockerBuild":
+		case "kanikoExecute":
 			jsonResult, err = json.Marshal(BuildSettings{
-				DockerBuild: settings,
+				KanikoExecute: settings,
 			})
 		case "mtaBuild":
 			jsonResult, err = json.Marshal(BuildSettings{

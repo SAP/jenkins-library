@@ -123,8 +123,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        aliases:
-          - name: npm/buildSettingsInfo
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo

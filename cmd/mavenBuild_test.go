@@ -131,16 +131,4 @@ func TestMavenBuild(t *testing.T) {
 		assert.Contains(t, mockedUtils.Calls[0].Params, "profile1,profile2")
 	})
 
-	t.Run("test build settings cpe with no previous existing values", func(t *testing.T) {
-		mockedUtils := newMavenMockUtils()
-
-		config := mavenBuildOptions{Profiles: []string{"profile1", "profile2"}, CreateBOM: true}
-
-		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
-
-		assert.Nil(t, err)
-
-		assert.Equal(t, cpe.custom.buildSettingsInfo, "{\"mavenBuild\":[{\"profiles\":[\"profile1\",\"profile2\"],\"createBOM\":true}]}")
-	})
-
 }

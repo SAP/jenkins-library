@@ -183,8 +183,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        aliases:
-          - name: maven/buildSettingsInfo
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo

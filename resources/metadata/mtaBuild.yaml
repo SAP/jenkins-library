@@ -215,8 +215,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        aliases:
-          - name: mta/buildSettingsInfo
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo

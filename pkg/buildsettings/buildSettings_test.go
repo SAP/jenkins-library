@@ -8,7 +8,7 @@ import (
 
 func TestCreateBuildSettingsInfo(t *testing.T) {
 
-	t.Run("test build settings cpe with no previous existing values", func(t *testing.T) {
+	t.Run("test build settings cpe with no previous and existing values", func(t *testing.T) {
 		testTableConfig := []struct {
 			config    BuildOptions
 			buildTool string

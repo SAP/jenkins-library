@@ -406,7 +406,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "mta/buildSettingsInfo"}},
+						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 				},
