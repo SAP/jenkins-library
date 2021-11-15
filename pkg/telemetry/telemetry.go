@@ -121,7 +121,7 @@ func (t *Telemetry) GetData() Data {
 	return t.data
 }
 
-// Send telemetry information to SWA 
+// Send telemetry information to SWA
 func (t *Telemetry) Send() {
 
 	t.sendCustom()
