@@ -8,34 +8,35 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BuildSettingsInfo struct {
-	Profiles                    []string `json:"profiles,omitempty"`
-	Publish                     bool     `json:"publish,omitempty"`
-	CreateBOM                   bool     `json:"createBOM,omitempty"`
-	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
-	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
-	DefaultNpmRegistry          string   `json:"defaultNpmRegistry,omitempty"`
-}
-
 type BuildSettings struct {
-	MavenBuild  []BuildSettingsInfo `json:"mavenBuild,omitempty"`
-	NpmBuild    []BuildSettingsInfo `json:"npmBuild,omitempty"`
-	DockerBuild []BuildSettingsInfo `json:"dockerBuild,omitempty"`
-	MtaBuild    []BuildSettingsInfo `json:"mtaBuild,omitempty"`
+	MavenBuild  []BuildOptions `json:"mavenBuild,omitempty"`
+	NpmBuild    []BuildOptions `json:"npmBuild,omitempty"`
+	DockerBuild []BuildOptions `json:"dockerBuild,omitempty"`
+	MtaBuild    []BuildOptions `json:"mtaBuild,omitempty"`
 }
 
 type BuildOptions struct {
 	Profiles                    []string `json:"profiles,omitempty"`
-	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
-	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
-	CreateBOM                   bool     `json:"createBOM,omitempty"`
 	Publish                     bool     `json:"publish,omitempty"`
-	BuildSettingsInfo           string   `json:"buildSettingsInfo,omitempty"`
+	CreateBOM                   bool     `json:"createBOM,omitempty"`
+	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 	DefaultNpmRegistry          string   `json:"defaultNpmRegistry,omitempty"`
+	BuildSettingsInfo           string   `json:"buildSettingsInfo,omitempty"`
+	DockerImage                 string   `json:"dockerImage,omitempty"`
+}
+
+func (i *BuildOptions) ToJson() ([]byte, error) {
+	tmp, err := json.Marshal(i)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate valid JSON.")
+	} else {
+		return tmp, nil
+	}
 }
 
 func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, error) {
-	currentBuildSettingsInfo := BuildSettingsInfo{
+	currentBuildSettingsInfo := BuildOptions{
 		CreateBOM:                   config.CreateBOM,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
@@ -68,7 +69,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
 		}
 	} else {
-		var settings []BuildSettingsInfo
+		var settings []BuildOptions
 		settings = append(settings, currentBuildSettingsInfo)
 		var err error
 		switch buildTool {
@@ -88,6 +89,8 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			jsonResult, err = json.Marshal(BuildSettings{
 				MtaBuild: settings,
 			})
+		default:
+			return "", errors.Wrapf(err, "invalid buildTool '%s' for native build - '%s' not supported", buildTool, buildTool)
 		}
 		if err != nil {
 			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
