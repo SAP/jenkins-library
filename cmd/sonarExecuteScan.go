@@ -324,33 +324,37 @@ func handlePullRequest(config sonarExecuteScanOptions) error {
 }
 
 func loadSonarScanner(url string, client piperhttp.Downloader) error {
-	if scannerPath, err := execLookPath(sonar.binary); err == nil {
+	scannerPath, lookupErr := execLookPath(sonar.binary)
+	if lookupErr == nil {
 		// using existing sonar-scanner
 		log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
-	} else if len(url) != 0 {
-		// download sonar-scanner-cli into TEMP folder
-		log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
-		tmpFolder := getTempDir()
-		defer os.RemoveAll(tmpFolder) // clean up
-		archive := filepath.Join(tmpFolder, path.Base(url))
-		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			return errors.Wrap(err, "Download of sonar-scanner failed")
+	} else {
+		log.Entry().Debugf("Lookup failed: %s", lookupErr)
+		if len(url) != 0 {
+			// download sonar-scanner-cli into TEMP folder
+			log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
+			tmpFolder := getTempDir()
+			defer os.RemoveAll(tmpFolder) // clean up
+			archive := filepath.Join(tmpFolder, path.Base(url))
+			if err := client.DownloadFile(url, archive, nil, nil); err != nil {
+				return errors.Wrap(err, "Download of sonar-scanner failed")
+			}
+			// unzip sonar-scanner-cli
+			log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
+			if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
+				return errors.Wrap(err, "Extraction of sonar-scanner failed")
+			}
+			// move sonar-scanner-cli to .sonar-scanner/
+			toolPath := ".sonar-scanner"
+			foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
+			log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
+			if err := osRename(foldername, toolPath); err != nil {
+				return errors.Wrap(err, "Moving of sonar-scanner failed")
+			}
+			// update binary path
+			sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
+			log.Entry().Debug("Download completed")
 		}
-		// unzip sonar-scanner-cli
-		log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
-		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
-			return errors.Wrap(err, "Extraction of sonar-scanner failed")
-		}
-		// move sonar-scanner-cli to .sonar-scanner/
-		toolPath := ".sonar-scanner"
-		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
-		log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
-		if err := osRename(foldername, toolPath); err != nil {
-			return errors.Wrap(err, "Moving of sonar-scanner failed")
-		}
-		// update binary path
-		sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
-		log.Entry().Debug("Download completed")
 	}
 	return nil
 }
