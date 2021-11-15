@@ -1,8 +1,10 @@
 # Build and Publish Add-on Products on SAP BTP, ABAP Environment
 
 !!! caution "Current limitations"
+    gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
-      - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
+!!! caution "Required project "Piper" library version"
+    SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
 
 ## Introduction
 
@@ -28,8 +30,6 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
 - The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
-**Note:** Changing the version string of the add-on product does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on product/version, the existing delivery packages are reused for the new add-on product version.
-
 ### Software Component Version
 
 !!! note "Development on SAP BTP, ABAP environment"
@@ -39,13 +39,14 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
-- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
-- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
+- The first number denotes the release. Release deliverie contains the whole software component and deliver planned, new functionalities or feature enhancements. They are delivered with delivery packages of type “Add-on Installation Package”.
+- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contain smaller, planned functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
+- The third number denotes the Patch level. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are shipped with delivery packages of type “Correction Package”.
 
-The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
+The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
-**Note:** Only by changing the **version string** of of a software component, the build of a new delivery package with the latest changes is created.
+Software Component Versions are uniquely created and independent from the add-on product versions where they are included.
+This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
 
 ### Target Vector
 
@@ -92,7 +93,7 @@ With these SAP tools the assembled add-on deliveries are deployed to ABAP system
 
 #### Installation Test System
 
-In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of [service plan `saas_oem`](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1697387c02e74e66a55cf21a05678167.html) is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter `is_development_allowed = false` to prevent local changes.
+In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service plan `saas_oem` is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter `is_development_allowed = false` to prevent local changes.
 
 ### Prerequisites
 
@@ -115,7 +116,7 @@ The communication with the AAKaaS needs a technical communication user. The crea
 ABAP environment systems are created in the SAP BTP cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry command line interface: [cf CLI](https://docs.cloudfoundry.org/cf-cli/). For this to work, two things need to be configured:
 
 - Cloud Foundry needs to be enabled on subaccount level. This can be done on the Subaccount Overview page. The subaccount is then mapped to a “Cloud Foundry Organization”, for which you must provide a suitable name during the creation. Have a look at the [documentation](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/dc18bac42270468d84b6c030a668e003.html) for more details.
-- A (technical) user is required to access the SAP BTP via the cf CLI. The user needs to be a [member of the global account](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/4a0491330a164f5a873fa630c7f45f06.html) and has to have the [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role. The user and password need to be stored in the Jenkins Credentials Store.
+- A (technical) user is required to access the SAP BTP via the cf CLI. The user needs to be assigned as space member including [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role in order to create/read service instances and service keys. The user and password need to be stored in the Jenkins Credentials Store.
 
 Later, during the pipeline configuration, you will specify the Service Plan, which will be used for the creation of an ABAP environment system. Please make sure, that there are enough entitlements for this [Service Plan in the Subaccount](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html).
 
@@ -130,34 +131,10 @@ Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
 
 This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in the global account.
 
-#### Project "Piper" Library Version to SAP BTP, ABAP Environment Dependency
-
-SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
-
 ### Configuration
 
-In the following subsections, the pipeline configuration for this scenario is explained. To get a general overview on the ABAP environment pipeline configuration, have a look [here](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/configuration/). In addition to the following sections explaining the configuration, there will be an example repository including all required files.
-
-#### Jenkinsfile
-
-This file is the entry point of the pipeline. It should look like this:
-
-```Groovy
-@Library('piper-lib-os') _
-
-abapEnvironmentPipeline script: this
-```
-
-The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of project "Piper".
-
-!!! note "Jenkins Library Version"
-    If desired, a specific release of this library can be requested: e.g. release 1.93.0 with `@Library('piper-lib-os@v1.93.0') _`. As the library is an Open Source project, it is possible that incompatible changes are introduced. If you want to avoid this, it is recommended to use such a specific release. If no release is specified, the newest version of the Jenkins-library will be used (pulled from the master branch).
-
-The second line `abapEnvironmentPipeline script: this` defines that the predefined “ABAP environment pipeline” will be executed.
-
-#### Pipeline configuration file
-
-A configuration file `.pipeline/config.yml` is used to provide all required values to run the pipeline. This includes - for example - different endpoints or credential IDs of user and password values stored in the [Jenkins Credentials Store](https://www.jenkins.io/doc/book/using/using-credentials/). If a complex configuration is necessary, a separate configuration file is required, which will also be referenced in the `config.yml` file.
+In the following subsections, the pipeline configuration for this scenario is explained.
+Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md).
 
 #### Add-on descriptor file
 
@@ -193,10 +170,19 @@ Explanation of the keys:
 The section “repositories” contains one or multiple software component versions:
 
 - `name`: the technical name of the software component
-- `branch`: this is the release branch from the git repository
+- `branch`: this is the branch from the git repository
 - `version`: this is the technical software component version `<software component version>.<support package level>.<patch level>`
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
+
+Changing the `addonVersion` string does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on `addonVersion`, the existing delivery packages are reused for the new add-on product version.
+Only by changing the `version` of a software component, the build of a new delivery package with the latest changes is triggered.
+
+The `addonVersion` should be determined by synchronously to how the software components bundle is changed: In case the release version of a software component is changed, the release of the `addonVersion` should be changed. If the support package version of a software component is changed, support package version of the add-on should be changed. And if patch version of a software component, the patch version of the add-on should be adjusted.
+
+`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component.
+
+The `branch` should only be changed while also changing release version or support package level of a software component. During creation of a patch version (CPK) the `branch` should remain the same as before, so that previous and current commit of the software component can be found in the same branch for comparison.
 
 ##### Versioning Rules
 
@@ -218,10 +204,10 @@ Invalid increase:
 - 2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)
 - 2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)
 
-#### Jenkins Job
+Technically, the allowed number range for add-on product version and software component version is 1.0.0 to 9999.9999.9999.
 
-Once the configuration in the git repository is completed, the pipeline on the Jenkins Server can be created. On your Jenkins server click on “New Item” to create a new pipeline. Provide a name and select the type “Pipeline”. On the creation screen for the pipeline, scroll to the section Pipeline and select “Pipeline script from SCM”. Provide the URL (and credentials - if required) of the repository in which you configured the pipeline. Make sure the “Script Path” points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
-Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent add-on build processes for the same version.
+The support package level of software component version can only go up until 369 because of technical limitations.
+For the patch level, there is a technical limit of 36³, limited to 9999.
 
 ### Example
 
@@ -239,6 +225,7 @@ If the pipelines receives the error from a backend system during execeution of t
 | Prepare System           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
 | Clone Repositories       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)| BC-CP-ABA-SC |
 | ATC                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)| BC-DWB-TOO-ATF |
+| AUnit                    | [abapEnvironmentRunAUnitTest](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/)| BC-DWB-TOO-ATF |
 | Build                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
 |                          | [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/) | BC-UPG-OCS |
 |                          | [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)| BC-UPG-ADDON |
@@ -250,3 +237,5 @@ If the pipelines receives the error from a backend system during execeution of t
 | Post                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)| BC-CP-ABA |
 
 *Note:* Always attach the pipeline execution log ouput to the support incident, if possible including timestamps by using the [Timestamper Jenkins plugin](https://plugins.jenkins.io/timestamper/).
+
+For troubleshooting purposes, the add-on descriptor file as well as build logs are archived as pipeline artifacts in the [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/) step.
