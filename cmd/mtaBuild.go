@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -235,11 +235,18 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	log.Entry().Infof("creating build settings information...")
-	builSettingsErr := createMtaBuildSettingsInfo(config, commonPipelineEnvironment)
-
-	if builSettingsErr != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", builSettingsErr)
+	buildTool := "mtaBuild"
+	mtaConfig := buildsettings.BuildOptions{
+		Profiles:           config.Profiles,
+		GlobalSettingsFile: config.GlobalSettingsFile,
+		Publish:            config.Publish,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
 	}
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, buildTool)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
@@ -301,58 +308,6 @@ func runMtaBuild(config mtaBuildOptions,
 		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
 	}
 	return err
-}
-
-func createMtaBuildSettingsInfo(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
-	currentBuildSettingsInfo := BuildSettingsInfo{
-		GlobalSettingsFile: config.GlobalSettingsFile,
-		Profiles:           config.Profiles,
-		Publish:            config.Publish,
-		DefaultNpmRegistry: config.DefaultNpmRegistry,
-	}
-	var jsonMap map[string][]interface{}
-
-	if len(config.BuildSettingsInfo) > 0 {
-
-		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
-		if err != nil {
-			return errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
-		}
-
-		if mtaBuild, exist := jsonMap["mtaBuild"]; exist {
-			if reflect.TypeOf(mtaBuild).Kind() == reflect.Slice {
-				jsonMap["mtaBuild"] = append(mtaBuild, currentBuildSettingsInfo)
-			}
-		} else {
-			var settings []interface{}
-			settings = append(settings, currentBuildSettingsInfo)
-			jsonMap["mtaBuild"] = settings
-		}
-
-		newJsonMap, err := json.Marshal(&jsonMap)
-		if err != nil {
-			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
-		}
-
-		commonPipelineEnvironment.custom.buildSettingsInfo = string(newJsonMap)
-
-	} else {
-		var settings []BuildSettingsInfo
-		settings = append(settings, currentBuildSettingsInfo)
-		jsonResult, err := json.Marshal(BuildSettings{
-			MtaBuild: settings,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "Creating build settings failed with json marshalling")
-		} else {
-			commonPipelineEnvironment.custom.buildSettingsInfo = string(jsonResult)
-		}
-	}
-
-	log.Entry().Infof("build settings infomration successfully created with '%v", commonPipelineEnvironment.custom.buildSettingsInfo)
-
-	return nil
-
 }
 
 func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
