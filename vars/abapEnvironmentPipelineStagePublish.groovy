@@ -22,7 +22,7 @@ void call(Map parameters = [:]) {
         if (script.currentBuild.result == 'SUCCESS') {
             abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
         } else {
-            input message: "Pipeline status is not successful. The Add-on will NOT be published."
+            echo "Pipeline status is not successful. The Add-on will NOT be published."
         }
     }
 
