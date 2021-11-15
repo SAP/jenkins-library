@@ -11,7 +11,10 @@ import (
 
 func TestCreateTargetVectorStep(t *testing.T) {
 	//setup
-	config := abapAddonAssemblyKitCreateTargetVectorOptions{}
+	config := abapAddonAssemblyKitCreateTargetVectorOptions{
+		Username: "dummy",
+		Password: "dummy",
+	}
 	addonDescriptor := abaputils.AddonDescriptor{
 		AddonProduct:    "dummy",
 		AddonVersion:    "dummy",
