@@ -263,7 +263,10 @@ private String checkBuildTool(config) {
             buildDescriptorPattern = 'package.json'
             break
         case 'mta':
-            buildDescriptorPattern = 'mta.yaml'
+            if(config.source)
+                buildDescriptorPattern = 'config.source/mta.yaml'
+            else
+                buildDescriptorPattern = 'mta.yaml'
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
