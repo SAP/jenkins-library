@@ -8,6 +8,8 @@ The following steps are executed in this stage:
 
 - [abapAddonAssemblyKitPublishTargetVector](../../../steps/abapAddonAssemblyKitPublishTargetVector.md)
 
+If the pipeline stauts is not "SUCCESS", the step execution is skipped.
+
 ## Stage Parameters
 
 There are no specifc stage parameters.
