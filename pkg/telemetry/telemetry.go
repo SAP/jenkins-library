@@ -26,15 +26,6 @@ const actionName = "Piper Library OS"
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 
-// SiteID ...
-var SiteID string
-
-// SWA baseURL
-const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
-
-// SWA endpoint
-const endpoint = "/tracker/log"
-
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
 	baseData             BaseData
@@ -42,20 +33,20 @@ type Telemetry struct {
 	data                 Data
 	provider             orchestrator.OrchestratorSpecificConfigProviding
 	disabled             bool
-	client               piperhttp.Client
+	client               *piperhttp.Client
 	CustomReportingDsn   string
 	CustomReportingToken string
+	customClient         *piperhttp.Client
 	PipelineTelemetry    *PipelineTelemetry
+	BaseURL              string
+	Endpoint             string
+	SiteID               string
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	t.disabled = telemetryDisabled
-	// skip if telemetry is disabled
-	if telemetryDisabled {
-		log.Entry().Info("Telemetry reporting deactivated")
-		return
-	}
+
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil || provider == nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
@@ -63,14 +54,26 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	}
 	t.provider = provider
 
+	if t.client == nil {
+		t.client = &piperhttp.Client{}
+	}
+
 	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
+	if t.BaseURL == "" {
+		//SWA baseURL
+		t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
+	}
+	if t.Endpoint == "" {
+		// SWA endpoint
+		t.Endpoint = "/tracker/log"
+	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
 	}
 
-	if len(SiteID) == 0 {
-		SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
+	if t.SiteID == "" {
+		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
 
 	t.baseData = BaseData{
@@ -80,7 +83,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		ActionName:      actionName,
 		EventType:       eventType,
 		StepName:        stepName,
-		SiteID:          SiteID,
+		SiteID:          t.SiteID,
 		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
 	}
@@ -118,7 +121,7 @@ func (t *Telemetry) GetData() Data {
 	return t.data
 }
 
-// Send telemetry information to SWA
+// Send telemetry information to SWA 
 func (t *Telemetry) Send() {
 
 	t.sendCustom()
@@ -128,18 +131,19 @@ func (t *Telemetry) Send() {
 		return
 	}
 
-	request, _ := url.Parse(baseURL)
-	request.Path = endpoint
+	request, _ := url.Parse(t.BaseURL)
+	request.Path = t.Endpoint
 	request.RawQuery = t.data.toPayloadString()
 	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
 	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
 }
 
 func (t *Telemetry) sendCustom() {
-	t.data.ErrorCode = "1"
 	if t.data.ErrorCode == "1" && len(t.CustomReportingDsn) > 0 {
 		// check if reporting is available in the config and then send the payload to the specific URL
-		customClient := &piperhttp.Client{}
+		if t.customClient == nil {
+			t.customClient = &piperhttp.Client{}
+		}
 		t.provider.GetBuildUrl()
 		data := t.data
 		data.BuildURLHash = t.provider.GetBuildUrl()
@@ -167,7 +171,7 @@ func (t *Telemetry) sendCustom() {
 		}
 
 		log.Entry().Debugf("Sending the following payload: %v", string(payload))
-		resp, err := customClient.SendRequest(http.MethodPost, t.CustomReportingDsn, bytes.NewBuffer(payload), nil, nil)
+		resp, err := t.customClient.SendRequest(http.MethodPost, t.CustomReportingDsn, bytes.NewBuffer(payload), nil, nil)
 
 		if resp != nil {
 			if resp.StatusCode != http.StatusOK {
