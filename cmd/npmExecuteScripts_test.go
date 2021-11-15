@@ -136,12 +136,4 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
-
-	t.Run("test build settings cpe with no previous existing values", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{CreateBOM: true, Publish: true}
-
-		npmExecuteScripts(config, nil, &cpe)
-
-		assert.Equal(t, cpe.custom.buildSettingsInfo, "{\"npmBuild\":[{\"publish\":true,\"createBOM\":true}]}")
-	})
 }
