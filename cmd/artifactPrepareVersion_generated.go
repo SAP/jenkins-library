@@ -18,7 +18,7 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool              string `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang maven mta npm pip sbt yarn"`
+	BuildTool              string `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle maven mta npm pip sbt yarn"`
 	CommitUserName         string `json:"commitUserName,omitempty"`
 	CustomVersionField     string `json:"customVersionField,omitempty"`
 	CustomVersionSection   string `json:"customVersionSection,omitempty"`
