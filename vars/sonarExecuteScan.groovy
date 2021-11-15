@@ -65,9 +65,6 @@ void call(Map parameters = [:]) {
                             withEnv(environment){
                                 influxWrapper(script){
                                     piperExecuteBin.credentialWrapper(config, credentialInfo){
-                                        sh "echo $PATH"
-                                        sh "which sonar-scanner"
-
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                         archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                     }
