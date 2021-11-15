@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -159,7 +160,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
-	mtaYamlFile := "mta.yaml"
+	mtaYamlFile := filepath.Join(getPath(config.Source, "./"), "mta.yaml")
 	mtaYamlFileExists, err := utils.FileExists(mtaYamlFile)
 
 	if err != nil {
@@ -198,16 +199,9 @@ func runMtaBuild(config mtaBuildOptions,
 	if len(config.Extensions) != 0 {
 		call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 	}
-	if config.Source != "" && config.Source != "./" {
-		call = append(call, "--source", config.Source)
-	} else {
-		call = append(call, "--source", "./")
-	}
-	if config.Target != "" && config.Target != "./" {
-		call = append(call, "--target", config.Target)
-	} else {
-		call = append(call, "--target", "./")
-	}
+
+	call = append(call, "--source", getPath(config.Source, "./"))
+	call = append(call, "--target", getPath(config.Target, "./"))
 
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")
@@ -477,4 +471,12 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 	}
 
 	return id, nil
+}
+
+func getPath(path string, defaultPath string) string {
+	if path != "" {
+		return filepath.FromSlash(path)
+	} else {
+		return filepath.FromSlash(defaultPath)
+	}
 }

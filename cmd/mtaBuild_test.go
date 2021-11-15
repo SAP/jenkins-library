@@ -278,3 +278,61 @@ func TestMarBuild(t *testing.T) {
 		})
 	})
 }
+
+func TestMtaBuildSourceDir(t *testing.T) {
+
+	t.Run("get source dir", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("source dir unset", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("./"), getPath("", "./"))
+		})
+		t.Run("source dir set to default", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("./"), getPath("./", "./"))
+		})
+		t.Run("source dir set to relative path", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("path"), getPath("path", "./"))
+		})
+		t.Run("source dir ends with seperator", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("path/"), getPath("path/", "./"))
+		})
+		t.Run("source dir set to absolute path", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("/absolute/path"), getPath("/absolute/path", "./"))
+		})
+	})
+
+	t.Run("yaml", func(t *testing.T) {
+		t.Parallel()
+		cpe := mtaBuildCommonPipelineEnvironment{}
+		t.Run("default yaml", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+			utilsMock.AddFile("mta.yaml", []byte("already there"))
+
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp"}, &cpe, utilsMock)
+
+			assert.False(t, utilsMock.HasWrittenFile("mta.yaml"))
+		})
+		t.Run("write yaml into source", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "path"}, &cpe, utilsMock)
+
+			assert.True(t, utilsMock.HasWrittenFile("path/mta.yaml"))
+		})
+		t.Run("read yaml from source", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+			utilsMock.AddFile("path/mta.yaml", []byte("already there"))
+
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "path"}, &cpe, utilsMock)
+
+			assert.False(t, utilsMock.HasWrittenFile("path/mta.yaml"))
+		})
+	})
+
+}
