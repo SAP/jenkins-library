@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -28,6 +29,7 @@ const (
 	detectorPath = "/cnb/lifecycle/detector"
 	builderPath  = "/cnb/lifecycle/builder"
 	exporterPath = "/cnb/lifecycle/exporter"
+	platformPath = "/tmp/platform"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -154,7 +156,12 @@ func copyFile(source, target string, utils cnbutils.BuildUtils) error {
 func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
 	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
 	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile, include, exclude) {
+		relPath, err := filepath.Rel(source, sourceFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+		}
+		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
 			dir, err := isDir(sourceFile)
 			if err != nil {
@@ -262,15 +269,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	platformPath := "/platform"
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
-		platformPath = "/tmp/platform"
 		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to write environment variables to files")
 		}
+	}
+
+	err = bindings.ProcessBindings(utils, platformPath, config.Bindings)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed process bindings")
 	}
 
 	dockerConfigFile := ""
@@ -385,7 +396,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
-		log.Entry().Info("skipping updation of certificates")
+		log.Entry().Info("skipping certificates update")
 	}
 
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)

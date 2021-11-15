@@ -1,0 +1,11 @@
+steps:
+  cnbBuild:
+    bindings:
+      maven-settings:
+        type: maven
+        key: settings.xml
+        content: "invalid xml"
+      dummy-binding:
+        type: dummy
+        key: dummy.yml
+        file: TestCnbIntegration/config.yml
