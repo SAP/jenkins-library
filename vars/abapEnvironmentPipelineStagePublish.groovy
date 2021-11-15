@@ -18,7 +18,12 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
+
+        if (script.currentBuild.result == 'SUCCESS') {
+            abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
+        } else {
+            input message: "Pipeline status is not successful. The Add-on will NOT be published."
+        }
     }
 
 }
