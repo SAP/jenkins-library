@@ -55,7 +55,7 @@ type whitesourceExecuteScanOptions struct {
 	Timeout                              int      `json:"timeout,omitempty"`
 	UserToken                            string   `json:"userToken,omitempty"`
 	VersioningModel                      string   `json:"versioningModel,omitempty"`
-	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"oneof=xlsx json xml"`
+	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"possible-values=xlsx json xml"`
 	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty"`
 	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
