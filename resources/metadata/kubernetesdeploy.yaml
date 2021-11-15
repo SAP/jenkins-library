@@ -51,7 +51,7 @@ spec:
         aliases:
           - name: helmDeploymentParameters
         type: "[]string"
-        description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
+        description: Defines additional parameters for "helm install" or "kubectl apply" command.
         scope:
           - PARAMETERS
           - STAGES
@@ -70,7 +70,7 @@ spec:
         aliases:
           - name: k8sAppTemplate
         type: string
-        description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)
+        description: 'Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.'
         scope:
           - PARAMETERS
           - STAGES
@@ -96,6 +96,29 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -172,8 +195,10 @@ spec:
           - helm
           - helm3
       - name: forceUpdates
+        aliases:
+          - name: force
         type: bool
-        description: "Helm only: force resource updates with helm parameter `--force`"
+        description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
         mandatory: false
         scope:
           - PARAMETERS
@@ -234,7 +259,7 @@ spec:
           - STEPS
       - name: kubeConfig
         type: string
-        description: Defines the path to the \"kubeconfig\" file.
+        description: Defines the path to the "kubeconfig" file.
         scope:
           - GENERAL
           - PARAMETERS
@@ -245,13 +270,11 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/kube-config
-              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
-              - $(vaultBasePath)/GROUP-SECRETS/kube-config
+            name: kubeConfigFileSecretName
+            default: kube-config
       - name: kubeContext
         type: string
-        description: Defines the context to use from the \"kubeconfig\" file.
+        description: Defines the context to use from the "kubeconfig" file.
         scope:
           - PARAMETERS
           - STAGES
@@ -293,6 +316,8 @@ spec:
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -300,10 +325,20 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
+      - name: deployCommand
+        type: string
+        description: "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`."
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: apply
+        possibleValues:
+          - apply
+          - replace
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config

@@ -75,10 +75,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: cleanupMode
         type: string
         description: Decides which parts are removed from the Protecode backend after the scan
@@ -165,7 +163,7 @@ spec:
         default: false
       - name: replaceProductId
         type: int
-        description: Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds.
+        description: Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds. If product id is not specified, then Piper starts auto detection mechanism, more precisely it searches a product id with scanned product name in that specified group, if there are several scans have been done with the same product name then the latest scan id will be fetched from BDBA backend. After obtaining product id, Piper re-uploads / replaces new binary without affecting already existing product id.
         scope:
           - PARAMETERS
           - STAGES
@@ -187,10 +185,8 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/protecode
-              - $(vaultBasePath)/$(vaultPipelineName)/protecode
-              - $(vaultBasePath)/GROUP-SECRETS/protecode
+            name: protecodeVaultSecretName
+            default: protecode
       - name: password
         type: string
         description: Password which is used for the user
@@ -205,10 +201,8 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/protecode
-              - $(vaultBasePath)/$(vaultPipelineName)/protecode
-              - $(vaultBasePath)/GROUP-SECRETS/protecode
+            name: protecodeVaultSecretName
+            default: protecode
       - name: version
         aliases:
           - name: artifactVersion

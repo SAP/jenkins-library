@@ -156,7 +156,6 @@ steps:
       client: '001'
     abapPackage: 'PACK'
     applicationName: 'APP'
-    applicationDescription: 'Lorem ipsum'
 ```
 
 ```groovy

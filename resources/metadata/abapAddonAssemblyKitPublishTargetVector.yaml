@@ -49,6 +49,25 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: T
+      - name: maxRuntimeInMinutes
+        type: int
+        description: Maximum runtime for status polling in minutes
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: 5
+      - name: pollingIntervalInSeconds
+        type: int
+        description: Wait time in seconds between polling calls
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: 30
       - name: addonDescriptor
         type: string
         description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions

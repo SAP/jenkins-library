@@ -76,8 +76,10 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 		releaseBody += getReleaseDeltaText(config, lastRelease)
 	}
 
+	prefixedTagName := config.TagPrefix + config.Version
+
 	release := github.RepositoryRelease{
-		TagName:         &config.Version,
+		TagName:         &prefixedTagName,
 		TargetCommitish: &config.Commitish,
 		Name:            &config.Version,
 		Body:            &releaseBody,
