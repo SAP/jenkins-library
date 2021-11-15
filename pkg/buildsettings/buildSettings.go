@@ -10,7 +10,7 @@ import (
 
 type BuildSettings struct {
 	MavenBuild        []BuildOptions `json:"mavenBuild,omitempty"`
-	NpmExecuteScripts []BuildOptions `json:"executeNpmScripts,omitempty"`
+	NpmExecuteScripts []BuildOptions `json:"npmExecuteScripts,omitempty"`
 	KanikoExecute     []BuildOptions `json:"kanikoExecute,omitempty"`
 	MtaBuild          []BuildOptions `json:"mtaBuild,omitempty"`
 }
