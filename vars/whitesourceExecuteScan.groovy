@@ -5,9 +5,9 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/whitesource.yaml'
+@Field String METADATA_FILE = 'metadata/whitesourceExecuteScan.yaml'
 
-//Metadata maintained in file project://resources/metadata/whitesource.yaml
+//Metadata maintained in file project://resources/metadata/whitesourceExecuteScan.yaml
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this

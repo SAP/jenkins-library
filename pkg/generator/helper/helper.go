@@ -484,6 +484,10 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		stepName := stepData.Metadata.Name
 		fmt.Printf("Step name: %v\n", stepName)
+		if stepName+".yaml" != filepath.Base(configFilePath) {
+			fmt.Printf("Expected file %s to have name %s.yaml (<stepName>.yaml)\n", configFilePath, filepath.Join(filepath.Dir(configFilePath), stepName))
+			os.Exit(1)
+		}
 		allSteps.Steps = append(allSteps.Steps, stepName)
 
 		for _, parameter := range stepData.Spec.Inputs.Parameters {
