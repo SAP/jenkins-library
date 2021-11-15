@@ -66,6 +66,8 @@ void call(Map parameters = [:]) {
                                 influxWrapper(script){
                                     piperExecuteBin.credentialWrapper(config, credentialInfo){
                                         sh "echo $PATH"
+                                        sh "echo $JAVA_HOME"
+                                        sh "which java"
                                         sh "which sonar-scanner"
 
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
