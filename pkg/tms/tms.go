@@ -38,6 +38,10 @@ type Node struct {
 	Name string `json:"name"`
 }
 
+type nodes struct {
+	Nodes []Node `json:"nodes"`
+}
+
 type CommunicationInterface interface {
 	GetNodes() ([]Node, error)
 }
@@ -158,16 +162,18 @@ func (communicationInstance *CommunicationInstance) GetNodes() ([]Node, error) {
 
 	// TODO: somewhere here the proxy should be considered as well
 
-	var nodes []Node
+	var aNodes []Node
 	var data []byte
 	data, err := sendRequest(communicationInstance, http.MethodGet, "/v2/nodes", nil, header, http.StatusOK, false)
 	if err != nil {
-		return nodes, err
+		return aNodes, err
 	}
 
-	json.Unmarshal(data, &nodes)
+	var getNodesResponse nodes
+	json.Unmarshal(data, &getNodesResponse)
+	aNodes = getNodesResponse.Nodes
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Nodes obtained successfully")
 	}
-	return nodes, nil
+	return aNodes, nil
 }

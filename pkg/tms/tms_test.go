@@ -102,6 +102,39 @@ func TestGetOAuthToken(t *testing.T) {
 	})
 }
 
+func TestGetNodes(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
+	t.Run("test success", func(t *testing.T) {
+		getNodesResponse := `{"nodes": [{"id": 1,"name": "TEST_NODE"}]}`
+		uploaderMock := uploaderMock{responseBody: getNodesResponse, httpStatusCode: http.StatusOK}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodes, err := communicationInstance.GetNodes()
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
+		assert.Equal(t, 1, len(nodes), "Length of nodes list incorrect")
+		assert.Equal(t, 1, nodes[0].Id, "Id of node at position 0 in the list incorrect")
+		assert.Equal(t, "TEST_NODE", nodes[0].Name, "Name of node at position 0 in the list incorrect")
+	})
+
+	t.Run("test error", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		_, err := communicationInstance.GetNodes()
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
+
+	})
+
+}
+
 func TestSendRequest(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
 	t.Run("test success against uaa", func(t *testing.T) {
