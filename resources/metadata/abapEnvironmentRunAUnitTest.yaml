@@ -103,7 +103,7 @@ spec:
         scope:
           - PARAMETERS
           - STAGES
-          - STEPS2
+          - STEPS
         mandatory: true
         secret: true
         resourceRef:
