@@ -264,7 +264,7 @@ private String checkBuildTool(config) {
             break
         case 'mta':
             if(config.source)
-                buildDescriptorPattern = 'config.source/mta.yaml'
+                buildDescriptorPattern = config.source +'/mta.yaml'
             else
                 buildDescriptorPattern = 'mta.yaml'
             break
