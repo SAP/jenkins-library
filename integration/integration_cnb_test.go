@@ -26,6 +26,29 @@ func TestNpmProject(t *testing.T) {
 	container.assertHasOutput(t, "failed to write image to the following tags: [test/not-found:0.0.1")
 }
 
+func TestProjectDescriptor(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "-v", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
+
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "Dockerfile doesn't match include pattern, ignoring")
+	container.assertHasOutput(t, "srv/hello.js matches include pattern")
+	container.assertHasOutput(t, "srv/hello.js matches include pattern")
+	container.assertHasOutput(t, "package.json matches include pattern")
+	container.assertHasOutput(t, "Downloading buildpack")
+	container.assertHasOutput(t, "Setting custom environment variables: '[BP_NODE_VERSION=15.14.0]'")
+	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 15.14.0")
+	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
+	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
+	container.assertHasOutput(t, "failed to write image to the following tags: [test/not-found:0.0.1")
+}
+
 func TestZipPath(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -101,4 +124,19 @@ func TestWrongBuilderProject(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
+}
+
+func TestBindings(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata"},
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "TestMtaIntegration/maven")
+
+	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
+	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/type")
+	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/dummy.yml")
 }

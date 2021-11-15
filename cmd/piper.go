@@ -166,6 +166,8 @@ func Execute() {
 	rootCmd.AddCommand(InfluxWriteDataCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunAUnitTestCommand())
 	rootCmd.AddCommand(CheckStepActiveCommand())
+	rootCmd.AddCommand(ApiProxyDownloadCommand())
+	rootCmd.AddCommand(ApiKeyValueMapDownloadCommand())
 
 	addRootFlags(rootCmd)
 

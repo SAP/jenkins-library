@@ -64,9 +64,20 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
-	containerImageName, containerImageTag, err := splitFullImageName(config.Image)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+	//support either image or containerImageName and containerImageTag
+	containerImageName := ""
+	containerImageTag := ""
+
+	if len(config.Image) > 0 {
+		containerImageName, containerImageTag, err = splitFullImageName(config.Image)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+		}
+	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		containerImageName = config.ContainerImageName
+		containerImageTag = config.ContainerImageTag
+	} else {
+		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
 	helmLogFields := map[string]interface{}{}
 	helmLogFields["Chart Path"] = config.ChartPath
@@ -237,22 +248,37 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
 	}
 
+	//support either image or containerImageName and containerImageTag
+	fullImage := ""
+
+	if len(config.Image) > 0 {
+		fullImage = config.Image
+	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		fullImage = config.ContainerImageName + ":" + config.ContainerImageTag
+	} else {
+		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+	}
+
 	// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
-	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, config.Image)))
+	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, fullImage)))
 
 	err = ioutil.WriteFile(config.AppTemplate, appTemplate, 0700)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", config.AppTemplate)
 	}
 
-	kubeApplyParams := append(kubeParams, "apply", "--filename", config.AppTemplate)
-	if len(config.AdditionalParameters) > 0 {
-		kubeApplyParams = append(kubeApplyParams, config.AdditionalParameters...)
+	kubeParams = append(kubeParams, config.DeployCommand, "--filename", config.AppTemplate)
+	if config.ForceUpdates == true && config.DeployCommand == "replace" {
+		kubeParams = append(kubeParams, "--force")
 	}
 
-	if err := command.RunExecutable("kubectl", kubeApplyParams...); err != nil {
-		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
+	if len(config.AdditionalParameters) > 0 {
+		kubeParams = append(kubeParams, config.AdditionalParameters...)
+	}
+
+	if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
+		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil

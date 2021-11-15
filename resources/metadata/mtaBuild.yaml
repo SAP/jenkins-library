@@ -47,6 +47,17 @@ spec:
         default:
         aliases:
           - name: extension
+      - name: jobs
+        type: int
+        description: "Configures the number of Make jobs that can run simultaneously. Maximum value allowed is 8"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default:
+        aliases:
+          - name: jobs
       - name: platform
         type: string
         description: "The target platform to which the mtar can be deployed."
@@ -205,4 +216,4 @@ spec:
           - name: mtarFilePath
           - name: custom/mtarPublishedUrl
   containers:
-    - image: devxci/mbtci:1.1.1
+    - image: devxci/mbtci-java11-node14

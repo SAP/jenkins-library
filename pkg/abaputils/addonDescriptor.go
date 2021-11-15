@@ -51,6 +51,7 @@ type Repository struct {
 	Namespace           string
 	SarXMLFilePath      string
 	Languages           []string `json:"languages"`
+	InBuildScope        bool
 }
 
 // ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking
@@ -116,7 +117,7 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFun
 func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error {
 	//checking if parsing went wrong
 	if len(addonDescriptor.Repositories) == 0 {
-		return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+		return errors.New("AddonDescriptor doesn't contain any repositories")
 	}
 	//
 	emptyRepositoryCounter := 0
@@ -125,7 +126,7 @@ func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error 
 			emptyRepositoryCounter++
 		}
 		if counter+1 == len(addonDescriptor.Repositories) && emptyRepositoryCounter == len(addonDescriptor.Repositories) {
-			return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+			return errors.New("AddonDescriptor doesn't contain any repositories")
 		}
 	}
 	return nil
@@ -136,11 +137,21 @@ func (me *AddonDescriptor) initFromJSON(JSON []byte) error {
 	return json.Unmarshal(JSON, me)
 }
 
+// initFromJSON : Init from json string
+func (me *AddonDescriptor) InitFromJSONstring(JSONstring string) error {
+	return me.initFromJSON([]byte(JSONstring))
+}
+
 // AsJSON : dito
 func (me *AddonDescriptor) AsJSON() []byte {
 	//hopefully no errors should happen here or they are covered by the users unit tests
 	jsonBytes, _ := json.Marshal(me)
 	return jsonBytes
+}
+
+// AsJSONstring : dito
+func (me *AddonDescriptor) AsJSONstring() string {
+	return string(me.AsJSON())
 }
 
 // SetRepositories : dito
@@ -158,4 +169,14 @@ func (me *Repository) GetAakAasLanguageVector() string {
 		languageVector = languageVector + language
 	}
 	return languageVector
+}
+
+func (me *AddonDescriptor) GetRepositoriesInBuildScope() []Repository {
+	var RepositoriesInBuildScope []Repository
+	for _, repo := range me.Repositories {
+		if repo.InBuildScope {
+			RepositoriesInBuildScope = append(RepositoriesInBuildScope, repo)
+		}
+	}
+	return RepositoriesInBuildScope
 }
