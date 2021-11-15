@@ -9,7 +9,7 @@ import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/karma.yaml'
+@Field String METADATA_FILE = 'metadata/karmaExecuteTests.yaml'
 
 void call(Map parameters = [:]) {
     List credentials = [
