@@ -235,14 +235,13 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	log.Entry().Infof("creating build settings information...")
-	buildTool := "mtaBuild"
 	mtaConfig := buildsettings.BuildOptions{
 		Profiles:           config.Profiles,
 		GlobalSettingsFile: config.GlobalSettingsFile,
 		Publish:            config.Publish,
 		BuildSettingsInfo:  config.BuildSettingsInfo,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, buildTool)
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, "mtaBuild")
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info : ''%v", err)
 	}

@@ -86,7 +86,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	_, err := maven.Execute(&mavenOptions, utils)
 
 	log.Entry().Infof("creating build settings information...")
-	buildTool := "mavenBuild"
 	mavenConfig := buildsettings.BuildOptions{
 		Profiles:                    config.Profiles,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
@@ -95,7 +94,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		Publish:                     config.Publish,
 		BuildSettingsInfo:           config.BuildSettingsInfo,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, buildTool)
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, "mavenBuild")
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info : ''%v", err)
 	}
