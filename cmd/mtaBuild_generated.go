@@ -23,7 +23,7 @@ type mtaBuildOptions struct {
 	Version                         string   `json:"version,omitempty"`
 	Extensions                      string   `json:"extensions,omitempty"`
 	Jobs                            int      `json:"jobs,omitempty"`
-	Platform                        string   `json:"platform,omitempty" validate:"oneof=CF NEO XSA"`
+	Platform                        string   `json:"platform,omitempty" validate:"possible-values=CF NEO XSA"`
 	ApplicationName                 string   `json:"applicationName,omitempty"`
 	Source                          string   `json:"source,omitempty"`
 	Target                          string   `json:"target,omitempty"`
@@ -399,7 +399,7 @@ func mtaBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci:1.1.1"},
+				{Image: "devxci/mbtci-java11-node14"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

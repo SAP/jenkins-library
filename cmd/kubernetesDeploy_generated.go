@@ -28,7 +28,7 @@ type kubernetesDeployOptions struct {
 	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string   `json:"deploymentName,omitempty"`
-	DeployTool                 string   `json:"deployTool,omitempty" validate:"oneof=kubectl helm helm3"`
+	DeployTool                 string   `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
 	ForceUpdates               bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                 []string `json:"helmValues,omitempty"`
@@ -41,7 +41,7 @@ type kubernetesDeployOptions struct {
 	Namespace                  string   `json:"namespace,omitempty"`
 	TillerNamespace            string   `json:"tillerNamespace,omitempty"`
 	DockerConfigJSON           string   `json:"dockerConfigJSON,omitempty"`
-	DeployCommand              string   `json:"deployCommand,omitempty" validate:"oneof=apply replace"`
+	DeployCommand              string   `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.

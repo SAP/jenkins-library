@@ -18,7 +18,7 @@ import (
 type integrationArtifactResourceOptions struct {
 	APIServiceKey     string `json:"apiServiceKey,omitempty"`
 	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
-	Operation         string `json:"operation,omitempty" validate:"oneof=create update delete"`
+	Operation         string `json:"operation,omitempty" validate:"possible-values=create update delete"`
 	ResourcePath      string `json:"resourcePath,omitempty"`
 }
 

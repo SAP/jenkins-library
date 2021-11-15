@@ -21,15 +21,15 @@ type detectExecuteScanOptions struct {
 	Token                      string   `json:"token,omitempty"`
 	CodeLocation               string   `json:"codeLocation,omitempty"`
 	ProjectName                string   `json:"projectName,omitempty"`
-	Scanners                   []string `json:"scanners,omitempty"`
+	Scanners                   []string `json:"scanners,omitempty" validate:"possible-values=signature source"`
 	ScanPaths                  []string `json:"scanPaths,omitempty"`
 	DependencyPath             string   `json:"dependencyPath,omitempty"`
 	Unmap                      bool     `json:"unmap,omitempty"`
 	ScanProperties             []string `json:"scanProperties,omitempty"`
 	ServerURL                  string   `json:"serverUrl,omitempty"`
 	Groups                     []string `json:"groups,omitempty"`
-	FailOn                     []string `json:"failOn,omitempty"`
-	VersioningModel            string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
+	FailOn                     []string `json:"failOn,omitempty" validate:"possible-values=ALL BLOCKER CRITICAL MAJOR MINOR NONE"`
+	VersioningModel            string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	Version                    string   `json:"version,omitempty"`
 	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
 	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`

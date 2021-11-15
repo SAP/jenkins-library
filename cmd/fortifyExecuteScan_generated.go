@@ -60,7 +60,7 @@ type fortifyExecuteScanOptions struct {
 	DeltaMinutes                    int      `json:"deltaMinutes,omitempty"`
 	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty"`
 	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty"`
-	VersioningModel                 string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
+	VersioningModel                 string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty"`
 	ReportTemplateID                int      `json:"reportTemplateId,omitempty"`
 	FilterSetTitle                  string   `json:"filterSetTitle,omitempty"`

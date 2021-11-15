@@ -216,4 +216,4 @@ spec:
           - name: mtarFilePath
           - name: custom/mtarPublishedUrl
   containers:
-    - image: devxci/mbtci:1.1.1
+    - image: devxci/mbtci-java11-node14
