@@ -10,8 +10,8 @@ import (
 
 type BuildSettings struct {
 	MavenBuild  []BuildOptions `json:"mavenBuild,omitempty"`
-	NpmBuild    []BuildOptions `json:"npmBuild,omitempty"`
-	DockerBuild []BuildOptions `json:"dockerBuild,omitempty"`
+	NpmBuild    []BuildOptions `json:"executeNpmScripts,omitempty"`
+	DockerBuild []BuildOptions `json:"kanikoExecute,omitempty"`
 	MtaBuild    []BuildOptions `json:"mtaBuild,omitempty"`
 }
 
