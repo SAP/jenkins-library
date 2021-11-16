@@ -756,7 +756,7 @@ func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	} else if resp == nil {
 		return worklistID, errors.New("get worklist failed: did not retrieve a HTTP response")
 	}
-	location := resp.Header["location"][0]
+	location := resp.Header["Location"][0]
 	locationSlice := strings.Split(location, "/")
 	worklistID = locationSlice[len(locationSlice)-1]
 
