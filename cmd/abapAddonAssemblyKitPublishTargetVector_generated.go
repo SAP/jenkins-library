@@ -19,7 +19,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"oneof=T P"`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"possible-values=T P"`
 	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
 	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
