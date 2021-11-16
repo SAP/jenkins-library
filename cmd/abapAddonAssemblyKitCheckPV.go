@@ -33,7 +33,9 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment, readAdoDescriptor abaputils.ReadAddonDescriptorType) error {
 
 	conn := new(abapbuild.Connector)
-	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+		return err
+	}
 
 	log.Entry().Infof("Reading Product Version Information from addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
 	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
