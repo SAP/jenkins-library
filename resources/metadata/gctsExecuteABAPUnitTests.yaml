@@ -73,9 +73,12 @@ spec:
       - name: scope
         type: string
         enum:
-          - CHANGED
-          - PACKAGE
-          - REPOSITORY  
+          - local_objects
+          - remote_objects
+          - local_packages
+          - remote_packages
+          - repository
+          - packages
         description: Specifies the scope of objects to be tested. In total there are six predefined scopes LOCAL_CHANGED_OBJECTS, LOCAL_CHANGED_PACKAGES, REMOTE_CHANGED_OBJECTS, REMOTE_CHANGED_PACKAGES, , REPOSITORY and ALL_PACKAGES.
         scope:
           - PARAMETERS
