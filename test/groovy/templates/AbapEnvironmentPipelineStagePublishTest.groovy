@@ -40,22 +40,10 @@ class abapEnvironmentPipelineStagePublishTest extends BasePiperTest {
     }
 
     @Test
-    void testPublishNotExecuted() {
-
-        nullScript.commonPipelineEnvironment.configuration.runStage = []
-
-        nullScript.currentBuild.result = 'UNSTABLE'
-        jsr.step.abapEnvironmentPipelineStagePublish(script: nullScript)
-
-        assertThat(stepsCalled, not(hasItem('abapAddonAssemblyKitPublishTargetVector')))
-    }
-
-    @Test
     void testPublishExecuted() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
 
-        nullScript.currentBuild.result = "SUCCESS"
         jsr.step.abapEnvironmentPipelineStagePublish(script: nullScript)
 
         assertThat(stepsCalled, hasItem('abapAddonAssemblyKitPublishTargetVector'))

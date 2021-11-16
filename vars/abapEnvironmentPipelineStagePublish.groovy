@@ -19,11 +19,8 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
 
-        if (script.currentBuild.result == 'SUCCESS') {
-            abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
-        } else {
-            echo "Pipeline status is not successful. The Add-on will NOT be published."
-        }
+        abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
+
     }
 
 }
