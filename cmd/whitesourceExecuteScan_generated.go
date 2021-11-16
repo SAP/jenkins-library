@@ -55,7 +55,7 @@ type whitesourceExecuteScanOptions struct {
 	Timeout                              int      `json:"timeout,omitempty"`
 	UserToken                            string   `json:"userToken,omitempty"`
 	VersioningModel                      string   `json:"versioningModel,omitempty"`
-	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"oneof=xlsx json xml"`
+	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"possible-values=xlsx json xml"`
 	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty"`
 	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
@@ -774,7 +774,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "dub"}, {Name: "buildTool", Value: "docker"}}}}},
-				{Image: "devxci/mbtci:1.1.1", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "mta"}}}}},
+				{Image: "devxci/mbtci-java11-node14", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "mta"}}}}},
 				{Image: "golang:1", WorkingDir: "/go", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "golang"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},

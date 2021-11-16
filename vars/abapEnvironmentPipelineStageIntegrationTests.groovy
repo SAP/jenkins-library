@@ -39,13 +39,15 @@ void call(Map parameters = [:]) {
         try {
             abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
         } catch (Exception e) {
-            script.currentBuild.result = 'UNSTABLE'
-        }
-        if (config.confirmDeletion) {
-            input message: "Add-on product was installed successfully? Once you proceed, the test system will be deleted."
-        }
-        if (!config.debug) {
-            cloudFoundryDeleteService script: parameters.script
+            echo "Deployment test of add-on product failed."
+            throw e
+        } finally {
+            if (config.confirmDeletion) {
+                input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
+            }
+            if (!config.debug) {
+                cloudFoundryDeleteService script: parameters.script
+            }
         }
     }
 
