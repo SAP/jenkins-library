@@ -91,7 +91,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	log.Entry().Infof("changed objects:", objects)
 
-	if config.UnitTest {
+	if config.AUnitTest {
 
 		err := executeAUnitTest(config, httpClient, objects)
 
@@ -104,7 +104,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	}
 
-	if config.AtcCheck {
+	if config.ATCCheck {
 
 		err = executeATCCheck(config, httpClient, objects)
 
