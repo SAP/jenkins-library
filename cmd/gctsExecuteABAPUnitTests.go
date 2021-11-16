@@ -651,7 +651,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 }
 
 func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, xml []byte, worklistID string) (err error) {
-
+	log.Entry().Info("start ATC run")
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
 		return errors.Wrap(discError, "start of ATC run failed")
@@ -687,7 +687,7 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 }
 
 func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, worklistID string) (response *http.Response, err error) {
-
+	log.Entry().Info("get ATC run")
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
 		return response, errors.Wrap(discError, "get ATC run failed")
@@ -725,6 +725,8 @@ func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender,
 }
 
 func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (worklistID string, error error) {
+
+	log.Entry().Info("get Worklist")
 
 	url := config.Host +
 		"/sap/bc/adt/atc/worklists?checkVariant=DEFAULT_REMOTE_REF?sap-client=" + config.Client
