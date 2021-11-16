@@ -52,6 +52,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		Publish:            config.Publish,
 		CreateBOM:          config.CreateBOM,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
 	}
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, "npmExecuteScripts")
 	if err != nil {
