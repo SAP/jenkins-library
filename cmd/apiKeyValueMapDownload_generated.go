@@ -15,26 +15,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type integrationArtifactResourceOptions struct {
-	APIServiceKey     string `json:"apiServiceKey,omitempty"`
-	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
-	Operation         string `json:"operation,omitempty" validate:"possible-values=create update delete"`
-	ResourcePath      string `json:"resourcePath,omitempty"`
+type apiKeyValueMapDownloadOptions struct {
+	APIServiceKey   string `json:"apiServiceKey,omitempty"`
+	KeyValueMapName string `json:"keyValueMapName,omitempty"`
+	DownloadPath    string `json:"downloadPath,omitempty"`
 }
 
-// IntegrationArtifactResourceCommand Add, Delete or Update an resource file of integration flow designtime artifact
-func IntegrationArtifactResourceCommand() *cobra.Command {
-	const STEP_NAME = "integrationArtifactResource"
+// ApiKeyValueMapDownloadCommand Download a specific Key Value Map from the API Portal
+func ApiKeyValueMapDownloadCommand() *cobra.Command {
+	const STEP_NAME = "apiKeyValueMapDownload"
 
-	metadata := integrationArtifactResourceMetadata()
-	var stepConfig integrationArtifactResourceOptions
+	metadata := apiKeyValueMapDownloadMetadata()
+	var stepConfig apiKeyValueMapDownloadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 
-	var createIntegrationArtifactResourceCmd = &cobra.Command{
+	var createApiKeyValueMapDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Add, Delete or Update an resource file of integration flow designtime artifact",
-		Long:  `With this step you can either add, delete or update a resource of integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for managing an resource of integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Download a specific Key Value Map from the API Portal",
+		Long: `With this step you can download a specific Key Value Map from the API Portal, which returns a zip file with the Key Value Map contents in to current workspace using the OData API.
+Learn more about the SAP API Management API for downloading an Key Value Map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -96,47 +96,45 @@ func IntegrationArtifactResourceCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			integrationArtifactResource(stepConfig, &telemetryData)
+			apiKeyValueMapDownload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addIntegrationArtifactResourceFlags(createIntegrationArtifactResourceCmd, &stepConfig)
-	return createIntegrationArtifactResourceCmd
+	addApiKeyValueMapDownloadFlags(createApiKeyValueMapDownloadCmd, &stepConfig)
+	return createApiKeyValueMapDownloadCmd
 }
 
-func addIntegrationArtifactResourceFlags(cmd *cobra.Command, stepConfig *integrationArtifactResourceOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.Operation, "operation", os.Getenv("PIPER_operation"), "Specifies the operation(create/update/delete) for resource file of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.ResourcePath, "resourcePath", os.Getenv("PIPER_resourcePath"), "Specifies integration artifact resource file relative path.")
+func addApiKeyValueMapDownloadFlags(cmd *cobra.Command, stepConfig *apiKeyValueMapDownloadOptions) {
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
+	cmd.Flags().StringVar(&stepConfig.KeyValueMapName, "keyValueMapName", os.Getenv("PIPER_keyValueMapName"), "Specifies the name of the Key Value Map.")
+	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies Key Value Map download CSV file location.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
-	cmd.MarkFlagRequired("integrationFlowId")
-	cmd.MarkFlagRequired("operation")
-	cmd.MarkFlagRequired("resourcePath")
+	cmd.MarkFlagRequired("keyValueMapName")
+	cmd.MarkFlagRequired("downloadPath")
 }
 
 // retrieve step metadata
-func integrationArtifactResourceMetadata() config.StepData {
+func apiKeyValueMapDownloadMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "integrationArtifactResource",
+			Name:        "apiKeyValueMapDownload",
 			Aliases:     []config.Alias{},
-			Description: "Add, Delete or Update an resource file of integration flow designtime artifact",
+			Description: "Download a specific Key Value Map from the API Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "apiServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cpiApiServiceKeyCredentialsId",
+								Name:  "apimApiServiceKeyCredentialsId",
 								Param: "apiServiceKey",
 								Type:  "secret",
 							},
@@ -148,31 +146,22 @@ func integrationArtifactResourceMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_apiServiceKey"),
 					},
 					{
-						Name:        "integrationFlowId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name:        "operation",
+						Name:        "keyValueMapName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_operation"),
+						Default:     os.Getenv("PIPER_keyValueMapName"),
 					},
 					{
-						Name:        "resourcePath",
+						Name:        "downloadPath",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_resourcePath"),
+						Default:     os.Getenv("PIPER_downloadPath"),
 					},
 				},
 			},
