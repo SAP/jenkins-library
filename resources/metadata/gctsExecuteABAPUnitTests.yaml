@@ -1,19 +1,28 @@
 metadata:
   name: gctsExecuteABAPUnitTests
-  description: Runs ABAP unit tests for all packages of the specified repository
+  description: Runs ABAP unit tests and ATC (ABAP Test Cockpit) Checks for the specified scope. 
   longDescription: |
-    This step will execute every unit test associated with a package belonging to the specified local repository on an ABAP system.
-
+    This step will execute every unit test and ATC Checks for the specified scope of a local repository on an ABAP system.
+    In total there are six scopes. You can specify one of the following scopes based on your use case.
+      1.	LOCAL_CHANGED_OBJECTS - delta between commit that triggered the pipeline and the last local commit
+      2.	LOCAL_CHANGED_PACKAGES – delta between commit that triggered the pipeline and the last local commit. Objects will be resolved into packages.
+      3.	REMOTE_CHANGED_OBJECTS - delta between commit that triggered the pipeline and the last remote commit.
+      4.	REMOTE_CHANGED_PACKAGES - delta between commit that triggered the pipeline and the last remote commit. Objects will be resolved into packages.
+      5.	ALL_PACKAGES – all packages which belong to the repository 
+      6.	REPOSITORY – all objects which belong to the repository
+    In addition, this step gives you the flexibility to choose whether you want to execute only units tests or only ATC checks or both. By default, both unit test and ATC checks will be executed.
+    The results of Unit Tests and ATC checks are stored in a checkstyle format. In Jenkins with the help of Static Analysis Warning Plug-In you can view the issues founds and navigate to the exact line of the source code where the issue occurred. For your information the source code is an object in ABAP system or a file in a Git repository.
+    You can use gCTSExecuteABAPUnitTests as of SAP S/4HANA 2020.
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the unit tests
+        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the unit tests and ATC Checks
         type: jenkins
     params:
       - name: username
         type: string
-        description: User to authenticate to the ABAP system
+        description: User to authenticate to the ABAP system. Note – Do not provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -26,7 +35,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password to authenticate to the ABAP system
+        description: Password to authenticate to the ABAP system. . Note – Do not provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -67,7 +76,7 @@ spec:
           - CHANGED
           - PACKAGE
           - REPOSITORY  
-        description: Specifies the scope of objects to be tested
+        description: Specifies the scope of objects to be tested. In total there are six predefined scopes LOCAL_CHANGED_OBJECTS, LOCAL_CHANGED_PACKAGES, REMOTE_CHANGED_OBJECTS, REMOTE_CHANGED_PACKAGES, , REPOSITORY and ALL_PACKAGES.
         scope:
           - PARAMETERS
           - STAGES
@@ -81,21 +90,7 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: maxTimeOut
-        type: int
-        description: Maximum waiting time for results of the execution of ABAP Unit Tests
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: checkVariant
-        type: string
-        description: Check Variant for ATC Checks
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: unitTest
+      - name: aUnitTest
         type: bool
         default: true
         description: Specifies whether to execute Unit Tests
@@ -103,7 +98,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: atcCheck
+      - name: ATCCheck
         type: bool
         default: true
         description: Specifies whether to execute ATC Check
@@ -111,9 +106,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: jenkinsWorkspace
+      - name: workspace
         type: string
-        description: The absolute path of the directory assigned to the build as workspace
+        description: The absolute path to job workspace directory 
         scope:
           - PARAMETERS
           - STAGES
