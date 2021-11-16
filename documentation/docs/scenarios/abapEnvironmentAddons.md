@@ -46,7 +46,7 @@ A software component version is defined by a name and a version string. The name
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
 Software Component Versions are uniquely created and independent from the add-on product versions where they are included.
-This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
+This means that once a software component version was built, it will be reused in any following add-on product versions where referenced.
 
 ### Target Vector
 
@@ -175,14 +175,19 @@ The section “repositories” contains one or multiple software component versi
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
-Changing the `addonVersion` string does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on `addonVersion`, the existing delivery packages are reused for the new add-on product version.
-Only by changing the `version` of a software component, the build of a new delivery package with the latest changes is triggered.
+`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple addon products).
 
-The `addonVersion` should be determined by synchronously to how the software components bundle is changed: In case the release version of a software component is changed, the release of the `addonVersion` should be changed. If the support package version of a software component is changed, support package version of the add-on should be changed. And if patch version of a software component, the patch version of the add-on should be adjusted.
+The `version` of a software component influcences two aspects:
 
-`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component.
+- The given version will be used as part of the target vector
+- If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
 
-The `branch` should only be changed while also changing release version or support package level of a software component. During creation of a patch version (CPK) the `branch` should remain the same as before, so that previous and current commit of the software component can be found in the same branch for comparison.
+As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built no new package is build. Only a new target vector is created.
+If the `version` of a software component (repository) is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package can not be deployed.
+If the addon product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
+
+`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different list of commits.
+The `commitID` should only be changed while also adjusting the `version` number of a software component. While adjusting the patch version or support package version of a software component, the `branch` should only be changed if the other branch also includes the `commitID` of the previous software component version.
 
 ##### Versioning Rules
 

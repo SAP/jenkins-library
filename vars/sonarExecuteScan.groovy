@@ -6,7 +6,7 @@ import groovy.transform.Field
 import java.nio.charset.StandardCharsets
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/sonar.yaml'
+@Field String METADATA_FILE = 'metadata/sonarExecuteScan.yaml'
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
