@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -18,6 +20,8 @@ type checkStepActiveCommandOptions struct {
 	stepName        string
 	stageName       string
 	v1Active        bool
+	stageOutputFile string
+	stepOutputFile  string
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
@@ -90,6 +94,35 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	log.Entry().Debugf("RunSteps: %v", runSteps)
 	log.Entry().Debugf("RunStages: %v", runStages)
 
+	if len(checkStepActiveOptions.stageOutputFile) > 0 || len(checkStepActiveOptions.stepOutputFile) > 0 {
+		if len(checkStepActiveOptions.stageOutputFile) > 0 {
+			result, err := json.Marshal(runStages)
+			if err != nil {
+				return fmt.Errorf("error marshalling json: %w", err)
+			}
+			log.Entry().Infof("Writing stage condition file %v", checkStepActiveOptions.stageOutputFile)
+			err = utils.FileWrite(checkStepActiveOptions.stageOutputFile, result, 0666)
+			if err != nil {
+				return fmt.Errorf("error writing file '%v': %w", checkStepActiveOptions.stageOutputFile, err)
+			}
+		}
+
+		if len(checkStepActiveOptions.stepOutputFile) > 0 {
+			result, err := json.Marshal(runSteps)
+			if err != nil {
+				return fmt.Errorf("error marshalling json: %w", err)
+			}
+			log.Entry().Infof("Writing step condition file %v", checkStepActiveOptions.stepOutputFile)
+			err = utils.FileWrite(checkStepActiveOptions.stepOutputFile, result, 0666)
+			if err != nil {
+				return fmt.Errorf("error writing file '%v': %w", checkStepActiveOptions.stepOutputFile, err)
+			}
+		}
+
+		// do not perform a check if output files are written
+		return nil
+	}
+
 	if !runSteps[checkStepActiveOptions.stageName][checkStepActiveOptions.stepName] {
 		return errors.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
 	}
@@ -104,6 +137,8 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepName, "step", "", "Name of the step being checked")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", "", "Name of the stage in which contains the step being checked")
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
+	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
+	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
 	cmd.MarkFlagRequired("step")
 	cmd.MarkFlagRequired("stage")
 }
