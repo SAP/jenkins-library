@@ -140,6 +140,7 @@ func TestRunSonar(t *testing.T) {
 			Organization:              "SAP",
 			Version:                   "1.2.3",
 			VersioningModel:           "major",
+			PullRequestProvider:       "GitHub",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		// test
@@ -168,7 +169,8 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
-			Options: []string{"-Dsonar.projectKey=piper"},
+			Options:             []string{"-Dsonar.projectKey=piper"},
+			PullRequestProvider: "GitHub",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
