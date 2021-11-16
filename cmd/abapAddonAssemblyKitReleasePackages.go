@@ -50,8 +50,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	}
 	addonDescriptor.Repositories = sortingBack(packagesWithReposLocked, packagesWithReposNotLocked)
 	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
+	cpe.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 	return nil
 }
 
