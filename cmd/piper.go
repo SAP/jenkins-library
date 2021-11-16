@@ -57,9 +57,10 @@ type SentryConfiguration struct {
 	Dsn string `json:"dsn,omitempty"`
 }
 
+// CustomReportingConfiguration defines the configuration for custom telemetry reporting
 type CustomReportingConfiguration struct {
-	CustomReportingURL   string `json:"dsn,omitempty"`
-	CustomReportingToken string `json:"token,omitempty"`
+	Dsn   string `json:"dsn,omitempty"`
+	Token string `json:"token,omitempty"`
 }
 
 // SplunkConfiguration defines the configuration options for the Splunk logging system
