@@ -20,6 +20,7 @@ class commonPipelineEnvironment implements Serializable {
 
     //stores the build tools if it inferred automatically, e.g. in the SAP Cloud SDK pipeline
     String buildTool
+    String buildToolDescPath = null
 
     //Stores the current buildResult
     String buildResult = 'SUCCESS'
@@ -92,6 +93,7 @@ class commonPipelineEnvironment implements Serializable {
         githubOrg = null
         githubRepo = null
 
+        buildToolDescPath = null
         mtarFilePath = null
         valueMap = [:]
 
@@ -199,6 +201,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
+        [filename: '.pipeline/commonPipelineEnvironment/buildToolDescPath', property: 'buildToolDescPath'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
     ]

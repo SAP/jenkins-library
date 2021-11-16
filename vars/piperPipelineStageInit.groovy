@@ -171,6 +171,11 @@ void call(Map parameters = [:]) {
             checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
+        if(config.verbose) {
+            script.echo "init cpe.configuration: ${script.commonPipelineEnvironment.configuration}"
+            script.echo "init config: ${config}"
+        }
+
         String buildTool = checkBuildTool(config)
 
         script.commonPipelineEnvironment.projectName = config.projectName

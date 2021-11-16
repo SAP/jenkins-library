@@ -103,6 +103,12 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
+        if(config.verbose) {
+            script.echo "setup cpe.configuration: ${script.commonPipelineEnvironment.configuration}"
+            script.echo "setup config: ${config}"
+        }
+
+        inferBuildToolDesc(script, config)
         inferBuildTool(script, config)
 
         (parameters.utils ?: new Utils()).pushToSWA([
@@ -122,6 +128,10 @@ void call(Map parameters = [:]) {
     }
 }
 
+
+// Infer build tool descriptor (maven, npm, mta)
+private static void inferBuildToolDesc(script, config) {
+}
 
 // Infer build tool (maven, npm, mta) based on existing build descriptor files in the project root.
 private static void inferBuildTool(script, config) {
