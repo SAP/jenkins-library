@@ -37,9 +37,10 @@ func TestProjectDescriptor(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "-v", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
-	container.assertHasOutput(t, "/project/Dockerfile doesn't match include pattern, ignoring")
-	container.assertHasOutput(t, "/project/srv/hello.js matches include pattern")
-	container.assertHasOutput(t, "/project/srv/hello.js matches include pattern")
+	container.assertHasOutput(t, "Dockerfile doesn't match include pattern, ignoring")
+	container.assertHasOutput(t, "srv/hello.js matches include pattern")
+	container.assertHasOutput(t, "srv/hello.js matches include pattern")
+	container.assertHasOutput(t, "package.json matches include pattern")
 	container.assertHasOutput(t, "Downloading buildpack")
 	container.assertHasOutput(t, "Setting custom environment variables: '[BP_NODE_VERSION=15.14.0]'")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 15.14.0")

@@ -156,7 +156,12 @@ func copyFile(source, target string, utils cnbutils.BuildUtils) error {
 func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
 	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
 	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile, include, exclude) {
+		relPath, err := filepath.Rel(source, sourceFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+		}
+		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
 			dir, err := isDir(sourceFile)
 			if err != nil {
@@ -391,7 +396,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
-		log.Entry().Info("skipping updation of certificates")
+		log.Entry().Info("skipping certificates update")
 	}
 
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
