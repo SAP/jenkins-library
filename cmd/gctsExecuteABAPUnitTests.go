@@ -350,7 +350,7 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	log.Entry().Info("execution of unit test has started")
 
 	var innerXml string
-	var result aUnitRunResult
+	var result runResult
 
 	for _, object := range objects {
 
@@ -427,24 +427,24 @@ func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 	header.Add("Accept", "application/xml")
 	header.Add("Content-Type", "application/vnd.sap.adt.abapunit.testruns.result.v1+xml")
 
-	resp, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xml), header, nil)
+	response, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xml), header, nil)
 
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
+	/*	defer func() {
+			if response != nil && response.Body != nil {
+				response.Body.Close()
+			}
+		}()
+	*/
 	if httpErr != nil {
 		return response, errors.Wrap(httpErr, "run of unit tests failed")
-	} else if resp == nil {
+	} else if response == nil {
 		return response, errors.New("run of unit tests failed: did not retrieve a HTTP response")
 	}
 
-	return resp, nil
+	return response, nil
 }
 
-func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *aUnitRunResult) (parsedResult Checkstyle, error error) {
+func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *runResult) (parsedResult Checkstyle, error error) {
 
 	log.Entry().Info("parsing unit test result to checkstyle started...")
 
@@ -570,7 +570,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	log.Entry().Info("excecution of ATC checks has started")
 
 	var innerXml string
-	var result ATCCheckRunResult
+	var result Worklist
 
 	for _, object := range objects {
 
@@ -708,12 +708,6 @@ func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender,
 
 	resp, httpErr := client.SendRequest("GET", url, nil, header, nil)
 
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
 	if httpErr != nil {
 		return response, errors.Wrap(httpErr, "get ATC run failed")
 	} else if resp == nil {
@@ -763,7 +757,7 @@ func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	return worklistID, nil
 }
 
-func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, response *ATCCheckRunResult) (atcResults Checkstyle, error error) {
+func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, response *Worklist) (atcResults Checkstyle, error error) {
 
 	log.Entry().Info("conversion of ATC check results to CheckStyle has started")
 
@@ -1945,7 +1939,7 @@ type ATCRun struct {
 
 //Link of XML object
 
-type ATCCheckRunResult struct {
+type Worklist struct {
 	XMLName             xml.Name `xml:"worklist"`
 	Text                string   `xml:",chardata"`
 	ID                  string   `xml:"id,attr"`
@@ -2030,7 +2024,7 @@ type gctsLogs struct {
 	Code     string `json:"code"`
 }
 
-type aUnitRunResult struct {
+type runResult struct {
 	XMLName xml.Name `xml:"runResult"`
 	Text    string   `xml:",chardata"`
 	Aunit   string   `xml:"aunit,attr"`
