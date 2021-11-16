@@ -18,12 +18,13 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 var atcFailure, aUnitFailure bool
 
-func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions) {
+func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData) {
 
 	// for command execution use Command
 	c := command.Command{}
