@@ -864,6 +864,7 @@ func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, bui
 			return err
 		}
 	}
+	return nil
 }
 
 func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyUtils, buildID string, t map[string]string) error {
