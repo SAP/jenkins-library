@@ -71,9 +71,11 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
             -> pmdParserStepCalled = true
         })
 
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml\'', '{"dockerImage": "maven:3.6-jdk-8"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenExecuteStaticCodeChecks.yaml\'', '{"dockerImage": "maven:3.6-jdk-8"}')
 
         helper.registerAllowedMethod('findFiles', [Map.class], {return null})
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
     }
 
     @Test
@@ -89,7 +91,7 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
             script: nullScript
         )
 
-        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[shellCallRule.shell.size() -1], is('./piper mavenExecuteStaticCodeChecks'))
         assertTrue(spotBugsStepCalled)
@@ -110,7 +112,7 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
             script: nullScript
         )
 
-        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[shellCallRule.shell.size() -1], is('./piper mavenExecuteStaticCodeChecks'))
         assertFalse(spotBugsStepCalled)

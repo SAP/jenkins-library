@@ -9,7 +9,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +30,7 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 	metadata := uiVeri5ExecuteTestsMetadata()
 	var stepConfig uiVeri5ExecuteTestsOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createUiVeri5ExecuteTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -37,6 +40,8 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -53,6 +58,20 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -63,10 +82,20 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			uiVeri5ExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -80,8 +109,8 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install @ui5/uiveri5 --global --quiet`, "The command that is executed to install the uiveri5 test tool.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `/home/node/.npm-global/bin/uiveri5`, "The command that is executed to start the tests.")
-	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runCommand, last parameter has to be path to conf.js (default if missing: ./conf.js).")
-	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated and will result in an error if set. Please use runOptions instead. Be aware, you have to add --seleniumAddress='http://<url>:4444/wd/hub' to your runOptions now!")
+	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress=http://localhost:4444/wd/hub`}, "Options to append to the runCommand, last parameter has to be path to conf.js (default if missing: ./conf.js).")
+	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated and will result in an error if set. Please use runOptions instead. Split the testOptions string at the whitespaces when migrating it into a list of runOptions. Be aware, you have to add --seleniumAddress='http://<url>:4444/wd/hub' to your runOptions now!")
 	cmd.Flags().StringVar(&stepConfig.TestServerURL, "testServerUrl", os.Getenv("PIPER_testServerUrl"), "URL pointing to the deployment.")
 
 	cmd.MarkFlagRequired("installCommand")
@@ -99,6 +128,10 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "installCommand",
@@ -107,6 +140,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `npm install @ui5/uiveri5 --global --quiet`,
 					},
 					{
 						Name:        "runCommand",
@@ -115,6 +149,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `/home/node/.npm-global/bin/uiveri5`,
 					},
 					{
 						Name:        "runOptions",
@@ -123,6 +158,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     []string{`--seleniumAddress=http://localhost:4444/wd/hub`},
 					},
 					{
 						Name:        "testOptions",
@@ -131,6 +167,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testOptions"),
 					},
 					{
 						Name:        "testServerUrl",
@@ -139,6 +176,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testServerUrl"),
 					},
 				},
 			},

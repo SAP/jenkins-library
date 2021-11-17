@@ -9,7 +9,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +19,9 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty"`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"possible-values=T P"`
+	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
@@ -28,16 +32,21 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 	metadata := abapAddonAssemblyKitPublishTargetVectorMetadata()
 	var stepConfig abapAddonAssemblyKitPublishTargetVectorOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createAbapAddonAssemblyKitPublishTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step triggers the publication of the Target Vector according to the specified scope.",
 		Long: `This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector.
-With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.`,
+With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -56,6 +65,20 @@ With targetVectorScope "T" the Target Vector will be published to the test envir
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -66,10 +89,20 @@ With targetVectorScope "T" the Target Vector will be published to the test envir
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			abapAddonAssemblyKitPublishTargetVector(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -84,7 +117,9 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
-	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", os.Getenv("PIPER_targetVectorScope"), "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
+	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", `T`, "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
+	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 5, "Maximum runtime for status polling in minutes")
+	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 30, "Wait time in seconds between polling calls")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
@@ -103,6 +138,9 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -111,6 +149,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -119,6 +158,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -127,6 +167,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "targetVectorScope",
@@ -135,6 +176,25 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `T`,
+					},
+					{
+						Name:        "maxRuntimeInMinutes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     5,
+					},
+					{
+						Name:        "pollingIntervalInSeconds",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
 					},
 					{
 						Name: "addonDescriptor",
@@ -148,6 +208,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

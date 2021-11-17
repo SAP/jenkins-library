@@ -29,6 +29,8 @@ func newLintMockUtilsBundle() mockLintUtilsBundle {
 }
 
 func TestNpmExecuteLint(t *testing.T) {
+	defaultConfig := npmExecuteLintOptions{RunScript: "ci-lint"}
+
 	t.Run("Call with ci-lint script and one package.json", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
 		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
@@ -37,9 +39,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		npmUtils.ExecRunner = lintUtils.execRunner
 		npmUtils.FilesMock = lintUtils.FilesMock
 
-		config := npmExecuteLintOptions{
-			FailOnError: true,
-		}
+		config := defaultConfig
+		config.FailOnError = true
 
 		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
@@ -52,7 +53,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
 
-		config := npmExecuteLintOptions{}
+		config := defaultConfig
 		config.DefaultNpmRegistry = "foo.bar"
 
 		npmUtils := newNpmMockUtilsBundle()
@@ -74,7 +75,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
 		lintUtils.AddFile(filepath.Join("src", ".eslintrc.json"), []byte("{\"name\": \"Test\" }"))
 
-		config := npmExecuteLintOptions{}
+		config := defaultConfig
 		config.DefaultNpmRegistry = "foo.bar"
 
 		npmUtils := newNpmMockUtilsBundle()
@@ -95,7 +96,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
 		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 
-		config := npmExecuteLintOptions{}
+		config := defaultConfig
 		config.DefaultNpmRegistry = "foo.bar"
 
 		npmUtils := newNpmMockUtilsBundle()
@@ -117,7 +118,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
 		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm run ci-lint --silent": errors.New("exit 1")}}
 
-		config := npmExecuteLintOptions{}
+		config := defaultConfig
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
 
@@ -141,7 +142,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
 		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"eslint . -f checkstyle -o ./0_defaultlint.xml --ignore-pattern node_modules/ --ignore-pattern .eslintrc.js": errors.New("exit 1")}}
 
-		config := npmExecuteLintOptions{}
+		config := defaultConfig
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
 
@@ -171,5 +172,75 @@ func TestNpmExecuteLint(t *testing.T) {
 			assert.Contains(t, eslintConfigs, ".eslintrc.json")
 			assert.Contains(t, eslintConfigs, filepath.Join("src", ".eslintrc.json"))
 		}
+	})
+
+	t.Run("Call with ci-lint script and install", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"test\", \"scripts\": { \"ci-lint\": \"\" } }"))
+
+		npmUtils := npm.NewNpmMockUtilsBundle()
+		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+
+		config := defaultConfig
+		config.Install = true
+
+		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}, Install: true}}
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with default and install", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"test\"}"))
+
+		npmUtils := npm.NewNpmMockUtilsBundle()
+		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+
+		config := defaultConfig
+		config.Install = true
+
+		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}, Install: true}}
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with custom runScript", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"test\", \"scripts\": { \"lint:ci\": \"\" } }"))
+
+		npmUtils := npm.NewNpmMockUtilsBundle()
+		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+
+		config := defaultConfig
+		config.RunScript = "lint:ci"
+
+		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"lint:ci"}, RunOptions: []string{"--silent"}}}
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with empty runScript and failOnError", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
+		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm run ci-lint --silent": errors.New("exit 1")}}
+
+		config := defaultConfig
+		config.FailOnError = true
+		config.RunScript = ""
+
+		npmUtils := newNpmMockUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.EqualError(t, err, "runScript is not allowed to be empty!")
 	})
 }

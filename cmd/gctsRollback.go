@@ -54,7 +54,6 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		return errors.Errorf("no remote repository URL configured")
 	}
 
-	parsedURL, err := url.Parse(repoInfo.Result.URL)
 	if err != nil {
 		return errors.Wrap(err, "could not parse remote repository URL as valid URL")
 	}
@@ -71,28 +70,6 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 			Repository: config.Repository,
 			Client:     config.Client,
 			Commit:     config.Commit,
-		}
-
-	} else if parsedURL.Host == "github.com" {
-		log.Entry().Info("Remote repository domain is 'github.com'. Trying to rollback to last commit with status 'success'.")
-
-		commitList, err := getCommits(config, telemetryData, httpClient)
-		if err != nil {
-			return errors.Wrap(err, "could not get repository commits")
-		}
-
-		successCommit, err := getLastSuccessfullCommit(config, telemetryData, httpClient, parsedURL, commitList)
-		if err != nil {
-			return errors.Wrap(err, "could not determine successful commit")
-		}
-
-		deployOptions = gctsDeployOptions{
-			Username:   config.Username,
-			Password:   config.Password,
-			Host:       config.Host,
-			Repository: config.Repository,
-			Client:     config.Client,
-			Commit:     successCommit,
 		}
 
 	} else {
@@ -117,7 +94,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		}
 	}
 
-	deployErr := deployCommit(&deployOptions, telemetryData, httpClient)
+	deployErr := pullByCommit(&deployOptions, telemetryData, command, httpClient)
 
 	if deployErr != nil {
 		return errors.Wrap(deployErr, "rollback commit failed")

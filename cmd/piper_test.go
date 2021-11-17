@@ -7,17 +7,26 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-
-	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
+
+func resetEnv(e []string) {
+	for _, val := range e {
+		tmp := strings.Split(val, "=")
+		os.Setenv(tmp[0], tmp[1])
+	}
+}
 
 func TestAddRootFlags(t *testing.T) {
 	var testRootCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
@@ -49,15 +58,15 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
 			// init
+			defer resetEnv(os.Environ())
+			os.Clearenv()
+
+			//mock Jenkins env
+			os.Setenv("JENKINS_HOME", "anything")
+			require.NotEmpty(t, os.Getenv("JENKINS_HOME"))
+			os.Setenv("STAGE_NAME", test.stageNameEnv)
+
 			GeneralConfig.StageName = test.stageNameArg
-
-			resetValue := os.Getenv(stageNameEnvKey)
-			defer func() { _ = os.Setenv(stageNameEnvKey, resetValue) }()
-
-			err := os.Setenv(stageNameEnvKey, test.stageNameEnv)
-			if err != nil {
-				t.Fatalf("could not set env var %s", stageNameEnvKey)
-			}
 
 			if test.stageNameJSON != "" {
 				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageNameJSON)
@@ -156,16 +165,26 @@ func TestRetrieveHookConfig(t *testing.T) {
 	}{
 		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
 		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}, "splunk":{"dsn":"https://my.splunk.dsn", "token": "mytoken", "index": "myindex", "sendLogs": true}}`),
+			expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"},
+				SplunkConfig: SplunkConfiguration{
+					Dsn:      "https://my.splunk.dsn",
+					Token:    "mytoken",
+					Index:    "myindex",
+					SendLogs: true,
+				},
+			},
+		},
 	}
 
 	for _, test := range tt {
 		var target HookConfiguration
-		var hookJSONRaw json.RawMessage
+		var hookJSONinterface map[string]interface{}
 		if len(test.hookJSON) > 0 {
-			err := json.Unmarshal(test.hookJSON, &hookJSONRaw)
+			err := json.Unmarshal(test.hookJSON, &hookJSONinterface)
 			assert.NoError(t, err)
 		}
-		retrieveHookConfig(&hookJSONRaw, &target)
+		retrieveHookConfig(hookJSONinterface, &target)
 		assert.Equal(t, test.expectedHookConfig, target)
 	}
 }
@@ -476,4 +495,41 @@ bar: 42
 		assert.Contains(t, logBuffer.String(), "The value may be ignored as a result")
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
+}
+
+func TestResolveAccessTokens(t *testing.T) {
+	tt := []struct {
+		description      string
+		tokenList        []string
+		expectedTokenMap map[string]string
+	}{
+		{description: "empty tokens", tokenList: []string{}, expectedTokenMap: map[string]string{}},
+		{description: "invalid token", tokenList: []string{"onlyToken"}, expectedTokenMap: map[string]string{}},
+		{description: "one token", tokenList: []string{"github.com:token1"}, expectedTokenMap: map[string]string{"github.com": "token1"}},
+		{description: "more tokens", tokenList: []string{"github.com:token1", "github.corp:token2"}, expectedTokenMap: map[string]string{"github.com": "token1", "github.corp": "token2"}},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expectedTokenMap, ResolveAccessTokens(test.tokenList), test.description)
+	}
+}
+
+func TestAccessTokensFromEnvJSON(t *testing.T) {
+	tt := []struct {
+		description       string
+		inputJSON         string
+		expectedTokenList []string
+	}{
+		{description: "empty ENV", inputJSON: "", expectedTokenList: []string{}},
+		{description: "invalid JSON", inputJSON: "{", expectedTokenList: []string{}},
+		{description: "empty JSON 1", inputJSON: "{}", expectedTokenList: []string{}},
+		{description: "empty JSON 2", inputJSON: "[]]", expectedTokenList: []string{}},
+		{description: "invalid JSON format", inputJSON: `{"test":"test"}`, expectedTokenList: []string{}},
+		{description: "one token", inputJSON: `["github.com:token1"]`, expectedTokenList: []string{"github.com:token1"}},
+		{description: "more tokens", inputJSON: `["github.com:token1","github.corp:token2"]`, expectedTokenList: []string{"github.com:token1", "github.corp:token2"}},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expectedTokenList, AccessTokensFromEnvJSON(test.inputJSON), test.description)
+	}
 }

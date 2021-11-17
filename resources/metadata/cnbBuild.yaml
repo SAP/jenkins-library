@@ -1,0 +1,174 @@
+metadata:
+  name: cnbBuild
+  description: Executes a Cloud Native Buildpacks build for creating a Docker container.
+  longDescription: Executes a Cloud Native Buildpacks build for creating a Docker container.
+spec:
+  inputs:
+    secrets:
+      - name: dockerConfigJsonCredentialsId
+        description: |
+          Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)) in the following format:
+
+          ```json
+          {
+              "auths": {
+                      "$server": {
+                              "auth": "base64($username + ':' + $password)"
+                      }
+              }
+          }
+          ```
+
+          Example:
+
+          ```json
+          {
+              "auths": {
+                      "example.com": {
+                              "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
+                      }
+              }
+          }
+          ```
+        type: jenkins
+    params:
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        mandatory: true
+        description: Name of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        mandatory: true
+        description: Tag of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        mandatory: true
+        description: Container registry where the image should be pushed to
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: buildpacks
+        type: "[]string"
+        description: List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildEnvVars
+        type: "[]string"
+        description: List of custom environment variables used during a build in the form of 'KEY=VALUE'.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: path
+        type: string
+        description: |
+          The path should either point to a directory with your sources or an artifact in zip format.
+          This property determines the input to the buildpack.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectDescriptor
+        type: string
+        description: |
+          Path to the project.toml file.
+          See [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.
+          Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.
+
+          Note: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
+        default: project.toml
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: additionalTags
+        type: "[]string"
+        description: List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. "latest".
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: bindings
+        type: "map[string]interface{}"
+        description: |
+          Map of bindings that should be offered to the buildpack. The type of bindings depend on the buildpack. For documentation about bindings in general see [the paketo documentation](https://paketo.io/docs/howto/configuration/#bindings).
+
+          Example: Custom maven settings.xml for the Java Buildpack
+
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              file: path/to/settings.xml
+          ```
+
+          or inline
+
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              content: "inline settings.xml"
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/registryUrl
+          - name: container/imageNameTag
+  containers:
+    - image: "paketobuildpacks/builder:full"

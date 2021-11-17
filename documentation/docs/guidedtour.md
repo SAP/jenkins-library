@@ -2,7 +2,7 @@
 
 Follow this guided tour to become familiar with the basics of using project "Piper".
 
-The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] will be enriched with a pipeline which syncs the sources, builds these as MTA and deploys the result into a Cloud Foundry environment. The application contains a simple `nodejs` application. Deployed as web service, it serves static data.
+The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] will be enriched with a pipeline which syncs the sources, builds these as multitarget applications and deploys the result into a Cloud Foundry environment. The application contains a simple `nodejs` application. Deployed as web service, it serves static data.
 
 **Recommendation:** We recommend to clone the sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] and execute the instructions on your own repository. See **(Optional) Sample Application**.
 
@@ -50,7 +50,7 @@ Copy the sources of the application into your own Git repository. While we will 
 
 1. Create an organization on GitHub, if you haven't any yet. See [Creating a new organization][github-create-org].
 1. [Duplicate][github-duplicate-repo] the repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organization. [Make this repository private][github-set-repo-visible]. **Note:** Forked public repositories cannot be made private.
-1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Cloud Platform. If you haven't any yet, get a [Trial Account][sap-cp-trial].
+1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Business Technology Platform (SAP BTP). If you haven't any yet, get a [Trial Account][sap-cp-trial].
 1. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork. Other branches might work as well, but this one is tested.
 
 ## Create Your First Pipeline
@@ -73,33 +73,29 @@ Copy the sources of the application into your own Git repository. While we will 
 1. Save your changes to your remote repository.
 
 1. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. Per default, the `cx-server` starts Jenkins on HTTP port `80`. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
-   <p align="center">
-   ![Clicke New Item](images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
-   </p>
+
+    ![Clicke New Item](images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
 
 1. Provide a name for your new item (for example, *My First Pipeline*) and select **Multibranch Pipeline**.
-   <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline.png "Jenkins New Item")
-   </p>
-   **Note:** The ready-made continuous delivery pipelines of project "Piper" must run as **Multibranch Pipeline**.
+    ![Create Pipeline Job](images/JenkinsNewItemPipeline.png "Jenkins New Item")
+
+    **Note:** The ready-made continuous delivery pipelines of project "Piper" must run as **Multibranch Pipeline**.
 
 1. For **Branch Sources**, choose **Add source**, select **Git** as source repository.
-   <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-AddSource.png "Branch Sources - Add source")
-   </p>
+
+    ![Create Pipeline Job](images/JenkinsNewItemPipeline-AddSource.png "Branch Sources - Add source")
 
 1. For **Project Repository** in the **Git** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in **Credentials**.
 
 1. For **Discover branches**, choose **Add** and **Filter by name (with wildcards)**.
-   <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
-   </p>
-   A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only.
+
+    ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
+
+    A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only.
 
 1. For **Include** in the **Filter by name** section, enter the branch name `1_REST_persist_in_Memory`.
-   <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-FilterByName.png "Discover Branches - Filter By Name")
-   </p>
+
+    ![Create Pipeline Job](images/JenkinsNewItemPipeline-FilterByName.png "Discover Branches - Filter By Name")
 
 1. Choose **Save**. **Result:** Jenkins scans the repository for branches and filters them according to the specified **Includes**. If the branch is detected, it is built.
 
@@ -115,7 +111,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
    }
    ```
 
-   The `mtaBuild` step calls a build tool to build a multi-target application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
+The `mtaBuild` step calls a build tool to build a multitarget application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
 
 1. Create the MTA descriptor file with the name `mta.yaml` in the root level of the repository. Insert the following code:
 
@@ -156,7 +152,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
    }
    ```
 
-   The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP Cloud Platform.
+The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP BTP.
 
 1. To configure the step to deploy into the Cloud Foundry environment, in your repository, open the `.pipeline/config.yml` and add the following content:
 
@@ -172,27 +168,24 @@ For additional information about multibranch pipelines, please refer to the [Jen
 
    **Note:** look after the indentation of the step within the YAML. Specify the `organisation` and `space` properties. For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
 1. The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
-   <p align="center">
-   ![Add Credentials](images/JenkinsCredentials-1.png "Add Credentials")
-   </p>
+
+    ![Add Credentials](images/JenkinsCredentials-1.png "Add Credentials")
 
 1. Save the Credential
 
 1. Save your changes to your remote repository.
 
 1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the three stages "prepare", "build" and "deploy".
-   <p align="center">
-   ![Build Now](images/JenkinsPipelineJob.png "Stage View")
-   </p>
+
+    ![Build Now](images/JenkinsPipelineJob.png "Stage View")
 
 If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config], and the [mta.yaml][guidedtour-sample.mta]. **Note**: YAML files are surprisingly sensitive regarding indentation.
 
 ## Open Application
 
-Your application has been deployed into your space in the Cloud Foundry space on SAP Cloud Platform. Login to SAP Cloud Platform and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
-   <p align="center">
-   ![Deployed Application](images/SCPDeployApp-1.png "SAP Cloud Platform")
-   </p>
+Your application has been deployed into your space in the Cloud Foundry space on SAP BTP. Login to SAP BTP and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
+
+  ![Deployed Application](images/SCPDeployApp-1.png "SAP Business Technology Platform")
 
 Open the application name to get into the `Application Overview`. Open the **Application Route** and add `/users` to the URL. **Result:** The application returns a list of user data.
 

@@ -11,7 +11,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +21,8 @@ type xsDeployOptions struct {
 	DeployOpts            string `json:"deployOpts,omitempty"`
 	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty"`
 	MtaPath               string `json:"mtaPath,omitempty"`
-	Action                string `json:"action,omitempty"`
-	Mode                  string `json:"mode,omitempty"`
+	Action                string `json:"action,omitempty" validate:"possible-values=NONE Resume Abort Retry"`
+	Mode                  string `json:"mode,omitempty" validate:"possible-values=NONE DEPLOY BG_DEPLOY"`
 	OperationID           string `json:"operationId,omitempty"`
 	APIURL                string `json:"apiUrl,omitempty"`
 	Username              string `json:"username,omitempty"`
@@ -65,6 +67,7 @@ func XsDeployCommand() *cobra.Command {
 	var stepConfig xsDeployOptions
 	var startTime time.Time
 	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createXsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -74,6 +77,8 @@ func XsDeployCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -92,6 +97,20 @@ func XsDeployCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -103,10 +122,20 @@ func XsDeployCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			xsDeploy(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -152,6 +181,9 @@ func xsDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "credentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "deployOpts",
@@ -160,6 +192,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_deployOpts"),
 					},
 					{
 						Name:        "operationIdLogPattern",
@@ -168,6 +201,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
+						Default:     `^.*xs bg-deploy -i (.*) -a.*$`,
 					},
 					{
 						Name: "mtaPath",
@@ -181,6 +215,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaPath"),
 					},
 					{
 						Name:        "action",
@@ -189,6 +224,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `NONE`,
 					},
 					{
 						Name:        "mode",
@@ -197,6 +233,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `DEPLOY`,
 					},
 					{
 						Name: "operationId",
@@ -210,6 +247,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_operationId"),
 					},
 					{
 						Name:        "apiUrl",
@@ -218,6 +256,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_apiUrl"),
 					},
 					{
 						Name: "username",
@@ -232,6 +271,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "user"}},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -246,6 +286,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "org",
@@ -254,6 +295,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_org"),
 					},
 					{
 						Name:        "space",
@@ -262,6 +304,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_space"),
 					},
 					{
 						Name:        "loginOpts",
@@ -270,6 +313,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_loginOpts"),
 					},
 					{
 						Name:        "xsSessionFile",
@@ -278,6 +322,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_xsSessionFile"),
 					},
 				},
 			},

@@ -1,43 +1,28 @@
 # Configuration
 
-In general, the ABAP Environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
-In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This specific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
+In general, the SAP BTP, ABAP environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP environment pipeline used for testing. This specific example will create a pipeline, which executes ATC checks after creating a new ABAP environment system. In the end, the system will be deprovisioned.
 
 You can have a look at different pipeline configurations in our [SAP-samples repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples) or learn more about the configuration in the respective stage or step documentation.
 
 | Stage                    | Steps |
 |--------------------------|-------|
 | Init                     | -     |
-| [Initial Checks](stages/initialChecks.md)           | [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/), [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/)|
+| [Initial Checks](stages/initialChecks.md)           | [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/), [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/), [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/),|
 | [Prepare System](stages/prepareSystem.md)           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)|
-| [Clone Repositories](stages/cloneRepositories.md)       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)|
-| [ATC](stages/ATC.md)                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)|
-| [Build](stages/build.md)                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/), [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/), [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/), [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/), [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/), [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector/), [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
-| [Integration Tests](stages/integrationTest.md)        | [cloudFoundryCreateService](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/)|
+| [Clone Repositories](stages/cloneRepositories.md)       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/), [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/), [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/)|
+| [Test](stages/Test.md)                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/), [abapEnvironmentRunAUnitTest](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/)|
+| [Build](stages/build.md)                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/),  [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/), [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/), [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/), [abapEnvironmentAssembleConfirm](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssembleConfirm/), [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector/), [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
+| [Integration Tests](stages/integrationTest.md)        | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 | [Confirm](stages/confirm.md)                  | -     |
 | [Publish](stages/publish.md)                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
 | [Post](stages/post.md)                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
-
-!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
-
-    With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
-
-      - To pull a software component to a system, the software component needs to be cloned first.
-      - It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102
-
-    **Implications for the “abapEnvironmentPipeline”:**
-
-    If you are using the “Prepare System” stage to create a new ABAP Environment system, it is no longer possible to use the “Clone Repositories” stage with the “Pull” strategy or with the default strategy (no strategy specified). Please use the strategy “Clone” instead. For more information, have a look at the [stage documentation](./stages/cloneRepositories.md).
-    The strategy “AddonBuild” will execute the abapEnvironmentCloneGitRepo instead of the previous logic. No configuration changes should be necessary.
-
-    Please be aware that a repeated execution of a pipeline using the strategy “Clone” or “AddonBuild” will not be possible until hotfix collection HFC03 (planned).
-    The recommended workaround is to replace the strategy “AddonBuild” with “CheckoutPull”, whenever the system from a previous pipeline run is reused.
 
 ## 1. Prerequisites
 
 * Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
 * Create a git repository on a host reachable by the Jenkins server (e.g. GitHub.com). The pipeline will be configured in this repository. Create a GitHub User with read access.
-* The entitlements for the ABAP Environment system are available in the SAP BTP global account and assigned to the subaccount.
+* The entitlements for the ABAP environment system are available in the SAP BTP global account and assigned to the subaccount.
 * A Cloud Foundry Organization & Space with the allocated entitlements are available.
 * A Cloud Foundry User & Password with the required authorization ("Space Developer") in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store.
 
@@ -51,13 +36,13 @@ Create a file named `Jenkinsfile` in your repository with the following content:
 abapEnvironmentPipeline script: this
 ```
 
-The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch. This can be achieved by either adapting the configuration (see [documentation](https://sap.github.io/jenkins-library/infrastructure/customjenkins/#shared-library)) or by specifying the release within the annotaion:
+The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the project "Piper" library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch. This can be achieved by either adapting the configuration (see [documentation](https://sap.github.io/jenkins-library/infrastructure/customjenkins/#shared-library)) or by specifying the release within the annotaion:
 
 ```
 @Library('piper-lib-os@v1.53.0') _
 ```
 
-An Overview of the releases of the Piper Library can be found [here](https://github.com/SAP/jenkins-library/releases).
+An Overview of the releases of the project "Piper" library can be found [here](https://github.com/SAP/jenkins-library/releases).
 
 ## 3. Configuration for the Communication
 
@@ -74,7 +59,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ## 4. Configuration for Cloning the repositories
 
-If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
+If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this stage.
 
 ```yml
 repositories:
@@ -88,7 +73,7 @@ You can later use the `repositories.yml` file for the `repositories` parameter i
 
 ## 5. Configuration for ATC
 
-Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which Packages or Software Components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
+Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which packages or software components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
 
 ```yml
 atcobjects:
@@ -100,7 +85,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ## 6. Technical Pipeline Configuration
 
-Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
+Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the credentials store of the Jenkins server. Here is an example of the configuration file:
 
 ```yml
 general:
@@ -135,22 +120,21 @@ Some stages may only be executed if a certain condition is met. For example: the
 
 ### Prepare system
 
-The example values for the `Prepare System` stage are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
+The example values for the `Prepare System` stage are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP BTP, ABAP environment instance may incur costs.
 
 Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/) for more details.
 
 ### Clone Repositories
 
-If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the Software Components and the Branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the Software Components and Branches:
+If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the software components and the branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the software components and branches:
 
 * `Pull`: If you have specified Pull as the strategy the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step will be used
 * `Clone`: If you have specified the Clone strategy the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step will be used
 * `CheckoutPull`: This strategy performs a Checkout of Branches with the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) step followed by a Pull of the Software Component with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step
-* `AddonBuild`: This will perform a Pull of the Software Component with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step, a Checkout of Branches with the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) step followed by a Pull of the Software Component again with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step
 
 Note that you can use the `repositories.yml` file with the `repositories` parameter consistently for all strategies.
 
-The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP BTP Cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry Organization and Space.
+The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP BTP cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry organization and space.
 
 ## 7. Create a Jenkins Pipeline
 
@@ -163,36 +147,12 @@ If you want to configure a build trigger, this can be done in the section of the
 H H(3-4) * * *
 ```
 
-## Extension
-
-You can extend each stage of this pipeline following the [documentation](../../extensibility.md).
-
-For example, this can be used to display ATC results utilizing the checkstyle format with the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) ([GitHub Project](https://github.com/jenkinsci/warnings-ng-plugin)).
-To achieve this, create a file `.pipeline/extensions/ATC.groovy` with the following content:
-
-```groovy
-void call(Map params) {
-  //access stage name
-  echo "Start - Extension for stage: ${params.stageName}"
-
-  //access config
-  echo "Current stage config: ${params.config}"
-
-  //execute original stage as defined in the template
-  params.originalStage()
-
-  recordIssues tools: [checkStyle(pattern: '**/ATCResults.xml')], qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
-
-  echo "End - Extension for stage: ${params.stageName}"
-}
-return this
-```
-
-While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
-
-!!! caution "Local Jenkins"
-    If you are using a local Jenkins you may have to [adapt the Jenkins URL](https://stackoverflow.com/a/39543223) in the configuration if the CheckStyl Plugin shows this error: "Can't create fingerprints for some files".
+Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent build processes.
 
 ### Stage Names
 
 The stage name for the extension is usually the displayed name, e.g. `ATC.groovy` or `Prepare System.groovy`. One exception is the generated `Post` stage. While the displayed name is "Declarative: Post Actions", you can extend this stage using `Post.groovy`.
+
+## Extension
+
+You can extend each stage of this pipeline following the [general extensibility documentation](../../extensibility.md) and the specific [ABAP Environment pipeline extensibility documentation](extensibility.md).

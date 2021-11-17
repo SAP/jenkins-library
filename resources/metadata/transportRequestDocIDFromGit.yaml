@@ -1,0 +1,48 @@
+metadata:
+  name: transportRequestDocIDFromGit
+  description: "Retrieves change document ID from Git repository"
+  longDescription: |
+    This step scans the commit messages of the Git repository for a pattern to retrieve the change document ID.
+    It is primarily made for the transportRequestUploadSOLMAN step to provide the change document ID by Git means.
+spec:
+  inputs:
+    params:
+      - name: gitFrom
+        aliases:
+          - name: changeManagement/git/from
+        type: "string"
+        description: "GIT starting point for retrieving the change document and transport request ID"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "origin/master"
+      - name: gitTo
+        aliases:
+          - name: changeManagement/git/to
+        type: "string"
+        description: "GIT ending point for retrieving the change document and transport request ID"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "HEAD"
+      - name: changeDocumentLabel
+        aliases:
+          - name: changeManagement/changeDocumentLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the change document ID. The GIT commit log messages are scanned for this label"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "ChangeDocument"
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/changeDocumentId

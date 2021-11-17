@@ -1,0 +1,12 @@
+stages:
+  Init: {}
+  Initial Checks: {}
+  Prepare System: {}
+  AUnit: {}
+  ATC: {}
+  Clone Repositories: {}
+  Build: {}
+  Integration Tests: {}
+  Confirm: {}
+  Publish: {}
+  Post: {}

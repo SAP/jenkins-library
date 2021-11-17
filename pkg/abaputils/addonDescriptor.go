@@ -11,13 +11,23 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+ * The AddonDescriptor
+ * ===================
+ * contains information about the Add-on Product and the comprised Add-on Software Component Git Repositories
+ *
+ * Lifecycle
+ * =========
+ * addon.yml file is read by abapAddonAssemblyKitCheckPV|CheckCV
+ * addonDesriptor is stored in CPE [commonPipelineEnvironment]
+ * subsequent steps enrich and update the data in CPE
+ */
+
 // AddonDescriptor contains fields about the addonProduct
 type AddonDescriptor struct {
-	AddonProduct     string      `json:"addonProduct"`
-	AddonVersionYAML string      `json:"addonVersion"`
-	AddonVersion     string      `json:"addonVersionAAK"`
-	AddonUniqueID    string      `json:"addonUniqueID"`
-	CustomerID       interface{} `json:"customerID"`
+	AddonProduct     string `json:"addonProduct"`
+	AddonVersionYAML string `json:"addonVersion"`
+	AddonVersion     string `json:"addonVersionAAK"`
 	AddonSpsLevel    string
 	AddonPatchLevel  string
 	TargetVectorID   string
@@ -40,15 +50,18 @@ type Repository struct {
 	Status              string
 	Namespace           string
 	SarXMLFilePath      string
+	Languages           []string `json:"languages"`
+	InBuildScope        bool
 }
 
 // ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking
 type ReadAddonDescriptorType func(FileName string) (AddonDescriptor, error)
+type readFileFunc func(FileName string) ([]byte, error)
 
 // ReadAddonDescriptor parses AddonDescriptor YAML file
 func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 	var addonDescriptor AddonDescriptor
-	err := addonDescriptor.initFromYmlFile(FileName)
+	err := addonDescriptor.initFromYmlFile(FileName, readFile)
 	return addonDescriptor, err
 }
 
@@ -59,26 +72,35 @@ func ConstructAddonDescriptorFromJSON(JSON []byte) (AddonDescriptor, error) {
 	return addonDescriptor, err
 }
 
+func readFile(FileName string) ([]byte, error) {
+	fileLocations, err := filepath.Glob(FileName)
+	if err != nil || len(fileLocations) != 1 {
+		return nil, errors.New(fmt.Sprintf("Could not find %v", FileName))
+	}
+
+	absoluteFilename, err := filepath.Abs(fileLocations[0])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not get path of %v", FileName))
+	}
+
+	var fileContent []byte
+	fileContent, err = ioutil.ReadFile(absoluteFilename)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not read %v", FileName))
+	}
+
+	return fileContent, nil
+}
+
 // initFromYmlFile : Reads from file
-func (me *AddonDescriptor) initFromYmlFile(FileName string) error {
-	filelocation, err := filepath.Glob(FileName)
-	if err != nil || len(filelocation) != 1 {
-		return errors.New(fmt.Sprintf("Could not find %v", FileName))
-	}
-
-	filename, err := filepath.Abs(filelocation[0])
+func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFunc) error {
+	fileContent, err := readFile(FileName)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Could not get path of %v", FileName))
-	}
-
-	var yamlBytes []byte
-	yamlBytes, err = ioutil.ReadFile(filename)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Could not read %v", FileName))
+		return err
 	}
 
 	var jsonBytes []byte
-	jsonBytes, err = yaml.YAMLToJSON(yamlBytes)
+	jsonBytes, err = yaml.YAMLToJSON(fileContent)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Could not parse %v", FileName))
 	}
@@ -95,7 +117,7 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string) error {
 func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error {
 	//checking if parsing went wrong
 	if len(addonDescriptor.Repositories) == 0 {
-		return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+		return errors.New("AddonDescriptor doesn't contain any repositories")
 	}
 	//
 	emptyRepositoryCounter := 0
@@ -104,7 +126,7 @@ func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error 
 			emptyRepositoryCounter++
 		}
 		if counter+1 == len(addonDescriptor.Repositories) && emptyRepositoryCounter == len(addonDescriptor.Repositories) {
-			return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+			return errors.New("AddonDescriptor doesn't contain any repositories")
 		}
 	}
 	return nil
@@ -115,6 +137,11 @@ func (me *AddonDescriptor) initFromJSON(JSON []byte) error {
 	return json.Unmarshal(JSON, me)
 }
 
+// initFromJSON : Init from json string
+func (me *AddonDescriptor) InitFromJSONstring(JSONstring string) error {
+	return me.initFromJSON([]byte(JSONstring))
+}
+
 // AsJSON : dito
 func (me *AddonDescriptor) AsJSON() []byte {
 	//hopefully no errors should happen here or they are covered by the users unit tests
@@ -122,7 +149,34 @@ func (me *AddonDescriptor) AsJSON() []byte {
 	return jsonBytes
 }
 
+// AsJSONstring : dito
+func (me *AddonDescriptor) AsJSONstring() string {
+	return string(me.AsJSON())
+}
+
 // SetRepositories : dito
 func (me *AddonDescriptor) SetRepositories(Repositories []Repository) {
 	me.Repositories = Repositories
+}
+
+// GetAakAasLanguageVector : dito
+func (me *Repository) GetAakAasLanguageVector() string {
+	if len(me.Languages) <= 0 {
+		return `ISO-DEEN`
+	}
+	languageVector := `ISO-`
+	for _, language := range me.Languages {
+		languageVector = languageVector + language
+	}
+	return languageVector
+}
+
+func (me *AddonDescriptor) GetRepositoriesInBuildScope() []Repository {
+	var RepositoriesInBuildScope []Repository
+	for _, repo := range me.Repositories {
+		if repo.InBuildScope {
+			RepositoriesInBuildScope = append(RepositoriesInBuildScope, repo)
+		}
+	}
+	return RepositoriesInBuildScope
 }

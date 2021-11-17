@@ -121,13 +121,21 @@ spec:
         mandatory: false
       - name: atcResultsFileName
         type: string
-        description: Specifies output file name for the results from the ATC run
+        description: Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: false
         default: "ATCResults.xml"
+      - name: generateHTML
+        type: bool
+        description: Specifies whether the ATC results should also be generated as an HTML document
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
   containers:
     - name: cf
-      image: ppiper/cf-cli
+      image: ppiper/cf-cli:7

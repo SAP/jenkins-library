@@ -30,6 +30,7 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/branch
           - name: custom/customList
             type: "[]string"
@@ -42,6 +43,9 @@ spec:
             tags:
               - name: t1
   inputs:
+    resources:
+      - name: stashName
+        type: stash
     params:
       - name: param0
         type: string
@@ -56,16 +60,36 @@ spec:
         description: param1 description
         scope:
         - PARAMETERS
+        possibleValues:
+        - value1
+        - value2
+        - value3
       - name: param2
         type: string
-        description: param1 description
+        description: param2 description
         scope:
         - PARAMETERS
-        mandatory: true
+        mandatoryIf:
+        - name: param1
+          value: value1
+      - name: param3
+        type: string
+        description: param3 description
+        scope:
+        - PARAMETERS
+        possibleValues:
+        - value1
+        - value2
+        - value3
+        mandatoryIf:
+        - name: param1
+          value: value1
+        - name: param2
+          value: value2
 `
 	var r string
 	switch name {
-	case "test.yaml":
+	case "testStep.yaml":
 		r = meta1
 	default:
 		r = ""
@@ -86,7 +110,7 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 func TestProcessMetaFiles(t *testing.T) {
 
 	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
-	ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData)
+	ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -96,7 +120,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		t.Log(string(files[resultFilePath]))
+		//t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
@@ -111,7 +135,7 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("custom step code", func(t *testing.T) {
 		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
-		ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData)
+		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
 		expected, err := ioutil.ReadFile(goldenFilePath)
@@ -120,7 +144,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		t.Log(string(files[resultFilePath]))
+		//t.Log(string(files[resultFilePath]))
 	})
 }
 

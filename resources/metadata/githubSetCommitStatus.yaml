@@ -1,0 +1,123 @@
+metadata:
+  name: githubSetCommitStatus
+  description: Set a status of a certain commit.
+  longDescription: |
+    This step allows you to set a status for a certain commit.
+    Details can be found here: https://developer.github.com/v3/repos/statuses/.
+
+    Typically, following information is set:
+
+    * state (pending, failure, success)
+    * context
+    * target URL (link to details)
+
+    It can for example be used to create additional check indicators for a pull request which can be evaluated and also be enforced by GitHub configuration.
+spec:
+  inputs:
+    secrets:
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
+    params:
+      - name: apiUrl
+        aliases:
+          - name: githubApiUrl
+        description: Set the GitHub API URL.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: https://api.github.com
+        mandatory: true
+      - name: commitId
+        description: The commitId for which the status should be set.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/commitId
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: context
+        description: Label for the status which will for example show up in a pull request.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: description
+        description: Short description of the status.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: Name of the GitHub organization.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: Name of the GitHub repository.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: status
+        description: Status which should be set on the commitId.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        possibleValues:
+          - failure
+          - pending
+          - success
+        mandatory: true
+      - name: targetUrl
+        description: Target URL to associate the status with.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: token
+        aliases:
+          - name: githubToken
+          - name: access_token
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName

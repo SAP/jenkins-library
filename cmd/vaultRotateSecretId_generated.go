@@ -9,12 +9,14 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type vaultRotateSecretIdOptions struct {
-	SecretStore                          string `json:"secretStore,omitempty"`
+	SecretStore                          string `json:"secretStore,omitempty" validate:"possible-values=jenkins ado"`
 	JenkinsURL                           string `json:"jenkinsUrl,omitempty"`
 	JenkinsCredentialDomain              string `json:"jenkinsCredentialDomain,omitempty"`
 	JenkinsUsername                      string `json:"jenkinsUsername,omitempty"`
@@ -23,6 +25,10 @@ type vaultRotateSecretIdOptions struct {
 	VaultServerURL                       string `json:"vaultServerUrl,omitempty"`
 	VaultNamespace                       string `json:"vaultNamespace,omitempty"`
 	DaysBeforeExpiry                     int    `json:"daysBeforeExpiry,omitempty"`
+	AdoOrganization                      string `json:"adoOrganization,omitempty"`
+	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty" validate:"required_if=SecretStore ado"`
+	AdoProject                           string `json:"adoProject,omitempty"`
+	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
 }
 
 // VaultRotateSecretIdCommand Rotate vault AppRole Secret ID
@@ -32,6 +38,7 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 	metadata := vaultRotateSecretIdMetadata()
 	var stepConfig vaultRotateSecretIdOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createVaultRotateSecretIdCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -41,6 +48,8 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -54,10 +63,25 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			log.RegisterSecret(stepConfig.JenkinsURL)
 			log.RegisterSecret(stepConfig.JenkinsUsername)
 			log.RegisterSecret(stepConfig.JenkinsToken)
+			log.RegisterSecret(stepConfig.AdoPersonalAccessToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
 				log.RegisterHook(&sentryHook)
+			}
+
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -70,10 +94,20 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			vaultRotateSecretId(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -90,10 +124,14 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.JenkinsCredentialDomain, "jenkinsCredentialDomain", `_`, "The jenkins credential domain which should be used")
 	cmd.Flags().StringVar(&stepConfig.JenkinsUsername, "jenkinsUsername", os.Getenv("PIPER_jenkinsUsername"), "The jenkins username")
 	cmd.Flags().StringVar(&stepConfig.JenkinsToken, "jenkinsToken", os.Getenv("PIPER_jenkinsToken"), "The jenkins token")
-	cmd.Flags().StringVar(&stepConfig.VaultAppRoleSecretTokenCredentialsID, "vaultAppRoleSecretTokenCredentialsId", os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"), "The Jenkins credential ID for the Vault AppRole Secret ID credential")
+	cmd.Flags().StringVar(&stepConfig.VaultAppRoleSecretTokenCredentialsID, "vaultAppRoleSecretTokenCredentialsId", os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"), "The Jenkins credential ID or Azure DevOps variable name for the Vault AppRole Secret ID credential")
 	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
 	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The vault namespace that should be used (optional)")
 	cmd.Flags().IntVar(&stepConfig.DaysBeforeExpiry, "daysBeforeExpiry", 15, "The amount of days before expiry until the secret ID gets rotated")
+	cmd.Flags().StringVar(&stepConfig.AdoOrganization, "adoOrganization", os.Getenv("PIPER_adoOrganization"), "The Azure DevOps organization name")
+	cmd.Flags().StringVar(&stepConfig.AdoPersonalAccessToken, "adoPersonalAccessToken", os.Getenv("PIPER_adoPersonalAccessToken"), "The Azure DevOps personal access token")
+	cmd.Flags().StringVar(&stepConfig.AdoProject, "adoProject", os.Getenv("PIPER_adoProject"), "The Azure DevOps project ID. Project name also can be used")
+	cmd.Flags().IntVar(&stepConfig.AdoPipelineID, "adoPipelineId", 0, "The Azure DevOps pipeline ID. Also called as definition ID")
 
 	cmd.MarkFlagRequired("vaultAppRoleSecretTokenCredentialsId")
 	cmd.MarkFlagRequired("vaultServerUrl")
@@ -117,20 +155,22 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `jenkins`,
 					},
 					{
 						Name: "jenkinsUrl",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "url"}},
+						Default:   os.Getenv("PIPER_jenkinsUrl"),
 					},
 					{
 						Name:        "jenkinsCredentialDomain",
@@ -139,34 +179,37 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `_`,
 					},
 					{
 						Name: "jenkinsUsername",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "userId"}},
+						Default:   os.Getenv("PIPER_jenkinsUsername"),
 					},
 					{
 						Name: "jenkinsToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "token"}},
+						Default:   os.Getenv("PIPER_jenkinsToken"),
 					},
 					{
 						Name:        "vaultAppRoleSecretTokenCredentialsId",
@@ -175,6 +218,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"),
 					},
 					{
 						Name:        "vaultServerUrl",
@@ -183,6 +227,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultServerUrl"),
 					},
 					{
 						Name:        "vaultNamespace",
@@ -191,6 +236,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultNamespace"),
 					},
 					{
 						Name:        "daysBeforeExpiry",
@@ -199,6 +245,49 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     15,
+					},
+					{
+						Name:        "adoOrganization",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_adoOrganization"),
+					},
+					{
+						Name: "adoPersonalAccessToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "azureDevOpsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "azure-dev-ops",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "token"}},
+						Default:   os.Getenv("PIPER_adoPersonalAccessToken"),
+					},
+					{
+						Name:        "adoProject",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_adoProject"),
+					},
+					{
+						Name:        "adoPipelineId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
 					},
 				},
 			},

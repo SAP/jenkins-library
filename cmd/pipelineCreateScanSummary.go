@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -37,15 +38,14 @@ func pipelineCreateScanSummary(config pipelineCreateScanSummaryOptions, telemetr
 	}
 }
 
-const reportDir = ".pipeline/stepReports"
-
 func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, telemetryData *telemetry.CustomData, utils pipelineCreateScanSummaryUtils) error {
 
-	pattern := reportDir + "/*.json"
+	pattern := reporting.StepReportDirectory + "/*.json"
 	reports, _ := utils.Glob(pattern)
 
 	scanReports := []reporting.ScanReport{}
 	for _, report := range reports {
+		log.Entry().Debugf("reading file %v", report)
 		reportContent, err := utils.FileRead(report)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -59,9 +59,13 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 	}
 
 	output := []byte{}
+	if len(config.PipelineLink) > 0 {
+		output = []byte(fmt.Sprintf("## Pipeline Source for Details\n\nAs listed results might be incomplete, it is crucial that you check the detailed [pipeline](%v) status.\n\n", config.PipelineLink))
+	}
 	for _, scanReport := range scanReports {
 		if (config.FailedOnly && !scanReport.SuccessfulScan) || !config.FailedOnly {
-			output = append(output, scanReport.ToMarkdown()...)
+			mdReport, _ := scanReport.ToMarkdown()
+			output = append(output, mdReport...)
 		}
 	}
 
