@@ -334,7 +334,7 @@ func (er *execRunnerMock) Stderr(err io.Writer) {
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
-	if piperutils.ContainsString(p, "--failTranslate") {
+	if len(p) > 0 && piperutils.ContainsString(p, "--failTranslate") {
 		return errors.New("Translate failed")
 	}
 	er.currentExecution().parameters = p

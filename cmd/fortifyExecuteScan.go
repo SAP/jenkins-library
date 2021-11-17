@@ -805,7 +805,10 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
 
-	return translateProject(&config, utils, buildID, classpath)
+	err = translateProject(&config, utils, buildID, classpath)
+	if err != nil {
+		return err
+	}
 
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
