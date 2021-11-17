@@ -504,9 +504,9 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 							aUnitError.Severity = "error"
 						case "critical":
 							aUnitFailure = true
-							aUnitError.Severity = "warning"
+							aUnitError.Severity = "error"
 						case "tolerable":
-							aUnitError.Severity = "info"
+							aUnitError.Severity = "warning"
 						default:
 							aUnitError.Severity = "info"
 
