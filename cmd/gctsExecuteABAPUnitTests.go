@@ -915,27 +915,20 @@ func findLine(path string, readableSource bool, objName string, objectType strin
 
 		}
 
+		if strings.Contains(path, "CLAS/OSO") {
 
-		if strings.Contains(path, "CLAS/OSO"){
-
-			
 			for line, linecontent := range splittedfilecontent {
 
-
-				if strings.Contains(linecontent, "protected section.")  {
+				if strings.Contains(linecontent, "protected section.") {
 					linepointer = line
 					break
 				}
 
 			}
 
-
-
-
-		}else 	if strings.Contains(path, "CLAS/OM"){
+		} else if strings.Contains(path, "CLAS/OM") {
 
 			for line, linecontent := range splittedfilecontent {
-
 
 				if strings.Contains(linecontent, "method"+" "+method) {
 					linepointer = line
@@ -944,12 +937,9 @@ func findLine(path string, readableSource bool, objName string, objectType strin
 
 			}
 
-
-
-		}else if strings.Contains(path, "CLAS/OSI"){
+		} else if strings.Contains(path, "CLAS/OSI") {
 
 			for line, linecontent := range splittedfilecontent {
-
 
 				if strings.Contains(linecontent, "private section.") {
 					linepointer = line
@@ -958,36 +948,21 @@ func findLine(path string, readableSource bool, objName string, objectType strin
 
 			}
 
-
-
-
 		}
-		
-		
 
-			regexLine := regexp.MustCompile(`.start=\d*`)
-			linestring := regexLine.FindString(path)
-			if linestring != "" {
+		regexLine := regexp.MustCompile(`.start=\d*`)
+		linestring := regexLine.FindString(path)
+		if linestring != "" {
 
-				lineint, err := strconv.Atoi(linestring[len(`.start=`):])
-				if err == nil {
-					line = strconv.Itoa(linepointer + lineint)
-
-				}
-
-			}
-
-		} else {
-			regexLine := regexp.MustCompile(`.start=\d*`)
-			linestring := regexLine.FindString(path)
-			if linestring != "" {
-				line = linestring[len(`.start=`):]
+			lineint, err := strconv.Atoi(linestring[len(`.start=`):])
+			if err == nil {
+				line = strconv.Itoa(linepointer + lineint)
 
 			}
 
 		}
+
 	} else {
-
 		regexLine := regexp.MustCompile(`.start=\d*`)
 		linestring := regexLine.FindString(path)
 		if linestring != "" {
