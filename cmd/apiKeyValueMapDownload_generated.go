@@ -67,7 +67,7 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 			}
 
 			if len(GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
-				log.Entry().Info("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
+				log.Entry().Infof("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
 				telemetryClient.CustomReportingDsn = GeneralConfig.HookConfig.CustomReportingConfig.Dsn
 				telemetryClient.CustomReportingToken = GeneralConfig.HookConfig.CustomReportingConfig.Token
 			}

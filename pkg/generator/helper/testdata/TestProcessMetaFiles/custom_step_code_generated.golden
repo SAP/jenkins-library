@@ -146,7 +146,7 @@ func TestStepCommand() *cobra.Command {
 			}
 
 			if len(piperOsCmd.GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
-				log.Entry().Info("Initialized step reporting with: %v", piperOsCmd.GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
+				log.Entry().Infof("Initialized step reporting with: %v", piperOsCmd.GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
 				telemetryClient.CustomReportingDsn = piperOsCmd.GeneralConfig.HookConfig.CustomReportingConfig.Dsn
 				telemetryClient.CustomReportingToken = piperOsCmd.GeneralConfig.HookConfig.CustomReportingConfig.Token
 			}

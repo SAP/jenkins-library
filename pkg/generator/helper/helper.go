@@ -132,7 +132,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
-				log.Entry().Info("Initialized step reporting with: %v", {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
+				log.Entry().Infof("Initialized step reporting with: %v", {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
 				telemetryClient.CustomReportingDsn = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn
 				telemetryClient.CustomReportingToken = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Token
 			}

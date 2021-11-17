@@ -97,7 +97,7 @@ It is primarily made for the transport request upload steps to provide the trans
 			}
 
 			if len(GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
-				log.Entry().Info("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
+				log.Entry().Infof("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
 				telemetryClient.CustomReportingDsn = GeneralConfig.HookConfig.CustomReportingConfig.Dsn
 				telemetryClient.CustomReportingToken = GeneralConfig.HookConfig.CustomReportingConfig.Token
 			}

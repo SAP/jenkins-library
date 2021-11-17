@@ -199,7 +199,7 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			}
 
 			if len(GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
-				log.Entry().Info("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
+				log.Entry().Infof("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
 				telemetryClient.CustomReportingDsn = GeneralConfig.HookConfig.CustomReportingConfig.Dsn
 				telemetryClient.CustomReportingToken = GeneralConfig.HookConfig.CustomReportingConfig.Token
 			}
