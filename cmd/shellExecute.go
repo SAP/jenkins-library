@@ -39,14 +39,15 @@ func newShellExecuteUtils() shellExecuteUtils {
 
 func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomData) {
 	utils := newShellExecuteUtils()
+	fileUtils := &piperutils.Files{}
 
-	err := runShellExecute(&config, telemetryData, utils)
+	err := runShellExecute(&config, telemetryData, utils, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
+func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils, fileUtils piperutils.FileUtils) error {
 	// create vault client
 	// try to retrieve existing credentials
 	// if it's impossible - will add it
@@ -56,11 +57,10 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		},
 		Namespace: config.VaultNamespace,
 	}
-	client, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
+	_, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 	if err != nil {
 		log.Entry().Info("could not create vault client:", err)
 	}
-	defer client.MustRevokeToken()
 
 	// piper http client for downloading scripts
 	httpClient := piperhttp.Client{}
@@ -76,12 +76,14 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		if err != nil {
 			// err means that it's not a remote script
 			// check if the script is physically present (for local scripts)
-			exists, err := utils.FileExists(source)
+			exists, err := fileUtils.FileExists(source)
 			if err != nil {
-				log.Entry().WithError(err).Errorf("failed to check for defined script")
+				log.Entry().WithError(err).Error("failed to check for defined script")
+				return errors.Wrap(err, "failed to check for defined script")
 			}
 			if !exists {
-				log.Entry().WithError(err).Errorf("the specified script could not be found")
+				log.Entry().WithError(err).Error("the specified script could not be found")
+				return errors.New("the specified script could not be found")
 			}
 			e = append(e, source)
 		} else {

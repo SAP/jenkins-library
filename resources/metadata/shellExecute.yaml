@@ -13,7 +13,6 @@ spec:
           - STAGES
           - STEPS
         description: The URL for the Vault server to use
-        mandatory: true
       - name: vaultNamespace
         type: string
         scope:
@@ -22,7 +21,6 @@ spec:
           - STAGES
           - STEPS
         description: The vault namespace that should be used (optional)
-        default: true
       - name: sources
         type: "[]string"
         scope:
