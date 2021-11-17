@@ -34,12 +34,25 @@ type CommunicationInstance struct {
 }
 
 type Node struct {
-	Id   int    `json:"id"`
+	Id   int64  `json:"id"`
 	Name string `json:"name"`
 }
 
 type nodes struct {
 	Nodes []Node `json:"nodes"`
+}
+
+type MtaExtDescriptor struct {
+	Id            int64  `json:"id"`
+	Description   string `json:"description"`
+	MtaId         string `json:"mtaId"`
+	MtaExtId      string `json:"mtaExtId"`
+	MtaVersion    string `json:"mtaVersion"`
+	LastChangedAt string `json:"lastChangedAt"`
+}
+
+type mtaExtDescriptors struct {
+	MtaExtDescriptors []MtaExtDescriptor `json:"mtaExtDescriptors"`
 }
 
 type CommunicationInterface interface {
@@ -176,4 +189,39 @@ func (communicationInstance *CommunicationInstance) GetNodes() ([]Node, error) {
 		communicationInstance.logger.Info("Nodes obtained successfully")
 	}
 	return aNodes, nil
+}
+
+func (communicationInstance *CommunicationInstance) GetMtaExtDescriptor(nodeId int64, mtaId, mtaVersion string) (MtaExtDescriptor, error) {
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Get MTA extension descriptor started")
+		communicationInstance.logger.Infof("tmsUrl: %v, nodeId: %v, mtaId: %v, mtaVersion: %v", communicationInstance.tmsUrl, nodeId, mtaId, mtaVersion)
+	}
+
+	header := http.Header{}
+	header.Add("Content-Type", "application/json")
+
+	// TODO: somewhere here the proxy should be considered as well
+
+	var mtaExtDescriptor MtaExtDescriptor
+	var data []byte
+	data, err := sendRequest(communicationInstance, http.MethodGet, fmt.Sprintf("/v2/nodes/%v/mtaExtDescriptors?mtaId=%v&mtaVersion=%v", nodeId, mtaId, mtaVersion), nil, header, http.StatusOK, false)
+	if err != nil {
+		return mtaExtDescriptor, err
+	}
+
+	var getMtaExtDescriptorsResponse mtaExtDescriptors
+	json.Unmarshal(data, &getMtaExtDescriptorsResponse)
+	if len(getMtaExtDescriptorsResponse.MtaExtDescriptors) != 0 {
+		mtaExtDescriptor = getMtaExtDescriptorsResponse.MtaExtDescriptors[0]
+	}
+
+	if communicationInstance.isVerbose {
+		if mtaExtDescriptor.Id != int64(0) { // the struct is initialized
+			communicationInstance.logger.Info("MTA extension descriptor obtained successfully")
+		} else {
+			communicationInstance.logger.Warn("No MTA extension descriptor found")
+		}
+	}
+	return mtaExtDescriptor, nil
+
 }

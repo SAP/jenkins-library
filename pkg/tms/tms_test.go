@@ -116,7 +116,7 @@ func TestGetNodes(t *testing.T) {
 		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 		assert.Equal(t, 1, len(nodes), "Length of nodes list incorrect")
-		assert.Equal(t, 1, nodes[0].Id, "Id of node at position 0 in the list incorrect")
+		assert.Equal(t, int64(1), nodes[0].Id, "Id of node at position 0 in the list incorrect")
 		assert.Equal(t, "TEST_NODE", nodes[0].Name, "Name of node at position 0 in the list incorrect")
 	})
 
@@ -131,6 +131,70 @@ func TestGetNodes(t *testing.T) {
 		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 
+	})
+
+}
+
+func TestGetMtaExtDescriptor(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
+	t.Run("test success", func(t *testing.T) {
+		id := int64(777)
+		mtaExtDescription := "This is a test description"
+		mtaId := "test.mta.id"
+		mtaExtId := "test.mta.id_ext"
+		mtaVersion := "1.0.0"
+		lastChangedAt := "2021-11-16T13:06:05.711Z"
+
+		getMtaExtDescriptorResponse := fmt.Sprintf(`{"mtaExtDescriptors": [{"id": %v,"description": "%v","mtaId": "%v","mtaExtId": "%v","mtaVersion": "%v","lastChangedAt": "%v"}]}`, id, mtaExtDescription, mtaId, mtaExtId, mtaVersion, lastChangedAt)
+		uploaderMock := uploaderMock{responseBody: getMtaExtDescriptorResponse, httpStatusCode: http.StatusOK}
+
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		mtaExtDescriptor, err := communicationInstance.GetMtaExtDescriptor(nodeId, mtaId, mtaVersion)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors?mtaId=%v&mtaVersion=%v", nodeId, mtaId, mtaVersion), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
+		assert.Equal(t, id, mtaExtDescriptor.Id, "MTA extension descriptor Id field incorrect")
+		assert.Equal(t, mtaExtDescription, mtaExtDescriptor.Description, "MTA extension descriptor Description field incorrect")
+		assert.Equal(t, mtaId, mtaExtDescriptor.MtaId, "MTA extension descriptor MtaId field incorrect")
+		assert.Equal(t, mtaExtId, mtaExtDescriptor.MtaExtId, "MTA extension descriptor MtaExtId field incorrect")
+		assert.Equal(t, mtaVersion, mtaExtDescriptor.MtaVersion, "MTA extension descriptor MtaVersion field incorrect")
+		assert.Equal(t, lastChangedAt, mtaExtDescriptor.LastChangedAt, "MTA extension descriptor LastChangedAt field incorrect")
+	})
+
+	t.Run("test success, no MTA extension descriptor found", func(t *testing.T) {
+		getMtaExtDescriptorResponse := `{"mtaExtDescriptors": []}`
+		uploaderMock := uploaderMock{responseBody: getMtaExtDescriptorResponse, httpStatusCode: http.StatusOK}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		mtaId := "test.mta.id"
+		mtaVersion := "1.0.1"
+		mtaExtDescriptor, err := communicationInstance.GetMtaExtDescriptor(nodeId, mtaId, mtaVersion)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors?mtaId=%v&mtaVersion=%v", nodeId, mtaId, mtaVersion), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
+		assert.Equal(t, int64(0), mtaExtDescriptor.Id, "Initialized mtaExtDescriptor structure received, but a zero-valued expected")
+	})
+
+	t.Run("test error", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		mtaId := "test.mta.id"
+		mtaVersion := "1.0.1"
+		_, err := communicationInstance.GetMtaExtDescriptor(nodeId, mtaId, mtaVersion)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors?mtaId=%v&mtaVersion=%v", nodeId, mtaId, mtaVersion), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 	})
 
 }
