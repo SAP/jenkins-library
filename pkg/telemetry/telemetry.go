@@ -124,7 +124,11 @@ func (t *Telemetry) GetData() Data {
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
 
-	t.sendCustom()
+	if t.data.ErrorCode == "1" && len(t.CustomReportingDsn) > 0 {
+		// check if reporting dsn is available in the config and then send the payload to the specific URL
+		log.Entry().Infof("Step %v exited with errorcode 1, sending additional reporting infos to %v", t.data.StepName, t.CustomReportingDsn)
+		t.sendCustom()
+	}
 
 	// skip if telemetry is disabled
 	if t.disabled {
@@ -139,55 +143,52 @@ func (t *Telemetry) Send() {
 }
 
 func (t *Telemetry) sendCustom() {
-	if t.data.ErrorCode == "1" && len(t.CustomReportingDsn) > 0 {
-		// check if reporting is available in the config and then send the payload to the specific URL
-		if t.customClient == nil {
-			t.customClient = &piperhttp.Client{}
-		}
-		t.provider.GetBuildUrl()
-		data := t.data
-		data.BuildURLHash = t.provider.GetBuildUrl()
-		data.PipelineURLHash = t.provider.GetBuildUrl()
+	if t.customClient == nil {
+		t.customClient = &piperhttp.Client{}
+	}
+	t.provider.GetBuildUrl()
+	data := t.data
+	data.BuildURLHash = t.provider.GetBuildUrl()
+	data.PipelineURLHash = t.provider.GetBuildUrl()
 
-		var payload []byte
-		var err error
-		if t.PipelineTelemetry != nil {
-			var m map[string]string
+	var payload []byte
+	var err error
+	if t.PipelineTelemetry != nil {
+		var m map[string]string
 
-			jPipelineTelemetry, _ := json.Marshal(t.PipelineTelemetry)
-			json.Unmarshal(jPipelineTelemetry, &m)
-			jData, _ := json.Marshal(data)
-			json.Unmarshal(jData, &m)
+		jPipelineTelemetry, _ := json.Marshal(t.PipelineTelemetry)
+		json.Unmarshal(jPipelineTelemetry, &m)
+		jData, _ := json.Marshal(data)
+		json.Unmarshal(jData, &m)
 
-			payload, err = json.Marshal(m)
-			if err != nil {
-				log.Entry().Errorf("error while marshalling reporting details, %v", err)
-			}
-		} else {
-			payload, err = json.Marshal(data)
-			if err != nil {
-				log.Entry().Errorf("error while marshalling reporting details, %v", err)
-			}
-		}
-
-		log.Entry().Debugf("Sending the following payload: %v", string(payload))
-		resp, err := t.customClient.SendRequest(http.MethodPost, t.CustomReportingDsn, bytes.NewBuffer(payload), nil, nil)
-
-		if resp != nil {
-			if resp.StatusCode != http.StatusOK {
-				// log it to stdout
-				rdr := io.LimitReader(resp.Body, 1000)
-				body, errRead := ioutil.ReadAll(rdr)
-				log.Entry().Infof("%v: error logging failed - %v", resp.Status, string(body))
-				if errRead != nil {
-					log.Entry().Errorf("Error reading response body. %v", errRead)
-				}
-				log.Entry().Errorf("%v: error logging failed - %v, %v", err, resp.Status, string(body))
-			}
-		}
-
+		payload, err = json.Marshal(m)
 		if err != nil {
-			log.Entry().Errorf("error sending the requests: %v", err)
+			log.Entry().Errorf("error while marshalling reporting details, %v", err)
 		}
+	} else {
+		payload, err = json.Marshal(data)
+		if err != nil {
+			log.Entry().Errorf("error while marshalling reporting details, %v", err)
+		}
+	}
+
+	log.Entry().Debugf("Sending the following payload: %v", string(payload))
+	resp, err := t.customClient.SendRequest(http.MethodPost, t.CustomReportingDsn, bytes.NewBuffer(payload), nil, nil)
+
+	if resp != nil {
+		if resp.StatusCode != http.StatusOK {
+			// log it to stdout
+			rdr := io.LimitReader(resp.Body, 1000)
+			body, errRead := ioutil.ReadAll(rdr)
+			log.Entry().Infof("%v: error logging failed - %v", resp.Status, string(body))
+			if errRead != nil {
+				log.Entry().Errorf("Error reading response body. %v", errRead)
+			}
+			log.Entry().Errorf("%v: error logging failed - %v, %v", err, resp.Status, string(body))
+		}
+	}
+
+	if err != nil {
+		log.Entry().Errorf("error sending the requests: %v", err)
 	}
 }
