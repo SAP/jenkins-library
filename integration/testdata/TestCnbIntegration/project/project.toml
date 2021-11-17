@@ -5,7 +5,7 @@ version = "0.1"
 [build]
 include = [
     "*.js",
-    "package.json"
+    "/package.json"
 ]
 
 [[build.env]]
