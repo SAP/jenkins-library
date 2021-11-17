@@ -805,7 +805,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
 
-	translateProject(&config, utils, buildID, classpath)
+	return translateProject(&config, utils, buildID, classpath)
 
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
@@ -851,7 +851,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	return string(translateJSON), err
 }
 
-func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, buildID, classpath string) {
+func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, buildID, classpath string) error {
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
 	log.Entry().Debugf("Translating with options: %v", translateList)
@@ -859,7 +859,10 @@ func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, bui
 		if len(classpath) > 0 {
 			translate["autoClasspath"] = classpath
 		}
-		handleSingleTranslate(config, utils, buildID, translate)
+		err := handleSingleTranslate(config, utils, buildID, translate)
+		if err != nil {
+			return err
+		}
 	}
 }
 
