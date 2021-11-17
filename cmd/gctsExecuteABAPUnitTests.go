@@ -910,10 +910,16 @@ func findLine(path string, readableSource bool, objName string, objectType strin
 
 			splittedfilecontent := strings.Split(filecontent, "\n")
 			for line, linecontent := range splittedfilecontent {
-				regexSubObj := regexp.MustCompile(`includes\/\w*`)
-				subObject := regexSubObj.FindString(path)
-				subObject = subObject[len(`includes/`):]
-				if strings.Contains(linecontent, "protected section.") || strings.Contains(linecontent, "method"+subObject) || strings.Contains(linecontent, "private section.") {
+
+				regexMethod := regexp.MustCompile(`.name=[a-zA-Z0-9_-]*;`)
+				method := regexMethod.FindString(path)
+
+				if method != "" {
+					method = method[len(`.name=`) : len(method)-1]
+
+				}
+
+				if strings.Contains(linecontent, "protected section.") || strings.Contains(linecontent, "method"+" "+method) || strings.Contains(linecontent, "private section.") {
 					linepointer = line
 					break
 				}
