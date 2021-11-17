@@ -894,7 +894,7 @@ func constructPath(workspace string, path string, targetDir string, objectName s
 func findLine(path string, readableSource bool, objName string, objectType string, workspace string, targetDir string) (line string, error error) {
 	var linepointer int
 	if readableSource {
-		if strings.Contains(path, "CLAS%2FOSO") || strings.Contains(path, "CLAS%2FOM") || strings.Contains(path, "CLAS%2FOSI") {
+		if strings.Contains(path, "CLAS/OSO") || strings.Contains(path, "CLAS/OM") || strings.Contains(path, "CLAS/OSI") {
 
 			filePath, err := constructPath(workspace, path, targetDir, objName, objectType)
 			if err != nil {
