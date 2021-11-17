@@ -94,7 +94,7 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 			}
 			packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
 			if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
-				return repos, errors.New("CommitID of package" + pckgWR[i].Package.PackageName + "is the same as the on of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
+				return repos, errors.New("CommitID of package " + pckgWR[i].Package.PackageName + " is the same as the on of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
 			}
 		}
 
