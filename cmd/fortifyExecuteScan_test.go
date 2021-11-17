@@ -19,6 +19,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/google/go-github/v32/github"
@@ -333,6 +334,9 @@ func (er *execRunnerMock) Stderr(err io.Writer) {
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
+	if piperutils.ContainsString(p, "--failTranslate") {
+		return errors.New("Translate failed")
+	}
 	er.currentExecution().parameters = p
 	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
 	classpathMaven := "some.jar;someother.jar"
@@ -793,6 +797,14 @@ func TestTranslateProject(t *testing.T) {
 		translateProject(&config, &utils, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
+	})
+	
+	t.Run("failure propagated", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
+		err := translateProject(&config, &utils, "--failTranslate", "./WEB-INF/lib/*.jar")
+		assert.Error(t, err)
+		assert.Equal(t, "failed to execute sourceanalyzer translate command with options -verbose, -64, -b, --failTranslate, -Xmx2G, -cp, ./WEB-INF/lib/*.jar, -extdirs", tmp/, -source, 1.8, -jdk, 1.8.0-21, -sourcepath, src/ext/, ./**/*", err.Error())
 	})
 }
 
