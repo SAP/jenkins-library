@@ -18,8 +18,10 @@ func TestReleasePackagesStep(t *testing.T) {
 		Token:      "myToken",
 		StatusCode: 200,
 	}
-	timeout := time.Duration(5 * time.Second)
-	pollInterval := time.Duration(1 * time.Second)
+	maxRuntime := time.Duration(1 * time.Second)
+	pollingInterval := time.Duration(1 * time.Microsecond)
+	config.Username = "dummyUser"
+	config.Password = "dummyPassword"
 	t.Run("step success", func(t *testing.T) {
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
@@ -36,7 +38,7 @@ func TestReleasePackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, pollInterval)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, maxRuntime, pollingInterval)
 
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
@@ -55,7 +57,7 @@ func TestReleasePackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, pollInterval)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, maxRuntime, pollingInterval)
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, err.Error(), "Parameter missing. Please provide the name of the package which should be released")
 	})
@@ -73,8 +75,9 @@ func TestReleasePackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 
-		timeout := time.Duration(2 * time.Second)
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, pollInterval)
+		maxRuntime := time.Duration(2 * time.Second)
+		pollingInterval := time.Duration(1 * time.Second)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, maxRuntime, pollingInterval)
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, err.Error(), "Timed out")
 	})

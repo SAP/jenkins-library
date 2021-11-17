@@ -23,19 +23,19 @@ func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePacka
 
 	client := piperhttp.Client{}
 
-	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
-	pollIntervalsInSeconds := time.Duration(30 * time.Second)
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervalInSeconds)*time.Second)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
 func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment, maxRuntime time.Duration, pollingInterval time.Duration) error {
 	conn := new(abapbuild.Connector)
-	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+		return err
+	}
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
@@ -44,7 +44,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 		return err
 	}
 	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
-	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, maxRuntime, pollingInterval)
 	if err != nil {
 		return err
 	}
@@ -95,9 +95,9 @@ func sortByStatus(repos []abaputils.Repository, conn abapbuild.Connector) ([]aak
 	return packagesWithReposLocked, packagesWithReposNotLocked
 }
 
-func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]aakaas.PackageWithRepository, error) {
-	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntime time.Duration, pollingInterval time.Duration) ([]aakaas.PackageWithRepository, error) {
+	timeout := time.After(maxRuntime)
+	ticker := time.Tick(pollingInterval)
 
 	for {
 		select {
@@ -110,7 +110,7 @@ func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes t
 					err := pckgWR[i].Package.Release()
 					// if there is an error, release is not yet finished
 					if err != nil {
-						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollingInterval)
 						allFinished = false
 					}
 				}

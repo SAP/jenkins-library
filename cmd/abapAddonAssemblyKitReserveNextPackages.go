@@ -22,17 +22,15 @@ func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveN
 	c.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
-	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
-	pollIntervalsInSeconds := time.Duration(30 * time.Second)
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &client, cpe, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervalInSeconds)*time.Second)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
 func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment, maxRuntime time.Duration, pollingInterval time.Duration) error {
 
 	conn := new(abapbuild.Connector)
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
@@ -49,7 +47,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 		return err
 	}
 
-	err = pollReserveNextPackages(packagesWithRepos, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	err = pollReserveNextPackages(packagesWithRepos, maxRuntime, pollingInterval)
 	if err != nil {
 		return err
 	}
@@ -104,9 +102,9 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 	return repos, nil
 }
 
-func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntime time.Duration, pollingInterval time.Duration) error {
+	timeout := time.After(maxRuntime)
+	ticker := time.Tick(pollingInterval)
 	for {
 		select {
 		case <-timeout:
@@ -117,14 +115,14 @@ func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeIn
 				err := pckgWR[i].Package.GetPackageAndNamespace()
 				// if there is an error, reservation is not yet finished
 				if err != nil {
-					log.Entry().Infof("Reservation of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
+					log.Entry().Infof("Reservation of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollingInterval)
 					allFinished = false
 				} else {
 					switch pckgWR[i].Package.Status {
 					case aakaas.PackageStatusLocked:
 						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].Package.PackageName)
 					case aakaas.PackageStatusCreationTriggered:
-						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %s", pckgWR[i].Package.PackageName, pollingInterval)
 						allFinished = false
 					case aakaas.PackageStatusPlanned:
 						log.Entry().Infof("Reservation of %s was successful with status 'planned'", pckgWR[i].Package.PackageName)

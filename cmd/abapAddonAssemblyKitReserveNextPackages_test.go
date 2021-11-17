@@ -251,8 +251,8 @@ func TestReservePackages(t *testing.T) {
 // ********************* Test pollReserveNextPackages *******************
 
 func TestPollReserveNextPackages(t *testing.T) {
-	timeout := time.Duration(5 * time.Second)
-	pollInterval := time.Duration(1 * time.Second)
+	timeout := time.Duration(1 * time.Second)
+	pollInterval := time.Duration(1 * time.Microsecond)
 	t.Run("test pollReserveNextPackages - testing loop", func(t *testing.T) {
 		client := abaputils.ClientMock{
 			BodyList: []string{responseReserveNextPackagePlanned, responseReserveNextPackageCreationTriggered},

@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -10,6 +11,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) {
@@ -89,13 +91,15 @@ func (c *componentVersion) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 
 func (c *componentVersion) validate() error {
 	log.Entry().Infof("Validate component %s version %s and resolve version", c.Name, c.VersionYAML)
-	appendum := "/odata/aas_ocs_package/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
+	appendum := "/odata/aas_ocs_package/ValidateComponentVersion?Name='" + url.QueryEscape(c.Name) + "'&Version='" + url.QueryEscape(c.VersionYAML) + "'"
 	body, err := c.Connector.Get(appendum)
 	if err != nil {
 		return err
 	}
 	var jCV jsonComponentVersion
-	json.Unmarshal(body, &jCV)
+	if err := json.Unmarshal(body, &jCV); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Component Version: "+string(body))
+	}
 	c.Name = jCV.ComponentVersion.Name
 	c.Version = jCV.ComponentVersion.Version
 	c.SpLevel = jCV.ComponentVersion.SpLevel

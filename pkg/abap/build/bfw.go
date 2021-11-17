@@ -2,11 +2,12 @@ package build
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // RunState : Current Status of the Build
@@ -153,7 +154,9 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	}
 
 	var jBuild jsonBuild
-	json.Unmarshal(body, &jBuild)
+	if err := json.Unmarshal(body, &jBuild); err != nil {
+		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+	}
 	b.BuildID = jBuild.Build.BuildID
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
@@ -167,13 +170,16 @@ func (b *Build) Start(phase string, inputValues Values) error {
 
 // Get : Get all Build tasks
 func (b *Build) Get() error {
-	appendum := "/builds('" + b.BuildID + "')"
+	appendum := "/builds('" + url.QueryEscape(b.BuildID) + "')"
 	body, err := b.Connector.Get(appendum)
 	if err != nil {
 		return err
 	}
 	var jBuild jsonBuild
-	json.Unmarshal(body, &jBuild)
+	if err := json.Unmarshal(body, &jBuild); err != nil {
+		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+	}
+
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
 	b.Phase = jBuild.Build.Phase
@@ -186,13 +192,15 @@ func (b *Build) Get() error {
 
 func (b *Build) getTasks() error {
 	if len(b.Tasks) == 0 {
-		appendum := "/builds('" + b.BuildID + "')/tasks"
+		appendum := "/builds('" + url.QueryEscape(b.BuildID) + "')/tasks"
 		body, err := b.Connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jTasks jsonTasks
-		json.Unmarshal(body, &jTasks)
+		if err := json.Unmarshal(body, &jTasks); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		b.Tasks = jTasks.ResultTasks.Tasks
 		sort.Slice(b.Tasks, func(i, j int) bool {
 			return b.Tasks[i].TaskID < b.Tasks[j].TaskID
@@ -206,13 +214,15 @@ func (b *Build) getTasks() error {
 
 func (b *Build) getValues() error {
 	if len(b.Values) == 0 {
-		appendum := "/builds('" + b.BuildID + "')/values"
+		appendum := "/builds('" + url.QueryEscape(b.BuildID) + "')/values"
 		body, err := b.Connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jValues jsonValues
-		json.Unmarshal(body, &jValues)
+		if err := json.Unmarshal(body, &jValues); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		b.Values = jValues.ResultValues.Values
 		for i := range b.Values {
 			b.Values[i].connector = b.Connector
@@ -302,13 +312,15 @@ func (b *Build) IsFinished() bool {
 
 func (t *task) getLogs() error {
 	if len(t.Logs) == 0 {
-		appendum := fmt.Sprint("/tasks(build_id='", t.BuildID, "',task_id=", t.TaskID, ")/logs")
+		appendum := fmt.Sprint("/tasks(build_id='", url.QueryEscape(t.BuildID), "',task_id=", t.TaskID, ")/logs")
 		body, err := t.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jLogs jsonLogs
-		json.Unmarshal(body, &jLogs)
+		if err := json.Unmarshal(body, &jLogs); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		t.Logs = jLogs.ResultLogs.Logs
 	}
 	return nil
@@ -316,13 +328,15 @@ func (t *task) getLogs() error {
 
 func (t *task) getResults() error {
 	if len(t.Results) == 0 {
-		appendum := fmt.Sprint("/tasks(build_id='", t.BuildID, "',task_id=", t.TaskID, ")/results")
+		appendum := fmt.Sprint("/tasks(build_id='", url.QueryEscape(t.BuildID), "',task_id=", t.TaskID, ")/results")
 		body, err := t.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jResults jsonResults
-		json.Unmarshal(body, &jResults)
+		if err := json.Unmarshal(body, &jResults); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
 			t.Results[i].connector = t.connector
@@ -337,7 +351,7 @@ func (t *task) getResults() error {
 
 // Download : Provides the atrefact of build step
 func (result *Result) Download(downloadPath string) error {
-	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
+	appendum := fmt.Sprint("/results(build_id='", url.QueryEscape(result.BuildID), "',task_id=", result.TaskID, ",name='", url.QueryEscape(result.Name), "')/$value")
 	err := result.connector.Download(appendum, downloadPath)
 	return err
 }

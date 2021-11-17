@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) {
@@ -95,7 +96,9 @@ func (p *productVersion) validateAndResolveVersionFields() error {
 		return err
 	}
 	var jPV jsonProductVersion
-	json.Unmarshal(body, &jPV)
+	if err := json.Unmarshal(body, &jPV); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Product Version: "+string(body))
+	}
 	p.Name = jPV.ProductVersion.Name
 	p.Version = jPV.ProductVersion.Version
 	p.SpsLevel = jPV.ProductVersion.SpsLevel

@@ -24,6 +24,8 @@ func TestPublishTargetVectorStep(t *testing.T) {
 	}
 	adoDesc, _ := json.Marshal(addonDescriptor)
 	config.AddonDescriptor = string(adoDesc)
+	maxRuntime := time.Duration(1 * time.Second)
+	pollingInterval := time.Duration(1 * time.Microsecond)
 
 	t.Run("step success prod", func(t *testing.T) {
 		//arrange
@@ -34,7 +36,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		mc.AddData(aakaas.AAKaaSGetTVPublishProdSuccess)
 
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, maxRuntime, pollingInterval)
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
@@ -47,8 +49,9 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		mc.AddData(aakaas.AAKaaSTVPublishTestPost)
 		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
 		mc.AddData(aakaas.AAKaaSGetTVPublishTestSuccess)
+
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, maxRuntime, pollingInterval)
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
@@ -60,7 +63,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 			Error: errors.New("dummy"),
 		}
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, maxRuntime, pollingInterval)
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})
@@ -70,7 +73,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		config := abapAddonAssemblyKitPublishTargetVectorOptions{}
 		mc := abapbuild.NewMockClient()
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, maxRuntime, pollingInterval)
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})
