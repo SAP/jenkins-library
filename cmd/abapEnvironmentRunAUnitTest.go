@@ -198,27 +198,14 @@ func buildAUnitTestBody(AUnitConfig AUnitConfig) (metadataString string, options
 	}
 
 	//Build Options
-	//Check if Options are needed, MPS doesn't require options
-	//There is no actually no good alternative to this implementation since we need to ensure the minimalistic MPS request body as well as different OSL sets in explicit runs
-	mpsCounter := 0
-	if len(AUnitConfig.ObjectSet) != 0 {
-		for _, objectSet := range AUnitConfig.ObjectSet {
-			if !(reflect.DeepEqual(objectSet.MultiPropertySet, MultiPropertySet{})) {
-				mpsCounter++
-			}
-		}
-		if mpsCounter == 0 {
-			optionsString += buildAUnitOptionsString(AUnitConfig)
-			//Build metadata string
-			metadataString += `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
-		}
-	}
+	optionsString += buildAUnitOptionsString(AUnitConfig)
+	//Build metadata string
+	metadataString += `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 
 	//Build Object Set
 	objectSetString += buildAUnitObjectSetString(AUnitConfig)
-	if mpsCounter == 0 {
-		metadataString += `</aunit:run>`
-	}
+	objectSetString += `</aunit:run>`
+
 	return metadataString, optionsString, objectSetString, nil
 }
 
@@ -278,150 +265,96 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	return optionsString
 }
 
-//This function checks recursively if there any subsequent packages in ObjectSet and converts them to the AUnit body
+//This function checks recursively if there any subsequent packages in ObjectSet and converts them to the AUnit request body
 //It has been designed to take an indefinite amount of Sets, BaseSets and ExclusionSets. Each set can possibly contain any amount and type of sets in reverse
 //At every stage we have to check if we are in one of these sets and check if there are subsequents sets contained in it
 //Golang allows us to iterate through the objects contained in a set and convert them to the appropriate AUnit body
-//If the current set in writeObjectSets() is empty, no additional logic is needed. Nothing happens simply and it's relatively cheap
-//It breaks naturally once all subsets including their objects have been iterated through and converted and there are no Sets/BaseSets/ExclusionSets left
-//If there are new "Sets" inside the ObjectSet they need to be added here
+//If the current set in writeObjectSetProperties() is empty, no additional logic is needed. Nothing happens simply and it's relatively cheap
+//The functions ends naturally once all subsets including their objects have been iterated through and converted and there are no Sets/BaseSets/ExclusionSets left
+//If there are new congruent "Sets" added to the ObjectSet they need to be looped here
 func checkOSLObjectSetsRecursive(set Set, baseSet BaseSet, exclusionSet ExclusionSet, multipropertyset MultiPropertySet) (objectSetString string) {
 	//We assume we may already be in a multipropertyset or normal set where there can be objects inside of this set that need to be converted first
 	//However we can only be in a set or multipropertyset. refer to the method call for further reference. This should not be reused if you use a different logic
-	objectSetString += writeObjectSets(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, multipropertyset))
+	objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, multipropertyset))
 	if (len(set.Set) != 0) || (len(baseSet.Set) != 0) || (len(exclusionSet.Set) != 0) || (len(multipropertyset.Set) != 0) {
 		for _, set := range set.Set {
 			objectSetString += `<osl:set xsi:type="` + set.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:set>`
 		}
 		for _, set := range baseSet.Set {
 			objectSetString += `<osl:set xsi:type="` + set.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:set>`
 		}
 		for _, set := range exclusionSet.Set {
 			objectSetString += `<osl:set xsi:type="` + set.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:set>`
 		}
 		for _, set := range multipropertyset.Set {
 			objectSetString += `<osl:set xsi:type="` + set.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(set, BaseSet{}, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:set>`
 		}
 	}
 	if (len(set.BaseSet) != 0) || (len(baseSet.BaseSet) != 0) || (len(exclusionSet.BaseSet) != 0) || (len(multipropertyset.BaseSet) != 0) {
 		for _, baseSet := range set.BaseSet {
 			objectSetString += `<osl:baseSet xsi:type="` + baseSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:baseSet>`
 		}
 		for _, baseSet := range baseSet.BaseSet {
 			objectSetString += `<osl:baseSet xsi:type="` + baseSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:baseSet>`
 		}
 		for _, baseSet := range exclusionSet.BaseSet {
 			objectSetString += `<osl:baseSet xsi:type="` + baseSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:baseSet>`
 		}
 		for _, baseSet := range multipropertyset.BaseSet {
 			objectSetString += `<osl:baseSet xsi:type="` + baseSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, baseSet, ExclusionSet{}, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:baseSet>`
 		}
 	}
 	if (len(set.ExclusionSet) != 0) || (len(baseSet.ExclusionSet) != 0) || (len(exclusionSet.ExclusionSet) != 0) || (len(multipropertyset.ExclusionSet) != 0) {
 		for _, exclusionSet := range set.ExclusionSet {
 			objectSetString += `<osl:exclusionSet xsi:type="` + exclusionSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:exclusionSet>`
 		}
 		for _, exclusionSet := range baseSet.ExclusionSet {
 			objectSetString += `<osl:exclusionSet xsi:type="` + exclusionSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:exclusionSet>`
 		}
 		for _, exclusionSet := range exclusionSet.ExclusionSet {
 			objectSetString += `<osl:exclusionSet xsi:type="` + exclusionSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:exclusionSet>`
 		}
 		for _, exclusionSet := range multipropertyset.ExclusionSet {
 			objectSetString += `<osl:exclusionSet xsi:type="` + exclusionSet.Type + `">`
-			objectSetString += writeObjectSets(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})              //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
+			objectSetString += writeObjectSetProperties(parseAllObjectSetsToMPS(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})) //We can print here, there may be objects already present
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, exclusionSet, MultiPropertySet{})                       //Afterwards we can continue checking if there are subsequent sets, if not we end up here again anyway
 			objectSetString += `</osl:exclusionSet>`
 		}
 	}
 	return objectSetString
-}
-
-//For an easier use of the writeObjectSets() this function converts BaseSet and ExclusionSet Objects to a Simple structure.
-//These structures are identical so the values can simply be re-assigned. Both Sets (BaseSet and ExclusionSet) can never be both filled
-func parseAllObjectSetsToMPS(set Set, baseSet BaseSet, exclusionSet ExclusionSet, multipropertySet MultiPropertySet) (mps MultiPropertySet) {
-
-	//This is actually needed for the checkOSLObjectSetsRecursive() function, so the posible Set "subset" values don't get lost
-	//Since MultipropertySets could contain flat objects
-	if !(reflect.DeepEqual(set, Set{})) {
-		mps.ComponentSet = set.ComponentSet
-		mps.FlatObjectSet = set.FlatObjectSet
-		mps.ObjectTypeSet = set.ObjectTypeSet
-		mps.PackageSet = set.PackageSet
-		mps.TransportSet = set.TransportSet
-		mps.Type = set.Type
-		mps.BaseSet = set.BaseSet
-		mps.ExclusionSet = set.ExclusionSet
-		mps.Set = set.Set
-	}
-	if !(reflect.DeepEqual(baseSet, BaseSet{})) {
-		mps.ComponentSet = baseSet.ComponentSet
-		mps.FlatObjectSet = baseSet.FlatObjectSet
-		mps.ObjectTypeSet = baseSet.ObjectTypeSet
-		mps.PackageSet = baseSet.PackageSet
-		mps.TransportSet = baseSet.TransportSet
-		mps.Type = baseSet.Type
-		mps.BaseSet = baseSet.BaseSet
-		mps.ExclusionSet = baseSet.ExclusionSet
-		mps.Set = baseSet.Set
-	}
-	if !(reflect.DeepEqual(exclusionSet, ExclusionSet{})) {
-		mps.ComponentSet = exclusionSet.ComponentSet
-		mps.FlatObjectSet = exclusionSet.FlatObjectSet
-		mps.ObjectTypeSet = exclusionSet.ObjectTypeSet
-		mps.PackageSet = exclusionSet.PackageSet
-		mps.TransportSet = exclusionSet.TransportSet
-		mps.Type = exclusionSet.Type
-		mps.BaseSet = exclusionSet.BaseSet
-		mps.ExclusionSet = exclusionSet.ExclusionSet
-		mps.Set = exclusionSet.Set
-	}
-	if !(reflect.DeepEqual(multipropertySet, MultiPropertySet{})) {
-		mps.ComponentSet = multipropertySet.ComponentSet
-		mps.FlatObjectSet = multipropertySet.FlatObjectSet
-		mps.ObjectTypeSet = multipropertySet.ObjectTypeSet
-		mps.PackageSet = multipropertySet.PackageSet
-		mps.TransportSet = multipropertySet.TransportSet
-		mps.BaseSet = multipropertySet.BaseSet
-		mps.ComponentNames = multipropertySet.ComponentNames
-		mps.ExclusionSet = multipropertySet.ExclusionSet
-		mps.Set = multipropertySet.Set
-		mps.Type = multipropertySet.Type
-	}
-	return mps
 }
 
 //This function converts all objects, transport numbers, components, ... to the appropriate AUnit XML format.
@@ -429,7 +362,9 @@ func parseAllObjectSetsToMPS(set Set, baseSet BaseSet, exclusionSet ExclusionSet
 //Each Set should only contains objects of the same Set subobject. E.g. packageObjects should only contain packages
 //If the respective AUnitconfig.yml is misconfigured with multiple objects of different types/sets the AUnit body will be misconfigured
 //Since all Sets (Set, BaseSet, ExclusionSet) can possibly contain the same elements we dont iterate through all structures and limit the use rather to take Sets only and convert them beforehand
-func writeObjectSets(set MultiPropertySet) (objectSetString string) {
+//We also have to include the Package duplicate since packages in PackageSet have the Option to include Suboptions --> could be merged in the future by checking if includeSubpackages != nil
+//We also have to include the ObjectTypes duplicate since redeclaration of JSON tags is not allowed for the MPS structure property of ObjectTypes
+func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
 	for _, packageSet := range set.PackageSet {
 		objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
 	}
@@ -445,8 +380,38 @@ func writeObjectSets(set MultiPropertySet) (objectSetString string) {
 	for _, objectTypeSet := range set.ObjectTypeSet {
 		objectSetString += `<osl:objectType name="` + objectTypeSet.Name + `"/>`
 	}
-	for _, componentName := range set.ComponentNames {
-		objectSetString += `<osl:softwareComponent name="` + componentName.Name + `"/>`
+	for _, packages := range set.PackageNames {
+		objectSetString += `<osl:package name="` + packages.Name + `"/>`
+	}
+	for _, objectTypeGroup := range set.ObjectTypeGroups {
+		objectSetString += `<osl:objectTypeGroup name="` + objectTypeGroup.Name + `"/>`
+	}
+	for _, objectType := range set.ObjectTypes {
+		objectSetString += `<osl:objectType name="` + objectType.Name + `"/>`
+	}
+	for _, owner := range set.Owners {
+		objectSetString += `<osl:owner name="` + owner.Name + `"/>`
+	}
+	for _, releaseState := range set.ReleaseStates {
+		objectSetString += `<osl:releaseState value="` + releaseState.Value + `"/>`
+	}
+	for _, version := range set.Versions {
+		objectSetString += `<osl:version value="` + version.Value + `"/>`
+	}
+	for _, applicationComponent := range set.ApplicationComponents {
+		objectSetString += `<osl:applicationComponent name="` + applicationComponent.Name + `"/>`
+	}
+	for _, component := range set.ComponentNames {
+		objectSetString += `<osl:softwareComponent name="` + component.Name + `"/>`
+	}
+	for _, transportLayer := range set.TransportLayers {
+		objectSetString += `<osl:transportLayer name="` + transportLayer.Name + `"/>`
+	}
+	for _, language := range set.Languages {
+		objectSetString += `<osl:language value="` + language.Value + `"/>`
+	}
+	for _, sourceSystem := range set.SourceSystems {
+		objectSetString += `<osl:sourceSystem name="` + sourceSystem.Name + `"/>`
 	}
 	return objectSetString
 }
@@ -457,11 +422,10 @@ func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string)
 	for _, s := range AUnitConfig.ObjectSet {
 		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
 
-		//Currently we only support one MultiPropertySet as this can possibly contain any amount of subsets
+		//This only supports one MultiPropertySet inside of an ObjectSet --> If multiple MPS requests are possible an iteration for the MPS array will be needed
 		objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, ExclusionSet{}, s.MultiPropertySet)
 
-		//We assume there is a Set in the AUnitconfig.yml structure first
-		//If this is changed, the loop can simply be removed and the recursive converting can directly be called
+		//We assume there is a Set in the AUnitconfig.yml structure first after handling any Multi Property Set
 		for _, t := range s.Set {
 			objectSetString += `<osl:set xsi:type="` + t.Type + `">`
 			objectSetString += checkOSLObjectSetsRecursive(t, BaseSet{}, ExclusionSet{}, MultiPropertySet{})
@@ -576,6 +540,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		log.Entry().Infof(`Here are the results for the AUnit test run '%s' executed by User %s on System %s in Client %s at %s. The AUnit run took %s seconds and contains %s tests with %s failures, %s errors, %s skipped and %s assert findings`, parsedXML.Title, parsedXML.System, parsedXML.ExecutedBy, parsedXML.Client, parsedXML.Timestamp, parsedXML.Time, parsedXML.Tests, parsedXML.Failures, parsedXML.Errors, parsedXML.Skipped, parsedXML.Asserts)
 		for _, s := range parsedXML.Testsuite.Testcase {
 			//Log Infos for testcase
+			//HTML Procesing can be done here
 			for _, failure := range s.Failure {
 				log.Entry().Debugf("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
 			}
@@ -589,6 +554,71 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
 	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
 	return nil
+}
+
+//For an easier use of the writeObjectSetProperties() this function converts BaseSet and ExclusionSet Objects to a Simple structure
+//These structures are almost identical so the values can simply be re-assigned. Both Sets (BaseSet and ExclusionSet) should never be both filled, otherwise the values will be re-assigned
+//If there is a different approach needed the checks can be arranged with if-else statemenents
+func parseAllObjectSetsToMPS(set Set, baseSet BaseSet, exclusionSet ExclusionSet, multipropertySet MultiPropertySet) (mps MultiPropertySet) {
+
+	//This is actually needed for the checkOSLObjectSetsRecursive() function, so the posible Set "subset" values don't get lost
+	//Since MultipropertySets could contain flat objects
+	if !(reflect.DeepEqual(set, Set{})) {
+		mps.ComponentSet = set.ComponentSet
+		mps.FlatObjectSet = set.FlatObjectSet
+		mps.ObjectTypeSet = set.ObjectTypeSet
+		mps.PackageSet = set.PackageSet
+		mps.TransportSet = set.TransportSet
+		mps.Type = set.Type
+		mps.BaseSet = set.BaseSet
+		mps.ExclusionSet = set.ExclusionSet
+		mps.Set = set.Set
+	}
+	if !(reflect.DeepEqual(baseSet, BaseSet{})) {
+		mps.ComponentSet = baseSet.ComponentSet
+		mps.FlatObjectSet = baseSet.FlatObjectSet
+		mps.ObjectTypeSet = baseSet.ObjectTypeSet
+		mps.PackageSet = baseSet.PackageSet
+		mps.TransportSet = baseSet.TransportSet
+		mps.Type = baseSet.Type
+		mps.BaseSet = baseSet.BaseSet
+		mps.ExclusionSet = baseSet.ExclusionSet
+		mps.Set = baseSet.Set
+	}
+	if !(reflect.DeepEqual(exclusionSet, ExclusionSet{})) {
+		mps.ComponentSet = exclusionSet.ComponentSet
+		mps.FlatObjectSet = exclusionSet.FlatObjectSet
+		mps.ObjectTypeSet = exclusionSet.ObjectTypeSet
+		mps.PackageSet = exclusionSet.PackageSet
+		mps.TransportSet = exclusionSet.TransportSet
+		mps.Type = exclusionSet.Type
+		mps.BaseSet = exclusionSet.BaseSet
+		mps.ExclusionSet = exclusionSet.ExclusionSet
+		mps.Set = exclusionSet.Set
+	}
+	if !(reflect.DeepEqual(multipropertySet, MultiPropertySet{})) {
+		mps.ComponentSet = multipropertySet.ComponentSet
+		mps.FlatObjectSet = multipropertySet.FlatObjectSet
+		mps.ObjectTypeSet = multipropertySet.ObjectTypeSet
+		mps.PackageSet = multipropertySet.PackageSet
+		mps.TransportSet = multipropertySet.TransportSet
+		mps.BaseSet = multipropertySet.BaseSet
+		mps.ComponentNames = multipropertySet.ComponentNames
+		mps.ExclusionSet = multipropertySet.ExclusionSet
+		mps.Set = multipropertySet.Set
+		mps.PackageNames = multipropertySet.PackageNames
+		mps.ObjectTypeGroups = multipropertySet.ObjectTypeGroups
+		mps.ObjectTypes = multipropertySet.ObjectTypes
+		mps.Owners = multipropertySet.Owners
+		mps.ReleaseStates = multipropertySet.ReleaseStates
+		mps.Versions = multipropertySet.Versions
+		mps.ApplicationComponents = multipropertySet.ApplicationComponents
+		mps.ComponentNames = multipropertySet.ComponentNames
+		mps.TransportLayers = multipropertySet.TransportLayers
+		mps.Languages = multipropertySet.Languages
+		mps.SourceSystems = multipropertySet.SourceSystems
+	}
+	return mps
 }
 
 //
@@ -640,16 +670,26 @@ type ObjectSet struct {
 
 //MultiPropertySet that can possibly contain any subsets/object of the OSL
 type MultiPropertySet struct {
-	Type           string               `json:"type,omitempty"`
-	Set            []Set                `json:"set,omitempty"`
-	BaseSet        []BaseSet            `json:"baseset,omitempty"`
-	ExclusionSet   []ExclusionSet       `json:"exclusionset,omitempty"`
-	PackageSet     []AUnitPackageSet    `json:"package,omitempty"`
-	FlatObjectSet  []AUnitFlatObjectSet `json:"object,omitempty"`
-	ComponentSet   []AUnitComponentSet  `json:"component,omitempty"`
-	TransportSet   []AUnitTransportSet  `json:"transport,omitempty"`
-	ObjectTypeSet  []AUnitObjectTypeSet `json:"objecttype,omitempty"`
-	ComponentNames []Component          `json:"componentnames,omitempty"`
+	Type                  string                 `json:"type,omitempty"`
+	Set                   []Set                  `json:"set,omitempty"`
+	BaseSet               []BaseSet              `json:"baseset,omitempty"`
+	ExclusionSet          []ExclusionSet         `json:"exclusionset,omitempty"`
+	PackageSet            []AUnitPackageSet      `json:"package,omitempty"`
+	FlatObjectSet         []AUnitFlatObjectSet   `json:"object,omitempty"`
+	ComponentSet          []AUnitComponentSet    `json:"component,omitempty"`
+	TransportSet          []AUnitTransportSet    `json:"transport,omitempty"`
+	ObjectTypeSet         []AUnitObjectTypeSet   `json:"objecttype,omitempty"`
+	PackageNames          []AUnitPackage         `json:"packagenames,omitempty"`
+	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroup,omitempty"`
+	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
+	Owners                []Owner                `json:"owner,omitempty"`
+	ReleaseStates         []ReleaseState         `json:"releasestate,omitempty"`
+	Versions              []Version              `json:"version,omitempty"`
+	ApplicationComponents []ApplicationComponent `json:"applicationcomponent,omitempty"`
+	ComponentNames        []Component            `json:"componentnames,omitempty"`
+	TransportLayers       []TransportLayer       `json:"transportlayer,omitempty"`
+	Languages             []Language             `json:"language,omitempty"`
+	SourceSystems         []SourceSystem         `json:"sourcesystem,omitempty"`
 }
 
 //Set in form of packages and software components to be checked
@@ -718,8 +758,58 @@ type AUnitObjectTypeSet struct {
 	Name string `json:"name,omitempty"`
 }
 
-//Component names for multipropertyset
+//AUnitPackage for MPS
+type AUnitPackage struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ObjectTypeGroup
+type ObjectTypeGroup struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ObjectType
+type ObjectType struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Owner
+type Owner struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ReleaseState
+type ReleaseState struct {
+	Value string `json:"name,omitempty"`
+}
+
+//Version
+type Version struct {
+	Value string `json:"name,omitempty"`
+}
+
+//ApplicationComponent
+type ApplicationComponent struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Component
 type Component struct {
+	Name string `json:"name,omitempty"`
+}
+
+//TransportLayer
+type TransportLayer struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Language
+type Language struct {
+	Value string `json:"name,omitempty"`
+}
+
+//SourceSystem
+type SourceSystem struct {
 	Name string `json:"name,omitempty"`
 }
 
