@@ -1067,7 +1067,7 @@ func getFileName(path string, readableSource bool, objName string) (fileName str
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.abap"
+			fileName = strings.ToLower(objName) + ".clas.abap"
 		} else {
 			fileName = "METH " + objName + ".abap"
 		}
