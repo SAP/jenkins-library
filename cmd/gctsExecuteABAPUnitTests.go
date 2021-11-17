@@ -894,37 +894,76 @@ func constructPath(workspace string, path string, targetDir string, objectName s
 func findLine(path string, readableSource bool, objName string, objectType string, workspace string, targetDir string) (line string, error error) {
 	var linepointer int
 	if readableSource {
-		if strings.Contains(path, "CLAS/OSO") || strings.Contains(path, "CLAS/OM") || strings.Contains(path, "CLAS/OSI") {
 
-			filePath, err := constructPath(workspace, path, targetDir, objName, objectType)
-			if err != nil {
-				return line, errors.Wrap(err, "find Line has failed")
+		filePath, err := constructPath(workspace, path, targetDir, objName, objectType)
+		if err != nil {
+			return line, errors.Wrap(err, "find Line has failed")
 
-			}
-			rawfilecontent, err := ioutil.ReadFile(filePath)
-			if err != nil {
-				fmt.Println("File reading error", err)
-				return
-			}
-			filecontent := string(rawfilecontent)
+		}
+		rawfilecontent, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			fmt.Println("File reading error", err)
+			return
+		}
+		filecontent := string(rawfilecontent)
+		splittedfilecontent := strings.Split(filecontent, "\n")
+		regexMethod := regexp.MustCompile(`.name=[a-zA-Z0-9_-]*;`)
+		method := regexMethod.FindString(path)
 
-			splittedfilecontent := strings.Split(filecontent, "\n")
+		if method != "" {
+			method = method[len(`.name=`) : len(method)-1]
+
+		}
+
+
+		if strings.Contains(path, "CLAS/OSO"){
+
+			
 			for line, linecontent := range splittedfilecontent {
 
-				regexMethod := regexp.MustCompile(`.name=[a-zA-Z0-9_-]*;`)
-				method := regexMethod.FindString(path)
 
-				if method != "" {
-					method = method[len(`.name=`) : len(method)-1]
-
-				}
-
-				if strings.Contains(linecontent, "protected section.") || strings.Contains(linecontent, "method"+" "+method) || strings.Contains(linecontent, "private section.") {
+				if strings.Contains(linecontent, "protected section.")  {
 					linepointer = line
 					break
 				}
 
 			}
+
+
+
+
+		}else 	if strings.Contains(path, "CLAS/OM"){
+
+			for line, linecontent := range splittedfilecontent {
+
+
+				if strings.Contains(linecontent, "method"+" "+method) {
+					linepointer = line
+					break
+				}
+
+			}
+
+
+
+		}else if strings.Contains(path, "CLAS/OSI"){
+
+			for line, linecontent := range splittedfilecontent {
+
+
+				if strings.Contains(linecontent, "private section.") {
+					linepointer = line
+					break
+				}
+
+			}
+
+
+
+
+		}
+		
+		
 
 			regexLine := regexp.MustCompile(`.start=\d*`)
 			linestring := regexLine.FindString(path)
