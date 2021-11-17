@@ -78,52 +78,65 @@ func TestBuildAUnitTestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: []ObjectSet{{
-				Type: "testSet",
-				Set: []Set{
-					{
-						Type: "testBaseSet",
-						BaseSet: []BaseSet{{
-							Type: "testAUnitTransportSet",
-							TransportSet: []AUnitTransportSet{{
-								Number: "TR123Test",
-							}},
-						}},
-					},
-					{
-						Type: "testBaseSet",
-						BaseSet: []BaseSet{{
-							Type: "testAUnitComponentSet",
-							ComponentSet: []AUnitComponentSet{{
-								Name: "TestComponent",
-							}},
-						}},
-						ExclusionSet: []ExclusionSet{{
-							Type: "testAUnitPackageSet",
-							PackageSet: []AUnitPackageSet{{
-								Name:               "TestPackage",
-								IncludeSubpackages: new(bool),
-							}},
-						}},
-					},
-					{
-						Type: "testSet",
-						Set: []Set{
-							{
-								Type: "testSet",
-								FlatObjectSet: []AUnitFlatObjectSet{{
-									Name: "TestObject",
-									Type: "CLAS",
+			ObjectSet: []ObjectSet{
+				{
+					Type: "testSet",
+					Set: []Set{
+						{
+							Type: "testBaseSet",
+							BaseSet: []BaseSet{
+								{
+									Type: "testAUnitTransportSet",
+									TransportSet: []AUnitTransportSet{
+										{
+											Number: "TR123Test",
+										}},
 								}},
-							},
-							{
-								Type: "testSet",
-								ObjectTypeSet: []AUnitObjectTypeSet{{
-									Name: "TestObjectType",
+						},
+						{
+							Type: "testBaseSet",
+							BaseSet: []BaseSet{
+								{
+									Type: "testAUnitComponentSet",
+									ComponentSet: []AUnitComponentSet{
+										{
+											Name: "TestComponent",
+										}},
 								}},
-							}},
-					}},
-			}},
+							ExclusionSet: []ExclusionSet{
+								{
+									Type: "testAUnitPackageSet",
+									PackageSet: []AUnitPackageSet{
+										{
+											Name:               "TestPackage",
+											IncludeSubpackages: new(bool),
+										}},
+								}},
+						},
+						{
+							Type: "testSet",
+							Set: []Set{
+								{
+									Type: "testAUnitFlatObjectSet",
+									FlatObjectSet: []AUnitFlatObjectSet{
+										{
+											Name: "TestCLAS",
+											Type: "CLAS",
+										},
+										{
+											Name: "TestINTF",
+											Type: "INTF",
+										}},
+								},
+								{
+									Type: "testAUnitObjectTypeSet",
+									ObjectTypeSet: []AUnitObjectTypeSet{
+										{
+											Name: "TestObjectType",
+										}},
+								}},
+						}},
+				}},
 		}
 
 		var metadataString, optionsString, objectSetString string
