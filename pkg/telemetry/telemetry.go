@@ -124,7 +124,7 @@ func (t *Telemetry) GetData() Data {
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
 
-	if t.data.ErrorCode == "1" && len(t.CustomReportingDsn) > 0 {
+	if (t.data.ErrorCode == "1" || t.PipelineTelemetry != nil) && len(t.CustomReportingDsn) > 0 {
 		// check if reporting dsn is available in the config and then send the payload to the specific URL
 		log.Entry().Infof("Step %v exited with errorcode 1, sending additional reporting infos to %v", t.data.StepName, t.CustomReportingDsn)
 		t.sendCustom()

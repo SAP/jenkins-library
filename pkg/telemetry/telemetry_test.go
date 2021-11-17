@@ -165,6 +165,19 @@ func TestTelemetry_Send(t *testing.T) {
 			reportingCalls: 1,
 			hasError:       "1",
 		},
+		{
+			name: "Telemetry enabled, reporting disabled, sending only pipelineTelemetry (no error)",
+			fields: fields{
+				disabled:           false,
+				CustomReportingDsn: customReportingDsn,
+				PipelineTelemetry: &PipelineTelemetry{
+					CorrelationId: "test-pipeline",
+				},
+			},
+			swaCalls:       1,
+			reportingCalls: 1,
+			hasError:       "0",
+		},
 	}
 
 	httpmock.Activate()
