@@ -798,13 +798,13 @@ func TestTranslateProject(t *testing.T) {
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
 	})
-	
+
 	t.Run("failure propagated", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
 		err := translateProject(&config, &utils, "--failTranslate", "./WEB-INF/lib/*.jar")
 		assert.Error(t, err)
-		assert.Equal(t, "failed to execute sourceanalyzer translate command with options -verbose, -64, -b, --failTranslate, -Xmx2G, -cp, ./WEB-INF/lib/*.jar, -extdirs", tmp/, -source, 1.8, -jdk, 1.8.0-21, -sourcepath, src/ext/, ./**/*", err.Error())
+		assert.Equal(t, "failed to execute sourceanalyzer translate command with options [-verbose -64 -b --failTranslate -Xmx2G -cp ./WEB-INF/lib/*.jar -extdirs tmp/ -source 1.8 -jdk 1.8.0-21 -sourcepath src/ext/ ./**/*]: Translate failed", err.Error())
 	})
 }
 
