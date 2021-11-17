@@ -131,6 +131,12 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
+				log.Entry().Info("Initialized step reporting with: %v", {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
+				telemetryClient.CustomReportingDsn = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Dsn
+				telemetryClient.CustomReportingToken = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.CustomReportingConfig.Token
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
