@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -102,8 +103,33 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		}
 	*/
 
-	// TODO: this is very simple for now - just to make the communication instance working towards TMS backend
-	communicationInstance.GetNodes()
+	// TODO: this is very simple and hardcoded for now
+	// 1. Get nodes
+	nodes, err1 := communicationInstance.GetNodes()
+	if err1 != nil {
+		return fmt.Errorf("failed to get nodes: %w", err1)
+	}
+
+	var nodeId int64
+	for i := 0; i < len(nodes); i++ {
+		if nodes[i].Name == config.NodeName {
+			nodeId = nodes[i].Id
+			break
+		}
+	}
+
+	// 2. Get MTA extension descriptor for node with given id
+	mtaExtDescriptor, err2 := communicationInstance.GetMtaExtDescriptor(nodeId, "alm.pi.test.scv_a", config.MtaVersion)
+	if err2 != nil {
+		return fmt.Errorf("failed to get MTA extension descriptor: %w", err2)
+	}
+
+	// 3. Update obtained MTA extension descriptor
+	// TODO: read MTA extension descriptor file path from the map provided in step configuration
+	communicationInstance.UpdateMtaExtDescriptor(nodeId, mtaExtDescriptor.Id, "workspace/mtaext_update_test.mtaext", config.MtaVersion, config.CustomDescription, config.NamedUser)
+
+	// 4. Upload another MTA extensoin descriptor
+	communicationInstance.UploadMtaExtDescriptor(nodeId, "workspace/mtaext_upload_test.mtaext", "1.0.1", config.CustomDescription, config.NamedUser)
 
 	return nil
 }
