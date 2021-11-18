@@ -55,6 +55,8 @@ func TestCheckCVsStep(t *testing.T) {
 	client := &abaputils.ClientMock{
 		Body: responseCheckCVs,
 	}
+	config.Username = "dummyUser"
+	config.Password = "dummyPassword"
 	t.Run("step success", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
 		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
