@@ -66,6 +66,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	}
 	addonDescriptorCPE.SetRepositories(addonDescriptor.Repositories)
 	cpe.abap.addonDescriptor = string(addonDescriptorCPE.AsJSON())
+	log.Entry().Info(cpe.abap.addonDescriptor)
 	log.Entry().Info("Wrote addonDescriptor to CommonPipelineEnvironment")
 	return nil
 }

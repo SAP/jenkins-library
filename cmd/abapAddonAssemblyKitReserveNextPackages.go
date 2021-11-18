@@ -38,6 +38,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	}
 
 	addonDescriptor := new(abaputils.AddonDescriptor)
+	log.Entry().Info(config.AddonDescriptor)
 	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV steps have been run before]")
 	}
