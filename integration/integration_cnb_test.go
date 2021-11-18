@@ -16,10 +16,10 @@ func TestNpmProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--buildEnvVars", "BP_NODE_VERSION=15.14.0")
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--buildEnvVars", "BP_NODE_VERSION=16")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
-	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 15.14.0")
+	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
 	container.assertHasOutput(t, "failed to write image to the following tags: [test/not-found:0.0.1")
@@ -41,8 +41,8 @@ func TestProjectDescriptor(t *testing.T) {
 	container.assertHasOutput(t, "srv/hello.js matches include pattern")
 	container.assertHasOutput(t, "package.json matches include pattern")
 	container.assertHasOutput(t, "Downloading buildpack")
-	container.assertHasOutput(t, "Setting custom environment variables: '[BP_NODE_VERSION=15.14.0]'")
-	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 15.14.0")
+	container.assertHasOutput(t, "Setting custom environment variables: '[BP_NODE_VERSION=16]'")
+	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
 	container.assertHasOutput(t, "failed to write image to the following tags: [test/not-found:0.0.1")
