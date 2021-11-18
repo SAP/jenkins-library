@@ -81,12 +81,6 @@ For PMD the failure priority and the max allowed violations are configurable via
 				log.RegisterHook(logCollector)
 			}
 
-			if len(GeneralConfig.HookConfig.CustomReportingConfig.Dsn) > 0 {
-				log.Entry().Infof("Initialized step reporting with: %v", GeneralConfig.HookConfig.CustomReportingConfig.Dsn)
-				telemetryClient.CustomReportingDsn = GeneralConfig.HookConfig.CustomReportingConfig.Dsn
-				telemetryClient.CustomReportingToken = GeneralConfig.HookConfig.CustomReportingConfig.Token
-			}
-
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
