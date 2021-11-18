@@ -47,8 +47,8 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	SentryConfig          SentryConfiguration          `json:"sentry,omitempty"`
-	SplunkConfig          SplunkConfiguration          `json:"splunk,omitempty"`
+	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
+	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
