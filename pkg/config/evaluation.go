@@ -2,9 +2,13 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"path"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/pkg/errors"
 )
@@ -16,6 +20,137 @@ const (
 	filePatternCondition           = "filePattern"
 	npmScriptsCondition            = "npmScripts"
 )
+
+// EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
+func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
+
+	// initialize in case not initialized
+	if r.RunConfig.RunSteps == nil {
+		r.RunConfig.RunSteps = map[string]map[string]bool{}
+	}
+	if r.RunConfig.RunStages == nil {
+		r.RunConfig.RunStages = map[string]bool{}
+	}
+
+	for _, stage := range r.PipelineConfig.Spec.Stages {
+		runStep := map[string]bool{}
+		stageActive := false
+
+		// currently displayName is used, may need to consider to use technical name as well
+		stageName := stage.DisplayName
+
+		for _, step := range stage.Steps {
+			// Only consider orchestrator-specific steps in case orchestrator limitation is set
+			currentOrchestrator := orchestrator.DetectOrchestrator().String()
+			if len(step.Orchestrators) > 0 && !piperutils.ContainsString(step.Orchestrators, currentOrchestrator) {
+				continue
+			}
+
+			stepActive := false
+			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
+			if err != nil {
+				return err
+			}
+
+			if active, ok := stepConfig.Config[step.Name].(bool); ok {
+				// respect explicit activation/de-activation if available
+				stepActive = active
+			} else {
+				if step.Conditions == nil || len(step.Conditions) == 0 {
+					// if no condition is available, step will be active by default
+					stepActive = true
+				} else {
+					for _, condition := range step.Conditions {
+						stepActive, err = condition.evaluateV1(stepConfig, utils)
+						if err != nil {
+							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
+						}
+						if stepActive {
+							// first condition which matches will be considered to activate the step
+							break
+						}
+					}
+				}
+			}
+			if stepActive {
+				stageActive = true
+			}
+			runStep[step.Name] = stepActive
+			r.RunSteps[stageName] = runStep
+		}
+		r.RunStages[stageName] = stageActive
+	}
+	return nil
+}
+
+func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
+
+	// only the first condition will be evaluated.
+	// if multiple conditions should be checked they need to provided via the Conditions list
+	if s.Config != nil {
+
+		if len(s.Config) > 1 {
+			return false, errors.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
+		}
+
+		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
+		for param, activationValues := range s.Config {
+			for _, activationValue := range activationValues {
+				if activationValue == config.Config[param] {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+	}
+
+	if len(s.ConfigKey) > 0 {
+		if configValue := config.Config[s.ConfigKey]; configValue != nil {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if len(s.FilePattern) > 0 {
+		files, err := utils.Glob(s.FilePattern)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to check filePattern condition")
+		}
+		if len(files) > 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if len(s.FilePatternFromConfig) > 0 {
+
+		configValue := fmt.Sprint(config.Config[s.FilePatternFromConfig])
+		if len(configValue) == 0 {
+			return false, nil
+		}
+		files, err := utils.Glob(configValue)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to check filePatternFromConfig condition")
+		}
+		if len(files) > 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if len(s.NpmScript) > 0 {
+		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
+	}
+
+	// needs to be checked last:
+	// if none of the other conditions matches, step will be active unless set to inactive
+	if s.Inactive == true {
+		return false, nil
+	} else {
+		return true, nil
+	}
+}
 
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
 func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
@@ -105,6 +240,13 @@ func checkConfig(condition interface{}, config StepConfig, stepName string) (boo
 		return false, errors.Errorf("error: condidiion type invalid: %T, possible types: string, map[string]interface{}", condition)
 	}
 
+	return false, nil
+}
+
+func checkConfigKey(configKey string, config StepConfig, stepName string) (bool, error) {
+	if configValue := stepConfigLookup(config.Config, stepName, configKey); configValue != nil {
+		return true, nil
+	}
 	return false, nil
 }
 
@@ -231,6 +373,47 @@ func checkForNpmScriptsInPackages(condition interface{}, config StepConfig, step
 			}
 		default:
 			return false, errors.Errorf("error: condidiion type invalid: %T, possible types: string, []interface{}", condition)
+		}
+	}
+	return false, nil
+}
+
+func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils piperutils.FileUtils) (bool, error) {
+	packages, err := utils.Glob("**/package.json")
+	if err != nil {
+		return false, errors.Wrap(err, "failed to check if file-exists")
+	}
+	for _, pack := range packages {
+		packDirs := strings.Split(path.Dir(pack), "/")
+		isNodeModules := false
+		for _, dir := range packDirs {
+			if dir == "node_modules" {
+				isNodeModules = true
+				break
+			}
+		}
+		if isNodeModules {
+			continue
+		}
+
+		jsonFile, err := utils.FileRead(pack)
+		if err != nil {
+			return false, errors.Errorf("failed to open file %s: %v", pack, err)
+		}
+		packageJSON := map[string]interface{}{}
+		if err := json.Unmarshal(jsonFile, &packageJSON); err != nil {
+			return false, errors.Errorf("failed to unmarshal json file %s: %v", pack, err)
+		}
+		npmScripts, ok := packageJSON["scripts"]
+		if !ok {
+			continue
+		}
+		scriptsMap, ok := npmScripts.(map[string]interface{})
+		if !ok {
+			return false, errors.Errorf("failed to read scripts from package.json: %T", npmScripts)
+		}
+		if _, ok := scriptsMap[npmScript]; ok {
+			return true, nil
 		}
 	}
 	return false, nil
