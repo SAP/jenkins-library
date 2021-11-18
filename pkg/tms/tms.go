@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -57,6 +58,9 @@ type mtaExtDescriptors struct {
 
 type CommunicationInterface interface {
 	GetNodes() ([]Node, error)
+	GetMtaExtDescriptor(nodeId int64, mtaId, mtaVersion string) (MtaExtDescriptor, error)
+	UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
+	UploadMtaExtDescriptor(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 }
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
@@ -224,4 +228,100 @@ func (communicationInstance *CommunicationInstance) GetMtaExtDescriptor(nodeId i
 	}
 	return mtaExtDescriptor, nil
 
+}
+
+func (communicationInstance *CommunicationInstance) UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error) {
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Update of MTA extension descriptor started")
+		communicationInstance.logger.Infof("tmsUrl: %v, nodeId: %v, mtaExtDescriptorId: %v, file: %v, mtaVersion: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeId, idOfMtaExtDescriptor, file, mtaVersion, description, namedUser)
+	}
+
+	header := http.Header{}
+	header.Add("tms-named-user", namedUser)
+	// TODO: which headers are required in addition?
+
+	tmsUrl := strings.TrimSuffix(communicationInstance.tmsUrl, "/")
+	url := fmt.Sprintf("%v/v2/nodes/%v/mtaExtDescriptors/%v", tmsUrl, nodeId, idOfMtaExtDescriptor)
+	formFields := map[string]string{"mtaVersion": mtaVersion, "description": description}
+
+	var mtaExtDescriptor MtaExtDescriptor
+	fileHandle, errOpenFile := os.Open(file)
+	if errOpenFile != nil {
+		return mtaExtDescriptor, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
+	}
+	defer fileHandle.Close()
+
+	uploadRequestData := piperHttp.UploadRequestData{Method: http.MethodPut, URL: url, File: file, FileFieldName: "file", FormFields: formFields, FileContent: fileHandle, Header: header, Cookies: nil}
+
+	var data []byte
+	data, errUpload := upload(communicationInstance, uploadRequestData, http.StatusOK)
+	if errUpload != nil {
+		return mtaExtDescriptor, errUpload
+	}
+
+	json.Unmarshal(data, &mtaExtDescriptor)
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("MTA extension descriptor updated successfully")
+	}
+	return mtaExtDescriptor, nil
+
+}
+
+func (communicationInstance *CommunicationInstance) UploadMtaExtDescriptor(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error) {
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Upload of MTA extension descriptor started")
+		communicationInstance.logger.Infof("tmsUrl: %v, nodeId: %v, file: %v, mtaVersion: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeId, file, mtaVersion, description, namedUser)
+	}
+
+	header := http.Header{}
+	header.Add("tms-named-user", namedUser)
+	// TODO: which headers are required in addition?
+
+	tmsUrl := strings.TrimSuffix(communicationInstance.tmsUrl, "/")
+	url := fmt.Sprintf("%v/v2/nodes/%v/mtaExtDescriptors", tmsUrl, nodeId)
+	formFields := map[string]string{"mtaVersion": mtaVersion, "description": description}
+
+	var mtaExtDescriptor MtaExtDescriptor
+	fileHandle, errOpenFile := os.Open(file)
+	if errOpenFile != nil {
+		return mtaExtDescriptor, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
+	}
+	defer fileHandle.Close()
+
+	uploadRequestData := piperHttp.UploadRequestData{Method: http.MethodPost, URL: url, File: file, FileFieldName: "file", FormFields: formFields, FileContent: fileHandle, Header: header, Cookies: nil}
+
+	var data []byte
+	data, errUpload := upload(communicationInstance, uploadRequestData, http.StatusCreated)
+	if errUpload != nil {
+		return mtaExtDescriptor, errUpload
+	}
+
+	json.Unmarshal(data, &mtaExtDescriptor)
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("MTA extension descriptor uploaded successfully")
+	}
+	return mtaExtDescriptor, nil
+
+}
+
+func upload(communicationInstance *CommunicationInstance, uploadRequestData piperHttp.UploadRequestData, expectedStatusCode int) ([]byte, error) {
+	response, err := communicationInstance.httpClient.Upload(uploadRequestData)
+
+	// err is not nil for HTTP status codes >= 300
+	if err != nil {
+		communicationInstance.logger.Errorf("HTTP request failed with error: %s", err)
+		communicationInstance.logResponseBody(response)
+		return nil, err
+	}
+
+	if response.StatusCode != expectedStatusCode {
+		return nil, fmt.Errorf("unexpected positive HTTP status code %v, while it was expected %v", response.StatusCode, expectedStatusCode)
+	}
+
+	data, _ := ioutil.ReadAll(response.Body)
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Debugf("Valid response body: %v", string(data))
+	}
+	defer response.Body.Close()
+	return data, nil
 }
