@@ -42,12 +42,8 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		// ToDo: If step is called x times, and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
-	filePathCPE := filepath.Join(f.Path, ".pipeline", "commonPipelineEnvironment", fileName)
-
 	errDetails, _ := json.Marshal(&details)
 	Entry().Infof("fatal error: errorDetails{correlationId:\"%v\",stepName:\"%v\",category:\"%v\",error:\"%v\",result:\"%v\",message:\"%v\"}", details["correlationId"], details["stepName"], details["category"], details["error"], details["result"], details["message"])
-	ioutil.WriteFile(filePathCPE, errDetails, 0666)
-	Entry().Debugf("persisted error information in %v", filePathCPE)
 
 	_, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -59,6 +55,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
+// ErrorDetails struct holds information about errors of the step
 type ErrorDetails struct {
 	Message       string
 	Error         string
@@ -68,6 +65,7 @@ type ErrorDetails struct {
 	StepName      string
 }
 
+// GetErrorsJson reads errorDetails.json files from the CPE and returns an ErrorDetails struct.
 func GetErrorsJson() ([]ErrorDetails, error) {
 	fileName := "errorDetails.json"
 	path, err := os.Getwd()
