@@ -1,9 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
@@ -12,8 +14,15 @@ import (
 type RunConfig struct {
 	StageConfigFile io.ReadCloser
 	StageConfig     StageConfig
+	RunStages       map[string]bool
 	RunSteps        map[string]map[string]bool
 	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
+	FileUtils       *piperutils.Files
+}
+
+type RunConfigV1 struct {
+	RunConfig
+	PipelineConfig PipelineDefinitionV1
 }
 
 type StageConfig struct {
@@ -22,6 +31,65 @@ type StageConfig struct {
 
 type StepConditions struct {
 	Conditions map[string]map[string]interface{} `json:"stepConditions,omitempty"`
+}
+
+type PipelineDefinitionV1 struct {
+	APIVersion string   `json:"apiVersion"`
+	Kind       string   `json:"kind"`
+	Metadata   Metadata `json:"metadata"`
+	Spec       Spec     `json:"spec"`
+	openFile   func(s string, t map[string]string) (io.ReadCloser, error)
+	runSteps   map[string]map[string]bool
+}
+
+type Metadata struct {
+	Name        string `json:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type Spec struct {
+	Stages []Stage `json:"stages"`
+}
+
+type Stage struct {
+	Name        string `json:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Description string `json:"description,omitempty"`
+	Steps       []Step `json:"steps,omitempty"`
+}
+
+type Step struct {
+	Name          string          `json:"name,omitempty"`
+	Description   string          `json:"description,omitempty"`
+	Conditions    []StepCondition `json:"conditions,omitempty"`
+	Orchestrators []string        `json:"orchestrators,omitempty"`
+}
+
+type StepCondition struct {
+	Config                map[string][]interface{} `json:"config,omitempty"`
+	ConfigKey             string                   `json:"configKey,omitempty"`
+	FilePattern           string                   `json:"filePattern,omitempty"`
+	FilePatternFromConfig string                   `json:"filePatternFromConfig,omitempty"`
+	Inactive              bool                     `json:"inactive,omitempty"`
+	NpmScript             string                   `json:"npmScript,omitempty"`
+}
+
+func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
+
+	if len(r.PipelineConfig.Spec.Stages) == 0 {
+		if err := r.loadConditionsV1(); err != nil {
+			return fmt.Errorf("failed to load pipeline run conditions: %w", err)
+		}
+	}
+
+	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate step conditions: %w", err)
+	}
+
+	return nil
 }
 
 // InitRunConfig ...
@@ -71,6 +139,20 @@ func (r *RunConfig) loadConditions() error {
 	}
 
 	err = yaml.Unmarshal(content, &r.StageConfig)
+	if err != nil {
+		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
+	}
+	return nil
+}
+
+func (r *RunConfigV1) loadConditionsV1() error {
+	defer r.StageConfigFile.Close()
+	content, err := ioutil.ReadAll(r.StageConfigFile)
+	if err != nil {
+		return errors.Wrapf(err, "error: failed to read the stageConfig file")
+	}
+
+	err = yaml.Unmarshal(content, &r.PipelineConfig)
 	if err != nil {
 		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
 	}
