@@ -203,6 +203,7 @@ public class CommonStepsTest extends BasePiperTest{
         'isChangeInDevelopment', //implementing new golang pattern without fields
         'apiProxyDownload', //implementing new golang pattern without fields
         'apiKeyValueMapDownload', //implementing new golang pattern without fields
+        'apiProxyUpload', //implementing new golang pattern without fields
     ]
 
     @Test

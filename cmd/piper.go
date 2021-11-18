@@ -168,6 +168,7 @@ func Execute() {
 	rootCmd.AddCommand(CheckStepActiveCommand())
 	rootCmd.AddCommand(ApiProxyDownloadCommand())
 	rootCmd.AddCommand(ApiKeyValueMapDownloadCommand())
+	rootCmd.AddCommand(ApiProxyUploadCommand())
 
 	addRootFlags(rootCmd)
 
