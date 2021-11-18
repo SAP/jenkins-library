@@ -277,7 +277,7 @@ func TestUploadRequest(t *testing.T) {
 			assert.NoError(t, err, "Error occurred but none expected")
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
-			
+
 			assert.Equal(t, testFile.Name(), multipartHeader.Filename, "Uploaded file incorrect")
 			assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
 
