@@ -9,8 +9,6 @@ spec:
       - name: cfCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.
         type: jenkins
-        aliases:
-          - name: cloudFoundry/credentialsId
       - name: dockerCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.
         type: jenkins
