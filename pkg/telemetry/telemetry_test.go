@@ -85,98 +85,31 @@ func TestTelemetry_Send(t *testing.T) {
 		SiteID               string
 	}
 
-	customReportingDsn := "https://reporting-is-fun.sap"
-
 	tests := []struct {
-		name           string
-		fields         fields
-		swaCalls       int
-		reportingCalls int
-		hasError       string // "0" or "1" to simulate ErrorCode (type string)
+		name     string
+		fields   fields
+		swaCalls int
 	}{
 		{
 			name: "Telemetry disabled, reporting disabled",
 			fields: fields{
 				disabled: true,
 			},
-			swaCalls:       0,
-			reportingCalls: 0,
-			hasError:       "0",
+			swaCalls: 0,
 		},
 		{
-			name: "Telemetry enabled, reporting disabled",
+			name: "Telemetry enabled",
 			fields: fields{
 				disabled: false,
 			},
-			swaCalls:       1,
-			reportingCalls: 0,
-			hasError:       "0",
+			swaCalls: 1,
 		},
 		{
-			name: "Telemetry disabled, reporting enabled (no error)",
+			name: "Telemetry disabled",
 			fields: fields{
-				disabled:           true,
-				CustomReportingDsn: customReportingDsn,
+				disabled: true,
 			},
-			swaCalls:       0,
-			reportingCalls: 0,
-			hasError:       "0",
-		},
-		{
-			name: "Telemetry disabled, reporting enabled (with error)",
-			fields: fields{
-				disabled:           true,
-				CustomReportingDsn: customReportingDsn,
-			},
-			swaCalls:       0,
-			reportingCalls: 1,
-			hasError:       "1",
-		},
-		{
-			name: "Telemetry enabled, reporting enabled (no error)",
-			fields: fields{
-				disabled:           false,
-				CustomReportingDsn: customReportingDsn,
-			},
-			swaCalls:       1,
-			reportingCalls: 0,
-			hasError:       "0",
-		},
-		{
-			name: "Telemetry enabled, reporting enabled (with error)",
-			fields: fields{
-				disabled:           false,
-				CustomReportingDsn: customReportingDsn,
-			},
-			swaCalls:       1,
-			reportingCalls: 1,
-			hasError:       "1",
-		},
-		{
-			name: "Telemetry enabled, reporting enabled with pipelineTelemetry(with error)",
-			fields: fields{
-				disabled:           false,
-				CustomReportingDsn: customReportingDsn,
-				PipelineTelemetry: &PipelineTelemetry{
-					CorrelationId: "test-pipeline",
-				},
-			},
-			swaCalls:       1,
-			reportingCalls: 1,
-			hasError:       "1",
-		},
-		{
-			name: "Telemetry enabled, reporting disabled, sending only pipelineTelemetry (no error)",
-			fields: fields{
-				disabled:           false,
-				CustomReportingDsn: customReportingDsn,
-				PipelineTelemetry: &PipelineTelemetry{
-					CorrelationId: "test-pipeline",
-				},
-			},
-			swaCalls:       1,
-			reportingCalls: 1,
-			hasError:       "0",
+			swaCalls: 0,
 		},
 	}
 
@@ -231,7 +164,7 @@ func TestTelemetry_Send(t *testing.T) {
 			)
 
 			// test
-			telemetryClient.SetData(&CustomData{ErrorCode: tt.hasError})
+			telemetryClient.SetData(&CustomData{})
 			telemetryClient.Send()
 
 			// assert
@@ -239,13 +172,6 @@ func TestTelemetry_Send(t *testing.T) {
 
 			if got := info["GET "+url]; !assert.Equal(t, got, tt.swaCalls) {
 				t.Errorf("Send() = swa calls %v, wanted %v", got, tt.swaCalls)
-			}
-
-			if tt.fields.CustomReportingDsn == "" {
-				// Case we don't want any Custom reporting to happen
-				assert.Equal(t, tt.reportingCalls, info["POST "])
-			} else {
-				assert.Equal(t, tt.reportingCalls, info["POST "+tt.fields.CustomReportingDsn]) // can break if not present
 			}
 
 		})
