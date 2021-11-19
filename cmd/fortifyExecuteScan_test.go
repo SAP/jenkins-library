@@ -280,13 +280,13 @@ func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64
 type pullRequestServiceMock struct{}
 
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+	authorString := author
+	user := github.User{Email: &authorString}
 	if owner == "A" {
 		result := 17
-		authorString := author
-		user := github.User{Email: &authorString}
 		return []*github.PullRequest{{Number: &result, User: &user}}, &github.Response{}, nil
 	} else if owner == "C" {
-		return []*github.PullRequest{}, &github.Response{}, errors.New("Test error")
+		return []*github.PullRequest{{User: &user}}, &github.Response{}, errors.New("Test error")
 	}
 	return []*github.PullRequest{}, &github.Response{}, nil
 }
@@ -739,7 +739,7 @@ func TestDeterminePullRequestMerge(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		match, authorString := determinePullRequestMerge(config)
 		assert.Equal(t, "2462", match, "Expected different result")
-		assert.Equal(t, author, authorString, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 
 	t.Run("no match", func(t *testing.T) {
