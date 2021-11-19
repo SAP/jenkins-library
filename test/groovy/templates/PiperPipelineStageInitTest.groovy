@@ -50,6 +50,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
                 case 'pom.xml':
                 case 'mta.yaml':
                 case 'path/mta.yaml':
+                case 'pathFromStage/mta.yaml':
                 case 'path/pom.xml':
                     return [new File(map.glob)].toArray()
                 default:
@@ -232,6 +233,15 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
 
         assertEquals('path/mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescMtaSourceStage() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], stages: [Build: [source: 'pathFromStage']], steps : [mtaBuild: [source: 'path']]]
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
+
+        assertEquals('pathFromStage/mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
     }
 
     @Test
