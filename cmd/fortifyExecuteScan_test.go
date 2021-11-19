@@ -28,6 +28,8 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
+const author string = "john.doe@dummy.com"
+
 type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
@@ -280,7 +282,9 @@ type pullRequestServiceMock struct{}
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
 	if owner == "A" {
 		result := 17
-		return []*github.PullRequest{{Number: &result}}, &github.Response{}, nil
+		authorString := author
+		user := github.User{Email: &authorString}
+		return []*github.PullRequest{{Number: &result, User: &user}}, &github.Response{}, nil
 	} else if owner == "C" {
 		return []*github.PullRequest{}, &github.Response{}, errors.New("Test error")
 	}
@@ -733,14 +737,16 @@ func TestDeterminePullRequestMerge(t *testing.T) {
 	config := fortifyExecuteScanOptions{CommitMessage: "Merge pull request #2462 from branch f-test", PullRequestMessageRegex: `(?m).*Merge pull request #(\d+) from.*`, PullRequestMessageRegexGroup: 1}
 
 	t.Run("success", func(t *testing.T) {
-		match := determinePullRequestMerge(config)
+		match, authorString := determinePullRequestMerge(config)
 		assert.Equal(t, "2462", match, "Expected different result")
+		assert.Equal(t, author, authorString, "Expected different result")
 	})
 
 	t.Run("no match", func(t *testing.T) {
 		config.CommitMessage = "Some test commit"
-		match := determinePullRequestMerge(config)
+		match, authorString := determinePullRequestMerge(config)
 		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 }
 
@@ -748,21 +754,24 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 	prServiceMock := pullRequestServiceMock{}
 
 	t.Run("success", func(t *testing.T) {
-		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "A"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "A"}, prServiceMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "17", match, "Expected different result")
+		assert.Equal(t, author, authorString, "Expected different result")
 	})
 
 	t.Run("no match", func(t *testing.T) {
-		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "B"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "B"}, prServiceMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 
 	t.Run("error", func(t *testing.T) {
-		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
 		assert.EqualError(t, err, "Test error")
 		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 }
 

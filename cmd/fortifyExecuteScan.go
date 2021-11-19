@@ -158,9 +158,13 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		}
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
 	} else {
-		prID := determinePullRequestMerge(config)
+		prID, prAuthor := determinePullRequestMerge(config)
 		if len(prID) > 0 {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
+			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
+				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
+				config.Assignees = append(config.Assignees, prAuthor)
+			}
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
 			if err != nil {
@@ -294,11 +298,16 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 
 	fortifyReportingData := prepareReportData(influx)
 	scanReport := fortify.CreateCustomReport(fortifyReportingData, issueGroups)
-	paths, err := fortify.WriteCustomReports(scanReport, influx.fortify_data.fields.projectName, influx.fortify_data.fields.projectVersion)
+	paths, err := fortify.WriteCustomReports(scanReport)
 	if err != nil {
 		return errors.Wrap(err, "failed to write custom reports"), reports
 	}
 	reports = append(reports, paths...)
+
+	err = fortify.UploadReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees)
+	if err != nil {
+		return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
+	}
 
 	jsonReport := fortify.CreateJSONReport(fortifyReportingData, spotChecksCountByCategory, config.ServerURL)
 	paths, err = fortify.WriteJSONReport(jsonReport)
@@ -924,14 +933,15 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 	return nil
 }
 
-func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
+func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
+	author := ""
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
 	if err == nil {
-		result, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
+		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
 			log.Entry().WithError(err).Warn("Failed to get PR metadata via GitHub client")
 		} else {
-			return result
+			return prID, author
 		}
 	}
 
@@ -939,18 +949,18 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
 	r, _ := regexp.Compile(config.PullRequestMessageRegex)
 	matches := r.FindSubmatch([]byte(config.CommitMessage))
 	if matches != nil && len(matches) > 1 {
-		return string(matches[config.PullRequestMessageRegexGroup])
+		return string(matches[config.PullRequestMessageRegexGroup]), author
 	}
-	return ""
+	return "", ""
 }
 
-func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, error) {
+func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
 	if err == nil && len(prList) > 0 {
-		return fmt.Sprintf("%v", prList[0].GetNumber()), nil
+		return fmt.Sprintf("%v", prList[0].GetNumber()), *prList[0].User.Email, nil
 	}
-	return "", err
+	return "", "", err
 }
 
 func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {

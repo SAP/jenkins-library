@@ -44,6 +44,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
+        mandatory: false
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
