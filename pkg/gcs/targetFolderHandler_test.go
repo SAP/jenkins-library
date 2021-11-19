@@ -3,24 +3,23 @@ package gcs
 import (
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetTargetFolder(t *testing.T) {
 	tests := []struct {
-		target   TargetFolderHandle
-		expected string
+		folderPath     string
+		stepResultType string
+		subFolder      string
+		expected       string
 	}{
-		{target: TargetFolderHandle{FolderPath: "folder/path/", StepResultType: "general", SubFolder: "sub/folder"}, expected: "folder/path/general/sub/folder"},
-		{target: TargetFolderHandle{FolderPath: "folder/path/", SubFolder: "sub/folder"}, expected: "folder/path/sub/folder"},
-		{target: TargetFolderHandle{FolderPath: "folder/path/", StepResultType: "general"}, expected: "folder/path/general"},
-		{target: TargetFolderHandle{FolderPath: "folder1", StepResultType: "general", SubFolder: "folder2/"}, expected: "folder1/general/folder2"}}
+		{folderPath: "folder/path/", stepResultType: "general", subFolder: "sub/folder", expected: "folder/path/general/sub/folder"},
+		{folderPath: "folder/path/", subFolder: "sub/folder", expected: "folder/path/sub/folder"},
+		{folderPath: "folder/path/", stepResultType: "general", expected: "folder/path/general"},
+		{folderPath: "folder1", stepResultType: "general", subFolder: "folder2/", expected: "folder1/general/folder2"}}
 
 	for key, tt := range tests {
 		t.Run(fmt.Sprintf("Row %v", key+1), func(t *testing.T) {
-			actualTargetFolder, err := tt.target.GetTargetFolder()
-			assert.NoError(t, err)
+			actualTargetFolder := GetTargetFolder(tt.folderPath, tt.stepResultType, tt.subFolder)
 			if actualTargetFolder != tt.expected {
 				t.Errorf("Expected '%v' was '%v'", tt.expected, actualTargetFolder)
 			}

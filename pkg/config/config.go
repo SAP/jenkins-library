@@ -192,6 +192,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
+		stepConfig.mixinReportingConfig(def.General, def.Steps[stepName], def.Stages[stageName])
+
 		stepConfig.mixInHookConfig(def.Hooks)
 	}
 
@@ -247,6 +249,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			resolveVaultTestCredentials(&stepConfig, vaultClient)
 		}
 	}
+
+	stepConfig.mixinReportingConfig(c.General, c.Steps[stepName], c.Stages[stageName])
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {

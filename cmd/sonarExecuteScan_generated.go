@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +47,47 @@ type sonarExecuteScanOptions struct {
 	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
 	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
 	M2Path                    string   `json:"m2Path,omitempty"`
+}
+
+type sonarExecuteScanReports struct {
+}
+
+func (p *sonarExecuteScanReports) persist(path, resourceName string) {
+	content := []struct {
+		filePattern    string
+		stepResultType string
+		subFolder      string
+	}{
+		{filePattern: "reportName", stepResultType: "general", subFolder: "test/sub/folder"},
+		{filePattern: "reports/*", stepResultType: "general", subFolder: ""},
+	}
+
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsFolderPath := GeneralConfig.GCSFolderPath
+	gcsBucketID := GeneralConfig.GCSBucketId
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Fatal("failed to persist reports")
+	}
+	for _, param := range content {
+		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
+		foundFiles, err := doublestar.Glob(param.filePattern)
+		if err != nil {
+			log.Entry().Fatal("failed to persist reports")
+		}
+		for _, sourcePath := range foundFiles {
+			fileInfo, err := os.Stat(sourcePath)
+			if err != nil {
+				log.Entry().Fatal("failed to get file info")
+			}
+			if fileInfo.IsDir() {
+				continue
+			}
+			gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath))
+		}
+	}
 }
 
 type sonarExecuteScanInflux struct {
@@ -103,6 +146,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 	metadata := sonarExecuteScanMetadata()
 	var stepConfig sonarExecuteScanOptions
 	var startTime time.Time
+	var reports sonarExecuteScanReports
 	var influx sonarExecuteScanInflux
 	var logCollector *log.CollectorHook
 
@@ -155,6 +199,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				reports.persist(GeneralConfig.EnvRootPath, "reports")
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -516,6 +561,11 @@ func sonarExecuteScanMetadata() config.StepData {
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
+					{
+						Name:       "reports",
+						Type:       "reports",
+						Parameters: []map[string]interface{}{},
+					},
 					{
 						Name: "influx",
 						Type: "influx",

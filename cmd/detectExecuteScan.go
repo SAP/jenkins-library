@@ -373,7 +373,7 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	policyReportPaths, err := writePolicyStatusReports(policyReport, config, utils)
 
 	paths = append(paths, policyReportPaths...)
-	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil, gcsClient, GeneralConfig.GCSBucketId)
+	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}

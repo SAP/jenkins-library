@@ -397,7 +397,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		//Persist findings afterwards
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
-		piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil, gcsClient, GeneralConfig.GCSBucketId)
+		piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
 	}
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)

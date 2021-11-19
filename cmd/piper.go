@@ -11,15 +11,12 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
-
-var gcsClient gcs.Client
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
@@ -46,9 +43,8 @@ type GeneralConfigOptions struct {
 	VaultPath            string
 	HookConfig           HookConfiguration
 	MetaDataResolver     func() map[string]config.StepData
-	UploadReportsToGCS   bool
 	GCPJsonKeyFilePath   string
-	GCSTargetFolder      string
+	GCSFolderPath        string
 	GCSBucketId          string
 }
 
@@ -199,9 +195,8 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The vault server which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultNamespace, "vaultNamespace", "", "The vault namespace which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultPath, "vaultPath", "", "The path which should be used to fetch credentials")
-	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCPJsonKeyFilePath, "gcpJsonKeyFilePath", "", "File path to Google Cloud Platform JSON key file")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSTargetFolder, "gcsTargetFolder", "", "Target folder in the GCS. If the value is empty, the source path is used")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 
 }
@@ -380,6 +375,15 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
+	if GeneralConfig.GCPJsonKeyFilePath == "" {
+		GeneralConfig.GCPJsonKeyFilePath = stepConfig.Config["gcpJsonKeyFilePath"].(string)
+	}
+	if GeneralConfig.GCSFolderPath == "" {
+		GeneralConfig.GCSFolderPath = stepConfig.Config["gcsFolderPath"].(string)
+	}
+	if GeneralConfig.GCSBucketId == "" {
+		GeneralConfig.GCSBucketId = stepConfig.Config["gcsBucketId"].(string)
+	}
 	return nil
 }
 

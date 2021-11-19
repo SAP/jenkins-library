@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 )
@@ -18,7 +17,7 @@ type Path struct {
 }
 
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
-func PersistReportsAndLinks(stepName, workspace string, reports, links []Path, gcsClient gcs.Client, bucketID string) {
+func PersistReportsAndLinks(stepName, workspace string, reports, links []Path) {
 	if reports == nil {
 		reports = []Path{}
 	}
@@ -47,14 +46,5 @@ func PersistReportsAndLinks(stepName, workspace string, reports, links []Path, g
 		log.Entry().Errorln("Failed to marshall links.json data for archiving")
 	} else {
 		piperenv.SetParameter(workspace, fmt.Sprintf("%v_links.json", stepName), string(linkList))
-	}
-	// upload reports to Google Cloud Storage
-	if gcsClient != nil {
-		for _, report := range reports {
-			if err := gcsClient.UploadFile(bucketID, report.Target, report.Target); err != nil {
-				log.Entry().Fatalf("Failed to upload report to GCS: %v", err)
-			}
-			log.Entry().Infof("Report %s was uploaded to GCS", report.Target)
-		}
 	}
 }

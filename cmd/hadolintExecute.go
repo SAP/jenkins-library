@@ -112,7 +112,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	}
 	//TODO: mock away in tests
 	// persist report information
-	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{}, gcsClient, GeneralConfig.GCSBucketId)
+	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
 	return nil
 }
 

@@ -269,6 +269,14 @@ spec:
 
   outputs:
     resources:
+      - name: reports
+        type: reports
+        params: 
+          - filePattern: "reportName"
+            type: "general"
+            subFolder: "test/sub/folder"
+          - filePattern: "reports/*"
+            type: "general"
       - name: influx
         type: influx
         params:

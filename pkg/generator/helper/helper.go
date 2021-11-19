@@ -56,6 +56,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	{{ if .OutputResources -}}
+	{{ $reportsExist := false -}}
+	{{ range $notused, $oRes := .OutputResources -}}
+	{{ if eq (index $oRes "type") "reports" -}}{{ $reportsExist = true -}}{{ end -}}
+	{{ end -}}
+	{{ if $reportsExist -}}
+	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/gcs"
+	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -163,7 +171,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -627,6 +635,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 	for _, res := range stepData.Spec.Outputs.Resources {
 		currentResource := map[string]string{}
 		currentResource["name"] = res.Name
+		currentResource["type"] = res.Type
 
 		switch res.Type {
 		case "piperEnvironment":
@@ -683,6 +692,23 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			}
 			currentResource["def"] = def
 			currentResource["objectname"] = influxResource.StructName()
+			outputResources = append(outputResources, currentResource)
+		case "reports":
+			var reportsResource ReportsResource
+			reportsResource.Name = res.Name
+			reportsResource.StepName = stepData.Metadata.Name
+			for _, param := range res.Parameters {
+				subFolder, _ := param["subFolder"].(string)
+				stepResultType, _ := param["type"].(string)
+				reportsParam := ReportsParameter{FilePattern: fmt.Sprint(param["filePattern"]), Type: stepResultType, SubFolder: subFolder}
+				reportsResource.Parameters = append(reportsResource.Parameters, reportsParam)
+			}
+			def, err := reportsResource.StructString()
+			if err != nil {
+				return outputResources, err
+			}
+			currentResource["def"] = def
+			currentResource["objectname"] = reportsResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		}
 	}

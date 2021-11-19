@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 
 	"cloud.google.com/go/storage"
@@ -24,13 +23,12 @@ type Client interface {
 
 // gcsClient provides functions to interact with google cloud storage API
 type gcsClient struct {
-	context             context.Context
-	envVars             []EnvVar
-	client              storage.Client
-	clientOptions       []option.ClientOption
-	openFile            func(name string) (io.ReadCloser, error)
-	createFile          func(name string) (io.WriteCloser, error)
-	targetFolderHandler TargetFolderHandler
+	context       context.Context
+	envVars       []EnvVar
+	client        storage.Client
+	clientOptions []option.ClientOption
+	openFile      func(name string) (io.ReadCloser, error)
+	createFile    func(name string) (io.WriteCloser, error)
 }
 
 // EnvVar defines an  environment variable incl. information about a potential modification to the variable
@@ -66,26 +64,18 @@ func WithClientOptions(opts ...option.ClientOption) gcsOption {
 	}
 }
 
-func WithTargetFolderHandler(handler TargetFolderHandler) gcsOption {
-	return func(g *gcsClient) {
-		g.targetFolderHandler = handler
-	}
-}
-
 // Init intitializes the google cloud storage client
 func NewClient(opts ...gcsOption) (*gcsClient, error) {
 	var (
-		defaultOpenFile            = openFileFromFS
-		defaultCreateFile          = createFileOnFS
-		defaultTargetFolderHandler = &targetFolderHandler{}
+		defaultOpenFile   = openFileFromFS
+		defaultCreateFile = createFileOnFS
 	)
 
 	ctx := context.Background()
 	gcsClient := &gcsClient{
-		context:             ctx,
-		openFile:            defaultOpenFile,
-		createFile:          defaultCreateFile,
-		targetFolderHandler: defaultTargetFolderHandler,
+		context:    ctx,
+		openFile:   defaultOpenFile,
+		createFile: defaultCreateFile,
 	}
 
 	// options handling
@@ -104,11 +94,6 @@ func NewClient(opts ...gcsOption) (*gcsClient, error) {
 
 // UploadFile uploads a file into a google cloud storage bucket
 func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
-	targetFolder, err := g.targetFolderHandler.GetTargetFolder()
-	if err != nil {
-		return errors.Wrapf(err, "getting target folder failed: %v:", err)
-	}
-	targetPath = path.Join(targetFolder, targetPath)
 	target := g.client.Bucket(bucketID).Object(targetPath).NewWriter(g.context)
 	log.Entry().Debugf("uploading %v to %v\n", sourcePath, targetPath)
 	sourceFile, err := g.openFile(sourcePath)
@@ -129,11 +114,6 @@ func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath st
 
 // DownloadFile downloads a file from a google cloud storage bucket
 func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
-	targetFolder, err := g.targetFolderHandler.GetTargetFolder()
-	if err != nil {
-		return errors.Wrapf(err, "getting target folder failed: %v:", err)
-	}
-	targetPath = path.Join(targetFolder, targetPath)
 	log.Entry().Debugf("downloading %v to %v\n", sourcePath, targetPath)
 	gcsReader, err := g.client.Bucket(bucketID).Object(sourcePath).NewReader(g.context)
 	if err != nil {
@@ -233,10 +213,4 @@ func createFileOnFS(name string) (io.WriteCloser, error) {
 		return nil, err
 	}
 	return os.Create(name)
-}
-
-type targetFolderHandler struct{}
-
-func (t *targetFolderHandler) GetTargetFolder() (string, error) {
-	return "", nil
 }

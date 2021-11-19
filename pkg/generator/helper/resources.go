@@ -195,3 +195,86 @@ func (i *InfluxResource) StructString() (string, error) {
 func (i *InfluxResource) StructName() string {
 	return fmt.Sprintf("%v%v", i.StepName, strings.Title(i.Name))
 }
+
+// PiperEnvironmentResource defines a piper environement resource which stores data across multiple pipeline steps
+type ReportsResource struct {
+	Name       string
+	StepName   string
+	Parameters []ReportsParameter
+}
+
+// PiperEnvironmentParameter defines a parameter within the Piper environment
+type ReportsParameter struct {
+	FilePattern string
+	Type        string
+	SubFolder   string
+}
+
+const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
+}
+
+func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
+	content := []struct{
+		filePattern string
+		stepResultType string
+		subFolder string
+	}{
+		{{- range $notused, $param := .Parameters }}
+		{filePattern: "{{ $param.FilePattern }}", stepResultType: "{{ $param.Type }}", subFolder: "{{ $param.SubFolder }}"},
+		{{- end }}
+	}
+
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsFolderPath := GeneralConfig.GCSFolderPath
+	gcsBucketID := GeneralConfig.GCSBucketId
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Fatal("failed to persist reports")
+	}
+	for _, param := range content {
+		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
+		foundFiles, err := doublestar.Glob(param.filePattern)
+		if err != nil {
+			log.Entry().Fatal("failed to persist reports")
+		}
+		for _, sourcePath := range foundFiles {
+			fileInfo, err := os.Stat(sourcePath)
+			if err != nil {
+				log.Entry().Fatal("failed to get file info")
+			}
+			if fileInfo.IsDir() {
+				continue
+			}
+			gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath))
+		}
+	}
+}`
+
+// StructName returns the name of the environment resource struct
+func (p *ReportsResource) StructName() string {
+	return fmt.Sprintf("%v%v", p.StepName, strings.Title(p.Name))
+}
+
+// StructString returns the golang coding for the struct definition of the environment resource
+func (p *ReportsResource) StructString() (string, error) {
+	funcMap := template.FuncMap{
+		"title":             strings.Title,
+		"golangName":        golangName,
+		"resourceFieldType": resourceFieldType,
+	}
+
+	tmpl, err := template.New("resources").Funcs(funcMap).Parse(reportsStructTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var generatedCode bytes.Buffer
+	err = tmpl.Execute(&generatedCode, &p)
+	if err != nil {
+		return "", err
+	}
+
+	return string(generatedCode.String()), nil
+}

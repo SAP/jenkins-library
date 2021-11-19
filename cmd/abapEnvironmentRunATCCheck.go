@@ -212,7 +212,7 @@ func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (e
 				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
 			}
 		}
-		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil, gcsClient, GeneralConfig.GCSBucketId)
+		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 	}
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)
