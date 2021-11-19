@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"net/url"
 	"os/exec"
 	"strings"
 
-	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -48,19 +48,8 @@ func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomDat
 }
 
 func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils, fileUtils piperutils.FileUtils) error {
-	// create vault client
-	// try to retrieve existing credentials
-	// if it's impossible - will add it
-	vaultConfig := &vault.Config{
-		Config: &api.Config{
-			Address: config.VaultServerURL,
-		},
-		Namespace: config.VaultNamespace,
-	}
-	_, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
-	if err != nil {
-		log.Entry().Info("could not create vault client:", err)
-	}
+
+	var err error
 
 	// piper http client for downloading scripts
 	httpClient := piperhttp.Client{}
@@ -79,11 +68,11 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 			exists, err := fileUtils.FileExists(source)
 			if err != nil {
 				log.Entry().WithError(err).Error("failed to check for defined script")
-				return errors.Wrap(err, "failed to check for defined script")
+				return fmt.Errorf("failed to check for defined script: %w", err)
 			}
 			if !exists {
 				log.Entry().WithError(err).Error("the specified script could not be found")
-				return errors.New("the specified script could not be found")
+				return fmt.Errorf("the script '%v' could not be found: %w", source, err)
 			}
 			e = append(e, source)
 		} else {
