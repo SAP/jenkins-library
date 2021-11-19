@@ -34,7 +34,7 @@ func pollProjectStatus(projectToken string, scanTime time.Time, sys whitesourceP
 		scanTime:         scanTime,
 		maxAge:           20 * time.Second,
 		timeBetweenPolls: 20 * time.Second,
-		maxWaitTime:      30 * time.Minute,
+		maxWaitTime:      15 * time.Minute,
 	}
 	return blockUntilProjectIsUpdated(projectToken, sys, options)
 }
