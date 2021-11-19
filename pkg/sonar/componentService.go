@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/issues/search
+// EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/measures/component
 const EndpointMeasuresComponent = "measures/component"
 
 // ComponentService ...

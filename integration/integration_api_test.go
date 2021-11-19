@@ -73,12 +73,9 @@ func TestSonarMeasuresComponentSearch(t *testing.T) {
 
 	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, &piperhttp.Client{})
 	// test
-	coverage, _, err := componentService.GetCoverage()
+	_, err := componentService.GetCoverage()
 	// assert
 	assert.NoError(t, err)
-	assert.NotEmpty(t, coverage.Coverage)
-	assert.NotEmpty(t, coverage.BranchCoverage)
-	assert.NotEmpty(t, coverage.LineCoverage)
 }
 
 func TestPiperGithubPublishRelease(t *testing.T) {
