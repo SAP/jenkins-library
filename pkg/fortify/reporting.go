@@ -157,7 +157,7 @@ func UploadReportToGithub(scanReport reporting.ScanReport, token, APIURL, owner,
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	// ignore JSON errors since structure is in our hands
 	markdownReport, _ := scanReport.ToMarkdown()
-	err :=pipergithub.CreateIssue(token, APIURL, owner, repository, "Fortify SAST Results", markdownReport, assignees, true)
+	err := pipergithub.CreateIssue(token, APIURL, owner, repository, "Fortify SAST Results", markdownReport, assignees, true)
 	if err != nil {
 		return errors.Wrap(err, "failed to upload fortify results into GitHub issue")
 	}
