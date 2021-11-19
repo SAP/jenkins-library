@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -38,16 +39,76 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	fileName := "errorDetails.json"
 	if details["stepName"] != nil {
 		fileName = fmt.Sprintf("%v_%v", fmt.Sprint(details["stepName"]), fileName)
+		// ToDo: If step is called x times, and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
+	errDetails, _ := json.Marshal(&details)
+	Entry().Infof("fatal error: errorDetails{correlationId:\"%v\",stepName:\"%v\",category:\"%v\",error:\"%v\",result:\"%v\",message:\"%v\"}", details["correlationId"], details["stepName"], details["category"], details["error"], details["result"], details["message"])
 
 	_, err := ioutil.ReadFile(filePath)
-
 	if err != nil {
-		// ignore errors, since we don't want to break the logging flow
-		errDetails, _ := json.Marshal(&details)
+		// do not overwrite file in case it already exists
+		// this helps to report the first error which occured - instead of the last one
 		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
 
 	return nil
+}
+
+// ErrorDetails struct holds information about errors of the step
+type ErrorDetails struct {
+	Message       string
+	Error         string
+	Category      string
+	Result        string
+	CorrelationId string
+	StepName      string
+}
+
+// GetErrorsJson reads errorDetails.json files from the CPE and returns an ErrorDetails struct.
+func GetErrorsJson() ([]ErrorDetails, error) {
+	fileName := "errorDetails.json"
+	path, err := os.Getwd()
+	pathCPE := path + "/.pipeline/commonPipelineEnvironment"
+	if err != nil {
+		fmt.Errorf("can not get current working dir")
+		return []ErrorDetails{}, err
+	}
+
+	matches, err := filepath.Glob(pathCPE + "/*" + fileName)
+	Entry().Debugf("found the following errorDetails files: %v", matches)
+	if err != nil {
+		Entry().Debugf("could not find any *errorDetails.json files")
+	}
+
+	errorDetails := []ErrorDetails{}
+
+	if len(matches) != 0 {
+		Entry().Debugf("Found %v files", matches)
+
+		for _, v := range matches {
+			errorDetail, err := readErrorJson(v)
+			if err != nil {
+				Entry().Debugf("could not read error details for file %v", v)
+			}
+			errorDetails = append(errorDetails, errorDetail)
+
+		}
+	}
+
+	return errorDetails, nil
+}
+
+func readErrorJson(filePath string) (ErrorDetails, error) {
+	//filePath := filepath.Join(path, fileName)
+
+	errorDetails := ErrorDetails{}
+	jsonFile, err := ioutil.ReadFile(filePath)
+
+	err = json.Unmarshal(jsonFile, &errorDetails)
+	if err != nil {
+		fmt.Errorf("could not unmarshal error details")
+		return ErrorDetails{}, err
+	}
+	return errorDetails, nil
 }
