@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -119,17 +120,35 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	}
 
 	// 2. Get MTA extension descriptor for node with given id
-	mtaExtDescriptor, err2 := communicationInstance.GetMtaExtDescriptor(nodeId, "alm.pi.test.scv_a", config.MtaVersion)
+	obtainedMtaExtDescriptor, err2 := communicationInstance.GetMtaExtDescriptor(nodeId, "com.sap.radsoulbeard.fiori", config.MtaVersion)
 	if err2 != nil {
 		return fmt.Errorf("failed to get MTA extension descriptor: %w", err2)
 	}
 
 	// 3. Update obtained MTA extension descriptor
-	// TODO: read MTA extension descriptor file path from the map provided in step configuration
-	communicationInstance.UpdateMtaExtDescriptor(nodeId, mtaExtDescriptor.Id, "workspace/mtaext_update_test.mtaext", config.MtaVersion, config.CustomDescription, config.NamedUser)
+	// TODO: read MTA extension descriptor file path from the map provided in config.yml
+	_, err3 := communicationInstance.UpdateMtaExtDescriptor(nodeId, obtainedMtaExtDescriptor.Id, "mtaext_update_test.mtaext", config.MtaVersion, config.CustomDescription, config.NamedUser)
+	if err3 != nil {
+		return fmt.Errorf("failed to update MTA extension descriptor: %w", err3)
+	}
 
-	// 4. Upload another MTA extensoin descriptor
-	communicationInstance.UploadMtaExtDescriptor(nodeId, "workspace/mtaext_upload_test.mtaext", "1.0.1", config.CustomDescription, config.NamedUser)
+	// 4. Upload another MTA extension descriptor to node
+	_, err4 := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, "mtaext_upload_test.mtaext", "1.0.1", config.CustomDescription, config.NamedUser)
+	if err4 != nil {
+		return fmt.Errorf("failed to upload MTA extension descriptor: %w", err4)
+	}
+
+	// 5. Upload file
+	uploadedFile, err5 := communicationInstance.UploadFile(config.MtaPath, config.NamedUser)
+	if err5 != nil {
+		return fmt.Errorf("failed to upload file: %w", err5)
+	}
+
+	// 6. Uplaod file to node
+	_, err6 := communicationInstance.UploadFileToNode(config.NodeName, strconv.FormatInt(uploadedFile.Id, 10), config.CustomDescription, config.NamedUser)
+	if err6 != nil {
+		return fmt.Errorf("failed to upload file to node: %w", err6)
+	}
 
 	return nil
 }
