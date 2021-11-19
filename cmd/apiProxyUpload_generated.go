@@ -107,7 +107,7 @@ Learn more about the SAP API Management API for uploading an api proxy artifact 
 
 func addApiProxyUploadFlags(cmd *cobra.Command, stepConfig *apiProxyUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies api proxy zip artifact relative file path.")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies api proxy zip artifact relative file path")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("filePath")

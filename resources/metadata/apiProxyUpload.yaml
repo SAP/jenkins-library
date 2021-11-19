@@ -25,7 +25,7 @@ spec:
             param: apiServiceKey
       - name: filePath
         type: string
-        description: Specifies api proxy zip artifact relative file path.
+        description: Specifies api proxy zip artifact relative file path
         scope:
           - PARAMETERS
           - STAGES
