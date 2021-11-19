@@ -176,12 +176,15 @@ void call(Map parameters = [:]) {
             script.echo "init config: ${config}"
         }
 
-        String buildTool = checkBuildTool(config)
+        String buildTool = config.buildTool
+        String buildToolDescPath = inferBuildToolDesc(script, config.buildTool)
+
+        checkBuildTool(buildTool, buildToolDescPath)
 
         script.commonPipelineEnvironment.projectName = config.projectName
 
         if (!script.commonPipelineEnvironment.projectName && config.inferProjectName) {
-            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool)
+            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool, buildToolDescPath)
         }
 
         if (Boolean.valueOf(env.ON_K8S) && config.containerMapResource) {
@@ -240,44 +243,54 @@ void call(Map parameters = [:]) {
     }
 }
 
-private String inferProjectName(Script script, String buildTool) {
+// Infer build tool descriptor (maven, npm, mta)
+private static String inferBuildToolDesc(script, buildTool) {
+
+    String buildToolDescPath = null
+
     switch (buildTool) {
         case 'maven':
-            def pom = script.readMavenPom file: 'pom.xml'
+            Map configBuild = script.commonPipelineEnvironment.getStepConfiguration('mavenBuild', 'Build')
+            buildToolDescPath = configBuild.pomPath? configBuild.pomPath + '/pom.xml' : 'pom.xml'
+            break
+        case 'npm': // no parameter for the descriptor path
+            buildToolDescPath = 'package.json'
+            break
+        case 'mta':
+            Map configMtaBuild = script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', 'Build')
+            buildToolDescPath = configMtaBuild.source? configMtaBuild.source + '/mta.yaml' : 'mta.yaml'
+            break
+        default:
+            break;
+    }
+
+    if(buildToolDescPath) {
+        script.commonPipelineEnvironment.buildToolDescPath = buildToolDescPath
+    }
+
+    return buildToolDescPath
+}
+
+private String inferProjectName(Script script, String buildTool, String buildToolDescPath) {
+    switch (buildTool) {
+        case 'maven':
+            def pom = script.readMavenPom file: buildToolDescPath
             return "${pom.groupId}-${pom.artifactId}"
         case 'npm':
-            Map packageJson = script.readJSON file: 'package.json'
+            Map packageJson = script.readJSON file: buildToolDescPath
             return packageJson.name
         case 'mta':
-            Map mta = script.readYaml file: 'mta.yaml'
+            Map mta = script.readYaml file: buildToolDescPath
             return mta.ID
     }
 
     script.error "Cannot infer projectName. Project buildTool was none of the expected ones 'mta', 'maven', or 'npm'."
 }
 
-private String checkBuildTool(config) {
-    def buildDescriptorPattern = ''
-    String buildTool = config.buildTool
-
-    switch (buildTool) {
-        case 'maven':
-            buildDescriptorPattern = 'pom.xml'
-            break
-        case 'npm':
-            buildDescriptorPattern = 'package.json'
-            break
-        case 'mta':
-            if(config.source)
-                buildDescriptorPattern = config.source +'/mta.yaml'
-            else
-                buildDescriptorPattern = 'mta.yaml'
-            break
-    }
+private checkBuildTool(String buildTool, String buildDescriptorPattern) {
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project (buildDescriptorPattern: '${buildDescriptorPattern}', please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
+        error "[${STEP_NAME}] buildTool configuration '${buildTool}' does not fit to your project (buildDescriptorPattern: '${buildDescriptorPattern}'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
-    return buildTool
 }
 
 private void initStashConfiguration (script, stashSettings, customStashSettings, verbose) {

@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.isEmptyOrNullString
 import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
@@ -21,12 +22,14 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
+    private JenkinsReadMavenPomRule jrmpr = new JenkinsReadMavenPomRule(this, null)
     private ExpectedException thrown = new ExpectedException()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(jryr)
+        .around(jrmpr)
         .around(thrown)
         .around(jlr)
         .around(jsr)
@@ -45,7 +48,10 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         helper.registerAllowedMethod("findFiles", [Map.class], { map ->
             switch (map.glob) {
                 case 'pom.xml':
-                    return [new File('pom.xml')].toArray()
+                case 'mta.yaml':
+                case 'path/mta.yaml':
+                case 'path/pom.xml':
+                    return [new File(map.glob)].toArray()
                 default:
                     return [].toArray()
             }
@@ -104,7 +110,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testInitBuildToolDoesNotMatchProject() {
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project (buildDescriptorPattern: \'package.json\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(
             script: nullScript,
             juStabUtils: utils,
@@ -202,6 +208,54 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     }
 
     @Test
+    void testInferBuildToolDescMta() {
+        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "mta")
+        assertEquals('mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescMaven() {
+        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "maven")
+        assertEquals('pom.xml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescNpm() {
+        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "npm")
+        assertEquals('package.json', nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescMtaSource() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], steps : [mtaBuild: [source: 'path']]]
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
+
+        assertEquals('path/mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescMavenSource() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], steps : [mavenBuild: [pomPath: 'path']]]
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
+
+        assertEquals('path/pom.xml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescUnknown() {
+        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "unknown")
+        assertEquals(null, nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
+    void testInferBuildToolDescNull() {
+        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, null)
+        assertEquals(null, nullScript.commonPipelineEnvironment.buildToolDescPath)
+    }
+
+    @Test
     void testInitInferBuildTool() {
         nullScript.commonPipelineEnvironment.configuration = [general: [inferBuildTool: true]]
         nullScript.commonPipelineEnvironment.buildTool = 'maven'
@@ -215,6 +269,30 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'artifactPrepareVersion',
             'pipelineStashFilesBeforeBuild'
         ))
+    }
+
+    @Test
+    void testInferProjectNameFromMta() {
+        jryr.registerYaml('mta.yaml','ID: "fromMtaYaml"')
+        assertEquals('fromMtaYaml', jsr.step.piperPipelineStageInit.inferProjectName(nullScript, "mta", "mta.yaml"))
+    }
+
+    @Test
+    void testInferProjectNameFromMtaSource() {
+        jryr.registerYaml('path/mta.yaml','ID: "fromPathMtaYaml"')
+        assertEquals('fromPathMtaYaml', jsr.step.piperPipelineStageInit.inferProjectName(nullScript, "mta", "path/mta.yaml"))
+    }
+
+    @Test
+    void testInferProjectNameFromMavenPath() {
+        jrmpr.registerPom('path/pom.xml',
+            '<project>'
+                + '<groupId>gidFromPathPom</groupId>'
+                + '<artifactId>aidFromPathPom</artifactId>'
+            + '</project>'
+        )
+
+        assertEquals('gidFromPathPom-aidFromPathPom', jsr.step.piperPipelineStageInit.inferProjectName(nullScript, "maven", "path/pom.xml"))
     }
 
     @Test
