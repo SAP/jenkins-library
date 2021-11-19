@@ -2,7 +2,7 @@ metadata:
   name: apiProxyUpload
   description: Upload an api proxy artifact in to the API Portal
   longDescription: |
-    With this step you can upload an api proxy artifact in to the API Portal using the OData API. 
+    With this step you can upload an api proxy artifact in to the API Portal using the OData API.
     Learn more about the SAP API Management API for uploading an api proxy artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
 
 spec:
