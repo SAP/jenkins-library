@@ -26,6 +26,7 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	Password             string `json:"password,omitempty"`
 	Host                 string `json:"host,omitempty"`
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
+	GenerateHTML         bool   `json:"generateHTML,omitempty"`
 }
 
 // AbapEnvironmentRunAUnitTestCommand Runs an AUnit Test
@@ -131,6 +132,7 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
+	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 
 	cmd.MarkFlagRequired("aUnitConfig")
 	cmd.MarkFlagRequired("username")
@@ -252,6 +254,15 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `AUnitResults.xml`,
+					},
+					{
+						Name:        "generateHTML",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
