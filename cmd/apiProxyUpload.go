@@ -4,7 +4,6 @@ import (
 	"bytes"
 	b64 "encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -58,27 +57,9 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 	payload := []byte(b64.StdEncoding.EncodeToString(fileContent))
 	apiProxyUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiProxyStatusURL, bytes.NewBuffer(payload), header, nil)
 
-	if apiProxyUploadStatusResp != nil && apiProxyUploadStatusResp.Body != nil {
-		defer apiProxyUploadStatusResp.Body.Close()
-	}
-
-	if apiProxyUploadStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
-
-	if apiProxyUploadStatusResp.StatusCode == http.StatusOK {
-		log.Entry().
-			WithField("Api Proxy artifact", config.FilePath).
-			Info("Successfully created api proxy artefact in API Portal")
-		return nil
-	}
-	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(apiProxyUploadStatusResp.Body)
-		if readErr != nil {
-			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", apiProxyUploadStatusResp.StatusCode)
-		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), apiProxyUploadStatusResp.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, uploadApiProxyStatusURL, string(responseBody))
-	}
-	return errors.Errorf("Failed to create api proxy artefact, Response Status code: %v", apiProxyUploadStatusResp.StatusCode)
+	failureMessage := "Failed to upload API Proxy artefact"
+	successMessage := "Successfully created api proxy artefact in API Portal"
+	httpFileUploadRequestParameters := cpi.HttpFileUploadRequestParameters{ErrMessage: failureMessage, FilePath: config.FilePath, Response: apiProxyUploadStatusResp,
+		HttpMethod: httpMethod, HttpUrl: uploadApiProxyStatusURL, HttpErr: httpErr, SuccessMessage: successMessage}
+	return cpi.HttpUploadUtils.HandleHTTPFileUploadResponse(httpFileUploadRequestParameters)
 }

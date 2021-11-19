@@ -27,6 +27,11 @@ type HttpCPIUtils interface {
 	HandleHTTPFileDownloadResponse() error
 }
 
+//HttpUploadUtils for CPI
+type HttpUploadUtils interface {
+	HandleHTTPFileUploadResponse() error
+}
+
 //TokenParameters struct
 type TokenParameters struct {
 	TokenURL, Username, Password string
@@ -37,6 +42,13 @@ type TokenParameters struct {
 type HttpFileDownloadRequestParameters struct {
 	ErrMessage, FileDownloadPath string
 	Response                     *http.Response
+}
+
+//HttpUploadParameters struct
+type HttpFileUploadRequestParameters struct {
+	ErrMessage, FilePath, HttpMethod, HttpUrl, SuccessMessage string
+	Response                                                  *http.Response
+	HttpErr                                                   error
 }
 
 // ServiceKey contains information about a CPI service key
@@ -147,4 +159,33 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, response.StatusCode)
 	return errors.Errorf("%s, Response Status code: %v", httpFileDownloadRequestParameters.ErrMessage, response.StatusCode)
+}
+
+// HandleHTTPFileUploadResponse - Handle the file upload response
+func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTTPFileUploadResponse() error {
+	response := httpFileUploadRequestParameters.Response
+	httpErr := httpFileUploadRequestParameters.HttpErr
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
+
+	if response == nil {
+		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
+	if response.StatusCode == http.StatusOK {
+		log.Entry().
+			WithField("Created Artifact", httpFileUploadRequestParameters.FilePath).
+			Info(httpFileUploadRequestParameters.SuccessMessage)
+		return nil
+	}
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(response.Body)
+		if readErr != nil {
+			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HttpMethod, httpFileUploadRequestParameters.HttpUrl, string(responseBody))
+	}
+	return errors.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
 }
