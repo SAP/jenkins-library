@@ -271,11 +271,11 @@ spec:
     resources:
       - name: reports
         type: reports
-        params: 
-          - filePattern: "reportName"
+        params:
+          - filePattern: "sonarscan.json"
             type: "general"
-            subFolder: "test/sub/folder"
-          - filePattern: "reports/*"
+            subFolder: "sonarExecuteScan"
+          - filePattern: "sonarExecuteScan_*.json"
             type: "general"
       - name: influx
         type: influx

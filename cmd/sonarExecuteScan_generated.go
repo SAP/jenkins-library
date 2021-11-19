@@ -26,7 +26,7 @@ type sonarExecuteScanOptions struct {
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
-	VersioningModel           string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
+	VersioningModel           string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	Version                   string   `json:"version,omitempty"`
 	CustomScanVersion         string   `json:"customScanVersion,omitempty"`
 	ProjectKey                string   `json:"projectKey,omitempty"`
@@ -39,7 +39,7 @@ type sonarExecuteScanOptions struct {
 	ChangeID                  string   `json:"changeId,omitempty"`
 	ChangeBranch              string   `json:"changeBranch,omitempty"`
 	ChangeTarget              string   `json:"changeTarget,omitempty"`
-	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"oneof=GitHub"`
+	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"possible-values=GitHub"`
 	Owner                     string   `json:"owner,omitempty"`
 	Repository                string   `json:"repository,omitempty"`
 	GithubToken               string   `json:"githubToken,omitempty"`
@@ -58,8 +58,8 @@ func (p *sonarExecuteScanReports) persist(path, resourceName string) {
 		stepResultType string
 		subFolder      string
 	}{
-		{filePattern: "reportName", stepResultType: "general", subFolder: "test/sub/folder"},
-		{filePattern: "reports/*", stepResultType: "general", subFolder: ""},
+		{filePattern: "sonarscan.json", stepResultType: "general", subFolder: "sonarExecuteScan"},
+		{filePattern: "sonarExecuteScan_*.json", stepResultType: "general", subFolder: ""},
 	}
 
 	envVars := []gcs.EnvVar{
@@ -69,23 +69,25 @@ func (p *sonarExecuteScanReports) persist(path, resourceName string) {
 	gcsBucketID := GeneralConfig.GCSBucketId
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
-		log.Entry().Fatal("failed to persist reports")
+		log.Entry().Fatalf("failed to persist reports: %v", err)
 	}
 	for _, param := range content {
 		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
 		foundFiles, err := doublestar.Glob(param.filePattern)
 		if err != nil {
-			log.Entry().Fatal("failed to persist reports")
+			log.Entry().Fatalf("failed to persist reports: %v", err)
 		}
 		for _, sourcePath := range foundFiles {
 			fileInfo, err := os.Stat(sourcePath)
 			if err != nil {
-				log.Entry().Fatal("failed to get file info")
+				log.Entry().Fatalf("failed to persist reports: %v", err)
 			}
 			if fileInfo.IsDir() {
 				continue
 			}
-			gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath))
+			if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
 		}
 	}
 }
@@ -149,6 +151,8 @@ func SonarExecuteScanCommand() *cobra.Command {
 	var reports sonarExecuteScanReports
 	var influx sonarExecuteScanInflux
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createSonarExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -179,6 +183,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -195,31 +200,33 @@ func SonarExecuteScanCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				reports.persist(GeneralConfig.EnvRootPath, "reports")
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			sonarExecuteScan(stepConfig, &telemetryData, &influx)
-			telemetryData.ErrorCode = "0"
+			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}

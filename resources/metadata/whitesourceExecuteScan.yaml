@@ -113,6 +113,28 @@ spec:
           - STAGES
           - STEPS
         default: ./wss-unified-agent.config
+      - name: containerRegistryPassword
+        description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerRegistryUser
+        description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: createProductFromPipeline
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
@@ -508,7 +530,7 @@ spec:
               value: dub
             - name: buildTool
               value: docker
-    - image: devxci/mbtci:1.1.1
+    - image: devxci/mbtci-java11-node14
       workingDir: /home/mta
       env: []
       conditions:

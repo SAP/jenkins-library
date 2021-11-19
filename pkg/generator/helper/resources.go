@@ -231,23 +231,25 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	gcsBucketID := GeneralConfig.GCSBucketId
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
-		log.Entry().Fatal("failed to persist reports")
+		log.Entry().Fatalf("failed to persist reports: %v", err)
 	}
 	for _, param := range content {
 		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
 		foundFiles, err := doublestar.Glob(param.filePattern)
 		if err != nil {
-			log.Entry().Fatal("failed to persist reports")
+			log.Entry().Fatalf("failed to persist reports: %v", err)
 		}
 		for _, sourcePath := range foundFiles {
 			fileInfo, err := os.Stat(sourcePath)
 			if err != nil {
-				log.Entry().Fatal("failed to get file info")
+				log.Entry().Fatalf("failed to persist reports: %v", err)
 			}
 			if fileInfo.IsDir() {
 				continue
 			}
-			gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath))
+			if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
 		}
 	}
 }`

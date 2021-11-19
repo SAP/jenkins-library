@@ -96,6 +96,7 @@ spec:
           - docker
           - dub
           - golang
+          - gradle
           - maven
           - mta
           - npm
@@ -134,6 +135,7 @@ spec:
           - STAGES
           - STEPS
         possibleValues:
+          - docker
           - maven
           - pep440
           - semver2

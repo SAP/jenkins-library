@@ -81,6 +81,15 @@ spec:
           - STEPS
         type: string
         mandatory: true
+      - name: updateExisting
+        description: Whether to update an existing open issue with the same title by adding a comment instead of creating a new one.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        mandatory: false
+        default: false
       - name: token
         aliases:
           - name: githubToken

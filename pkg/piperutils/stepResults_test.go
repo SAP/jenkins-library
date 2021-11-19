@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/gcs/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -78,28 +77,5 @@ func TestPersistReportAndLinks(t *testing.T) {
 			require.NoError(t, err, "No error expected but got one")
 			assert.Equal(t, "[]", string(reportsFileData))
 		}
-	})
-
-	t.Run("upload to Google Cloud Storage", func(t *testing.T) {
-		workspace, err := ioutil.TempDir("", "workspace5")
-		require.NoError(t, err, "Failed to create temporary workspace directory")
-		// clean up tmp dir
-		defer os.RemoveAll(workspace)
-
-		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
-		links := []Path{}
-
-		mockedGCSClient := &mocks.Client{}
-		bucketID := "test-bucket"
-		for _, report := range reports {
-			mockedGCSClient.Mock.On("UploadFile", bucketID, report.Target, report.Target).Return(
-				func(bucketID string, sourcePath string, targetPath string) error {
-					return nil
-				},
-			).Once()
-		}
-		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
-		mockedGCSClient.Mock.AssertNumberOfCalls(t, "UploadFile", len(reports))
-		mockedGCSClient.Mock.AssertExpectations(t)
 	})
 }

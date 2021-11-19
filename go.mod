@@ -34,6 +34,7 @@ require (
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/motemen/go-nuts v0.0.0-20210915132349-615a782f2c69
 	github.com/pelletier/go-toml v1.9.4
 	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
