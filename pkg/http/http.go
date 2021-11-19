@@ -425,7 +425,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if len(c.username) > 0 {
+	if len(c.username) > 0 || len(c.password) > 0 {
 		request.SetBasicAuth(c.username, c.password)
 		c.logger.Debug("Using Basic Authentication ****/****")
 	}
