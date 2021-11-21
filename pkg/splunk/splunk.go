@@ -102,23 +102,6 @@ func readCommonPipelineEnvironment(filePath string) string {
 	return string(contentFile)
 }
 
-// MonitoringData definition for monitoring
-type MonitoringData struct {
-	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
-	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
-	StageName       string `json:"StageName,omitempty"`
-	StepName        string `json:"StepName,omitempty"`
-	ExitCode        string `json:"ExitCode,omitempty"`
-	Duration        string `json:"Duration,omitempty"`
-	ErrorCode       string `json:"ErrorCode,omitempty"`
-	ErrorCategory   string `json:"ErrorCategory,omitempty"`
-	CorrelationID   string `json:"CorrelationID,omitempty"`
-	CommitHash      string `json:"CommitHash,omitempty"`
-	Branch          string `json:"Branch,omitempty"`
-	GitOwner        string `json:"GitOwner,omitempty"`
-	GitRepository   string `json:"GitRepository,omitempty"`
-}
-
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 
 	return MonitoringData{
@@ -138,19 +121,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	}
 }
 
-type Event struct {
-	Messages  []log.Message  `json:"messages,omitempty"`  // messages
-	Telemetry MonitoringData `json:"telemetry,omitempty"` // telemetryData
-}
-type Details struct {
-	Host       string `json:"host"`                 // hostname
-	Source     string `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      Event  `json:"event,omitempty"`      // throw any useful key/val pairs here}
-}
-
-func (s *Splunk) SendPipelineStatus(pipelineTelemetryData telemetry.PipelineTelemetry, logFile *[]byte) error {
+func (s *Splunk) SendPipelineStatus(pipelineTelemetryData PipelineTelemetry, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
 
 	readLogFile := string(*logFile)
@@ -176,27 +147,9 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData telemetry.PipelineTele
 	return nil
 }
 
-type LogFileEvents struct {
-	Messages  []string                    `json:"messages,omitempty"`  // messages
-	Telemetry telemetry.PipelineTelemetry `json:"telemetry,omitempty"` // telemetryData
-}
-type DetailsLog struct {
-	Host       string        `json:"host"`                 // hostname
-	Source     string        `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string        `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string        `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      LogFileEvents `json:"event,omitempty"`      // throw any useful key/val pairs here}
-}
 
-type DetailsTelemetry struct {
-	Host       string                      `json:"host"`                 // hostname
-	Source     string                      `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string                      `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string                      `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      telemetry.PipelineTelemetry `json:"event,omitempty"`      // throw any useful key/val pairs here}
-}
 
-func (s *Splunk) postTelemetry(telemetryData telemetry.PipelineTelemetry) error {
+func (s *Splunk) postTelemetry(telemetryData PipelineTelemetry) error {
 
 	details := DetailsTelemetry{
 		Host:       s.correlationID,
@@ -209,7 +162,7 @@ func (s *Splunk) postTelemetry(telemetryData telemetry.PipelineTelemetry) error 
 	if err != nil {
 		return errors.Wrap(err, "error while marshalling Splunk message details")
 	}
-
+	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %v", string(payload))
 	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if resp != nil {
@@ -239,7 +192,7 @@ func (s *Splunk) postTelemetry(telemetryData telemetry.PipelineTelemetry) error 
 	return nil
 }
 
-func (s *Splunk) postLogFile(telemetryData telemetry.PipelineTelemetry, messages []string) error {
+func (s *Splunk) postLogFile(telemetryData PipelineTelemetry, messages []string) error {
 
 	event := LogFileEvents{
 		Messages:  messages,
