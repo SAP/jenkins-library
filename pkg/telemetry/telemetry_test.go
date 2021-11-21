@@ -82,7 +82,6 @@ func TestTelemetry_Send(t *testing.T) {
 		Endpoint             string
 		SiteID               string
 	}
-
 	tests := []struct {
 		name     string
 		fields   fields
@@ -113,10 +112,8 @@ func TestTelemetry_Send(t *testing.T) {
 
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			httpmock.Reset()
 			telemetryClient := &Telemetry{disabled: tt.fields.disabled}
 			telemetryClient.Initialize(tt.fields.disabled, tt.name)

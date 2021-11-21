@@ -147,8 +147,6 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData PipelineTelemetry, log
 	return nil
 }
 
-
-
 func (s *Splunk) postTelemetry(telemetryData PipelineTelemetry) error {
 
 	details := DetailsTelemetry{
