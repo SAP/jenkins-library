@@ -251,7 +251,7 @@ private static String inferBuildToolDesc(script, buildTool) {
     switch (buildTool) {
         case 'maven':
             Map configBuild = script.commonPipelineEnvironment.getStepConfiguration('mavenBuild', 'Build')
-            buildToolDesc = configBuild.pomPath? configBuild.pomPath + '/pom.xml' : 'pom.xml'
+            buildToolDesc = configBuild.pomPath? configBuild.pomPath : 'pom.xml'
             break
         case 'npm': // no parameter for the descriptor path
             buildToolDesc = 'package.json'

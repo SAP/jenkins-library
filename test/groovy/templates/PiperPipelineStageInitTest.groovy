@@ -241,7 +241,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testInferBuildToolDescMavenSource() {
-        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], steps : [mavenBuild: [pomPath: 'pathFromStep']]]
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], steps : [mavenBuild: [pomPath: 'pathFromStep/pom.xml']]]
 
         thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'maven\' does not fit to your project (buildDescriptorPattern: \'pathFromStep/pom.xml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
