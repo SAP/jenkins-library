@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -23,8 +24,12 @@ type uploaderMock struct {
 	urlCalled                string
 	requestBody              string
 	responseBody             string
+	filePath                 string
+	fileFieldName            string
+	fileContentString        string
 	header                   http.Header
 	isTechnicalErrorExpected bool
+	formFields               map[string]string
 }
 
 func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
@@ -60,8 +65,26 @@ func (um *uploaderMock) UploadRequest(method, url, file, fieldName string, heade
 	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
 }
 
-func (um *uploaderMock) Upload(_ piperHttp.UploadRequestData) (*http.Response, error) {
-	return &http.Response{}, fmt.Errorf("not implemented")
+func (um *uploaderMock) Upload(uploadRequestData piperHttp.UploadRequestData) (*http.Response, error) {
+	if um.isTechnicalErrorExpected {
+		return nil, errors.New("Provoked technical error")
+	}
+	um.httpMethod = uploadRequestData.Method
+	um.urlCalled = uploadRequestData.URL
+	um.header = uploadRequestData.Header
+	um.filePath = uploadRequestData.File
+	um.fileFieldName = uploadRequestData.FileFieldName
+	um.formFields = uploadRequestData.FormFields
+	if uploadRequestData.FileContent != nil {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(uploadRequestData.FileContent)
+		um.fileContentString = buf.String()
+	}
+	var httpError error
+	if um.httpStatusCode >= 300 {
+		httpError = fmt.Errorf("http error %v", um.httpStatusCode)
+	}
+	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
 }
 
 func (um *uploaderMock) SetOptions(options piperHttp.ClientOptions) {
@@ -197,6 +220,158 @@ func TestGetMtaExtDescriptor(t *testing.T) {
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 	})
 
+}
+
+func TestUpdateMtaExtDescriptor(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
+	t.Run("test success", func(t *testing.T) {
+		idOfMtaExtDescriptor := int64(777)
+		mtaExtDescription := "This is an updated description"
+		mtaId := "test.mta.id"
+		mtaExtId := "test.mta.id_ext"
+		mtaVersion := "1.0.0"
+		lastChangedAt := "2021-11-16T13:06:05.711Z"
+
+		updateMtaExtDescriptorResponse := fmt.Sprintf(`{"id": %v,"description": "%v","mtaId": "%v","mtaExtId": "%v","mtaVersion": "%v","lastChangedAt": "%v"}`, idOfMtaExtDescriptor, mtaExtDescription, mtaId, mtaExtId, mtaVersion, lastChangedAt)
+		uploaderMock := uploaderMock{responseBody: updateMtaExtDescriptorResponse, httpStatusCode: http.StatusOK}
+
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		namedUser := "testUser"
+		filePath := "./resources/mtaext_update_test.mtaext"
+		mtaExtDescriptor, err := communicationInstance.UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor, filePath, mtaVersion, mtaExtDescription, namedUser)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors/%v", nodeId, idOfMtaExtDescriptor), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodPut, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{namedUser}, uploaderMock.header[http.CanonicalHeaderKey("tms-named-user")], "tms-named-user header incorrect")
+		assert.Equal(t, filePath, uploaderMock.filePath, "File path incorrect")
+		assert.Equal(t, "file", uploaderMock.fileFieldName, "File field name incorrect")
+		assert.Equal(t, map[string]string{"mtaVersion": mtaVersion, "description": mtaExtDescription}, uploaderMock.formFields, "Form field(s) incorrect")
+
+		fileHandle, _ := os.Open(filePath)
+		defer fileHandle.Close()
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(fileHandle)
+		fileContentString := buf.String()
+		assert.Equal(t, fileContentString, uploaderMock.fileContentString, "File content incorrect")
+
+		assert.Equal(t, idOfMtaExtDescriptor, mtaExtDescriptor.Id, "MTA extension descriptor Id field incorrect")
+		assert.Equal(t, mtaExtDescription, mtaExtDescriptor.Description, "MTA extension descriptor Description field incorrect")
+		assert.Equal(t, mtaId, mtaExtDescriptor.MtaId, "MTA extension descriptor MtaId field incorrect")
+		assert.Equal(t, mtaExtId, mtaExtDescriptor.MtaExtId, "MTA extension descriptor MtaExtId field incorrect")
+		assert.Equal(t, mtaVersion, mtaExtDescriptor.MtaVersion, "MTA extension descriptor MtaVersion field incorrect")
+		assert.Equal(t, lastChangedAt, mtaExtDescriptor.LastChangedAt, "MTA extension descriptor LastChangedAt field incorrect")
+	})
+
+	t.Run("test upload error", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		idOfMtaExtDescriptor := int64(777)
+		filePath := "./resources/mtaext_update_test.mtaext"
+		mtaVersion := "1.0.0"
+		mtaExtDescription := "This is an updated description"
+		namedUser := "testUser"
+		_, err := communicationInstance.UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor, filePath, mtaVersion, mtaExtDescription, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors/%v", nodeId, idOfMtaExtDescriptor), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "http error 400", err.Error(), "Error text incorrect")
+	})
+
+	t.Run("test error on opening file", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Some response`, httpStatusCode: http.StatusOK}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		idOfMtaExtDescriptor := int64(777)
+		filePath := "./resources/not_existing.mtaext"
+		mtaVersion := "1.0.0"
+		mtaExtDescription := "This is an updated description"
+		namedUser := "testUser"
+		_, err := communicationInstance.UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor, filePath, mtaVersion, mtaExtDescription, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Contains(t, err.Error(), fmt.Sprintf("unable to locate file %v", filePath), "Error text does not contain expected string")
+	})
+}
+
+func TestUloadMtaExtDescriptorToNode(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
+	t.Run("test success", func(t *testing.T) {
+		idOfMtaExtDescriptor := int64(777)
+		mtaExtDescription := "This is a test description"
+		mtaId := "test.mta.id"
+		mtaExtId := "test.mta.id_ext"
+		mtaVersion := "1.0.0"
+		lastChangedAt := "2021-11-16T13:06:05.711Z"
+
+		uploadMtaExtDescriptorResponse := fmt.Sprintf(`{"id": %v,"description": "%v","mtaId": "%v","mtaExtId": "%v","mtaVersion": "%v","lastChangedAt": "%v"}`, idOfMtaExtDescriptor, mtaExtDescription, mtaId, mtaExtId, mtaVersion, lastChangedAt)
+		uploaderMock := uploaderMock{responseBody: uploadMtaExtDescriptorResponse, httpStatusCode: http.StatusCreated}
+
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		namedUser := "testUser"
+		filePath := "./resources/mtaext_update_test.mtaext"
+		mtaExtDescriptor, err := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, filePath, mtaVersion, mtaExtDescription, namedUser)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors", nodeId), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{namedUser}, uploaderMock.header[http.CanonicalHeaderKey("tms-named-user")], "tms-named-user header incorrect")
+		assert.Equal(t, filePath, uploaderMock.filePath, "File path incorrect")
+		assert.Equal(t, "file", uploaderMock.fileFieldName, "File field name incorrect")
+		assert.Equal(t, map[string]string{"mtaVersion": mtaVersion, "description": mtaExtDescription}, uploaderMock.formFields, "Form field(s) incorrect")
+
+		fileHandle, _ := os.Open(filePath)
+		defer fileHandle.Close()
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(fileHandle)
+		fileContentString := buf.String()
+		assert.Equal(t, fileContentString, uploaderMock.fileContentString, "File content incorrect")
+
+		assert.Equal(t, idOfMtaExtDescriptor, mtaExtDescriptor.Id, "MTA extension descriptor Id field incorrect")
+		assert.Equal(t, mtaExtDescription, mtaExtDescriptor.Description, "MTA extension descriptor Description field incorrect")
+		assert.Equal(t, mtaId, mtaExtDescriptor.MtaId, "MTA extension descriptor MtaId field incorrect")
+		assert.Equal(t, mtaExtId, mtaExtDescriptor.MtaExtId, "MTA extension descriptor MtaExtId field incorrect")
+		assert.Equal(t, mtaVersion, mtaExtDescriptor.MtaVersion, "MTA extension descriptor MtaVersion field incorrect")
+		assert.Equal(t, lastChangedAt, mtaExtDescriptor.LastChangedAt, "MTA extension descriptor LastChangedAt field incorrect")
+	})
+
+	t.Run("test upload error", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		filePath := "./resources/mtaext_update_test.mtaext"
+		mtaVersion := "1.0.0"
+		mtaExtDescription := "This is an updated description"
+		namedUser := "testUser"
+		_, err := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, filePath, mtaVersion, mtaExtDescription, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors", nodeId), uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "http error 400", err.Error(), "Error text incorrect")
+	})
+
+	t.Run("test error on opening file", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Some response`, httpStatusCode: http.StatusOK}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeId := int64(111)
+		filePath := "./resources/not_existing.mtaext"
+		mtaVersion := "1.0.0"
+		mtaExtDescription := "This is an updated description"
+		namedUser := "testUser"
+		_, err := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, filePath, mtaVersion, mtaExtDescription, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Contains(t, err.Error(), fmt.Sprintf("unable to locate file %v", filePath), "Error text does not contain expected string")
+	})
 }
 
 func TestSendRequest(t *testing.T) {
