@@ -125,6 +125,8 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	var localObjects []repoObject
 	var localObject repoObject
 
+	log.Entry().Info("get local objects")
+
 	repository, err := getRepository(config, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "getting local changed objects failed")
@@ -135,10 +137,13 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return []repoObject{}, errors.Wrap(err, "getting local changed objects failed")
 	}
 
-	for _, object := range resp.Objects {
-		localObject.Object = object.Name
-		localObject.Type = object.Type
-		localObjects = append(localObjects, localObject)
+	if resp.Objects != nil {
+		for _, object := range resp.Objects {
+			localObject.Object = object.Name
+			localObject.Type = object.Type
+			localObjects = append(localObjects, localObject)
+		}
+
 	}
 
 	return localObjects, nil
