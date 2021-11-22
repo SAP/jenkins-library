@@ -122,6 +122,7 @@ void call(Map parameters = [:]) {
     }
 }
 
+
 // Infer build tool (maven, npm, mta) based on existing build descriptor files in the project root.
 private static void inferBuildTool(script, config) {
     // For backwards compatibility, build tool inference must be enabled via inferBuildTool setting

@@ -171,11 +171,6 @@ void call(Map parameters = [:]) {
             checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
-        if(config.verbose) {
-            script.echo "init cpe.configuration: ${script.commonPipelineEnvironment.configuration}"
-            script.echo "init config: ${config}"
-        }
-
         String buildTool = config.buildTool
         String buildToolDesc = inferBuildToolDesc(script, config.buildTool)
 
@@ -257,8 +252,8 @@ private static String inferBuildToolDesc(script, buildTool) {
             buildToolDesc = 'package.json'
             break
         case 'mta':
-            Map configMtaBuild = script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', 'Build')
-            buildToolDesc = configMtaBuild.source? configMtaBuild.source + '/mta.yaml' : 'mta.yaml'
+            Map configBuild = script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', 'Build')
+            buildToolDesc = configBuild.source? configBuild.source + '/mta.yaml' : 'mta.yaml'
             break
         default:
             break;

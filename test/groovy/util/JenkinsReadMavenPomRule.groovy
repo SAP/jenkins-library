@@ -41,7 +41,7 @@ class JenkinsReadMavenPomRule implements TestRule {
                         if(pom == null)
                             return loadPom("${testRoot}/${m.file}")
                         if(pom instanceof Closure) pom = pom()
-                        return loadPomfromText(pom)
+                            return loadPomfromText(pom)
                     } else {
                         throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
                     }
