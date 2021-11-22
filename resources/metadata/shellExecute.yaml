@@ -12,3 +12,7 @@ spec:
           - STAGES
           - STEPS
         description: Scripts names for execution or links to scripts
+  containers:
+    - name: shell
+      image: debian:stretch
+      workingDir: /tmp

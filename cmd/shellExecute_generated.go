@@ -134,6 +134,9 @@ func shellExecuteMetadata() config.StepData {
 					},
 				},
 			},
+			Containers: []config.Container{
+				{Name: "shell", Image: "debian:stretch", WorkingDir: "/tmp"},
+			},
 		},
 	}
 	return theMetaData
