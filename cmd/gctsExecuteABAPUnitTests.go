@@ -545,7 +545,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 		} else {
 
-			FileName = "CINC " + objectName + "============CCAU.abap"
+			FileName = "CINC " + objectName + "================CCAU.abap"
 
 		}
 
