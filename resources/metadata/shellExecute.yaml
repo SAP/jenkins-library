@@ -22,8 +22,5 @@ spec:
           - STEPS
   containers:
     - name: shell
-      image: debian:stretch
-      workingDir: /tmp
-      options:
-        - name: -u
-          value: "0"
+      image: node:lts-stretch
+      workingDir: /home/node
