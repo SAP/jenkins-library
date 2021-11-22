@@ -1177,7 +1177,7 @@ func getRepository(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 	if parsingErr != nil {
 		return repositoryResponseBody{}, errors.Errorf("%v", parsingErr)
 	}
-
+	log.Entry().Info("get repository", repositoryResponse.Result.Name)
 	return repositoryResponse, nil
 
 }
@@ -1295,6 +1295,7 @@ func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit str
 	if parsingErr != nil {
 		return objectsResponseBody{}, errors.Errorf("%v", parsingErr)
 	}
+	log.Entry().Info("get object difference", objectResponse.Objects)
 	return objectResponse, nil
 }
 
