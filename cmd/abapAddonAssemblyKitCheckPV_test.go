@@ -16,6 +16,8 @@ func TestCheckPVStep(t *testing.T) {
 	client := &abaputils.ClientMock{
 		Body: responseCheckPV,
 	}
+	config.Username = "dummyUser"
+	config.Password = "dummyPassword"
 	t.Run("step success", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
 		err := runAbapAddonAssemblyKitCheckPV(&config, nil, client, &cpe, mockReadAddonDescriptor)
