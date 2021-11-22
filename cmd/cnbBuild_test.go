@@ -58,6 +58,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform"}, runner.Calls[0].Params)
 		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform"}, runner.Calls[1].Params)
 		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
+		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
 	})
 
 	t.Run("success case (registry without https)", func(t *testing.T) {
@@ -85,6 +87,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform"}, runner.Calls[0].Params)
 		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform"}, runner.Calls[1].Params)
 		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
+		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
 	})
 
 	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {

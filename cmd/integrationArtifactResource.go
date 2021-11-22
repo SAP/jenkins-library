@@ -225,7 +225,7 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifact
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", resp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, resp.StatusCode)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), resp.StatusCode)
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", integrationArtifactResourceData.Method, integrationArtifactResourceData.URL, string(responseBody))
 	}
 	return errors.Errorf("%s, Response Status code: %v", integrationArtifactResourceData.FlrMessage, resp.StatusCode)

@@ -14,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -226,6 +227,19 @@ func runMtaBuild(config mtaBuildOptions,
 		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}
+
+	log.Entry().Infof("creating build settings information...")
+	mtaConfig := buildsettings.BuildOptions{
+		Profiles:           config.Profiles,
+		GlobalSettingsFile: config.GlobalSettingsFile,
+		Publish:            config.Publish,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
+	}
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, "mtaBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 

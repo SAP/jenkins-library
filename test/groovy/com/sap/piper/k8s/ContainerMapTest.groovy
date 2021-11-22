@@ -15,7 +15,7 @@ class ContainerMapTest extends BasePiperTest {
     String exampleConfigYaml = """
 # Mapping of Go step names to their YAML metadata resource file
 stepMetadata:
-  artifactPrepareVersion: versioning.yaml
+  artifactPrepareVersion: artifactPrepareVersion.yaml
 containerMaps:
   init:
     - artifactPrepareVersion
@@ -54,7 +54,7 @@ containerMaps:
             ]
         ])
 
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/versioning.yaml\'', '{"dockerImage":"artifact-image"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/artifactPrepareVersion.yaml\'', '{"dockerImage":"artifact-image"}')
     }
 
     @Test
