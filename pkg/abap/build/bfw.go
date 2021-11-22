@@ -37,15 +37,33 @@ const (
 )
 
 //******** structs needed for json convertion ********
-
 type jsonBuild struct {
-	Build *Build `json:"d"`
+	Build struct {
+		BuildID     string      `json:"build_id"`
+		RunState    RunState    `json:"run_state"`
+		ResultState resultState `json:"result_state"`
+		Phase       string      `json:"phase"`
+		Entitytype  string      `json:"entitytype"`
+		Startedby   string      `json:"startedby"`
+		StartedAt   string      `json:"started_at"`
+		FinishedAt  string      `json:"finished_at"`
+	} `json:"d"`
 }
 
 type jsonTasks struct {
 	ResultTasks struct {
-		Tasks []task `json:"results"`
+		Tasks []jsonTask `json:"results"`
 	} `json:"d"`
+}
+
+type jsonTask struct {
+	BuildID     string      `json:"build_id"`
+	TaskID      int         `json:"task_id"`
+	LogID       string      `json:"log_id"`
+	PluginClass string      `json:"plugin_class"`
+	StartedAt   string      `json:"started_at"`
+	FinishedAt  string      `json:"finished_at"`
+	ResultState resultState `json:"result_state"`
 }
 
 type jsonLogs struct {
@@ -179,7 +197,6 @@ func (b *Build) Get() error {
 	if err := json.Unmarshal(body, &jBuild); err != nil {
 		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
 	}
-
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
 	b.Phase = jBuild.Build.Phase
@@ -197,17 +214,13 @@ func (b *Build) getTasks() error {
 		if err != nil {
 			return err
 		}
-		var jTasks jsonTasks
-		if err := json.Unmarshal(body, &jTasks); err != nil {
-			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		b.Tasks, err = unmarshalTasks(body, b.Connector)
+		if err != nil {
+			return err
 		}
-		b.Tasks = jTasks.ResultTasks.Tasks
 		sort.Slice(b.Tasks, func(i, j int) bool {
 			return b.Tasks[i].TaskID < b.Tasks[j].TaskID
 		})
-		for i := range b.Tasks {
-			b.Tasks[i].connector = b.Connector
-		}
 	}
 	return nil
 }
@@ -389,4 +402,27 @@ func (vs Values) String() string {
 
 func (in inputForPost) String() string {
 	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
+}
+
+//******** unmarshal function  ************
+func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
+
+	var tasks []task
+	var append_task task
+	var jTasks jsonTasks
+	if err := json.Unmarshal(body, &jTasks); err != nil {
+		return tasks, errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+	}
+	for _, jTask := range jTasks.ResultTasks.Tasks {
+		append_task.connector = connector
+		append_task.BuildID = jTask.BuildID
+		append_task.TaskID = jTask.TaskID
+		append_task.LogID = jTask.LogID
+		append_task.PluginClass = jTask.PluginClass
+		append_task.StartedAt = jTask.StartedAt
+		append_task.FinishedAt = jTask.FinishedAt
+		append_task.ResultState = jTask.ResultState
+		tasks = append(tasks, append_task)
+	}
+	return tasks, nil
 }
