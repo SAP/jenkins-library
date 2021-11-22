@@ -99,7 +99,7 @@ func TestGetValues(t *testing.T) {
 func TestGetResults(t *testing.T) {
 	t.Run("Run getResults", func(t *testing.T) {
 		b := testSetup(&ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
-		err := b.getResults()
+		err := b.GetResults()
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(b.Tasks[0].Results))
 		assert.Equal(t, 2, len(b.Tasks[1].Results))

@@ -16,6 +16,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"abapAddonAssemblyKitReserveNextPackages":   abapAddonAssemblyKitReserveNextPackagesMetadata(),
 		"abapEnvironmentAssembleConfirm":            abapEnvironmentAssembleConfirmMetadata(),
 		"abapEnvironmentAssemblePackages":           abapEnvironmentAssemblePackagesMetadata(),
+		"abapEnvironmentBuild":                      abapEnvironmentBuildMetadata(),
 		"abapEnvironmentCheckoutBranch":             abapEnvironmentCheckoutBranchMetadata(),
 		"abapEnvironmentCloneGitRepo":               abapEnvironmentCloneGitRepoMetadata(),
 		"abapEnvironmentCreateSystem":               abapEnvironmentCreateSystemMetadata(),

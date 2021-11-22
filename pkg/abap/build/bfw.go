@@ -2,11 +2,12 @@ package build
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // RunState : Current Status of the Build
@@ -165,6 +166,38 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	return nil
 }
 
+// TODO unittest hierfür
+func (b *Build) Poll(maxRuntime time.Duration, pollingInterval time.Duration) error {
+	timeout := time.After(maxRuntime)
+	ticker := time.Tick(pollingInterval)
+	for {
+		select {
+		case <-timeout:
+			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntime)
+		case <-ticker:
+			b.Get()
+			if !b.IsFinished() {
+				log.Entry().Infof("Build is not yet finished, check again in %s", pollingInterval)
+			} else {
+				return nil
+			}
+		}
+	}
+}
+
+func (b *Build) EndedWithError(treatWarningsAsError bool) error {
+	if b.RunState == Failed {
+		return errors.Errorf("Build of failed")
+	}
+	if treatWarningsAsError && b.ResultState == warning {
+		return errors.Errorf("Build ended with warning, setting to failes as configured")
+	}
+	if (b.ResultState == aborted) || (b.ResultState == erroneous) {
+		return errors.Errorf("Build ended with %s", b.ResultState)
+	}
+	return nil
+}
+
 // Get : Get all Build tasks
 func (b *Build) Get() error {
 	appendum := "/builds('" + b.BuildID + "')"
@@ -246,7 +279,7 @@ func (b *Build) PrintLogs() error {
 	return nil
 }
 
-func (b *Build) getResults() error {
+func (b *Build) GetResults() error {
 	if err := b.getTasks(); err != nil {
 		return err
 	}
@@ -272,7 +305,7 @@ func (t *task) printLogs() error {
 func (b *Build) GetResult(name string) (Result, error) {
 	var Results []Result
 	var returnResult Result
-	if err := b.getResults(); err != nil {
+	if err := b.GetResults(); err != nil {
 		return returnResult, err
 	}
 	for _, task := range b.Tasks {

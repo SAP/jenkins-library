@@ -1,0 +1,161 @@
+metadata:
+  name: abapEnvironmentBuild
+  description: "TODO"
+  longDescription: |
+    TODO
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        type: jenkins
+        aliases:
+          - name: cfCredentialsId
+          - name: credentialsId
+    params:
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: cfOrg
+        type: string
+        description: Cloud Foundry target organization
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfSpace
+        type: string
+        description: Cloud Foundry target space
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/space
+      - name: cfServiceInstance
+        type: string
+        description: Cloud Foundry Service Instance
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceInstance
+      - name: cfServiceKeyName
+        type: string
+        description: Cloud Foundry Service Key
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
+      - name: host
+        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: username
+        type: string
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+      - name: phase
+        type: string
+        mandatory: true
+        description: TODO
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: values
+        type: "[]string"
+        description: TODO
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: downloadResultFiles
+        type: bool
+        mandatory: true
+        default: false
+        description: TODO
+        scope: 
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: resultFilenames
+        type: "[]string"
+        mandatory: false
+        description: TODO
+        scope: 
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: treatWarningsAsError
+        type: bool
+        mandatory: true
+        default: false
+        description: TODO
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: maxRuntimeInMinutes
+        type: int
+        description: maximal runtime of the step in minutes
+        mandatory: true
+        default: 360
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: pollingIntervallInSeconds
+        type: int
+        description: wait time in seoncds till next status request in the backend system
+        mandatory: true
+        default: 60
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - name: cf
+      image: ppiper/cf-cli:7
