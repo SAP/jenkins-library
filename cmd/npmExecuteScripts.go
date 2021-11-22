@@ -48,11 +48,13 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 
 	log.Entry().Infof("creating build settings information...")
+	dockerImage := "DOCKER_IMAGE"
 	npmConfig := buildsettings.BuildOptions{
 		Publish:            config.Publish,
 		CreateBOM:          config.CreateBOM,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
 		BuildSettingsInfo:  config.BuildSettingsInfo,
+		DockerImage:        dockerImage,
 	}
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, "npmExecuteScripts")
 	if err != nil {

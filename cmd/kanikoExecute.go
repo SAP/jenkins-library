@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
@@ -100,6 +101,17 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
 		}
 	}
+
+	log.Entry().Infof("creating build settings information...")
+	dockerImage := os.Getenv("DOCKER_IMAGE")
+	kanikoConfig := buildsettings.BuildOptions{
+		DockerImage: dockerImage,
+	}
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, "kanikoExecute")
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
 		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")

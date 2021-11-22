@@ -86,6 +86,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	_, err := maven.Execute(&mavenOptions, utils)
 
 	log.Entry().Infof("creating build settings information...")
+	dockerImage := "DOCKER_IMAGE"
 	mavenConfig := buildsettings.BuildOptions{
 		Profiles:                    config.Profiles,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
@@ -93,6 +94,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		CreateBOM:                   config.CreateBOM,
 		Publish:                     config.Publish,
 		BuildSettingsInfo:           config.BuildSettingsInfo,
+		DockerImage:                 dockerImage,
 	}
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, "mavenBuild")
 	if err != nil {
