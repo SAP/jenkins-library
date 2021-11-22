@@ -15,28 +15,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type jsonApplyPatchOptions struct {
-	Input  string `json:"input,omitempty"`
-	Patch  string `json:"patch,omitempty"`
-	Output string `json:"output,omitempty"`
+type shellExecuteOptions struct {
+	VaultServerURL string   `json:"vaultServerUrl,omitempty"`
+	VaultNamespace string   `json:"vaultNamespace,omitempty"`
+	Sources        []string `json:"sources,omitempty"`
 }
 
-// JsonApplyPatchCommand Patches a json with a patch file
-func JsonApplyPatchCommand() *cobra.Command {
-	const STEP_NAME = "jsonApplyPatch"
+// ShellExecuteCommand Step executes defined script
+func ShellExecuteCommand() *cobra.Command {
+	const STEP_NAME = "shellExecute"
 
-	metadata := jsonApplyPatchMetadata()
-	var stepConfig jsonApplyPatchOptions
+	metadata := shellExecuteMetadata()
+	var stepConfig shellExecuteOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createJsonApplyPatchCmd = &cobra.Command{
+	var createShellExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Patches a json with a patch file",
-		Long: `This steps patches a json file with patch file using the json patch standard.
-This step can, e.g., be used if there is a json schema which needs to be patched.`,
+		Short: "Step executes defined script",
+		Long:  `Step executes defined script with Vault credentials, or created them on this step`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -100,63 +99,60 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			jsonApplyPatch(stepConfig, &stepTelemetryData)
+			shellExecute(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addJsonApplyPatchFlags(createJsonApplyPatchCmd, &stepConfig)
-	return createJsonApplyPatchCmd
+	addShellExecuteFlags(createShellExecuteCmd, &stepConfig)
+	return createShellExecuteCmd
 }
 
-func addJsonApplyPatchFlags(cmd *cobra.Command, stepConfig *jsonApplyPatchOptions) {
-	cmd.Flags().StringVar(&stepConfig.Input, "input", os.Getenv("PIPER_input"), "File path to the json file which schould be patched.")
-	cmd.Flags().StringVar(&stepConfig.Patch, "patch", os.Getenv("PIPER_patch"), "File path to the patch which should be applied to the json file.")
-	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "File path to destination of the patched json file.")
+func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
+	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
+	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The vault namespace that should be used (optional)")
+	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
 
-	cmd.MarkFlagRequired("input")
-	cmd.MarkFlagRequired("patch")
-	cmd.MarkFlagRequired("output")
 }
 
 // retrieve step metadata
-func jsonApplyPatchMetadata() config.StepData {
+func shellExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "jsonApplyPatch",
+			Name:        "shellExecute",
 			Aliases:     []config.Alias{},
-			Description: "Patches a json with a patch file",
+			Description: "Step executes defined script",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "input",
+						Name:        "vaultServerUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_input"),
+						Default:     os.Getenv("PIPER_vaultServerUrl"),
 					},
 					{
-						Name:        "patch",
+						Name:        "vaultNamespace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_patch"),
+						Default:     os.Getenv("PIPER_vaultNamespace"),
 					},
 					{
-						Name:        "output",
+						Name:        "sources",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_output"),
+						Default:     []string{},
 					},
 				},
 			},
