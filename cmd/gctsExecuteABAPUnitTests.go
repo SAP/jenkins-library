@@ -1155,6 +1155,7 @@ func getFileName(path string, readableSource bool, objName string) (fileName str
 }
 
 func getRepository(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryResponseBody, error) {
+	log.Entry().Info("get repository")
 	var repositoryResponse repositoryResponseBody
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
@@ -1271,6 +1272,7 @@ func getCommitList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 
 func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit string, toCommit string, client piperhttp.Sender) (objectsResponseBody, error) {
 	var objectResponse objectsResponseBody
+	log.Entry().Info("get object difference")
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/compareCommits?fromCommit=" + fromCommit + "&toCommit=" + toCommit + "&sap-client=" + config.Client
