@@ -394,6 +394,12 @@ func TestExecutions(t *testing.T) {
 			config:                fortifyExecuteScanOptions{BuildTool: "golang", BuildDescriptorFile: "go.mod", VerifyOnly: true},
 			expectedReportsLength: 0,
 		},
+		{
+			nameOfRun:             "maven scan and verify",
+			config:                fortifyExecuteScanOptions{BuildTool: "maven", BuildDescriptorFile: "pom.xml", UpdateRulePack: true, Reporting: true, UploadResults: true},
+			expectedReportsLength: 2,
+			expectedReports:       []string{"target/fortify-scan.*", "target/*.fpr"},
+		},
 	}
 
 	for _, data := range testData {
