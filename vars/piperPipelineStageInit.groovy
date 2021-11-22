@@ -177,14 +177,14 @@ void call(Map parameters = [:]) {
         }
 
         String buildTool = config.buildTool
-        String buildToolDescPath = inferBuildToolDesc(script, config.buildTool)
+        String buildToolDesc = inferBuildToolDesc(script, config.buildTool)
 
-        checkBuildTool(buildTool, buildToolDescPath)
+        checkBuildTool(buildTool, buildToolDesc)
 
         script.commonPipelineEnvironment.projectName = config.projectName
 
         if (!script.commonPipelineEnvironment.projectName && config.inferProjectName) {
-            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool, buildToolDescPath)
+            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool, buildToolDesc)
         }
 
         if (Boolean.valueOf(env.ON_K8S) && config.containerMapResource) {
@@ -246,41 +246,37 @@ void call(Map parameters = [:]) {
 // Infer build tool descriptor (maven, npm, mta)
 private static String inferBuildToolDesc(script, buildTool) {
 
-    String buildToolDescPath = null
+    String buildToolDesc = null
 
     switch (buildTool) {
         case 'maven':
             Map configBuild = script.commonPipelineEnvironment.getStepConfiguration('mavenBuild', 'Build')
-            buildToolDescPath = configBuild.pomPath? configBuild.pomPath + '/pom.xml' : 'pom.xml'
+            buildToolDesc = configBuild.pomPath? configBuild.pomPath + '/pom.xml' : 'pom.xml'
             break
         case 'npm': // no parameter for the descriptor path
-            buildToolDescPath = 'package.json'
+            buildToolDesc = 'package.json'
             break
         case 'mta':
             Map configMtaBuild = script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', 'Build')
-            buildToolDescPath = configMtaBuild.source? configMtaBuild.source + '/mta.yaml' : 'mta.yaml'
+            buildToolDesc = configMtaBuild.source? configMtaBuild.source + '/mta.yaml' : 'mta.yaml'
             break
         default:
             break;
     }
 
-    if(buildToolDescPath) {
-        script.commonPipelineEnvironment.buildToolDescPath = buildToolDescPath
-    }
-
-    return buildToolDescPath
+    return buildToolDesc
 }
 
-private String inferProjectName(Script script, String buildTool, String buildToolDescPath) {
+private String inferProjectName(Script script, String buildTool, String buildToolDesc) {
     switch (buildTool) {
         case 'maven':
-            def pom = script.readMavenPom file: buildToolDescPath
+            def pom = script.readMavenPom file: buildToolDesc
             return "${pom.groupId}-${pom.artifactId}"
         case 'npm':
-            Map packageJson = script.readJSON file: buildToolDescPath
+            Map packageJson = script.readJSON file: buildToolDesc
             return packageJson.name
         case 'mta':
-            Map mta = script.readYaml file: buildToolDescPath
+            Map mta = script.readYaml file: buildToolDesc
             return mta.ID
     }
 

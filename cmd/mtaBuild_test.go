@@ -46,7 +46,7 @@ func newMtaBuildTestUtilsBundle() *mtaBuildTestUtilsBundle {
 	return &utilsBundle
 }
 
-func TestMarBuild(t *testing.T) {
+func TestMtaBuild(t *testing.T) {
 
 	cpe := mtaBuildCommonPipelineEnvironment{}
 
@@ -171,7 +171,7 @@ func TestMarBuild(t *testing.T) {
 
 		if assert.Len(t, utilsMock.Calls, 1) {
 			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "./", "--target", "./"}, utilsMock.Calls[0].Params)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", filepath.FromSlash("./"), "--target", filepath.FromSlash("./")}, utilsMock.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
@@ -193,7 +193,7 @@ func TestMarBuild(t *testing.T) {
 
 			if assert.Len(t, utilsMock.Calls, 1) {
 				assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "mySourcePath/", "--target", "myTargetPath/"}, utilsMock.Calls[0].Params)
+				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", filepath.FromSlash("mySourcePath/"), "--target", filepath.FromSlash("myTargetPath/")}, utilsMock.Calls[0].Params)
 			}
 			assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 		})
@@ -281,52 +281,47 @@ func TestMarBuild(t *testing.T) {
 
 func TestMtaBuildSourceDir(t *testing.T) {
 
-	t.Run("get source dir", func(t *testing.T) {
+	t.Run("getPath", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("source dir unset", func(t *testing.T) {
+		t.Run("getPath dir unset", func(t *testing.T) {
 			assert.Equal(t, filepath.FromSlash("./"), getPath("", "./"))
 		})
-		t.Run("source dir set to default", func(t *testing.T) {
-			assert.Equal(t, filepath.FromSlash("./"), getPath("./", "./"))
-		})
-		t.Run("source dir set to relative path", func(t *testing.T) {
+		t.Run("getPath dir set to relative path", func(t *testing.T) {
 			assert.Equal(t, filepath.FromSlash("path"), getPath("path", "./"))
 		})
-		t.Run("source dir ends with seperator", func(t *testing.T) {
+		t.Run("getPath dir ends with seperator", func(t *testing.T) {
 			assert.Equal(t, filepath.FromSlash("path/"), getPath("path/", "./"))
 		})
-		t.Run("source dir set to absolute path", func(t *testing.T) {
+		t.Run("getPath dir set to absolute path", func(t *testing.T) {
 			assert.Equal(t, filepath.FromSlash("/absolute/path"), getPath("/absolute/path", "./"))
 		})
 	})
 
-	t.Run("yaml", func(t *testing.T) {
+	t.Run("find build tool descriptor from configuration", func(t *testing.T) {
 		t.Parallel()
 		cpe := mtaBuildCommonPipelineEnvironment{}
-		t.Run("default yaml", func(t *testing.T) {
+		t.Run("default mta.yaml", func(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 
-			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 			utilsMock.AddFile("mta.yaml", []byte("already there"))
 
 			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp"}, &cpe, utilsMock)
 
 			assert.False(t, utilsMock.HasWrittenFile("mta.yaml"))
 		})
-		t.Run("write yaml into source", func(t *testing.T) {
+		t.Run("create mta.yaml from config.source", func(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 
 			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "path"}, &cpe, utilsMock)
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "create"}, &cpe, utilsMock)
 
-			assert.True(t, utilsMock.HasWrittenFile("path/mta.yaml"))
+			assert.True(t, utilsMock.HasWrittenFile("create/mta.yaml"))
 		})
-		t.Run("read yaml from source", func(t *testing.T) {
+		t.Run("read yaml from config.source", func(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 
-			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 			utilsMock.AddFile("path/mta.yaml", []byte("already there"))
 
 			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "path"}, &cpe, utilsMock)

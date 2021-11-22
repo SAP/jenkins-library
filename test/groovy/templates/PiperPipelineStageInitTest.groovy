@@ -50,7 +50,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
                 case 'pom.xml':
                 case 'mta.yaml':
                 case 'path/mta.yaml':
-                case 'pathFromStage/mta.yaml':
                 case 'path/pom.xml':
                     return [new File(map.glob)].toArray()
                 default:
@@ -210,59 +209,52 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testInferBuildToolDescMta() {
-        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "mta")
-        assertEquals('mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+        assertEquals('mta.yaml', jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "mta"))
     }
 
     @Test
     void testInferBuildToolDescMaven() {
-        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "maven")
-        assertEquals('pom.xml', nullScript.commonPipelineEnvironment.buildToolDescPath)
+        assertEquals('pom.xml', jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "maven"))
     }
 
     @Test
     void testInferBuildToolDescNpm() {
-        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "npm")
-        assertEquals('package.json', nullScript.commonPipelineEnvironment.buildToolDescPath)
+        assertEquals('package.json', jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "npm"))
     }
 
     @Test
     void testInferBuildToolDescMtaSource() {
-        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], steps : [mtaBuild: [source: 'path']]]
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], steps : [mtaBuild: [source: 'pathFromStep']]]
 
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'mta\' does not fit to your project (buildDescriptorPattern: \'pathFromStep/mta.yaml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
 
-        assertEquals('path/mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
     }
 
     @Test
     void testInferBuildToolDescMtaSourceStage() {
-        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], stages: [Build: [source: 'pathFromStage']], steps : [mtaBuild: [source: 'path']]]
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], stages: [Build: [source: 'pathFromStage']], steps : [mtaBuild: [source: 'pathFromStep']]]
 
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'mta\' does not fit to your project (buildDescriptorPattern: \'pathFromStage/mta.yaml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
-
-        assertEquals('pathFromStage/mta.yaml', nullScript.commonPipelineEnvironment.buildToolDescPath)
     }
 
     @Test
     void testInferBuildToolDescMavenSource() {
-        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], steps : [mavenBuild: [pomPath: 'path']]]
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], steps : [mavenBuild: [pomPath: 'pathFromStep']]]
 
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'maven\' does not fit to your project (buildDescriptorPattern: \'pathFromStep/pom.xml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
-
-        assertEquals('path/pom.xml', nullScript.commonPipelineEnvironment.buildToolDescPath)
     }
 
     @Test
     void testInferBuildToolDescUnknown() {
-        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "unknown")
-        assertEquals(null, nullScript.commonPipelineEnvironment.buildToolDescPath)
+        assertEquals(null, jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, "unknown"))
     }
 
     @Test
     void testInferBuildToolDescNull() {
-        jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, null)
-        assertEquals(null, nullScript.commonPipelineEnvironment.buildToolDescPath)
+        assertEquals(null, jsr.step.piperPipelineStageInit.inferBuildToolDesc(nullScript, null))
     }
 
     @Test
@@ -289,8 +281,11 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testInferProjectNameFromMtaSource() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta', inferProjectName: true], steps : [mtaBuild: [source: 'path']]]
+
         jryr.registerYaml('path/mta.yaml','ID: "fromPathMtaYaml"')
-        assertEquals('fromPathMtaYaml', jsr.step.piperPipelineStageInit.inferProjectName(nullScript, "mta", "path/mta.yaml"))
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
+        assertEquals('fromPathMtaYaml', nullScript.commonPipelineEnvironment.projectName)
     }
 
     @Test
