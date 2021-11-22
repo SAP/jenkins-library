@@ -1,11 +1,9 @@
 # Build and Publish Add-on Products on SAP BTP, ABAP Environment
 
 !!! caution "Current limitations"
+    gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
-      - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
-
-!!! Required project "Piper" library version
-
+!!! caution "Required project "Piper" library version"
     SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
 
 ## Introduction
@@ -48,7 +46,7 @@ A software component version is defined by a name and a version string. The name
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
 Software Component Versions are uniquely created and independent from the add-on product versions where they are included.
-This means that once a software component version was built it will be reused in any following add-on product versions where referenced.
+This means that once a software component version was built, it will be reused in any following add-on product versions where referenced.
 
 ### Target Vector
 
@@ -177,14 +175,19 @@ The section “repositories” contains one or multiple software component versi
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
-Changing the `addonVersion` string does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on `addonVersion`, the existing delivery packages are reused for the new add-on product version.
-Only by changing the `version` of a software component, the build of a new delivery package with the latest changes is triggered.
+`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple addon products).
 
-The `addonVersion` should be determined by synchronously to how the software components bundle is changed: In case the release version of a software component is changed, the release of the `addonVersion` should be changed. If the support package version of a software component is changed, support package version of the add-on should be changed. And if patch version of a software component, the patch version of the add-on should be adjusted.
+The `version` of a software component influcences two aspects:
 
-`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different commits. The `commitID` should only be changed while also adjusting the `version` number of a software component.
+- The given version will be used as part of the target vector
+- If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
 
-The `branch` should only be changed while also changing release version or support package level of a software component. During creation of a patch version (CPK) the `branch` should remain the same as before, so that previous and current commit of the software component can be found in the same branch for comparison.
+As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built no new package is build. Only a new target vector is created.
+If the `version` of a software component (repository) is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package can not be deployed.
+If the addon product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
+
+`branch`, `commitID` identify a specific state of a software component. Branches of a software component can include different list of commits.
+The `commitID` should only be changed while also adjusting the `version` number of a software component. While adjusting the patch version or support package version of a software component, the `branch` should only be changed if the other branch also includes the `commitID` of the previous software component version.
 
 ##### Versioning Rules
 
@@ -205,6 +208,11 @@ Invalid increase:
 - 2.0.0 to 2.0.2 (version 2.0.1 is missing; therefore, a patch level is missing)
 - 2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)
 - 2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)
+
+Technically, the allowed number range for add-on product version and software component version is 1.0.0 to 9999.9999.9999.
+
+The support package level of software component version can only go up until 369 because of technical limitations.
+For the patch level, there is a technical limit of 36³, limited to 9999.
 
 ### Example
 
@@ -245,6 +253,7 @@ If these steps do no resolve the issue, please open a [support incident](https:/
 | Prepare System           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
 | Clone Repositories       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)| BC-CP-ABA-SC |
 | ATC                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)| BC-DWB-TOO-ATF |
+| AUnit                    | [abapEnvironmentRunAUnitTest](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/)| BC-DWB-TOO-ATF |
 | Build                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
 |                          | [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/) | BC-UPG-OCS |
 |                          | [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)| BC-UPG-ADDON |

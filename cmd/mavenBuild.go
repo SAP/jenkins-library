@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -17,16 +18,16 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
-func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
+func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
 
-	err := runMavenBuild(&config, telemetryData, utils)
+	err := runMavenBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
 
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
@@ -84,6 +85,21 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
+	log.Entry().Infof("creating build settings information...")
+	mavenConfig := buildsettings.BuildOptions{
+		Profiles:                    config.Profiles,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		CreateBOM:                   config.CreateBOM,
+		Publish:                     config.Publish,
+		BuildSettingsInfo:           config.BuildSettingsInfo,
+	}
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, "mavenBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+
 	if err == nil {
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")
@@ -120,6 +136,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
 	}
+
 	return err
 }
 

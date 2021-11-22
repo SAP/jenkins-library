@@ -156,7 +156,12 @@ func copyFile(source, target string, utils cnbutils.BuildUtils) error {
 func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
 	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
 	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile, include, exclude) {
+		relPath, err := filepath.Rel(source, sourceFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+		}
+		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
 			dir, err := isDir(sourceFile)
 			if err != nil {
@@ -357,9 +362,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	var containerImage string
-	var containerImageTag string
-
 	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
@@ -372,12 +374,26 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
 		}
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 	} else {
 		containerRegistry = config.ContainerRegistryURL
+		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
 	}
 
-	containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
-	containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+	containerImage := path.Join(containerRegistry, config.ContainerImageName)
+	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+
+	targets := []string{
+		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+	}
+
+	for _, tag := range config.AdditionalTags {
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		if !piperutils.ContainsString(targets, target) {
+			targets = append(targets, target)
+		}
+	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
@@ -391,7 +407,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
-		log.Entry().Info("skipping updation of certificates")
+		log.Entry().Info("skipping certificates update")
 	}
 
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
@@ -404,21 +420,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
-	}
-
-	containerImageNameTag := fmt.Sprintf("%s:%s", containerImage, containerImageTag)
-	targets := []string{
-		containerImageNameTag,
-	}
-
-	commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-	commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
-
-	for _, tag := range config.AdditionalTags {
-		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(targets, target) {
-			targets = append(targets, target)
-		}
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
