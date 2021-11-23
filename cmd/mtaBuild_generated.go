@@ -218,7 +218,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -227,7 +227,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "extension", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "extension"}},
 						Default:     os.Getenv("PIPER_extensions"),
 					},
 					{
@@ -236,7 +236,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "jobs", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "jobs"}},
 						Default:     0,
 					},
 					{
@@ -281,7 +281,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
 					{
@@ -290,7 +290,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
@@ -299,7 +299,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -308,7 +308,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
@@ -379,7 +379,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "mta/publish", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "mta/publish"}},
 						Default:     false,
 					},
 					{

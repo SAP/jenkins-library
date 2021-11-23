@@ -416,7 +416,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxProject", Deprecated: false}, {Name: "checkMarxProjectName", Deprecated: true}},
+						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName", Deprecated: true}},
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
@@ -434,7 +434,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxServerUrl", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -452,7 +452,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxGroupId", Deprecated: false}, {Name: "groupId", Deprecated: true}},
+						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId", Deprecated: true}},
 						Default:     os.Getenv("PIPER_teamId"),
 					},
 					{

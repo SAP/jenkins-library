@@ -385,7 +385,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "access_token", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
@@ -551,7 +551,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "githubOrg", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
@@ -565,7 +565,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "githubRepo", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
@@ -592,7 +592,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "fortifyReportDownloadEndpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "fortifyReportDownloadEndpoint"}},
 						Default:     `/transfer/reportDownload.html`,
 					},
 					{
@@ -646,7 +646,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "fortifyApiEndpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "fortifyApiEndpoint"}},
 						Default:     `/api/v1`,
 					},
 					{
@@ -691,7 +691,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "fortifyFprUploadEndpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "fortifyFprUploadEndpoint"}},
 						Default:     `/upload/resultFileUpload.html`,
 					},
 					{
@@ -700,7 +700,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "fortifyProjectName", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "fortifyProjectName"}},
 						Default:     `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`,
 					},
 					{
@@ -718,7 +718,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "fortifyServerUrl", Deprecated: false}, {Name: "sscUrl", Deprecated: true}},
+						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl", Deprecated: true}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -754,7 +754,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "fortifyFprDownloadEndpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "fortifyFprDownloadEndpoint"}},
 						Default:     `/download/currentStateFprDownload.html`,
 					},
 					{
@@ -826,7 +826,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
@@ -835,7 +835,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -844,7 +844,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{

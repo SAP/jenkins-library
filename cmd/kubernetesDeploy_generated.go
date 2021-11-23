@@ -208,7 +208,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmDeploymentParameters", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmDeploymentParameters"}},
 						Default:     []string{},
 					},
 					{
@@ -217,7 +217,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "k8sAPIServer", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "k8sAPIServer"}},
 						Default:     os.Getenv("PIPER_apiServer"),
 					},
 					{
@@ -226,7 +226,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "k8sAppTemplate", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "k8sAppTemplate"}},
 						Default:     os.Getenv("PIPER_appTemplate"),
 					},
 					{
@@ -235,7 +235,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmChartPath", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmChartPath"}},
 						Default:     os.Getenv("PIPER_chartPath"),
 					},
 					{
@@ -259,7 +259,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerImageName", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 						Default:     os.Getenv("PIPER_containerImageName"),
 					},
 					{
@@ -273,7 +273,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
 					{
@@ -287,7 +287,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerRegistryUrl", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
@@ -329,7 +329,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmDeploymentName", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
 						Default:     os.Getenv("PIPER_deploymentName"),
 					},
 					{
@@ -347,7 +347,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "force", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "force"}},
 						Default:     true,
 					},
 					{
@@ -379,7 +379,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "deployImage", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "deployImage"}},
 						Default:   os.Getenv("PIPER_image"),
 					},
 					{
@@ -449,7 +449,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmDeploymentNamespace", Deprecated: false}, {Name: "k8sDeploymentNamespace", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmDeploymentNamespace"}, {Name: "k8sDeploymentNamespace"}},
 						Default:     `default`,
 					},
 					{
@@ -458,7 +458,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmTillerNamespace", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmTillerNamespace"}},
 						Default:     os.Getenv("PIPER_tillerNamespace"),
 					},
 					{

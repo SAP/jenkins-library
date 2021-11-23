@@ -189,7 +189,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "applicationDescription", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "applicationDescription"}},
 						Default:     `Deployed with Piper based on SAP Fiori tools`,
 					},
 					{
@@ -198,7 +198,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint", Deprecated: false}, {Name: "changeManagement/cts/endpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}, {Name: "changeManagement/cts/endpoint"}},
 						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
@@ -207,7 +207,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/client", Deprecated: false}, {Name: "changeManagement/cts/client", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/client"}, {Name: "changeManagement/cts/client"}},
 						Default:     os.Getenv("PIPER_client"),
 					},
 					{
@@ -252,7 +252,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/osDeployUser", Deprecated: false}, {Name: "changeManagement/cts/osDeployUser", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/osDeployUser"}, {Name: "changeManagement/cts/osDeployUser"}},
 						Default:     `node`,
 					},
 					{
@@ -261,7 +261,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/deployConfigFile", Deprecated: false}, {Name: "changeManagement/cts/deployConfigFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/deployConfigFile"}, {Name: "changeManagement/cts/deployConfigFile"}},
 						Default:     `ui5-deploy.yaml`,
 					},
 					{
@@ -284,7 +284,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/deployToolDependencies", Deprecated: false}, {Name: "changeManagement/cts/deployToolDependencies", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/deployToolDependencies"}, {Name: "changeManagement/cts/deployToolDependencies"}},
 						Default:     []string{`@ui5/cli`, `@sap/ux-ui5-tooling`, `@ui5/logger`, `@ui5/fs`},
 					},
 					{
@@ -293,7 +293,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/npmInstallOpts", Deprecated: false}, {Name: "changeManagement/cts/npmInstallOpts", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/npmInstallOpts"}, {Name: "changeManagement/cts/npmInstallOpts"}},
 						Default:     []string{},
 					},
 				},

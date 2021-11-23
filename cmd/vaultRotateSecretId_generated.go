@@ -169,7 +169,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "url", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "url"}},
 						Default:   os.Getenv("PIPER_jenkinsUrl"),
 					},
 					{
@@ -193,7 +193,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "userId", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "userId"}},
 						Default:   os.Getenv("PIPER_jenkinsUsername"),
 					},
 					{
@@ -208,7 +208,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "token", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "token"}},
 						Default:   os.Getenv("PIPER_jenkinsToken"),
 					},
 					{
@@ -268,7 +268,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "token", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "token"}},
 						Default:   os.Getenv("PIPER_adoPersonalAccessToken"),
 					},
 					{

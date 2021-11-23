@@ -151,7 +151,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubApiUrl", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 						Default:     `https://api.github.com`,
 					},
 					{
@@ -192,7 +192,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubOrg", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
@@ -206,7 +206,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubRepo", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
@@ -244,7 +244,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken", Deprecated: false}, {Name: "access_token", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 						Default:   os.Getenv("PIPER_token"),
 					},
 				},

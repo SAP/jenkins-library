@@ -188,7 +188,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubServerUrl", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 						Default:     `https://github.com`,
 					},
 					{
@@ -250,7 +250,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerRegistryUrl", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
@@ -264,7 +264,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "image", Deprecated: true}, {Name: "containerImage", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "image", Deprecated: true}, {Name: "containerImage"}},
 						Default:   os.Getenv("PIPER_containerImageNameTag"),
 					},
 					{
@@ -273,7 +273,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmChartPath", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmChartPath"}},
 						Default:     os.Getenv("PIPER_chartPath"),
 					},
 					{
@@ -291,7 +291,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmDeploymentName", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
 						Default:     os.Getenv("PIPER_deploymentName"),
 					},
 					{

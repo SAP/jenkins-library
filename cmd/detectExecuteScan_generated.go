@@ -247,7 +247,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "blackduckToken", Deprecated: false}, {Name: "detectToken", Deprecated: false}, {Name: "apiToken", Deprecated: true}, {Name: "detect/apiToken", Deprecated: true}},
+						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken", Deprecated: true}, {Name: "detect/apiToken", Deprecated: true}},
 						Default:   os.Getenv("PIPER_token"),
 					},
 					{
@@ -265,7 +265,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "detect/projectName", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/projectName"}},
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
@@ -274,7 +274,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/scanners", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/scanners"}},
 						Default:     []string{`signature`},
 					},
 					{
@@ -283,7 +283,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/scanPaths", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/scanPaths"}},
 						Default:     []string{`.`},
 					},
 					{
@@ -292,7 +292,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/dependencyPath", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/dependencyPath"}},
 						Default:     `.`,
 					},
 					{
@@ -301,7 +301,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/unmap", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/unmap"}},
 						Default:     false,
 					},
 					{
@@ -310,7 +310,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/scanProperties", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/scanProperties"}},
 						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`},
 					},
 					{
@@ -319,7 +319,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "detect/serverUrl", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -328,7 +328,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/groups", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/groups"}},
 						Default:     []string{},
 					},
 					{
@@ -337,7 +337,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/failOn", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/failOn"}},
 						Default:     []string{`BLOCKER`},
 					},
 					{
@@ -360,7 +360,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "projectVersion", Deprecated: false}, {Name: "detect/projectVersion", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -378,7 +378,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
@@ -387,7 +387,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -396,7 +396,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
@@ -414,7 +414,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/includedPackageManagers", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/includedPackageManagers"}},
 						Default:     []string{},
 					},
 					{
@@ -423,7 +423,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/excludedPackageManagers", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/excludedPackageManagers"}},
 						Default:     []string{},
 					},
 					{
@@ -432,7 +432,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/mavenExcludedScopes", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/mavenExcludedScopes"}},
 						Default:     []string{},
 					},
 					{
@@ -441,7 +441,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/detectTools", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "detect/detectTools"}},
 						Default:     []string{},
 					},
 					{

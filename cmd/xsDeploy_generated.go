@@ -200,7 +200,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "deployIdLogPattern", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
 						Default:     `^.*xs bg-deploy -i (.*) -a.*$`,
 					},
 					{

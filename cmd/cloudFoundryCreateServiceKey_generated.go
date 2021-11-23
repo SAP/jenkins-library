@@ -150,7 +150,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 					},
 					{
@@ -201,7 +201,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/org", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
@@ -210,7 +210,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/space", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
@@ -219,7 +219,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
@@ -228,7 +228,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey", Deprecated: false}, {Name: "cloudFoundry/serviceKeyName", Deprecated: false}, {Name: "cfServiceKey", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
 					},
 					{
@@ -237,7 +237,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyConfig", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyConfig"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyConfig"),
 					},
 				},

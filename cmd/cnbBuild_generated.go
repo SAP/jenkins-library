@@ -184,7 +184,7 @@ func cnbBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "dockerImageName", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 						Default:     os.Getenv("PIPER_containerImageName"),
 					},
 					{
@@ -198,7 +198,7 @@ func cnbBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
 					{
@@ -212,7 +212,7 @@ func cnbBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerRegistryUrl", Deprecated: false}},
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{

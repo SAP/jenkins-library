@@ -192,7 +192,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
 						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
@@ -201,7 +201,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/instance", Deprecated: false}, {Name: "changeManagement/rfc/developmentInstance", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/instance"}, {Name: "changeManagement/rfc/developmentInstance"}},
 						Default:     os.Getenv("PIPER_instance"),
 					},
 					{
@@ -240,7 +240,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/client", Deprecated: false}, {Name: "changeManagement/rfc/developmentClient", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "changeManagement/client"}, {Name: "changeManagement/rfc/developmentClient"}},
 						Default:     os.Getenv("PIPER_client"),
 					},
 					{
@@ -303,7 +303,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "failOnWarning", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "failOnWarning"}},
 						Default:     true,
 					},
 					{

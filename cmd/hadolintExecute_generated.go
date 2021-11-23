@@ -181,7 +181,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerfile", Deprecated: false}},
+						Aliases:     []config.Alias{{Name: "dockerfile"}},
 						Default:     `./Dockerfile`,
 					},
 					{
