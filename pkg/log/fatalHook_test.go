@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -23,9 +22,6 @@ func TestFatalHookFire(t *testing.T) {
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(workspace)
-	var logCollector *CollectorHook
-	logCollector = &CollectorHook{CorrelationID: "local"}
-	RegisterHook(logCollector)
 
 	t.Run("with step name", func(t *testing.T) {
 		hook := FatalHook{
@@ -48,11 +44,6 @@ func TestFatalHookFire(t *testing.T) {
 		assert.NotContains(t, string(fileContent), `"category":"testCategory"`)
 		assert.Contains(t, string(fileContent), `"correlationId":"https://build.url"`)
 		assert.Contains(t, string(fileContent), `"message":"the error message"`)
-		logInfoAvailable := false
-		for _, message := range logCollector.Messages {
-			logInfoAvailable = strings.Contains(message.Message, "fatal error: errorDetails{correlationId:\"https://build.url\",stepName:\"testStep\",category:\"undefined\",error:\"<nil>\",result:\"failure\",message:\"the error message\"}")
-		}
-		assert.True(t, logInfoAvailable)
 	})
 
 	t.Run("no step name", func(t *testing.T) {
