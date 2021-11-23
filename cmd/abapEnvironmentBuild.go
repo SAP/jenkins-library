@@ -178,6 +178,11 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
+	// TODO an besseren ort schieben, jetzt nur zum testen
+	conn.Client.SetOptions(piperhttp.ClientOptions{
+		TrustedCerts: []string{"yi3Cert.cer"},
+	})
+
 	return nil
 }
 
