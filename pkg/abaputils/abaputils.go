@@ -69,6 +69,9 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
+	//TODO delete
+	log.Entry().Infof("user %d", len(connectionDetails.User))
+	log.Entry().Infof("blub %d", len(connectionDetails.Password))
 	return connectionDetails, error
 }
 
