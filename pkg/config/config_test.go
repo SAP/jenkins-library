@@ -910,3 +910,35 @@ func TestMixInStepDefaults(t *testing.T) {
 		assert.Equal(t, test.expected, test.stepConfig.Config, test.name)
 	}
 }
+
+func testMetadataResolver() map[string]StepData {
+	return map[string]StepData{
+		"githubCreateIssue": {
+			Metadata: StepMetadata{
+				Name: "githubCreateIssue",
+			},
+		},
+	}
+}
+
+func TestResolveMetadata(t *testing.T) {
+
+	t.Run("Succes - stepName", func(t *testing.T) {
+		stepName := "githubCreateIssue"
+		stepData, err := ResolveMetadata(map[string]string{}, testMetadataResolver, "", stepName)
+		assert.NoError(t, err)
+		assert.Equal(t, "githubCreateIssue", stepData.Metadata.Name)
+	})
+
+	t.Run("Error - wrong stepName", func(t *testing.T) {
+		stepName := "notExisting"
+		_, err := ResolveMetadata(map[string]string{}, testMetadataResolver, "", stepName)
+		assert.EqualError(t, err, "could not retrieve by stepName notExisting")
+	})
+
+	t.Run("Error - missing input", func(t *testing.T) {
+		stepName := ""
+		_, err := ResolveMetadata(map[string]string{}, testMetadataResolver, "", stepName)
+		assert.EqualError(t, err, "either one of stepMetadata or stepName parameter has to be passed")
+	})
+}
