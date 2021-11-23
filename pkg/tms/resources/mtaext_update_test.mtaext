@@ -1,8 +1,0 @@
-_schema-version: "3.1.0"
-ID: test.mta.id_ext
-extends: test.mta.id
-
-modules:
-   - name: "openui5-sample-app"
-     parameters:
-        version: 1.0.0-${timestamp}

@@ -227,8 +227,8 @@ func TestUpdateMtaExtDescriptor(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		idOfMtaExtDescriptor := int64(777)
 		mtaExtDescription := "This is an updated description"
-		mtaId := "test.mta.id"
-		mtaExtId := "test.mta.id_ext"
+		mtaId := "fs-storage"
+		mtaExtId := "fs-storage-ext"
 		mtaVersion := "1.0.0"
 		lastChangedAt := "2021-11-16T13:06:05.711Z"
 
@@ -238,8 +238,8 @@ func TestUpdateMtaExtDescriptor(t *testing.T) {
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		nodeId := int64(111)
+		filePath := "./resources/cf_example.mtaext"
 		namedUser := "testUser"
-		filePath := "./resources/mtaext_update_test.mtaext"
 		mtaExtDescriptor, err := communicationInstance.UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor, filePath, mtaVersion, mtaExtDescription, namedUser)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
@@ -271,7 +271,7 @@ func TestUpdateMtaExtDescriptor(t *testing.T) {
 
 		nodeId := int64(111)
 		idOfMtaExtDescriptor := int64(777)
-		filePath := "./resources/mtaext_update_test.mtaext"
+		filePath := "./resources/cf_example.mtaext"
 		mtaVersion := "1.0.0"
 		mtaExtDescription := "This is an updated description"
 		namedUser := "testUser"
@@ -304,8 +304,8 @@ func TestUloadMtaExtDescriptorToNode(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		idOfMtaExtDescriptor := int64(777)
 		mtaExtDescription := "This is a test description"
-		mtaId := "test.mta.id"
-		mtaExtId := "test.mta.id_ext"
+		mtaId := "fs-storage"
+		mtaExtId := "fs-storage-ext"
 		mtaVersion := "1.0.0"
 		lastChangedAt := "2021-11-16T13:06:05.711Z"
 
@@ -315,8 +315,8 @@ func TestUloadMtaExtDescriptorToNode(t *testing.T) {
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		nodeId := int64(111)
+		filePath := "./resources/cf_example.mtaext"
 		namedUser := "testUser"
-		filePath := "./resources/mtaext_update_test.mtaext"
 		mtaExtDescriptor, err := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, filePath, mtaVersion, mtaExtDescription, namedUser)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
@@ -347,9 +347,9 @@ func TestUloadMtaExtDescriptorToNode(t *testing.T) {
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		nodeId := int64(111)
-		filePath := "./resources/mtaext_update_test.mtaext"
+		filePath := "./resources/cf_example.mtaext"
 		mtaVersion := "1.0.0"
-		mtaExtDescription := "This is an updated description"
+		mtaExtDescription := "This is a test description"
 		namedUser := "testUser"
 		_, err := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, filePath, mtaVersion, mtaExtDescription, namedUser)
 
@@ -365,12 +365,122 @@ func TestUloadMtaExtDescriptorToNode(t *testing.T) {
 		nodeId := int64(111)
 		filePath := "./resources/not_existing.mtaext"
 		mtaVersion := "1.0.0"
-		mtaExtDescription := "This is an updated description"
+		mtaExtDescription := "This is a test description"
 		namedUser := "testUser"
 		_, err := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, filePath, mtaVersion, mtaExtDescription, namedUser)
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Contains(t, err.Error(), fmt.Sprintf("unable to locate file %v", filePath), "Error text does not contain expected string")
+	})
+}
+
+func TestUloadFile(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
+	t.Run("test success", func(t *testing.T) {
+		fileId := int64(333)
+		fileName := "cf_example.mtar"
+
+		uploadFileResponse := fmt.Sprintf(`{"fileId": %v,"fileName": "%v"}`, fileId, fileName)
+		uploaderMock := uploaderMock{responseBody: uploadFileResponse, httpStatusCode: http.StatusCreated}
+
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		filePath := "./resources/cf_example.mtar"
+		namedUser := "testUser"
+		uploadedFile, err := communicationInstance.UploadFile(filePath, namedUser)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/files/upload", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, filePath, uploaderMock.filePath, "File path incorrect")
+		assert.Equal(t, "file", uploaderMock.fileFieldName, "File field name incorrect")
+		assert.Equal(t, map[string]string{"namedUser": namedUser}, uploaderMock.formFields, "Form field incorrect")
+
+		fileHandle, _ := os.Open(filePath)
+		defer fileHandle.Close()
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(fileHandle)
+		fileContentString := buf.String()
+		assert.Equal(t, fileContentString, uploaderMock.fileContentString, "File content incorrect")
+
+		assert.Equal(t, fileId, uploadedFile.Id, "Uploaded file Id field incorrect")
+		assert.Equal(t, fileName, uploadedFile.Name, "Uploaded file Name field incorrect")
+	})
+
+	t.Run("test upload error", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		filePath := "./resources/cf_example.mtar"
+		namedUser := "testUser"
+		_, err := communicationInstance.UploadFile(filePath, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/files/upload", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "http error 400", err.Error(), "Error text incorrect")
+	})
+
+	t.Run("test error on opening file", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Some response`, httpStatusCode: http.StatusOK}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		filePath := "./resources/not_existing.mtar"
+		namedUser := "testUser"
+		_, err := communicationInstance.UploadFile(filePath, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Contains(t, err.Error(), fmt.Sprintf("unable to locate file %v", filePath), "Error text does not contain expected string")
+	})
+}
+
+func TestUloadFileToNode(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
+	t.Run("test success", func(t *testing.T) {
+		transportRequestId := int64(555)
+		transportRequestDescription := "This is a test description"
+		queueId := int64(123)
+		nodeId := int64(456)
+		nodeName := "TEST_NODE"
+		queueEntryString := fmt.Sprintf(`{"queueId": %v,"nodeId": %v,"nodeName": "%v"}`, queueId, nodeId, nodeName)
+
+		uploadFileToNodeResponse := fmt.Sprintf(`{"transportRequestId": %v,"transportRequestDescription": "%v","queueEntries": [%v]}`, transportRequestId, transportRequestDescription, queueEntryString)
+		uploaderMock := uploaderMock{responseBody: uploadFileToNodeResponse, httpStatusCode: http.StatusOK}
+
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		fileId := "111"
+		namedUser := "testUser"
+		transportRequest, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
+		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
+
+		entryString := fmt.Sprintf(`{"uri":"%v"}`, fileId)
+		assert.Equal(t, fmt.Sprintf(`{"contentType":"MTA","storageType":"FILE","nodeName":"%v","description":"%v","namedUser":"%v","entries":[%v]}`, nodeName, transportRequestDescription, namedUser, entryString), uploaderMock.requestBody, "Request body incorrect")
+
+		assert.Equal(t, transportRequestId, transportRequest.Id, "Transport request Id field incorrect")
+		assert.Equal(t, transportRequestDescription, transportRequest.Description, "Transport request Description field incorrect")
+		assert.Equal(t, 1, len(transportRequest.QueueEntries), "Queue entries amount for transport request incorrect")
+		assert.Equal(t, queueId, transportRequest.QueueEntries[0].Id, "Queue entry Id field incorrect")
+		assert.Equal(t, nodeId, transportRequest.QueueEntries[0].NodeId, "Queue entry NodeId field incorrect")
+		assert.Equal(t, nodeName, transportRequest.QueueEntries[0].NodeName, "Queue entry NodeName field incorrect")
+	})
+
+	t.Run("test error", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		nodeName := "TEST_NODE"
+		fileId := "111"
+		transportRequestDescription := "This is a test description"
+		namedUser := "testUser"
+		_, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "http error 400", err.Error(), "Error text incorrect")
 	})
 }
 
