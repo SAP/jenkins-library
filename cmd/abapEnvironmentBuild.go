@@ -176,15 +176,10 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
-	// TODO delete
-	log.Entry().Infof("cert %s", config.CustomTLSCertificateNames)
-	log.Entry().Infof("User %s", config.Username)
-	log.Entry().Infof("values %s", config.Values)
-
 	// TODO an besseren ort schieben, jetzt nur zum testen
 	conn.Client.SetOptions(piperhttp.ClientOptions{
 		//TrustedCerts: []string{"yi3Cert.cer"},
-		TrustedCerts: config.CustomTLSCertificateNames,
+		TrustedCerts: config.CertificateNames,
 	})
 
 	return nil

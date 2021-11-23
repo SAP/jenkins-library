@@ -162,7 +162,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: customTlsCertificateNames
+      - name: certificateNames
         type: "[]string"
         description: TODO
         mandatory: false

@@ -31,7 +31,7 @@ type abapEnvironmentBuildOptions struct {
 	TreatWarningsAsError      bool     `json:"treatWarningsAsError,omitempty"`
 	MaxRuntimeInMinutes       int      `json:"maxRuntimeInMinutes,omitempty"`
 	PollingIntervallInSeconds int      `json:"pollingIntervallInSeconds,omitempty"`
-	CustomTLSCertificateNames []string `json:"customTlsCertificateNames,omitempty"`
+	CertificateNames          []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentBuildCommand TODO
@@ -135,7 +135,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "TODO")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
-	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateNames, "customTlsCertificateNames", []string{}, "TODO")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "TODO")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -296,7 +296,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Default:     60,
 					},
 					{
-						Name:        "customTlsCertificateNames",
+						Name:        "certificateNames",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
