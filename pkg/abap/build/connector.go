@@ -16,10 +16,12 @@ import (
 
 // Connector : Connector Utility Wrapping http client
 type Connector struct {
-	Client         piperhttp.Sender
-	DownloadClient piperhttp.Downloader
-	Header         map[string][]string
-	Baseurl        string
+	Client          piperhttp.Sender
+	DownloadClient  piperhttp.Downloader
+	Header          map[string][]string
+	Baseurl         string
+	MaxRuntime      time.Duration // just as handover parameter for polling functions
+	PollingInterval time.Duration // just as handover parameter for polling functions
 }
 
 // ConnectorConfiguration : Handover Structure for Connector Creation

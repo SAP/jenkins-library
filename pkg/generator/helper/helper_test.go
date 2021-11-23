@@ -94,7 +94,7 @@ spec:
 `
 	var r string
 	switch name {
-	case "test.yaml":
+	case "testStep.yaml":
 		r = meta1
 	default:
 		r = ""
@@ -115,7 +115,7 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 func TestProcessMetaFiles(t *testing.T) {
 
 	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
-	ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData)
+	ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -140,7 +140,7 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("custom step code", func(t *testing.T) {
 		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
-		ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData)
+		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
 		expected, err := ioutil.ReadFile(goldenFilePath)
