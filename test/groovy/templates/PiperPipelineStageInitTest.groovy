@@ -47,10 +47,14 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         helper.registerAllowedMethod("findFiles", [Map.class], { map ->
             switch (map.glob) {
-                case 'pom.xml':
                 case 'mta.yaml':
                 case 'path/mta.yaml':
+                case 'pathFromStep/mta.yaml':
+                case 'pathFromStage/mta.yaml':
+                case 'pom.xml':
                 case 'path/pom.xml':
+                case 'pathFromStep/pom.xml':
+                case 'pathFromStage/pom.xml':
                     return [new File(map.glob)].toArray()
                 default:
                     return [].toArray()
@@ -226,7 +230,11 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     void testInferBuildToolDescMtaSource() {
         nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], steps : [mtaBuild: [source: 'pathFromStep']]]
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'mta\' does not fit to your project (buildDescriptorPattern: \'pathFromStep/mta.yaml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        helper.registerAllowedMethod('artifactPrepareVersion', [Map.class, Closure.class], { m, body ->
+            assertThat(m.filePath, is('pathFromStep/mta.yaml'))
+            return body()
+        })
+
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
 
     }
@@ -235,7 +243,11 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     void testInferBuildToolDescMtaSourceStage() {
         nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'mta'], stages: [Build: [source: 'pathFromStage']], steps : [mtaBuild: [source: 'pathFromStep']]]
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'mta\' does not fit to your project (buildDescriptorPattern: \'pathFromStage/mta.yaml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        helper.registerAllowedMethod('artifactPrepareVersion', [Map.class, Closure.class], { m, body ->
+            assertThat(m.filePath, is('pathFromStage/mta.yaml'))
+            return body()
+        })
+
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
     }
 
@@ -243,7 +255,23 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     void testInferBuildToolDescMavenSource() {
         nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], steps : [mavenBuild: [pomPath: 'pathFromStep/pom.xml']]]
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'maven\' does not fit to your project (buildDescriptorPattern: \'pathFromStep/pom.xml\'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        helper.registerAllowedMethod('artifactPrepareVersion', [Map.class, Closure.class], { m, body ->
+            assertThat(m.filePath, is('pathFromStep/pom.xml'))
+            return body()
+        })
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
+    }
+
+    @Test
+    void testInferBuildToolDescMavenSourceStage() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [buildTool: 'maven'], stages: [Build: [pomPath: 'pathFromStage/pom.xml']], steps : [mavenBuild: [pomPath: 'pathFromStep/pom.xml']]]
+
+        helper.registerAllowedMethod('artifactPrepareVersion', [Map.class, Closure.class], { m, body ->
+            assertThat(m.filePath, is('pathFromStage/pom.xml'))
+            return body()
+        })
+
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
     }
 

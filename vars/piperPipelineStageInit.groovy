@@ -224,6 +224,9 @@ void call(Map parameters = [:]) {
             if (config.inferBuildTool) {
                 prepareVersionParams.buildTool = buildTool
             }
+            if(buildToolDesc) {
+                prepareVersionParams.filePath = buildToolDesc
+            }
             if (env.ON_K8S && !config.runArtifactVersioningOnPod) {
                 // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
                 // Since artifactPrepareVersion may need the ".git" folder in order to push a tag, it would need to be part of the stashing.
