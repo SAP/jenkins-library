@@ -217,7 +217,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"GENERAL","PARAMETERS",},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "oldparam0", Deprecated: false},},
+						Aliases:   []config.Alias{{Name: "oldparam0"},},
 						Default:   `val0`,
 					},
 					{
