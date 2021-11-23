@@ -235,13 +235,14 @@ func runMtaBuild(config mtaBuildOptions,
 		Publish:            config.Publish,
 		BuildSettingsInfo:  config.BuildSettingsInfo,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, "mtaBuild")
+	buildSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, "mtaBuild")
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info : ''%v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettings
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+	commonPipelineEnvironment.mtaBuildToolDesc = mtaYamlFile
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`

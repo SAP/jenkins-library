@@ -196,6 +196,7 @@ func TestMtaBuild(t *testing.T) {
 				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", filepath.FromSlash("mySourcePath/"), "--target", filepath.FromSlash("myTargetPath/")}, utilsMock.Calls[0].Params)
 			}
 			assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
+			assert.Equal(t, filepath.FromSlash("mySourcePath/mta.yaml"), cpe.mtaBuildToolDesc)
 		})
 	})
 
