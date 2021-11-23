@@ -158,6 +158,8 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	subOptions.Password = config.Password
 	subOptions.Username = config.Username
 
+	//TODO delete
+	log.Entry().Infof("Host config %s , Host subOptions %s", config.Host, subOptions.Host)
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
 	if err != nil {
