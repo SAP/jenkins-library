@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -54,65 +53,4 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 
 	return nil
-}
-
-// ErrorDetails struct holds information about errors of the step
-type ErrorDetails struct {
-	Message       string
-	Error         string
-	Category      string
-	Result        string
-	CorrelationId string
-	StepName      string
-}
-
-// GetErrorsJson reads errorDetails.json files from the CPE and returns an ErrorDetails struct.
-func GetErrorsJson() ([]ErrorDetails, error) {
-	fileName := "errorDetails.json"
-	path, err := os.Getwd()
-	if err != nil {
-		Entry().Error("can not get current working dir")
-		return []ErrorDetails{}, err
-	}
-
-	pathCPE := path + "/.pipeline/commonPipelineEnvironment"
-	matches, err := filepath.Glob(pathCPE + "/*" + fileName)
-	if err != nil {
-		Entry().Error("could not search filepath for *errorDetails.json files")
-		return []ErrorDetails{}, err
-	}
-	if len(matches) == 0 {
-		Entry().Debug("no errors found, returning empty errorDetails")
-		return []ErrorDetails{}, nil
-	}
-	Entry().Debugf("found the following errorDetails files: %v", matches)
-
-	var errorDetails []ErrorDetails
-	Entry().Debugf("Found %v files", matches)
-
-	for _, v := range matches {
-		errorDetail, err := readErrorJson(v)
-		if err != nil {
-			Entry().Errorf("could not read error details for file %v", v)
-			errorDetail = ErrorDetails{}
-		}
-		errorDetails = append(errorDetails, errorDetail)
-
-	}
-	return errorDetails, nil
-}
-
-func readErrorJson(filePath string) (ErrorDetails, error) {
-	errorDetails := ErrorDetails{}
-	jsonFile, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		Entry().Errorf("could not read file from path: %v", filePath)
-		return ErrorDetails{}, err
-	}
-	err = json.Unmarshal(jsonFile, &errorDetails)
-	if err != nil {
-		Entry().Error("could not unmarshal error details")
-		return ErrorDetails{}, err
-	}
-	return errorDetails, nil
 }
