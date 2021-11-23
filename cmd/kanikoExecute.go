@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
+	conf "github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
 
@@ -103,11 +105,29 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	log.Entry().Infof("creating build settings information...")
-	dockerImage := os.Getenv("DOCKER_IMAGE")
+	stepName := "kanikoExecute"
+	dockerImage := ""
+	var dataParametersJSON map[string]interface{}
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		dockerImage = value.(string)
+	} else {
+		metadata, err := conf.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, GeneralConfig.StepMetadata, stepName)
+		if err != nil {
+			log.Entry().Warnf("failed to resolve metadata: %v", err)
+		}
+		containers := metadata.Spec.Containers
+		if len(containers) > 0 {
+			dockerImage = containers[0].Image
+		}
+	}
 	kanikoConfig := buildsettings.BuildOptions{
 		DockerImage: dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, "kanikoExecute")
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info : %v", err)
 	}
