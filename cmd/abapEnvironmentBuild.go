@@ -170,6 +170,8 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	// TODO macht runtime überhaupt was
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 
+	log.Entry().Infof("Host config %s , Host connConfig %s", config.Host, connConfig.Host)
+
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
@@ -210,6 +212,5 @@ func parseValue(inputValue string) (abapbuild.Value, error) {
 			value.Value = strings.TrimSpace(valueSplit[1])
 		}
 	}
-
 	return value, nil
 }
