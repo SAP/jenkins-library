@@ -43,7 +43,8 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	errDetails, _ := json.Marshal(&details)
-	Entry().Infof("fatal error: errorDetails{correlationId:\"%v\",stepName:\"%v\",category:\"%v\",error:\"%v\",result:\"%v\",message:\"%v\"}", details["correlationId"], details["stepName"], details["category"], details["error"], details["result"], details["message"])
+	Entry().Infof("fatal error: errorDetails{correlationId:\"%v\",stepName:\"%v\",category:\"%v\",error:\"%v\",result:\"%v\",message:\"%v\"}",
+		details["correlationId"], details["stepName"], details["category"], details["error"], details["result"], details["message"])
 
 	_, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -69,45 +70,48 @@ type ErrorDetails struct {
 func GetErrorsJson() ([]ErrorDetails, error) {
 	fileName := "errorDetails.json"
 	path, err := os.Getwd()
-	pathCPE := path + "/.pipeline/commonPipelineEnvironment"
 	if err != nil {
-		fmt.Errorf("can not get current working dir")
+		Entry().Error("can not get current working dir")
 		return []ErrorDetails{}, err
 	}
 
+	pathCPE := path + "/.pipeline/commonPipelineEnvironment"
 	matches, err := filepath.Glob(pathCPE + "/*" + fileName)
-	Entry().Debugf("found the following errorDetails files: %v", matches)
 	if err != nil {
-		Entry().Debugf("could not find any *errorDetails.json files")
+		Entry().Error("could not search filepath for *errorDetails.json files")
+		return []ErrorDetails{}, err
 	}
+	if len(matches) == 0 {
+		Entry().Debug("no errors found, returning empty errorDetails")
+		return []ErrorDetails{}, nil
+	}
+	Entry().Debugf("found the following errorDetails files: %v", matches)
 
-	errorDetails := []ErrorDetails{}
+	var errorDetails []ErrorDetails
+	Entry().Debugf("Found %v files", matches)
 
-	if len(matches) != 0 {
-		Entry().Debugf("Found %v files", matches)
-
-		for _, v := range matches {
-			errorDetail, err := readErrorJson(v)
-			if err != nil {
-				Entry().Debugf("could not read error details for file %v", v)
-			}
-			errorDetails = append(errorDetails, errorDetail)
-
+	for _, v := range matches {
+		errorDetail, err := readErrorJson(v)
+		if err != nil {
+			Entry().Errorf("could not read error details for file %v", v)
+			errorDetail = ErrorDetails{}
 		}
-	}
+		errorDetails = append(errorDetails, errorDetail)
 
+	}
 	return errorDetails, nil
 }
 
 func readErrorJson(filePath string) (ErrorDetails, error) {
-	//filePath := filepath.Join(path, fileName)
-
 	errorDetails := ErrorDetails{}
 	jsonFile, err := ioutil.ReadFile(filePath)
-
+	if err != nil {
+		Entry().Errorf("could not read file from path: %v", filePath)
+		return ErrorDetails{}, err
+	}
 	err = json.Unmarshal(jsonFile, &errorDetails)
 	if err != nil {
-		fmt.Errorf("could not unmarshal error details")
+		Entry().Error("could not unmarshal error details")
 		return ErrorDetails{}, err
 	}
 	return errorDetails, nil
