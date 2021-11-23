@@ -180,7 +180,8 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 
 	// TODO an besseren ort schieben, jetzt nur zum testen
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		TrustedCerts: []string{"yi3Cert.cer"},
+		//TrustedCerts: []string{"yi3Cert.cer"},
+		TrustedCerts: config.CustomTLSCertificateNames,
 	})
 
 	return nil

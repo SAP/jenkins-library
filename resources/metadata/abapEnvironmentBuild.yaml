@@ -9,6 +9,11 @@ spec:
       - name: abapCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cfCredentialsId
           - name: credentialsId
@@ -153,6 +158,13 @@ spec:
         description: wait time in seconds till next status request in the backend system
         mandatory: true
         default: 60
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: customTlsCertificateNames
+        type: "[]string"
+        description: TODO
         scope:
           - PARAMETERS
           - STAGES
