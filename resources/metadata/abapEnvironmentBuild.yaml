@@ -78,6 +78,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+          - GENERAL
       - name: username
         type: string
         description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
@@ -149,7 +150,7 @@ spec:
           - STEPS
       - name: pollingIntervallInSeconds
         type: int
-        description: wait time in seoncds till next status request in the backend system
+        description: wait time in seconds till next status request in the backend system
         mandatory: true
         default: 60
         scope:

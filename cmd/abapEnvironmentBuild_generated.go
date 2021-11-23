@@ -133,7 +133,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringSliceVar(&stepConfig.ResultFilenames, "resultFilenames", []string{}, "TODO")
 	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "TODO")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
-	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seoncds till next status request in the backend system")
+	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -206,7 +206,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
