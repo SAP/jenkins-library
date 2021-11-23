@@ -299,7 +299,7 @@ func TestUpdateMtaExtDescriptor(t *testing.T) {
 	})
 }
 
-func TestUloadMtaExtDescriptorToNode(t *testing.T) {
+func TestUploadMtaExtDescriptorToNode(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
 	t.Run("test success", func(t *testing.T) {
 		idOfMtaExtDescriptor := int64(777)
@@ -374,7 +374,7 @@ func TestUloadMtaExtDescriptorToNode(t *testing.T) {
 	})
 }
 
-func TestUloadFile(t *testing.T) {
+func TestUploadFile(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
 	t.Run("test success", func(t *testing.T) {
 		fileId := int64(333)
@@ -433,7 +433,7 @@ func TestUloadFile(t *testing.T) {
 	})
 }
 
-func TestUloadFileToNode(t *testing.T) {
+func TestUploadFileToNode(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
 	t.Run("test success", func(t *testing.T) {
 		transportRequestId := int64(555)

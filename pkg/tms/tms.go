@@ -125,9 +125,8 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 }
 
 func (communicationInstance *CommunicationInstance) getOAuthToken() (string, error) {
-	communicationInstance.logger.Info("OAuth token retrieval started")
-
 	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("OAuth token retrieval started")
 		communicationInstance.logger.Infof("uaaUrl: %v, clientId: %v", communicationInstance.uaaUrl, communicationInstance.clientId)
 	}
 
@@ -152,7 +151,9 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	var token AuthToken
 	json.Unmarshal(data, &token)
 
-	communicationInstance.logger.Info("OAuth Token retrieved successfully")
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("OAuth Token retrieved successfully")
+	}
 	return token.TokenType + " " + token.AccessToken, nil
 }
 
