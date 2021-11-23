@@ -168,6 +168,10 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Host = config.Host
 	connConfig.Username = config.Username
 	connConfig.Password = config.Password
+
+	//TODO delete
+	log.Entry().Infof("user length %d", len(connConfig.Username))
+	log.Entry().Infof("blub %d", len(connConfig.Password))
 	// TODO macht runtime überhaupt was
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 
