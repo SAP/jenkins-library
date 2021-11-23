@@ -49,7 +49,11 @@ type HTTPSendLoader interface {
 // GetToken : Get the X-CRSF Token from ABAP Backend for later post
 func (conn *Connector) GetToken(appendum string) error {
 	url := conn.Baseurl + appendum
+	//TODO delete
+	log.Entry().Infof("Inside Get token url: %s", url)
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
+	//TODO delete
+	log.Entry().Infof("conn.Header[X-CSRF-Token]: %s", conn.Header["X-CSRF-Token"])
 	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
 	if err != nil {
 		if response == nil {
