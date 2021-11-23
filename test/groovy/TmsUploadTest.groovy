@@ -227,6 +227,34 @@ public class TmsUploadTest extends BasePiperTest {
     }
 
     @Test
+    public void testMtaBuildDescriptorFromCPE() {
+        Map nodeExtDescriptorMap = ["testNode1": "dummy.mtaext"]
+
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+        binding.workspace = "."
+        envRule.env.gitCommitId = "testCommitId"
+
+        nullScript.commonPipelineEnvironment.mtaBuildToolDesc = "path/mta.yaml"
+        readYamlRule.registerYaml('path/mta.yaml','ID: "com.sap.piper.tms.test"' + "\n" + 'version: "9.9.9"')
+        fileExistsRules.existingFiles.add('path/mta.yaml')
+
+
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            transportManagementService: tmsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey',
+            nodeExtDescriptorMapping: nodeExtDescriptorMap,
+            mtaVersion: '9.9.9',
+        )
+
+        assertThat(calledTmsMethodsWithArgs[2], is("getMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '9.9.9')"))
+    }
+
+    @Test
     public void failOnMissingMtaFile() {
 
         thrown.expect(AbortException)
