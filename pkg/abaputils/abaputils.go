@@ -39,11 +39,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
 
-	//TODO delete
-	log.Entry().Infof("Host inside GetAbapCommun... %s ", options.Host)
 	if options.Host != "" {
-		//TODO delete
-		log.Entry().Infof("Inside If")
 		// Host, User and Password are directly provided -> check for host schema (double https)
 		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
 		if err != nil {
@@ -58,11 +54,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		}
 		connectionDetails.User = options.Username
 		connectionDetails.Password = options.Password
-		//TODO delete
-		log.Entry().Infof("URL %s ", connectionDetails.URL)
 	} else {
-		//TODO delete
-		log.Entry().Infof("Inside else")
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
 			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -77,8 +69,6 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
-	//TODO delete
-	log.Entry().Infof("URL at end of method %s ", connectionDetails.URL)
 	return connectionDetails, error
 }
 

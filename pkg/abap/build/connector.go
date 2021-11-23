@@ -49,11 +49,7 @@ type HTTPSendLoader interface {
 // GetToken : Get the X-CRSF Token from ABAP Backend for later post
 func (conn *Connector) GetToken(appendum string) error {
 	url := conn.Baseurl + appendum
-	//TODO delete
-	log.Entry().Infof("Inside Get token url: %s", url)
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
-	//TODO delete
-	log.Entry().Infof("conn.Header[X-CSRF-Token]: %s", conn.Header["X-CSRF-Token"])
 	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
 	if err != nil {
 		if response == nil {
@@ -162,8 +158,6 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	subOptions.Password = config.Password
 	subOptions.Username = config.Username
 
-	//TODO delete
-	log.Entry().Infof("Host config %s , Host subOptions %s", config.Host, subOptions.Host)
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
 	if err != nil {
@@ -181,8 +175,6 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 		CookieJar: cookieJar,
 	})
 	conn.Baseurl = connectionDetails.URL
-	//TODO delete
-	log.Entry().Infof("end of initBuildFramework, conn.Baseurl: %s", conn.Baseurl)
 
 	return nil
 }
