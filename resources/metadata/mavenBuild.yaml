@@ -20,6 +20,7 @@ spec:
         description: Path to the pom file which should be installed including all children.
         scope:
           - PARAMETERS
+          - STAGES
           - STEPS
         mandatory: false
         default: pom.xml
