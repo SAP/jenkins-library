@@ -88,6 +88,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 		return err
 	}
 	var build abapbuild.Build
+	build.Connector = *conn
 	if err := build.Start(config.Phase, values); err != nil {
 		return err
 	}
@@ -177,6 +178,9 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
+	//TODO delete
+	log.Entry().Infof("end of initConnection, conn.Baseurl %s ", conn.Baseurl)
+	log.Entry().Infof("end of initConnection, conn.Header %s ", conn.Header)
 	return nil
 }
 

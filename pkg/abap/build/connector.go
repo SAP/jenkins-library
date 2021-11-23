@@ -181,6 +181,8 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 		CookieJar: cookieJar,
 	})
 	conn.Baseurl = connectionDetails.URL
+	//TODO delete
+	log.Entry().Infof("end of initBuildFramework, conn.Baseurl: %s", conn.Baseurl)
 
 	return nil
 }
