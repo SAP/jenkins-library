@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -213,7 +214,7 @@ func TestParseAUnitResult(t *testing.T) {
 		}()
 		bodyString := `<?xml version="1.0" encoding="utf-8"?><testsuites title="My AUnit run" system="TST" client="100" executedBy="TESTUSER" time="000.000" timestamp="2021-01-01T00:00:00Z" failures="2" errors="2" skipped="0" asserts="0" tests="2"><testsuite name="" tests="2" failures="2" errors="0" skipped="0" asserts="0" package="testpackage" timestamp="2021-01-01T00:00:00ZZ" time="0.000" hostname="test"><testcase classname="test" name="execute" time="0.000" asserts="2"><failure message="testMessage1" type="Assert Failure">Test1</failure><failure message="testMessage2" type="Assert Failure">Test2</failure></testcase></testsuite></testsuites>`
 		body := []byte(bodyString)
-		err = parseAUnitResult(body, "AUnitResults.xml")
+		err = parseAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -233,7 +234,7 @@ func TestParseAUnitResult(t *testing.T) {
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
-		err = parseAUnitResult(body, "AUnitResults.xml")
+		err = parseAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -243,7 +244,7 @@ func TestParseAUnitResult(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := parseAUnitResult(body, "AUnitResults.xml")
+		err := parseAUnitResult(body, "AUnitResults.xml", false)
 		assert.EqualError(t, err, "Parsing AUnit result failed: Body is empty, can't parse empty body")
 	})
 }
@@ -416,4 +417,129 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 		}
 	})
+}
+
+func TestGenerateHTMLDocumentAUnit(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Test empty XML Result", func(t *testing.T) {
+		t.Parallel()
+
+		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px"></td><th>System</th><td style="padding-right: 20px"></td><th>Client</th><td style="padding-right: 20px"></td><th>ExecutedBy</th><td style="padding-right: 20px"></td><th>Duration</th><td style="padding-right: 20px">s</td><th>Timestamp</th><td style="padding-right: 20px"></td></tr><tr><th>Failures</th><td style="padding-right: 20px"></td><th>Errors</th><td style="padding-right: 20px"></td><th>Skipped</th><td style="padding-right: 20px"></td><th>Asserts</th><td style="padding-right: 20px"></td><th>Tests</th><td style="padding-right: 20px"></td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr></table></body></html>`
+
+		result := AUnitResult{}
+
+		resultString := generateHTMLDocumentAUnit(&result)
+
+		assert.Equal(t, expectedString, resultString)
+	})
+
+	t.Run("Test AUnit XML Result", func(t *testing.T) {
+		t.Parallel()
+
+		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px"></td><th>System</th><td style="padding-right: 20px"></td><th>Client</th><td style="padding-right: 20px"></td><th>ExecutedBy</th><td style="padding-right: 20px"></td><th>Duration</th><td style="padding-right: 20px">s</td><th>Timestamp</th><td style="padding-right: 20px"></td></tr><tr><th>Failures</th><td style="padding-right: 20px"></td><th>Errors</th><td style="padding-right: 20px"></td><th>Skipped</th><td style="padding-right: 20px"></td><th>Asserts</th><td style="padding-right: 20px"></td><th>Tests</th><td style="padding-right: 20px"></td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr></table></body></html>`
+
+		result := AUnitResult{
+			XMLName:    xml.Name{Space: "testSpace", Local: "testLocal"},
+			Title:      "Test title",
+			System:     "Test system",
+			Client:     "000",
+			ExecutedBy: "CC00000",
+			Time:       "0.15",
+			Timestamp:  "2021-00-00T00:00:00Z",
+			Failures:   "4",
+			Errors:     "4",
+			Skipped:    "4",
+			Asserts:    "12",
+			Tests:      "12",
+			Testsuite: {
+				Tests:     "6",
+				Asserts:   "6",
+				Skipped:   "2",
+				Errors:    "2",
+				Failures:  "2",
+				Timestamp: "2021-00-00T00:00:00Z",
+				Time:      "0.1",
+				Hostname:  "0xb",
+				Package:   "testPackage",
+				Name:      "ZCL_testPackage",
+				Testcase  []struct {
+					Asserts:   "2",
+					Time:      "2",
+					Name:      "my_test",
+					Classname: "ZCL_my_test",
+					Error     []struct {
+						Text    string "xml:\",chardata\""
+						Type    string "xml:\"type,attr\""
+						Message string "xml:\"message,attr\""
+					} "xml:\"error\""
+					Failure []struct {
+						Text    string "xml:\",chardata\""
+						Type    string "xml:\"type,attr\""
+						Message string "xml:\"message,attr\""
+					} "xml:\"failure\""
+					Skipped []struct {
+						Text    string "xml:\",chardata\""
+						Message string "xml:\"message,attr\""
+					} "xml:\"skipped\""
+				} "xml:\"testcase\""
+			}{},
+		}
+
+
+
+		/*
+				Tests:     "6",
+				Asserts:   "6",
+				Skipped:   "2",
+				Errors:    "2",
+				Failures:  "2",
+				Timestamp: "2021-00-00T00:00:00Z",
+				Time:      "0.1",
+				Hostname:  "0xb",
+				Package:   "testPackage",
+				Name:      "ZCL_testPackage",
+					Testcase: {
+						Asserts:   "2",
+						Time:      "2",
+						Name:      "my_test",
+						Classname: "ZCL_my_test",
+						Error: {
+							Text:    "testText",
+							Type:    "Assert Error",
+							Message: "Error in ZCL_my_test",
+						}, {
+							Text:    "testText",
+							Type:    "Assert Error",
+							Message: "Error in ZCL_my_test2",
+						},
+						Failure: {
+							Text:    "testText",
+							Type:    "Assert Failure",
+							Message: "Error in ZCL_my_test",
+						}, {
+							Text:    "testText",
+							Type:    "Assert Failure",
+							Message: "Error in ZCL_my_test2",
+						},
+						Skipped: {
+							Text:    "testText",
+							Type:    "Skipped",
+							Message: "Skipped ZCL_my_test",
+						}, {
+							Text:    "testText",
+							Type:    "Skipped",
+							Message: "Skipped ZCL_my_test2",
+						},
+					},
+				},
+			}
+
+		*/
+
+		resultString := generateHTMLDocumentAUnit(&result)
+
+		assert.Equal(t, expectedString, resultString)
+	})
+
 }

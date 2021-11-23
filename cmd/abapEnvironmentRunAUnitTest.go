@@ -417,7 +417,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string, generateHTML bool
 }
 
 func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString string) {
-	htmlDocumentString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit test run results</h1><table style="border: 0px solid black"><tr><th>Run title</th><td style="padding-right: 20px">` + parsedXML.Title + `</td><th>System</th><td style="padding-right: 20px">` + parsedXML.System + `</td><th>Client</th><td style="padding-right: 20px">` + parsedXML.Client + `</td><th>ExecutedBy</th><td style="padding-right: 20px">` + parsedXML.ExecutedBy + `</td><th>Duration</th><td style="padding-right: 20px">` + parsedXML.Time + `s</td><th>Timestamp</th><td style="padding-right: 20px">` + parsedXML.Timestamp + `</td></tr><tr><th>Failures</th><td style="padding-right: 20px">` + parsedXML.Failures + `</td><th>Errors</th><td style="padding-right: 20px">` + parsedXML.Errors + `</td><th>Skipped</th><td style="padding-right: 20px">` + parsedXML.Skipped + `</td><th>Asserts</th><td style="padding-right: 20px">` + parsedXML.Asserts + `</td><th>Tests</th><td style="padding-right: 20px">` + parsedXML.Tests + `</td></tr></table><br><br><table style="width:100%"><tr><th>Severity</th><th>File</th><th>Message</th><th>Type</th><th>Text</th></tr>`
+	htmlDocumentString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px">` + parsedXML.Title + `</td><th>System</th><td style="padding-right: 20px">` + parsedXML.System + `</td><th>Client</th><td style="padding-right: 20px">` + parsedXML.Client + `</td><th>ExecutedBy</th><td style="padding-right: 20px">` + parsedXML.ExecutedBy + `</td><th>Duration</th><td style="padding-right: 20px">` + parsedXML.Time + `s</td><th>Timestamp</th><td style="padding-right: 20px">` + parsedXML.Timestamp + `</td></tr><tr><th>Failures</th><td style="padding-right: 20px">` + parsedXML.Failures + `</td><th>Errors</th><td style="padding-right: 20px">` + parsedXML.Errors + `</td><th>Skipped</th><td style="padding-right: 20px">` + parsedXML.Skipped + `</td><th>Asserts</th><td style="padding-right: 20px">` + parsedXML.Asserts + `</td><th>Tests</th><td style="padding-right: 20px">` + parsedXML.Tests + `</td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr>`
 	var htmlDocumentStringError, htmlDocumentStringWarning, htmlDocumentStringInfo, htmlDocumentStringDefault string
 	for _, s := range parsedXML.Testsuite.Testcase {
 		//Add coloring of lines inside of the respective severities, e.g. failures in red
@@ -429,14 +429,17 @@ func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString strin
 			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorTestcase + `"><td colspan="5"><b>Testcase: ` + s.Name + ` for class ` + s.Classname + `</b></td></tr>`
 		}
 		for _, t := range s.Error {
-			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorError + `"><td>Failure</td><td>` + s.Classname + `</td><td>` + t.Message + `</td><td>` + t.Type + `</td><td>` + t.Text + `</td></tr>`
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorError + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">` + t.Type + `</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
 		}
 		for _, t := range s.Failure {
-			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorFailure + `"><td>Failure</td><td>` + s.Classname + `</td><td>` + t.Message + `</td><td>` + t.Type + `</td><td>` + t.Text + `</td></tr>`
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorFailure + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">` + t.Type + `</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
 		}
 		for _, t := range s.Skipped {
-			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorSkipped + `"><td>Failure</td><td>` + s.Classname + `</td><td>` + t.Message + `</td><td>-</td><td>` + t.Text + `</td></tr>`
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorSkipped + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
 		}
+	}
+	if len(parsedXML.Testsuite.Testcase) == 0 {
+		htmlDocumentString += `<tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr>`
 	}
 	htmlDocumentString += htmlDocumentStringError + htmlDocumentStringWarning + htmlDocumentStringInfo + htmlDocumentStringDefault + `</table></body></html>`
 
