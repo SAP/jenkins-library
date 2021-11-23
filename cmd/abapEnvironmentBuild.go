@@ -169,9 +169,6 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Username = config.Username
 	connConfig.Password = config.Password
 
-	//TODO delete
-	log.Entry().Infof("user length %d", len(connConfig.Username))
-	log.Entry().Infof("blub %d", len(connConfig.Password))
 	// TODO macht runtime überhaupt was
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 
@@ -182,7 +179,9 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 
 	// TODO an besseren ort schieben, jetzt nur zum testen
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		TrustedCerts: config.CertificateNames,
+		UseDefaultTransport:       false,
+		TransportSkipVerification: false,
+		TrustedCerts:              config.CertificateNames,
 	})
 
 	return nil
