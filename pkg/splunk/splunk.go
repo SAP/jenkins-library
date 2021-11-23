@@ -69,7 +69,7 @@ func (s *Splunk) Send(telemetryData telemetry.Data, logCollector *log.CollectorH
 	// TODO: Logic for errorCategory (undefined, service, infrastructure)
 	if telemetryData.ErrorCode == "0" || (telemetryData.ErrorCode == "1" && !s.sendLogs) {
 		// Either Successful run, we only send the telemetry data, no logging information
-		// OR Failure run and we do not want to send the logs
+		// OR Failure run, and we do not want to send the logs
 		err := s.tryPostMessages(preparedTelemetryData, []log.Message{})
 		if err != nil {
 			return errors.Wrap(err, "error while sending logs")
@@ -121,7 +121,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	}
 }
 
-func (s *Splunk) SendPipelineStatus(pipelineTelemetryData PipelineTelemetry, logFile *[]byte) error {
+func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
 
 	readLogFile := string(*logFile)
@@ -147,8 +147,10 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData PipelineTelemetry, log
 	return nil
 }
 
-func (s *Splunk) postTelemetry(telemetryData PipelineTelemetry) error {
-
+func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
+	if telemetryData == nil {
+		telemetryData = map[string]interface{}{"Empty": "No telemetry available."}
+	}
 	details := DetailsTelemetry{
 		Host:       s.correlationID,
 		SourceType: "_json",
@@ -190,7 +192,7 @@ func (s *Splunk) postTelemetry(telemetryData PipelineTelemetry) error {
 	return nil
 }
 
-func (s *Splunk) postLogFile(telemetryData PipelineTelemetry, messages []string) error {
+func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []string) error {
 
 	event := LogFileEvents{
 		Messages:  messages,

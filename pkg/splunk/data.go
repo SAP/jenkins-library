@@ -32,8 +32,8 @@ type MonitoringData struct {
 }
 
 type LogFileEvents struct {
-	Messages  []string          `json:"messages,omitempty"`  // messages
-	Telemetry PipelineTelemetry `json:"telemetry,omitempty"` // telemetryData
+	Messages  []string               `json:"messages,omitempty"`  // messages
+	Telemetry map[string]interface{} `json:"telemetry,omitempty"` // telemetryData
 }
 type DetailsLog struct {
 	Host       string        `json:"host"`                 // hostname
@@ -44,33 +44,10 @@ type DetailsLog struct {
 }
 
 type DetailsTelemetry struct {
-	Host       string            `json:"host"`                 // hostname
-	Source     string            `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string            `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string            `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      PipelineTelemetry `json:"event,omitempty"`      // throw any useful key/val pairs here}
+	Host       string                 `json:"host"`                 // hostname
+	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      map[string]interface{} `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
-type StepData struct {
-}
-
-// PipelineTelemetry object to store pipeline related telemetry information
-type PipelineTelemetry struct {
-	CorrelationId       string             `json:"CorrelationId"`       // CorrelationId
-	Duration            string             `json:"PipelineDuration"`    // Duration of the pipeline in milliseconds
-	Orchestrator        string             `json:"Orchestrator"`        // Orchestrator, e.g. Jenkins or Azure
-	OrchestratorVersion string             `json:"OrchestratorVersion"` // OrchestratorVersion
-	PipelineStartTime   string             `json:"PipelineStartTime"`   // PipelineStartTime Pipeline start time
-	Errors              []log.ErrorDetails `json:"ErrorDetails"`        // Errors Error Codes found in errorsJson
-	BuildId             string             `json:"BuildId"`             // BuildId of the pipeline run
-	JobName             string             `json:"JobName"`
-	PipelineStatus      string             `json:"PipelineStatus"`
-	PipelineName        string             `json:"PipelineName"`
-	GitInstance         string             `json:"GitInstance"`
-	JobURL              string             `json:"JobURL"`
-	CommitHash          string             `json:"CommitHash"`
-	Branch              string             `json:"Branch"`
-	GitOwner            string             `json:"GitOwner"`
-	GitRepository       string             `json:"GitRepository"`
-	StepData            []StepData         `json:"StepData"`
-}
