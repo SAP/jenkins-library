@@ -58,7 +58,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, "npmExecuteScripts")
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+		log.Entry().Warnf("failed to create build settings info : %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 

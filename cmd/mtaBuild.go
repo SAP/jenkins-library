@@ -246,7 +246,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, "mtaBuild")
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+		log.Entry().Warnf("failed to create build settings info : %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 

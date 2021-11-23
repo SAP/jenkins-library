@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
+	conf "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -86,7 +88,25 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	_, err := maven.Execute(&mavenOptions, utils)
 
 	log.Entry().Infof("creating build settings information...")
-	dockerImage := "DOCKER_IMAGE"
+	stepName := "mavenBuild"
+	dockerImage := ""
+	var dataParametersJSON map[string]interface{}
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		dockerImage = value.(string)
+	} else {
+		metadata, err := conf.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, GeneralConfig.StepMetadata, stepName)
+		if err != nil {
+			log.Entry().Warnf("failed to resolve metadata: %v", err)
+		}
+		containers := metadata.Spec.Containers
+		if len(containers) > 0 {
+			dockerImage = containers[0].Image
+		}
+	}
 	mavenConfig := buildsettings.BuildOptions{
 		Profiles:                    config.Profiles,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
@@ -96,9 +116,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		BuildSettingsInfo:           config.BuildSettingsInfo,
 		DockerImage:                 dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, "mavenBuild")
+	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, stepName)
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+		log.Entry().Warnf("failed to create build settings info : %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 

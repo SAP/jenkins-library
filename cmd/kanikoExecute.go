@@ -109,7 +109,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 	builSettings, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, "kanikoExecute")
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+		log.Entry().Warnf("failed to create build settings info : %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
 

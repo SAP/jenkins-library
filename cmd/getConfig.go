@@ -109,7 +109,7 @@ func generateConfig(utils getConfigUtils) error {
 		}
 
 	} else {
-		metadata, err := resolveMetadata()
+		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, GeneralConfig.StepMetadata, configOptions.stepName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to resolve metadata")
 		}
@@ -252,34 +252,4 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			os.MkdirAll(dir, 0777)
 		}
 	}
-}
-
-func resolveMetadata() (config.StepData, error) {
-	var metadata config.StepData
-	if configOptions.stepMetadata != "" {
-		metadataFile, err := configOptions.openFile(configOptions.stepMetadata, GeneralConfig.GitHubAccessTokens)
-		if err != nil {
-			return metadata, errors.Wrap(err, "open failed")
-		}
-
-		err = metadata.ReadPipelineStepData(metadataFile)
-		if err != nil {
-			return metadata, errors.Wrap(err, "read failed")
-		}
-	} else {
-		if configOptions.stepName != "" {
-			if GeneralConfig.MetaDataResolver == nil {
-				GeneralConfig.MetaDataResolver = GetAllStepMetadata
-			}
-			metadataMap := GeneralConfig.MetaDataResolver()
-			var ok bool
-			metadata, ok = metadataMap[configOptions.stepName]
-			if !ok {
-				return metadata, errors.Errorf("could not retrieve by stepName %v", configOptions.stepName)
-			}
-		} else {
-			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
-		}
-	}
-	return metadata, nil
 }
