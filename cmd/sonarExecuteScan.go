@@ -386,8 +386,8 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			}
 			// add certificate to keystore
 			if err := keytool.ImportCert(runner, trustStoreFile, target); err != nil {
-				// if err := runner.RunExecutable("keytool", options...); err != nil {
-				return errors.Wrap(err, "Adding certificate to keystore failed")
+				log.Entry().Warnf("Adding certificate to keystore failed")
+				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
 		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
