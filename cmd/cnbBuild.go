@@ -222,6 +222,22 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 	return source, nil
 }
 
+func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
+	if c.BuildEnvVars == nil {
+		c.BuildEnvVars = vars
+
+		return
+	}
+
+	for k, v := range vars {
+		_, exists := c.BuildEnvVars[k]
+
+		if !exists {
+			c.BuildEnvVars[k] = v
+		}
+	}
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
@@ -252,12 +268,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
 		}
 
+		config.mergeEnvVars(descriptor.EnvVars)
+
 		if (config.Buildpacks == nil || len(config.Buildpacks) == 0) && len(descriptor.Buildpacks) > 0 {
 			config.Buildpacks = descriptor.Buildpacks
-		}
-
-		if (config.BuildEnvVars == nil || len(config.BuildEnvVars) == 0) && len(descriptor.EnvVars) > 0 {
-			config.BuildEnvVars = descriptor.EnvVars
 		}
 
 		if descriptor.Exclude != nil {
@@ -410,20 +424,21 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		log.Entry().Info("skipping certificates update")
 	}
 
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
+	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath, "-no-color")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
 	}
 
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath)
+	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath, "-no-color")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable(exporterPath, targets...)
+	exporterArgs := append([]string{"-no-color"}, targets...)
+	err = utils.RunExecutable(exporterPath, exporterArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)

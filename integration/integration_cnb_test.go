@@ -1,5 +1,7 @@
+//go:build integration
 // +build integration
-// can be execute with go test -tags=integration ./integration/...
+
+// can be executed with go test -tags=integration ./integration/...
 
 package main
 
@@ -12,10 +14,10 @@ func TestNpmProject(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "paketobuildpacks/builder:full",
 		User:    "cnb",
-		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
+		TestDir: []string{"testdata"},
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--buildEnvVars", "BP_NODE_VERSION=16")
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config_env.yml", "--path", "TestMtaIntegration/npm", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
@@ -40,7 +42,7 @@ func TestProjectDescriptor(t *testing.T) {
 	container.assertHasOutput(t, "srv/hello.js matches include pattern")
 	container.assertHasOutput(t, "package.json matches include pattern")
 	container.assertHasOutput(t, "Downloading buildpack")
-	container.assertHasOutput(t, "Setting custom environment variables: '[BP_NODE_VERSION=16]'")
+	container.assertHasOutput(t, "Setting custom environment variables: 'map[BP_NODE_VERSION:16]'")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
