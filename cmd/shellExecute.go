@@ -8,21 +8,20 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/vault"
 )
 
 type shellExecuteUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
+	piperutils.FileUtils
 }
 
 type shellExecuteUtilsBundle struct {
-	*vault.Client
 	*command.Command
 	*piperutils.Files
 }
@@ -39,15 +38,14 @@ func newShellExecuteUtils() shellExecuteUtils {
 
 func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomData) {
 	utils := newShellExecuteUtils()
-	fileUtils := &piperutils.Files{}
 
-	err := runShellExecute(&config, telemetryData, utils, fileUtils)
+	err := runShellExecute(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils, fileUtils piperutils.FileUtils) error {
+func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
 
 	var err error
 
@@ -57,6 +55,22 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	// scripts for running locally
 	var e []string
 
+	// install custom certificates
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		caCertificates := "/tmp/ca-certificates.crt"
+		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy certificates")
+		}
+		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, &httpClient, utils, caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to update certificates")
+		}
+		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
+	} else {
+		log.Entry().Info("skipping certificates update")
+	}
+
 	// check input data
 	// example for script: sources: ["./script.sh"]
 	for _, source := range config.Sources {
@@ -65,7 +79,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		if err != nil {
 			// err means that it's not a remote script
 			// check if the script is physically present (for local scripts)
-			exists, err := fileUtils.FileExists(source)
+			exists, err := utils.FileExists(source)
 			if err != nil {
 				log.Entry().WithError(err).Error("failed to check for defined script")
 				return fmt.Errorf("failed to check for defined script: %w", err)

@@ -52,20 +52,16 @@ func TestRunShellExecute(t *testing.T) {
 			Sources: []string{"path/to/script.sh"},
 		}
 		u := newShellExecuteTestsUtils()
-		fm := &shellExecuteFileMock{}
 
-		err := runShellExecute(c, nil, u, fm)
+		err := runShellExecute(c, nil, u)
 		assert.EqualError(t, err, "the specified script could not be found")
 	})
 
 	t.Run("success case - script is present", func(t *testing.T) {
 		o := &shellExecuteOptions{}
 		u := newShellExecuteTestsUtils()
-		m := &shellExecuteFileMock{
-			fileReadContent: map[string]string{"path/to/script/script.sh": ``},
-		}
 
-		err := runShellExecute(o, nil, u, m)
+		err := runShellExecute(o, nil, u)
 		assert.NoError(t, err)
 	})
 
@@ -77,7 +73,7 @@ func TestRunShellExecute(t *testing.T) {
 print 'test'`},
 		}
 
-		err := runShellExecute(o, nil, u, m)
+		err := runShellExecute(o, nil, u)
 		assert.NoError(t, err)
 	})
 
