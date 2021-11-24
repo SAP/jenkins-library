@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -67,13 +66,14 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runAbapEnvironmentBuild(&config, telemetryData, utils, &autils, &client)
+	err := runAbapEnvironmentBuild(&config, telemetryData, utils, &autils, &client, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervallInSeconds)*time.Second)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
+func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, com abaputils.Communication, client abapbuild.HTTPSendLoader,
+	maxRuntime time.Duration, PollingIntervall time.Duration) error {
 	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
@@ -96,7 +96,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	if err := build.Start(config.Phase, values); err != nil {
 		return err
 	}
-	if err := build.Poll(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervallInSeconds)); err != nil {
+	if err := build.Poll(maxRuntime, PollingIntervall); err != nil {
 		return err
 	}
 	if err := build.PrintLogs(); err != nil {
@@ -116,13 +116,13 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 				}
 				// TODO wohin speichern?
 				var fileName string
-				if len(result.AdditionalInfo) <= 255 {
+				if (len(result.AdditionalInfo) <= 255) && (len(result.AdditionalInfo) > 0) {
 					fileName = result.AdditionalInfo
 				} else {
 					fileName = result.Name
 				}
-				envPath := filepath.Join(GeneralConfig.EnvRootPath, "abapBuild")
-				downloadPath := filepath.Join(envPath, path.Base(fileName))
+				//envPath := filepath.Join(GeneralConfig.EnvRootPath, "abapBuild")
+				downloadPath := filepath.Join(GeneralConfig.EnvRootPath, path.Base(fileName))
 				if err := result.Download(downloadPath); err != nil {
 					return err
 				}
@@ -141,23 +141,24 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	//spezielle download files nur?
 	//download
 	//
-
-	//TODO beginn generiertes beispielcoding
-	// ***********************************************************************************************
-	// Example of calling methods from external dependencies directly on utils:
-	exists, err := utils.FileExists("file.txt")
-	if err != nil {
-		// It is good practice to set an error category.
-		// Most likely you want to do this at the place where enough context is known.
-		log.SetErrorCategory(log.ErrorConfiguration)
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-		return fmt.Errorf("failed to check for important file: %w", err)
-	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
-	}
-	// ***********************************************************************************************
+	/*
+		//TODO beginn generiertes beispielcoding
+		// ***********************************************************************************************
+		// Example of calling methods from external dependencies directly on utils:
+		exists, err := utils.FileExists("file.txt")
+		if err != nil {
+			// It is good practice to set an error category.
+			// Most likely you want to do this at the place where enough context is known.
+			log.SetErrorCategory(log.ErrorConfiguration)
+			// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
+			return fmt.Errorf("failed to check for important file: %w", err)
+		}
+		if !exists {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return fmt.Errorf("cannot run without important file")
+		}
+		// ***********************************************************************************************
+	*/
 
 	return nil
 }
@@ -206,7 +207,7 @@ func parseValues(inputValues []string) (abapbuild.Values, error) {
 
 func parseValue(inputValue string) (abapbuild.Value, error) {
 	var value abapbuild.Value
-	split := strings.Split(inputValue, ",")
+	split := strings.Split(inputValue, ";")
 	if len(split) != 2 {
 		//TODO sinnvolle errormessage
 		return value, errors.New("")
