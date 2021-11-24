@@ -74,10 +74,10 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
-	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
-	if err := initConnection(conn, config, com, client); err != nil {
+	conn, err := initConnection(config, com, client)
+	if err != nil {
 		return err
 	}
 
@@ -89,6 +89,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	}
 	var build abapbuild.Build
 	build.Connector = *conn
+
 	if err := build.Start(config.Phase, values); err != nil {
 		return err
 	}
@@ -158,8 +159,9 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	return nil
 }
 
-func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
+func initConnection(config *abapEnvironmentBuildOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) (*abapbuild.Connector, error) {
 	var connConfig abapbuild.ConnectorConfiguration
+	conn := new(abapbuild.Connector)
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg
 	connConfig.CfSpace = config.CfSpace
@@ -174,7 +176,7 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+		return conn, errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
 	// TODO an besseren ort schieben, jetzt nur zum testen
@@ -184,7 +186,7 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 		//TrustedCerts: config.CertificateNames,
 	})
 
-	return nil
+	return conn, nil
 }
 
 func parseValues(inputValues []string) (abapbuild.Values, error) {
