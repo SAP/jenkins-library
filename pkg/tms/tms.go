@@ -56,15 +56,15 @@ type mtaExtDescriptors struct {
 	MtaExtDescriptors []MtaExtDescriptor `json:"mtaExtDescriptors"`
 }
 
-type UploadedFile struct {
+type FileInfo struct {
 	Id   int64  `json:"fileId"`
 	Name string `json:"fileName"`
 }
 
-type TransportRequest struct {
-	Id           int64        `json:"transportRequestId"`
-	Description  string       `json:"transportRequestDescription"`
-	QueueEntries []QueueEntry `json:"queueEntries"`
+type NodeUploadResponseEntity struct {
+	TransportRequestId          int64        `json:"transportRequestId"`
+	TransportRequestDescription string       `json:"transportRequestDescription"`
+	QueueEntries                []QueueEntry `json:"queueEntries"`
 }
 
 type QueueEntry struct {
@@ -73,7 +73,7 @@ type QueueEntry struct {
 	NodeName string `json:"nodeName"`
 }
 
-type NodeUploadBody struct {
+type NodeUploadRequestEntity struct {
 	ContentType string  `json:"contentType"`
 	StorageType string  `json:"storageType"`
 	NodeName    string  `json:"nodeName"`
@@ -91,8 +91,8 @@ type CommunicationInterface interface {
 	GetMtaExtDescriptor(nodeId int64, mtaId, mtaVersion string) (MtaExtDescriptor, error)
 	UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 	UploadMtaExtDescriptorToNode(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
-	UploadFile(file, namedUser string) (UploadedFile, error)
-	UploadFileToNode(nodeName, fileId, description, namedUser string) (TransportRequest, error)
+	UploadFile(file, namedUser string) (FileInfo, error)
+	UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
 }
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
@@ -263,7 +263,7 @@ func (communicationInstance *CommunicationInstance) GetMtaExtDescriptor(nodeId i
 
 }
 
-func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, fileId, description, namedUser string) (TransportRequest, error) {
+func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error) {
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Node upload started")
 		communicationInstance.logger.Infof("tmsUrl: %v, nodeName: %v, fileId: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeName, fileId, description, namedUser)
@@ -274,24 +274,24 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, f
 
 	// TODO: somewhere here the proxy should be considered as well
 
-	var transportRequest TransportRequest
+	var nodeUploadResponseEntity NodeUploadResponseEntity
 	entry := Entry{Uri: fileId}
-	body := NodeUploadBody{ContentType: "MTA", StorageType: "FILE", NodeName: nodeName, Description: description, NamedUser: namedUser, Entries: []Entry{entry}}
+	body := NodeUploadRequestEntity{ContentType: "MTA", StorageType: "FILE", NodeName: nodeName, Description: description, NamedUser: namedUser, Entries: []Entry{entry}}
 	bodyBytes, errMarshaling := json.Marshal(body)
 	if errMarshaling != nil {
-		return transportRequest, errors.Wrapf(errMarshaling, "unable to marshal request body %v", body)
+		return nodeUploadResponseEntity, errors.Wrapf(errMarshaling, "unable to marshal request body %v", body)
 	}
 
 	data, errSendRequest := sendRequest(communicationInstance, http.MethodPost, "/v2/nodes/upload", bytes.NewReader(bodyBytes), header, http.StatusOK, false)
 	if errSendRequest != nil {
-		return transportRequest, errSendRequest
+		return nodeUploadResponseEntity, errSendRequest
 	}
 
-	json.Unmarshal(data, &transportRequest)
+	json.Unmarshal(data, &nodeUploadResponseEntity)
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Node upload executed successfully")
 	}
-	return transportRequest, nil
+	return nodeUploadResponseEntity, nil
 
 }
 
@@ -367,7 +367,7 @@ func (communicationInstance *CommunicationInstance) UploadMtaExtDescriptorToNode
 
 }
 
-func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser string) (UploadedFile, error) {
+func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser string) (FileInfo, error) {
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Upload of file started")
 		communicationInstance.logger.Infof("tmsUrl: %v, file: %v, namedUser: %v", communicationInstance.tmsUrl, file, namedUser)
@@ -377,10 +377,10 @@ func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser s
 	url := fmt.Sprintf("%v/v2/files/upload", tmsUrl)
 	formFields := map[string]string{"namedUser": namedUser}
 
-	var uploadedFile UploadedFile
+	var fileInfo FileInfo
 	fileHandle, errOpenFile := os.Open(file)
 	if errOpenFile != nil {
-		return uploadedFile, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
+		return fileInfo, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
 	}
 	defer fileHandle.Close()
 
@@ -389,14 +389,14 @@ func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser s
 	var data []byte
 	data, errUpload := upload(communicationInstance, uploadRequestData, http.StatusCreated)
 	if errUpload != nil {
-		return uploadedFile, errUpload
+		return fileInfo, errUpload
 	}
 
-	json.Unmarshal(data, &uploadedFile)
+	json.Unmarshal(data, &fileInfo)
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("File uploaded successfully")
 	}
-	return uploadedFile, nil
+	return fileInfo, nil
 
 }
 

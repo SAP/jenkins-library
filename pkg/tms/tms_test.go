@@ -387,7 +387,7 @@ func TestUploadFile(t *testing.T) {
 
 		filePath := "./resources/cf_example.mtar"
 		namedUser := "testUser"
-		uploadedFile, err := communicationInstance.UploadFile(filePath, namedUser)
+		fileInfo, err := communicationInstance.UploadFile(filePath, namedUser)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://tms.dummy.sap.com/v2/files/upload", uploaderMock.urlCalled, "Called url incorrect")
@@ -403,8 +403,8 @@ func TestUploadFile(t *testing.T) {
 		fileContentString := buf.String()
 		assert.Equal(t, fileContentString, uploaderMock.fileContentString, "File content incorrect")
 
-		assert.Equal(t, fileId, uploadedFile.Id, "Uploaded file Id field incorrect")
-		assert.Equal(t, fileName, uploadedFile.Name, "Uploaded file Name field incorrect")
+		assert.Equal(t, fileId, fileInfo.Id, "Id field of file info incorrect")
+		assert.Equal(t, fileName, fileInfo.Name, "Name field of file info incorrect")
 	})
 
 	t.Run("test upload error", func(t *testing.T) {
@@ -450,7 +450,7 @@ func TestUploadFileToNode(t *testing.T) {
 
 		fileId := "111"
 		namedUser := "testUser"
-		transportRequest, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+		nodeUploadResponseEntity, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")
@@ -460,12 +460,12 @@ func TestUploadFileToNode(t *testing.T) {
 		entryString := fmt.Sprintf(`{"uri":"%v"}`, fileId)
 		assert.Equal(t, fmt.Sprintf(`{"contentType":"MTA","storageType":"FILE","nodeName":"%v","description":"%v","namedUser":"%v","entries":[%v]}`, nodeName, transportRequestDescription, namedUser, entryString), uploaderMock.requestBody, "Request body incorrect")
 
-		assert.Equal(t, transportRequestId, transportRequest.Id, "Transport request Id field incorrect")
-		assert.Equal(t, transportRequestDescription, transportRequest.Description, "Transport request Description field incorrect")
-		assert.Equal(t, 1, len(transportRequest.QueueEntries), "Queue entries amount for transport request incorrect")
-		assert.Equal(t, queueId, transportRequest.QueueEntries[0].Id, "Queue entry Id field incorrect")
-		assert.Equal(t, nodeId, transportRequest.QueueEntries[0].NodeId, "Queue entry NodeId field incorrect")
-		assert.Equal(t, nodeName, transportRequest.QueueEntries[0].NodeName, "Queue entry NodeName field incorrect")
+		assert.Equal(t, transportRequestId, nodeUploadResponseEntity.TransportRequestId, "TransportRequestId field of node upload response incorrect")
+		assert.Equal(t, transportRequestDescription, nodeUploadResponseEntity.TransportRequestDescription, "TransportRequestDescription field of node upload response incorrect")
+		assert.Equal(t, 1, len(nodeUploadResponseEntity.QueueEntries), "Queue entries amount in node upload response incorrect")
+		assert.Equal(t, queueId, nodeUploadResponseEntity.QueueEntries[0].Id, "Queue entry Id field incorrect")
+		assert.Equal(t, nodeId, nodeUploadResponseEntity.QueueEntries[0].NodeId, "Queue entry NodeId field incorrect")
+		assert.Equal(t, nodeName, nodeUploadResponseEntity.QueueEntries[0].NodeName, "Queue entry NodeName field incorrect")
 	})
 
 	t.Run("test error", func(t *testing.T) {
