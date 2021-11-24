@@ -160,4 +160,4 @@ spec:
   containers:
     # To allow both maven and mta we require an image that contains both tools. If the user configures an image for mavenExecute that also needs to contain both.
     - name: mvn-npm
-      image: devxci/mbtci:1.1.1
+      image: devxci/mbtci-java11-node14

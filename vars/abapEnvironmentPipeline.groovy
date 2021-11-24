@@ -33,11 +33,21 @@ void call(parameters) {
                 }
             }
 
-            stage('ATC') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
-                steps {
-                    abapEnvironmentPipelineStageATC script: parameters.script
-                }
+            stage('Test') {
+                    parallel {
+                        stage('ATC') {
+                            when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                            steps {
+                                abapEnvironmentPipelineStageATC script: parameters.script
+                            }
+                        }
+                        stage('AUnit') {
+                            when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                            steps {
+                                abapEnvironmentPipelineStageAUnit script: parameters.script
+                            }
+                        }
+                    }
             }
 
             stage('Build') {
