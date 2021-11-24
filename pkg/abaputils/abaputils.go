@@ -55,9 +55,6 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		connectionDetails.User = options.Username
 		connectionDetails.Password = options.Password
 	} else {
-		//TODO delete
-		log.Entry().Info("Ankerpunkt ##############################################################################################")
-		log.Entry().Info(options.Host)
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
 			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -72,9 +69,6 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
-	//TODO delete
-	log.Entry().Infof("user %d", len(connectionDetails.User))
-	log.Entry().Infof("blub %d", len(connectionDetails.Password))
 	return connectionDetails, error
 }
 

@@ -74,9 +74,10 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
+	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
-	conn, err := initConnection(config, com, client)
+	err := initConnection(conn, config, com, client)
 	if err != nil {
 		return err
 	}
@@ -87,8 +88,10 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	if err != nil {
 		return err
 	}
-	var build abapbuild.Build
-	build.Connector = *conn
+
+	build := abapbuild.Build{
+		Connector: *conn,
+	}
 
 	if err := build.Start(config.Phase, values); err != nil {
 		return err
@@ -159,9 +162,8 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	return nil
 }
 
-func initConnection(config *abapEnvironmentBuildOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) (*abapbuild.Connector, error) {
+func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
 	var connConfig abapbuild.ConnectorConfiguration
-	conn := new(abapbuild.Connector)
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg
 	connConfig.CfSpace = config.CfSpace
@@ -176,17 +178,18 @@ func initConnection(config *abapEnvironmentBuildOptions, com abaputils.Communica
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
-		return conn, errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
 	// TODO an besseren ort schieben, jetzt nur zum testen
-	conn.Client.SetOptions(piperhttp.ClientOptions{
-		//UseDefaultTransport:       false,
-		TransportSkipVerification: true,
-		//TrustedCerts: config.CertificateNames,
-	})
+	/*
+		conn.Client.SetOptions(piperhttp.ClientOptions{
+			//UseDefaultTransport:       false,
+			TransportSkipVerification: true,
+			//TrustedCerts: config.CertificateNames,
+		})*/
 
-	return conn, nil
+	return nil
 }
 
 func parseValues(inputValues []string) (abapbuild.Values, error) {
