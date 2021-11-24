@@ -50,4 +50,3 @@ type DetailsTelemetry struct {
 	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
 	Event      map[string]interface{} `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
-
