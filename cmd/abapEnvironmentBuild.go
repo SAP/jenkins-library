@@ -180,8 +180,8 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	// TODO an besseren ort schieben, jetzt nur zum testen
 	conn.Client.SetOptions(piperhttp.ClientOptions{
 		//UseDefaultTransport:       false,
-		//TransportSkipVerification: true,
-		TrustedCerts: config.CertificateNames,
+		TransportSkipVerification: true,
+		//TrustedCerts: config.CertificateNames,
 	})
 
 	return nil
