@@ -303,7 +303,6 @@ func (communicationInstance *CommunicationInstance) UpdateMtaExtDescriptor(nodeI
 
 	header := http.Header{}
 	header.Add("tms-named-user", namedUser)
-	// TODO: which headers are required in addition?
 
 	tmsUrl := strings.TrimSuffix(communicationInstance.tmsUrl, "/")
 	url := fmt.Sprintf("%v/v2/nodes/%v/mtaExtDescriptors/%v", tmsUrl, nodeId, idOfMtaExtDescriptor)
@@ -340,7 +339,6 @@ func (communicationInstance *CommunicationInstance) UploadMtaExtDescriptorToNode
 
 	header := http.Header{}
 	header.Add("tms-named-user", namedUser)
-	// TODO: which headers are required in addition?
 
 	tmsUrl := strings.TrimSuffix(communicationInstance.tmsUrl, "/")
 	url := fmt.Sprintf("%v/v2/nodes/%v/mtaExtDescriptors", tmsUrl, nodeId)
@@ -375,9 +373,6 @@ func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser s
 		communicationInstance.logger.Infof("tmsUrl: %v, file: %v, namedUser: %v", communicationInstance.tmsUrl, file, namedUser)
 	}
 
-	header := http.Header{}
-	// TODO: which headers are required in addition?
-
 	tmsUrl := strings.TrimSuffix(communicationInstance.tmsUrl, "/")
 	url := fmt.Sprintf("%v/v2/files/upload", tmsUrl)
 	formFields := map[string]string{"namedUser": namedUser}
@@ -389,7 +384,7 @@ func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser s
 	}
 	defer fileHandle.Close()
 
-	uploadRequestData := piperHttp.UploadRequestData{Method: http.MethodPost, URL: url, File: file, FileFieldName: "file", FormFields: formFields, FileContent: fileHandle, Header: header, Cookies: nil}
+	uploadRequestData := piperHttp.UploadRequestData{Method: http.MethodPost, URL: url, File: file, FileFieldName: "file", FormFields: formFields, FileContent: fileHandle, Header: http.Header{}, Cookies: nil}
 
 	var data []byte
 	data, errUpload := upload(communicationInstance, uploadRequestData, http.StatusCreated)

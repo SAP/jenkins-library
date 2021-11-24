@@ -83,7 +83,6 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	influx.step_data.fields.tms = true
 }
 
-// TODO: understand the idea of CommunicationInterface
 func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface) error {
 	// TODO: provide TMS upload logic here
 	/*
