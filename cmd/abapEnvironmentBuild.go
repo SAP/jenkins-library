@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http/cookiejar"
 	"path"
 	"path/filepath"
 	"strings"
@@ -164,31 +165,45 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 }
 
 func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
-	var connConfig abapbuild.ConnectorConfiguration
-	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
-	connConfig.CfOrg = config.CfOrg
-	connConfig.CfSpace = config.CfSpace
-	connConfig.CfServiceInstance = config.CfServiceInstance
-	connConfig.CfServiceKeyName = config.CfServiceKeyName
-	connConfig.Host = config.Host
-	connConfig.Username = config.Username
-	connConfig.Password = config.Password
 
-	// TODO macht runtime überhaupt was
-	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+	conn.Client = client
+	conn.Header = make(map[string][]string)
+	conn.Header["Accept"] = []string{"application/json"}
+	conn.Header["Content-Type"] = []string{"application/json"}
 
-	err := conn.InitBuildFramework(connConfig, com, client)
+	conn.DownloadClient = client
+
+	// Mapping for options
+	subOptions := abaputils.AbapEnvironmentOptions{}
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+
+	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
 	if err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
 
-	// TODO an besseren ort schieben, jetzt nur zum testen
-	/*
-		conn.Client.SetOptions(piperhttp.ClientOptions{
-			//UseDefaultTransport:       false,
-			TransportSkipVerification: true,
-			//TrustedCerts: config.CertificateNames,
-		})*/
+	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{
+		Username:         connectionDetails.User,
+		Password:         connectionDetails.Password,
+		TransportTimeout: 20 * time.Second,
+	})
+	cookieJar, _ := cookiejar.New(nil)
+	//TODO das mit den zertifikaten einbauen!
+	conn.Client.SetOptions(piperhttp.ClientOptions{
+		TrustedCerts: config.CertificateNames,
+		Username:     connectionDetails.User,
+		Password:     connectionDetails.Password,
+		CookieJar:    cookieJar,
+	})
+	conn.Baseurl = connectionDetails.URL
 
 	return nil
 }
@@ -207,6 +222,7 @@ func parseValues(inputValues []string) (abapbuild.Values, error) {
 
 func parseValue(inputValue string) (abapbuild.Value, error) {
 	var value abapbuild.Value
+	//TODO ; wieder durch , ersetzen -> und dann config.yml anpassen
 	split := strings.Split(inputValue, ";")
 	if len(split) != 2 {
 		//TODO sinnvolle errormessage

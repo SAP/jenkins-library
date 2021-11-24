@@ -169,12 +169,10 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 		Password: connectionDetails.Password,
 	})
 	cookieJar, _ := cookiejar.New(nil)
-	//TODO das mit den zertifikaten einbauen!
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		TransportSkipVerification: true,
-		Username:                  connectionDetails.User,
-		Password:                  connectionDetails.Password,
-		CookieJar:                 cookieJar,
+		Username:  connectionDetails.User,
+		Password:  connectionDetails.Password,
+		CookieJar: cookieJar,
 	})
 	conn.Baseurl = connectionDetails.URL
 
