@@ -104,9 +104,9 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		}
 	}
 
-	log.Entry().Infof("creating build settings information...")
+	log.Entry().Debugf("creating build settings information...")
 	stepName := "kanikoExecute"
-	dockerImage := ""
+	var dockerImage string
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {
@@ -127,11 +127,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	kanikoConfig := buildsettings.BuildOptions{
 		DockerImage: dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : %v", err)
+		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
 		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")

@@ -235,9 +235,9 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	log.Entry().Infof("creating build settings information...")
+	log.Entry().Debugf("creating build settings information...")
 	stepName := "mtaBuild"
-	dockerImage := ""
+	var dockerImage string
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {
@@ -263,11 +263,11 @@ func runMtaBuild(config mtaBuildOptions,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
 		DockerImage:        dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, stepName)
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, stepName)
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : %v", err)
+		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 

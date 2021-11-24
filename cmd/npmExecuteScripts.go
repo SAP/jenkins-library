@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
+	conf "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -47,8 +50,26 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		return err
 	}
 
-	log.Entry().Infof("creating build settings information...")
-	dockerImage := "DOCKER_IMAGE"
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "npmExecuteScripts"
+	var dockerImage string
+	var dataParametersJSON map[string]interface{}
+	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
+	if errUnmarshal != nil {
+		log.Entry().Infof("Reading ParametersJSON is failed")
+	}
+	if value, ok := dataParametersJSON["dockerImage"]; ok {
+		dockerImage = value.(string)
+	} else {
+		metadata, err := conf.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, GeneralConfig.StepMetadata, stepName)
+		if err != nil {
+			log.Entry().Warnf("failed to resolve metadata: %v", err)
+		}
+		containers := metadata.Spec.Containers
+		if len(containers) > 0 {
+			dockerImage = containers[0].Image
+		}
+	}
 	npmConfig := buildsettings.BuildOptions{
 		Publish:            config.Publish,
 		CreateBOM:          config.CreateBOM,
@@ -56,11 +77,11 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		BuildSettingsInfo:  config.BuildSettingsInfo,
 		DockerImage:        dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, "npmExecuteScripts")
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, stepName)
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : %v", err)
+		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
 		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)

@@ -87,9 +87,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
-	log.Entry().Infof("creating build settings information...")
+	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	dockerImage := ""
+	var dockerImage string
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
 	if errUnmarshal != nil {
@@ -116,11 +116,11 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		BuildSettingsInfo:           config.BuildSettingsInfo,
 		DockerImage:                 dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, stepName)
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&mavenConfig, stepName)
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : %v", err)
+		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if err == nil {
 		if config.Publish && !config.Verify {
