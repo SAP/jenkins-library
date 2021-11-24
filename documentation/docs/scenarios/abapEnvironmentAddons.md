@@ -56,9 +56,9 @@ As explained above, the shipment of a software takes place via add-on product ve
 - Product release
 - Product Support Package stack and Patch level
 - A list of contained software component versions with
-    - Software component name
-    - Software component release
-    - Delivery Package, which delivers the versions
+  - Software component name
+  - Software component release
+  - Delivery Package, which delivers the versions
 
 In ABAP Environment Pipeline stage [*Build*](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/) a target vector for the particular add-on product version is published in test scope. This makes it possible to perform an add-on test installation in stage [*Integration Tests*](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/). At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning in the *Integration Tests* stage.
 
@@ -187,7 +187,7 @@ If the `version` of a software component (repository) is increased but not the `
 If the addon product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
 
 `branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different list of commits.
-The `commitID` should only be changed while also adjusting the `version` number of a software component. 
+The `commitID` should only be changed while also adjusting the `version` number of a software component.
 While adjusting the patch version or support package version of a software component, the `branch` should only be changed if the previous branch also includes the `commitID` of the previous software component version.
 
 ##### Versioning Rules
