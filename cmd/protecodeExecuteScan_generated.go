@@ -372,7 +372,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "reuseExisting"}},
+						Aliases:     []config.Alias{{Name: "reuseExisting", Deprecated: true}},
 						Default:     false,
 					},
 					{
@@ -402,7 +402,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "user"}},
+						Aliases:   []config.Alias{{Name: "user", Deprecated: true}},
 						Default:   os.Getenv("PIPER_username"),
 					},
 					{
@@ -437,7 +437,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
