@@ -84,10 +84,13 @@ To trigger the AUnit run an AUnit config file `aUnitConfig.yml` will be needed. 
 The following section contains an example of an `aUnitConfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This repository containing the `Jenkinsfile` must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
-You can specify an object set containing the objects that should be checked. These can be for example packages, classes or transport requests containing test classes that can be executed. This must be in the same format as below example for a `aUnitConfig.yml` file.
-Note that if you specify a package inside a packageSet to be checked for each package that has to be checked you can configure if you want the subpackages to be included in checks or not. We recommend you to specify each development package you want to be checked as it is not possible to specify structure packages within the `aUnitConfig.yml` file. You can specify complete development packages using the `includesubpackages: false` parameter.
+!!! Currently the Object Set configuration is limited to the usage of Multi Property Sets.
+You can specify a Multi Property Set containing multiple properties that should be checked. Each property that is specified in the Multi Property Set acts like an additional rule.
+This means if you specify e.g. a Multi Property Set containing the owner and package properties that an ABAP Unit test run will be started testing all objects belonging to this owner inside of the given package. If you additionally define the Version to be `ACTIVE` for the ABAP Unit test run inside of the Multi Property Set, only objects belonging to this owner which are active inside of the package would be tested. 
+This must be in the same format as below examples for a `aUnitConfig.yml` file.
+Note that if you want to check complete software components we reccommend to use the `component` property over the `package` property as this may cause issues for structure packages.
 
-See below example for an `aUnitConfig.yml` file containing a package to be checked:
+See below example for an `aUnitConfig.yml` file containing the software component `demoSoftwareComponent` to be checked:
 
 ```yaml
 title: My AUnit run
@@ -105,16 +108,15 @@ options:
     short: true
     medium: true
     long: true
-objectSet:
-  - type: unionSet
-    set:
-      - type: packageSet
-        package:
-          - name: my_package
-            includeSubpackages: false
+objectset:
+  - type: multiPropertySet
+    multipropertyset:
+      componentnames: 
+        - component:
+          name: demoSoftwareComponent
 ```
 
-The following example of an `aUnitConfig.yml` file containing one class and one interface to be checked:
+The following example of an `aUnitConfig.yml` file to check all objects belonging to the owner `demoOwner`:
 
 ```yaml
 title: My AUnit run
@@ -132,13 +134,58 @@ options:
     short: true
     medium: true
     long: true
-objectSet:
-  - type: unionSet
-    set:
-      - type: flatObjectSet
-        object:
-        - name: my_class
-          type: CLAS
-        - name: my_interface
-          type: INTF
+objectset:
+  - type: multiPropertySet
+    multipropertyset:
+      owner: 
+        - name: demoOwner
+```
+
+The following example of an `aUnitConfig.yml` file contains all possible properties of the Multi Property Set that can be used:
+
+```yaml
+title: My AUnit run
+context: My unit tests
+options:
+  measurements: none
+  scope:
+    ownTests: true
+    foreignTests: true
+  riskLevel:
+    harmless: true
+    dangerous: true
+    critical: true
+  duration:
+    short: true
+    medium: true
+    long: true
+objectset:
+  - type: multiPropertySet
+    multipropertyset:
+      owner: 
+        - name: demoOwner
+      componentnames: 
+        - component:
+          name: demoSoftwareComponent
+      version:
+        - value: ACTIVE
+      packagenames: 
+        - package:
+          name: demoPackage
+      objectnamepattern:
+        - value: 'ZCL_*'
+      language:
+        - value: EN
+      sourcesystem:
+        - name: H01
+      objecttype:
+        - name: CLAS
+      objecttypegroup:
+        - name: CLAS
+      releasestate:
+        - value: RELEASED
+      applicationcomponent:
+        - name: demoApplicationComponent
+      transportlayer:
+        - name: H01
 ```
