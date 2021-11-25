@@ -143,7 +143,7 @@ func MtaBuildCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -427,7 +427,7 @@ func mtaBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "mtarFilePath"},
 							{"Name": "custom/mtarPublishedUrl"},
-							{"Name": "custom/buildSettingsInfo"},
+							{"Name": "custom/buildSettingsInfo", "type": "string"},
 						},
 					},
 				},

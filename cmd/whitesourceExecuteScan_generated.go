@@ -225,7 +225,7 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -793,15 +793,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/whitesourceProjectNames"},
+							{"Name": "custom/whitesourceProjectNames", "type": "[]string"},
 						},
 					},
 					{
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "whitesource"}}},
-							{"Name": "whitesource_data"}, {"fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "policy_violations"}}},
+							{"Name": "step_data", "fields": []map[string]string{{"name": "whitesource"}}},
+							{"Name": "whitesource_data", "fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "policy_violations"}}},
 						},
 					},
 				},

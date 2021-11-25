@@ -166,7 +166,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -478,8 +478,8 @@ func detectExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "detect"}}},
-							{"Name": "detect_data"}, {"fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "components"}, {"name": "policy_violations"}}},
+							{"Name": "step_data", "fields": []map[string]string{{"name": "detect"}}},
+							{"Name": "detect_data", "fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "components"}, {"name": "policy_violations"}}},
 						},
 					},
 				},

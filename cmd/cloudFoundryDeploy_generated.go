@@ -173,7 +173,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -563,7 +563,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "deployment_data"}, {"fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}}, {"tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
+							{"Name": "deployment_data", "fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}, "tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
 						},
 					},
 				},

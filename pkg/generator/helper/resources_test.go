@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStructString(t *testing.T) {
+func TestInfluxResource_StructString(t *testing.T) {
 	tt := []struct {
 		in       InfluxResource
 		expected string
@@ -79,6 +79,81 @@ func (i *TestStepTestInflux) persist(path, resourceName string) {
 	}
 	if errCount > 0 {
 		log.Entry().Fatal("failed to persist Influx environment")
+	}
+}`,
+		},
+	}
+
+	for run, test := range tt {
+		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
+			got, err := test.in.StructString()
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, got)
+		})
+
+	}
+}
+
+func TestReportsResource_StructString(t *testing.T) {
+	tt := []struct {
+		in       ReportsResource
+		expected string
+	}{
+		{
+			in: ReportsResource{
+				Name:     "reports",
+				StepName: "testStep",
+				Parameters: []ReportsParameter{
+					{
+						FilePattern: "pattern1",
+						Type:        "general",
+						SubFolder:   "sub/folder",
+					},
+					{
+						FilePattern: "pattern2",
+					},
+				},
+			},
+			expected: `type testStepReports struct {
+}
+
+func (p *testStepReports) persist(path, resourceName string) {
+	content := []struct{
+		filePattern string
+		stepResultType string
+		subFolder string
+	}{
+		{filePattern: "pattern1", stepResultType: "general", subFolder: "sub/folder"},
+		{filePattern: "pattern2", stepResultType: "", subFolder: ""},
+	}
+
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsFolderPath := GeneralConfig.GCSFolderPath
+	gcsBucketID := GeneralConfig.GCSBucketId
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Fatalf("failed to persist reports: %v", err)
+	}
+	for _, param := range content {
+		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
+		foundFiles, err := doublestar.Glob(param.filePattern)
+		if err != nil {
+			log.Entry().Fatalf("failed to persist reports: %v", err)
+		}
+		for _, sourcePath := range foundFiles {
+			fileInfo, err := os.Stat(sourcePath)
+			if err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
+			if fileInfo.IsDir() {
+				continue
+			}
+			if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
+		}
 	}
 }`,
 		},

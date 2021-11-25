@@ -273,10 +273,10 @@ spec:
         type: reports
         params:
           - filePattern: "sonarscan.json"
-            type: "general"
+            type: general
             subFolder: "sonarExecuteScan"
           - filePattern: "sonarExecuteScan_*.json"
-            type: "general"
+            type: general
       - name: influx
         type: influx
         params:

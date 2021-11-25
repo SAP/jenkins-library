@@ -166,7 +166,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -291,9 +291,14 @@ func {{ .StepName }}Metadata() config.StepData {
 						{{ if $res.Type }}Type: {{ $res.Type | quote }}, {{- end }}
 						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
 						{{ range $i, $p := $res.Parameters }}
-							{{ if $p.name}}{"Name": {{ $p.name | quote }}},{{ end -}}
-							{{ if $p.fields}}{"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} } },{{ end -}}
-							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} } },{{ end -}}
+							{{ if $p }}{ {{- end -}}
+							{{ if $p.name}}"Name": {{ $p.name | quote }},{{ end -}}
+							{{ if $p.fields}}"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} },{{ end -}}
+							{{ if $p.tags}}"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} },{{ end -}}
+							{{ if $p.filePattern}}"filePattern": {{ $p.filePattern | quote }},{{ end -}}
+							{{ if $p.type}}"type": {{ $p.type | quote }},{{ end -}}
+							{{ if $p.subFolder}}"subFolder": {{ $p.subFolder | quote }},{{ end -}}
+							{{ if $p }}}, {{- end -}}
 						{{ end }}
 						{{ if $res.Parameters -}} }, {{- end }}
 						{{- if $res.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $res.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}

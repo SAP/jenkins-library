@@ -25,6 +25,13 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
 spec:
   outputs:
     resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "test-report_*.json"
+            subFolder: "sonarExecuteScan"
+          - filePattern: "report1"
+            type: general
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:

@@ -133,7 +133,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -332,7 +332,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/buildSettingsInfo"},
+							{"Name": "custom/buildSettingsInfo", "type": "string"},
 						},
 					},
 				},

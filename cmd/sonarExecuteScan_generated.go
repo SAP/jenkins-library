@@ -215,7 +215,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -569,16 +569,19 @@ func sonarExecuteScanMetadata() config.StepData {
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
-						Name:       "reports",
-						Type:       "reports",
-						Parameters: []map[string]interface{}{},
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "sonarscan.json", "type": "general", "subFolder": "sonarExecuteScan"},
+							{"filePattern": "sonarExecuteScan_*.json", "type": "general"},
+						},
 					},
 					{
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
-							{"Name": "sonarqube_data"}, {"fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
+							{"Name": "step_data", "fields": []map[string]string{{"name": "sonar"}}},
+							{"Name": "sonarqube_data", "fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
 						},
 					},
 				},

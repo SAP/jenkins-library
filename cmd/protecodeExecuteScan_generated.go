@@ -166,7 +166,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -457,8 +457,8 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "protecode"}}},
-							{"Name": "protecode_data"}, {"fields": []map[string]string{{"name": "excluded_vulnerabilities"}, {"name": "historical_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "vulnerabilities"}}},
+							{"Name": "step_data", "fields": []map[string]string{{"name": "protecode"}}},
+							{"Name": "protecode_data", "fields": []map[string]string{{"name": "excluded_vulnerabilities"}, {"name": "historical_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "vulnerabilities"}}},
 						},
 					},
 				},

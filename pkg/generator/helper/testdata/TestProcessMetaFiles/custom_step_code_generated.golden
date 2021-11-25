@@ -11,6 +11,8 @@ import (
 	piperOsCmd "github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -25,6 +27,49 @@ type testStepOptions struct {
 	Param3 string `json:"param3,omitempty" validate:"possible-values=value1 value2 value3,required_if=Param1 value1 Param2 value2"`
 }
 
+
+type testStepReports struct {
+}
+
+func (p *testStepReports) persist(path, resourceName string) {
+	content := []struct{
+		filePattern string
+		stepResultType string
+		subFolder string
+	}{
+		{filePattern: "test-report_*.json", stepResultType: "", subFolder: "sonarExecuteScan"},
+		{filePattern: "report1", stepResultType: "general", subFolder: ""},
+	}
+
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsFolderPath := GeneralConfig.GCSFolderPath
+	gcsBucketID := GeneralConfig.GCSBucketId
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Fatalf("failed to persist reports: %v", err)
+	}
+	for _, param := range content {
+		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
+		foundFiles, err := doublestar.Glob(param.filePattern)
+		if err != nil {
+			log.Entry().Fatalf("failed to persist reports: %v", err)
+		}
+		for _, sourcePath := range foundFiles {
+			fileInfo, err := os.Stat(sourcePath)
+			if err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
+			if fileInfo.IsDir() {
+				continue
+			}
+			if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
+		}
+	}
+}
 
 type testStepCommonPipelineEnvironment struct {
 	artifactVersion string
@@ -107,6 +152,7 @@ func TestStepCommand() *cobra.Command {
 	metadata := testStepMetadata()
 	var stepConfig testStepOptions
 	var startTime time.Time
+	var reports testStepReports
 	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
 	var logCollector *log.CollectorHook
@@ -161,6 +207,7 @@ func TestStepCommand() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				reports.persist(piperOsCmd.GeneralConfig.EnvRootPath, "reports")
 				commonPipelineEnvironment.persist(piperOsCmd.GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(piperOsCmd.GeneralConfig.EnvRootPath, "influxTest")
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -172,7 +219,7 @@ func TestStepCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			log.DeferExitHandler(handler)
+			//log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -257,21 +304,29 @@ func testStepMetadata() config.StepData {
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "test-report_*.json","subFolder": "sonarExecuteScan",},
+							{"filePattern": "report1","type": "general",},
+						},
+					},
+					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "artifactVersion"},
-							{"Name": "git/commitId"},
-							{"Name": "git/headCommitId"},
-							{"Name": "git/branch"},
-							{"Name": "custom/customList"},
+							{"Name": "artifactVersion",},
+							{"Name": "git/commitId",},
+							{"Name": "git/headCommitId",},
+							{"Name": "git/branch",},
+							{"Name": "custom/customList","type": "[]string",},
 						},
 					},
 					{
 						Name: "influxTest",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "m1"},{"fields": []map[string]string{ {"name": "f1"}, } },{"tags": []map[string]string{ {"name": "t1"}, } },
+							{"Name": "m1","fields": []map[string]string{ {"name": "f1"}, },"tags": []map[string]string{ {"name": "t1"}, },},
 						},
 					},
 				},
