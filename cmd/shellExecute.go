@@ -1,15 +1,12 @@
 package cmd
 
 import (
-	"net/url"
 	"os/exec"
-	"strings"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -57,65 +54,32 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		},
 		Namespace: config.VaultNamespace,
 	}
+
+	// no need to create a vault client, just need to resolve variables for scripts
 	_, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 	if err != nil {
 		log.Entry().Info("could not create vault client:", err)
 	}
 
-	// piper http client for downloading scripts
-	httpClient := piperhttp.Client{}
-
-	// scripts for running locally
-	var e []string
-
 	// check input data
 	// example for script: sources: ["./script.sh"]
 	for _, source := range config.Sources {
-		// check it's a local script or remote
-		_, err := url.ParseRequestURI(source)
+		// check if the script is physically present
+		exists, err := fileUtils.FileExists(source)
 		if err != nil {
-			// err means that it's not a remote script
-			// check if the script is physically present (for local scripts)
-			exists, err := fileUtils.FileExists(source)
-			if err != nil {
-				log.Entry().WithError(err).Error("failed to check for defined script")
-				return errors.Wrap(err, "failed to check for defined script")
-			}
-			if !exists {
-				log.Entry().WithError(err).Error("the specified script could not be found")
-				return errors.New("the specified script could not be found")
-			}
-			e = append(e, source)
-		} else {
-			// this block means that it's a remote script
-			// so, need to download it before
-			// get script name at first
-			path := strings.Split(source, "/")
-			err = httpClient.DownloadFile(source, path[len(path)-1], nil, nil)
-			if err != nil {
-				log.Entry().WithError(err).Errorf("the specified script could not be downloaded")
-			}
-			// make script executable
-			exec.Command("/bin/sh", "chmod +x "+path[len(path)-1])
-
-			e = append(e, path[len(path)-1])
-
+			log.Entry().WithError(err).Error("failed to check for defined script")
+			return errors.Wrap(err, "failed to check for defined script")
 		}
-	}
-
-	// if all ok - try to run them one by one
-	for _, script := range e {
-		log.Entry().Info("starting running script:", script)
-		err = utils.RunExecutable(script)
+		if !exists {
+			log.Entry().WithError(err).Error("the specified script could not be found")
+			return errors.New("the specified script could not be found")
+		}
+		log.Entry().Info("starting running script:", source)
+		err = utils.RunExecutable(source)
 		if err != nil {
-			log.Entry().Errorln("starting running script:", script)
+			log.Entry().Errorln("starting running script:", source)
 		}
-
-		// if it's an exit error, then check the exit code
-		// according to the requirements
-		// 0 - success
-		// 1 - fails the build (or > 2)
-		// 2 - build unstable - unsupported now
+		// handle exit code
 		if ee, ok := err.(*exec.ExitError); ok {
 			switch ee.ExitCode() {
 			case 0:
