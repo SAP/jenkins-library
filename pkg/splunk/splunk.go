@@ -104,7 +104,7 @@ func readCommonPipelineEnvironment(filePath string) string {
 
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 
-	return MonitoringData{
+	monitoringData := MonitoringData{
 		PipelineUrlHash: telemetryData.PipelineURLHash,
 		BuildUrlHash:    telemetryData.BuildURLHash,
 		StageName:       telemetryData.StageName,
@@ -119,6 +119,16 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		GitOwner:        readCommonPipelineEnvironment("github/owner"),
 		GitRepository:   readCommonPipelineEnvironment("github/repository"),
 	}
+	monitoringJson, err := json.Marshal(monitoringData)
+	if err != nil {
+		log.Entry().Error("could not marshal monitoring data")
+		log.Entry().Infof("Step monitoring data: {n/a}")
+	} else {
+		// log step monitoring data, changes here need to change the regex in the internal piper lib
+		log.Entry().Infof("Step monitoring data:%v", string(monitoringJson))
+	}
+
+	return monitoringData
 }
 
 func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}, logFile *[]byte) error {
