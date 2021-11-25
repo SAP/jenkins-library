@@ -54,7 +54,7 @@ func (p *isChangeInDevelopmentCommonPipelineEnvironment) persist(path, resourceN
 	}
 }
 
-// IsChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
+// IsChangeInDevelopmentCommand This step checks if a certain change is in status 'in development'
 func IsChangeInDevelopmentCommand() *cobra.Command {
 	const STEP_NAME = "isChangeInDevelopment"
 
@@ -63,11 +63,13 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment isChangeInDevelopmentCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createIsChangeInDevelopmentCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Checks if a certain change is in status 'in development'",
-		Long:  `"Checks if a certain change is in status 'in development'"`,
+		Short: "This step checks if a certain change is in status 'in development'",
+		Long:  `This step checks if a certain change is in status 'in development'`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -93,6 +95,7 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -109,30 +112,32 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			isChangeInDevelopment(stepConfig, &telemetryData, &commonPipelineEnvironment)
-			telemetryData.ErrorCode = "0"
+			isChangeInDevelopment(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -161,7 +166,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "isChangeInDevelopment",
 			Aliases:     []config.Alias{},
-			Description: "Checks if a certain change is in status 'in development'",
+			Description: "This step checks if a certain change is in status 'in development'",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

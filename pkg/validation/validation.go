@@ -2,7 +2,9 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/locales/en"
@@ -26,6 +28,7 @@ type validationOption func(*validation) error
 
 func New(opts ...validationOption) (*validation, error) {
 	validator := valid.New()
+	validator.RegisterValidation("possible-values", isPossibleValues)
 	enTranslator := en.New()
 	universalTranslator := ut.New(enTranslator, enTranslator)
 	translator, found := universalTranslator.GetTranslator("en")
@@ -60,19 +63,19 @@ func WithJSONNamesForStructFields() validationOption {
 func WithPredefinedErrorMessages() validationOption {
 	translations := []Translation{
 		{
-			Tag: "oneof",
+			Tag: "possible-values",
 			RegisterFn: func(ut ut.Translator) error {
-				return ut.Add("oneof", "The {0} must use the following values: {1}. ", true)
+				return ut.Add("possible-values", "The {0} must use the following values: {1}", true)
 			},
 			TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-				t, _ := ut.T("oneof", fe.Field(), fe.Param())
+				t, _ := ut.T("possible-values", fe.Field(), fe.Param())
 				return t
 			},
 		}, {
 			Tag: "required_if",
 			RegisterFn: func(ut ut.Translator) error {
 				// TODO: Improve the message for condition required_if for several fields
-				return ut.Add("required_if", "The {0} is required since the {1} is {2}. ", true)
+				return ut.Add("required_if", "The {0} is required since the {1} is {2}", true)
 			},
 			TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
 				params := []string{fe.Field()}
@@ -107,7 +110,7 @@ func (v *validation) ValidateStruct(s interface{}) error {
 			return err
 		}
 		for _, err := range errs.(valid.ValidationErrors) {
-			errStr += err.Translate(v.Translator)
+			errStr += err.Translate(v.Translator) + ". "
 		}
 		return errors.New(errStr)
 	}
@@ -125,4 +128,42 @@ func registerTranslations(translations []Translation, validator *valid.Validate,
 		}
 	}
 	return nil
+}
+
+func isPossibleValues(fl valid.FieldLevel) bool {
+	vals := strings.Split(strings.TrimSpace(fl.Param()), " ")
+
+	field := fl.Field()
+	switch field.Kind() {
+	case reflect.String:
+		val := field.String()
+		// Empty value can be used
+		vals = append(vals, "")
+		return contains(vals, val)
+	case reflect.Int:
+		val := strconv.FormatInt(field.Int(), 10)
+		return contains(vals, val)
+	case reflect.Slice:
+		slice, ok := field.Interface().([]string)
+		if !ok {
+			panic("Only []string can be used as slice type")
+		}
+		for _, val := range slice {
+			if !contains(vals, val) {
+				return false
+			}
+		}
+		return true
+	default:
+		panic(fmt.Sprintf("Bad field type %T", field.Interface()))
+	}
+}
+
+func contains(slice []string, str string) bool {
+	for _, v := range slice {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
