@@ -24,7 +24,7 @@ func ImportCert(runner command.ExecRunner, destTruststore, certfile string) erro
 		"-file", certfile,
 		"-alias", filepath.Base(certfile),
 	}
-	log.Entry().Infof("Importing certificate. %s", certfile)
+	log.Entry().Infof("Importing certificate: %s", certfile)
 	return runner.RunExecutable("keytool", options...)
 }
 
