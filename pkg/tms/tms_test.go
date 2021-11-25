@@ -51,14 +51,14 @@ func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header h
 	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
 }
 
-func (um *uploaderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (um *uploaderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	um.httpMethod = http.MethodPost
 	um.urlCalled = url
 	um.header = header
 	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
 }
 
-func (um *uploaderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (um *uploaderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	um.httpMethod = http.MethodPost
 	um.urlCalled = url
 	um.header = header
