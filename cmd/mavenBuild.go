@@ -93,6 +93,14 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var stepConfig conf.StepConfig
 
 	metadata, err := conf.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, configOptions.stepMetadata, configOptions.stepName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to resolve metadata")
+	}
+
+	prepareOutputEnvironment(metadata.Spec.Outputs.Resources, GeneralConfig.EnvRootPath)
+
+	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
 	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
@@ -102,7 +110,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		}
 		customConfig = nil
 	}
-	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
 	if err != nil {
@@ -119,11 +126,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			defaultConfig = append(defaultConfig, fc)
 		}
 	}
+
+	var flag map[string]interface{}
+
 	params := []conf.StepParameters{}
 	if !configOptions.contextConfig {
 		params = metadata.Spec.Inputs.Parameters
 	}
-	var flag map[string]interface{}
 
 	stepConfig, err = myConfig.GetStepConfig(flag, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
 	if err != nil {
