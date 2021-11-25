@@ -55,6 +55,8 @@ spec:
         type: stash
     params:
       - name: param0
+        aliases: 
+        - name: oldparam0
         type: string
         description: param0 description
         default: val0
@@ -63,6 +65,9 @@ spec:
         - PARAMETERS
         mandatory: true
       - name: param1
+        aliases: 
+        - name: oldparam1
+          deprecated: true
         type: string
         description: param1 description
         scope:

@@ -269,7 +269,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"GENERAL","PARAMETERS",},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "oldparam0"},},
 						Default:   `val0`,
 					},
 					{
@@ -278,7 +278,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "oldparam1", Deprecated: true},},
 						Default:   os.Getenv("PIPER_param1"),
 					},
 					{

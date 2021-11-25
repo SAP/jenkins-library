@@ -275,7 +275,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "user"}},
+						Aliases:   []config.Alias{{Name: "user", Deprecated: true}},
 						Default:   os.Getenv("PIPER_username"),
 					},
 					{

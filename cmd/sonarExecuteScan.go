@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
@@ -59,49 +60,49 @@ const (
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
-	// runner := command.Command{
-	// 	ErrorCategoryMapping: map[string][]string{
-	// 		log.ErrorConfiguration.String(): {
-	// 			"You must define the following mandatory properties for '*': *",
-	// 			"org.sonar.java.AnalysisException: Your project contains .java files, please provide compiled classes with sonar.java.binaries property, or exclude them from the analysis with sonar.exclusions property.",
-	// 			"ERROR: Invalid value for *",
-	// 			"java.lang.IllegalStateException: No files nor directories matching '*'",
-	// 		},
-	// 		log.ErrorInfrastructure.String(): {
-	// 			"ERROR: SonarQube server [*] can not be reached",
-	// 			"Caused by: java.net.SocketTimeoutException: timeout",
-	// 			"java.lang.IllegalStateException: Fail to request *",
-	// 			"java.lang.IllegalStateException: Fail to download plugin [*] into *",
-	// 		},
-	// 	},
-	// }
-	// // reroute command output to logging framework
-	// runner.Stdout(log.Writer())
-	// runner.Stderr(log.Writer())
-	// // client for downloading the sonar-scanner
-	// downloadClient := &piperhttp.Client{}
-	// downloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
-	// // client for talking to the SonarQube API
-	// apiClient := &piperhttp.Client{}
-	// //TODO: implement certificate handling
-	// apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
+	runner := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			log.ErrorConfiguration.String(): {
+				"You must define the following mandatory properties for '*': *",
+				"org.sonar.java.AnalysisException: Your project contains .java files, please provide compiled classes with sonar.java.binaries property, or exclude them from the analysis with sonar.exclusions property.",
+				"ERROR: Invalid value for *",
+				"java.lang.IllegalStateException: No files nor directories matching '*'",
+			},
+			log.ErrorInfrastructure.String(): {
+				"ERROR: SonarQube server [*] can not be reached",
+				"Caused by: java.net.SocketTimeoutException: timeout",
+				"java.lang.IllegalStateException: Fail to request *",
+				"java.lang.IllegalStateException: Fail to download plugin [*] into *",
+			},
+		},
+	}
+	// reroute command output to logging framework
+	runner.Stdout(log.Writer())
+	runner.Stderr(log.Writer())
+	// client for downloading the sonar-scanner
+	downloadClient := &piperhttp.Client{}
+	downloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
+	// client for talking to the SonarQube API
+	apiClient := &piperhttp.Client{}
+	//TODO: implement certificate handling
+	apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 
-	// sonar = sonarSettings{
-	// 	workingDir:  "./",
-	// 	binary:      "sonar-scanner",
-	// 	environment: []string{},
-	// 	options:     []string{},
-	// }
+	sonar = sonarSettings{
+		workingDir:  "./",
+		binary:      "sonar-scanner",
+		environment: []string{},
+		options:     []string{},
+	}
 
-	// influx.step_data.fields.sonar = false
-	// if err := runSonar(config, downloadClient, &runner, apiClient, influx); err != nil {
-	// 	if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
-	// 		// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
-	// 		log.SetErrorCategory(log.ErrorConfiguration)
-	// 	}
-	// 	log.Entry().WithError(err).Fatal("Execution failed")
-	// }
-	// influx.step_data.fields.sonar = true
+	influx.step_data.fields.sonar = false
+	if err := runSonar(config, downloadClient, &runner, apiClient, influx); err != nil {
+		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
+			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
+		log.Entry().WithError(err).Fatal("Execution failed")
+	}
+	influx.step_data.fields.sonar = true
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {

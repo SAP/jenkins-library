@@ -366,7 +366,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "projectVersion"}},
+						Aliases:   []config.Alias{{Name: "projectVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -420,7 +420,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarProperties"}},
+						Aliases:     []config.Alias{{Name: "sonarProperties", Deprecated: true}},
 						Default:     []string{},
 					},
 					{
