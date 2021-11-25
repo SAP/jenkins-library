@@ -357,22 +357,22 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 }
 
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
-	trustStorePath := filepath.Join(getWorkingDir(), ".certificates")
-	trustStoreFile := filepath.Join(trustStorePath, "cacerts")
+	truststorePath := filepath.Join(getWorkingDir(), ".certificates")
+	truststoreFile := filepath.Join(truststorePath, "cacerts")
 
-	if exists, _ := fileUtilsExists(trustStoreFile); exists {
+	if exists, _ := fileUtilsExists(truststoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
-		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + truststoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
+		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else if len(certificateList) > 0 {
 		// create download temp dir
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
-		os.MkdirAll(trustStorePath, 0777)
+		os.MkdirAll(truststorePath, 0777)
 		// copying existing truststore
 		defaultTruststorePath := keytool.GetDefaultTruststorePath()
 		if exists, _ := fileUtilsExists(defaultTruststorePath); exists {
-			if err := keytool.ImportTruststore(runner, trustStoreFile, defaultTruststorePath); err != nil {
+			if err := keytool.ImportTruststore(runner, truststoreFile, defaultTruststorePath); err != nil {
 				return errors.Wrap(err, "Copying existing keystore failed")
 			}
 		}
@@ -385,13 +385,13 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 				return errors.Wrapf(err, "Download of TLS certificate failed")
 			}
 			// add certificate to keystore
-			if err := keytool.ImportCert(runner, trustStoreFile, target); err != nil {
+			if err := keytool.ImportCert(runner, truststoreFile, target); err != nil {
 				log.Entry().Warnf("Adding certificate to keystore failed")
 				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
-		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + truststoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
+		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
