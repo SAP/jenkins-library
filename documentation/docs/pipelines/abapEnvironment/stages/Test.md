@@ -106,7 +106,7 @@ stages:
 
 #### aunitConfig.yml
 
-Please note that it is recommended to specify each development package you want to be checked as it is not possible to specify structure packages within the `aUnitConfig.yml` file. You can specify complete development packages using the `includesubpackages: false` parameter like in below example configuration.
+If you want to test complete software components please specify the `aUnitConfig.yml` file like in below example configuration.
 
 ```yaml
 title: My AUnit run
@@ -125,10 +125,9 @@ options:
     medium: true
     long: true
 objectSet:
-  - type: unionSet
-    set:
-      - type: packageSet
-        package:
-          - name: MY_PACKAGE
-            includeSubpackages: false
+  - type: multiPropertySet
+    multipropertyset:
+      componentnames:
+        - component:
+          name: demoSoftwareComponent
 ```
