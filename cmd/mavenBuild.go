@@ -89,57 +89,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	var myConfig conf.Config
-	var stepConfig conf.StepConfig
-
-	metadata, err := conf.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, configOptions.stepMetadata, configOptions.stepName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to resolve metadata")
-	}
-
-	prepareOutputEnvironment(metadata.Spec.Outputs.Resources, GeneralConfig.EnvRootPath)
-
-	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-
-	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-
-	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
-		}
-		customConfig = nil
-	}
-
-	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
-	if err != nil {
-		return errors.Wrap(err, "defaults: retrieving step defaults failed")
-	}
-
-	for _, f := range GeneralConfig.DefaultConfig {
-		fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
-		// only create error for non-default values
-		if err != nil && f != ".pipeline/defaults.yaml" {
-			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
-		}
-		if err == nil {
-			defaultConfig = append(defaultConfig, fc)
-		}
-	}
-
-	var flag map[string]interface{}
-
-	params := []conf.StepParameters{}
-	if !configOptions.contextConfig {
-		params = metadata.Spec.Inputs.Parameters
-	}
-
-	stepConfig, err = myConfig.GetStepConfig(flag, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
-	if err != nil {
-		return errors.Wrap(err, "getting step config failed")
-	}
-	log.Entry().Infof("Printing values from : %v", stepConfig)
-
 	var dockerImage string
 	var dataParametersJSON map[string]interface{}
 	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
@@ -157,6 +106,12 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		if len(containers) > 0 {
 			dockerImage = containers[0].Image
 		}
+
+		defaults, err := metadata.GetContextDefaults(stepName)
+		if err != nil {
+			errors.Wrap(err, "metadata: getting context defaults failed")
+		}
+		log.Entry().Infof("Printing default value %v", defaults)
 	}
 	mavenConfig := buildsettings.BuildOptions{
 		Profiles:                    config.Profiles,
