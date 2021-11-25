@@ -174,7 +174,7 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Username = config.Username
 	connConfig.Password = config.Password
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
-	//connConfig.CertificateNames = config.CertificateNames
+	connConfig.CertificateNames = config.CertificateNames
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
