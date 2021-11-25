@@ -362,7 +362,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 
 	if exists, _ := fileUtilsExists(truststoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + truststoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else if len(certificateList) > 0 {
 		// create download temp dir
@@ -390,7 +390,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + truststoreFile + " -Djavax.net.ssl.trustStorePassword=" + keytool.DefaultTruststorePassword)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")

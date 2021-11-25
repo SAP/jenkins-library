@@ -15,6 +15,10 @@ func GetDefaultTruststorePath() string {
 	return filepath.Join(os.Getenv("JAVA_HOME"), filepath.FromSlash(defaultTruststorePath))
 }
 
+func GetMavenOpts(truststoreFile string) string {
+	return "-Djavax.net.ssl.trustStore=" + truststoreFile + " -Djavax.net.ssl.trustStorePassword=" + DefaultTruststorePassword
+}
+
 func ImportCert(runner command.ExecRunner, destTruststore, certfile string) error {
 	options := []string{
 		"-import",
