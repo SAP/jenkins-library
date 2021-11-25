@@ -42,9 +42,8 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	errDetails, _ := json.Marshal(&details)
-	Entry().Infof("fatal error: errorDetails{correlationId:\"%v\",stepName:\"%v\",category:\"%v\",error:\"%v\",result:\"%v\",message:\"%v\"}",
-		details["correlationId"], details["stepName"], details["category"], details["error"], details["result"], details["message"])
-
+	// Logging information needed for error reporting -  do not modify.
+	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
 	_, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		// do not overwrite file in case it already exists
