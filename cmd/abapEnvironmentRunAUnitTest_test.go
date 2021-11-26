@@ -54,8 +54,6 @@ func TestBuildAUnitTestBody(t *testing.T) {
 		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
 		expectedobjectSetString := `<osl:objectSet xsi:type="testSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></osl:objectSet></aunit:run>`
-		//While the full Object Set is not enabled we need to switch the test
-		//expectedobjectSetString := `<osl:objectSet xsi:type="testSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:set xsi:type="testBaseSet"><osl:baseSet xsi:type="testAUnitTransportSet"><osl:transport number="TR123Test"/></osl:baseSet></osl:set><osl:set xsi:type="testBaseSet"><osl:baseSet xsi:type="testAUnitComponentSet"><osl:component name="TestComponent"/></osl:baseSet><osl:exclusionSet xsi:type="testAUnitPackageSet"><osl:package name="TestPackage" includeSubpackages="false"/></osl:exclusionSet></osl:set><osl:set xsi:type="testSet"><osl:set xsi:type="testSet"><osl:object name="TestObject" type="CLAS"/></osl:set><osl:set xsi:type="testSet"><osl:objectType name="TestObjectType"/></osl:set></osl:set></osl:objectSet>`
 
 		var err error
 		var config AUnitConfig
