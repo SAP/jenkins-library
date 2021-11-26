@@ -106,12 +106,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		if len(containers) > 0 {
 			dockerImage = containers[0].Image
 		}
-
-		defaults, err := metadata.GetContextDefaults(stepName)
-		if err != nil {
-			errors.Wrap(err, "metadata: getting context defaults failed")
-		}
-		log.Entry().Infof("Printing default value %v", defaults)
 	}
 	mavenConfig := buildsettings.BuildOptions{
 		Profiles:                    config.Profiles,
