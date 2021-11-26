@@ -24,7 +24,6 @@ func TestTelemetry_Initialize(t *testing.T) {
 		CustomReportingDsn   string
 		CustomReportingToken string
 		customClient         *piperhttp.Client
-		PipelineTelemetry    *PipelineTelemetry
 		BaseURL              string
 		Endpoint             string
 		SiteID               string
@@ -79,12 +78,10 @@ func TestTelemetry_Send(t *testing.T) {
 		client               *piperhttp.Client
 		CustomReportingDsn   string
 		CustomReportingToken string
-		PipelineTelemetry    *PipelineTelemetry
 		BaseURL              string
 		Endpoint             string
 		SiteID               string
 	}
-
 	tests := []struct {
 		name     string
 		fields   fields
@@ -115,18 +112,12 @@ func TestTelemetry_Send(t *testing.T) {
 
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			httpmock.Reset()
 			telemetryClient := &Telemetry{disabled: tt.fields.disabled}
 			telemetryClient.Initialize(tt.fields.disabled, tt.name)
 			telemetryClient.CustomReportingDsn = tt.fields.CustomReportingDsn
-			if tt.fields.PipelineTelemetry != nil {
-				// Test pipeline Telemetry data
-				telemetryClient.PipelineTelemetry = tt.fields.PipelineTelemetry
-			}
 			if telemetryClient.client == nil {
 				telemetryClient.client = &piperhttp.Client{}
 			}
