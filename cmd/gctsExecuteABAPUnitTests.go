@@ -719,6 +719,8 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return nil
 	}
 
+	log.Entry().Info("http response from ATC request", result)
+	log.Entry().Info("http response from ATC request", &result)
 	atcRes, err := parseATCCheckResult(config, client, &result)
 
 	if err != nil {
