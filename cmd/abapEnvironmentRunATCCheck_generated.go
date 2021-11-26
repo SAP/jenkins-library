@@ -258,7 +258,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 					{
 						Name:        "generateHTML",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
