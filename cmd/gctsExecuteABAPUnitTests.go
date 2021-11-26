@@ -679,7 +679,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		case "PROG":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/programs/programs/` + object.Object + `/source/main"/>`
 		default:
-			log.Entry().Warning("object Type" + object.Type + " is not supported!")
+			log.Entry().Warning("object Type " + object.Type + " is not supported!")
 
 		}
 
@@ -722,8 +722,8 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	atcRes, err := parseATCCheckResult(config, client, &result)
 
 	if err != nil {
-		log.Entry().Warning(err)
-		return nil
+		log.Entry().Error(err)
+		return errors.Wrap(err, "execution of ATC Checks failed")
 	}
 
 	log.Entry().Info("execute ATC Checks finished", atcRes)
@@ -855,12 +855,13 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 		objectType := object.Type
 		objectName := object.Name
-		log.Entry().Info("object type", objectType)
-		log.Entry().Info("object name", objectName)
+		log.Entry().Info("object type ", objectType)
+		log.Entry().Info("object name ", objectName)
 
 		for _, atcworklist := range object.Findings.Finding {
 
 			path, err := url.PathUnescape(atcworklist.Location)
+			log.Entry().Info("path(atcLocation): ", path)
 
 			if err != nil {
 				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
