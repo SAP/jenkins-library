@@ -719,8 +719,6 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return nil
 	}
 
-	log.Entry().Info("http response from ATC request", result)
-	log.Entry().Info("http response from ATC request", &result)
 	atcRes, err := parseATCCheckResult(config, client, &result)
 
 	if err != nil {
@@ -872,6 +870,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 			if len(atcworklist.Atcfinding) > 0 {
 
+				log.Entry().Info("Atcfinding: ", atcworklist.Atcfinding)
 				priority, err := strconv.Atoi(atcworklist.Priority)
 
 				if err != nil {
