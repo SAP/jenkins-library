@@ -12,12 +12,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -38,6 +36,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+
 	if aUnitFailure || atcFailure {
 
 		log.Entry().Fatal("unit test(s) has failed and/or ATC issue(s) found! Check Statistic Analysis Warning for more information!")
@@ -47,6 +46,11 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 }
 
 func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpClient piperhttp.Sender) error {
+
+	const localChangedObjects = "localchangedobjects"
+	const remoteChangedObjects = "remotechangedobjects"
+	const localChangedPackages = "localchangedpackages"
+	const remoteChangedPackages = "remotechangedpackages"
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
@@ -66,16 +70,16 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 	var objects []repoObject
 	var err error
 
-	log.Entry().Infof("scope:", config.Scope)
+	log.Entry().Info("scope:", config.Scope)
 
 	switch strings.ToLower(config.Scope) {
-	case "local_objects":
+	case localChangedObjects:
 		objects, err = getLocalObjects(config, httpClient)
-	case "remote_objects":
+	case remoteChangedObjects:
 		objects, err = getRemoteObjects(config, httpClient)
-	case "local_packages":
+	case localChangedPackages:
 		objects, err = getLocalPackages(config, httpClient)
-	case "remote_packages":
+	case remoteChangedPackages:
 		objects, err = getRemotePackages(config, httpClient)
 	case "repository":
 		objects, err = getRepositoryObjects(config, httpClient)
@@ -86,13 +90,20 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 	}
 
 	if err != nil {
-		log.Entry().WithError(cookieErr).Fatal("failure in getting objects")
+		log.Entry().WithError(err).Fatal("failure in get objects")
 	}
 
-	log.Entry().Infof("changed objects:", objects)
+	if objects == nil {
+		log.Entry().Warning("no object delta was found, therefore the step execution will stop")
+		return nil
+
+	}
+
+	log.Entry().Infof("changed objects: %v", objects)
 
 	if config.AUnitTest {
 
+		// wrapper for execution of AUnit Test
 		err := executeAUnitTest(config, httpClient, objects)
 
 		if err != nil {
@@ -100,19 +111,20 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		}
 
-		log.Entry().Info("AUnit test run completed successfully. If there are any results from the run, the results are saved in .xml file")
+		log.Entry().Info("AUnit test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
 
 	}
 
 	if config.ATCCheck {
 
+		// wrapper for execution of ATCChecks
 		err = executeATCCheck(config, httpClient, objects)
 
 		if err != nil {
 			log.Entry().WithError(err).Fatal("execute ATC Check failed")
 		}
 
-		log.Entry().Info("ATCCheck test run completed successfully. If there are any results from the run, the results are saved in .xml file")
+		log.Entry().Info("ATCCheck test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
 
 	}
 
@@ -125,26 +137,28 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	var localObjects []repoObject
 	var localObject repoObject
 
-	log.Entry().Info("get local objects")
+	log.Entry().Info("get local changed objects started")
 
 	repository, err := getRepository(config, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting local changed objects failed")
+		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
 
-	resp, err := getObjectDifference(config, repository.Result.CurrentCommit, config.CommitID, client)
+	currentLocalCommit := repository.Result.CurrentCommit
+
+	// object delta between the commit that triggered the pipeline and the current commit in the local repository
+	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting local changed objects failed")
+		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
 
-	if resp.Objects != nil {
-		for _, object := range resp.Objects {
-			localObject.Object = object.Name
-			localObject.Type = object.Type
-			localObjects = append(localObjects, localObject)
-		}
-
+	for _, object := range resp.Objects {
+		localObject.Object = object.Name
+		localObject.Type = object.Type
+		localObjects = append(localObjects, localObject)
 	}
+
+	log.Entry().Info("get local changed objects finished")
 
 	return localObjects, nil
 }
@@ -153,29 +167,31 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	var remoteObjects []repoObject
 	var remoteObject repoObject
-	var lastCommit string
+	var currentRemoteCommit string
+
+	log.Entry().Info("get remote changed objects started")
 
 	commitList, err := getCommitList(config, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting remote changed objects failed")
+		return []repoObject{}, errors.Wrap(err, "get remote changed objects failed")
 	}
 
 	for i, commit := range commitList.Commits {
 		if commit.ID == config.CommitID {
-			lastCommit = commitList.Commits[i+1].ID
+			currentRemoteCommit = commitList.Commits[i+1].ID
 			break
 		}
 	}
-	if lastCommit == "" {
-		return []repoObject{}, errors.New("last remote commit was not found")
+	if currentRemoteCommit == "" {
+		return []repoObject{}, errors.New("current remote commit was not found")
 
 	}
-
-	resp, err := getObjectDifference(config, lastCommit, config.CommitID, client)
+	// object delta between the commit that triggered the pipeline and the current commit in the remote repository
+	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting remote changed objects failed")
+		return []repoObject{}, errors.Wrap(err, "get remote changed objects failed")
 	}
 
 	for _, object := range resp.Objects {
@@ -183,6 +199,8 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		remoteObject.Type = object.Type
 		remoteObjects = append(remoteObjects, remoteObject)
 	}
+
+	log.Entry().Info("get remote changed objects finished")
 
 	return remoteObjects, nil
 }
@@ -192,25 +210,30 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	var localPackages []repoObject
 	var localPackage repoObject
 
+	log.Entry().Info("get local changed packages started")
+
 	repository, err := getRepository(config, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting local packages failed")
+		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
 	}
 
-	resp, err := getObjectDifference(config, repository.Result.CurrentCommit, config.CommitID, client)
+	currentLocalCommit := repository.Result.CurrentCommit
 
-	log.Entry().Info("object delta", resp.Objects)
+	//object delta between the commit that triggered the pipeline and the current commit in the local repository
+	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting local packages failed")
+		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
 
 	}
 
 	myPackages := map[string]bool{}
+
+	// objects are resolved into packages(DEVC)
 	for _, object := range resp.Objects {
 		objInfo, err := getObjectInfo(config, client, object.Name, object.Type)
 		if err != nil {
-			return []repoObject{}, errors.Wrap(err, "getting local packages failed")
+			return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
 		}
 		if myPackages[objInfo.Devclass] {
 
@@ -223,6 +246,7 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	}
 
+	log.Entry().Info("get local changed packages finished")
 	return localPackages, nil
 }
 
@@ -230,35 +254,39 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 
 	var remotePackages []repoObject
 	var remotePackage repoObject
-	var lastCommit string
+	var currentRemoteCommit string
+
+	log.Entry().Info("get remote changed packages started")
 
 	commitList, err := getCommitList(config, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting remote packages failed")
+		return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
 	}
 
 	for i, commit := range commitList.Commits {
 		if commit.ID == config.CommitID {
-			lastCommit = commitList.Commits[i+1].ID
+			currentRemoteCommit = commitList.Commits[i+1].ID
 			break
 		}
 	}
 
-	if lastCommit == "" {
-		return []repoObject{}, errors.Wrap(err, "last remote commit was not found")
+	if currentRemoteCommit == "" {
+		return []repoObject{}, errors.Wrap(err, "current remote commit was not found")
 
 	}
-
-	resp, err := getObjectDifference(config, lastCommit, config.CommitID, client)
+	//object delta between the commit that triggered the pipeline and the current commit in the remote repository
+	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting remote packages failed")
+		return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
 	}
+
 	myPackages := map[string]bool{}
+	// objects are resolved into packages(DEVC)
 	for _, object := range resp.Objects {
 		objInfo, err := getObjectInfo(config, client, object.Name, object.Type)
 		if err != nil {
-			return []repoObject{}, errors.Wrap(err, "last remote commit was not found")
+			return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
 		}
 		if myPackages[objInfo.Devclass] {
 
@@ -270,13 +298,15 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 		}
 
 	}
-
+	log.Entry().Info("get remote changed packages finished")
 	return remotePackages, nil
 }
 
 func getRepositoryObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) ([]repoObject, error) {
 
-	var repositoryObjects objectsResponse
+	log.Entry().Info("get repository objects started")
+
+	var repositoryObjects repoObjectResponse
 
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
@@ -301,6 +331,9 @@ func getRepositoryObjects(config *gctsExecuteABAPUnitTestsOptions, client piperh
 		return []repoObject{}, errors.Errorf("%v", parsingErr)
 	}
 
+	log.Entry().Info("get repository objects finished")
+
+	// all objects that are part of the local repository
 	return repositoryObjects.Objects, nil
 }
 
@@ -308,11 +341,14 @@ func getPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	var packages []repoObject
 
+	log.Entry().Info("get packages started")
+
 	resp, err := getRepositoryObjects(config, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "getting packages failed")
+		return []repoObject{}, errors.Wrap(err, "get packages failed")
 	}
 
+	// all packages that are part of the local repository
 	for _, object := range resp {
 
 		if object.Type == "DEVC" {
@@ -320,6 +356,8 @@ func getPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 		}
 
 	}
+
+	log.Entry().Info("get packages finished")
 	return packages, nil
 }
 
@@ -352,7 +390,7 @@ func discoverServer(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 
 func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []repoObject) error {
 
-	log.Entry().Info("execution of unit test has started")
+	log.Entry().Info("execute ABAP Unit Test started")
 
 	var innerXml string
 	var result runResult
@@ -398,21 +436,23 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &result)
 	if parsingErr != nil {
 		log.Entry().Warning(parsingErr)
+		return nil
 	}
 
 	parsedRes, err := parseAUnitResult(config, client, &result)
 
-	if parsedRes.Version != "" {
-		return err
-
+	if err != nil {
+		log.Entry().Warning(err)
+		return nil
 	}
 
-	log.Entry().Info("execution of unit test finished.")
+	log.Entry().Info("execute ABAP Unit Test finished", parsedRes)
 	return nil
 }
 
 func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, xml []byte) (response *http.Response, err error) {
 
+	log.Entry().Info("run ABAP Unit Test")
 	url := config.Host +
 		"/sap/bc/adt/abapunit/testruns?sap-client=" + config.Client
 
@@ -434,12 +474,6 @@ func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 
 	response, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xml), header, nil)
 
-	/*	defer func() {
-			if response != nil && response.Body != nil {
-				response.Body.Close()
-			}
-		}()
-	*/
 	if httpErr != nil {
 		return response, errors.Wrap(httpErr, "run of unit tests failed")
 	} else if response == nil {
@@ -449,48 +483,41 @@ func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 	return response, nil
 }
 
-func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *runResult) (parsedResult Checkstyle, error error) {
+func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *runResult) (parsedResult checkstyle, err error) {
 
-	log.Entry().Info("parsing unit test result to checkstyle started...")
+	log.Entry().Info("parse Unit Test result-convert to checkstyle")
 
-	var targetDir, FileName string
-	var aUnitFile checkstyleFile
-	var aUnitError unitError
-
-	repoLayout, err := getRepositoryLayout(config, client)
-	if err != nil {
-		log.Entry().Error(err)
-	}
-
-	repository, err := getRepository(config, client)
-	if err != nil {
-		log.Entry().Error(err)
-	}
-
-	for _, config := range repository.Result.Config {
-		if config.Key == "VCS_TARGET_DIR" {
-			targetDir = config.Value
-		}
-	}
+	var fileName string
+	var aUnitFile file
+	var aUnitError checkstyleError
 
 	parsedResult.Version = "1.0"
-	regexLine := regexp.MustCompile(`.start=\d*`)
 
 	for _, program := range aUnitRunResult.Program {
 
 		objectType := program.Type[0:4]
 		objectName := program.Name
 
-		//syntax error use case
+		//syntax error in unit test or class
 		if program.Alerts.Alert.HasSyntaxErrors == "true" {
+
 			aUnitFailure = true
 			aUnitError.Source = objectName
 			aUnitError.Severity = "error"
 			aUnitError.Message = html.UnescapeString(program.Alerts.Alert.Title + " " + program.Alerts.Alert.Details.Detail.AttrText)
-			line := regexLine.FindString(program.Alerts.Alert.Stack.StackEntry.URI)
-			aUnitError.Line = line[len(`.start=`):]
+			aUnitError.Line, err = findLine(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName, objectType)
+			if err != nil {
+				return parsedResult, err
+
+			}
+			fileName, err = getFileName(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName)
+			if err != nil {
+				return parsedResult, err
+
+			}
 			aUnitFile.Error = append(aUnitFile.Error, aUnitError)
-			aUnitError = unitError{}
+			aUnitError = checkstyleError{}
+			log.Entry().Error("there is a syntax error", aUnitFile)
 		}
 
 		for _, testClass := range program.TestClasses.TestClass {
@@ -499,24 +526,29 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 				aUnitError.Source = testMethod.Name
 
+				// unit test failure
 				if len(testMethod.Alerts.Alert) > 0 {
 
 					for _, testalert := range testMethod.Alerts.Alert {
 
 						switch testalert.Severity {
 						case "fatal":
+							log.Entry().Error("unit test has failed with severity fatal")
 							aUnitFailure = true
 							aUnitError.Severity = "error"
 						case "critical":
+							log.Entry().Error("unit test has failed with severity critical")
 							aUnitFailure = true
 							aUnitError.Severity = "error"
 						case "tolerable":
+							log.Entry().Warning("unit test has failed with severity warning")
 							aUnitError.Severity = "warning"
 						default:
 							aUnitError.Severity = "info"
 
 						}
 
+						//unit test message is spread in different elements
 						for _, detail := range testalert.Details.Detail {
 							aUnitError.Message = aUnitError.Message + " " + detail.AttrText
 							for _, subdetail := range detail.Details.Detail {
@@ -525,33 +557,39 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 							}
 
 						}
-						line := regexLine.FindString(testalert.Stack.StackEntry.URI)
-						aUnitError.Line = line[len(`.start=`):]
+						aUnitError.Line, err = findLine(config, client, testalert.Stack.StackEntry.URI, objectName, objectType)
+						if err != nil {
+							return parsedResult, errors.Wrap(err, "could not parse ABAP Unit Result")
+
+						}
 
 					}
+
 					aUnitFile.Error = append(aUnitFile.Error, aUnitError)
-					aUnitError = unitError{}
+					aUnitError = checkstyleError{}
 
 				} else {
-					log.Entry().Info(testMethod.Name, " - unit test was successful")
+
+					log.Entry().Info("method name:", testMethod.Name, "- unit test was successful")
 
 				}
 
 			}
-		}
-		if repoLayout.Layout.ReadableSource == "true" || repoLayout.Layout.ReadableSource == "only" || repoLayout.Layout.ReadableSource == "all" {
 
-			FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "testclasses.abap"
+			fileName, err = getFileName(config, client, testClass.URI, objectName)
+			if err != nil {
+				return parsedResult, err
 
-		} else {
-
-			FileName = "CINC " + objectName + "================CCAU.abap"
-
+			}
 		}
 
-		aUnitFile.Name = config.Workspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
+		aUnitFile.Name, err = constructPath(config, client, fileName, objectName, objectType)
+		if err != nil {
+
+			return parsedResult, err
+		}
 		parsedResult.File = append(parsedResult.File, aUnitFile)
-		aUnitFile = checkstyleFile{}
+		aUnitFile = file{}
 
 	}
 
@@ -564,18 +602,16 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return parsedResult, fmt.Errorf("handling unit test results failed: %w", writeErr)
 	}
 
-	log.Entry().Info("parsing of unit test result to checkstyle has finished.")
-
 	return parsedResult, nil
 
 }
 
 func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []repoObject) (error error) {
 
-	log.Entry().Info("excecution of ATC checks has started")
+	log.Entry().Info("execute ATC Check started")
 
 	var innerXml string
-	var result Worklist
+	var result worklist
 
 	for _, object := range objects {
 
@@ -589,11 +625,6 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/packages/` + object.Object + `"/>`
 		case "FUGR":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + object.Object + `/source/main"/>`
-		/*case "FUNC":
-		objectInfo, objectErr := resolvePackageForObject(config, client, object.Object, object.Type)
-		if objectErr == nil{
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + objectInfo.Devclass + `/fmodules/` + object.Object + `/source/main"/>`
-		} */
 		case "TABU":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/tables/` + object.Object + `"/>`
 		case "DTEL":
@@ -642,21 +673,24 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &result)
 	if parsingErr != nil {
 		log.Entry().Warning(parsingErr)
+		return nil
 	}
 
 	atcRes, err := parseATCCheckResult(config, client, &result)
 
-	if atcRes.Version != "" {
-		return err
-
+	if err != nil {
+		log.Entry().Warning(err)
+		return nil
 	}
 
-	log.Entry().Info("excecution of ATC checks finished.")
+	log.Entry().Info("execute ATC Checks finished", atcRes)
 	return nil
 }
 
 func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, xml []byte, worklistID string) (err error) {
-	log.Entry().Info("start ATC run")
+
+	log.Entry().Info("start ATC Run")
+
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
 		return errors.Wrap(discError, "start of ATC run failed")
@@ -692,7 +726,8 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 }
 
 func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, worklistID string) (response *http.Response, err error) {
-	log.Entry().Info("get ATC run")
+
+	log.Entry().Info("get ATC Run")
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
 		return response, errors.Wrap(discError, "get ATC run failed")
@@ -725,8 +760,6 @@ func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender,
 
 func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (worklistID string, error error) {
 
-	log.Entry().Info("get Worklist")
-
 	url := config.Host +
 		"/sap/bc/adt/atc/worklists?checkVariant=DEFAULT_REMOTE_REF?sap-client=" + config.Client
 	discHeader, discError := discoverServer(config, client)
@@ -758,42 +791,18 @@ func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	location := resp.Header["Location"][0]
 	locationSlice := strings.Split(location, "/")
 	worklistID = locationSlice[len(locationSlice)-1]
+	log.Entry().Info("get worklist-session number for ATC check", worklistID)
 
 	return worklistID, nil
 }
 
-func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, response *Worklist) (atcResults Checkstyle, error error) {
+func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, response *worklist) (atcResults checkstyle, error error) {
 
-	log.Entry().Info("conversion of ATC check results to CheckStyle has started")
+	log.Entry().Info("parse ATC Check Result started")
 
-	var atcFile checkstyleFile
-	var fileName, targetDir, subObject string
-	var aTCUnitError unitError
-	var readableSourceFormat bool
-	//var linepointer int
-
-	repoLayout, err := getRepositoryLayout(config, client)
-	if err != nil {
-		return atcResults, errors.Wrap(err, "could not get repository layout")
-	}
-
-	repository, err := getRepository(config, client)
-	if err != nil {
-		return atcResults, errors.Wrap(err, "getting repository information failed")
-	}
-	for _, value := range repository.Result.Config {
-		if value.Key == "VCS_TARGET_DIR" {
-			targetDir = value.Value
-		}
-	}
-
-	if repoLayout.Layout.ReadableSource == "true" || repoLayout.Layout.ReadableSource == "only" || repoLayout.Layout.ReadableSource == "all" {
-		readableSourceFormat = true
-
-	} else {
-		readableSourceFormat = false
-
-	}
+	var atcFile file
+	var subObject string
+	var aTCUnitError checkstyleError
 
 	atcResults.Version = "1.0"
 
@@ -824,18 +833,22 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 				case 1:
 					atcFailure = true
 					aTCUnitError.Severity = "error"
+					log.Entry().Error("atc issue was found with priority 1")
 				case 2:
 					atcFailure = true
-					aTCUnitError.Severity = "high"
+					aTCUnitError.Severity = "error"
+					log.Entry().Error("atc issue was found with priority 2")
 				case 3:
-					aTCUnitError.Severity = "normal"
+					aTCUnitError.Severity = "warning"
+					log.Entry().Error("atc issue was found with priority 3")
 				default:
-					aTCUnitError.Severity = "low"
+					aTCUnitError.Severity = "info"
+					log.Entry().Error("atc issue was found with low priority")
 				}
 
 				if aTCUnitError.Line == "" {
 
-					aTCUnitError.Line, err = findLine(path, readableSourceFormat, objectName, objectType, config.Workspace, targetDir)
+					aTCUnitError.Line, err = findLine(config, client, path, objectName, objectType)
 
 					if err != nil {
 						return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
@@ -851,21 +864,25 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 				}
 
 				aTCUnitError.Message = html.UnescapeString(atcworklist.CheckTitle + " " + atcworklist.MessageTitle)
-				fileName, err = getFileName(path, readableSourceFormat, objectName)
-				if err != nil {
-					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
-
-				}
 				atcFile.Error = append(atcFile.Error, aTCUnitError)
-				aTCUnitError = unitError{}
+				aTCUnitError = checkstyleError{}
 			}
 
-			if atcFile.Error[0].Message != "" && fileName != "" {
+			if atcFile.Error[0].Message != "" {
 
-				atcFile.Name = config.Workspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
+				fileName, err := getFileName(config, client, path, objectName)
+
+				if err != nil {
+					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+				}
+
+				atcFile.Name, err = constructPath(config, client, fileName, objectName, objectType)
+				if err != nil {
+					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+				}
 				atcResults.File = append(atcResults.File, atcFile)
-				atcFile = checkstyleFile{}
-				fileName = ""
+				atcFile = file{}
+
 			}
 
 		}
@@ -883,71 +900,99 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 	return atcResults, writeErr
 }
 
-func constructPath(workspace string, path string, targetDir string, objectName string, objectType string) (filePath string, error error) {
+func constructPath(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, fileName string, objectName string, objectType string) (filePath string, error error) {
 
-	fileName, err := getFileName(path, true, objectName)
+	targetDir, err := getTargetDir(config, client)
 	if err != nil {
 		return filePath, errors.Wrap(err, "path could not be constructed")
 
 	}
 
-	filePath = workspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
+	filePath = config.Workspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
 	return filePath, nil
 
 }
 
-func findLine(path string, readableSource bool, objName string, objectType string, workspace string, targetDir string) (line string, error error) {
-	var linepointer int
+func findLine(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, path string, objectName string, objectType string) (line string, error error) {
+
+	regexLine := regexp.MustCompile(`.start=\d*`)
+	regexMethod := regexp.MustCompile(`.name=[a-zA-Z0-9_-]*;`)
+
+	readableSource, err := checkReadableSource(config, client)
+
+	if err != nil {
+
+		return line, errors.Wrap(err, "could not find line in source code")
+
+	}
+
+	fileName, err := getFileName(config, client, path, objectName)
+
+	if err != nil {
+
+		return line, err
+
+	}
+
+	filePath, err := constructPath(config, client, fileName, objectName, objectType)
+	if err != nil {
+		return line, errors.Wrap(err, "could not find line in source code")
+
+	}
+
+	var absLine int
 	if readableSource {
 
-		filePath, err := constructPath(workspace, path, targetDir, objName, objectType)
+		// the error line that we get from UnitTest Run or ATC Check is not aligned for the readable source, we need to calculated it
+		rawfile, err := ioutil.ReadFile(filePath)
+
 		if err != nil {
+
 			return line, errors.Wrap(err, "find Line has failed")
-
-		}
-		rawfilecontent, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			fmt.Println("File reading error", err)
-			return
-		}
-		filecontent := string(rawfilecontent)
-		splittedfilecontent := strings.Split(filecontent, "\n")
-		regexMethod := regexp.MustCompile(`.name=[a-zA-Z0-9_-]*;`)
-		method := regexMethod.FindString(path)
-
-		if method != "" {
-			method = method[len(`.name=`) : len(method)-1]
-
 		}
 
+		file := string(rawfile)
+
+		splittedfile := strings.Split(file, "\n")
+
+		// CLAS/OSO - is unique identifier for protection section in CLAS
 		if strings.Contains(path, "CLAS/OSO") {
 
-			for line, linecontent := range splittedfilecontent {
+			for l, line := range splittedfile {
 
-				if strings.Contains(linecontent, "protected section.") {
-					linepointer = line
+				if strings.Contains(line, "protected section.") {
+					absLine = l
 					break
 				}
 
 			}
 
+			// CLAS/OM - is unique identifier for method section in CLAS
 		} else if strings.Contains(path, "CLAS/OM") {
 
-			for line, linecontent := range splittedfilecontent {
+			methodName := regexMethod.FindString(path)
 
-				if strings.Contains(linecontent, "method"+" "+method) {
-					linepointer = line
+			if methodName != "" {
+				methodName = methodName[len(`.name=`) : len(methodName)-1]
+
+			}
+
+			for line, linecontent := range splittedfile {
+
+				if strings.Contains(linecontent, "method"+" "+methodName) {
+					absLine = line
 					break
 				}
 
 			}
 
+			// CLAS/OSI - is unique identifier for private section in CLAS
 		} else if strings.Contains(path, "CLAS/OSI") {
 
-			for line, linecontent := range splittedfilecontent {
+			for line, linecontent := range splittedfile {
 
 				if strings.Contains(linecontent, "private section.") {
-					linepointer = line
+					absLine = line
 					break
 				}
 
@@ -955,23 +1000,23 @@ func findLine(path string, readableSource bool, objName string, objectType strin
 
 		}
 
-		regexLine := regexp.MustCompile(`.start=\d*`)
-		linestring := regexLine.FindString(path)
-		if linestring != "" {
+		errLine := regexLine.FindString(path)
 
-			lineint, err := strconv.Atoi(linestring[len(`.start=`):])
+		if errLine != "" {
+
+			errLine, err := strconv.Atoi(errLine[len(`.start=`):])
 			if err == nil {
-				line = strconv.Itoa(linepointer + lineint)
+				line = strconv.Itoa(absLine + errLine)
 
 			}
 
 		}
 
 	} else {
-		regexLine := regexp.MustCompile(`.start=\d*`)
-		linestring := regexLine.FindString(path)
-		if linestring != "" {
-			line = linestring[len(`.start=`):]
+		// classic format
+		errLine := regexLine.FindString(path)
+		if errLine != "" {
+			line = errLine[len(`.start=`):]
 
 		}
 
@@ -979,9 +1024,15 @@ func findLine(path string, readableSource bool, objName string, objectType strin
 
 	return line, nil
 }
-func getFileName(path string, readableSource bool, objName string) (fileName string, error error) {
+func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, path string, objName string) (fileName string, error error) {
 
-	path, err := url.PathUnescape(path)
+	readableSource, err := checkReadableSource(config, client)
+	if err != nil {
+		return fileName, errors.Wrap(err, "get file name has failed")
+
+	}
+
+	path, err = url.PathUnescape(path)
 
 	if err != nil {
 		return fileName, errors.Wrap(err, "get file name has failed")
@@ -1044,7 +1095,7 @@ func getFileName(path string, readableSource bool, objName string) (fileName str
 	}
 
 	// TEST CLASSES
-	regexTestClass := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/includes\/testclasses\/`)
+	regexTestClass := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/includes\/testclasses`)
 	testClass := regexTestClass.FindString(path)
 	if testClass != "" {
 
@@ -1154,9 +1205,49 @@ func getFileName(path string, readableSource bool, objName string) (fileName str
 
 }
 
-func getRepository(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryResponseBody, error) {
-	log.Entry().Info("get repository")
-	var repositoryResponse repositoryResponseBody
+func getTargetDir(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (string, error) {
+
+	var targetDir string
+
+	repository, err := getRepository(config, client)
+
+	if err != nil {
+		return targetDir, err
+	}
+
+	for _, config := range repository.Result.Config {
+		if config.Key == "VCS_TARGET_DIR" {
+			targetDir = config.Value
+		}
+	}
+
+	return targetDir, nil
+
+}
+
+func checkReadableSource(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (readableSource bool, error error) {
+
+	repoLayout, err := getRepositoryLayout(config, client)
+	if err != nil {
+		return readableSource, errors.Wrap(err, "could not check readable source format")
+	}
+
+	if repoLayout.Layout.ReadableSource == "true" || repoLayout.Layout.ReadableSource == "only" || repoLayout.Layout.ReadableSource == "all" {
+
+		readableSource = true
+
+	} else {
+
+		readableSource = false
+
+	}
+
+	return readableSource, nil
+}
+
+func getRepository(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryResponse, error) {
+
+	var repositoryResp repositoryResponse
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
@@ -1168,23 +1259,23 @@ func getRepository(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 	}()
 
 	if httpErr != nil {
-		return repositoryResponseBody{}, errors.Wrap(httpErr, "could not get repository")
+		return repositoryResponse{}, errors.Wrap(httpErr, "could not get repository")
 	} else if resp == nil {
-		return repositoryResponseBody{}, errors.New("could not get repository: did not retrieve a HTTP response")
+		return repositoryResponse{}, errors.New("could not get repository: did not retrieve a HTTP response")
 	}
 
-	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repositoryResponse)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repositoryResp)
 	if parsingErr != nil {
-		return repositoryResponseBody{}, errors.Errorf("%v", parsingErr)
+		return repositoryResponse{}, errors.Errorf("%v", parsingErr)
 	}
-	log.Entry().Info("get repository", repositoryResponse.Result.Name)
-	return repositoryResponse, nil
+
+	return repositoryResp, nil
 
 }
 
-func getRepositoryLayout(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryLayout, error) {
+func getRepositoryLayout(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (layoutResponse, error) {
 
-	var repoLayoutResponse repositoryLayout
+	var repoLayoutResponse layoutResponse
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/layout?sap-client=" + config.Client
@@ -1198,52 +1289,22 @@ func getRepositoryLayout(config *gctsExecuteABAPUnitTestsOptions, client piperht
 	}()
 
 	if httpErr != nil {
-		return repositoryLayout{}, errors.Wrap(httpErr, "could not get repository layout")
+		return layoutResponse{}, errors.Wrap(httpErr, "could not get repository layout")
 	} else if resp == nil {
-		return repositoryLayout{}, errors.New("could not get repository layout: did not retrieve a HTTP response")
+		return layoutResponse{}, errors.New("could not get repository layout: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoLayoutResponse)
 	if parsingErr != nil {
-		return repositoryLayout{}, errors.Errorf("%v", parsingErr)
+		return layoutResponse{}, errors.Errorf("%v", parsingErr)
 	}
 
 	return repoLayoutResponse, nil
 }
 
-func getRepositoryHistory(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (getRepoHistoryResponseBody, error) {
+func getCommitList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (commitResponse, error) {
 
-	var historyResponse getRepoHistoryResponseBody
-
-	url := config.Host +
-		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
-		"/getHistory?sap-client=" + config.Client
-
-	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return getRepoHistoryResponseBody{}, errors.Wrap(httpErr, "getting repository history failed")
-	} else if resp == nil {
-		return getRepoHistoryResponseBody{}, errors.New("getting repository history failed: did not retrieve a HTTP response")
-	}
-
-	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &historyResponse)
-	if parsingErr != nil {
-		return getRepoHistoryResponseBody{}, errors.Errorf("%v", parsingErr)
-	}
-
-	return historyResponse, nil
-}
-
-func getCommitList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (commitsResponseBody, error) {
-
-	var commitResponse commitsResponseBody
+	var commitResp commitResponse
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/getCommit?sap-client=" + config.Client
@@ -1257,21 +1318,21 @@ func getCommitList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 	}()
 
 	if httpErr != nil {
-		return commitsResponseBody{}, errors.Wrap(httpErr, "getting repository history failed")
+		return commitResponse{}, errors.Wrap(httpErr, "get repository history failed")
 	} else if resp == nil {
-		return commitsResponseBody{}, errors.New("getting repository history failed: did not retrieve a HTTP response")
+		return commitResponse{}, errors.New("get repository history failed: did not retrieve a HTTP response")
 	}
 
-	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &commitResponse)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &commitResp)
 	if parsingErr != nil {
-		return commitsResponseBody{}, errors.Errorf("%v", parsingErr)
+		return commitResponse{}, errors.Errorf("%v", parsingErr)
 	}
 
-	return commitResponse, nil
+	return commitResp, nil
 }
 
-func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit string, toCommit string, client piperhttp.Sender) (objectsResponseBody, error) {
-	var objectResponse objectsResponseBody
+func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit string, toCommit string, client piperhttp.Sender) (objectsResponse, error) {
+	var objectResponse objectsResponse
 	log.Entry().Info("get object difference")
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
@@ -1286,22 +1347,22 @@ func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit str
 	}()
 
 	if httpErr != nil {
-		return objectsResponseBody{}, errors.Wrap(httpErr, "getting object difference failed")
+		return objectsResponse{}, errors.Wrap(httpErr, "get object difference failed")
 	} else if resp == nil {
-		return objectsResponseBody{}, errors.New("getting object difference failed: did not retrieve a HTTP response")
+		return objectsResponse{}, errors.New("get object difference failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &objectResponse)
 	if parsingErr != nil {
-		return objectsResponseBody{}, errors.Errorf("%v", parsingErr)
+		return objectsResponse{}, errors.Errorf("%v", parsingErr)
 	}
 	log.Entry().Info("get object difference", objectResponse.Objects)
 	return objectResponse, nil
 }
 
-func getObjectInfo(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objectName string, objectType string) (objectMetaInfo, error) {
+func getObjectInfo(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objectName string, objectType string) (objectInfo, error) {
 
-	var objectMetInfoResponse objectMetaInfo
+	var objectMetInfoResponse objectInfo
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/objects/" + objectType + "/" + objectName +
 		"?sap-client=" + config.Client
@@ -1315,659 +1376,20 @@ func getObjectInfo(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 	}()
 
 	if httpErr != nil {
-		return objectMetaInfo{}, errors.Wrap(httpErr, "resolve package failed")
+		return objectInfo{}, errors.Wrap(httpErr, "resolve package failed")
 	} else if resp == nil {
-		return objectMetaInfo{}, errors.New("resolve package failed: did not retrieve a HTTP response")
+		return objectInfo{}, errors.New("resolve package failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &objectMetInfoResponse)
 	if parsingErr != nil {
-		return objectMetaInfo{}, errors.Errorf("%v", parsingErr)
+		return objectInfo{}, errors.Errorf("%v", parsingErr)
 	}
 	return objectMetInfoResponse, nil
 
 }
 
-/****************************************************************************************************
-*******************************************************************************************************/
-
-func executeUnitTestV2(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []repoObject) error {
-
-	var maxTimeOut int64
-
-	const defaultMaxTimeOut = 10000
-
-	//	if config.MaxTimeOut != 0 {
-	//		maxTimeOut = int64(config.MaxTimeOut)
-	//	} else {
-	maxTimeOut = defaultMaxTimeOut
-	//	}
-
-	runId, err := executeTestRun(config, client, objects)
-
-	if err != nil {
-		return errors.Wrap(err, "execution of unit tests failed")
-	}
-	initialTime := time.Now().Unix()
-	for {
-
-		statusResponse, err := getRunStatus(config, client, runId)
-
-		if err != nil {
-			return errors.Wrap(err, "execution of unit tests failed")
-		}
-
-		currentTime := time.Now().Unix()
-		timeDuration := currentTime - initialTime
-		log.Entry().
-			Info("Status", statusResponse.Progress.Status)
-
-		if statusResponse.Progress.Status == "FINISHED" || timeDuration > maxTimeOut {
-			break
-
-		}
-	}
-	log.Entry().
-		Info("Get Unit Test Result")
-
-	testResults, err := getTestResults(config, client, runId)
-
-	log.Entry().
-		Info("Test Result", testResults)
-
-	if testResults.Failures != "0" || testResults.Errors != "0" {
-
-		return errors.Wrap(err, "execution of unit tests failed")
-
-	}
-
-	return nil
-}
-
-func executeATCV2(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []repoObject) error {
-
-	var maxTimeOut int64
-	var ATCStatus ATCRun
-	var ATCId string
-	const defaultMaxTimeOut = 10000
-	//	if config.MaxTimeOut != 0 {
-	//		maxTimeOut = int64(config.MaxTimeOut)
-	//	} else {
-	maxTimeOut = defaultMaxTimeOut
-	//	}
-
-	runId, err := startATCRunV(config, client, objects)
-
-	if err != nil {
-		return errors.Wrap(err, "execution of atc failed")
-	}
-
-	initialTime := time.Now().Unix()
-	for {
-		log.Entry().
-			Info("Start Check ATC Status")
-		ATCStatus, err = checkATCStatus(config, client, runId)
-
-		if err != nil {
-			return errors.Wrap(err, "execution of unit tests failed")
-		}
-
-		currentTime := time.Now().Unix()
-		timeDuration := currentTime - initialTime
-		log.Entry().
-			Info("Time duration", timeDuration)
-		log.Entry().
-			Info("ATC Status", ATCStatus.Status)
-		if ATCStatus.Status == "Completed" || ATCStatus.Status == "Not Created" || ATCStatus.Status == "" || timeDuration > maxTimeOut {
-			break
-
-		}
-
-	}
-
-	if len(ATCStatus.Link) > 0 {
-		location := ATCStatus.Link[0].Key
-		locationSlice := strings.Split(location, "/")
-		ATCId = locationSlice[len(locationSlice)-1]
-		log.Entry().
-			Info("Start ATC Result")
-		err := getATCResult(config, client, ATCId)
-		if err != nil {
-			return errors.Wrap(err, "execution of unit tests failed")
-		}
-	} else {
-
-		return fmt.Errorf("could not get any response from ATC poll: %w", errors.New("status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started"))
-	}
-
-	return nil
-
-}
-
-func runUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpClient piperhttp.Sender) error {
-
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "execution of unit tests failed")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
-	}
-	httpClient.SetOptions(clientOptions)
-
-	var repoObjects []repoObject
-	var getPackageErr error
-
-	/*	if config.Scope == "CHANGED" {
-
-			repoObjects, getPackageErr = getChangedObjects(config, httpClient)
-
-		} else if config.Scope == "PACKAGE" {
-
-			repoObjects, getPackageErr = getPackageObjects(config, httpClient)
-
-		} else if config.Scope == "REPOSITORY" {
-
-			repoObjects, getPackageErr = getRepositoryObjects(config, httpClient)
-
-		}
-	*/
-	if getPackageErr != nil {
-		return errors.Wrap(getPackageErr, "execution of unit tests failed")
-	}
-
-	discHeader, discError := discoverServer(config, httpClient)
-
-	if discError != nil {
-		return errors.Wrap(discError, "execution of unit tests failed")
-	}
-
-	if discHeader.Get("X-Csrf-Token") == "" {
-		return errors.Errorf("could not retrieve x-csrf-token from server")
-	}
-
-	header := make(http.Header)
-	header.Add("x-csrf-token", discHeader.Get("X-Csrf-Token"))
-	//header.Add("Accept", "application/xml")
-	header.Add("Accept", "application/vnd.sap.adt.api.abapunit.run.v1+xml")
-	//header.Add("Content-Type", "application/vnd.sap.adt.abapunit.testruns.result.v1+xml")
-	header.Add("Content-Type", "application/vnd.sap.adt.api.abapunit.run.v1+xml")
-
-	/*	executeTestsErr := executeTestsForObject(config, httpClient, header, repoObjects)
-		if executeTestsErr != nil {
-			return errors.Wrap(executeTestsErr, "execution of unit tests failed")
-		}
-	*/
-	runID, startATCErr := startATCRunV(config, httpClient, repoObjects)
-	if startATCErr != nil {
-		return errors.Wrap(startATCErr, "execution of unit tests failed")
-	}
-
-	status, checkATCStatusErr := checkATCStatus(config, httpClient, runID)
-
-	if checkATCStatusErr != nil {
-		return errors.Wrap(checkATCStatusErr, "execution of unit tests failed")
-	}
-
-	getATCResultErr := getATCResult(config, httpClient, status.Status)
-
-	if getATCResultErr != nil {
-		return errors.Wrap(getATCResultErr, "execution of unit tests failed")
-	}
-
-	/*for _, object := range repoObjects {
-		executeTestsErr := executeTestsForObject(config, httpClient, header, object.Object, object.Type)
-		//executeTestsErr := executeTestsForPackage(config, httpClient, header, object)
-
-		if executeTestsErr != nil {
-			return errors.Wrap(executeTestsErr, "execution of unit tests failed")
-		}
-	}
-	*/
-	log.Entry().
-		WithField("repository", config.Repository).
-		Info("all unit tests were successful")
-
-	return nil
-}
-
-func startATCRunV(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []repoObject) (runId string, error error) {
-
-	discHeader, discError := discoverServer(config, client)
-
-	var xmlBody []byte
-
-	if discError != nil {
-		return runId, errors.Wrap(discError, "execution of unit tests failed")
-	}
-
-	if discHeader.Get("X-Csrf-Token") == "" {
-		return runId, errors.Errorf("could not retrieve x-csrf-token from server")
-	}
-
-	header := make(http.Header)
-	header.Add("x-csrf-token", discHeader.Get("X-Csrf-Token"))
-	header.Add("Accept", "application/vnd.sap.atc.run.parameters.v1+xml")
-	header.Add("Content-Type", "application/vnd.sap.atc.run.parameters.v1+xml")
-
-	var innerXml string
-	for _, object := range objects {
-
-		if object.Type == "DEVC" {
-
-			innerXml = innerXml + `<obj:package value="` + object.Object + `" includeSubpackages="true"/>`
-		}
-	}
-
-	//	if config.CheckVariant != "" {
-
-	//		xmlBody = []byte(`<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc"
-	//                         xmlns:obj="http://www.sap.com/adt/objectset" checkVariant="` + config.CheckVariant +
-	//			`"> <obj:objectSet><obj:packages>` + innerXml + `</obj:packages></obj:objectSet></atc:runparameters>`)
-
-	//	} else {
-
-	xmlBody = []byte(`<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc"
-                         xmlns:obj="http://www.sap.com/adt/objectset"><obj:objectSet><obj:packages>` + innerXml + `</obj:packages></obj:objectSet></atc:runparameters>`)
-
-	//	}
-
-	url := config.Host + "/sap/bc/adt/api/atc/runs?clientWait=false"
-
-	resp, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xmlBody), header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return runId, errors.Wrap(httpErr, "execution of ATC Checks failed")
-	} else if resp == nil {
-		return runId, errors.New("execution of ATC Checks failed: did not retrieve a HTTP response")
-	}
-
-	location := resp.Header["Location"][0]
-	locationSlice := strings.Split(location, "/")
-	runId = locationSlice[len(locationSlice)-1]
-
-	return runId, nil
-
-}
-
-func checkATCStatus(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, runId string) (status ATCRun, err error) {
-
-	url := config.Host +
-		"/sap/bc/adt/atc/runs/" + runId + "?sap-client=" + config.Client
-
-	header := make(http.Header)
-
-	header.Add("Accept", "application/vnd.sap.atc.run.v1+xml")
-
-	resp, httpErr := client.SendRequest("GET", url, nil, header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return status, errors.Wrap(httpErr, "execution of ATC checks failed")
-	} else if resp == nil {
-		return status, errors.New("execution of ATC checks failed: did not retrieve a HTTP response")
-	}
-	//	statusResponse := new(ATCRun)
-	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &status)
-	if parsingErr != nil {
-		log.Entry().Warning(parsingErr)
-	}
-
-	return status, nil
-
-}
-
-func getATCResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, resultID string) (err error) {
-
-	url := config.Host +
-		"/sap/bc/adt/api/atc/results/" + resultID + "?sap-client=" + config.Client
-
-	header := make(http.Header)
-
-	header.Add("Accept", "application/vnd.sap.atc.checkstyle.v1+xml")
-
-	resp, httpErr := client.SendRequest("GET", url, nil, header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return errors.Wrap(httpErr, "execution of ATC checks failed")
-	} else if resp == nil {
-		return errors.New("execution of ATC checks failed: did not retrieve a HTTP response")
-	}
-
-	var body []byte
-	const atcResultFileName = "ATCResults"
-	if httpErr == nil {
-		body, err = ioutil.ReadAll(resp.Body)
-	}
-	if err == nil {
-		defer resp.Body.Close()
-		err = parseATCResponseResult(body, atcResultFileName)
-	}
-	if err != nil {
-		return fmt.Errorf("handling ATC result failed: %w", err)
-	}
-	err = ioutil.WriteFile(atcResultFileName, body, 0644)
-	return nil
-
-}
-
-func parseATCResponseResult(body []byte, atcResultFileName string) (err error) {
-	if len(body) == 0 {
-		return fmt.Errorf("parsing ATC result failed: %w", errors.New("body is empty, can't parse empty body"))
-	}
-
-	parsedXML := new(ATCFiles)
-	xml.Unmarshal([]byte(body), &parsedXML)
-	if len(parsedXML.Files) == 0 {
-		log.Entry().Info("there were no results from this run, most likely the checked Package are empty or contain no ATC findings")
-	}
-
-	err = ioutil.WriteFile(atcResultFileName, body, 0644)
-	if err == nil {
-		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
-		piperutils.PersistReportsAndLinks("gctsExecuteABAPUnitTests", "", reports, nil)
-		for _, s := range parsedXML.Files {
-			for _, t := range s.ATCErrors {
-				log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
-			}
-		}
-	}
-	if err != nil {
-		return fmt.Errorf("writing results to XML file failed: %w", err)
-	}
-	return nil
-}
-
-func executeTestRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []repoObject) (runId string, error error) {
-
-	var objectXml string
-	var packageXml string
-	packageXml = `<osl:set xsi:type="packageSet">`
-	objectXml = `<osl:set xsi:type="flatObjectSet">`
-	for _, object := range objects {
-
-		if object.Type == "DEVC" {
-			packageXml = packageXml + `<osl:package name="` + object.Object + `" includeSubpackages="true"/>"`
-		} else {
-			objectXml = objectXml + `<osl:object name="` + object.Object + `" type="` + object.Type + `"/>`
-		}
-	}
-	packageXml = packageXml + `</osl:set>`
-	objectXml = objectXml + `</osl:set>`
-	var xmlBody = []byte(`<?xml version="1.0" encoding="UTF-8"?>
-		<aunit:run title="My Run" context="AIE Integration Test" xmlns:aunit="http://www.sap.com/adt/api/aunit">
-		  <aunit:options>
-			<aunit:measurements/>
-			<aunit:scope ownTests="true" foreignTests="true"/>
-			<aunit:riskLevel harmless="true" dangerous="true" critical="true"/>
-			<aunit:duration short="true" medium="true" long="true"/>
-		  </aunit:options>
-		  <osl:objectSet xsi:type="unionSet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">` + packageXml + objectXml +
-		`</osl:objectSet>
-		</aunit:run>`)
-
-	discHeader, discError := discoverServer(config, client)
-
-	if discError != nil {
-		return runId, errors.Wrap(discError, "execution of unit tests failed")
-	}
-
-	if discHeader.Get("X-Csrf-Token") == "" {
-		return runId, errors.Errorf("could not retrieve x-csrf-token from server")
-	}
-
-	header := make(http.Header)
-	header.Add("x-csrf-token", discHeader.Get("X-Csrf-Token"))
-
-	header.Add("Accept", "application/vnd.sap.adt.api.abapunit.run.v1+xml")
-	header.Add("Content-Type", "application/vnd.sap.adt.api.abapunit.run.v1+xml")
-
-	url := config.Host +
-		"/sap/bc/adt/api/abapunit/runs?sap-client=" + config.Client
-
-	resp, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xmlBody), header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return runId, errors.Wrap(httpErr, "execution of unit tests failed")
-	} else if resp == nil {
-		return runId, errors.New("execution of unit tests failed: did not retrieve a HTTP response")
-	}
-
-	location := resp.Header["Location"][0]
-	locationSlice := strings.Split(location, "/")
-	runId = locationSlice[len(locationSlice)-1]
-
-	return runId, nil
-}
-
-func getRunStatus(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, runId string) (status run, error error) {
-
-	url := config.Host +
-		"/sap/bc/adt/api/abapunit/runs/" + runId + "?sap-client=" + config.Client
-
-	header := make(http.Header)
-
-	header.Add("Accept", "application/vnd.sap.adt.api.abapunit.run-status.v1+xml")
-
-	resp, httpErr := client.SendRequest("GET", url, nil, header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return status, errors.Wrap(httpErr, "execution of unit tests failed")
-	} else if resp == nil {
-		return status, errors.New("execution of unit tests failed: did not retrieve a HTTP response")
-	}
-
-	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &status)
-	if parsingErr != nil {
-		log.Entry().Warning(parsingErr)
-	}
-
-	return status, nil
-}
-
-func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, runId string) (results Testsuites, error error) {
-
-	var response Testsuites
-	var UnitTestResults Checkstyle
-	var File checkstyleFile
-	var UnitError unitError
-	var FileName string
-	var VcsTargetDir string
-	var Source string
-	var objectType string
-	var objectName string
-
-	url := config.Host +
-		"/sap/bc/adt/api/abapunit/results/" + runId + "?sap-client=" + config.Client
-
-	header := make(http.Header)
-
-	header.Add("Accept", "application/vnd.sap.adt.api.junit.run-result.v1+xml")
-
-	resp, httpErr := client.SendRequest("GET", url, nil, header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if httpErr != nil {
-		return results, errors.Wrap(httpErr, "execution of unit tests failed")
-	} else if resp == nil {
-		return results, errors.New("execution of unit tests failed: did not retrieve a HTTP response")
-	}
-
-	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &response)
-	if parsingErr != nil {
-		log.Entry().Warning(parsingErr)
-	}
-
-	layout, layouterr := getRepositoryLayout(config, client)
-	if layouterr != nil {
-		return response, fmt.Errorf("getting repository layout failed: %w", layouterr)
-	}
-
-	repository, repoErr := getRepository(config, client)
-	if repoErr != nil {
-		return response, fmt.Errorf("getting repository information failed: %w", repoErr)
-	}
-	for _, value := range repository.Result.Config {
-		if value.Key == "VCS_TARGET_DIR" {
-			VcsTargetDir = value.Value
-		}
-	}
-
-	for tskey, _ := range response.Testsuite {
-
-		tests, testerr := strconv.Atoi(response.Testsuite[tskey].Tests)
-		if testerr != nil {
-			log.Entry().Warning(testerr)
-		}
-		if tests != 0 {
-
-			/*		failures, falirerr := strconv.Atoi(response.Testsuite[key].Failures)
-					if falirerr != nil {
-						log.Entry().Warning(falirerr)
-
-					}
-
-					} */
-			for tckey, _ := range response.Testsuite[tskey].Testcase {
-				asserts, assertserr := strconv.Atoi(response.Testsuite[tskey].Testcase[tckey].Asserts)
-				if assertserr != nil {
-					log.Entry().Warning(assertserr)
-				}
-
-				if asserts == 0 {
-
-					UnitError.Source = response.Testsuite[tskey].Testcase[tckey].Name
-					UnitError.Severity = "low"
-					UnitError.Message = "test case is successful"
-					UnitError.Line = ""
-					File.Error = append(File.Error, UnitError)
-					regexObjectName := regexp.MustCompile(`:[a-zA-Z0-9_]*-`)
-					regexObjectType := regexp.MustCompile(`.[a-zA-Z]*:`)
-					preobjectName := regexObjectName.FindString(response.Testsuite[tskey].Testcase[tckey].Classname)
-					preobjectType := regexObjectType.FindString(response.Testsuite[tskey].Testcase[tckey].Classname)
-					objectType = preobjectType[1 : len(preobjectType)-1]
-					objectName = preobjectName[1 : len(preobjectName)-1]
-
-				} else {
-					UnitError.Source = response.Testsuite[tskey].Testcase[tckey].Name
-					UnitError.Severity = "error"
-
-					UnitError.Message = html.UnescapeString(response.Testsuite[tskey].Testcase[tckey].Failure.Text)
-
-					regexLine := regexp.MustCompile(`Line: <\d*>`)
-					//	re2 := regexp.MustCompile(`\d+`)
-
-					linestring := regexLine.FindString(UnitError.Message)
-					UnitError.Line = linestring[7 : len(linestring)-1]
-					File.Error = append(File.Error, UnitError)
-					regexObjectName := regexp.MustCompile(`:[a-zA-Z0-9_]*-`)
-					regexObjectType := regexp.MustCompile(`.[a-zA-Z]*:`)
-					preobjectName := regexObjectName.FindString(response.Testsuite[tskey].Testcase[tckey].Classname)
-					preobjectType := regexObjectType.FindString(response.Testsuite[tskey].Testcase[tckey].Classname)
-					objectType = preobjectType[1 : len(preobjectType)-1]
-					objectName = preobjectName[1 : len(preobjectName)-1]
-
-				}
-			}
-		} else {
-
-			log.Entry().Warning("No Unit Tests were found!")
-		}
-
-		//	if failures != 0 {
-
-		//		for i := 0; i < failures; i++ {
-
-		if layout.Layout.ReadableSource == "true" || layout.Layout.ReadableSource == "only" || layout.Layout.ReadableSource == "all" {
-
-			FileName = objectName + "." + objectType + "." + "testclasses.abap"
-
-		} else {
-
-			FileName = "CINC " + objectName + "============CCAU.abap"
-
-		}
-
-		if layout.Layout.Subdirectory != "" {
-
-			Source = layout.Layout.Subdirectory
-
-		} else if VcsTargetDir != "" {
-
-			Source = VcsTargetDir
-
-		}
-
-		File.Name = config.Workspace + "/" + Source + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
-		UnitTestResults.File = append(UnitTestResults.File, File)
-		File = checkstyleFile{}
-		UnitError = unitError{}
-
-	}
-
-	//UnitError.Line = re2.FindString(linestring)
-
-	UnitTestResults.Version = "1.0"
-
-	const UnitTestFileName = "UnitTestResults"
-
-	body, _ := xml.Marshal(UnitTestResults)
-
-	err := ioutil.WriteFile(UnitTestFileName, body, 0644)
-
-	if err != nil {
-		return response, fmt.Errorf("handling unit test results failed: %w", err)
-	}
-
-	return response, nil
-}
-
-type ATCRun struct {
-	XMLName xml.Name  `xml:"run"`
-	Status  string    `xml:"status,attr"`
-	Link    []ATCLink `xml:"link"`
-}
-
-//Link of XML object
-
-type Worklist struct {
+type worklist struct {
 	XMLName             xml.Name `xml:"worklist"`
 	Text                string   `xml:",chardata"`
 	ID                  string   `xml:"id,attr"`
@@ -2030,26 +1452,6 @@ type Worklist struct {
 			} `xml:"findings"`
 		} `xml:"object"`
 	} `xml:"objects"`
-}
-
-type ATCLink struct {
-	Key   string `xml:"href,attr"`
-	Value string `xml:",chardata"`
-}
-type gctsException struct {
-	Message     string `json:"message"`
-	Description string `json:"description"`
-	Code        int    `json:"code"`
-}
-
-type gctsLogs struct {
-	Time     int    `json:"time"`
-	User     string `json:"user"`
-	Section  string `json:"section"`
-	Action   string `json:"action"`
-	Severity string `json:"severity"`
-	Message  string `json:"message"`
-	Code     string `json:"code"`
 }
 
 type runResult struct {
@@ -2151,105 +1553,34 @@ type runResult struct {
 	} `xml:"program"`
 }
 
-type run struct {
-	XMLName  xml.Name `xml:"run"`
-	Text     string   `xml:",chardata"`
-	Title    string   `xml:"title,attr"`
-	Context  string   `xml:"context,attr"`
-	Aunit    string   `xml:"aunit,attr"`
-	Progress struct {
-		Text       string `xml:",chardata"`
-		Status     string `xml:"status,attr"`
-		Percentage string `xml:"percentage,attr"`
-	} `xml:"progress"`
-	ExecutedBy struct {
-		Text string `xml:",chardata"`
-		User string `xml:"user,attr"`
-	} `xml:"executedBy"`
-	Time struct {
-		Text    string `xml:",chardata"`
-		Started string `xml:"started,attr"`
-		Ended   string `xml:"ended,attr"`
-	} `xml:"time"`
-	Link struct {
-		Text  string `xml:",chardata"`
-		Href  string `xml:"href,attr"`
-		Rel   string `xml:"rel,attr"`
-		Type  string `xml:"type,attr"`
-		Title string `xml:"title,attr"`
-		Atom  string `xml:"atom,attr"`
-	} `xml:"link"`
+type gctsException struct {
+	Message     string `json:"message"`
+	Description string `json:"description"`
+	Code        int    `json:"code"`
 }
 
-type bodyRun struct {
-	XMLName xml.Name `xml:"bodyRun"`
-	Text    string   `xml:",chardata"`
-	Title   string   `xml:"title,attr"`
-	Context string   `xml:"context,attr"`
-	Aunit   string   `xml:"aunit,attr"`
-	Options struct {
-		Text         string `xml:",chardata"`
-		Measurements string `xml:"measurements"`
-		Scope        struct {
-			Text         string `xml:",chardata"`
-			OwnTests     string `xml:"ownTests,attr"`
-			ForeignTests string `xml:"foreignTests,attr"`
-		} `xml:"scope"`
-		RiskLevel struct {
-			Text      string `xml:",chardata"`
-			Harmless  string `xml:"harmless,attr"`
-			Dangerous string `xml:"dangerous,attr"`
-			Critical  string `xml:"critical,attr"`
-		} `xml:"riskLevel"`
-		Duration struct {
-			Text   string `xml:",chardata"`
-			Short  string `xml:"short,attr"`
-			Medium string `xml:"medium,attr"`
-			Long   string `xml:"long,attr"`
-		} `xml:"duration"`
-	} `xml:"options"`
-	ObjectSet struct {
-		Text string `xml:",chardata"`
-		Type string `xml:"type,attr"`
-		Osl  string `xml:"osl,attr"`
-		Xsi  string `xml:"xsi,attr"`
-		Set  struct {
-			Text   string `xml:",chardata"`
-			Type   string `xml:"type,attr"`
-			Object []struct {
-				Text string `xml:",chardata"`
-				Name string `xml:"name,attr"`
-				Type string `xml:"type,attr"`
-			} `xml:"object"`
-		} `xml:"set"`
-	} `xml:"objectSet"`
+type gctsLogs struct {
+	Time     int    `json:"time"`
+	User     string `json:"user"`
+	Section  string `json:"section"`
+	Action   string `json:"action"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+	Code     string `json:"code"`
 }
 
-type objects struct {
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Action string `json:"action"`
-}
-
-type commits struct {
+type commit struct {
 	ID string `json:"id"`
 }
 
-type objectsResponseBody struct {
-	Objects   []objects     `json:"objects"`
-	Log       []gctsLogs    `json:"log"`
-	Exception gctsException `json:"exception"`
-	ErrorLogs []gctsLogs    `json:"errorLog"`
-}
-
-type commitsResponseBody struct {
-	Commits   []commits     `json:"commits"`
+type commitResponse struct {
+	Commits   []commit      `json:"commits"`
 	ErrorLog  []gctsLogs    `json:"errorLog"`
 	Log       []gctsLogs    `json:"log"`
 	Exception gctsException `json:"exception"`
 }
 
-type objectMetaInfo struct {
+type objectInfo struct {
 	Pgmid     string `json:"pgmid"`
 	Object    string `json:"object"`
 	ObjName   string `json:"objName"`
@@ -2257,14 +1588,8 @@ type objectMetaInfo struct {
 	Author    string `json:"author"`
 	Devclass  string `json:"devclass"`
 }
-type repoObject struct {
-	Pgmid       string `json:"pgmid"`
-	Object      string `json:"object"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-}
 
-type repoconfig struct {
+type repoConfig struct {
 	Key        string  `json:"key"`
 	Value      string  `json:"value"`
 	Cprivate   string  `json:"cprivate"`
@@ -2276,7 +1601,7 @@ type repoconfig struct {
 	ChangedBy  string  `json:"changedBy"`
 }
 
-type result struct {
+type repository struct {
 	Rid           string       `json:"rid"`
 	Name          string       `json:"name"`
 	Role          string       `json:"role"`
@@ -2288,12 +1613,36 @@ type result struct {
 	Url           string       `json:"url"`
 	CreatedBy     string       `json:"createdBy"`
 	CreatedDate   string       `json:"createdDate"`
-	Config        []repoconfig `json:"config"`
+	Config        []repoConfig `json:"config"`
 	Objects       int          `json:"objects"`
 	CurrentCommit string       `json:"currentCommit"`
 }
 
+type repositoryResponse struct {
+	Result    repository    `json:"result"`
+	Exception gctsException `json:"exception"`
+}
+
+type objects struct {
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Action string `json:"action"`
+}
 type objectsResponse struct {
+	Objects   []objects     `json:"objects"`
+	Log       []gctsLogs    `json:"log"`
+	Exception gctsException `json:"exception"`
+	ErrorLogs []gctsLogs    `json:"errorLog"`
+}
+
+type repoObject struct {
+	Pgmid       string `json:"pgmid"`
+	Object      string `json:"object"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+type repoObjectResponse struct {
 	Objects   []repoObject  `json:"objects"`
 	Log       []gctsLogs    `json:"log"`
 	Exception gctsException `json:"exception"`
@@ -2311,65 +1660,14 @@ type layout struct {
 	KeepClient      string `json:"keepClient"`
 }
 
-type repositoryLayout struct {
+type layoutResponse struct {
 	Layout    layout     `json:"layout"`
 	Log       []gctsLogs `json:"log"`
 	Exception string     `json:"exception"`
 	ErrorLogs []gctsLogs `json:"errorLog"`
 }
 
-type repositoryResponseBody struct {
-	Result    result        `json:"result"`
-	Exception gctsException `json:"exception"`
-}
-
-type Testsuites struct {
-	XMLName    xml.Name `xml:"testsuites"`
-	Text       string   `xml:",chardata"`
-	Title      string   `xml:"title,attr"`
-	System     string   `xml:"system,attr"`
-	Client     string   `xml:"client,attr"`
-	ExecutedBy string   `xml:"executedBy,attr"`
-	Time       string   `xml:"time,attr"`
-	Timestamp  string   `xml:"timestamp,attr"`
-	Failures   string   `xml:"failures,attr"`
-	Errors     string   `xml:"errors,attr"`
-	Skipped    string   `xml:"skipped,attr"`
-	Asserts    string   `xml:"asserts,attr"`
-	Tests      string   `xml:"tests,attr"`
-	Testsuite  []struct {
-		Text      string `xml:",chardata"`
-		Name      string `xml:"name,attr"`
-		Tests     string `xml:"tests,attr"`
-		Failures  string `xml:"failures,attr"`
-		Errors    string `xml:"errors,attr"`
-		Skipped   string `xml:"skipped,attr"`
-		Asserts   string `xml:"asserts,attr"`
-		Package   string `xml:"package,attr"`
-		Timestamp string `xml:"timestamp,attr"`
-		Time      string `xml:"time,attr"`
-		Hostname  string `xml:"hostname,attr"`
-		Testcase  []struct {
-			Text      string `xml:",chardata"`
-			Classname string `xml:"classname,attr"`
-			Name      string `xml:"name,attr"`
-			Time      string `xml:"time,attr"`
-			Asserts   string `xml:"asserts,attr"`
-			Failure   struct {
-				Text    string `xml:",chardata"`
-				Message string `xml:"message,attr"`
-				Type    string `xml:"type,attr"`
-			} `xml:"failure"`
-		} `xml:"testcase"`
-	} `xml:"testsuite"`
-}
-
-type ATCFiles struct {
-	XMLName xml.Name `xml:"checkstyle"`
-	Files   []File   `xml:"file"`
-}
-
-type unitError struct {
+type checkstyleError struct {
 	Text     string `xml:",chardata"`
 	Message  string `xml:"message,attr"`
 	Source   string `xml:"source,attr"`
@@ -2377,15 +1675,15 @@ type unitError struct {
 	Severity string `xml:"severity,attr"`
 }
 
-type checkstyleFile struct {
-	Text  string      `xml:",chardata"`
-	Name  string      `xml:"name,attr"`
-	Error []unitError `xml:"error"`
+type file struct {
+	Text  string            `xml:",chardata"`
+	Name  string            `xml:"name,attr"`
+	Error []checkstyleError `xml:"error"`
 }
 
-type Checkstyle struct {
-	XMLName xml.Name         `xml:"checkstyle"`
-	Text    string           `xml:",chardata"`
-	Version string           `xml:"version,attr"`
-	File    []checkstyleFile `xml:"file"`
+type checkstyle struct {
+	XMLName xml.Name `xml:"checkstyle"`
+	Text    string   `xml:",chardata"`
+	Version string   `xml:"version,attr"`
+	File    []file   `xml:"file"`
 }
