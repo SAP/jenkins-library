@@ -59,7 +59,13 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 
 	failureMessage := "Failed to upload API Proxy artefact"
 	successMessage := "Successfully created api proxy artefact in API Portal"
-	httpFileUploadRequestParameters := cpi.HttpFileUploadRequestParameters{ErrMessage: failureMessage, FilePath: config.FilePath, Response: apiProxyUploadStatusResp,
-		HttpMethod: httpMethod, HttpUrl: uploadApiProxyStatusURL, HttpErr: httpErr, SuccessMessage: successMessage}
+	httpFileUploadRequestParameters := cpi.HttpFileUploadRequestParameters{
+		ErrMessage: failureMessage,
+		FilePath: config.FilePath,
+		Response: apiProxyUploadStatusResp,
+		HttpMethod: httpMethod,
+		HttpUrl: uploadApiProxyStatusURL,
+		HttpErr: httpErr,
+		SuccessMessage: successMessage}
 	return cpi.HttpUploadUtils.HandleHTTPFileUploadResponse(httpFileUploadRequestParameters)
 }

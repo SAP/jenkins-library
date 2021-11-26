@@ -16,9 +16,10 @@ func TestRunApiProxyUpload(t *testing.T) {
 		path := filepath.Join("tempDir", "apiproxy.zip")
 		filesMock.AddFile(path, []byte("dummy content"))
 		exists, err := filesMock.FileExists(path)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Fatal("Failed to create temporary file")
+		}
 		assert.True(t, exists)
-
 		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
