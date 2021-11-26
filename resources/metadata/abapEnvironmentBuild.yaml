@@ -106,30 +106,63 @@ spec:
           - STAGES
           - STEPS
       - name: values
-        type: "[]string"
+        type: string
         description: TODO
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: false
-      - name: downloadResultFiles
+      - name: downloadAllResultFiles
         type: bool
         mandatory: true
         default: false
-        description: TODO
+        description: TODO Downloads all result files => schlägt downloadResultFilenames
         scope: 
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: resultFilenames
+      - name: downloadResultFilenames
         type: "[]string"
         mandatory: false
-        description: TODO
+        description: TODO 
         scope: 
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: publishAllDownloadedResultFiles
+        type: bool
+        mandatory: true
+        default: false
+        description: TODO Downloads all result files => schlägt publishResultFilenames
+        scope: 
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: publishResultFilenames
+        type: "[]string"
+        mandatory: false
+        description: TODO wenn hier was steht was gar nichct runtergeladen wurde => fehler
+        scope: 
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: subDirectoryForDownload
+        type: string
+        mandatory: false
+        scope: 
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: filenamePrefixForDownload
+        type: string
+        mandatory: false
+        scope: 
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: treatWarningsAsError
         type: bool
         mandatory: true
@@ -166,6 +199,19 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: cpeValues
+        type: string
+        description: TODO
+        mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: build/values
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: build/values
   containers:
     - name: cf
       image: ppiper/cf-cli:7

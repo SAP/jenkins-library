@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"path"
-	"path/filepath"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -48,7 +47,7 @@ func newAbapEnvironmentBuildUtils() abapEnvironmentBuildUtils {
 	return &utils
 }
 
-func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newAbapEnvironmentBuildUtils()
@@ -66,28 +65,60 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runAbapEnvironmentBuild(&config, telemetryData, utils, &autils, &client, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervallInSeconds)*time.Second)
+	err := runAbapEnvironmentBuild(&config, telemetryData, utils, &autils, &client, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervallInSeconds)*time.Second, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, com abaputils.Communication, client abapbuild.HTTPSendLoader,
-	maxRuntime time.Duration, PollingIntervall time.Duration) error {
+	maxRuntime time.Duration, PollingIntervall time.Duration, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
-	err := initConnection(conn, config, com, client)
-	if err != nil {
+	if err := initConnection(conn, config, com, client); err != nil {
 		return err
 	}
 
-	//erzeuge value liste
-	// TODO lieber in bfw?
-	values, err := parseValues(config.Values)
-	if err != nil {
+	//stringValues := "[{\"value_id\":\"ID1\",\"value\":\"Value1\"}]"
+	var values abapbuild.Values
+	if err := json.Unmarshal([]byte(config.Values), &values.Values); err != nil {
 		return err
 	}
+	var cpevalues abapbuild.Values
+	if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
+		return err
+	}
+	m := make(map[string]string)
+
+	// falls es einen wert doppelt in der config gibt -> fehler
+	for _, value := range values.Values {
+		_, present := m[value.ValueID]
+		if present {
+			//TODO bessere error message
+			return errors.New("Value duplicate")
+		}
+		m[value.ValueID] = value.Value
+	}
+
+	//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
+	for i := len(cpevalues.Values) - 1; i >= 0; i-- {
+		_, present := m[cpevalues.Values[i].ValueID]
+		if present {
+			cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
+		}
+	}
+
+	values.Values = append(values.Values, cpevalues.Values...)
+
+	//erzeuge value liste
+	// TODO lieber in bfw?
+	//addonDescriptorCPE, _ := abaputils.ConstructAddonDescriptorFromJSON([]byte(config.AddonDescriptor))
+
+	/*values, err := parseValues(config.Values)
+	if err != nil {
+		return err
+	} */
 
 	build := abapbuild.Build{
 		Connector: *conn,
@@ -106,40 +137,52 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 		return err
 	}
 
-	//download == true?
-	if config.DownloadResultFiles {
-		if len(config.ResultFilenames) > 0 {
-			for _, name := range config.ResultFilenames {
-				result, err := build.GetResult(name)
-				if err != nil {
-					return err
-				}
-				// TODO wohin speichern?
-				var fileName string
-				if (len(result.AdditionalInfo) <= 255) && (len(result.AdditionalInfo) > 0) {
-					fileName = result.AdditionalInfo
-				} else {
-					fileName = result.Name
-				}
-				//envPath := filepath.Join(GeneralConfig.EnvRootPath, "abapBuild")
-				downloadPath := filepath.Join(GeneralConfig.EnvRootPath, path.Base(fileName))
-				if err := result.Download(downloadPath); err != nil {
-					return err
-				}
+	if config.PublishAllDownloadedResultFiles {
+		if err := build.DownloadResults(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
+			return err
+		}
+	} else {
+		//download nur spezifizierte
+		for _, name := range config.DownloadResultFilenames {
+			result, err := build.GetResult(name)
+			if err != nil {
+				return err
+			}
+			if err := result.DownloadWithFilenamePrefix(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
+				return err
 			}
 		}
-		// TODO alle downloaden, hier?
-		/*	if err := build.GetResults(); err != nil {
-					return err
-				}
-				for _, task := range b.tasks {
-					task.
-			// TODO
-			//}
-		*/
 	}
-	//spezielle download files nur?
-	//download
+
+	if config.PublishAllDownloadedResultFiles {
+		build.PublishAllDownloadedResults("abapEnvironmentBuild")
+	} else {
+		if err := build.PublishDownloadedResults("abapEnvironmentBuild", config.PublishResultFilenames); err != nil {
+			return err
+		}
+	}
+
+	//TODO values von build nehmen und in die struktur pressen und das wegschreiben
+	//TODO test start
+	type cpeValue struct {
+		ValueID string `json:"value_id"`
+		Value   string `json:"value"`
+	}
+	var testValues []cpeValue
+	testValues = []cpeValue{
+		{
+			ValueID: "ID1",
+			Value:   "Value1",
+		},
+		{
+			ValueID: "ID2",
+			Value:   "Value2",
+		},
+	}
+
+	//Das brauch ich um am ende die Values wegzuschreiben -> muss also eigentlich nach utnen
+	jsonBytes, _ := json.Marshal(testValues)
+	cpe.build.values = string(jsonBytes)
 	//
 	/*
 		//TODO beginn generiertes beispielcoding
@@ -218,3 +261,27 @@ func parseValue(inputValue string) (abapbuild.Value, error) {
 	}
 	return value, nil
 }
+
+//TODO delete
+/*
+	config.Values = []string{"{value_id:'ID1','value':'Value1'}"}
+	//config.Values = []string{"value_id: PACKAGES, value: /BUILD/AUNIT_DUMMY_TESTS", "value_id: MyId1, value: AunitValue1", "value_id: MyId2, value: AunitValue2"}
+	config.CpeValues = []string{"value_id: PACKAGES, value: /BUILD/AUNIT_DUMMY_TESTS", "value_id: MyId1, value: CPEValue1", "value_id: MyId3, value: CPEValue3"}
+	//TODO am ende erwartet: package ist eh gleich, soll MyId1, MyId2 von config.Values, MyId1 von CpeValues verwerfen, dafür MyId3 dazu packen
+	var configValue abapbuild.Value
+	var configValues abapbuild.Values
+	for _, inputConfigValue := range config.Values {
+		if err := json.Unmarshal([]byte(inputConfigValue), configValue); err != nil {
+			return err
+		}
+		configValues.Values = append(configValues.Values, configValue)
+	}
+	var cpeValue abapbuild.Value
+	var cpeValues abapbuild.Values
+	for _, inputCpeValue := range config.CpeValues {
+		if err := json.Unmarshal([]byte(inputCpeValue), cpeValue); err != nil {
+			return err
+		}
+		cpeValues.Values = append(cpeValues.Values, cpeValue)
+	}
+*/

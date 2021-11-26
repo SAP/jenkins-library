@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -16,22 +18,55 @@ import (
 )
 
 type abapEnvironmentBuildOptions struct {
-	CfAPIEndpoint             string   `json:"cfApiEndpoint,omitempty"`
-	CfOrg                     string   `json:"cfOrg,omitempty"`
-	CfSpace                   string   `json:"cfSpace,omitempty"`
-	CfServiceInstance         string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName          string   `json:"cfServiceKeyName,omitempty"`
-	Host                      string   `json:"host,omitempty"`
-	Username                  string   `json:"username,omitempty"`
-	Password                  string   `json:"password,omitempty"`
-	Phase                     string   `json:"phase,omitempty"`
-	Values                    []string `json:"values,omitempty"`
-	DownloadResultFiles       bool     `json:"downloadResultFiles,omitempty"`
-	ResultFilenames           []string `json:"resultFilenames,omitempty"`
-	TreatWarningsAsError      bool     `json:"treatWarningsAsError,omitempty"`
-	MaxRuntimeInMinutes       int      `json:"maxRuntimeInMinutes,omitempty"`
-	PollingIntervallInSeconds int      `json:"pollingIntervallInSeconds,omitempty"`
-	CertificateNames          []string `json:"certificateNames,omitempty"`
+	CfAPIEndpoint                   string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg                           string   `json:"cfOrg,omitempty"`
+	CfSpace                         string   `json:"cfSpace,omitempty"`
+	CfServiceInstance               string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName                string   `json:"cfServiceKeyName,omitempty"`
+	Host                            string   `json:"host,omitempty"`
+	Username                        string   `json:"username,omitempty"`
+	Password                        string   `json:"password,omitempty"`
+	Phase                           string   `json:"phase,omitempty"`
+	Values                          string   `json:"values,omitempty"`
+	DownloadAllResultFiles          bool     `json:"downloadAllResultFiles,omitempty"`
+	DownloadResultFilenames         []string `json:"downloadResultFilenames,omitempty"`
+	PublishAllDownloadedResultFiles bool     `json:"publishAllDownloadedResultFiles,omitempty"`
+	PublishResultFilenames          []string `json:"publishResultFilenames,omitempty"`
+	SubDirectoryForDownload         string   `json:"subDirectoryForDownload,omitempty"`
+	FilenamePrefixForDownload       string   `json:"filenamePrefixForDownload,omitempty"`
+	TreatWarningsAsError            bool     `json:"treatWarningsAsError,omitempty"`
+	MaxRuntimeInMinutes             int      `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervallInSeconds       int      `json:"pollingIntervallInSeconds,omitempty"`
+	CertificateNames                []string `json:"certificateNames,omitempty"`
+	CpeValues                       string   `json:"cpeValues,omitempty"`
+}
+
+type abapEnvironmentBuildCommonPipelineEnvironment struct {
+	build struct {
+		values string
+	}
+}
+
+func (p *abapEnvironmentBuildCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "build", name: "values", value: p.build.values},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
 }
 
 // AbapEnvironmentBuildCommand TODO
@@ -41,6 +76,7 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 	metadata := abapEnvironmentBuildMetadata()
 	var stepConfig abapEnvironmentBuildOptions
 	var startTime time.Time
+	var commonPipelineEnvironment abapEnvironmentBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 
 	var createAbapEnvironmentBuildCmd = &cobra.Command{
@@ -92,6 +128,7 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -109,7 +146,7 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			abapEnvironmentBuild(stepConfig, &telemetryData)
+			abapEnvironmentBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -129,18 +166,24 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.Phase, "phase", os.Getenv("PIPER_phase"), "TODO")
-	cmd.Flags().StringSliceVar(&stepConfig.Values, "values", []string{}, "TODO")
-	cmd.Flags().BoolVar(&stepConfig.DownloadResultFiles, "downloadResultFiles", false, "TODO")
-	cmd.Flags().StringSliceVar(&stepConfig.ResultFilenames, "resultFilenames", []string{}, "TODO")
+	cmd.Flags().StringVar(&stepConfig.Values, "values", os.Getenv("PIPER_values"), "TODO")
+	cmd.Flags().BoolVar(&stepConfig.DownloadAllResultFiles, "downloadAllResultFiles", false, "TODO Downloads all result files => schlägt downloadResultFilenames")
+	cmd.Flags().StringSliceVar(&stepConfig.DownloadResultFilenames, "downloadResultFilenames", []string{}, "TODO")
+	cmd.Flags().BoolVar(&stepConfig.PublishAllDownloadedResultFiles, "publishAllDownloadedResultFiles", false, "TODO Downloads all result files => schlägt publishResultFilenames")
+	cmd.Flags().StringSliceVar(&stepConfig.PublishResultFilenames, "publishResultFilenames", []string{}, "TODO wenn hier was steht was gar nichct runtergeladen wurde => fehler")
+	cmd.Flags().StringVar(&stepConfig.SubDirectoryForDownload, "subDirectoryForDownload", os.Getenv("PIPER_subDirectoryForDownload"), "")
+	cmd.Flags().StringVar(&stepConfig.FilenamePrefixForDownload, "filenamePrefixForDownload", os.Getenv("PIPER_filenamePrefixForDownload"), "")
 	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "TODO")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "TODO")
+	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "TODO")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("phase")
-	cmd.MarkFlagRequired("downloadResultFiles")
+	cmd.MarkFlagRequired("downloadAllResultFiles")
+	cmd.MarkFlagRequired("publishAllDownloadedResultFiles")
 	cmd.MarkFlagRequired("treatWarningsAsError")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
 	cmd.MarkFlagRequired("pollingIntervallInSeconds")
@@ -245,13 +288,13 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Name:        "values",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_values"),
 					},
 					{
-						Name:        "downloadResultFiles",
+						Name:        "downloadAllResultFiles",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
@@ -260,13 +303,49 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Default:     false,
 					},
 					{
-						Name:        "resultFilenames",
+						Name:        "downloadResultFilenames",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "publishAllDownloadedResultFiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "publishResultFilenames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "subDirectoryForDownload",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_subDirectoryForDownload"),
+					},
+					{
+						Name:        "filenamePrefixForDownload",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filenamePrefixForDownload"),
 					},
 					{
 						Name:        "treatWarningsAsError",
@@ -304,10 +383,35 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name: "cpeValues",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "build/values",
+							},
+						},
+						Scope:     []string{},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_cpeValues"),
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Name: "cf", Image: "ppiper/cf-cli:7"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "build/values"},
+						},
+					},
+				},
 			},
 		},
 	}

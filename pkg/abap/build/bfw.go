@@ -3,10 +3,13 @@ package build
 import (
 	"encoding/json"
 	"fmt"
+	"path"
+	"path/filepath"
 	"sort"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -29,11 +32,12 @@ const (
 	// Finished : Build Framework ended successful
 	Finished RunState = "FINISHED"
 	// Failed : Build Framework endded with error
-	Failed     RunState = "FAILED"
-	loginfo    msgty    = "I"
-	logwarning msgty    = "W"
-	logerror   msgty    = "E"
-	logaborted msgty    = "A"
+	Failed          RunState = "FAILED"
+	loginfo         msgty    = "I"
+	logwarning      msgty    = "W"
+	logerror        msgty    = "E"
+	logaborted      msgty    = "A"
+	dummyResultName string   = "Dummy"
 )
 
 //******** structs needed for json convertion ********
@@ -114,6 +118,8 @@ type Result struct {
 	Name           string `json:"name"`
 	AdditionalInfo string `json:"additional_info"`
 	Mimetype       string `json:"mimetype"`
+	SavedFilename  string
+	DownloadPath   string
 }
 
 // Value : Returns Build Runtime Value
@@ -185,12 +191,13 @@ func (b *Build) Poll(maxRuntime time.Duration, pollingInterval time.Duration) er
 	}
 }
 
+// TODO unittest hierfür
 func (b *Build) EndedWithError(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
 		return errors.Errorf("Build of failed")
 	}
 	if treatWarningsAsError && b.ResultState == warning {
-		return errors.Errorf("Build ended with warning, setting to failes as configured")
+		return errors.Errorf("Build ended with warning, setting to failed as configured")
 	}
 	if (b.ResultState == aborted) || (b.ResultState == erroneous) {
 		return errors.Errorf("Build ended with %s", b.ResultState)
@@ -301,28 +308,81 @@ func (t *task) printLogs() error {
 	return nil
 }
 
+//TODO hier hab ich das mit dem pointer geändert! gut checken das download usw trotzdem tut
 // GetResult : Returns the last Build artefact created from build step
-func (b *Build) GetResult(name string) (Result, error) {
-	var Results []Result
+func (b *Build) GetResult(name string) (*Result, error) {
+	var Results []*Result
 	var returnResult Result
 	if err := b.GetResults(); err != nil {
-		return returnResult, err
+		return &returnResult, err
 	}
-	for _, task := range b.Tasks {
-		for _, result := range task.Results {
-			if result.Name == name {
-				Results = append(Results, result)
+	for i_task := range b.Tasks {
+		for i_result := range b.Tasks[i_task].Results {
+			if b.Tasks[i_task].Results[i_result].Name == name {
+				//TODO test
+				//return &b.Tasks[i_task].Results[i_result], nil
+				Results = append(Results, &b.Tasks[i_task].Results[i_result])
 			}
 		}
 	}
 	switch len(Results) {
 	case 0:
-		return returnResult, errors.New("No result named " + name + " was found")
+		return &returnResult, errors.New("No result named " + name + " was found")
 	case 1:
 		return Results[0], nil
 	default:
-		return returnResult, errors.New("More than one result with the name " + name + " was found")
+		return &returnResult, errors.New("More than one result with the name " + name + " was found")
 	}
+}
+
+func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
+	if err := b.GetResults(); err != nil {
+		return err
+	}
+	for _, task := range b.Tasks {
+		//in case there was no result, there is only one entry with dummyResultName, obviously we don't want to download this
+		if task.Results[0].Name != dummyResultName {
+			for _, result := range task.Results {
+				if err := result.DownloadWithFilenamePrefix(basePath, filenamePrefix); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (b *Build) PublishAllDownloadedResults(stepname string) {
+	var filesToPublish []piperutils.Path
+	for _, task := range b.Tasks {
+		for _, result := range task.Results {
+			if result.wasDownloaded() {
+				filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
+			}
+		}
+	}
+	if len(filesToPublish) > 0 {
+		piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+	}
+}
+
+func (b *Build) PublishDownloadedResults(stepname string, filenames []string) error {
+	var filesToPublish []piperutils.Path
+	for i := range filenames {
+		result, err := b.GetResult(filenames[i])
+		if err != nil {
+			return err
+		}
+		if result.wasDownloaded() {
+			filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
+		} else {
+			//TODO error? vermutlich schon, wenn ich versuche ein file zu publishen das nicht runtergeladen wurde
+		}
+	}
+	if len(filesToPublish) > 0 {
+		piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+	}
+	return nil
 }
 
 // IsFinished : Returns Build run state
@@ -362,7 +422,7 @@ func (t *task) getResults() error {
 		}
 		if len(t.Results) == 0 {
 			//prevent 2nd GET request - no new results will occure...
-			t.Results = append(t.Results, Result{Name: "Dummy"})
+			t.Results = append(t.Results, Result{Name: dummyResultName})
 		}
 	}
 	return nil
@@ -373,6 +433,28 @@ func (result *Result) Download(downloadPath string) error {
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
 	err := result.connector.Download(appendum, downloadPath)
 	return err
+}
+
+//TODO besserer Name....
+func (result *Result) DownloadWithFilenamePrefix(basePath string, filenamePrefix string) error {
+	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
+	filename := filenamePrefix + result.Name
+	downloadPath := filepath.Join(path.Base(basePath), path.Base(filename))
+	if err := result.connector.Download(appendum, downloadPath); err != nil {
+		return err
+	}
+	result.SavedFilename = filename
+	result.DownloadPath = downloadPath
+	return nil
+
+}
+
+func (result *Result) wasDownloaded() bool {
+	if len(result.DownloadPath) > 0 && len(result.SavedFilename) > 0 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (logging *logStruct) print() {
