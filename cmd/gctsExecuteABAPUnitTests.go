@@ -39,7 +39,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 	if aUnitFailure || atcFailure {
 
-		log.Entry().Fatal("unit test(s) has failed and/or ATC issue(s) found! Check Statistic Analysis Warning for more information!")
+		log.Entry().Fatal("step execution failed")
 
 	}
 
@@ -111,8 +111,15 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		}
 
-		log.Entry().Info("AUnit test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
+		if aUnitFailure {
 
+			log.Entry().Error("unit test(s) has/have failed! Check Statistic Analysis Warning for more information!")
+
+		} else {
+
+			log.Entry().Info("AUnit test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
+
+		}
 	}
 
 	if config.AtcCheck {
@@ -124,7 +131,15 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 			log.Entry().WithError(err).Fatal("execute ATC Check failed")
 		}
 
-		log.Entry().Info("ATCCheck test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
+		if aUnitFailure {
+
+			log.Entry().Error(" ATC issue(s) found! Check Statistic Analysis Warning for more information!")
+
+		} else {
+
+			log.Entry().Info("ATCCheck test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
+
+		}
 
 	}
 
@@ -664,7 +679,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		case "PROG":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/programs/programs/` + object.Object + `/source/main"/>`
 		default:
-			log.Entry().Warning("Object Type" + object.Type + "is not supported!")
+			log.Entry().Warning("object Type" + object.Type + " is not supported!")
 
 		}
 
@@ -749,6 +764,8 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 		return errors.New("start of ATC run failed: did not retrieve a HTTP response")
 	}
 
+	log.Entry().Info("start ATC Run finished")
+
 	return nil
 
 }
@@ -781,7 +798,7 @@ func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender,
 	} else if resp == nil {
 		return response, errors.New("get ATC run failed: did not retrieve a HTTP response")
 	}
-
+	log.Entry().Info("get ATC Run finished")
 	return resp, nil
 
 }
@@ -819,7 +836,7 @@ func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	location := resp.Header["Location"][0]
 	locationSlice := strings.Split(location, "/")
 	worklistID = locationSlice[len(locationSlice)-1]
-	log.Entry().Info("get worklist-session number for ATC check", worklistID)
+	log.Entry().Info("worklist id for ATC check: ", worklistID)
 
 	return worklistID, nil
 }
@@ -838,6 +855,8 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 		objectType := object.Type
 		objectName := object.Name
+		log.Entry().Info("object type", objectType)
+		log.Entry().Info("object name", objectName)
 
 		for _, atcworklist := range object.Findings.Finding {
 
