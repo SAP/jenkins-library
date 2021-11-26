@@ -151,6 +151,7 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	}
 
 	currentLocalCommit := repository.Result.CurrentCommit
+	log.Entry().Info("current commit in the local repository", currentLocalCommit)
 
 	// object delta between the commit that triggered the pipeline and the current commit in the local repository
 	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
@@ -199,6 +200,7 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return []repoObject{}, errors.New("current remote commit was not found")
 
 	}
+	log.Entry().Info("current commit in the remote repository", currentRemoteCommit)
 	// object delta between the commit that triggered the pipeline and the current commit in the remote repository
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 
@@ -236,6 +238,7 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	}
 
 	currentLocalCommit := repository.Result.CurrentCommit
+	log.Entry().Info("current commit in the local repository", currentLocalCommit)
 
 	//object delta between the commit that triggered the pipeline and the current commit in the local repository
 	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
@@ -299,6 +302,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 		return []repoObject{}, errors.Wrap(err, "current remote commit was not found")
 
 	}
+	log.Entry().Info("current commit in the local repository", currentRemoteCommit)
 	//object delta between the commit that triggered the pipeline and the current commit in the remote repository
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 	if err != nil {
