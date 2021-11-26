@@ -14,19 +14,21 @@ import (
 )
 
 type gctsExecuteABAPUnitTestsOptions struct {
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Client     string `json:"client,omitempty"`
-	Scope      string `json:"scope,omitempty"`
-	CommitID   string `json:"commitId,omitempty"`
-	AUnitTest  bool   `json:"aUnitTest,omitempty"`
-	ATCCheck   bool   `json:"ATCCheck,omitempty"`
-	Workspace  string `json:"workspace,omitempty"`
+	Username             string `json:"username,omitempty"`
+	Password             string `json:"password,omitempty"`
+	Host                 string `json:"host,omitempty"`
+	Repository           string `json:"repository,omitempty"`
+	Client               string `json:"client,omitempty"`
+	AUnitTest            bool   `json:"aUnitTest,omitempty"`
+	AtcCheck             bool   `json:"atcCheck,omitempty"`
+	Scope                string `json:"scope,omitempty"`
+	CommitID             string `json:"commitId,omitempty"`
+	Workspace            string `json:"workspace,omitempty"`
+	AtcResultsFileName   string `json:"atcResultsFileName,omitempty"`
+	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
 }
 
-// GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) Checks for the specified scope.
+// GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
 func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 	const STEP_NAME = "gctsExecuteABAPUnitTests"
 
@@ -36,18 +38,13 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 
 	var createGctsExecuteABAPUnitTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) Checks for the specified scope.",
-		Long: `This step will execute every unit test and ATC Checks for the specified scope of a local repository on an ABAP system.
-In total there are six scopes. You can specify one of the following scopes based on your use case.
-  1.	LOCAL_CHANGED_OBJECTS - delta between commit that triggered the pipeline and the last local commit
-  2.	LOCAL_CHANGED_PACKAGES – delta between commit that triggered the pipeline and the last local commit. Objects will be resolved into packages.
-  3.	REMOTE_CHANGED_OBJECTS - delta between commit that triggered the pipeline and the last remote commit.
-  4.	REMOTE_CHANGED_PACKAGES - delta between commit that triggered the pipeline and the last remote commit. Objects will be resolved into packages.
-  5.	ALL_PACKAGES – all packages which belong to the repository 
-  6.	REPOSITORY – all objects which belong to the repository
-In addition, this step gives you the flexibility to choose whether you want to execute only units tests or only ATC checks or both. By default, both unit test and ATC checks will be executed.
-The results of Unit Tests and ATC checks are stored in a checkstyle format. In Jenkins with the help of Static Analysis Warning Plug-In you can view the issues founds and navigate to the exact line of the source code where the issue occurred. For your information the source code is an object in ABAP system or a file in a Git repository.
-You can use gCTSExecuteABAPUnitTests as of SAP S/4HANA 2020.`,
+		Short: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.",
+		Long: `This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system. 
+Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both. 
+By default, both checks are executed.
+The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins Static Analysis Warning plug-In([Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred. 
+To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in Example section.
+You can use this step as of SAP S/4HANA 2020.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -95,21 +92,23 @@ You can use gCTSExecuteABAPUnitTests as of SAP S/4HANA 2020.`,
 }
 
 func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecuteABAPUnitTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the ABAP system. Note – Do not provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the ABAP system. . Note – Do not provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
-	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
-	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
-	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Specifies the scope of objects to be tested. In total there are six predefined scopes LOCAL_CHANGED_OBJECTS, LOCAL_CHANGED_PACKAGES, REMOTE_CHANGED_OBJECTS, REMOTE_CHANGED_PACKAGES, , REPOSITORY and ALL_PACKAGES.")
-	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "The commit that triggered the pipeline")
-	cmd.Flags().BoolVar(&stepConfig.AUnitTest, "aUnitTest", true, "Specifies whether to execute Unit Tests")
-	cmd.Flags().BoolVar(&stepConfig.ATCCheck, "ATCCheck", true, "Specifies whether to execute ATC Check")
-	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "The absolute path to job workspace directory")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password of the ABAP  user that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Protocol and host of the ABAP system, including the port. Please provide in the format <protocol>://<host>:<port>. Supported protocols are http and https.")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name (ID) of the local repository on the ABAP system")
+	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Client of the ABAP system in which you want to execute the checks")
+	cmd.Flags().BoolVar(&stepConfig.AUnitTest, "aUnitTest", true, "Indication whether you want to execute the unit test checks.")
+	cmd.Flags().BoolVar(&stepConfig.AtcCheck, "atcCheck", true, "Indication whether you want to execute the ATC checks.")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects for which you want to execute the checks localChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the local repository). The checks are executed for the individual objects. remoteChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the remote repository). The checks are executed for the individual objects. localChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the local repository).  All objects are resolved into packages. The checks are executed for the packages. remoteChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the remote repository). All objects are resolved into packages. The checks are executed for the packages. repository - All objects that are part of the local repository. The checks are executed for the individual objects. packages - All packages that are part of the local repository . The checks are executed for the packages.")
+	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "ID of the commit that triggered the pipeline")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to job workspace directory")
+	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC checks")
+	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit tests")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("host")
+	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("client")
 	cmd.MarkFlagRequired("scope")
 	cmd.MarkFlagRequired("commitId")
@@ -122,7 +121,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gctsExecuteABAPUnitTests",
 			Aliases:     []config.Alias{},
-			Description: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) Checks for the specified scope.",
+			Description: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -156,7 +155,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "repository",
+						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -164,7 +163,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "host",
+						Name:        "repository",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -177,6 +176,22 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "aUnitTest",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "atcCheck",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -196,27 +211,27 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "aUnitTest",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "ATCCheck",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "workspace",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "atcResultsFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "aUnitResultsFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},

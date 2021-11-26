@@ -86,7 +86,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 	case "packages":
 		objects, err = getPackages(config, httpClient)
 	default:
-		objects, err = getLocalObjects(config, httpClient)
+		objects, err = getRepositoryObjects(config, httpClient)
 	}
 
 	if err != nil {
@@ -115,7 +115,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	}
 
-	if config.ATCCheck {
+	if config.AtcCheck {
 
 		// wrapper for execution of ATCChecks
 		err = executeATCCheck(config, httpClient, objects)
@@ -138,6 +138,12 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	var localObject repoObject
 
 	log.Entry().Info("get local changed objects started")
+
+	if config.CommitID != "" {
+
+		return []repoObject{}, errors.Errorf("For scope: localChangedObjects you need to specify a commitId")
+
+	}
 
 	repository, err := getRepository(config, client)
 	if err != nil {
@@ -170,6 +176,12 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	var currentRemoteCommit string
 
 	log.Entry().Info("get remote changed objects started")
+
+	if config.CommitID != "" {
+
+		return []repoObject{}, errors.Errorf("For scope: remoteChangedObjects you need to specify a commitId")
+
+	}
 
 	commitList, err := getCommitList(config, client)
 
@@ -211,6 +223,12 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	var localPackage repoObject
 
 	log.Entry().Info("get local changed packages started")
+
+	if config.CommitID != "" {
+
+		return []repoObject{}, errors.Errorf("For scope: localChangedPackages you need to specify a commitId")
+
+	}
 
 	repository, err := getRepository(config, client)
 	if err != nil {
@@ -257,6 +275,12 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 	var currentRemoteCommit string
 
 	log.Entry().Info("get remote changed packages started")
+
+	if config.CommitID != "" {
+
+		return []repoObject{}, errors.Errorf("For scope: remoteChangedPackages you need to specify a commitId")
+
+	}
 
 	commitList, err := getCommitList(config, client)
 
@@ -595,10 +619,10 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	body, _ := xml.Marshal(parsedResult)
 
-	writeErr := ioutil.WriteFile("UnitTestResults", body, 0644)
+	writeErr := ioutil.WriteFile(config.AUnitResultsFileName, body, 0644)
 
 	if writeErr != nil {
-		log.Entry().Error("file UnitTestResults could not be created")
+		log.Entry().Error("file AUnitResults.xml could not be created")
 		return parsedResult, fmt.Errorf("handling unit test results failed: %w", writeErr)
 	}
 
@@ -890,10 +914,10 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 	atcBody, _ := xml.Marshal(atcResults)
 
-	writeErr := ioutil.WriteFile("ATCResults", atcBody, 0644)
+	writeErr := ioutil.WriteFile(config.AtcResultsFileName, atcBody, 0644)
 
 	if writeErr != nil {
-		log.Entry().Error("ATCResults could not be created")
+		log.Entry().Error("ATCResults.xml could not be created")
 		return atcResults, fmt.Errorf("handling atc results failed: %w", writeErr)
 	}
 	log.Entry().Info("parsing ATC check results to CheckStyle has finished.")

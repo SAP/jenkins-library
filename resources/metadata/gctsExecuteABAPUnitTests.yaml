@@ -5,7 +5,8 @@ metadata:
     This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system. 
     Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both. 
     By default, both checks are executed.
-    The results of the checks are stored in a checkstyle format. With the help of the Static Analysis Warning plug-In in Jenkins, you can view the issues found, and navigate to the exact line of the source code where the issue occurred. 
+    The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins Static Analysis Warning plug-In([Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred. 
+    To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in Example section.
     You can use this step as of SAP S/4HANA 2020.
 
 spec:
@@ -73,7 +74,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: ATCCheck
+      - name: atcCheck
         type: bool
         default: true
         description: Indication whether you want to execute the ATC checks.
@@ -90,7 +91,7 @@ spec:
           - remoteChangedPackages
           - repository
           - packages
-        description: Scope of objects for which you want to execute the checks. 
+        description: Scope of objects for which you want to execute the checks
          localChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the local repository). The checks are executed for the individual objects.
          remoteChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the remote repository). The checks are executed for the individual objects.
          localChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the local repository).  All objects are resolved into packages. The checks are executed for the packages.
@@ -109,7 +110,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
       - name: workspace
         type: string
         description: Absolute path to job workspace directory 
@@ -118,4 +119,23 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+      - name: atcResultsFileName
+        type: string
+        description: Specifies output file name for the results from the ATC checks
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: "ATCResults.xml"
+      - name: aUnitResultsFileName
+        type: string
+        description: Specifies output file name for the results from the AUnit tests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: "AUnitResults.xml"
+ 
  
