@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
-	conf "github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
 
@@ -106,24 +104,18 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "kanikoExecute"
-	var dockerImage string
-	var dataParametersJSON map[string]interface{}
-	var errUnmarshal = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &dataParametersJSON)
-	if errUnmarshal != nil {
-		log.Entry().Infof("Reading ParametersJSON is failed")
+	configOptions.contextConfig = true
+	configOptions.stepName = stepName
+	stepConfig, err := getConfig()
+	if err != nil {
+		return err
 	}
-	if value, ok := dataParametersJSON["dockerImage"]; ok {
-		dockerImage = value.(string)
-	} else {
-		metadata, err := conf.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, GeneralConfig.StepMetadata, stepName)
-		if err != nil {
-			log.Entry().Warnf("failed to resolve metadata: %v", err)
-		}
-		containers := metadata.Spec.Containers
-		if len(containers) > 0 {
-			dockerImage = containers[0].Image
-		}
+
+	dockerImage, ok := stepConfig.Config["dockerImage"].(string)
+	if !ok {
+		return errors.Errorf("error: config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
 	}
+
 	kanikoConfig := buildsettings.BuildOptions{
 		DockerImage: dockerImage,
 	}
