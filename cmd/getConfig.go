@@ -75,8 +75,7 @@ func ConfigCommand() *cobra.Command {
 	return createConfigCmd
 }
 
-func generateConfig(utils getConfigUtils) error {
-
+func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
@@ -86,7 +85,7 @@ func generateConfig(utils getConfigUtils) error {
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
 			}
 			customConfig = nil
 		}
@@ -96,7 +95,7 @@ func generateConfig(utils getConfigUtils) error {
 			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
-				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
@@ -105,13 +104,14 @@ func generateConfig(utils getConfigUtils) error {
 
 		stepConfig, err = myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.stageConfigAcceptedParameters, GeneralConfig.StageName)
 		if err != nil {
-			return errors.Wrap(err, "getting stage config failed")
+			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
 
 	} else {
+		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, configOptions.stepMetadata, configOptions.stepName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to resolve metadata")
+			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
 
 		// prepare output resource directories:
@@ -128,21 +128,21 @@ func generateConfig(utils getConfigUtils) error {
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
 			}
 			customConfig = nil
 		}
 
 		defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
 		if err != nil {
-			return errors.Wrap(err, "defaults: retrieving step defaults failed")
+			return stepConfig, errors.Wrap(err, "defaults: retrieving step defaults failed")
 		}
 
 		for _, f := range GeneralConfig.DefaultConfig {
 			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
-				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
@@ -158,13 +158,23 @@ func generateConfig(utils getConfigUtils) error {
 
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
 		if err != nil {
-			return errors.Wrap(err, "getting step config failed")
+			return stepConfig, errors.Wrap(err, "getting step config failed")
 		}
+		log.Entry().Infof("getConfig printing stepConfig: %v", stepConfig)
 
 		// apply context conditions if context configuration is requested
 		if configOptions.contextConfig {
 			applyContextConditions(metadata, &stepConfig)
 		}
+	}
+	return stepConfig, nil
+}
+
+func generateConfig(utils getConfigUtils) error {
+
+	stepConfig, err := getConfig()
+	if err != nil {
+		return err
 	}
 
 	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
