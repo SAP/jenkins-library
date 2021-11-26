@@ -252,7 +252,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken"}, {Name: "detect/apiToken"}},
+						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken", Deprecated: true}, {Name: "detect/apiToken", Deprecated: true}},
 						Default:   os.Getenv("PIPER_token"),
 					},
 					{
