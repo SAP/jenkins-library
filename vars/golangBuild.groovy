@@ -1,7 +1,7 @@
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/golangBuild.yaml'
+@Field String METADATA_FILE = "metadata/$STEP_NAME.yaml"
 
 void call(Map parameters = [:]) {
     List credentials = []
