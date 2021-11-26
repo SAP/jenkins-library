@@ -36,7 +36,7 @@ func (j *JenkinsConfigProvider) getAPIInformation() map[string]interface{} {
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		log.Entry().Error(err)
+		log.Entry().WithError(err).Error("could not get api information from Jenkins")
 		return map[string]interface{}{}
 	}
 
