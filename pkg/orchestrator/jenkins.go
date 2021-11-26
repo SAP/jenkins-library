@@ -143,7 +143,7 @@ func (a *JenkinsConfigProvider) GetStageName() string {
 }
 
 func (j *JenkinsConfigProvider) GetBranch() string {
-	return getEnv("GIT_BRANCH", "n/a")
+	return getEnv("BRANCH_NAME", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetBuildUrl() string {
