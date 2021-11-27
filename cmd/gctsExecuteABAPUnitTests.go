@@ -492,13 +492,13 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return nil
 	}
 
-	log.Entry().Info("execute ABAP Unit Test finished", parsedRes)
+	log.Entry().Info("execute ABAP Unit Test finished with these results:", parsedRes)
 	return nil
 }
 
 func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, xml []byte) (response *http.Response, err error) {
 
-	log.Entry().Info("run ABAP Unit Test")
+	log.Entry().Info("run ABAP Unit Test started")
 	url := config.Host +
 		"/sap/bc/adt/abapunit/testruns?sap-client=" + config.Client
 
@@ -526,12 +526,13 @@ func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 		return response, errors.New("run of unit tests failed: did not retrieve a HTTP response")
 	}
 
+	log.Entry().Info("run ABAP Unit Test finished")
 	return response, nil
 }
 
 func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *runResult) (parsedResult checkstyle, err error) {
 
-	log.Entry().Info("parse Unit Test result-convert to checkstyle")
+	log.Entry().Info("parse ABAP Unit Result started")
 
 	var fileName string
 	var aUnitFile file
@@ -570,7 +571,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 			for _, testMethod := range testClass.TestMethods.TestMethod {
 
-				aUnitError.Source = testMethod.Name
+				aUnitError.Source = testClass.Name + "/" + testMethod.Name
 
 				// unit test failure
 				if len(testMethod.Alerts.Alert) > 0 {
@@ -617,7 +618,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 				} else {
 
-					log.Entry().Info("method name:", testMethod.Name, "- unit test was successful")
+					log.Entry().Info("unit test:", testClass.Name+"/"+testMethod.Name, "- was successful")
 
 				}
 
@@ -649,6 +650,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return parsedResult, fmt.Errorf("handling unit test results failed: %w", writeErr)
 	}
 
+	log.Entry().Info("parse ABAP Unit Result finished")
 	return parsedResult, nil
 
 }
