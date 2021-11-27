@@ -908,6 +908,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 					aTCUnitError.Line, err = findLine(config, client, path, objectName, objectType)
 
 					if err != nil {
+						log.Entry().Info(path)
 						log.Entry().Warning(err)
 
 					}
@@ -1285,6 +1286,16 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 		}
 
 	}
+
+	// PROGRAM
+	regexProg := regexp.MustCompile(`\/sap\/bc\/adt\/programs\/programs\/` + strings.ToLower(objName))
+	prog := regexProg.FindString(path)
+	if prog != "" {
+
+		fileName = "REPS " + objName + ".abap"
+
+	}
+
 	return fileName, nil
 
 }
