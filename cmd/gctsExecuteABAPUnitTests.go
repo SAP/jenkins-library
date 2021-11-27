@@ -160,7 +160,7 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 	log.Entry().Info("get local changed objects started")
 
-	if config.CommitID != "" {
+	if config.CommitID == "" {
 
 		return []repoObject{}, errors.Errorf("For scope: localChangedObjects you need to specify a commitId")
 
@@ -199,7 +199,7 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	log.Entry().Info("get remote changed objects started")
 
-	if config.CommitID != "" {
+	if config.CommitID == "" {
 
 		return []repoObject{}, errors.Errorf("For scope: remoteChangedObjects you need to specify a commitId")
 
@@ -247,7 +247,7 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	log.Entry().Info("get local changed packages started")
 
-	if config.CommitID != "" {
+	if config.CommitID == "" {
 
 		return []repoObject{}, errors.Errorf("For scope: localChangedPackages you need to specify a commitId")
 
@@ -300,7 +300,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 
 	log.Entry().Info("get remote changed packages started")
 
-	if config.CommitID != "" {
+	if config.CommitID == "" {
 
 		return []repoObject{}, errors.Errorf("For scope: remoteChangedPackages you need to specify a commitId")
 
