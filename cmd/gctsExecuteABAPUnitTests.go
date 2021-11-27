@@ -99,7 +99,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	}
 
-	log.Entry().Infof("changed objects: %v", objects)
+	log.Entry().Infof("objects to be checked: %v", objects)
 
 	if config.AUnitTest {
 
@@ -131,7 +131,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 			log.Entry().WithError(err).Fatal("execute ATC Check failed")
 		}
 
-		if aUnitFailure {
+		if atcFailure {
 
 			log.Entry().Error(" ATC issue(s) found! Check Statistic Analysis Warning for more information!")
 
@@ -726,13 +726,13 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return errors.Wrap(err, "execution of ATC Checks failed")
 	}
 
-	log.Entry().Info("execute ATC Checks finished", atcRes)
+	log.Entry().Info("execute ATC Checks finished with these results:", atcRes)
 	return nil
-}
 
+}
 func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, xml []byte, worklistID string) (err error) {
 
-	log.Entry().Info("start ATC Run")
+	log.Entry().Info("ATC Run started")
 
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
@@ -764,7 +764,7 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 		return errors.New("start of ATC run failed: did not retrieve a HTTP response")
 	}
 
-	log.Entry().Info("start ATC Run finished")
+	log.Entry().Info("ATC Run finished")
 
 	return nil
 
@@ -772,7 +772,7 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, worklistID string) (response *http.Response, err error) {
 
-	log.Entry().Info("get ATC Run")
+	log.Entry().Info("get ATC Run Results started")
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
 		return response, errors.Wrap(discError, "get ATC run failed")
@@ -798,7 +798,7 @@ func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender,
 	} else if resp == nil {
 		return response, errors.New("get ATC run failed: did not retrieve a HTTP response")
 	}
-	log.Entry().Info("get ATC Run finished")
+	log.Entry().Info("get ATC Run Results finished")
 	return resp, nil
 
 }
@@ -858,11 +858,10 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 		for _, atcworklist := range object.Findings.Finding {
 
-			log.Entry().Info("there is atc finding for object type: ", objectType)
-			log.Entry().Info("object name: ", objectName)
+			log.Entry().Info("there is atc finding for object type: ", objectType+" object name: "+objectName)
 
 			path, err := url.PathUnescape(atcworklist.Location)
-			log.Entry().Info("path - atcLocation: ", path)
+			log.Entry().Info("atc Location: ", path)
 
 			if err != nil {
 				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
@@ -889,10 +888,10 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 					log.Entry().Error("atc issue was found with priority 2")
 				case 3:
 					aTCUnitError.Severity = "warning"
-					log.Entry().Error("atc issue was found with priority 3")
+					log.Entry().Warning("atc issue was found with priority 3")
 				default:
 					aTCUnitError.Severity = "info"
-					log.Entry().Error("atc issue was found with low priority")
+					log.Entry().Info("atc issue was found with low priority")
 				}
 
 				if aTCUnitError.Line == "" {
@@ -900,7 +899,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 					aTCUnitError.Line, err = findLine(config, client, path, objectName, objectType)
 
 					if err != nil {
-						log.Entry().Error(err, "could not find error line")
+						log.Entry().Warning(err, " could not find error line")
 
 					}
 
@@ -997,7 +996,7 @@ func findLine(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, 
 
 		if err != nil {
 
-			return line, errors.Wrap(err, "object does not exists in the repository "+config.Repository)
+			return line, errors.Wrapf(err, "object does not exists in the repository "+config.Repository)
 		}
 
 		file := string(rawfile)
@@ -1249,8 +1248,8 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 		}
 
 	}
-
-	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + objName)
+	// CLAS
+	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + strings.ToLower(objName))
 	clas := regexClas.FindString(path)
 	if clas != "" {
 		if readableSource {
