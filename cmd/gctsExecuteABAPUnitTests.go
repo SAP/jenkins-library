@@ -102,7 +102,10 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	}
 
-	log.Entry().Infof("objects to be checked: %v", objects)
+	log.Entry().Infof("objects to be checked:")
+	for _, object := range objects {
+		log.Entry().Infof(object.Type, " ", object.Object)
+	}
 
 	if config.AUnitTest {
 
@@ -492,7 +495,7 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return nil
 	}
 
-	log.Entry().Info("execute ABAP Unit Test finished with these results:", parsedRes)
+	log.Entry().Info("execute ABAP Unit Test finished with these results:", parsedRes.File)
 	return nil
 }
 
@@ -580,15 +583,15 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 						switch testalert.Severity {
 						case "fatal":
-							log.Entry().Error("unit test has failed with severity fatal")
+							log.Entry().Error("unit test " + aUnitError.Source + " has failed with severity fatal")
 							aUnitFailure = true
 							aUnitError.Severity = "error"
 						case "critical":
-							log.Entry().Error("unit test has failed with severity critical")
+							log.Entry().Error("unit test " + aUnitError.Source + " has failed with severity critical")
 							aUnitFailure = true
 							aUnitError.Severity = "error"
 						case "tolerable":
-							log.Entry().Warning("unit test has failed with severity warning")
+							log.Entry().Warning("unit test" + aUnitError.Source + "  has failed with severity warning")
 							aUnitError.Severity = "warning"
 						default:
 							aUnitError.Severity = "info"
@@ -618,7 +621,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 				} else {
 
-					log.Entry().Info("unit test:", testClass.Name+"/"+testMethod.Name, "- was successful")
+					log.Entry().Info("unit test:", aUnitError.Source, "- was successful")
 
 				}
 
@@ -732,7 +735,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return errors.Wrap(err, "execution of ATC Checks failed")
 	}
 
-	log.Entry().Info("execute ATC Checks finished with these results:", atcRes)
+	log.Entry().Info("execute ATC Checks finished with these results:", atcRes.File)
 	return nil
 
 }
