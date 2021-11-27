@@ -26,9 +26,9 @@ An add-on product version is defined by a name and a version string. The name of
 
 The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
-- The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
-- The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
+- The first number denotes the __release__. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
+- The second number denotes the __support package stack level__. A support package stack consists of support package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
+- The third number denotes the __patch level__. A Patch delivery contains patch deliveries of the contained software component versions.
 
 ### Software Component Version
 
@@ -39,9 +39,12 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contain the whole software component and carry planned, new functionalities or feature enhancements. They are provided with delivery packages of type “Add-on Installation Package”.
-- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may carry smaller, planned functional enhancements. They are provided with delivery packages of type “Component Support Package”.
-- The third number denotes the Patch level. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type “Correction Package” (CPK). CPK packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the patch level are included in the object list of the CPK.
+- The first number denotes the __release__. Release deliveries contain the whole software component and carry planned, new functionalities or feature enhancements. They are provided with delivery packages of type *Add-on Installation* (AOI).
+  <br>Each AOI package contains all the objects of the software component. That means, every object is included in the object list of the package. In contrast to CSP and CPK packages, the calculation of objects to be included in the delivery is not based on a delta calculation.
+- The second number denotes the __support package level__. Support package deliveries contain a larger collection of corrections and may carry smaller, planned functional enhancements. They are provided with delivery packages of type *Component Support Package* (CSP).
+  <br>CSP packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the support package level are included to the object list of the CSP.
+- The third number denotes the __patch level__. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type *Correction Package* (CPK).
+  <br>CPK packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the patch level are included in the object list of the CPK.
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
@@ -224,21 +227,44 @@ As an alternative you can refer to the [example using a permanent assembly syste
 
 If you encounter an issue with the pipeline itself, please open an issue in [GitHub](https://github.com/SAP/jenkins-library/issues).
 
-In case of an error during execution of the pipeline steps:
-
-| Stage                                                                                                  | Step                                                                                                                            | Error                                                                                                                            | Resolution                                                                                                                                                                                                                                                                                                                                               |
-|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [Prepare System](https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/)         | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)                         | `A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.` | ABAP System provisioning requires sufficient entitlements for abap/standard as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.                                                                                                                                                                               |
-| [Clone Repositories](https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/) | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)                           | e.g. `A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...`                          | Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.                                                                                                                                                                                                                                       |
-| [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)                             | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)                           | *Long-running step execution*                                                                                                    | [Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings. |
-| [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)                          | [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/) | e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`  | New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.                                                                                                                                                                                                          |
-|                                                                                                        |                                                                                                                                 | e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`                                 | New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.                                                                                                                                                                              |
-|                                                                                                        | [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)                 | e.g. `Commit 7137bcb08c675dea9e08252ea269ebba1ca83226 not found`                                                                 | New Patch Level of software component, and branch is changed in add-on descriptor: A `commitID`of previously created patch version is not available in another branch.                                                                                                                                                                                   |
-| [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)    | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)                         | `A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.` | ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.                                                                                                                                                                               |
-| [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)                            | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)                             | *Add-on assembly system is deleted unexpectedly*                                                                                 | Create a Piper extension of the `Post` stage, similar to [Post.groovy](https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy)                                                                                                                                                              |
-
 Once execution of the `Build` stage, in particular the `abapAddonAssemblyKitRegisterPackages` step, has been completed, errors must be resolved by creating new software component versions with the correct configuration.
 Pipeline steps can be restarted without causing double execution of already perfomed steps (intermediate results are stored).
+
+### Common Issues
+
+In case of an error during execution of the pipeline steps:
+
+* Stage: [Prepare System](https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/)
+    * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
+        * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
+          <br>ABAP System provisioning requires sufficient entitlements for `abap/standard` as well as `abap/hana_compute_unit` and `abap/abap_compute_unit` to be assigned to the subaccount.
+* Stage: [Clone Repositories](https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/)
+    * Step: [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)
+        * __e.g. `A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...`__
+          <br>Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.
+* Stage: [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)
+    * Step: [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)
+        * __*Long-running step execution*__
+          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings.
+* Stage: [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)
+    * Step: [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/)
+        * __e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`__
+          <br>New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.
+        * __e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`__
+          <br>New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.
+    * Step: [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)
+        * __e.g. `Commit 7137bcb08c675dea9e08252ea269ebba1ca83226 not found`__
+          <br>New Patch Level of software component, and branch is changed in add-on descriptor: A `commitID`of previously created patch version is not available in another branch.
+* Stage: [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)
+    * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
+        * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
+          <br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.
+* Stage: [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)
+    * Step: [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)
+        * __*Add-on assembly system is deleted unexpectedly*__
+          <br>Create a Piper extension of the `Post` stage, similar to [Post.groovy](https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy)
+
+### Support Components
 
 If issues cannot be resolved, please open a [support incident](https://launchpad.support.sap.com/#/notes/1296527) on the respective support component:
 
