@@ -51,6 +51,8 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 	const remoteChangedObjects = "remotechangedobjects"
 	const localChangedPackages = "localchangedpackages"
 	const remoteChangedPackages = "remotechangedpackages"
+	const repository = "repository"
+	const packages = "packages"
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
@@ -81,11 +83,12 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 		objects, err = getLocalPackages(config, httpClient)
 	case remoteChangedPackages:
 		objects, err = getRemotePackages(config, httpClient)
-	case "repository":
+	case repository:
 		objects, err = getRepositoryObjects(config, httpClient)
-	case "packages":
+	case packages:
 		objects, err = getPackages(config, httpClient)
 	default:
+		log.Entry().Info("the specified scope does not exists, the default one will be used:" + repository)
 		objects, err = getRepositoryObjects(config, httpClient)
 	}
 
@@ -602,7 +605,8 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 						}
 						aUnitError.Line, err = findLine(config, client, testalert.Stack.StackEntry.URI, objectName, objectType)
 						if err != nil {
-							log.Entry().Error(err, "could not find the error line")
+
+							log.Entry().Warning(err)
 
 						}
 
@@ -899,7 +903,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 					aTCUnitError.Line, err = findLine(config, client, path, objectName, objectType)
 
 					if err != nil {
-						log.Entry().Warning(err, " could not find error line")
+						log.Entry().Warning(err)
 
 					}
 
