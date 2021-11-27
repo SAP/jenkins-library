@@ -104,7 +104,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	log.Entry().Infof("objects to be checked:")
 	for _, object := range objects {
-		log.Entry().Info(object.Type, object.Object)
+		log.Entry().Info(object.Type, " ", object.Object)
 	}
 
 	if config.AUnitTest {
@@ -607,7 +607,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 							}
 
 						}
-						log.Entry().Info("URI ", testalert.Stack.StackEntry.URI)
+
 						aUnitError.Line, err = findLine(config, client, testalert.Stack.StackEntry.URI, objectName, objectType)
 						if err != nil {
 
@@ -627,7 +627,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 				}
 
 			}
-			log.Entry().Info("URI ", testClass.URI)
+
 			fileName, err = getFileName(config, client, testClass.URI, objectName)
 			if err != nil {
 				return parsedResult, err
