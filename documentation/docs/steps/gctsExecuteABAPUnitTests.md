@@ -78,7 +78,7 @@ steps:
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
 
-Example configuration for the use of recordIssue step to make the finding visible in Jenkins interface.
+Example configuration for the use of *recordIssue* step to make the finding visible in Jenkins interface.
 
 ```groovy
 recordIssues(

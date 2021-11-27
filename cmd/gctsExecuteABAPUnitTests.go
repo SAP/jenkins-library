@@ -871,7 +871,6 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 			log.Entry().Info("there is atc finding for object type: ", objectType+" object name: "+objectName)
 
 			path, err := url.PathUnescape(atcworklist.Location)
-			log.Entry().Info("atc Location: ", path)
 
 			if err != nil {
 				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
@@ -1223,7 +1222,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	}
 
 	// FUNCTION INCLUDE
-	regexFuncIncl := regexp.MustCompile(`\/sap\/bc\/adt\/functions/groups\/\w*\/includes/\w*`)
+	regexFuncIncl := regexp.MustCompile(`\/sap\/bc\/adt\/functions\/groups\/\w*\/includes/\w*`)
 
 	funcIncl := regexFuncIncl.FindString(path)
 	if funcIncl != "" {
@@ -1241,8 +1240,23 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	}
 
+	// FUNCTION GROUP
+	regexFuncGr := regexp.MustCompile(`\/sap\/bc\/adt\/functions\/groups\/\w*\/source\/main`)
+
+	funcGr := regexFuncGr.FindString(path)
+	if funcGr != "" {
+
+		if readableSource {
+
+			fileName = strings.ToLower(objName) + ".fugr.sapl" + strings.ToLower(objName) + ".reps.abap"
+		} else {
+			fileName = "REPS SAPL" + objName + ".abap"
+		}
+
+	}
+
 	// FUNCTION MODULE
-	regexFuncMod := regexp.MustCompile(`\/sap\/bc\/adt\/functions/groups\/\w*\/fmodules/\w*`)
+	regexFuncMod := regexp.MustCompile(`\/sap\/bc\/adt\/functions\/groups\/\w*\/fmodules/\w*`)
 	funcMod := regexFuncMod.FindString(path)
 	if funcMod != "" {
 
@@ -1265,6 +1279,9 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 		if readableSource {
 
 			fileName = strings.ToLower(objName) + ".clas.global.abap"
+		} else {
+
+			fileName = "CPUB " + objName + ".abap"
 		}
 
 	}
