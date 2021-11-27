@@ -41,7 +41,7 @@ A software component version is defined by a name and a version string. The name
 
 - The first number denotes the release. Release deliveries contain the whole software component and carry planned, new functionalities or feature enhancements. They are provided with delivery packages of type “Add-on Installation Package”.
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may carry smaller, planned functional enhancements. They are provided with delivery packages of type “Component Support Package”.
-- The third number denotes the Patch level. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type “Correction Package”.
+- The third number denotes the Patch level. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type “Correction Package” (CPK). CPK packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the patch level are included in the object list of the CPK.
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
