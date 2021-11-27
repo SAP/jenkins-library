@@ -602,7 +602,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 						}
 						aUnitError.Line, err = findLine(config, client, testalert.Stack.StackEntry.URI, objectName, objectType)
 						if err != nil {
-							return parsedResult, errors.Wrap(err, "could not parse ABAP Unit Result")
+							log.Entry().Error(err, "could not find the error line")
 
 						}
 
@@ -855,13 +855,14 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 		objectType := object.Type
 		objectName := object.Name
-		log.Entry().Info("object type ", objectType)
-		log.Entry().Info("object name ", objectName)
 
 		for _, atcworklist := range object.Findings.Finding {
 
+			log.Entry().Info("there is atc finding for object type: ", objectType)
+			log.Entry().Info("object name: ", objectName)
+
 			path, err := url.PathUnescape(atcworklist.Location)
-			log.Entry().Info("path(atcLocation): ", path)
+			log.Entry().Info("path - atcLocation: ", path)
 
 			if err != nil {
 				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
@@ -870,7 +871,6 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 
 			if len(atcworklist.Atcfinding) > 0 {
 
-				log.Entry().Info("Atcfinding: ", atcworklist.Atcfinding)
 				priority, err := strconv.Atoi(atcworklist.Priority)
 
 				if err != nil {
@@ -900,7 +900,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 					aTCUnitError.Line, err = findLine(config, client, path, objectName, objectType)
 
 					if err != nil {
-						return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+						log.Entry().Error(err, "could not find error line")
 
 					}
 
@@ -997,7 +997,7 @@ func findLine(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, 
 
 		if err != nil {
 
-			return line, errors.Wrap(err, "find Line has failed")
+			return line, errors.Wrap(err, "object does not exists in the repository "+config.Repository)
 		}
 
 		file := string(rawfile)
@@ -1250,6 +1250,15 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	}
 
+	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + objName)
+	clas := regexClas.FindString(path)
+	if clas != "" {
+		if readableSource {
+
+			fileName = strings.ToLower(objName) + ".clas.abap"
+		}
+
+	}
 	return fileName, nil
 
 }
