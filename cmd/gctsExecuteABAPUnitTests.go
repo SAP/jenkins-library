@@ -119,7 +119,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if aUnitFailure {
 
-			log.Entry().Error("unit test(s) has/have failed! Check Statistic Analysis Warning for more information!")
+			log.Entry().Error("unit test(s) has/have failed! Check Warnings Next Generation tool for more information!")
 
 		} else {
 
@@ -139,7 +139,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if atcFailure {
 
-			log.Entry().Error(" ATC issue(s) found! Check Statistic Analysis Warning for more information!")
+			log.Entry().Error(" ATC issue(s) found! Check Warnings Next Generation tool for more information!")
 
 		} else {
 
