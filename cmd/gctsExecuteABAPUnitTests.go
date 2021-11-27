@@ -104,7 +104,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 	log.Entry().Infof("objects to be checked:")
 	for _, object := range objects {
-		log.Entry().Infof(object.Type, " ", object.Object)
+		log.Entry().Info(object.Type, object.Object)
 	}
 
 	if config.AUnitTest {
@@ -591,7 +591,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 							aUnitFailure = true
 							aUnitError.Severity = "error"
 						case "tolerable":
-							log.Entry().Warning("unit test" + aUnitError.Source + "  has failed with severity warning")
+							log.Entry().Warning("unit test " + aUnitError.Source + "  has failed with severity warning")
 							aUnitError.Severity = "warning"
 						default:
 							aUnitError.Severity = "info"
@@ -607,6 +607,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 							}
 
 						}
+						log.Entry().Info("URI ", testalert.Stack.StackEntry.URI)
 						aUnitError.Line, err = findLine(config, client, testalert.Stack.StackEntry.URI, objectName, objectType)
 						if err != nil {
 
@@ -626,7 +627,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 				}
 
 			}
-
+			log.Entry().Info("URI ", testClass.URI)
 			fileName, err = getFileName(config, client, testClass.URI, objectName)
 			if err != nil {
 				return parsedResult, err
@@ -993,7 +994,7 @@ func findLine(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, 
 
 	filePath, err := constructPath(config, client, fileName, objectName, objectType)
 	if err != nil {
-		return line, errors.Wrap(err, "could not find line in source code")
+		return line, errors.Wrap(err, objectType+"/"+objectName+"could not find line in source code")
 
 	}
 
@@ -1263,7 +1264,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	if clas != "" {
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + ".clas.abap"
+			fileName = strings.ToLower(objName) + ".clas.global.abap"
 		}
 
 	}
