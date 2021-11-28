@@ -1274,7 +1274,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	}
 	// CLAS
-	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + strings.ToLower(objName))
+	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + strings.ToLower(objName) + `$`)
 	clas := regexClas.FindString(path)
 	if clas != "" {
 		if readableSource {
