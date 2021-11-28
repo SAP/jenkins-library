@@ -355,7 +355,7 @@ func getRepositoryObjects(config *gctsExecuteABAPUnitTestsOptions, client piperh
 
 	log.Entry().Info("get repository objects started")
 
-	var repositoryObjects repoObjectResponse
+	var repoResp repoObjectResponse
 
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
@@ -375,15 +375,27 @@ func getRepositoryObjects(config *gctsExecuteABAPUnitTestsOptions, client piperh
 		return []repoObject{}, errors.New("could not get repository objects: did not retrieve a HTTP response")
 	}
 
-	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repositoryObjects)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoResp)
 	if parsingErr != nil {
 		return []repoObject{}, errors.Errorf("%v", parsingErr)
+	}
+
+	var repositoryObjects []repoObject
+
+	// remove object type DEVC, because it is already included in scope packages
+	// also if you run ATC Checks for DEVC together with other object types, ATC checks will run only for DEVC
+	for _, object := range repoResp.Objects {
+
+		if object.Type != "DEVC" {
+			repositoryObjects = append(repositoryObjects, object)
+		}
+
 	}
 
 	log.Entry().Info("get repository objects finished")
 
 	// all objects that are part of the local repository
-	return repositoryObjects.Objects, nil
+	return repositoryObjects, nil
 }
 
 func getPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) ([]repoObject, error) {
@@ -392,13 +404,32 @@ func getPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	log.Entry().Info("get packages started")
 
-	resp, err := getRepositoryObjects(config, client)
-	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get packages failed")
+	var repoResp repoObjectResponse
+
+	url := config.Host +
+		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
+		"/objects?sap-client=" + config.Client
+
+	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
+
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	if httpErr != nil {
+		return []repoObject{}, errors.Wrap(httpErr, "get packages failed: could not get repository objects")
+	} else if resp == nil {
+		return []repoObject{}, errors.New("get packages failed: could not get repository objects: did not retrieve a HTTP response")
 	}
 
-	// all packages that are part of the local repository
-	for _, object := range resp {
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoResp)
+	if parsingErr != nil {
+		return []repoObject{}, errors.Errorf("%v", parsingErr)
+	}
+	// chose only DEVC from repository objects
+	for _, object := range repoResp.Objects {
 
 		if object.Type == "DEVC" {
 			packages = append(packages, object)

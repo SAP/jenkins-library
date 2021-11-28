@@ -753,12 +753,7 @@ func TestGetRepositoryObjectsSuccess(t *testing.T) {
 			Type:        "CLAS",
 			Description: "Class (ABAP Objects)",
 		}
-		object2 := repoObject{
-			Pgmid:       "R3TR",
-			Object:      "ZP_GCTS",
-			Type:        "DEVC",
-			Description: "Package(ABAP Objects)",
-		}
+
 		object3 := repoObject{
 			Pgmid:       "R3TR",
 			Object:      "ZIF_GCTS_API",
@@ -767,7 +762,6 @@ func TestGetRepositoryObjectsSuccess(t *testing.T) {
 		}
 		var repoObjects []repoObject
 		repoObjects = append(repoObjects, object1)
-		repoObjects = append(repoObjects, object2)
 		repoObjects = append(repoObjects, object3)
 
 		objects, err := getRepositoryObjects(&config, &httpClient)
