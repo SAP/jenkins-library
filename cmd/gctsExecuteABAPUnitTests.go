@@ -871,6 +871,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 			log.Entry().Info("there is atc finding for object type: ", objectType+" object name: "+objectName)
 
 			path, err := url.PathUnescape(atcworklist.Location)
+			log.Entry().Info(path)
 
 			if err != nil {
 				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
