@@ -871,7 +871,6 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 			log.Entry().Info("there is atc finding for object type: ", objectType+" object name: "+objectName)
 
 			path, err := url.PathUnescape(atcworklist.Location)
-			log.Entry().Info(path)
 
 			if err != nil {
 				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
@@ -1210,7 +1209,11 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".clas.global.abap"
 		} else {
-			fileName = "METH " + objName + ".abap"
+
+			regexmethodName := regexp.MustCompile(`name=\/\w*`)
+			methodName := regexmethodName.FindString(path)
+
+			fileName = "METH " + methodName[len(`name=`):] + ".abap"
 		}
 
 	}
