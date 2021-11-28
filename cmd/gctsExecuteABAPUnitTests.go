@@ -1100,7 +1100,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	//  INTERFACES
 	regexInterface := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/interfaces\/\w*`)
 	intf := regexInterface.FindString(path)
-	if intf != "" {
+	if intf != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1113,7 +1113,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASSES DEFINITIONS
 	regexClasDef := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/includes\/definitions\/`)
 	clasDef := regexClasDef.FindString(path)
-	if clasDef != "" {
+	if clasDef != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1127,7 +1127,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASSES IMPLEMENTATIONS
 	regexClasImpl := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/includes\/implementations\/`)
 	clasImpl := regexClasImpl.FindString(path)
-	if clasImpl != "" {
+	if clasImpl != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1141,7 +1141,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASSES MACROS
 	regexClasMacro := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/includes\/macros\/`)
 	clasMacro := regexClasMacro.FindString(path)
-	if clasMacro != "" {
+	if clasMacro != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1155,7 +1155,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// TEST CLASSES
 	regexTestClass := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*#?\/?\w*\/?testclass`)
 	testClass := regexTestClass.FindString(path)
-	if testClass != "" {
+	if testClass != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1169,7 +1169,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASS PROTECTED
 	regexClasProtected := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/source\/main#type=CLAS\/OSO`)
 	classProtected := regexClasProtected.FindString(path)
-	if classProtected != "" {
+	if classProtected != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1183,7 +1183,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASS PRIVATE
 	regexClasPrivate := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/source\/main#type=CLAS\/OSI`)
 	classPrivate := regexClasPrivate.FindString(path)
-	if classPrivate != "" {
+	if classPrivate != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1197,7 +1197,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASS METHOD
 	regexClasMethod := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/source\/main#type=CLAS\/OM`)
 	classMethod := regexClasMethod.FindString(path)
-	if classMethod != "" {
+	if classMethod != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1211,7 +1211,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// CLASS PUBLIC
 	regexClasPublic := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/source\/main#start`)
 	classPublic := regexClasPublic.FindString(path)
-	if classPublic != "" {
+	if classPublic != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1226,7 +1226,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	regexFuncIncl := regexp.MustCompile(`\/sap\/bc\/adt\/functions\/groups\/\w*\/includes/\w*`)
 
 	funcIncl := regexFuncIncl.FindString(path)
-	if funcIncl != "" {
+	if funcIncl != "" && fileName == "" {
 
 		regexSubObj := regexp.MustCompile(`includes\/\w*`)
 		subObject := regexSubObj.FindString(path)
@@ -1245,7 +1245,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	regexFuncGr := regexp.MustCompile(`\/sap\/bc\/adt\/functions\/groups\/\w*\/source\/main`)
 
 	funcGr := regexFuncGr.FindString(path)
-	if funcGr != "" {
+	if funcGr != "" && fileName == "" {
 
 		if readableSource {
 
@@ -1259,7 +1259,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// FUNCTION MODULE
 	regexFuncMod := regexp.MustCompile(`\/sap\/bc\/adt\/functions\/groups\/\w*\/fmodules/\w*`)
 	funcMod := regexFuncMod.FindString(path)
-	if funcMod != "" {
+	if funcMod != "" && fileName == "" {
 
 		regexSubObj := regexp.MustCompile(`includes\/\w*`)
 		subObject := regexSubObj.FindString(path)
@@ -1274,9 +1274,9 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	}
 	// CLAS
-	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + strings.ToLower(objName) + `$`)
+	regexClas := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/` + strings.ToLower(objName))
 	clas := regexClas.FindString(path)
-	if clas != "" {
+	if clas != "" && fileName == "" {
 		if readableSource {
 
 			fileName = strings.ToLower(objName) + ".clas.global.abap"
@@ -1290,7 +1290,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	// PROGRAM
 	regexProg := regexp.MustCompile(`\/sap\/bc\/adt\/programs\/programs\/` + strings.ToLower(objName))
 	prog := regexProg.FindString(path)
-	if prog != "" {
+	if prog != "" && fileName == "" {
 
 		fileName = "REPS " + objName + ".abap"
 
