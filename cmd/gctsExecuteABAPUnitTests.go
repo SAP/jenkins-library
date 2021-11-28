@@ -172,7 +172,7 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	}
 
 	currentLocalCommit := repository.Result.CurrentCommit
-	log.Entry().Info("current commit in the local repository", currentLocalCommit)
+	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
 
 	// object delta between the commit that triggered the pipeline and the current commit in the local repository
 	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
@@ -221,7 +221,7 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return []repoObject{}, errors.New("current remote commit was not found")
 
 	}
-	log.Entry().Info("current commit in the remote repository", currentRemoteCommit)
+	log.Entry().Info("current commit in the remote repository: ", currentRemoteCommit)
 	// object delta between the commit that triggered the pipeline and the current commit in the remote repository
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 
@@ -259,7 +259,7 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	}
 
 	currentLocalCommit := repository.Result.CurrentCommit
-	log.Entry().Info("current commit in the local repository", currentLocalCommit)
+	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
 
 	//object delta between the commit that triggered the pipeline and the current commit in the local repository
 	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
@@ -323,7 +323,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 		return []repoObject{}, errors.Wrap(err, "current remote commit was not found")
 
 	}
-	log.Entry().Info("current commit in the local repository", currentRemoteCommit)
+	log.Entry().Info("current commit in the local repository: ", currentRemoteCommit)
 	//object delta between the commit that triggered the pipeline and the current commit in the remote repository
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 	if err != nil {
@@ -1153,7 +1153,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	}
 
 	// TEST CLASSES
-	regexTestClass := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*\/includes\/testclasses`)
+	regexTestClass := regexp.MustCompile(`\/sap\/bc\/adt\/oo\/classes\/\w*#?\/?\w*\/?testclass`)
 	testClass := regexTestClass.FindString(path)
 	if testClass != "" {
 
@@ -1428,7 +1428,7 @@ func getCommitList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 
 func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit string, toCommit string, client piperhttp.Sender) (objectsResponse, error) {
 	var objectResponse objectsResponse
-	log.Entry().Info("get object difference")
+	log.Entry().Info("get object difference started")
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/compareCommits?fromCommit=" + fromCommit + "&toCommit=" + toCommit + "&sap-client=" + config.Client
@@ -1451,7 +1451,7 @@ func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit str
 	if parsingErr != nil {
 		return objectsResponse{}, errors.Errorf("%v", parsingErr)
 	}
-	log.Entry().Info("get object difference", objectResponse.Objects)
+	log.Entry().Info("get object difference finished: ", objectResponse.Objects)
 	return objectResponse, nil
 }
 
