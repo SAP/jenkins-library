@@ -1210,7 +1210,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 			fileName = strings.ToLower(objName) + ".clas.global.abap"
 		} else {
 
-			regexmethodName := regexp.MustCompile(`name=\/\w*`)
+			regexmethodName := regexp.MustCompile(`name=\w*`)
 			methodName := regexmethodName.FindString(path)
 
 			fileName = "METH " + methodName[len(`name=`):] + ".abap"
