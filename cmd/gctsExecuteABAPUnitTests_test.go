@@ -1136,7 +1136,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 			})
 
 			t.Run("check file name", func(t *testing.T) {
-				assert.Equal(t, "/var/jenkins_home/workspace/myFirstPipeline//objects/CLAS/ZCL_GCTS/CINC ZCL_GCTS=======CCAU.abap", parsedRes.File[0].Name)
+				assert.Equal(t, "/var/jenkins_home/workspace/myFirstPipeline//objects/CLAS/ZCL_GCTS/CINC ZCL_GCTS======================CCAU.abap", parsedRes.File[0].Name)
 			})
 
 		}
@@ -1192,7 +1192,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 			})
 
 			t.Run("check file name", func(t *testing.T) {
-				assert.Equal(t, "/var/jenkins_home/workspace/myFirstPipeline//objects/CLAS/ZCL_GCTS_PIPER_DEMO/CINC ZCL_GCTS_PIPER_DEMO=======CCAU.abap", parsedRes.File[0].Name)
+				assert.Equal(t, "/var/jenkins_home/workspace/myFirstPipeline//objects/CLAS/ZCL_GCTS_PIPER_DEMO/CINC ZCL_GCTS_PIPER_DEMO===========CCAU.abap", parsedRes.File[0].Name)
 			})
 
 			t.Run("check line number", func(t *testing.T) {

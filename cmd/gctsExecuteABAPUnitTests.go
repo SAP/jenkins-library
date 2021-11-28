@@ -1092,6 +1092,12 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	path, err = url.PathUnescape(path)
 
+	var fileExtension string
+	fileExtensionLength := 30 - len(objName)
+	for i := 0; i < fileExtensionLength; i++ {
+		fileExtension += "="
+	}
+
 	if err != nil {
 		return fileName, errors.Wrap(err, "get file name has failed")
 
@@ -1106,7 +1112,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".intf.abap"
 		} else {
-			fileName = "REPS " + strings.ToUpper(objName) + "====IU.abap"
+			fileName = "REPS " + strings.ToUpper(objName) + fileExtension + "IU.abap"
 		}
 
 	}
@@ -1119,7 +1125,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".clas.definitions.abap"
 		} else {
-			fileName = "CINC " + objName + "=======CCDEF.abap"
+			fileName = "CINC " + objName + fileExtension + "CCDEF.abap"
 		}
 
 	}
@@ -1133,7 +1139,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".clas.implementations.abap"
 		} else {
-			fileName = "CINC " + objName + "=======CCIMP.abap"
+			fileName = "CINC " + objName + fileExtension + "CCIMP.abap"
 		}
 
 	}
@@ -1147,7 +1153,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".clas.macros.abap"
 		} else {
-			fileName = "CINC " + objName + "=======CCMAC.abap"
+			fileName = "CINC " + objName + fileExtension + "CCMAC.abap"
 		}
 
 	}
@@ -1161,7 +1167,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".clas.testclasses.abap"
 		} else {
-			fileName = "CINC " + objName + "=======CCAU.abap"
+			fileName = "CINC " + objName + fileExtension + "CCAU.abap"
 		}
 
 	}
