@@ -1204,7 +1204,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 			})
 
 			t.Run("check source", func(t *testing.T) {
-				assert.Equal(t, "CHECK", parsedRes.File[0].Error[0].Source)
+				assert.Equal(t, "LTCL_MASTER/CHECK", parsedRes.File[0].Error[0].Source)
 			})
 
 			t.Run("check message", func(t *testing.T) {
@@ -1272,7 +1272,7 @@ func TestParseAUnitResultFailure(t *testing.T) {
 		if assert.Error(t, err) {
 
 			t.Run("check method", func(t *testing.T) {
-				assert.Equal(t, err.Error(), "could not parse ABAP Unit Result: could not find line in source code: could not check readable source format: could not get repository layout: a http error occurred")
+				assert.Equal(t, "parse AUnit Result failed: get file name has failed: could not check readable source format: could not get repository layout: a http error occurred", err.Error())
 			})
 
 			assert.NotEmpty(t, parsedRes, "results are not empty")
@@ -1428,7 +1428,7 @@ func TestParseATCCheckResultFailure(t *testing.T) {
 		xml.Unmarshal(xmlBody, &resp)
 		parsedRes, err := parseATCCheckResult(&config, &httpClient, resp)
 
-		assert.EqualError(t, err, "conversion of ATC check results to CheckStyle has failed: could not find line in source code: could not check readable source format: could not get repository layout: a http error occurred")
+		assert.EqualError(t, err, "conversion of ATC check results to CheckStyle has failed: get file name has failed: could not check readable source format: could not get repository layout: a http error occurred")
 		assert.NotEmpty(t, parsedRes)
 	})
 

@@ -323,7 +323,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 		return []repoObject{}, errors.Wrap(err, "current remote commit was not found")
 
 	}
-	log.Entry().Info("current commit in the local repository: ", currentRemoteCommit)
+	log.Entry().Info("current commit in the remote repository: ", currentRemoteCommit)
 	//object delta between the commit that triggered the pipeline and the current commit in the remote repository
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
 	if err != nil {
@@ -557,12 +557,12 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 			aUnitError.Message = html.UnescapeString(program.Alerts.Alert.Title + " " + program.Alerts.Alert.Details.Detail.AttrText)
 			aUnitError.Line, err = findLine(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName, objectType)
 			if err != nil {
-				return parsedResult, err
+				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
 
 			}
 			fileName, err = getFileName(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName)
 			if err != nil {
-				return parsedResult, err
+				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
 
 			}
 			aUnitFile.Error = append(aUnitFile.Error, aUnitError)
@@ -630,7 +630,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 			fileName, err = getFileName(config, client, testClass.URI, objectName)
 			if err != nil {
-				return parsedResult, err
+				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
 
 			}
 		}
@@ -638,7 +638,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		aUnitFile.Name, err = constructPath(config, client, fileName, objectName, objectType)
 		if err != nil {
 
-			return parsedResult, err
+			return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
 		}
 		parsedResult.File = append(parsedResult.File, aUnitFile)
 		aUnitFile = file{}
