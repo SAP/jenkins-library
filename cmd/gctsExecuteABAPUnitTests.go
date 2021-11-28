@@ -1117,7 +1117,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.definitions.abap"
+			fileName = strings.ToLower(objName) + ".clas.definitions.abap"
 		} else {
 			fileName = "CINC " + objName + "=======CCDEF.abap"
 		}
@@ -1131,7 +1131,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.implementations.abap"
+			fileName = strings.ToLower(objName) + ".clas.implementations.abap"
 		} else {
 			fileName = "CINC " + objName + "=======CCIMP.abap"
 		}
@@ -1145,7 +1145,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.macros.abap"
+			fileName = strings.ToLower(objName) + ".clas.macros.abap"
 		} else {
 			fileName = "CINC " + objName + "=======CCMAC.abap"
 		}
@@ -1159,7 +1159,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.testclasses.abap"
+			fileName = strings.ToLower(objName) + ".clas.testclasses.abap"
 		} else {
 			fileName = "CINC " + objName + "=======CCAU.abap"
 		}
@@ -1173,7 +1173,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.abap"
+			fileName = strings.ToLower(objName) + ".clas.abap"
 		} else {
 			fileName = "CPRO " + objName + ".abap"
 		}
@@ -1187,7 +1187,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.abap"
+			fileName = strings.ToLower(objName) + ".clas.abap"
 		} else {
 			fileName = "CPRI " + objName + ".abap"
 		}
@@ -1215,7 +1215,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + "." + ".clas.abap"
+			fileName = strings.ToLower(objName) + ".clas.abap"
 		} else {
 			fileName = "CPUB " + objName + ".abap"
 		}
@@ -1428,7 +1428,7 @@ func getCommitList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 
 func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit string, toCommit string, client piperhttp.Sender) (objectsResponse, error) {
 	var objectResponse objectsResponse
-	log.Entry().Info("get object difference started")
+
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/compareCommits?fromCommit=" + fromCommit + "&toCommit=" + toCommit + "&sap-client=" + config.Client
@@ -1451,7 +1451,7 @@ func getObjectDifference(config *gctsExecuteABAPUnitTestsOptions, fromCommit str
 	if parsingErr != nil {
 		return objectsResponse{}, errors.Errorf("%v", parsingErr)
 	}
-	log.Entry().Info("get object difference finished: ", objectResponse.Objects)
+	log.Entry().Info("get object differences: ", objectResponse.Objects)
 	return objectResponse, nil
 }
 
