@@ -82,10 +82,12 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 
 	//stringValues := "[{\"value_id\":\"ID1\",\"value\":\"Value1\"}]"
 	var values abapbuild.Values
+	log.Entry().Infof("config values %s", config.Values)
 	if err := json.Unmarshal([]byte(config.Values), &values.Values); err != nil {
 		return err
 	}
 	var cpevalues abapbuild.Values
+	log.Entry().Infof("cpe values %s", config.CpeValues)
 	if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
 		return err
 	}
