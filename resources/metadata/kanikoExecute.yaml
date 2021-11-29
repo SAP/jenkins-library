@@ -120,7 +120,6 @@ spec:
           - name: container/registryUrl
           - name: container/imageNameTag
           - name: custom/buildSettingsInfo
-            type: "string"
   containers:
     - image: gcr.io/kaniko-project/executor:debug
       command:

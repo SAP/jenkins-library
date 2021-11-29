@@ -203,7 +203,6 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The vault server which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultNamespace, "vaultNamespace", "", "The vault namespace which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultPath, "vaultPath", "", "The path which should be used to fetch credentials")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 
 }
 

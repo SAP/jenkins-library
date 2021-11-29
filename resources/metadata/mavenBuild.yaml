@@ -192,7 +192,6 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
-            type: "string"
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
