@@ -236,16 +236,9 @@ func runMtaBuild(config mtaBuildOptions,
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mtaBuild"
-	configOptions.contextConfig = true
-	configOptions.stepName = stepName
-	stepConfig, err := getConfig()
+	dockerImage, err := getDockerImageValue(stepName)
 	if err != nil {
 		return err
-	}
-
-	dockerImage, ok := stepConfig.Config["dockerImage"].(string)
-	if !ok {
-		return errors.Errorf("error: config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
 	}
 
 	mtaConfig := buildsettings.BuildOptions{

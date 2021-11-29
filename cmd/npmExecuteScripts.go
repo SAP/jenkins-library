@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
@@ -50,16 +49,9 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "npmExecuteScripts"
-	configOptions.contextConfig = true
-	configOptions.stepName = stepName
-	stepConfig, err := getConfig()
+	dockerImage, err := getDockerImageValue(stepName)
 	if err != nil {
 		return err
-	}
-
-	dockerImage, ok := stepConfig.Config["dockerImage"].(string)
-	if !ok {
-		return errors.Errorf("error: config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
 	}
 
 	npmConfig := buildsettings.BuildOptions{

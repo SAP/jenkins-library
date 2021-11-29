@@ -75,6 +75,23 @@ func ConfigCommand() *cobra.Command {
 	return createConfigCmd
 }
 
+func getDockerImageValue(stepName string) (string, error) {
+
+	configOptions.contextConfig = true
+	configOptions.stepName = stepName
+	stepConfig, err := getConfig()
+	if err != nil {
+		return "", err
+	}
+
+	dockerImageValue, ok := stepConfig.Config["dockerImage"].(string)
+	if !ok {
+		return "", errors.Errorf("error: config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
+	}
+
+	return dockerImageValue, nil
+}
+
 func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
