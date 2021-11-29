@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -54,22 +53,6 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 
 	// scripts for running locally
 	var e []string
-
-	// install custom certificates
-	if len(config.CustomTLSCertificateLinks) > 0 {
-		caCertificates := "/tmp/ca-certificates.crt"
-		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
-		if err != nil {
-			return errors.Wrap(err, "failed to copy certificates")
-		}
-		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, &httpClient, utils, caCertificates)
-		if err != nil {
-			return errors.Wrap(err, "failed to update certificates")
-		}
-		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
-	} else {
-		log.Entry().Info("skipping certificates update")
-	}
 
 	// check input data
 	// example for script: sources: ["./script.sh"]
