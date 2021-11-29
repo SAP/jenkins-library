@@ -461,6 +461,9 @@ func (result *Result) DownloadWithFilenamePrefix(basePath string, filenamePrefix
 }
 
 func (result *Result) evaluateParamter(parameter string) (string, error) {
+	if len(parameter) == 0 {
+		return parameter, nil
+	}
 	if (string(parameter[0]) == "{") && string(parameter[len(parameter)-1]) == "}" {
 		trimmedParam := strings.ToLower(parameter[1 : len(parameter)-1])
 		switch trimmedParam {
