@@ -125,10 +125,10 @@ Later, during the pipeline configuration, you will specify the service plan, whi
 
 #### Register Add-on Product for a Global Account
 
-The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global production account. Therefore, the add-on product name and global production account need to be registered with SAP:
+The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global accounts. Therefore, the add-on product name and global accounts need to be registered with SAP:
 
-- As an add-on admin, create an incident using component BC-CP-ABA, and provide the following information:
-Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
+Create an incident using component BC-CP-ABA, and provide the following information:
+- Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
 
 - Global production account ID = *Account ID* in section *Global Account Info* on the overview page of your global account, e.g. `151b5fdc-58c1-4a55-95e1-467df2134c5f` (Feature Set A) or *Global Account Info* on the *Usage Analytics* page of your global account (Feature Set B).
 
