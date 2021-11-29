@@ -6,6 +6,8 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -438,6 +440,14 @@ func (result *Result) Download(downloadPath string) error {
 
 //TODO besserer Name....
 func (result *Result) DownloadWithFilenamePrefix(basePath string, filenamePrefix string) error {
+	basePath, err := result.evaluateParamter(basePath)
+	if err != nil {
+		return err
+	}
+	filenamePrefix, err = result.evaluateParamter(filenamePrefix)
+	if err != nil {
+		return err
+	}
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
 	filename := filenamePrefix + result.Name
 	downloadPath := filepath.Join(path.Base(basePath), path.Base(filename))
@@ -448,6 +458,22 @@ func (result *Result) DownloadWithFilenamePrefix(basePath string, filenamePrefix
 	result.DownloadPath = downloadPath
 	return nil
 
+}
+
+func (result *Result) evaluateParamter(parameter string) (string, error) {
+	if (string(parameter[0]) == "{") && string(parameter[len(parameter)-1]) == "}" {
+		trimmedParam := strings.ToLower(parameter[1 : len(parameter)-1])
+		switch trimmedParam {
+		case "buildid":
+			return result.BuildID, nil
+		case "taskid":
+			return strconv.Itoa(result.TaskID), nil
+		default:
+			return "", errors.Errorf("Unknown parameter %s", parameter)
+		}
+	} else {
+		return parameter, nil
+	}
 }
 
 func (result *Result) wasDownloaded() bool {
