@@ -354,10 +354,11 @@ func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
 
 func (b *Build) PublishAllDownloadedResults(stepname string) {
 	var filesToPublish []piperutils.Path
-	for _, task := range b.Tasks {
-		for _, result := range task.Results {
-			if result.wasDownloaded() {
-				filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
+	for i_task := range b.Tasks {
+		for i_result := range b.Tasks[i_task].Results {
+			if b.Tasks[i_task].Results[i_result].wasDownloaded() {
+				filesToPublish = append(filesToPublish, piperutils.Path{Target: b.Tasks[i_task].Results[i_result].DownloadPath,
+					Name: b.Tasks[i_task].Results[i_result].SavedFilename, Mandatory: true})
 			}
 		}
 	}

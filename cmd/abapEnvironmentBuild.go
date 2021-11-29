@@ -82,6 +82,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 
 	//stringValues := "[{\"value_id\":\"ID1\",\"value\":\"Value1\"}]"
 	var values abapbuild.Values
+	//TODO delete
 	log.Entry().Infof("config values %s", config.Values)
 	if err := json.Unmarshal([]byte(config.Values), &values.Values); err != nil {
 		return err
@@ -99,6 +100,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	}
 
 	var cpevalues abapbuild.Values
+	//TODO delete
 	log.Entry().Infof("cpe values %s", config.CpeValues)
 	if len(config.CpeValues) > 0 {
 		if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
@@ -109,11 +111,16 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 			_, present := m[cpevalues.Values[i].ValueID]
 			if present {
 				cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
+			} else {
+				//TODO delete den else zweig
+				log.Entry().Infof("remove value %s", cpevalues.Values[i])
 			}
 		}
 
 		values.Values = append(values.Values, cpevalues.Values...)
 	}
+	//TODO delete
+	log.Entry().Infof("Values used %s", values.Values)
 
 	//erzeuge value liste
 	// TODO lieber in bfw?
@@ -141,7 +148,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 		return err
 	}
 
-	if config.PublishAllDownloadedResultFiles {
+	if config.DownloadAllResultFiles {
 		if err := build.DownloadResults(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
 			return err
 		}
