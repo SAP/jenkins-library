@@ -86,11 +86,6 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	if err := json.Unmarshal([]byte(config.Values), &values.Values); err != nil {
 		return err
 	}
-	var cpevalues abapbuild.Values
-	log.Entry().Infof("cpe values %s", config.CpeValues)
-	if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
-		return err
-	}
 	m := make(map[string]string)
 
 	// falls es einen wert doppelt in der config gibt -> fehler
@@ -103,15 +98,22 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 		m[value.ValueID] = value.Value
 	}
 
-	//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
-	for i := len(cpevalues.Values) - 1; i >= 0; i-- {
-		_, present := m[cpevalues.Values[i].ValueID]
-		if present {
-			cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
+	var cpevalues abapbuild.Values
+	log.Entry().Infof("cpe values %s", config.CpeValues)
+	if len(config.CpeValues) > 0 {
+		if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
+			return err
 		}
-	}
+		//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
+		for i := len(cpevalues.Values) - 1; i >= 0; i-- {
+			_, present := m[cpevalues.Values[i].ValueID]
+			if present {
+				cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
+			}
+		}
 
-	values.Values = append(values.Values, cpevalues.Values...)
+		values.Values = append(values.Values, cpevalues.Values...)
+	}
 
 	//erzeuge value liste
 	// TODO lieber in bfw?
