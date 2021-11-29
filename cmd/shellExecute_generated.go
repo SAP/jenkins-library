@@ -16,8 +16,7 @@ import (
 )
 
 type shellExecuteOptions struct {
-	Sources                   []string `json:"sources,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	Sources []string `json:"sources,omitempty"`
 }
 
 // ShellExecuteCommand Step executes defined script
@@ -110,7 +109,6 @@ func ShellExecuteCommand() *cobra.Command {
 
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
-	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 
 }
 
@@ -129,15 +127,6 @@ func shellExecuteMetadata() config.StepData {
 						Name:        "sources",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "customTlsCertificateLinks",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
