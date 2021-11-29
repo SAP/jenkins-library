@@ -168,17 +168,11 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 		ValueID string `json:"value_id"`
 		Value   string `json:"value"`
 	}
+
+	build.GetValues()
 	var testValues []cpeValue
-	testValues = []cpeValue{
-		{
-			ValueID: "ID1",
-			Value:   "Value1",
-		},
-		{
-			ValueID: "ID2",
-			Value:   "Value2",
-		},
-	}
+	byt, _ := json.Marshal(&build.Values)
+	json.Unmarshal(byt, &testValues)
 
 	//Das brauch ich um am ende die Values wegzuschreiben -> muss also eigentlich nach utnen
 	jsonBytes, _ := json.Marshal(testValues)
@@ -226,6 +220,7 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	return nil
 }
 
+//TODO delete
 func parseValues(inputValues []string) (abapbuild.Values, error) {
 	var values abapbuild.Values
 	for _, inputValue := range inputValues {
@@ -238,6 +233,7 @@ func parseValues(inputValues []string) (abapbuild.Values, error) {
 	return values, nil
 }
 
+//TODO delete
 func parseValue(inputValue string) (abapbuild.Value, error) {
 	var value abapbuild.Value
 	//TODO ; wieder durch , ersetzen -> und dann config.yml anpassen

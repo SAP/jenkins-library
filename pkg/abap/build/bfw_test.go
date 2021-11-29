@@ -82,7 +82,7 @@ func TestGetValues(t *testing.T) {
 	t.Run("Run getValues", func(t *testing.T) {
 		b := testSetup(&ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
 		assert.Equal(t, 0, len(b.Values))
-		err := b.getValues()
+		err := b.GetValues()
 		assert.NoError(t, err)
 		assert.Equal(t, 4, len(b.Values))
 		assert.Equal(t, "PHASE", b.Values[0].ValueID)

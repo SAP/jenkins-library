@@ -244,7 +244,7 @@ func (b *Build) getTasks() error {
 	return nil
 }
 
-func (b *Build) getValues() error {
+func (b *Build) GetValues() error {
 	if len(b.Values) == 0 {
 		appendum := "/builds('" + b.BuildID + "')/values"
 		body, err := b.Connector.Get(appendum)
