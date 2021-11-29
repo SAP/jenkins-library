@@ -709,7 +709,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/packages/` + object.Object + `"/>`
 		case "FUGR":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + object.Object + `/source/main"/>`
-		case "TABU":
+		case "TABL":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/tables/` + object.Object + `"/>`
 		case "DTEL":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/dataelements/` + object.Object + `"/>`
@@ -1277,7 +1277,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 			fileName = strings.ToLower(objName) + ".fugr." + strings.ToLower(subObject) + ".reps.abap"
 		} else {
-			fileName = "REPS " + subObject + ".abap"
+			fileName = "REPS " + strings.ToUpper(subObject) + ".abap"
 		}
 
 	}
