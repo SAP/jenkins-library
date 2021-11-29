@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/tms"
+	"github.com/ghodss/yaml"
 )
 
 type uaa struct {
@@ -28,6 +29,7 @@ type tmsUploadUtils interface {
 	command.ExecRunner
 
 	FileExists(filename string) (bool, error)
+	FileRead(path string) ([]byte, error)
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The tmsUploadUtils interface should be descriptive of your runtime dependencies,
@@ -59,7 +61,7 @@ func newTmsUploadUtils() tmsUploadUtils {
 func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	// utils := newTmsUploadUtils()
+	utils := newTmsUploadUtils()
 
 	client := &piperHttp.Client{}
 	// TODO: any options to set for the client? (see e.g. checkmarxExecuteScan.go)
@@ -69,21 +71,31 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
 
+	if GeneralConfig.Verbose {
+		log.Entry().Info("Will be used for communication:")
+		log.Entry().Infof("- client id: %v", serviceKey.Uaa.ClientId)
+		log.Entry().Infof("- TMS URL: %v", serviceKey.Uri)
+		log.Entry().Infof("- UAA URL: %v", serviceKey.Uaa.Url)
+	}
+
 	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
 
+	// TODO: how to organize telemetry reporting?
+	// TODO: is unstashing done before the step? are all required artifacts in place?
 	// TODO: understand, what does this influx part do
 	influx.step_data.fields.tms = false
 
-	if err := runTmsUpload(config, communicationInstance); err != nil {
+	// TODO: load to config parameters from the common pipeline environment
+	if err := runTmsUpload(config, communicationInstance, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
 	influx.step_data.fields.tms = true
 }
 
-func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface) error {
+func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils) error {
 	// TODO: provide TMS upload logic here
 	/*
 		log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
@@ -103,11 +115,68 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		}
 	*/
 
-	// TODO: this is very simple and hardcoded for now
-	// 1. Get nodes
-	nodes, err1 := communicationInstance.GetNodes()
-	if err1 != nil {
-		return fmt.Errorf("failed to get nodes: %w", err1)
+	mtaPath := config.MtaPath
+	if mtaPath == "" {
+		// TODO: get here mtarFilePath from the common piepline environment and assign it to mtaPath
+	}
+
+	exists, _ := utils.FileExists(mtaPath)
+	if !exists {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("mta file not found '%s'", mtaPath)
+	}
+
+	description := config.CustomDescription
+	if description == "" {
+		// TODO: get git commit id from common pipeline environment and assign it description
+	}
+
+	// TODO: get name of user, who started the job; if it exists, assign it to namedUser variable, otherwise use namedUser from the config
+	namedUser := config.NamedUser
+
+	nodeName := config.NodeName
+
+	mtaVersion := config.MtaVersion
+	if mtaVersion == "" {
+		mtaVersion = "*"
+	}
+
+	// TODO: what we receive in the map, when the parameter is not defined?
+	nodeExtDescriptorMapping := config.NodeExtDescriptorMapping
+
+	// TODO: does it take into consideration the "verbose" parameter of the step or only the genearl configuration?
+	if GeneralConfig.Verbose {
+		log.Entry().Info("The step will use the following values:")
+		log.Entry().Infof("- description: %v", description)
+
+		// TODO: will this check be enough?
+		if len(nodeExtDescriptorMapping) != 0 {
+			log.Entry().Infof("- mapping between node names and MTA extension descriptor file paths: %v", nodeExtDescriptorMapping)
+		}
+		log.Entry().Infof("- MTA path: %v", mtaPath)
+		log.Entry().Infof("- MTA version: %v", mtaVersion)
+		if namedUser != "" {
+			log.Entry().Infof("- named user: %v", namedUser)
+		}
+		log.Entry().Infof("- node name: %v", nodeName)
+	}
+
+	// TODO: will this check be enough?
+	if len(nodeExtDescriptorMapping) != 0 {
+		nodes, errGetNodes := communicationInstance.GetNodes()
+		if errGetNodes != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return fmt.Errorf("failed to get nodes: %w", errGetNodes)
+		}
+
+		mtaYamlMap, errGetMtaYamlAsMap := getMtaYamlAsMap(utils)
+		if errGetMtaYamlAsMap != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return fmt.Errorf("failed to get mta.yaml as map: %w", errGetMtaYamlAsMap)
+		}
+
+		// TODO: continue here with validation of node-extension-descriptor-mapping
+
 	}
 
 	var nodeId int64
@@ -150,6 +219,28 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	}
 
 	return nil
+}
+
+func getNodeIdExtDescriptorMapping(nodeExtDescriptorMapping map[string]string, nodes []tms.Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[string]string, error) {
+	var result map[string]string
+
+	// TODO: implement the logic here
+
+	return result, nil
+}
+
+func getMtaYamlAsMap(utils tmsUploadUtils) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	bytes, err := utils.FileRead("mta.yaml")
+	if err != nil {
+		return result, err
+	}
+	err = yaml.Unmarshal(bytes, &result)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
