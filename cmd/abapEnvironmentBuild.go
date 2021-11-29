@@ -109,11 +109,10 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 		//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
 		for i := len(cpevalues.Values) - 1; i >= 0; i-- {
 			_, present := m[cpevalues.Values[i].ValueID]
-			if present {
-				cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
-			} else {
-				//TODO delete den else zweig
+			if present || (cpevalues.Values[i].ValueID == "PHASE") {
+				//TODO delete
 				log.Entry().Infof("remove value %s", cpevalues.Values[i])
+				cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
 			}
 		}
 

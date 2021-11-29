@@ -339,11 +339,11 @@ func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
 	if err := b.GetResults(); err != nil {
 		return err
 	}
-	for _, task := range b.Tasks {
+	for i_task := range b.Tasks {
 		//in case there was no result, there is only one entry with dummyResultName, obviously we don't want to download this
-		if task.Results[0].Name != dummyResultName {
-			for _, result := range task.Results {
-				if err := result.DownloadWithFilenamePrefix(basePath, filenamePrefix); err != nil {
+		if b.Tasks[i_task].Results[0].Name != dummyResultName {
+			for i_result := range b.Tasks[i_task].Results {
+				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefix(basePath, filenamePrefix); err != nil {
 					return err
 				}
 			}
