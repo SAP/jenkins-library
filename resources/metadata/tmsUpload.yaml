@@ -16,9 +16,6 @@ spec:
       - name: credentialsId
         description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.
         type: jenkins
-    resources:
-      - name: buildResult
-        type: stash
     params:
       - name: tmsServiceKey
         type: string
@@ -58,7 +55,10 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        mandatory: true
+        mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
       - name: mtaVersion
         type: string
         description: Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.
