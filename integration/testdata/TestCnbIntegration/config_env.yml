@@ -1,0 +1,4 @@
+steps:
+  cnbBuild:
+    buildEnvVars:
+      BP_NODE_VERSION: 16

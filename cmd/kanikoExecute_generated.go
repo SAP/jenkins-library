@@ -207,7 +207,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
+						Aliases:     []config.Alias{{Name: "containerImageNameAndTag", Deprecated: true}},
 						Default:     os.Getenv("PIPER_containerImage"),
 					},
 					{
