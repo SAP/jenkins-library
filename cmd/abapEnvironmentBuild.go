@@ -31,7 +31,6 @@ type abapEnvironmentBuildUtils interface {
 }
 
 type abapEnvironmentBuildUtilsBundle struct {
-	//TODO mein verständnis: command.Command -> ist ein struct, das wird hier embedded, damit "erbt man alles von dem"
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
@@ -78,7 +77,6 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervallInSeconds))
-	//client := piperhttp.Client{}
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -86,7 +84,7 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	//err := runAbapEnvironmentBuild(&config, telemetryData, utils, &client, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervallInSeconds)*time.Second, cpe)
+
 	err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -94,109 +92,26 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
-	//func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, client abapbuild.HTTPSendLoader,
-	//maxRuntime time.Duration, pollingIntervall time.Duration, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
-	//if err := initConnection(conn, config, utils, client, maxRuntime, pollingIntervall); err != nil {
 	if err := initConnection(conn, config, utils); err != nil {
 		return err
 	}
-
-	var values abapbuild.Values
-	//TODO delete
-	log.Entry().Infof("config values %s", config.Values)
-	if err := json.Unmarshal([]byte(config.Values), &values.Values); err != nil {
+	values, err := generateValues(config)
+	if err != nil {
 		return err
 	}
-	m := make(map[string]string)
 
-	// falls es einen wert doppelt in der config gibt -> fehler
-	for _, value := range values.Values {
-		_, present := m[value.ValueID]
-		if present {
-			//TODO bessere error message
-			return errors.New("Value duplicate")
-		}
-		m[value.ValueID] = value.Value
-	}
-
-	var cpevalues abapbuild.Values
-	//TODO delete
-	log.Entry().Infof("cpe values %s", config.CpeValues)
-	if len(config.CpeValues) > 0 {
-		if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
-			return err
-		}
-		//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
-		for i := len(cpevalues.Values) - 1; i >= 0; i-- {
-			_, present := m[cpevalues.Values[i].ValueID]
-			if present || (cpevalues.Values[i].ValueID == "PHASE") {
-				//TODO delete
-				log.Entry().Infof("remove value %s", cpevalues.Values[i])
-				cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
-			}
-		}
-
-		values.Values = append(values.Values, cpevalues.Values...)
-	}
 	//TODO delete
 	log.Entry().Infof("Values used %s", values.Values)
 
-	build := abapbuild.Build{
-		Connector: *conn,
-	}
-
-	if err := build.Start(config.Phase, values); err != nil {
+	finalValues, err := runBuild(conn, config, utils, values)
+	if err != nil {
 		return err
 	}
-	if err := build.Poll(); err != nil {
-		return err
-	}
-	if err := build.PrintLogs(); err != nil {
-		return err
-	}
-	if err := build.EndedWithError(config.TreatWarningsAsError); err != nil {
-		return err
-	}
+	cpe.build.values = finalValues
 
-	if config.DownloadAllResultFiles {
-		if err := build.DownloadResults(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
-			return err
-		}
-	} else {
-		//download nur spezifizierte
-		for _, name := range config.DownloadResultFilenames {
-			result, err := build.GetResult(name)
-			if err != nil {
-				return err
-			}
-			if err := result.DownloadWithFilenamePrefixAndTargetDirectory(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
-				return err
-			}
-		}
-	}
-
-	if config.PublishAllDownloadedResultFiles {
-		build.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
-	} else {
-		if err := build.PublishDownloadedResults("abapEnvironmentBuild", config.PublishResultFilenames, utils); err != nil {
-			return err
-		}
-	}
-
-	type cpeValue struct {
-		ValueID string `json:"value_id"`
-		Value   string `json:"value"`
-	}
-
-	build.GetValues()
-	var cpeValues []cpeValue
-	byt, _ := json.Marshal(&build.Values)
-	json.Unmarshal(byt, &cpeValues)
-	jsonBytes, _ := json.Marshal(cpeValues)
-	cpe.build.values = string(jsonBytes)
 	//
 	/*
 		//TODO beginn generiertes beispielcoding
@@ -242,6 +157,173 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	conn.PollingInterval = utils.getPollingIntervall() //pollingIntervall
 	log.Entry().Infof("MaxRuntime %s", conn.MaxRuntime)
 	log.Entry().Infof("polling intervall %s", conn.PollingInterval)
+	return nil
+}
+
+// ***********************************Run Build***************************************************************
+func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, values abapbuild.Values) (string, error) {
+	build := myBuild{
+		Build: abapbuild.Build{
+			Connector: *conn,
+		},
+		config: config,
+	}
+	if err := build.Start(values); err != nil {
+		return "", err
+	}
+
+	if err := build.Poll(); err != nil {
+		return "", err
+	}
+	if err := build.PrintLogs(); err != nil {
+		return "", err
+	}
+	if err := build.EndedWithError(); err != nil {
+		return "", err
+	}
+	if err := build.Download(); err != nil {
+		return "", err
+	}
+	if err := build.Publish(utils); err != nil {
+		return "", err
+	}
+
+	finalValues, err := build.GetFinalValues()
+	if err != nil {
+		return "", err
+	}
+	return finalValues, nil
+}
+
+type myBuild struct {
+	abapbuild.Build
+	config *abapEnvironmentBuildOptions
+}
+
+func (b *myBuild) Start(values abapbuild.Values) error {
+	if err := b.Build.Start(b.config.Phase, values); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *myBuild) EndedWithError() error {
+	if err := b.Build.EndedWithError(b.config.TreatWarningsAsError); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *myBuild) Download() error {
+	if b.config.DownloadAllResultFiles {
+		if err := b.DownloadResults(b.config.SubDirectoryForDownload, b.config.FilenamePrefixForDownload); err != nil {
+			return err
+		}
+	} else {
+		//download nur spezifizierte
+		for _, name := range b.config.DownloadResultFilenames {
+			result, err := b.GetResult(name)
+			if err != nil {
+				return err
+			}
+			if err := result.DownloadWithFilenamePrefixAndTargetDirectory(b.config.SubDirectoryForDownload, b.config.FilenamePrefixForDownload); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
+	if b.config.PublishAllDownloadedResultFiles {
+		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
+	} else {
+		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.config.PublishResultFilenames, utils); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *myBuild) GetFinalValues() (string, error) {
+	type cpeValue struct {
+		ValueID string `json:"value_id"`
+		Value   string `json:"value"`
+	}
+
+	b.GetValues()
+	var cpeValues []cpeValue
+	byt, err := json.Marshal(&b.Values)
+	if err != nil {
+		return "", err
+	}
+	if err := json.Unmarshal(byt, &cpeValues); err != nil {
+		return "", err
+	}
+	jsonBytes, err := json.Marshal(cpeValues)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
+}
+
+// **********************************Generate Values**************************************************************
+func generateValues(config *abapEnvironmentBuildOptions) (abapbuild.Values, error) {
+	var values abapbuild.Values
+	vE := valuesEvaluator{}
+	if err := vE.initialize(config.Values); err != nil {
+		return values, err
+	}
+	if err := vE.appendValues(config.CpeValues); err != nil {
+		return values, err
+	}
+	values.Values = vE.values
+	return values, nil
+}
+
+type valuesEvaluator struct {
+	values []abapbuild.Value
+	m      map[string]string
+}
+
+func (vE *valuesEvaluator) initialize(stringValues string) error {
+	log.Entry().Infof("config values %s", stringValues)
+	if err := json.Unmarshal([]byte(stringValues), &vE.values); err != nil {
+		return err
+	}
+	vE.m = make(map[string]string)
+
+	// falls es einen wert doppelt in der config gibt -> fehler
+	for _, value := range vE.values {
+		_, present := vE.m[value.ValueID]
+		if present {
+			//TODO bessere error message
+			return errors.New("Value duplicate")
+		}
+		vE.m[value.ValueID] = value.Value
+	}
+	return nil
+}
+
+func (vE *valuesEvaluator) appendValues(stringValues string) error {
+	var values []abapbuild.Value
+	//TODO delete
+	log.Entry().Infof("cpe values %s", stringValues)
+	if len(stringValues) > 0 {
+		if err := json.Unmarshal([]byte(stringValues), &values); err != nil {
+			return err
+		}
+		//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
+		for i := len(values) - 1; i >= 0; i-- {
+			_, present := vE.m[values[i].ValueID]
+			if present || (values[i].ValueID == "PHASE") {
+				//TODO delete
+				log.Entry().Infof("remove value %s", values[i])
+				values = append(values[:i], values[i+1:]...)
+			}
+		}
+		vE.values = append(vE.values, values...)
+	}
 	return nil
 }
 
@@ -305,4 +387,109 @@ func parseValue(inputValue string) (abapbuild.Value, error) {
 		}
 		cpeValues.Values = append(cpeValues.Values, cpeValue)
 	}
+*/
+
+/*
+	//TODO delete
+	log.Entry().Infof("config values %s", config.Values)
+	if err := json.Unmarshal([]byte(config.Values), &values.Values); err != nil {
+		return err
+	}
+	m := make(map[string]string)
+
+	// falls es einen wert doppelt in der config gibt -> fehler
+	for _, value := range values.Values {
+		_, present := m[value.ValueID]
+		if present {
+			//TODO bessere error message
+			return errors.New("Value duplicate")
+		}
+		m[value.ValueID] = value.Value
+	}
+
+	var cpevalues abapbuild.Values
+	//TODO delete
+	log.Entry().Infof("cpe values %s", config.CpeValues)
+	if len(config.CpeValues) > 0 {
+		if err := json.Unmarshal([]byte(config.CpeValues), &cpevalues.Values); err != nil {
+			return err
+		}
+		//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
+		for i := len(cpevalues.Values) - 1; i >= 0; i-- {
+			_, present := m[cpevalues.Values[i].ValueID]
+			if present || (cpevalues.Values[i].ValueID == "PHASE") {
+				//TODO delete
+				log.Entry().Infof("remove value %s", cpevalues.Values[i])
+				cpevalues.Values = append(cpevalues.Values[:i], cpevalues.Values[i+1:]...)
+			}
+		}
+
+		values.Values = append(values.Values, cpevalues.Values...)
+	}
+*/
+
+//TODO delete
+//************************build
+/*
+
+	build := abapbuild.Build{
+		Connector: *conn,
+	}
+	if err := build.Start(config.Phase, values); err != nil {
+		return err
+	}
+	if err := build.Poll(); err != nil {
+		return err
+	}
+	if err := build.PrintLogs(); err != nil {
+		return err
+	}
+	if err := build.EndedWithError(config.TreatWarningsAsError); err != nil {
+		return err
+	}
+
+		if config.DownloadAllResultFiles {
+		if err := build.DownloadResults(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
+			return err
+		}
+	} else {
+		//download nur spezifizierte
+		for _, name := range config.DownloadResultFilenames {
+			result, err := build.GetResult(name)
+			if err != nil {
+				return err
+			}
+			if err := result.DownloadWithFilenamePrefixAndTargetDirectory(config.SubDirectoryForDownload, config.FilenamePrefixForDownload); err != nil {
+				return err
+			}
+		}
+	}
+
+		if config.PublishAllDownloadedResultFiles {
+		build.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
+	} else {
+		if err := build.PublishDownloadedResults("abapEnvironmentBuild", config.PublishResultFilenames, utils); err != nil {
+			return err
+		}
+	}
+
+		type cpeValue struct {
+		ValueID string `json:"value_id"`
+		Value   string `json:"value"`
+	}
+
+	build.GetValues()
+	var cpeValues []cpeValue
+	byt, _ := json.Marshal(&build.Values)
+	json.Unmarshal(byt, &cpeValues)
+	jsonBytes, _ := json.Marshal(cpeValues)
+	cpe.build.values = string(jsonBytes)
+*/
+
+//TODO checke mal warum da immer der falsche fehler steht..
+/*
+	log.Entry().Info("blubblub")
+	log.Entry().Info("and more stuff")
+	log.SetErrorCategory(log.ErrorConfiguration)
+	return errors.New("Das ist ein FEHLER!")
 */
