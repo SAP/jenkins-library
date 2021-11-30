@@ -22,7 +22,7 @@ type cnbBuildOptions struct {
 	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
 	Buildpacks                []string               `json:"buildpacks,omitempty"`
-	BuildEnvVars              []string               `json:"buildEnvVars,omitempty"`
+	BuildEnvVars              map[string]interface{} `json:"buildEnvVars,omitempty"`
 	Path                      string                 `json:"path,omitempty"`
 	ProjectDescriptor         string                 `json:"projectDescriptor,omitempty"`
 	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
@@ -61,7 +61,7 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}
 }
 
-// CnbBuildCommand Executes a Cloud Native Buildpacks build for creating a Docker container.
+// CnbBuildCommand Executes Cloud Native Buildpacks.
 func CnbBuildCommand() *cobra.Command {
 	const STEP_NAME = "cnbBuild"
 
@@ -75,8 +75,9 @@ func CnbBuildCommand() *cobra.Command {
 
 	var createCnbBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Executes a Cloud Native Buildpacks build for creating a Docker container.",
-		Long:  `Executes a Cloud Native Buildpacks build for creating a Docker container.`,
+		Short: "Executes Cloud Native Buildpacks.",
+		Long: `Executes a Cloud Native Buildpacks build for creating Docker image(s).
+**Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -157,9 +158,9 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.")
-	cmd.Flags().StringSliceVar(&stepConfig.BuildEnvVars, "buildEnvVars", []string{}, "List of custom environment variables used during a build in the form of 'KEY=VALUE'.")
+
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.\nThis property determines the input to the buildpack.\n")
-	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.\n\nNote: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
+	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\nNote: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
@@ -175,7 +176,7 @@ func cnbBuildMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "cnbBuild",
 			Aliases:     []config.Alias{},
-			Description: "Executes a Cloud Native Buildpacks build for creating a Docker container.",
+			Description: "Executes Cloud Native Buildpacks.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -221,22 +222,26 @@ func cnbBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
-						Name:        "buildpacks",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Name: "buildpacks",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/buildpacks",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
 					},
 					{
 						Name:        "buildEnvVars",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
 					},
 					{
 						Name:        "path",

@@ -62,8 +62,8 @@ id = "paketo-buildpacks/nodejs"
 		descriptor, err := ParseDescriptor("project.toml", utils, client)
 
 		assert.NoError(t, err)
-		assert.Contains(t, descriptor.EnvVars, "VAR1=VAL1")
-		assert.Contains(t, descriptor.EnvVars, "VAR2=VAL2")
+		assert.Equal(t, descriptor.EnvVars["VAR1"], "VAL1")
+		assert.Equal(t, descriptor.EnvVars["VAR2"], "VAL2")
 
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-java@5.9.1")
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-nodejs@1.1.1")
