@@ -174,18 +174,17 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	return nil
 }
 
-// TODO unittest hierfür
-func (b *Build) Poll(maxRuntime time.Duration, pollingInterval time.Duration) error {
-	timeout := time.After(maxRuntime)
-	ticker := time.Tick(pollingInterval)
+func (b *Build) Poll() error {
+	timeout := time.After(b.Connector.MaxRuntime)
+	ticker := time.Tick(b.Connector.PollingInterval)
 	for {
 		select {
 		case <-timeout:
-			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntime)
+			return errors.Errorf("Timed out: (max Runtime %v reached)", b.Connector.MaxRuntime)
 		case <-ticker:
 			b.Get()
 			if !b.IsFinished() {
-				log.Entry().Infof("Build is not yet finished, check again in %s", pollingInterval)
+				log.Entry().Infof("Build is not yet finished, check again in %s", b.Connector.PollingInterval)
 			} else {
 				return nil
 			}
@@ -193,7 +192,6 @@ func (b *Build) Poll(maxRuntime time.Duration, pollingInterval time.Duration) er
 	}
 }
 
-// TODO unittest hierfür
 func (b *Build) EndedWithError(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
 		return errors.Errorf("Build of failed")
@@ -337,6 +335,7 @@ func (b *Build) GetResult(name string) (*Result, error) {
 	}
 }
 
+//TODO unittests
 func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
 	if err := b.GetResults(); err != nil {
 		return err
@@ -345,7 +344,7 @@ func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
 		//in case there was no result, there is only one entry with dummyResultName, obviously we don't want to download this
 		if b.Tasks[i_task].Results[0].Name != dummyResultName {
 			for i_result := range b.Tasks[i_task].Results {
-				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefix(basePath, filenamePrefix); err != nil {
+				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
 					return err
 				}
 			}
@@ -354,7 +353,8 @@ func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
 	return nil
 }
 
-func (b *Build) PublishAllDownloadedResults(stepname string) {
+//TODO unittests
+func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
 	var filesToPublish []piperutils.Path
 	for i_task := range b.Tasks {
 		for i_result := range b.Tasks[i_task].Results {
@@ -365,11 +365,14 @@ func (b *Build) PublishAllDownloadedResults(stepname string) {
 		}
 	}
 	if len(filesToPublish) > 0 {
-		piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		//TODO delete
+		//piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
 	}
 }
 
-func (b *Build) PublishDownloadedResults(stepname string, filenames []string) error {
+//TODO unittests
+func (b *Build) PublishDownloadedResults(stepname string, filenames []string, publish Publish) error {
 	var filesToPublish []piperutils.Path
 	for i := range filenames {
 		result, err := b.GetResult(filenames[i])
@@ -383,7 +386,9 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string) er
 		}
 	}
 	if len(filesToPublish) > 0 {
-		piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		//TODO delete
+		//piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
 	}
 	return nil
 }
@@ -439,7 +444,7 @@ func (result *Result) Download(downloadPath string) error {
 }
 
 //TODO besserer Name....
-func (result *Result) DownloadWithFilenamePrefix(basePath string, filenamePrefix string) error {
+func (result *Result) DownloadWithFilenamePrefixAndTargetDirectory(basePath string, filenamePrefix string) error {
 	basePath, err := result.evaluateParamter(basePath)
 	if err != nil {
 		return err
@@ -479,6 +484,7 @@ func (result *Result) evaluateParamter(parameter string) (string, error) {
 	}
 }
 
+//TODO unittests
 func (result *Result) wasDownloaded() bool {
 	if len(result.DownloadPath) > 0 && len(result.SavedFilename) > 0 {
 		return true
@@ -520,4 +526,12 @@ func (vs Values) String() string {
 
 func (in inputForPost) String() string {
 	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
+}
+
+type Publish interface {
+	PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path)
+}
+
+func PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
+	piperutils.PersistReportsAndLinks(stepName, workspace, reports, links)
 }

@@ -1,7 +1,10 @@
 package build
 
 import (
+	"path"
+	"path/filepath"
 	"testing"
+	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
@@ -111,5 +114,162 @@ func TestGetResults(t *testing.T) {
 		r, err := b.GetResult("SAR_XML")
 		assert.Equal(t, "application/octet-stream", r.Mimetype)
 		assert.NoError(t, err)
+	})
+}
+
+func TestPoll(t *testing.T) {
+	//arrange global
+	build := new(Build)
+	conn := new(Connector)
+	conn.MaxRuntime = time.Duration(1 * time.Second)
+	conn.PollingInterval = time.Duration(1 * time.Microsecond)
+	conn.Baseurl = "/sap/opu/odata/BUILD/CORE_SRV"
+	t.Run("Normal Poll", func(t *testing.T) {
+		//arrange
+		build.BuildID = "AKO22FYOFYPOXHOBVKXUTX3A3Q"
+		mc := NewMockClient()
+		mc.AddData(buildGet1)
+		mc.AddData(buildGet2)
+		conn.Client = &mc
+		build.Connector = *conn
+		//act
+		err := build.Poll()
+		//assert
+		assert.NoError(t, err)
+	})
+	t.Run("Poll runstate failed", func(t *testing.T) {
+		//arrange
+		build.BuildID = "AKO22FYOFYPOXHOBVKXUTX3A3Q"
+		mc := NewMockClient()
+		mc.AddData(buildGet1)
+		mc.AddData(buildGetRunStateFailed)
+		conn.Client = &mc
+		build.Connector = *conn
+		//act
+		err := build.Poll()
+		//assert
+		assert.NoError(t, err)
+	})
+	t.Run("Poll timeout", func(t *testing.T) {
+		//arrange
+		build.BuildID = "AKO22FYOFYPOXHOBVKXUTX3A3Q"
+		conn.MaxRuntime = time.Duration(2 * time.Microsecond)
+		conn.PollingInterval = time.Duration(1 * time.Microsecond)
+		mc := NewMockClient()
+		mc.AddData(buildGet1)
+		mc.AddData(buildGet1)
+		mc.AddData(buildGet2)
+		conn.Client = &mc
+		build.Connector = *conn
+		//act
+		err := build.Poll()
+		//assert
+		assert.Error(t, err)
+	})
+}
+
+func TestEndedWithError(t *testing.T) {
+	//arrange global
+	build := new(Build)
+	treatWarningsAsError := false
+	t.Run("No error", func(t *testing.T) {
+		//arrange
+		build.RunState = Finished
+		build.ResultState = successful
+		//act
+		err := build.EndedWithError(treatWarningsAsError)
+		//assert
+		assert.NoError(t, err)
+	})
+	t.Run("RunState failed => Error", func(t *testing.T) {
+		//arrange
+		build.RunState = Failed
+		//act
+		err := build.EndedWithError(treatWarningsAsError)
+		//assert
+		assert.Error(t, err)
+	})
+	t.Run("ResultState aborted => Error", func(t *testing.T) {
+		//arrange
+		build.RunState = Finished
+		build.ResultState = aborted
+		//act
+		err := build.EndedWithError(treatWarningsAsError)
+		//assert
+		assert.Error(t, err)
+	})
+	t.Run("ResultState erroneous => Error", func(t *testing.T) {
+		//arrange
+		build.RunState = Finished
+		build.ResultState = erroneous
+		//act
+		err := build.EndedWithError(treatWarningsAsError)
+		//assert
+		assert.Error(t, err)
+	})
+	t.Run("ResultState warning, treatWarningsAsError false => No error", func(t *testing.T) {
+		//arrange
+		build.RunState = Finished
+		build.ResultState = warning
+		//act
+		err := build.EndedWithError(treatWarningsAsError)
+		//assert
+		assert.NoError(t, err)
+	})
+	t.Run("ResultState warning, treatWarningsAsError true => error", func(t *testing.T) {
+		//arrange
+		build.RunState = Finished
+		build.ResultState = warning
+		treatWarningsAsError = true
+		//act
+		err := build.EndedWithError(treatWarningsAsError)
+		//assert
+		assert.Error(t, err)
+	})
+}
+
+func TestDownloadWithFilenamePrefixAndTargetDirectory(t *testing.T) {
+	//arrange global
+	result := new(Result)
+	result.BuildID = "123456789"
+	result.TaskID = 1
+	result.Name = "MyFile"
+	conn := new(Connector)
+	conn.DownloadClient = &DownloadClientMock{}
+	result.connector = *conn
+	t.Run("Download without extension", func(t *testing.T) {
+		//arrange
+		basePath := ""
+		filenamePrefix := ""
+		//act
+		err := result.DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "MyFile", result.SavedFilename)
+		assert.Equal(t, "MyFile", result.DownloadPath)
+	})
+	t.Run("Download with extensions", func(t *testing.T) {
+		//arrange
+		basePath := "MyDir"
+		filenamePrefix := "SuperFile_"
+		//act
+		err := result.DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "SuperFile_MyFile", result.SavedFilename)
+		downloadPath := filepath.Join(path.Base(basePath), path.Base("SuperFile_MyFile"))
+		assert.Equal(t, downloadPath, result.DownloadPath)
+	})
+	t.Run("Download with parameter", func(t *testing.T) {
+		//arrange
+		basePath := "{BuildID}"
+		filenamePrefix := "{taskid}"
+		//act
+		err := result.DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "1MyFile", result.SavedFilename)
+		downloadPath := filepath.Join(path.Base("123456789"), path.Base("1MyFile"))
+		assert.Equal(t, downloadPath, result.DownloadPath)
 	})
 }
