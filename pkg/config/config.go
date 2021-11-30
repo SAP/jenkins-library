@@ -190,7 +190,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// merge parameters provided by Piper environment
 	stepConfig.mixIn(envParameters, filters.All)
-	stepConfig.mixIn(envParameters, ReportingParameters.GetReportingFilter())
+	stepConfig.mixIn(envParameters, ReportingParameters.getReportingFilter())
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
@@ -201,7 +201,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
 		reportingConfig := Config{}
 		copier.Copy(&reportingConfig, &def)
-		reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.GetStepFilters(), stageName, stepName, []Alias{})
+		reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 		stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
 		stepConfig.mixInHookConfig(def.Hooks)
@@ -249,7 +249,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	reportingConfig := Config{}
 	copier.Copy(&reportingConfig, c)
-	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.GetStepFilters(), stageName, stepName, []Alias{})
+	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
 	// check whether vault should be skipped

@@ -370,6 +370,43 @@ steps:
 		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
+	t.Run("Test reporting parameters with aliases and cpe resources", func(t *testing.T) {
+		var c Config
+		testConfig := ioutil.NopCloser(strings.NewReader(`general:
+  gcpJsonKeyFilePath: gcpJsonKeyFilePath_value
+steps:
+  step1:
+    jsonKeyFilePath: gcpJsonKeyFilePath_from_alias`))
+		testDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(`general:
+  pipelineId: gcsBucketId_from_alias
+steps:
+  step1:
+    gcsBucketId: gcsBucketId_value`))}
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+		cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
+		err = os.MkdirAll(cpeDir, 0700)
+		if err != nil {
+			t.Fatal("Failed to create sub directory")
+		}
+
+		err = ioutil.WriteFile(filepath.Join(cpeDir, "gcsFolderPath.json"), []byte("\"value_from_cpe\""), 0700)
+		assert.NoError(t, err)
+
+		stepMeta := StepData{Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{}}}}
+		stepConfig, err := c.GetStepConfig(nil, "", testConfig, testDefaults, false, StepFilters{General: []string{"p0", "p1"}}, stepMeta, ReportingParameters.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1")
+
+		assert.NoError(t, err, "Error occurred but no error expected")
+		assert.Equal(t, "gcpJsonKeyFilePath_from_alias", stepConfig.Config["gcpJsonKeyFilePath"])
+		assert.Equal(t, "gcsBucketId_value", stepConfig.Config["gcsBucketId"])
+		assert.Equal(t, "value_from_cpe", stepConfig.Config["gcsFolderPath"])
+	})
+
 	//ToDo: test merging of env and parameters/flags
 }
 

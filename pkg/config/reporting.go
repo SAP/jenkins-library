@@ -48,9 +48,9 @@ func (r ReportingParams) GetResourceParameters(path, name string) map[string]int
 	return resourceParams
 }
 
-func (r ReportingParams) GetStepFilters() StepFilters {
+func (r ReportingParams) getStepFilters() StepFilters {
 	var filters StepFilters
-	reportingFilter := r.GetReportingFilter()
+	reportingFilter := r.getReportingFilter()
 	filters.All = append(filters.All, reportingFilter...)
 	filters.General = append(filters.General, reportingFilter...)
 	filters.Steps = append(filters.Steps, reportingFilter...)
@@ -58,7 +58,7 @@ func (r ReportingParams) GetStepFilters() StepFilters {
 	return filters
 }
 
-func (r ReportingParams) GetReportingFilter() []string {
+func (r ReportingParams) getReportingFilter() []string {
 	var reportingFilter []string
 	for _, param := range r.Parameters {
 		reportingFilter = append(reportingFilter, param.Name)
@@ -67,7 +67,7 @@ func (r ReportingParams) GetReportingFilter() []string {
 }
 
 func (s *StepConfig) mixinReportingConfig(configs ...map[string]interface{}) {
-	reportingFilter := ReportingParameters.GetReportingFilter()
+	reportingFilter := ReportingParameters.getReportingFilter()
 	for _, config := range configs {
 		s.mixIn(config, reportingFilter)
 	}
