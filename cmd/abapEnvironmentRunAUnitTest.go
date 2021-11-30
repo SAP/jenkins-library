@@ -133,6 +133,7 @@ func triggerAUnitrun(config abapEnvironmentRunAUnitTestOptions, details abaputil
 	if err == nil {
 		log.Entry().Debugf("Request Body: %s", bodyString)
 		details.URL = abapEndpoint + "/sap/bc/adt/api/abapunit/runs"
+		//details.URL = abapEndpoint + "/sap/bc/adt/abapunit/testruns"
 		resp, err = runAUnit("POST", details, body, client)
 	}
 	if err != nil {
@@ -187,13 +188,19 @@ func buildAUnitTestBody(AUnitConfig AUnitConfig) (metadataString string, options
 	//Checks before building the XML body
 	if AUnitConfig.Title == "" {
 		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
-	} else if AUnitConfig.Context == "" {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No context for the AUnit run has been provided. Please configure an appropriate context for the respective test run")
-	} else if reflect.DeepEqual(AUnitOptions{}, AUnitConfig.Options) {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No options have been provided. Please configure the options for the respective test run")
-	} else if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
+	}
+	if AUnitConfig.Context == "" {
+		AUnitConfig.Context = "ABAP Environment Pipeline"
+	}
+	/*
+		if reflect.DeepEqual(AUnitOptions{}, AUnitConfig.Options) {
+			return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No options have been provided. Please configure the options for the respective test run")
+		}
+	*/
+	if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
 		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
-	} else if len(AUnitConfig.ObjectSet) == 0 {
+	}
+	if len(AUnitConfig.ObjectSet) == 0 {
 		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the set of objects you want to be checked for the respective test run")
 	}
 
@@ -230,36 +237,54 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	optionsString += `<aunit:options>`
 	if AUnitConfig.Options.Measurements != "" {
 		optionsString += `<aunit:measurements type="` + AUnitConfig.Options.Measurements + `"/>`
+	} else if AUnitConfig.Options.Measurements == "" {
+		optionsString += `<aunit:measurements type="none"/>`
 	}
 	//We assume there must be one scope configured
 	optionsString += `<aunit:scope`
 	if AUnitConfig.Options.Scope.OwnTests != nil {
 		optionsString += ` ownTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.OwnTests) + `"`
+	} else if AUnitConfig.Options.Scope.OwnTests == nil {
+		optionsString += ` ownTests="true"`
 	}
 	if AUnitConfig.Options.Scope.ForeignTests != nil {
 		optionsString += ` foreignTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.ForeignTests) + `"`
+	} else if AUnitConfig.Options.Scope.ForeignTests == nil {
+		optionsString += ` foreignTests="true"`
 	}
 	//We assume there must be one riskLevel configured
 	optionsString += `/><aunit:riskLevel`
 	if AUnitConfig.Options.RiskLevel.Harmless != nil {
 		optionsString += ` harmless="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Harmless) + `"`
+	} else if AUnitConfig.Options.RiskLevel.Harmless == nil {
+		optionsString += ` harmless="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Dangerous != nil {
 		optionsString += ` dangerous="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Dangerous) + `"`
+	} else if AUnitConfig.Options.RiskLevel.Dangerous == nil {
+		optionsString += ` dangerous="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Critical != nil {
 		optionsString += ` critical="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Critical) + `"`
+	} else if AUnitConfig.Options.RiskLevel.Critical == nil {
+		optionsString += ` critical="true"`
 	}
 	//We assume there must be one duration time configured
 	optionsString += `/><aunit:duration`
 	if AUnitConfig.Options.Duration.Short != nil {
 		optionsString += ` short="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Short) + `"`
+	} else if AUnitConfig.Options.Duration.Short == nil {
+		optionsString += ` short="true"`
 	}
 	if AUnitConfig.Options.Duration.Medium != nil {
 		optionsString += ` medium="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Medium) + `"`
+	} else if AUnitConfig.Options.Duration.Medium == nil {
+		optionsString += ` medium="true"`
 	}
 	if AUnitConfig.Options.Duration.Long != nil {
 		optionsString += ` long="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Long) + `"`
+	} else if AUnitConfig.Options.Duration.Long == nil {
+		optionsString += ` long="true"`
 	}
 	optionsString += `/></aunit:options>`
 	return optionsString
@@ -326,14 +351,35 @@ func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string)
 
 	//Build ObjectSets
 	for _, s := range AUnitConfig.ObjectSet {
-		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
-
-		objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, ExclusionSet{}, s.MultiPropertySet)
-
-		for _, t := range s.Set {
-			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
+		if s.Type == "" {
+			s.Type = "multiPropertySet"
 		}
-		objectSetString += `</osl:objectSet>`
+		if s.Type != "multiPropertySet" {
+			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
+		} else {
+			objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
+
+			if !(reflect.DeepEqual(s.PackageNames, AUnitPackage{})) || !(reflect.DeepEqual(s.ComponentNames, Component{})) {
+				//To ensure Scomps and packages can be assigned on this level
+				mps := MultiPropertySet{
+					PackageNames:   s.PackageNames,
+					ComponentNames: s.ComponentNames,
+				}
+				objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, ExclusionSet{}, mps)
+			}
+
+			//If user decides to add more properties on a MPS sublevel
+			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, ExclusionSet{}, s.MultiPropertySet)
+
+			if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
+				log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
+			}
+
+			for _, t := range s.Set {
+				log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
+			}
+			objectSetString += `</osl:objectSet>`
+		}
 	}
 	return objectSetString
 }
@@ -343,6 +389,7 @@ func fetchAUnitXcsrfToken(requestType string, details abaputils.ConnectionDetail
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Debug("Fetching Xcrsf-Token")
 
 	details.URL += "/sap/bc/adt/api/abapunit/runs/00000000000000000000000000000000"
+	//details.URL += "/sap/bc/adt/abapunit/testruns/00000000000000000000000000000000"
 	details.XCsrfToken = "fetch"
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
@@ -500,6 +547,8 @@ type Duration struct {
 
 //ObjectSet in form of packages and software components to be checked
 type ObjectSet struct {
+	PackageNames     []AUnitPackage   `json:"packagenames,omitempty"`
+	ComponentNames   []Component      `json:"componentnames,omitempty"`
 	Type             string           `json:"type,omitempty"`
 	MultiPropertySet MultiPropertySet `json:"multipropertyset,omitempty"`
 	Set              []Set            `json:"set,omitempty"`
