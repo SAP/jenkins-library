@@ -48,12 +48,10 @@ func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []st
 		defaultFiles,
 		false,
 		filters,
-		stepMetadata.Spec.Inputs.Parameters,
-		stepMetadata.Spec.Inputs.Secrets,
+		stepMetadata,
 		map[string]interface{}{},
 		"",
 		stepMetadata.Metadata.Name,
-		stepMetadata.Metadata.Aliases,
 	)
 	checkError(err)
 	return stepConfiguration

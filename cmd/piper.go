@@ -305,7 +305,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	filters.General = append(filters.General, "collectTelemetryData")
 	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
 
-	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	envParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	reportingEnvParams := config.ReportingParameters.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	resourceParams := mergeResourceParameters(envParams, reportingEnvParams)
+
 	flagValues := config.AvailableFlagValues(cmd, &filters)
 
 	var myConfig config.Config
@@ -362,7 +365,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 				defaultConfig = append(defaultConfig, fc)
 			}
 		}
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, *metadata, resourceParams, GeneralConfig.StageName, stepName)
 		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
 			log.SetVerbose(verbose)
 			GeneralConfig.Verbose = verbose
@@ -571,4 +574,14 @@ func getProjectConfigFile(name string) string {
 		return altName
 	}
 	return name
+}
+
+func mergeResourceParameters(resParams ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, m := range resParams {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
 }

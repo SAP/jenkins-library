@@ -16,6 +16,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 )
 
@@ -166,7 +167,11 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, metadata StepData, envParameters map[string]interface{}, stageName, stepName string) (StepConfig, error) {
+	parameters := metadata.Spec.Inputs.Parameters
+	secrets := metadata.Spec.Inputs.Secrets
+	stepAliases := metadata.Metadata.Aliases
+
 	var stepConfig StepConfig
 	var err error
 
@@ -176,7 +181,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			return StepConfig{}, err
 		}
 	}
-
+	// parameters = append(parameters, reportingParams...)
+	// filters = appendReportingFilter(filters)
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
 	// initialize with defaults from step.yaml
@@ -184,6 +190,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// merge parameters provided by Piper environment
 	stepConfig.mixIn(envParameters, filters.All)
+	stepConfig.mixIn(envParameters, ReportingParameters.GetReportingFilter())
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
@@ -192,7 +199,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
-		stepConfig.mixinReportingConfig(def.General, def.Steps[stepName], def.Stages[stageName])
+		reportingConfig := Config{}
+		copier.Copy(&reportingConfig, &def)
+		reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.GetStepFilters(), stageName, stepName, []Alias{})
+		stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
 		stepConfig.mixInHookConfig(def.Hooks)
 	}
@@ -236,6 +246,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
+
+	reportingConfig := Config{}
+	copier.Copy(&reportingConfig, c)
+	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.GetStepFilters(), stageName, stepName, []Alias{})
+	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
+
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
@@ -245,12 +261,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
-			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
 			resolveVaultTestCredentials(&stepConfig, vaultClient)
 		}
 	}
-
-	stepConfig.mixinReportingConfig(c.General, c.Steps[stepName], c.Stages[stageName])
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
@@ -316,7 +330,7 @@ func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, d
 		Parameters: acceptedParams,
 		Env:        []string{},
 	}
-	return c.GetStepConfig(map[string]interface{}{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, []StepParameters{}, []StepSecrets{}, map[string]interface{}{}, stageName, "", []Alias{})
+	return c.GetStepConfig(map[string]interface{}{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, StepData{}, map[string]interface{}{}, stageName, "")
 }
 
 // GetJSON returns JSON representation of an object
