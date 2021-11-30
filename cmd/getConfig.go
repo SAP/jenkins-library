@@ -79,15 +79,16 @@ func getDockerImageValue(stepName string) (string, error) {
 
 	configOptions.contextConfig = true
 	configOptions.stepName = stepName
-	stepConfig, err := getConfig()
-	if err != nil {
-		return "", err
-	}
+	// stepConfig, err := getConfig()
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	dockerImageValue, ok := stepConfig.Config["dockerImage"].(string)
-	if !ok {
-		return "", errors.Errorf("error: config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
-	}
+	var dockerImageValue string
+	// dockerImageValue, ok := stepConfig.Config["dockerImage"].(string)
+	// if !ok {
+	// 	log.Entry().Warnf("error: config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
+	// }
 
 	return dockerImageValue, nil
 }
