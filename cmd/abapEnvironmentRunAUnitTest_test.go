@@ -696,7 +696,7 @@ objectset:
       - set: 
         type: componentSet
           - component:
-            name: Z_D070961_PIPELINE
+            - name: Z_D070961_PIPELINE
 `
 
 		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
