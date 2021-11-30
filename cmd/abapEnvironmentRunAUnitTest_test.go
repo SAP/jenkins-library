@@ -573,7 +573,7 @@ options:
     long: true
 objectset:
   - packagenames: 
-      - name: Z_TEST_PACKAGE
+    - name: Z_TEST_PACKAGE
 `
 
 		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
@@ -694,7 +694,7 @@ objectset:
   - type: multipropertyset
     multipropertyset:
       - set: 
-        type: componentSet
+        - type: componentSet
           - component:
             - name: Z_D070961_PIPELINE
 `
