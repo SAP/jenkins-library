@@ -254,6 +254,39 @@ var buildGet2 = MockData{
 	StatusCode: 200,
 }
 
+var buildGetRunStateFailed = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')`,
+	Body: `{
+	"d" : {
+		"__metadata" : {
+			"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
+			"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
+			"type" : "BUILD.CORE_SRV.xBUILDxVIEW_BUILDSType"
+		},
+		"build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+		"run_state" : "FAILED",
+		"result_state" : "SUCCESSFUL",
+		"phase" : "BUILD_AOI",
+		"entitytype" : "C",
+		"startedby" : "CC0000000001",
+		"started_at" : "\/Date(1614108520862+0000)\/",
+		"finished_at" : "\/Date(1614108535350+0000)\/",
+		"tasks" : {
+			"__deferred" : {
+				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks"
+			}
+		},
+		"values" : {
+			"__deferred" : {
+				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/values"
+			}
+		}
+	}
+}`,
+	StatusCode: 200,
+}
+
 var buildGetTasks = MockData{
 	Method: `GET`,
 	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks`,
