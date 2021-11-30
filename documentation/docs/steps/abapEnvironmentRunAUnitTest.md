@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-!!! Currently the Object Set configuration is limited to the usage of Multi Property Sets. Please note that other sets, 
+!!! Currently the Object Set configuration is limited to the usage of Multi Property Sets. Please note that other sets besides the Multi Property Set will not be included in the ABAP Unit test runs. You can see an example of the Multi Property Sets with all configurable properties. However, we strongly reccommend to only specify packages and software components like in the first two examples of the section `AUnit config file example`.
 
 ## Prerequisites
 
@@ -110,7 +110,7 @@ options:
     medium: true
     long: true
 objectset:
-  - packagenames: 
+  - packagenames:
     - name: Z_TEST_PACKAGE
 ```
 
@@ -133,7 +133,7 @@ options:
     medium: true
     long: true
 objectset:
-  - componentnames: 
+  - componentnames:
     - name: Z_TESTSC
 ```
 
