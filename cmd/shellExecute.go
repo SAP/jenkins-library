@@ -1,25 +1,23 @@
 package cmd
 
 import (
+	"fmt"
 	"os/exec"
 
-	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/vault"
 )
 
 type shellExecuteUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
+	piperutils.FileUtils
 }
 
 type shellExecuteUtilsBundle struct {
-	*vault.Client
 	*command.Command
 	*piperutils.Files
 }
@@ -36,43 +34,26 @@ func newShellExecuteUtils() shellExecuteUtils {
 
 func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomData) {
 	utils := newShellExecuteUtils()
-	fileUtils := &piperutils.Files{}
 
-	err := runShellExecute(&config, telemetryData, utils, fileUtils)
+	err := runShellExecute(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils, fileUtils piperutils.FileUtils) error {
-	// create vault client
-	// try to retrieve existing credentials
-	// if it's impossible - will add it
-	vaultConfig := &vault.Config{
-		Config: &api.Config{
-			Address: config.VaultServerURL,
-		},
-		Namespace: config.VaultNamespace,
-	}
-
-	// no need to create a vault client, just need to resolve variables for scripts
-	_, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
-	if err != nil {
-		log.Entry().Info("could not create vault client:", err)
-	}
-
+func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
 	// check input data
 	// example for script: sources: ["./script.sh"]
 	for _, source := range config.Sources {
 		// check if the script is physically present
-		exists, err := fileUtils.FileExists(source)
+		exists, err := utils.FileExists(source)
 		if err != nil {
 			log.Entry().WithError(err).Error("failed to check for defined script")
-			return errors.Wrap(err, "failed to check for defined script")
+			return fmt.Errorf("failed to check for defined script: %w", err)
 		}
 		if !exists {
-			log.Entry().WithError(err).Error("the specified script could not be found")
-			return errors.New("the specified script could not be found")
+			log.Entry().WithError(err).Errorf("the script '%v' could not be found: %v", source, err)
+			return fmt.Errorf("the script '%v' could not be found: %w", source, err)
 		}
 		log.Entry().Info("starting running script:", source)
 		err = utils.RunExecutable(source)
