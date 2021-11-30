@@ -371,13 +371,11 @@ steps:
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
-      pipelineConfigAndTests: '.pipeline/**'
     stashExcludes:
       buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
-      pipelineConfigAndTests: ''
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
