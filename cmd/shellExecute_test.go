@@ -54,7 +54,7 @@ func TestRunShellExecute(t *testing.T) {
 		u := newShellExecuteTestsUtils()
 
 		err := runShellExecute(c, nil, u)
-		assert.EqualError(t, err, "the specified script could not be found")
+		assert.EqualError(t, err, "the script 'path/to/script.sh' could not be found")
 	})
 
 	t.Run("success case - script is present", func(t *testing.T) {

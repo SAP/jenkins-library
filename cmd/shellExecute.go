@@ -53,7 +53,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		}
 		if !exists {
 			log.Entry().WithError(err).Errorf("the script '%v' could not be found: %v", source, err)
-			return fmt.Errorf("the script '%v' could not be found: %w", source, err)
+			return fmt.Errorf("the script '%v' could not be found", source)
 		}
 		log.Entry().Info("starting running script:", source)
 		err = utils.RunExecutable(source)
