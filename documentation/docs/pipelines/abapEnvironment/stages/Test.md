@@ -106,7 +106,7 @@ stages:
 
 #### aunitConfig.yml
 
-If you want to test complete software components please specify the `aUnitConfig.yml` file like in below example configuration.
+If you want to test complete software components please specify the `aUnitConfig.yml` file like in below example configuration. This configuration will test the software components `Z_TEST_SC` and `Z_TEST_SC2`:
 
 ```yaml
 title: My AUnit run
@@ -125,9 +125,7 @@ options:
     medium: true
     long: true
 objectSet:
-  - type: multiPropertySet
-    multipropertyset:
-      componentnames:
-        - component:
-          name: demoSoftwareComponent
+  - componentnames: 
+    - name: Z_TEST_SC
+    - name: Z_TEST_SC2
 ```

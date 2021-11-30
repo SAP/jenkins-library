@@ -2,6 +2,8 @@
 
 ## ${docGenDescription}
 
+!!! Currently the Object Set configuration is limited to the usage of Multi Property Sets. Please note that other sets, 
+
 ## Prerequisites
 
 * A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP BTP, ABAP Environment - Software Component Test Integration (SAP_COM_0735)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a Service Key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0735", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
@@ -84,13 +86,12 @@ To trigger the AUnit run an AUnit config file `aUnitConfig.yml` will be needed. 
 The following section contains an example of an `aUnitConfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This repository containing the `Jenkinsfile` must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
-!!! Currently the Object Set configuration is limited to the usage of Multi Property Sets.
 You can specify a Multi Property Set containing multiple properties that should be checked. Each property that is specified in the Multi Property Set acts like an additional rule.
 This means if you specify e.g. a Multi Property Set containing the owner and package properties that an ABAP Unit test run will be started testing all objects belonging to this owner inside of the given package. If you additionally define the Version to be `ACTIVE` for the ABAP Unit test run inside of the Multi Property Set, only objects belonging to this owner which are active inside of the package would be tested.
 This must be in the same format as below examples for a `aUnitConfig.yml` file.
 Note that if you want to check complete software components we reccommend to use the `component` property over the `package` property as this may cause issues for structure packages.
 
-See below example for an `aUnitConfig.yml` file containing the software component `demoSoftwareComponent` to be checked:
+See below example for an `aUnitConfig.yml` file containing the package `Z_TEST_PACKAGE` to be checked:
 
 ```yaml
 title: My AUnit run
@@ -109,14 +110,11 @@ options:
     medium: true
     long: true
 objectset:
-  - type: multiPropertySet
-    multipropertyset:
-      componentnames:
-        - component:
-          name: demoSoftwareComponent
+  - packagenames: 
+    - name: Z_TEST_PACKAGE
 ```
 
-The following example of an `aUnitConfig.yml` file to check all objects belonging to the owner `demoOwner`:
+The following example of an `aUnitConfig.yml` file containing the software component `Z_TESTSC` to be checked:
 
 ```yaml
 title: My AUnit run
@@ -135,13 +133,11 @@ options:
     medium: true
     long: true
 objectset:
-  - type: multiPropertySet
-    multipropertyset:
-      owner:
-        - name: demoOwner
+  - componentnames: 
+    - name: Z_TESTSC
 ```
 
-The following example of an `aUnitConfig.yml` file contains all possible properties of the Multi Property Set that can be used:
+The following example of an `aUnitConfig.yml` file contains all possible properties of the Multi Property Set that can be used. Please take note that this is not the reccommended approach. If you want to check packages or software components please use the two above examples. The usage of the Multi Property Set is only reccommended for ABAP Unit tests that require these rules for the test execution. There is no official documentation on the usage of the Multi Property Set.
 
 ```yaml
 title: My AUnit run
