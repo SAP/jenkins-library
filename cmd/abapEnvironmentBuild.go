@@ -92,7 +92,6 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
-	conn := new(abapbuild.Connector)
 
 	//TODO checke mal warum da immer der falsche fehler steht..
 
@@ -100,6 +99,8 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	log.Entry().Info("and more stuff")
 	log.SetErrorCategory(log.ErrorConfiguration)
 	return errors.New("Das ist ein FEHLER!")
+
+	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
 	if err := initConnection(conn, config, utils); err != nil {
