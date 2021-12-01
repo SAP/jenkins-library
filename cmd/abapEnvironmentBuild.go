@@ -98,7 +98,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	log.Entry().Info("blubblub")
 	log.Entry().Info("and more stuff")
 	//log.SetErrorCategory(log.ErrorConfiguration)
-	return errors.New("Das ist ein FEHLER!")
+	return errors.New("Das ist ein völlig neuer einzigartiger FEHLER!")
 
 	conn := new(abapbuild.Connector)
 
