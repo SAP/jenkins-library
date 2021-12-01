@@ -92,14 +92,6 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
-
-	//TODO checke mal warum da immer der falsche fehler steht..
-
-	log.Entry().Info("blubblub")
-	log.Entry().Info("and more stuff")
-	//log.SetErrorCategory(log.ErrorConfiguration)
-	return errors.New("Das ist ein völlig neuer einzigartiger FEHLER!")
-
 	conn := new(abapbuild.Connector)
 
 	// TODO wrappe die fehler
