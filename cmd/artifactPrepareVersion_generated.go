@@ -13,15 +13,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool              string `json:"buildTool,omitempty"`
+	BuildTool              string `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle maven mta npm pip sbt yarn"`
 	CommitUserName         string `json:"commitUserName,omitempty"`
 	CustomVersionField     string `json:"customVersionField,omitempty"`
 	CustomVersionSection   string `json:"customVersionSection,omitempty"`
-	CustomVersioningScheme string `json:"customVersioningScheme,omitempty"`
+	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"possible-values=docker maven pep440 semver2"`
 	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
 	FilePath               string `json:"filePath,omitempty"`
@@ -35,7 +36,7 @@ type artifactPrepareVersionOptions struct {
 	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
 	Username               string `json:"username,omitempty"`
 	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
-	VersioningType         string `json:"versioningType,omitempty"`
+	VersioningType         string `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -89,6 +90,8 @@ func ArtifactPrepareVersionCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment artifactPrepareVersionCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createArtifactPrepareVersionCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -181,37 +184,49 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			artifactPrepareVersion(stepConfig, &telemetryData, &commonPipelineEnvironment)
-			telemetryData.ErrorCode = "0"
+			artifactPrepareVersion(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -221,11 +236,11 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 }
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
-	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", `Project Piper`, "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionField, "customVersionField", os.Getenv("PIPER_customVersionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionSection, "customVersionSection", os.Getenv("PIPER_customVersionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
-	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", os.Getenv("PIPER_customVersioningScheme"), "For `buildTool: custom`: Defines the versioning scheme to be used.")
+	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", `maven`, "For `buildTool: custom`: Defines the versioning scheme to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
 	cmd.Flags().BoolVar(&stepConfig.FetchCoordinates, "fetchCoordinates", false, "If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
@@ -302,7 +317,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_customVersioningScheme"),
+						Default:     `maven`,
 					},
 					{
 						Name:        "dockerVersionSource",

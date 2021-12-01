@@ -12,6 +12,9 @@ import util.Rules
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.fail
 
 class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -66,4 +69,26 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
     }
+
+    @Test
+    void testCreateSystemFails() {
+
+        helper.registerAllowedMethod('abapEnvironmentCreateSystem', [Map.class], {m -> stepsCalled.add('abapEnvironmentCreateSystem'); error("Failed")})
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Integration Tests': true
+        ]
+
+        try {
+            jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: false)
+            fail("Expected exception")
+        } catch (Exception e) {
+            // failure expected
+        }
+
+        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
+        assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
+    }
+
 }

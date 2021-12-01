@@ -117,6 +117,6 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, downloadResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), downloadResp.StatusCode)
 	return errors.Errorf("Integration Flow artifact download failed, Response Status code: %v", downloadResp.StatusCode)
 }

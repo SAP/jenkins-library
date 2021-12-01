@@ -165,10 +165,11 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		//ToDo: switch to gomod as dependency manager
 		"golang": {
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
-			{Name: "go.resolveDependencies", Value: true, Force: true},
 			{Name: "go.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.collectDependenciesAtRuntime", Value: false},
-			{Name: "go.dependencyManager", Value: "modules"},
+			{Name: "go.modules.resolveDependencies", Value: true, Force: true},
+			{Name: "go.modules.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "includes", Value: "**/*.lock **/*.y*ml **/*.json **/*.tsv"},
 		},
 		"gradle": {
 			{Name: "ignoreSourceFiles", Value: true, Force: true},

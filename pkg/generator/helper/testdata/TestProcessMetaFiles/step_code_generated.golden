@@ -13,13 +13,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type testStepOptions struct {
 	Param0 string `json:"param0,omitempty"`
-	Param1 string `json:"param1,omitempty"`
-	Param2 string `json:"param2,omitempty"`
+	Param1 string `json:"param1,omitempty" validate:"possible-values=value1 value2 value3"`
+	Param2 string `json:"param2,omitempty" validate:"required_if=Param1 value1"`
+	Param3 string `json:"param3,omitempty" validate:"possible-values=value1 value2 value3,required_if=Param1 value1 Param2 value2"`
 }
 
 
@@ -107,6 +109,8 @@ func TestStepCommand() *cobra.Command {
 	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createTestStepCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -135,38 +139,50 @@ func TestStepCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 				GeneralConfig.HookConfig.SplunkConfig.Dsn,
 				GeneralConfig.HookConfig.SplunkConfig.Token,
 				GeneralConfig.HookConfig.SplunkConfig.Index,
 				GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			testStep(stepConfig, &telemetryData, &commonPipelineEnvironment, &influxTest)
-			telemetryData.ErrorCode = "0"
+			testStep(stepConfig, &stepTelemetryData, &commonPipelineEnvironment, &influxTest)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -178,10 +194,10 @@ func TestStepCommand() *cobra.Command {
 func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 	cmd.Flags().StringVar(&stepConfig.Param0, "param0", `val0`, "param0 description")
 	cmd.Flags().StringVar(&stepConfig.Param1, "param1", os.Getenv("PIPER_param1"), "param1 description")
-	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param1 description")
+	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param2 description")
+	cmd.Flags().StringVar(&stepConfig.Param3, "param3", os.Getenv("PIPER_param3"), "param3 description")
 
 	cmd.MarkFlagRequired("param0")
-	cmd.MarkFlagRequired("param2")
 }
 
 // retrieve step metadata
@@ -205,7 +221,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"GENERAL","PARAMETERS",},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "oldparam0"},},
 						Default:   `val0`,
 					},
 					{
@@ -214,7 +230,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "oldparam1", Deprecated: true},},
 						Default:   os.Getenv("PIPER_param1"),
 					},
 					{
@@ -222,9 +238,18 @@ func testStepMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_param2"),
+					},
+					{
+						Name:      "param3",
+						ResourceRef: []config.ResourceReference{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param3"),
 					},
 				},
 			},

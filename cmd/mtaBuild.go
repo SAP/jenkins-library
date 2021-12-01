@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -208,6 +210,11 @@ func runMtaBuild(config mtaBuildOptions,
 		call = append(call, "--target", "./")
 	}
 
+	if config.Jobs > 0 {
+		call = append(call, "--mode=verbose")
+		call = append(call, "--jobs="+strconv.Itoa(config.Jobs))
+	}
+
 	if err = addNpmBinToPath(utils); err != nil {
 		return err
 	}
@@ -226,6 +233,27 @@ func runMtaBuild(config mtaBuildOptions,
 		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "mtaBuild"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	mtaConfig := buildsettings.BuildOptions{
+		Profiles:           config.Profiles,
+		GlobalSettingsFile: config.GlobalSettingsFile,
+		Publish:            config.Publish,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		DockerImage:        dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
@@ -247,7 +275,7 @@ func runMtaBuild(config mtaBuildOptions,
 		if (len(config.MtaDeploymentRepositoryPassword) > 0) && (len(config.MtaDeploymentRepositoryUser) > 0) &&
 			(len(config.MtaDeploymentRepositoryURL) > 0) {
 			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
-				downloadClient := &piperhttp.Client{}
+				httpClient := &piperhttp.Client{}
 
 				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
 				headers := http.Header{}
@@ -266,7 +294,12 @@ func runMtaBuild(config mtaBuildOptions,
 
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
 
-				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.MtaDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
+				data, err := os.Open(mtarName)
+				if err != nil {
+					return errors.Wrap(err, "failed to open mtar archive for upload")
+				}
+				_, httpErr := httpClient.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil)
+
 				if httpErr != nil {
 					return errors.Wrap(err, "failed to upload mtar to repository")
 				}

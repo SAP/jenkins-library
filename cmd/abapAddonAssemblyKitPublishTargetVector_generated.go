@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,9 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty"`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"possible-values=T P"`
+	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
@@ -30,6 +33,8 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 	var stepConfig abapAddonAssemblyKitPublishTargetVectorOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapAddonAssemblyKitPublishTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -63,36 +68,48 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			abapAddonAssemblyKitPublishTargetVector(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			abapAddonAssemblyKitPublishTargetVector(stepConfig, &stepTelemetryData)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -105,7 +122,9 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
-	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", os.Getenv("PIPER_targetVectorScope"), "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
+	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", `T`, "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
+	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 5, "Maximum runtime for status polling in minutes")
+	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 30, "Wait time in seconds between polling calls")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
@@ -162,7 +181,25 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_targetVectorScope"),
+						Default:     `T`,
+					},
+					{
+						Name:        "maxRuntimeInMinutes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     5,
+					},
+					{
+						Name:        "pollingIntervalInSeconds",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
 					},
 					{
 						Name: "addonDescriptor",

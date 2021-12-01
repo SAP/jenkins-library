@@ -131,7 +131,7 @@ func runIntegrationArtifactGetMplStatus(
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", mplStatusResp.StatusCode)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, mplStatusResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), mplStatusResp.StatusCode)
 	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", mplStatusResp.StatusCode)
 }
 

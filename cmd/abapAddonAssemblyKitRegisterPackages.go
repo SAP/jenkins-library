@@ -33,27 +33,33 @@ func abapAddonAssemblyKitRegisterPackages(config abapAddonAssemblyKitRegisterPac
 
 func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
 	cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment, fileReader readFile) error {
+
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
 	conn := new(abapbuild.Connector)
-	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
-	err := uploadSarFiles(addonDescriptor.Repositories, *conn, fileReader)
-	if err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
 		return err
 	}
 
-	// we need a second connector without the added Header
-	conn2 := new(abapbuild.Connector)
-	conn2.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	if err := uploadSarFiles(addonDescriptor.Repositories, *conn, fileReader); err != nil {
+		return err
+	}
+
+	conn2 := new(abapbuild.Connector) // we need a second connector without the added Header
+	if err := conn2.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+		return err
+	}
+
+	var err error
 	addonDescriptor.Repositories, err = registerPackages(addonDescriptor.Repositories, *conn2)
 	if err != nil {
 		return err
 	}
 
 	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
+	cpe.abap.addonDescriptor = addonDescriptor.AsJSONstring()
+
 	return nil
 }
 

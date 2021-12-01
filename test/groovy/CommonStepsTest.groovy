@@ -128,6 +128,7 @@ public class CommonStepsTest extends BasePiperTest{
         'cloudFoundryCreateSpace', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryDeleteSpace', //implementing new golang pattern without fields
+        'cloudFoundryDeploy', //implementing new golang pattern without fields
         'cnbBuild', //implementing new golang pattern without fields
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
@@ -199,6 +200,9 @@ public class CommonStepsTest extends BasePiperTest{
         'writePipelineEnv', //implementing new golang pattern without fields
         'readPipelineEnv', //implementing new golang pattern without fields
         'transportRequestUploadCTS', //implementing new golang pattern without fields
+        'isChangeInDevelopment', //implementing new golang pattern without fields
+        'apiProxyDownload', //implementing new golang pattern without fields
+        'apiKeyValueMapDownload', //implementing new golang pattern without fields
     ]
 
     @Test

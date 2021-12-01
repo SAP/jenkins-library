@@ -35,6 +35,7 @@ import hudson.AbortException
         'inheritFrom',
         'additionalPodProperties',
         'resources',
+        'annotations',
     /**
      * Set this to 'false' to bypass a docker image pull.
      * Useful during development process. Allows testing of images which are available in the local registry only.
@@ -72,6 +73,10 @@ import hudson.AbortException
      * really know what you are doing.
      */
     'additionalPodProperties',
+    /**
+    * Adds annotations in the metadata section of the PodSpec
+    */
+    'annotations',
     /**
      * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
      */
@@ -340,10 +345,12 @@ private String generatePodSpec(Map config) {
         apiVersion: "v1",
         kind      : "Pod",
         metadata  : [
-            lables: config.uniqueId
+            lables: config.uniqueId,
+            annotations: [:]
         ],
         spec      : [:]
     ]
+    podSpec.metadata.annotations = getAnnotations(config)
     podSpec.spec += getAdditionalPodProperties(config)
     podSpec.spec.initContainers = getInitContainerList(config)
     podSpec.spec.containers = getContainerList(config)
@@ -398,6 +405,10 @@ chown -R ${runAsUser}:${fsGroup} ."""
     return null
 }
 
+private Map getAnnotations(Map config){
+  return config.annotations ?: config.jenkinsKubernetes.annotations ?: [:]
+}
+
 private Map getAdditionalPodProperties(Map config) {
     Map podProperties = config.additionalPodProperties ?: config.jenkinsKubernetes.additionalPodProperties ?: [:]
     if(podProperties) {
@@ -415,13 +426,14 @@ private Map getSecurityContext(Map config) {
 private void unstashWorkspace(config, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"
-        echo "invalidate stash ${prefix}-${config.uniqueId}"
-        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
-        echo "${e.getMessage()}"
+        echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
+    } finally {
+        echo "invalidate stash ${prefix}-${config.uniqueId}"
+        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     }
 }
 
