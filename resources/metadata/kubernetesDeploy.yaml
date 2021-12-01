@@ -274,10 +274,8 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/kube-config
-              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
-              - $(vaultBasePath)/GROUP-SECRETS/kube-config
+            name: kubeConfigFileVaultSecretName
+            default: kube-config
       - name: kubeContext
         type: string
         description: Defines the context to use from the "kubeconfig" file.
