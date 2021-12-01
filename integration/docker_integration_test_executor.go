@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package main
@@ -5,8 +6,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -15,6 +14,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // The functions in this file provide a convenient way to integration test the piper binary in docker containers.
@@ -89,14 +91,20 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 		params = append(params, "-v", fmt.Sprintf("%s:/project", tempDir))
 	}
+
 	if len(testRunner.Environment) > 0 {
 		for envVarName, envVarValue := range testRunner.Environment {
 			params = append(params, "--env", fmt.Sprintf("%s=%s", envVarName, envVarValue))
 		}
 	}
+
+	if testRunner.Mounts != nil {
+		for src, dst := range testRunner.Mounts {
+			params = append(params, "-v", fmt.Sprintf("%s:%s", src, dst))
+		}
+	}
 	params = append(params, testRunner.Image, "sleep", "2000")
 
-	//todo mounts
 	err := testRunner.Runner.RunExecutable("docker", params...)
 	if err != nil {
 		t.Fatalf("Starting test container has failed %s", err)

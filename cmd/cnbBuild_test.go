@@ -23,9 +23,17 @@ func newCnbBuildTestsUtils() cnbutils.MockUtils {
 }
 
 func addBuilderFiles(utils *cnbutils.MockUtils) {
-	for _, path := range []string{detectorPath, builderPath, exporterPath} {
+	for _, path := range []string{analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
 		utils.FilesMock.AddFile(path, []byte(`xyz`))
 	}
+}
+
+func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner) {
+	assert.Equal(t, analyzerPath, runner.Calls[0].Exec)
+	assert.Equal(t, detectorPath, runner.Calls[1].Exec)
+	assert.Equal(t, builderPath, runner.Calls[2].Exec)
+	assert.Equal(t, restorerPath, runner.Calls[3].Exec)
+	assert.Equal(t, exporterPath, runner.Calls[4].Exec)
 }
 
 func TestRunCnbBuild(t *testing.T) {
@@ -52,12 +60,10 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
-		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
-		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
-		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assertLifecycleCalls(t, runner)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[4].Params)
 		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
 		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
 	})
@@ -81,12 +87,10 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
-		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
-		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
-		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assertLifecycleCalls(t, runner)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[4].Params)
 		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
 		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
 	})
@@ -115,12 +119,10 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
-		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
-		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
-		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
+		assertLifecycleCalls(t, runner)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[4].Params)
 	})
 
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {
@@ -160,12 +162,10 @@ func TestRunCnbBuild(t *testing.T) {
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Contains(t, runner.Env, fmt.Sprintf("SSL_CERT_FILE=%s", caCertsTmpFile))
-		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
-		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
-		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assertLifecycleCalls(t, runner)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[4].Params)
 	})
 
 	t.Run("success case (additionalTags)", func(t *testing.T) {
@@ -189,8 +189,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.NoError(t, err)
 
 		runner := utils.ExecMockRunner
-		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.ElementsMatch(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:3", registry, config.ContainerImageName), fmt.Sprintf("%s/%s:3.1", registry, config.ContainerImageName)}, runner.Calls[2].Params)
+		assert.Equal(t, exporterPath, runner.Calls[4].Exec)
+		assert.ElementsMatch(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:3", registry, config.ContainerImageName), fmt.Sprintf("%s/%s:3.1", registry, config.ContainerImageName)}, runner.Calls[4].Params)
 	})
 
 	t.Run("error case: Invalid DockerConfigJSON file", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 
 		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
-		assert.EqualError(t, err, "the provided dockerImage is not a valid builder")
+		assert.EqualError(t, err, "the provided dockerImage is not a valid builder: binary '/cnb/lifecycle/analyzer' not found")
 	})
 
 	t.Run("error case: builder image does not contain tls certificates", func(t *testing.T) {

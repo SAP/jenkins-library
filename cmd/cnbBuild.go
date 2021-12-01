@@ -26,8 +26,10 @@ import (
 )
 
 const (
+	analyzerPath = "/cnb/lifecycle/analyzer"
 	detectorPath = "/cnb/lifecycle/detector"
 	builderPath  = "/cnb/lifecycle/builder"
+	restorerPath = "/cnb/lifecycle/restorer"
 	exporterPath = "/cnb/lifecycle/exporter"
 	platformPath = "/tmp/platform"
 )
@@ -109,14 +111,18 @@ func isDir(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
-func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
-	for _, path := range []string{detectorPath, builderPath, exporterPath} {
-		exists, err := utils.FileExists(path)
-		if err != nil || !exists {
-			return exists, err
+func isBuilder(utils cnbutils.BuildUtils) error {
+	for _, binaryPath := range []string{analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
+		exists, err := utils.FileExists(binaryPath)
+		if err != nil {
+			return err
+		}
+
+		if !exists {
+			return fmt.Errorf("binary '%s' not found", binaryPath)
 		}
 	}
-	return true, nil
+	return nil
 }
 
 func isZip(path string) bool {
@@ -124,7 +130,7 @@ func isZip(path string) bool {
 
 	switch {
 	case err == nil:
-		r.Close()
+		_ = r.Close()
 		return true
 	case err == zip.ErrFormat:
 		return false
@@ -189,8 +195,7 @@ func copyProject(source, target string, include, exclude *ignore.GitIgnore, util
 	return nil
 }
 
-func extractZip(source, target string, utils cnbutils.BuildUtils) error {
-
+func extractZip(source, target string) error {
 	if isZip(source) {
 		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
 		_, err := piperutils.Unzip(source, target)
@@ -241,15 +246,10 @@ func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
-	exists, err := isBuilder(utils)
-
+	err = isBuilder(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to check if dockerImage is a valid builder")
-	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("the provided dockerImage is not a valid builder")
+		return errors.Wrap(err, "the provided dockerImage is not a valid builder")
 	}
 
 	include := ignore.CompileIgnoreLines("**/*")
@@ -355,7 +355,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	} else {
-		err = extractZip(source, target, utils)
+		err = extractZip(source, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -424,6 +424,20 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		log.Entry().Info("skipping certificates update")
 	}
 
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
+
+	var analyzerArgs []string
+	for _, tag := range targets[1:] {
+		analyzerArgs = append(analyzerArgs, "-tag="+tag)
+	}
+	analyzerArgs = append(analyzerArgs, targets[0])
+	err = utils.RunExecutable(analyzerPath, analyzerArgs...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", analyzerPath)
+	}
+
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath, "-no-color")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -436,7 +450,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
-	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
+	err = utils.RunExecutable(restorerPath, "-no-color")
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", restorerPath)
+	}
+
 	exporterArgs := append([]string{"-no-color"}, targets...)
 	err = utils.RunExecutable(exporterPath, exporterArgs...)
 	if err != nil {
