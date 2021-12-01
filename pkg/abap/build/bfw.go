@@ -319,8 +319,6 @@ func (b *Build) GetResult(name string) (*Result, error) {
 	for i_task := range b.Tasks {
 		for i_result := range b.Tasks[i_task].Results {
 			if b.Tasks[i_task].Results[i_result].Name == name {
-				//TODO test
-				//return &b.Tasks[i_task].Results[i_result], nil
 				Results = append(Results, &b.Tasks[i_task].Results[i_result])
 			}
 		}
@@ -366,8 +364,6 @@ func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
 	}
 	if len(filesToPublish) > 0 {
 		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
-		//TODO delete
-		//piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
 	}
 }
 
@@ -382,13 +378,12 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string, pu
 		if result.wasDownloaded() {
 			filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
 		} else {
-			//TODO error? vermutlich schon, wenn ich versuche ein file zu publishen das nicht runtergeladen wurde
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Errorf("Trying to publish the file %s which was not downloaded. Check your configuration", result.Name)
 		}
 	}
 	if len(filesToPublish) > 0 {
 		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
-		//TODO delete
-		//piperutils.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
 	}
 	return nil
 }
@@ -528,6 +523,7 @@ func (in inputForPost) String() string {
 	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
 }
 
+// *****************publish *******************************
 type Publish interface {
 	PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path)
 }
