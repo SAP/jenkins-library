@@ -30,6 +30,7 @@ type uploaderMock struct {
 	header                   http.Header
 	isTechnicalErrorExpected bool
 	formFields               map[string]string
+	transportProxy           *url.URL
 }
 
 func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
@@ -89,6 +90,7 @@ func (um *uploaderMock) Upload(uploadRequestData piperHttp.UploadRequestData) (*
 
 func (um *uploaderMock) SetOptions(options piperHttp.ClientOptions) {
 	um.token = options.Token
+	um.transportProxy = options.TransportProxy
 }
 
 func TestGetOAuthToken(t *testing.T) {
@@ -576,9 +578,9 @@ func TestSendRequest(t *testing.T) {
 }
 
 func TestNewCommunicationInstance(t *testing.T) {
-	t.Run("test success", func(t *testing.T) {
+	t.Run("test success no proxy", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
-		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", "", false)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://dummy.sap.com", communicationInstance.uaaUrl, "uaaUrl field of communication instance incorrect")
@@ -586,11 +588,20 @@ func TestNewCommunicationInstance(t *testing.T) {
 		assert.Equal(t, "testClientSecret", communicationInstance.clientSecret, "clientSecret field of communication instance incorrect")
 		assert.Equal(t, false, communicationInstance.isVerbose, "isVerbose field of communication instance incorrect")
 		assert.Equal(t, "bearer testOAuthToken", uploaderMock.token, "Obtained token incorrect")
+		assert.Equal(t, "", uploaderMock.transportProxy.Host, "Transport proxy host incorrect")
+	})
+
+	t.Run("test success with proxy", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
+		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", "somehost:8080", false)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, "somehost:8080", uploaderMock.transportProxy.Host, "Transport proxy host incorrect")
 	})
 
 	t.Run("test error", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
-		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", "", false)
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "Error fetching OAuth token: http error 400", err.Error(), "Error text incorrect")

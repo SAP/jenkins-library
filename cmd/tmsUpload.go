@@ -69,7 +69,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
 
-	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
+	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, config.Proxy, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}

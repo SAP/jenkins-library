@@ -96,7 +96,7 @@ type CommunicationInterface interface {
 }
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
-func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
+func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, clientId, clientSecret, proxy string, isVerbose bool) (*CommunicationInstance, error) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms")
 
 	communicationInstance := &CommunicationInstance{
@@ -113,11 +113,12 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 	if err != nil {
 		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
 	}
-
 	log.RegisterSecret(token)
 
+	transportProxy := &url.URL{Host: proxy}
 	options := piperHttp.ClientOptions{
-		Token: token,
+		Token:          token,
+		TransportProxy: transportProxy,
 	}
 	communicationInstance.httpClient.SetOptions(options)
 
