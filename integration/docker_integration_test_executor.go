@@ -37,6 +37,7 @@ type IntegrationTestDockerExecRunnerBundle struct {
 	Mounts      map[string]string
 	Environment map[string]string
 	Setup       []string
+	Network     string
 }
 
 // IntegrationTestDockerExecRunner keeps the state of an instance of a docker runner
@@ -49,6 +50,7 @@ type IntegrationTestDockerExecRunner struct {
 	Mounts        map[string]string
 	Environment   map[string]string
 	Setup         []string
+	Network       string
 	ContainerName string
 }
 
@@ -63,6 +65,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		Mounts:        bundle.Mounts,
 		Environment:   bundle.Environment,
 		Setup:         bundle.Setup,
+		Network:       bundle.Network,
 		ContainerName: containerName,
 	}
 
@@ -102,6 +105,10 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		for src, dst := range testRunner.Mounts {
 			params = append(params, "-v", fmt.Sprintf("%s:%s", src, dst))
 		}
+	}
+
+	if testRunner.Network != "" {
+		params = append(params, "--network", testRunner.Network)
 	}
 	params = append(params, testRunner.Image, "sleep", "2000")
 
@@ -188,5 +195,12 @@ func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want strin
 	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", want)
 	if err != nil {
 		t.Fatalf("Assertion has failed. Expected file %s to exist in container. %s", want, err)
+	}
+}
+
+func (d *IntegrationTestDockerExecRunner) terminate(t *testing.T) {
+	err := d.Runner.RunExecutable("docker", "rm", "-f", d.ContainerName)
+	if err != nil {
+		t.Fatalf("Failed to terminate container '%s'", d.ContainerName)
 	}
 }
