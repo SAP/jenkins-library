@@ -174,6 +174,7 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	return nil
 }
 
+// Poll : waits for the build framework to be finished
 func (b *Build) Poll() error {
 	timeout := time.After(b.Connector.MaxRuntime)
 	ticker := time.Tick(b.Connector.PollingInterval)
@@ -192,15 +193,16 @@ func (b *Build) Poll() error {
 	}
 }
 
+// EndedWithError : Checks the finale state of the build framework
 func (b *Build) EndedWithError(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
-		return errors.Errorf("Build of failed")
+		return errors.Errorf("Build ended with runState failed")
 	}
 	if treatWarningsAsError && b.ResultState == warning {
-		return errors.Errorf("Build ended with warning, setting to failed as configured")
+		return errors.Errorf("Build ended with resultState warning, setting to failed as configured")
 	}
 	if (b.ResultState == aborted) || (b.ResultState == erroneous) {
-		return errors.Errorf("Build ended with %s", b.ResultState)
+		return errors.Errorf("Build ended with resultState %s", b.ResultState)
 	}
 	return nil
 }
@@ -244,6 +246,7 @@ func (b *Build) getTasks() error {
 	return nil
 }
 
+// GetValues : Gets all Build values
 func (b *Build) GetValues() error {
 	if len(b.Values) == 0 {
 		appendum := "/builds('" + b.BuildID + "')/values"
@@ -286,6 +289,7 @@ func (b *Build) PrintLogs() error {
 	return nil
 }
 
+// GetResults : Gets all Build results
 func (b *Build) GetResults() error {
 	if err := b.getTasks(); err != nil {
 		return err
@@ -308,7 +312,6 @@ func (t *task) printLogs() error {
 	return nil
 }
 
-//TODO hier hab ich das mit dem pointer geändert! gut checken das download usw trotzdem tut
 // GetResult : Returns the last Build artefact created from build step
 func (b *Build) GetResult(name string) (*Result, error) {
 	var Results []*Result
@@ -331,61 +334,6 @@ func (b *Build) GetResult(name string) (*Result, error) {
 	default:
 		return &returnResult, errors.New("More than one result with the name " + name + " was found")
 	}
-}
-
-//TODO unittests
-func (b *Build) DownloadResults(basePath string, filenamePrefix string) error {
-	if err := b.GetResults(); err != nil {
-		return err
-	}
-	for i_task := range b.Tasks {
-		//in case there was no result, there is only one entry with dummyResultName, obviously we don't want to download this
-		if b.Tasks[i_task].Results[0].Name != dummyResultName {
-			for i_result := range b.Tasks[i_task].Results {
-				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-//TODO unittests
-func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
-	var filesToPublish []piperutils.Path
-	for i_task := range b.Tasks {
-		for i_result := range b.Tasks[i_task].Results {
-			if b.Tasks[i_task].Results[i_result].wasDownloaded() {
-				filesToPublish = append(filesToPublish, piperutils.Path{Target: b.Tasks[i_task].Results[i_result].DownloadPath,
-					Name: b.Tasks[i_task].Results[i_result].SavedFilename, Mandatory: true})
-			}
-		}
-	}
-	if len(filesToPublish) > 0 {
-		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
-	}
-}
-
-//TODO unittests
-func (b *Build) PublishDownloadedResults(stepname string, filenames []string, publish Publish) error {
-	var filesToPublish []piperutils.Path
-	for i := range filenames {
-		result, err := b.GetResult(filenames[i])
-		if err != nil {
-			return err
-		}
-		if result.wasDownloaded() {
-			filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
-		} else {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Errorf("Trying to publish the file %s which was not downloaded. Check your configuration", result.Name)
-		}
-	}
-	if len(filesToPublish) > 0 {
-		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
-	}
-	return nil
 }
 
 // IsFinished : Returns Build run state
@@ -431,6 +379,75 @@ func (t *task) getResults() error {
 	return nil
 }
 
+// DownloadAllResults : Downloads all build artefacts, saves it to basePath and the filenames can be modified with the filenamePrefix
+func (b *Build) DownloadAllResults(basePath string, filenamePrefix string) error {
+	if err := b.GetResults(); err != nil {
+		return err
+	}
+	for i_task := range b.Tasks {
+		//in case there was no result, there is only one entry with dummyResultName, obviously we don't want to download this
+		if b.Tasks[i_task].Results[0].Name != dummyResultName {
+			for i_result := range b.Tasks[i_task].Results {
+				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// DownloadResults : Download results which are specified in filenames
+func (b *Build) DownloadResults(filenames []string, basePath string, filenamePrefix string) error {
+	for _, name := range filenames {
+		result, err := b.GetResult(name)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "Problems finding the file %s, please check your config whether this file is really a result file", name)
+		}
+		if err := result.DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
+			return errors.Wrapf(err, "Error during the download of file %s", name)
+		}
+	}
+	return nil
+}
+
+// PublishAllDownloadedResults : publishes all build artefacts which were downloaded before
+func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
+	var filesToPublish []piperutils.Path
+	for i_task := range b.Tasks {
+		for i_result := range b.Tasks[i_task].Results {
+			if b.Tasks[i_task].Results[i_result].wasDownloaded() {
+				filesToPublish = append(filesToPublish, piperutils.Path{Target: b.Tasks[i_task].Results[i_result].DownloadPath,
+					Name: b.Tasks[i_task].Results[i_result].SavedFilename, Mandatory: true})
+			}
+		}
+	}
+	if len(filesToPublish) > 0 {
+		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+	}
+}
+
+// PublishDownloadedResults : Publishes build artefacts specified in filenames
+func (b *Build) PublishDownloadedResults(stepname string, filenames []string, publish Publish) error {
+	var filesToPublish []piperutils.Path
+	for i := range filenames {
+		result, err := b.GetResult(filenames[i])
+		if err != nil {
+			return err
+		}
+		if result.wasDownloaded() {
+			filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
+		} else {
+			return errors.Errorf("Trying to publish the file %s which was not downloaded", result.Name)
+		}
+	}
+	if len(filesToPublish) > 0 {
+		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+	}
+	return nil
+}
+
 // Download : Provides the atrefact of build step
 func (result *Result) Download(downloadPath string) error {
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
@@ -438,29 +455,30 @@ func (result *Result) Download(downloadPath string) error {
 	return err
 }
 
-//TODO besserer Name....
+// DownloadWithFilenamePrefixAndTargetDirectory : downloads build artefact, saves it to basePath and the filename can be modified with the filenamePrefix
 func (result *Result) DownloadWithFilenamePrefixAndTargetDirectory(basePath string, filenamePrefix string) error {
-	basePath, err := result.evaluateParamter(basePath)
+	basePath, err := result.resolveParamter(basePath)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Could not resolve parameter %s for the target directory", basePath)
 	}
-	filenamePrefix, err = result.evaluateParamter(filenamePrefix)
+	filenamePrefix, err = result.resolveParamter(filenamePrefix)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Could not resolve parameter %s for the filename prefix", filenamePrefix)
 	}
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
 	filename := filenamePrefix + result.Name
 	downloadPath := filepath.Join(path.Base(basePath), path.Base(filename))
 	if err := result.connector.Download(appendum, downloadPath); err != nil {
-		return err
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		return errors.Wrapf(err, "Could not download %s", result.Name)
 	}
 	result.SavedFilename = filename
 	result.DownloadPath = downloadPath
+	log.Entry().Infof("Saved file %s as %s to %s", result.Name, result.SavedFilename, result.DownloadPath)
 	return nil
-
 }
 
-func (result *Result) evaluateParamter(parameter string) (string, error) {
+func (result *Result) resolveParamter(parameter string) (string, error) {
 	if len(parameter) == 0 {
 		return parameter, nil
 	}
@@ -472,6 +490,7 @@ func (result *Result) evaluateParamter(parameter string) (string, error) {
 		case "taskid":
 			return strconv.Itoa(result.TaskID), nil
 		default:
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return "", errors.Errorf("Unknown parameter %s", parameter)
 		}
 	} else {
@@ -479,7 +498,6 @@ func (result *Result) evaluateParamter(parameter string) (string, error) {
 	}
 }
 
-//TODO unittests
 func (result *Result) wasDownloaded() bool {
 	if len(result.DownloadPath) > 0 && len(result.SavedFilename) > 0 {
 		return true

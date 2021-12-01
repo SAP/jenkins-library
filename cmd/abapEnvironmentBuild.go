@@ -80,7 +80,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	}
 	values, err := generateValues(config)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Generating the values from config failed")
 	}
 
 	//TODO delete
@@ -124,7 +124,7 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 		Build: abapbuild.Build{
 			Connector: *conn,
 		},
-		config: config,
+		abapEnvironmentBuildOptions: config,
 	}
 	if err := build.Start(values); err != nil {
 		return "", err
@@ -155,48 +155,43 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 
 type myBuild struct {
 	abapbuild.Build
-	config *abapEnvironmentBuildOptions
+	*abapEnvironmentBuildOptions
 }
 
 func (b *myBuild) Start(values abapbuild.Values) error {
-	if err := b.Build.Start(b.config.Phase, values); err != nil {
-		return err
+	if err := b.Build.Start(b.abapEnvironmentBuildOptions.Phase, values); err != nil {
+		return errors.Wrap(err, "Error during the execution of the build")
 	}
 	return nil
 }
 
 func (b *myBuild) EndedWithError() error {
-	if err := b.Build.EndedWithError(b.config.TreatWarningsAsError); err != nil {
+	if err := b.Build.EndedWithError(b.TreatWarningsAsError); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (b *myBuild) Download() error {
-	if b.config.DownloadAllResultFiles {
-		if err := b.DownloadResults(b.config.SubDirectoryForDownload, b.config.FilenamePrefixForDownload); err != nil {
-			return err
+	if b.DownloadAllResultFiles {
+		log.Entry().Infof("Downloading all available result files")
+		if err := b.DownloadAllResults(b.SubDirectoryForDownload, b.FilenamePrefixForDownload); err != nil {
+			return errors.Wrap(err, "Error during the download of the result files")
 		}
 	} else {
-		//download nur spezifizierte
-		for _, name := range b.config.DownloadResultFilenames {
-			result, err := b.GetResult(name)
-			if err != nil {
-				return err
-			}
-			if err := result.DownloadWithFilenamePrefixAndTargetDirectory(b.config.SubDirectoryForDownload, b.config.FilenamePrefixForDownload); err != nil {
-				return err
-			}
+		if err := b.DownloadResults(b.DownloadResultFilenames, b.SubDirectoryForDownload, b.FilenamePrefixForDownload); err != nil {
+			return err
+			//TODO error
 		}
 	}
 	return nil
 }
 
 func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
-	if b.config.PublishAllDownloadedResultFiles {
+	if b.PublishAllDownloadedResultFiles {
 		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
 	} else {
-		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.config.PublishResultFilenames, utils); err != nil {
+		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, utils); err != nil {
 			return err
 		}
 	}
@@ -211,7 +206,7 @@ func (b *myBuild) GetFinalValues() (string, error) {
 
 	b.GetValues()
 	var cpeValues []cpeValue
-	byt, err := json.Marshal(&b.Values)
+	byt, err := json.Marshal(&b.Build.Values)
 	if err != nil {
 		return "", err
 	}
@@ -245,18 +240,18 @@ type valuesEvaluator struct {
 }
 
 func (vE *valuesEvaluator) initialize(stringValues string) error {
-	log.Entry().Infof("config values %s", stringValues)
+	log.Entry().Infof("Input values from config %s", stringValues)
 	if err := json.Unmarshal([]byte(stringValues), &vE.values); err != nil {
-		return err
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrapf(err, "Could not convert the values %s from the config", stringValues)
 	}
-	vE.m = make(map[string]string)
 
-	// falls es einen wert doppelt in der config gibt -> fehler
+	vE.m = make(map[string]string)
 	for _, value := range vE.values {
 		_, present := vE.m[value.ValueID]
 		if present {
-			//TODO bessere error message
-			return errors.New("Value duplicate")
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Errorf("Value_id %s is not unique in the config", value.ValueID)
 		}
 		vE.m[value.ValueID] = value.Value
 	}
@@ -265,18 +260,16 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 
 func (vE *valuesEvaluator) appendValues(stringValues string) error {
 	var values []abapbuild.Value
-	//TODO delete
-	log.Entry().Infof("cpe values %s", stringValues)
+	log.Entry().Infof("Input values from the commonPipelineEnvironment %s", stringValues)
 	if len(stringValues) > 0 {
 		if err := json.Unmarshal([]byte(stringValues), &values); err != nil {
-			return err
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "Could not convert the values %s from the commonPipelineEnvironment", stringValues)
 		}
-		//wenn in der cpe ein wert steht der auch in der config steht, gewinnt config
 		for i := len(values) - 1; i >= 0; i-- {
 			_, present := vE.m[values[i].ValueID]
 			if present || (values[i].ValueID == "PHASE") {
-				//TODO delete
-				log.Entry().Infof("remove value %s", values[i])
+				log.Entry().Infof("Value %s already exists in config -> discard this value", values[i])
 				values = append(values[:i], values[i+1:]...)
 			}
 		}

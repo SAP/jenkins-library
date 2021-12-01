@@ -7,6 +7,7 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -272,4 +273,174 @@ func TestDownloadWithFilenamePrefixAndTargetDirectory(t *testing.T) {
 		downloadPath := filepath.Join(path.Base("123456789"), path.Base("1MyFile"))
 		assert.Equal(t, downloadPath, result.DownloadPath)
 	})
+}
+
+func TestDownloadAllResults(t *testing.T) {
+	//arrange global
+	build := GetMockBuildTestDownloadPublish()
+	t.Run("Download without extension", func(t *testing.T) {
+		//arrange
+		basePath := ""
+		filenamePrefix := ""
+		//act
+		err := build.DownloadAllResults(basePath, filenamePrefix)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "", build.Tasks[0].Results[0].SavedFilename)
+		assert.Equal(t, "", build.Tasks[0].Results[0].DownloadPath)
+
+		assert.Equal(t, "File1", build.Tasks[1].Results[0].SavedFilename)
+		assert.Equal(t, "File1", build.Tasks[1].Results[0].DownloadPath)
+
+		assert.Equal(t, "File2", build.Tasks[1].Results[1].SavedFilename)
+		assert.Equal(t, "File2", build.Tasks[1].Results[1].DownloadPath)
+	})
+	t.Run("Download with extension", func(t *testing.T) {
+		//arrange
+		basePath := ""
+		filenamePrefix := "SuperFile_"
+		//act
+		err := build.DownloadAllResults(basePath, filenamePrefix)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "", build.Tasks[0].Results[0].SavedFilename)
+		assert.Equal(t, "", build.Tasks[0].Results[0].DownloadPath)
+
+		assert.Equal(t, "SuperFile_File1", build.Tasks[1].Results[0].SavedFilename)
+		assert.Equal(t, "SuperFile_File1", build.Tasks[1].Results[0].DownloadPath)
+
+		assert.Equal(t, "SuperFile_File2", build.Tasks[1].Results[1].SavedFilename)
+		assert.Equal(t, "SuperFile_File2", build.Tasks[1].Results[1].DownloadPath)
+	})
+}
+
+func TestDownloadResults(t *testing.T) {
+	//arrange global
+	build := GetMockBuildTestDownloadPublish()
+	t.Run("Download existing", func(t *testing.T) {
+		//arrange
+		basePath := ""
+		filenamePrefix := ""
+		filenames := []string{"File1", "File3"}
+		//act
+		err := build.DownloadResults(filenames, basePath, filenamePrefix)
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "", build.Tasks[0].Results[0].SavedFilename)
+		assert.Equal(t, "", build.Tasks[0].Results[0].DownloadPath)
+
+		assert.Equal(t, "File1", build.Tasks[1].Results[0].SavedFilename)
+		assert.Equal(t, "File1", build.Tasks[1].Results[0].DownloadPath)
+
+		assert.Equal(t, "", build.Tasks[1].Results[1].SavedFilename)
+		assert.Equal(t, "", build.Tasks[1].Results[1].DownloadPath)
+
+		assert.Equal(t, "File3", build.Tasks[1].Results[2].SavedFilename)
+		assert.Equal(t, "File3", build.Tasks[1].Results[2].DownloadPath)
+	})
+	t.Run("Try to download non existing", func(t *testing.T) {
+		//arrange
+		basePath := ""
+		filenamePrefix := ""
+		filenames := []string{"File1", "File4"}
+		//act
+		err := build.DownloadResults(filenames, basePath, filenamePrefix)
+		//assert
+		assert.Error(t, err)
+		assert.Equal(t, "", build.Tasks[0].Results[0].SavedFilename)
+		assert.Equal(t, "", build.Tasks[0].Results[0].DownloadPath)
+
+		assert.Equal(t, "File1", build.Tasks[1].Results[0].SavedFilename)
+		assert.Equal(t, "File1", build.Tasks[1].Results[0].DownloadPath)
+
+		assert.Equal(t, "", build.Tasks[1].Results[1].SavedFilename)
+		assert.Equal(t, "", build.Tasks[1].Results[1].DownloadPath)
+	})
+}
+
+func TestPublishAllDownloadedResults(t *testing.T) {
+	t.Run("Something was downloaded", func(t *testing.T) {
+		//arrange
+		build := GetMockBuildTestDownloadPublish()
+		mP := mockPublish{}
+		build.Tasks[1].Results[0].SavedFilename = "File1"
+		build.Tasks[1].Results[0].DownloadPath = "Dir1/File1"
+		build.Tasks[1].Results[2].SavedFilename = "File3"
+		build.Tasks[1].Results[2].DownloadPath = "File3"
+		//act
+		build.PublishAllDownloadedResults("MyStep", &mP)
+		//assert
+		publishedFiles := []piperutils.Path{
+			{
+				Target:    "Dir1/File1",
+				Name:      "File1",
+				Mandatory: true,
+			},
+			{
+				Target:    "File3",
+				Name:      "File3",
+				Mandatory: true,
+			},
+		}
+		assert.Equal(t, publishedFiles, mP.reports)
+	})
+	t.Run("Nothing was downloaded", func(t *testing.T) {
+		//arrange
+		build := GetMockBuildTestDownloadPublish()
+		mP := mockPublish{}
+		//act
+		build.PublishAllDownloadedResults("MyStep", &mP)
+		//assert
+		publishedFiles := []piperutils.Path{}
+		assert.Equal(t, publishedFiles, mP.reports)
+	})
+}
+
+func TestPublishDownloadedResults(t *testing.T) {
+	filenames := []string{"File1", "File3"}
+	t.Run("Publish downloaded files", func(t *testing.T) {
+		//arrange
+		build := GetMockBuildTestDownloadPublish()
+		mP := mockPublish{}
+		build.Tasks[1].Results[0].SavedFilename = "SuperFile_File1"
+		build.Tasks[1].Results[0].DownloadPath = "Dir1/SuperFile_File1"
+		build.Tasks[1].Results[2].SavedFilename = "File3"
+		build.Tasks[1].Results[2].DownloadPath = "File3"
+		//act
+		err := build.PublishDownloadedResults("MyStep", filenames, &mP)
+		//assert
+		assert.NoError(t, err)
+		publishedFiles := []piperutils.Path{
+			{
+				Target:    "Dir1/SuperFile_File1",
+				Name:      "SuperFile_File1",
+				Mandatory: true,
+			},
+			{
+				Target:    "File3",
+				Name:      "File3",
+				Mandatory: true,
+			},
+		}
+		assert.Equal(t, publishedFiles, mP.reports)
+	})
+	t.Run("Try to publish file which was not downloaded", func(t *testing.T) {
+		//arrange
+		build := GetMockBuildTestDownloadPublish()
+		mP := mockPublish{}
+		build.Tasks[1].Results[0].SavedFilename = "SuperFile_File1"
+		build.Tasks[1].Results[0].DownloadPath = "Dir1/SuperFile_File1"
+		//act
+		err := build.PublishDownloadedResults("MyStep", filenames, &mP)
+		//assert
+		assert.Error(t, err)
+	})
+}
+
+type mockPublish struct {
+	reports []piperutils.Path
+}
+
+func (mP *mockPublish) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
+	mP.reports = reports
 }
