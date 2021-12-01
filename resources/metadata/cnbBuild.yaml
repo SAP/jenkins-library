@@ -1,7 +1,9 @@
 metadata:
   name: cnbBuild
-  description: Executes a Cloud Native Buildpacks build for creating a Docker container.
-  longDescription: Executes a Cloud Native Buildpacks build for creating a Docker container.
+  description: Executes Cloud Native Buildpacks.
+  longDescription: |-
+    Executes a Cloud Native Buildpacks build for creating Docker image(s).
+    **Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.
 spec:
   inputs:
     secrets:
@@ -78,9 +80,18 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/buildpacks
       - name: buildEnvVars
-        type: "[]string"
-        description: List of custom environment variables used during a build in the form of 'KEY=VALUE'.
+        type: "map[string]interface{}"
+        description: |
+          Map of custom environment variables used during a build.
+          Example:
+          ```yaml
+          buildEnvVars:
+            foo: bar
+          ```
         scope:
           - PARAMETERS
           - STAGES
@@ -99,7 +110,8 @@ spec:
         description: |
           Path to the project.toml file.
           See [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.
-          Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.
+          Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.
+          Environment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.
 
           Note: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
         default: project.toml
