@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -61,15 +62,25 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	// It can also be used for example as a mavenExecRunner.
 	// utils := newTmsUploadUtils()
 
+	proxy := config.Proxy
+	transportProxy, err := url.Parse(proxy)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to parse proxy string %v into a URL structure", proxy)
+	}
+	options := piperHttp.ClientOptions{TransportProxy: transportProxy}
+
 	client := &piperHttp.Client{}
-	// TODO: any options to set for the client? (see e.g. checkmarxExecuteScan.go)
+	client.SetOptions(options)
+	if GeneralConfig.Verbose && proxy != "" {
+		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
+	}
 
 	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
 
-	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, config.Proxy, GeneralConfig.Verbose)
+	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
