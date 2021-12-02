@@ -251,6 +251,11 @@ func kubernetesDeployMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -302,6 +307,11 @@ func kubernetesDeployMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -414,7 +424,7 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:    "kubeConfigFileSecretName",
+								Name:    "kubeConfigFileVaultSecretName",
 								Type:    "vaultSecretFile",
 								Default: "kube-config",
 							},
@@ -469,11 +479,6 @@ func kubernetesDeployMetadata() config.StepData {
 					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
 							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
