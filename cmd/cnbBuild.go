@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	creatorPath  = "/cnb/lifecycle/creator"
 	analyzerPath = "/cnb/lifecycle/analyzer"
 	detectorPath = "/cnb/lifecycle/detector"
 	builderPath  = "/cnb/lifecycle/builder"
@@ -398,17 +399,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
 	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 
-	targets := []string{
-		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
-	}
-
-	for _, tag := range config.AdditionalTags {
-		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(targets, target) {
-			targets = append(targets, target)
-		}
-	}
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -427,40 +417,25 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
 	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
 
-	var analyzerArgs []string
-	for _, tag := range targets[1:] {
-		analyzerArgs = append(analyzerArgs, "-tag="+tag)
-	}
-	analyzerArgs = append(analyzerArgs, targets[0])
-	err = utils.RunExecutable(analyzerPath, analyzerArgs...)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", analyzerPath)
+	creatorArgs := []string{
+		"-no-color",
+		"-buildpacks", buildpacksPath,
+		"-order", orderPath,
+		"-platform", platformPath,
 	}
 
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath, "-no-color")
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
+	for _, tag := range config.AdditionalTags {
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		if !piperutils.ContainsString(creatorArgs, target) {
+			creatorArgs = append(creatorArgs, "-tag", target)
+		}
 	}
 
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath, "-no-color")
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, containerImageTag))
+	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
-	}
-
-	err = utils.RunExecutable(restorerPath, "-no-color")
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", restorerPath)
-	}
-
-	exporterArgs := append([]string{"-no-color"}, targets...)
-	err = utils.RunExecutable(exporterPath, exporterArgs...)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
+		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
 
 	return nil

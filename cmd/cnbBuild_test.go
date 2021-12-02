@@ -29,20 +29,18 @@ func addBuilderFiles(utils *cnbutils.MockUtils) {
 }
 
 func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner) {
-	assert.Equal(t, analyzerPath, runner.Calls[0].Exec)
-	assert.Equal(t, detectorPath, runner.Calls[1].Exec)
-	assert.Equal(t, builderPath, runner.Calls[2].Exec)
-	assert.Equal(t, restorerPath, runner.Calls[3].Exec)
-	assert.Equal(t, exporterPath, runner.Calls[4].Exec)
+	assert.Equal(t, creatorPath, runner.Calls[0].Exec)
+	for _, arg := range []string{"-no-color", "-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform"} {
+		assert.Contains(t, runner.Calls[0].Params, arg)
+	}
 }
 
 func TestRunCnbBuild(t *testing.T) {
 	t.Parallel()
 
-	commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
-
 	t.Run("success case (registry with https)", func(t *testing.T) {
 		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		registry := "some-registry"
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
@@ -61,16 +59,15 @@ func TestRunCnbBuild(t *testing.T) {
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[4].Params)
-		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
-		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Equal(t, fmt.Sprintf("https://%s", registry), commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 	})
 
 	t.Run("success case (registry without https)", func(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
 			ContainerImageTag:    "0.0.1",
@@ -88,16 +85,15 @@ func TestRunCnbBuild(t *testing.T) {
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[4].Params)
-		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
-		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Equal(t, fmt.Sprintf("https://%s", registry), commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 	})
 
 	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
 			ContainerImageTag:    "0.0.1",
@@ -119,15 +115,16 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
-		assertLifecycleCalls(t, runner)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[4].Params)
+		assert.Equal(t, creatorPath, runner.Calls[0].Exec)
+		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks")
+		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks/order.toml")
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName))
 	})
 
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {
 		t.Parallel()
-
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, "https://test-cert.com/cert.crt", httpmock.NewStringResponder(200, "testCert"))
@@ -142,7 +139,6 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerImageTag:         "0.0.1",
 			ContainerRegistryURL:      registry,
 			DockerConfigJSON:          "/path/to/config.json",
-			Buildpacks:                []string{"test"},
 			CustomTLSCertificateLinks: []string{"https://test-cert.com/cert.crt", "https://test-cert.com/cert.crt"},
 		}
 
@@ -163,21 +159,18 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Contains(t, runner.Env, fmt.Sprintf("SSL_CERT_FILE=%s", caCertsTmpFile))
 		assertLifecycleCalls(t, runner)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[2].Params)
-		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[4].Params)
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
 	})
 
 	t.Run("success case (additionalTags)", func(t *testing.T) {
 		t.Parallel()
-
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		registry := "some-registry"
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
 			ContainerImageTag:    "3.1.5",
 			ContainerRegistryURL: registry,
 			DockerConfigJSON:     "/path/to/config.json",
-			Buildpacks:           []string{"test"},
 			AdditionalTags:       []string{"3", "3.1", "3.1", "3.1.5"},
 		}
 
@@ -189,12 +182,16 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.NoError(t, err)
 
 		runner := utils.ExecMockRunner
-		assert.Equal(t, exporterPath, runner.Calls[4].Exec)
-		assert.ElementsMatch(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:3", registry, config.ContainerImageName), fmt.Sprintf("%s/%s:3.1", registry, config.ContainerImageName)}, runner.Calls[4].Params)
+		assertLifecycleCalls(t, runner)
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3", registry, config.ContainerImageName))
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3.1", registry, config.ContainerImageName))
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3.1.5", registry, config.ContainerImageName))
 	})
 
 	t.Run("error case: Invalid DockerConfigJSON file", func(t *testing.T) {
 		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
 			ContainerImageName: "my-image",
 			DockerConfigJSON:   "/path/to/config.json",
@@ -210,6 +207,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 	t.Run("error case: DockerConfigJSON file not there (config.json)", func(t *testing.T) {
 		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
 			ContainerImageName: "my-image",
 			DockerConfigJSON:   "not-there/config.json",
@@ -224,6 +222,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 	t.Run("error case: DockerConfigJSON file not there (not config.json)", func(t *testing.T) {
 		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
 			ContainerImageName: "my-image",
 			DockerConfigJSON:   "not-there",
@@ -238,6 +237,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 	t.Run("error case: dockerImage is not a valid builder", func(t *testing.T) {
 		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{}
 
 		utils := newCnbBuildTestsUtils()
@@ -248,7 +248,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 	t.Run("error case: builder image does not contain tls certificates", func(t *testing.T) {
 		t.Parallel()
-
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		registry := "some-registry"
 		config := cnbBuildOptions{
 			ContainerImageName:        "my-image",
