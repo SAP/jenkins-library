@@ -143,6 +143,7 @@ func GetBuildMockClient() MockClient {
 	mc.AddData(buildGetTask11Result)
 	mc.AddData(buildGetTask12Result)
 	mc.AddData(buildGetTask11ResultMedia)
+	mc.AddData(buildGetValues)
 
 	return mc
 }
@@ -1543,6 +1544,43 @@ var buildGetTask11ResultMedia = MockData{
 	Method:     `GET`,
 	Url:        `/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11,name='SAR_XML')/$value`,
 	Body:       ``,
+	StatusCode: 200,
+}
+
+var buildGetValues = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/values`,
+	Body: `{
+		"d": {
+			"results": [
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "PHASE",
+					"value": "AUNIT"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "PACKAGES",
+					"value": "/BUILD/AUNIT_DUMMY_TESTS"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "MyId1",
+					"value": "AunitValue1"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "MyId2",
+					"value": "AunitValue2"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "BUILD_FRAMEWORK_MODE",
+					"value": "P"
+				}
+			]
+		}
+	}`,
 	StatusCode: 200,
 }
 

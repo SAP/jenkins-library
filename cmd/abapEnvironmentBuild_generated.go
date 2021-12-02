@@ -69,7 +69,7 @@ func (p *abapEnvironmentBuildCommonPipelineEnvironment) persist(path, resourceNa
 	}
 }
 
-// AbapEnvironmentBuildCommand TODO
+// AbapEnvironmentBuildCommand Executes builds as defined with the build framework
 func AbapEnvironmentBuildCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentBuild"
 
@@ -83,8 +83,8 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 
 	var createAbapEnvironmentBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "Executes builds as defined with the build framework",
+		Long:  `Executes builds as defined with the build framework. Transaction overview /n/BUILD/OVERVIEW`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -168,21 +168,21 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
-	cmd.Flags().StringVar(&stepConfig.Phase, "phase", os.Getenv("PIPER_phase"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.Values, "values", os.Getenv("PIPER_values"), "TODO")
-	cmd.Flags().BoolVar(&stepConfig.DownloadAllResultFiles, "downloadAllResultFiles", false, "TODO Downloads all result files => schlägt downloadResultFilenames")
-	cmd.Flags().StringSliceVar(&stepConfig.DownloadResultFilenames, "downloadResultFilenames", []string{}, "TODO")
-	cmd.Flags().BoolVar(&stepConfig.PublishAllDownloadedResultFiles, "publishAllDownloadedResultFiles", false, "TODO Downloads all result files => schlägt publishResultFilenames")
-	cmd.Flags().StringSliceVar(&stepConfig.PublishResultFilenames, "publishResultFilenames", []string{}, "TODO wenn hier was steht was gar nichct runtergeladen wurde => fehler")
-	cmd.Flags().StringVar(&stepConfig.SubDirectoryForDownload, "subDirectoryForDownload", os.Getenv("PIPER_subDirectoryForDownload"), "")
-	cmd.Flags().StringVar(&stepConfig.FilenamePrefixForDownload, "filenamePrefixForDownload", os.Getenv("PIPER_filenamePrefixForDownload"), "")
-	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "TODO")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
+	cmd.Flags().StringVar(&stepConfig.Phase, "phase", os.Getenv("PIPER_phase"), "Phase as specified in the build script in the backend system")
+	cmd.Flags().StringVar(&stepConfig.Values, "values", os.Getenv("PIPER_values"), "Input values for the build framework")
+	cmd.Flags().BoolVar(&stepConfig.DownloadAllResultFiles, "downloadAllResultFiles", false, "If true, all build artefacts are downloaded")
+	cmd.Flags().StringSliceVar(&stepConfig.DownloadResultFilenames, "downloadResultFilenames", []string{}, "Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored")
+	cmd.Flags().BoolVar(&stepConfig.PublishAllDownloadedResultFiles, "publishAllDownloadedResultFiles", false, "If true, it publishes all downloaded files")
+	cmd.Flags().StringSliceVar(&stepConfig.PublishResultFilenames, "publishResultFilenames", []string{}, "Only the specified files get published, in case the file was not downloaded before an error occures")
+	cmd.Flags().StringVar(&stepConfig.SubDirectoryForDownload, "subDirectoryForDownload", os.Getenv("PIPER_subDirectoryForDownload"), "Target directory to store the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly")
+	cmd.Flags().StringVar(&stepConfig.FilenamePrefixForDownload, "filenamePrefixForDownload", os.Getenv("PIPER_filenamePrefixForDownload"), "Filename prefix for the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly")
+	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "If a warrning occures, the step will be set to unstable")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
-	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "TODO")
-	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "TODO")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
+	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -200,7 +200,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentBuild",
 			Aliases:     []config.Alias{},
-			Description: "TODO",
+			Description: "Executes builds as defined with the build framework",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

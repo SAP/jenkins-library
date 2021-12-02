@@ -1,8 +1,8 @@
 metadata:
   name: abapEnvironmentBuild
-  description: "TODO"
-  longDescription: |
-    TODO
+  description: "Executes builds as defined with the build framework"
+  longDescription: | 
+    Executes builds as defined with the build framework. Transaction overview /n/BUILD/OVERVIEW
 spec:
   inputs:
     secrets:
@@ -81,7 +81,7 @@ spec:
           - GENERAL
       - name: username
         type: string
-        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
+        description: User
         scope:
           - PARAMETERS
           - STAGES
@@ -90,7 +90,7 @@ spec:
         secret: true
       - name: password
         type: string
-        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
+        description: Password
         scope:
           - PARAMETERS
           - STAGES
@@ -100,14 +100,14 @@ spec:
       - name: phase
         type: string
         mandatory: true
-        description: TODO
+        description: Phase as specified in the build script in the backend system
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: values
         type: string
-        description: TODO
+        description: Input values for the build framework
         scope:
           - PARAMETERS
           - STAGES
@@ -117,7 +117,7 @@ spec:
         type: bool
         mandatory: true
         default: false
-        description: TODO Downloads all result files => schlägt downloadResultFilenames
+        description: If true, all build artefacts are downloaded
         scope: 
           - PARAMETERS
           - STAGES
@@ -125,7 +125,7 @@ spec:
       - name: downloadResultFilenames
         type: "[]string"
         mandatory: false
-        description: TODO 
+        description: Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored 
         scope: 
           - PARAMETERS
           - STAGES
@@ -134,7 +134,7 @@ spec:
         type: bool
         mandatory: true
         default: false
-        description: TODO Downloads all result files => schlägt publishResultFilenames
+        description: If true, it publishes all downloaded files
         scope: 
           - PARAMETERS
           - STAGES
@@ -142,7 +142,7 @@ spec:
       - name: publishResultFilenames
         type: "[]string"
         mandatory: false
-        description: TODO wenn hier was steht was gar nichct runtergeladen wurde => fehler
+        description: Only the specified files get published, in case the file was not downloaded before an error occures
         scope: 
           - PARAMETERS
           - STAGES
@@ -150,6 +150,7 @@ spec:
       - name: subDirectoryForDownload
         type: string
         mandatory: false
+        description: Target directory to store the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly
         scope: 
           - PARAMETERS
           - STAGES
@@ -158,6 +159,7 @@ spec:
       - name: filenamePrefixForDownload
         type: string
         mandatory: false
+        description: Filename prefix for the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly
         scope: 
           - PARAMETERS
           - STAGES
@@ -167,7 +169,7 @@ spec:
         type: bool
         mandatory: true
         default: false
-        description: TODO
+        description: If a warrning occures, the step will be set to unstable
         scope:
           - PARAMETERS
           - STAGES
@@ -192,7 +194,7 @@ spec:
           - STEPS
       - name: certificateNames
         type: "[]string"
-        description: TODO
+        description: certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore
         mandatory: false
         scope:
           - PARAMETERS
@@ -201,7 +203,7 @@ spec:
           - GENERAL
       - name: cpeValues
         type: string
-        description: TODO
+        description: Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment

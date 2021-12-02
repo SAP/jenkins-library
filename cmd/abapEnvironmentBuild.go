@@ -16,8 +16,6 @@ import (
 
 type abapEnvironmentBuildUtils interface {
 	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
 	abaputils.Communication
 	abapbuild.Publish
 	abapbuild.HTTPSendLoader
@@ -27,7 +25,6 @@ type abapEnvironmentBuildUtils interface {
 
 type abapEnvironmentBuildUtilsBundle struct {
 	*command.Command
-	*piperutils.Files
 	*piperhttp.Client
 	*abaputils.AbapUtils
 	maxRuntime       time.Duration
@@ -49,7 +46,6 @@ func (aEBUB *abapEnvironmentBuildUtilsBundle) PersistReportsAndLinks(stepName, w
 func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingIntervall time.Duration) abapEnvironmentBuildUtils {
 	utils := abapEnvironmentBuildUtilsBundle{
 		Command: &command.Command{},
-		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
 		AbapUtils: &abaputils.AbapUtils{
 			Exec: &command.Command{},
@@ -72,23 +68,17 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
-	conn := new(abapbuild.Connector)
-
-	// TODO wrappe die fehler
-	if err := initConnection(conn, config, utils); err != nil {
-		return err
-	}
 	values, err := generateValues(config)
 	if err != nil {
 		return errors.Wrap(err, "Generating the values from config failed")
 	}
-
-	//TODO delete
-	log.Entry().Infof("Values used %s", values.Values)
-
+	conn := new(abapbuild.Connector)
+	if err := initConnection(conn, config, utils); err != nil {
+		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+	}
 	finalValues, err := runBuild(conn, config, utils, values)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error during execution of build framework")
 	}
 	cpe.build.values = finalValues
 	return nil
@@ -107,14 +97,11 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 	connConfig.CertificateNames = config.CertificateNames
 
-	err := conn.InitBuildFramework(connConfig, utils, utils)
-	if err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+	if err := conn.InitBuildFramework(connConfig, utils, utils); err != nil {
+		return err
 	}
 	conn.MaxRuntime = utils.getMaxRuntime()
 	conn.PollingInterval = utils.getPollingIntervall()
-	log.Entry().Infof("MaxRuntime %s", conn.MaxRuntime)
-	log.Entry().Infof("polling intervall %s", conn.PollingInterval)
 	return nil
 }
 
@@ -126,6 +113,7 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 		},
 		abapEnvironmentBuildOptions: config,
 	}
+
 	if err := build.Start(values); err != nil {
 		return "", err
 	}
@@ -133,6 +121,7 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 	if err := build.Poll(); err != nil {
 		return "", err
 	}
+
 	if err := build.PrintLogs(); err != nil {
 		return "", err
 	}
@@ -160,7 +149,7 @@ type myBuild struct {
 
 func (b *myBuild) Start(values abapbuild.Values) error {
 	if err := b.Build.Start(b.abapEnvironmentBuildOptions.Phase, values); err != nil {
-		return errors.Wrap(err, "Error during the execution of the build")
+		return errors.Wrap(err, "Error starting the build framework")
 	}
 	return nil
 }
@@ -174,14 +163,12 @@ func (b *myBuild) EndedWithError() error {
 
 func (b *myBuild) Download() error {
 	if b.DownloadAllResultFiles {
-		log.Entry().Infof("Downloading all available result files")
 		if err := b.DownloadAllResults(b.SubDirectoryForDownload, b.FilenamePrefixForDownload); err != nil {
 			return errors.Wrap(err, "Error during the download of the result files")
 		}
 	} else {
 		if err := b.DownloadResults(b.DownloadResultFilenames, b.SubDirectoryForDownload, b.FilenamePrefixForDownload); err != nil {
-			return err
-			//TODO error
+			return errors.Wrapf(err, "Error during the download of the result files %s", b.DownloadResultFilenames)
 		}
 	}
 	return nil
@@ -192,7 +179,7 @@ func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
 		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
 	} else {
 		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, utils); err != nil {
-			return err
+			return errors.Wrapf(err, "Error during the publish of the result files %s", b.PublishResultFilenames)
 		}
 	}
 	return nil
@@ -204,7 +191,9 @@ func (b *myBuild) GetFinalValues() (string, error) {
 		Value   string `json:"value"`
 	}
 
-	b.GetValues()
+	if err := b.GetValues(); err != nil {
+		return "", errors.Wrapf(err, "Error getting the values from build framework")
+	}
 	var cpeValues []cpeValue
 	byt, err := json.Marshal(&b.Build.Values)
 	if err != nil {
@@ -240,7 +229,6 @@ type valuesEvaluator struct {
 }
 
 func (vE *valuesEvaluator) initialize(stringValues string) error {
-	log.Entry().Infof("Input values from config %s", stringValues)
 	if err := json.Unmarshal([]byte(stringValues), &vE.values); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrapf(err, "Could not convert the values %s from the config", stringValues)
@@ -248,6 +236,10 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 
 	vE.m = make(map[string]string)
 	for _, value := range vE.values {
+		if (len(value.ValueID) == 0) || (len(value.Value) == 0) {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Errorf("Values %s from config have not the right format", stringValues)
+		}
 		_, present := vE.m[value.ValueID]
 		if present {
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -260,7 +252,6 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 
 func (vE *valuesEvaluator) appendValues(stringValues string) error {
 	var values []abapbuild.Value
-	log.Entry().Infof("Input values from the commonPipelineEnvironment %s", stringValues)
 	if len(stringValues) > 0 {
 		if err := json.Unmarshal([]byte(stringValues), &values); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)

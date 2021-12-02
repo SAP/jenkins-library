@@ -11,6 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type mockPublish struct {
+	reports []piperutils.Path
+}
+
+func (mP *mockPublish) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
+	mP.reports = reports
+}
+
 func testSetup(client piperhttp.Sender, buildID string) Build {
 	conn := new(Connector)
 	conn.Client = client
@@ -435,12 +443,4 @@ func TestPublishDownloadedResults(t *testing.T) {
 		//assert
 		assert.Error(t, err)
 	})
-}
-
-type mockPublish struct {
-	reports []piperutils.Path
-}
-
-func (mP *mockPublish) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	mP.reports = reports
 }

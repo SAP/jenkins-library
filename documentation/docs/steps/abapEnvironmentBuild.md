@@ -7,7 +7,7 @@
 - package logs ({packagename}.zip)
     This archive contains all relevant transport logs per assembled package which might be needed for detailed analysis in case of support requests or for audit purpose. For productive builds it might be advisable to store this file as well as the overall pipeline run logs in a revision proof manner. For every assembled package an respective zip archive with its related logs are created and archived as artifact.
 
-## Prerequisites
+## Prerequisites SAP BTP, ABAP environment
 
 * A SAP BTP, ABAP environment system is available.
   * This can be created manually on Cloud Foundry.
@@ -21,16 +21,7 @@
   * The host and credentials the SAP BTP, ABAP environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0582.
   * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0582.
   * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
-* The step needs information about the packages which should be assembled present in the CommonPipelineEnvironment.
-  * For each repository/component version it needs the name of the repository, the version, splevel, patchlevel, namespace, packagename, package type, the status of the package, and optional the predecessor commit id.
-  * To upload this information to the CommonPipelineEnvironment run prior to this step the steps:
-    * [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/),
-    * [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/).
-  * If one of the package is already in status released, the assembly for this package will not be executed.
-* The Software Components for which packages are to be assembled need to be present in the system.
-  * This can be done manually through the respective applications on the SAP BTP, ABAP environment system.
-  * In a pipeline, you can do this, for example, with the step [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/).
-* The packages to be assembled need to be reserved in AAKaaS and the corresponding information needs to be present in CommonPipelineEnvironment. To do so run step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/) prior this step.
+
 
 ## ${docGenParameters}
 
@@ -45,14 +36,14 @@
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
 
 ```groovy
-abapEnvironmentAssemblePackages script: this
+abapEnvironmentBuild script: this
 ```
 
-If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
+If you want to provide the host and credentials of the Communication Arrangement directly or you want to run in on premise, the configuration could look as follows:
 
 ```yaml
 steps:
-  abapEnvironmentAssemblePackages:
+  abapEnvironmentBuild:
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
 ```
@@ -61,56 +52,11 @@ Or by authenticating against Cloud Foundry and reading the Service Key details f
 
 ```yaml
 steps:
-  abapEnvironmentAssemblePackages:
+  abapEnvironmentBuild:
     abapCredentialsId: 'cfCredentialsId',
     cfApiEndpoint : 'https://test.server.com',
     cfOrg : 'cfOrg',
     cfSpace: 'cfSpace',
     cfServiceInstance: 'myServiceInstance',
     cfServiceKeyName: 'myServiceKey',
-```
-
-### Input via the CommonPipelineEnvironment
-
-```json
-{"addonProduct":"",
-"addonVersion":"",
-"addonVersionAAK":"",
-"addonUniqueID":"",
-"customerID":"",
-"AddonSpsLevel":"",
-"AddonPatchLevel":"",
-"TargetVectorID":"",
-"repositories":[
-  {
-    "name":"/DMO/REPO_A",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"0001",
-    "PackageName":"SAPK001001REPOA",
-    "PackageType":"CPK",
-    "SpLevel":"0000",
-    "PatchLevel":"0001",
-    "PredecessorCommitID":"cbb834e9e03cde177d2f109a6676901972983fbc",
-    "Status":"P",
-    "Namespace":"/DMO/",
-    "SarXMLFilePath":""
-  },
-  {
-    "name":"/DMO/REPO_B",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"0002",
-    "PackageName":"SAPK002001REPOB",
-    "PackageType":"CPK",
-    "SpLevel":"0001",
-    "PatchLevel":"0001",
-    "PredecessorCommitID":"2f7d43923c041a07a76c8adc859c737ad772ef26",
-    "Status":"P",
-    "Namespace":"/DMO/",
-    "SarXMLFilePath":""
-  }
-]}
 ```

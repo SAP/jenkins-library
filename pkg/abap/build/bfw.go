@@ -389,7 +389,7 @@ func (b *Build) DownloadAllResults(basePath string, filenamePrefix string) error
 		if b.Tasks[i_task].Results[0].Name != dummyResultName {
 			for i_result := range b.Tasks[i_task].Results {
 				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
-					return err
+					return errors.Wrapf(err, "Error during the download of file %s", b.Tasks[i_task].Results[i_result].Name)
 				}
 			}
 		}
@@ -434,11 +434,13 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string, pu
 	for i := range filenames {
 		result, err := b.GetResult(filenames[i])
 		if err != nil {
-			return err
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "Problems finding the file %s, please check your config whether this file is really a result file", filenames[i])
 		}
 		if result.wasDownloaded() {
 			filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
 		} else {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Errorf("Trying to publish the file %s which was not downloaded", result.Name)
 		}
 	}
