@@ -156,7 +156,6 @@ spec:
 
           **For `deployTool: helm/helm3`:**<br />
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
-          Note: the secret will not be persisted in the Kubernetes cluster.
 
           If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
 
@@ -324,8 +323,6 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile

@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -22,9 +23,12 @@ type kubernetesDeployUtils interface {
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
 
-	FileExists(filename string) (bool, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	FileRead(path string) ([]byte, error)
+	piperutils.FileUtils
+
+	//Abs(path string) (string, error)
+	//FileExists(filename string) (bool, error)
+	//FileWrite(path string, content []byte, perm os.FileMode) error
+	//FileRead(path string) ([]byte, error)
 }
 
 type kubernetesDeployUtilsBundle struct {
@@ -128,11 +132,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	}
 
 	var secretsData string
-	dockerConfigExists, err := utils.FileExists(config.DockerConfigJSON)
-	if err != nil {
-		dockerConfigExists = false
-	}
-	if !dockerConfigExists && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
+	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
 			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
@@ -140,7 +140,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
+		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
@@ -260,9 +260,11 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 
 		// first check if secret already exists
 		kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
+
+		// ToDo: always update the secret using a yaml definition
 		if err := utils.RunExecutable("kubectl", kubeCheckParams...); err != nil {
 			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
-			kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
+			kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 			kubeSecretParams = append(kubeParams, kubeSecretParams...)
 			log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 			log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
@@ -336,7 +338,7 @@ func splitFullImageName(image string) (imageName, tag string, err error) {
 	return "", "", fmt.Errorf("Failed to split image name '%v'", image)
 }
 
-func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string) []string {
+func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils) []string {
 	kubeSecretParams := []string{
 		"create",
 		"secret",
@@ -351,6 +353,15 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	}
 
 	if len(config.DockerConfigJSON) > 0 {
+		// first enhance config.json with additional pipeline-related credentials if they have been provided
+		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
+			var err error
+			_, err = piperDocker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			if err != nil {
+				log.Entry().Warningf("failed to update Docker config.json: %v", err)
+			}
+		}
+
 		return append(
 			kubeSecretParams,
 			"generic",
