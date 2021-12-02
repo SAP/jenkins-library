@@ -142,7 +142,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	}
 
 	// TODO: what we receive in the map, when the parameter is not defined?
-	nodeExtDescriptorMapping := config.NodeExtDescriptorMapping
+	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
 
 	// TODO: does it take into consideration the "verbose" parameter of the step or only the genearl configuration?
 	if GeneralConfig.Verbose {
@@ -150,8 +150,8 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		log.Entry().Infof("- description: %v", description)
 
 		// TODO: will this check be enough?
-		if len(nodeExtDescriptorMapping) != 0 {
-			log.Entry().Infof("- mapping between node names and MTA extension descriptor file paths: %v", nodeExtDescriptorMapping)
+		if len(nodeNameExtDescriptorMapping) != 0 {
+			log.Entry().Infof("- mapping between node names and MTA extension descriptor file paths: %v", nodeNameExtDescriptorMapping)
 		}
 		log.Entry().Infof("- MTA path: %v", mtaPath)
 		log.Entry().Infof("- MTA version: %v", mtaVersion)
@@ -162,7 +162,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	}
 
 	// TODO: will this check be enough?
-	if len(nodeExtDescriptorMapping) != 0 {
+	if len(nodeNameExtDescriptorMapping) != 0 {
 		nodes, errGetNodes := communicationInstance.GetNodes()
 		if errGetNodes != nil {
 			log.SetErrorCategory(log.ErrorService)
@@ -175,7 +175,9 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 			return fmt.Errorf("failed to get mta.yaml as map: %w", errGetMtaYamlAsMap)
 		}
 
-		// TODO: continue here with validation of node-extension-descriptor-mapping
+		getNodeIdExtDescriptorMapping(nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
+
+		// TODO: continue here
 
 	}
 
@@ -221,7 +223,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	return nil
 }
 
-func getNodeIdExtDescriptorMapping(nodeExtDescriptorMapping map[string]string, nodes []tms.Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[string]string, error) {
+func getNodeIdExtDescriptorMapping(nodeExtDescriptorMapping map[string]interface{}, nodes []tms.Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[string]string, error) {
 	var result map[string]string
 
 	// TODO: implement the logic here
