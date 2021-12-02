@@ -132,7 +132,6 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
-            type: "string"
   containers:
     - name: node
       image: node:lts-stretch
