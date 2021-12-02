@@ -24,11 +24,6 @@ type kubernetesDeployUtils interface {
 	RunExecutable(e string, p ...string) error
 
 	piperutils.FileUtils
-
-	//Abs(path string) (string, error)
-	//FileExists(filename string) (bool, error)
-	//FileWrite(path string, content []byte, perm os.FileMode) error
-	//FileRead(path string) ([]byte, error)
 }
 
 type kubernetesDeployUtilsBundle struct {
