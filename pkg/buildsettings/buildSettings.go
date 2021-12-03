@@ -43,6 +43,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		Profiles:                    config.Profiles,
 		Publish:                     config.Publish,
 		DefaultNpmRegistry:          config.DefaultNpmRegistry,
+		DockerImage:                 config.DockerImage,
 	}
 	var jsonMap map[string][]interface{}
 	var jsonResult []byte
