@@ -18,7 +18,7 @@ import (
 type golangBuildOptions struct {
 	BuildFlags                   []string `json:"buildFlags,omitempty"`
 	CgoEnabled                   bool     `json:"cgoEnabled,omitempty"`
-	CoverageFormat               string   `json:"coverageFormat,omitempty" validate:"oneof=cobertura html"`
+	CoverageFormat               string   `json:"coverageFormat,omitempty" validate:"possible-values=cobertura html"`
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
 	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
 	ExcludeGeneratedFromCoverage bool     `json:"excludeGeneratedFromCoverage,omitempty"`
@@ -31,7 +31,7 @@ type golangBuildOptions struct {
 	RunIntegrationTests          bool     `json:"runIntegrationTests,omitempty"`
 	TargetArchitectures          []string `json:"targetArchitectures,omitempty"`
 	TestOptions                  []string `json:"testOptions,omitempty"`
-	TestResultFormat             string   `json:"testResultFormat,omitempty" validate:"oneof=junit standard"`
+	TestResultFormat             string   `json:"testResultFormat,omitempty" validate:"possible-values=junit standard"`
 }
 
 // GolangBuildCommand This step will execute a golang build.
@@ -42,6 +42,8 @@ func GolangBuildCommand() *cobra.Command {
 	var stepConfig golangBuildOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createGolangBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -75,6 +77,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -91,29 +94,31 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			golangBuild(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			golangBuild(stepConfig, &stepTelemetryData)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
