@@ -12,6 +12,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/tms"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 type uaa struct {
@@ -169,71 +170,124 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 			return fmt.Errorf("failed to get nodes: %w", errGetNodes)
 		}
 
-		mtaYamlMap, errGetMtaYamlAsMap := getMtaYamlAsMap(utils)
+		mtaYamlMap, errGetMtaYamlAsMap := getYamlAsMap(utils, "mta.yaml")
 		if errGetMtaYamlAsMap != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("failed to get mta.yaml as map: %w", errGetMtaYamlAsMap)
 		}
 
-		getNodeIdExtDescriptorMapping(nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
-
-		// TODO: continue here
-
-	}
-
-	var nodeId int64
-	for i := 0; i < len(nodes); i++ {
-		if nodes[i].Name == config.NodeName {
-			nodeId = nodes[i].Id
-			break
+		// validate the whole mapping and then throw errors together, so that user can get them in one pipeline run
+		nodeIdExtDescriptorMapping, errGetNodeIdExtDescriptorMapping := formNodeIdExtDescriptorMappingWithValidation(utils, nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
+		if errGetNodeIdExtDescriptorMapping != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errGetNodeIdExtDescriptorMapping
 		}
-	}
 
-	// 2. Get MTA extension descriptor for node with given id
-	obtainedMtaExtDescriptor, err2 := communicationInstance.GetMtaExtDescriptor(nodeId, "com.sap.radsoulbeard.fiori", config.MtaVersion)
-	if err2 != nil {
-		return fmt.Errorf("failed to get MTA extension descriptor: %w", err2)
-	}
+		for nodeId, mtaExtDescriptorPath := range nodeIdExtDescriptorMapping {
+			// TODO: what if ID field in mta.yaml file does not exist?
+			obtainedMtaExtDescriptor, errGetMtaExtDescriptor := communicationInstance.GetMtaExtDescriptor(nodeId, fmt.Sprintf("%v", mtaYamlMap["ID"]), mtaVersion)
+			if errGetMtaExtDescriptor != nil {
+				log.SetErrorCategory(log.ErrorService)
+				return fmt.Errorf("failed to get MTA extension descriptor: %w", errGetMtaExtDescriptor)
+			}
 
-	// 3. Update obtained MTA extension descriptor
-	// TODO: read MTA extension descriptor file path from the map provided in config.yml
-	_, err3 := communicationInstance.UpdateMtaExtDescriptor(nodeId, obtainedMtaExtDescriptor.Id, "mtaext_update_test.mtaext", config.MtaVersion, config.CustomDescription, config.NamedUser)
-	if err3 != nil {
-		return fmt.Errorf("failed to update MTA extension descriptor: %w", err3)
-	}
+			idOfMtaExtDescriptor := obtainedMtaExtDescriptor.Id
+			if idOfMtaExtDescriptor != int64(0) {
+				_, errUpdateMtaExtDescriptor := communicationInstance.UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor, mtaExtDescriptorPath, mtaVersion, description, namedUser)
+				if errUpdateMtaExtDescriptor != nil {
+					log.SetErrorCategory(log.ErrorService)
+					return fmt.Errorf("failed to update MTA extension descriptor: %w", errUpdateMtaExtDescriptor)
+				}
+			} else {
+				_, errUploadMtaExtDescriptor := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, mtaExtDescriptorPath, mtaVersion, description, namedUser)
+				if errUploadMtaExtDescriptor != nil {
+					log.SetErrorCategory(log.ErrorService)
+					return fmt.Errorf("failed to upload MTA extension descriptor: %w", errUploadMtaExtDescriptor)
+				}
+			}
+		}
 
-	// 4. Upload another MTA extension descriptor to node
-	_, err4 := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, "mtaext_upload_test.mtaext", "1.0.1", config.CustomDescription, config.NamedUser)
-	if err4 != nil {
-		return fmt.Errorf("failed to upload MTA extension descriptor: %w", err4)
-	}
+		fileInfo, errUploadFile := communicationInstance.UploadFile(mtaPath, namedUser)
+		if errUploadFile != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return fmt.Errorf("failed to upload file: %w", errUploadFile)
+		}
 
-	// 5. Upload file
-	fileInfo, err5 := communicationInstance.UploadFile(config.MtaPath, config.NamedUser)
-	if err5 != nil {
-		return fmt.Errorf("failed to upload file: %w", err5)
-	}
-
-	// 6. Uplaod file to node
-	_, err6 := communicationInstance.UploadFileToNode(config.NodeName, strconv.FormatInt(fileInfo.Id, 10), config.CustomDescription, config.NamedUser)
-	if err6 != nil {
-		return fmt.Errorf("failed to upload file to node: %w", err6)
+		_, errUploadFileToNode := communicationInstance.UploadFileToNode(nodeName, strconv.FormatInt(fileInfo.Id, 10), description, namedUser)
+		if errUploadFileToNode != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return fmt.Errorf("failed to upload file to node: %w", errUploadFileToNode)
+		}
 	}
 
 	return nil
 }
 
-func getNodeIdExtDescriptorMapping(nodeExtDescriptorMapping map[string]interface{}, nodes []tms.Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[string]string, error) {
-	var result map[string]string
+func formNodeIdExtDescriptorMappingWithValidation(utils tmsUploadUtils, nodeNameExtDescriptorMapping map[string]interface{}, nodes []tms.Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[int64]string, error) {
+	var wrongMtaIdExtDescriptors []string
+	var wrongExtDescriptorPaths []string
+	var wrongNodeNames []string
+	var errorMessage string
 
-	// TODO: implement the logic here
+	nodeIdExtDescriptorMapping := make(map[int64]string)
+	for nodeName, mappedValue := range nodeNameExtDescriptorMapping {
+		mappedValueString := fmt.Sprintf("%v", mappedValue)
+		exists, _ := utils.FileExists(mappedValueString)
+		if exists {
+			extDescriptorMap, errGetYamlAsMap := getYamlAsMap(utils, mappedValueString)
+			if errGetYamlAsMap == nil {
+				// TODO: what, if there is no field (ID or extends) in th yaml? will it get nil or empty string
+				// TODO: what, if there is no both ID field in the mta.yaml and extends field in extension descriptor?
+				if fmt.Sprintf("%v", mtaYamlMap["ID"]) != fmt.Sprintf("%v", extDescriptorMap["extends"]) {
+					wrongMtaIdExtDescriptors = append(wrongMtaIdExtDescriptors, mappedValueString)
+				}
+			} else {
+				wrappedErr := errors.Wrapf(errGetYamlAsMap, "tried to parse %v as yaml, but got an error", mappedValueString)
+				errorMessage += fmt.Sprintf("%v\n", wrappedErr)
+			}
+		} else {
+			wrongExtDescriptorPaths = append(wrongExtDescriptorPaths, mappedValueString)
+		}
 
-	return result, nil
+		isNodeFound := false
+		for _, node := range nodes {
+			if node.Name == nodeName {
+				nodeIdExtDescriptorMapping[node.Id] = mappedValueString
+				isNodeFound = true
+				break
+			}
+		}
+		if !isNodeFound {
+			wrongNodeNames = append(wrongNodeNames, nodeName)
+		}
+	}
+
+	if mtaVersion != "*" && mtaVersion != mtaYamlMap["version"] {
+		errorMessage = "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
+	}
+
+	if len(wrongMtaIdExtDescriptors) > 0 || len(wrongExtDescriptorPaths) > 0 || len(wrongNodeNames) > 0 {
+		if len(wrongMtaIdExtDescriptors) > 0 {
+			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID\n", wrongMtaIdExtDescriptors)
+		}
+		if len(wrongExtDescriptorPaths) > 0 {
+			errorMessage += fmt.Sprintf("MTA extension descriptor files %v do not exist\n", wrongExtDescriptorPaths)
+		}
+		if len(wrongNodeNames) > 0 {
+			errorMessage += fmt.Sprintf("nodes %v do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n", wrongNodeNames)
+		}
+	}
+
+	if errorMessage == "" {
+		return nodeIdExtDescriptorMapping, nil
+	} else {
+		return nil, errors.New(errorMessage)
+	}
 }
 
-func getMtaYamlAsMap(utils tmsUploadUtils) (map[string]interface{}, error) {
+func getYamlAsMap(utils tmsUploadUtils, yamlPath string) (map[string]interface{}, error) {
 	var result map[string]interface{}
-	bytes, err := utils.FileRead("mta.yaml")
+	bytes, err := utils.FileRead(yamlPath)
 	if err != nil {
 		return result, err
 	}
