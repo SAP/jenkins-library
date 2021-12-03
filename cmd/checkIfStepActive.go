@@ -15,6 +15,7 @@ type checkStepActiveCommandOptions struct {
 	openFile        func(s string, t map[string]string) (io.ReadCloser, error)
 	stageConfigFile string
 	stepName        string
+	stageName       string
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
@@ -25,17 +26,13 @@ func CheckStepActiveCommand() *cobra.Command {
 	var checkStepActiveCmd = &cobra.Command{
 		Use:   "checkIfStepActive",
 		Short: "Checks if a step is active in a defined stage.",
-		PreRunE: func(cmd *cobra.Command, _ []string) error {
+		PreRun: func(cmd *cobra.Command, _ []string) {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 			initStageName(false)
-			if GeneralConfig.StageName == "" {
-				return errors.New("required flag 'stageName' not set")
-			}
 			log.SetVerbose(GeneralConfig.Verbose)
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
-			return nil
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := checkIfStepActive()
@@ -50,12 +47,19 @@ func CheckStepActiveCommand() *cobra.Command {
 }
 
 func checkIfStepActive() error {
+	// make the stageName the leading parameter
+	if GeneralConfig.StageName != "" {
+		checkStepActiveOptions.stageName = GeneralConfig.StageName
+	}
+	if checkStepActiveOptions.stageName == "" {
+		return errors.New("stage name must not be empty")
+	}
 	var pConfig config.Config
 
 	// load project config and defaults
 	projectConfig, err := initializeConfig(&pConfig)
 	if err != nil {
-		log.Entry().Errorf("Failed to load project config: %v", err)
+		return errors.Wrap(err, "failed to load project config")
 	}
 
 	stageConfigFile, err := checkStepActiveOptions.openFile(checkStepActiveOptions.stageConfigFile, GeneralConfig.GitHubAccessTokens)
@@ -73,7 +77,7 @@ func checkIfStepActive() error {
 
 	log.Entry().Debugf("RunSteps: %v", stageConditions.RunSteps)
 
-	stageName := GeneralConfig.StageName
+	stageName := checkStepActiveOptions.stageName
 	if !stageConditions.RunSteps[stageName][checkStepActiveOptions.stepName] {
 		return errors.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, stageName)
 	}
@@ -86,6 +90,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageConfigFile, "stageConfig", ".resources/piper-stage-config.yml",
 		"Default config of piper pipeline stages")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepName, "step", "", "Name of the step being checked")
+	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", GeneralConfig.StageName, "Name of the stage in which the step being checked is")
 	cmd.MarkFlagRequired("step")
 }
 
