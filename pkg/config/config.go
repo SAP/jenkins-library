@@ -181,8 +181,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			return StepConfig{}, err
 		}
 	}
-	// parameters = append(parameters, reportingParams...)
-	// filters = appendReportingFilter(filters)
+
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
 	// initialize with defaults from step.yaml

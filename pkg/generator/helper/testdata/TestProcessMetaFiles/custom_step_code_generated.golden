@@ -219,7 +219,7 @@ func TestStepCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			//log.DeferExitHandler(handler)
+			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {

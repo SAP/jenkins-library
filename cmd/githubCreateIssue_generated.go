@@ -98,7 +98,7 @@ You will be able to use this step for example for regular jobs to report into yo
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
-			//log.DeferExitHandler(handler)
+			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
