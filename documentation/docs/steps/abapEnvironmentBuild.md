@@ -83,4 +83,4 @@ stages:
     treatWarningsAsError: true
     maxRuntimeInMinutes: 360
     pollingIntervallInSeconds: 15
-```yaml
+```
