@@ -16,7 +16,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 )
 
@@ -198,8 +197,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
-		reportingConfig := Config{}
-		copier.Copy(&reportingConfig, &def)
+		reportingConfig, err := cloneConfig(&def)
+		if err != nil {
+			return StepConfig{}, err
+		}
 		reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 		stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
@@ -246,8 +247,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
 
-	reportingConfig := Config{}
-	copier.Copy(&reportingConfig, c)
+	reportingConfig, err := cloneConfig(c)
+	if err != nil {
+		return StepConfig{}, err
+	}
 	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
@@ -495,4 +498,18 @@ func sliceContains(slice []string, find string) bool {
 		}
 	}
 	return false
+}
+
+func cloneConfig(config *Config) (*Config, error) {
+	configJSON, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+
+	clone := &Config{}
+	if err = json.Unmarshal(configJSON, &clone); err != nil {
+		return nil, err
+	}
+
+	return clone, nil
 }

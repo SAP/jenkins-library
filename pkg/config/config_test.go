@@ -979,3 +979,25 @@ func TestMixInStepDefaults(t *testing.T) {
 		assert.Equal(t, test.expected, test.stepConfig.Config, test.name)
 	}
 }
+
+func TestCloneConfig(t *testing.T) {
+	testConfig := &Config{
+		General: map[string]interface{}{
+			"p0": "p0_general",
+		},
+		Stages: map[string]map[string]interface{}{
+			"stage1": {
+				"p1": "p1_stage",
+			},
+		},
+		Steps: map[string]map[string]interface{}{
+			"step1": {
+				"p2": "p2_step",
+			},
+		},
+	}
+	clone, err := cloneConfig(testConfig)
+	assert.NoError(t, err)
+	assert.Equal(t, false, testConfig == clone)
+	assert.Equal(t, testConfig, clone)
+}

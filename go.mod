@@ -30,7 +30,6 @@ require (
 	github.com/hashicorp/vault/api v1.1.2-0.20210713235431-1fc8af4c041f
 	github.com/influxdata/influxdb-client-go/v2 v2.5.1
 	github.com/jarcoal/httpmock v1.0.8
-	github.com/jinzhu/copier v0.3.2
 	github.com/magiconair/properties v1.8.5
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
