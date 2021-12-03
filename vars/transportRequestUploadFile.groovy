@@ -135,6 +135,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'abapPackage',
         /** The code page of your ABAP system. E.g. UTF-8. */
         'codePage', //RFC
+        /** If unix style line endings should be accepted. Only for `RFC`.*/
         'acceptUnixStyleLineEndings', // RFC
         /** @see transportRequestCreate */
         'verbose', // RFC
@@ -211,10 +212,10 @@ void call(Map parameters = [:]) {
         def changeDocumentId = null
 
         if(backendType == BackendType.SOLMAN) {
-            changeDocumentId = getChangeDocumentId(cm, script, configuration)
+            changeDocumentId = getChangeDocumentId(script, configuration)
         }
 
-        def transportRequestId = getTransportRequestId(cm, script, configuration)
+        def transportRequestId = getTransportRequestId(script, configuration)
 
         configHelper
             .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
@@ -239,14 +240,22 @@ void call(Map parameters = [:]) {
                         echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'" +
                             " of change document '${configuration.changeDocumentId}'."
 
-                        transportRequestUploadSOLMAN(script: script,
-                            cmClientOpts: configuration.changeManagement.clientOpts,
+                        Map paramsUpload = [
+                            script: script,
                             filePath: configuration.filePath,
                             uploadCredentialsId: configuration.changeManagement.credentialsId,
                             endpoint: configuration.changeManagement.endpoint,
                             applicationId: configuration.applicationId,
                             changeDocumentId: configuration.changeDocumentId,
-                            transportRequestId: configuration.transportRequestId)
+                            transportRequestId: configuration.transportRequestId
+                            ]
+
+                        if(configuration.changeManagement.clientOpts) {
+                            paramsUpload.cmClientOpts = configuration.changeManagement.clientOpts
+                        }
+                        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.solman?.docker)
+
+                        transportRequestUploadSOLMAN(paramsUpload)
 
                         echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'" +
                             " of change document '${configuration.changeDocumentId}'."
@@ -256,7 +265,8 @@ void call(Map parameters = [:]) {
 
                         echo "[INFO] Uploading application '${configuration.applicationName}' to transport request '${configuration.transportRequestId}'."
 
-                        transportRequestUploadCTS(script: script,
+                        Map paramsUpload = [
+                            script: script,
                             transportRequestId: configuration.transportRequestId,
                             endpoint: configuration.changeManagement.endpoint,
                             client: configuration.changeManagement.client,
@@ -267,7 +277,12 @@ void call(Map parameters = [:]) {
                             deployToolDependencies: configuration.changeManagement.cts.deployToolDependencies,
                             npmInstallOpts: configuration.changeManagement.cts.npmInstallOpts,
                             deployConfigFile: configuration.changeManagement.cts.deployConfigFile,
-                            uploadCredentialsId: configuration.changeManagement.credentialsId)
+                            uploadCredentialsId: configuration.changeManagement.credentialsId
+                            ]
+
+                        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.cts?.nodeDocker)
+
+                        transportRequestUploadCTS(paramsUpload)
 
                         echo "[INFO] Application '${configuration.applicationName}' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
 
@@ -275,7 +290,8 @@ void call(Map parameters = [:]) {
                     case BackendType.RFC:
 
                         echo "[INFO] Uploading file '${configuration.applicationUrl}' to transport request '${configuration.transportRequestId}'."
-                        transportRequestUploadRFC(script: script,
+
+                        Map paramsUpload = [script: script,
                             transportRequestId: configuration.transportRequestId,
                             applicationName: configuration.applicationName,
                             applicationUrl: configuration.applicationUrl,
@@ -289,7 +305,11 @@ void call(Map parameters = [:]) {
                             acceptUnixStyleLineEndings: configuration.acceptUnixStyleLineEndings,
                             failUploadOnWarning: configuration.failOnWarning,
                             verbose: configuration.verbose
-                        )
+                            ]
+
+                        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.rfc?.docker)
+
+                        transportRequestUploadRFC(paramsUpload)
 
                         echo "[INFO] File 'configuration.applicationUrl' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
 
@@ -300,4 +320,23 @@ void call(Map parameters = [:]) {
                 throw new AbortException(ex.getMessage())
             }
     }
+}
+
+Map addDockerParams(Script script, Map parameters, Map docker) {
+
+    if(docker) {
+        if(docker.image) {
+            parameters.dockerImage = docker.image
+        }
+        if(docker.options) {
+            parameters.dockerOptions = docker.options
+        }
+        if(docker.envVars) {
+            parameters.dockerEnvVars = docker.envVars
+        }
+        if(docker.pullImage != null) {
+            parameters.put('dockerPullImage', docker.pullImage)
+        }
+    }
+    return parameters
 }

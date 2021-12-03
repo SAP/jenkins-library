@@ -1,0 +1,71 @@
+metadata:
+  name: influxWriteData
+  description: Writes metrics to influxdb
+  longDescription: |
+    In this step, the metrics are written to the timeseries database [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/)
+spec:
+  inputs:
+    secrets:
+      - name: influxAuthTokenId
+        description: Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.
+        type: jenkins
+    params:
+      - name: serverUrl
+        type: string
+        description: Base URL to the InfluxDB server
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+      - name: authToken
+        type: string
+        description: Token to authenticate to the Influxdb
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: influxAuthTokenId
+            type: secret
+          - type: vaultSecret
+            name: influxVaultSecretName
+            default: influxdb
+      - name: bucket
+        type: string
+        description: Name of database (1.8) or bucket (2.0)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "piper"
+      - name: organization
+        type: string
+        description: Name of influx organization. Only for Influxdb 2.0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dataMap
+        type: string
+        description:
+          "Map of fields for each measurements. It has to be a JSON string.
+          For example: {'series_1':{'field_a':11,'field_b':12},'series_2':{'field_c':21,'field_d':22}}"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: dataMapTags
+        type: string
+        description:
+          "Map of tags for each measurements. It has to be a JSON string.
+          For example: {'series_1':{'tag_a':'a','tag_b':'b'},'series_2':{'tag_c':'c','tag_d':'d'}}"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false

@@ -2,11 +2,13 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +44,245 @@ func evaluateConditionsOpenFileMock(name string, _ map[string]string) (io.ReadCl
 	return fileContent, nil
 }
 
-func Test_evaluateConditions(t *testing.T) {
+func TestEvaluateConditionsV1(t *testing.T) {
+	filesMock := mock.FilesMock{}
+
+	runConfig := RunConfigV1{
+		PipelineConfig: PipelineDefinitionV1{
+			Spec: Spec{
+				Stages: []Stage{
+					{
+						Name:        "stage1",
+						DisplayName: "Test Stage 1",
+						Steps: []Step{
+							{
+								Name:          "step1_1",
+								Conditions:    []StepCondition{},
+								Orchestrators: []string{"Jenkins"},
+							},
+							{
+								Name: "step1_2",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKey"},
+								},
+							},
+							{
+								Name:       "step1_3",
+								Conditions: []StepCondition{},
+							},
+						},
+					},
+					{
+						Name:        "stage2",
+						DisplayName: "Test Stage 2",
+						Steps: []Step{
+							{
+								Name: "step2_1",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
+							},
+							{
+								Name: "step2_2",
+							},
+						},
+					},
+					{
+						Name:        "stage3",
+						DisplayName: "Test Stage 3",
+						Steps: []Step{
+							{
+								Name: "step3_1",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	config := Config{Stages: map[string]map[string]interface{}{
+		"Test Stage 1": {"step1_3": false, "testKey": "testVal"},
+		"Test Stage 2": {"testKey": "testVal"},
+	}}
+
+	expectedSteps := map[string]map[string]bool{
+		"Test Stage 1": {
+			"step1_2": true,
+			"step1_3": false,
+		},
+		"Test Stage 2": {
+			"step2_1": true,
+			"step2_2": true,
+		},
+		"Test Stage 3": {
+			"step3_1": false,
+		},
+	}
+
+	expectedStages := map[string]bool{
+		"Test Stage 1": true,
+		"Test Stage 2": true,
+		"Test Stage 3": false,
+	}
+
+	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSteps, runConfig.RunSteps)
+	assert.Equal(t, expectedStages, runConfig.RunStages)
+
+}
+
+func TestEvaluateV1(t *testing.T) {
+	tt := []struct {
+		name          string
+		config        StepConfig
+		stepCondition StepCondition
+		expected      bool
+		expectedError error
+	}{
+		{
+			name: "Config condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"deployTool": "helm3",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}}},
+			expected:      true,
+		},
+		{
+			name: "Config condition - false",
+			config: StepConfig{Config: map[string]interface{}{
+				"deployTool": "notsupported",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}}},
+			expected:      false,
+		},
+		{
+			name: "Config condition - integer - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"executors": 1,
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"executors": {1}}},
+			expected:      true,
+		},
+		{
+			name: "Config condition - wrong condition definition",
+			config: StepConfig{Config: map[string]interface{}{
+				"deployTool": "helm3",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}, "deployTool2": {"myTool"}}},
+			expectedError: fmt.Errorf("only one config key allowed per condition but 2 provided"),
+		},
+		{
+			name: "ConfigKey condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"dockerRegistryUrl": "https://my.docker.registry.url",
+			}},
+			stepCondition: StepCondition{ConfigKey: "dockerRegistryUrl"},
+			expected:      true,
+		},
+		{
+			name:          "ConfigKey condition - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{ConfigKey: "dockerRegistryUrl"},
+			expected:      false,
+		},
+		{
+			name:          "FilePattern condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{FilePattern: "**/conf.js"},
+			expected:      true,
+		},
+		{
+			name:          "FilePattern condition - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{FilePattern: "**/confx.js"},
+			expected:      false,
+		},
+		{
+			name: "FilePatternFromConfig condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"newmanCollection": "**/*.postman_collection.json",
+			}},
+			stepCondition: StepCondition{FilePatternFromConfig: "newmanCollection"},
+			expected:      true,
+		},
+		{
+			name: "FilePatternFromConfig condition - false",
+			config: StepConfig{Config: map[string]interface{}{
+				"newmanCollection": "**/*.postmanx_collection.json",
+			}},
+			stepCondition: StepCondition{FilePatternFromConfig: "newmanCollection"},
+			expected:      false,
+		},
+		{
+			name: "FilePatternFromConfig condition - false, empty value",
+			config: StepConfig{Config: map[string]interface{}{
+				"newmanCollection": "",
+			}},
+			stepCondition: StepCondition{FilePatternFromConfig: "newmanCollection"},
+			expected:      false,
+		},
+		{
+			name:          "NpmScript condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{NpmScript: "testScript"},
+			expected:      true,
+		},
+		{
+			name:          "NpmScript condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{NpmScript: "missingScript"},
+			expected:      false,
+		},
+		{
+			name:          "Inactive condition - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{Inactive: true},
+			expected:      false,
+		},
+		{
+			name:          "Inactive condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{Inactive: false},
+			expected:      true,
+		},
+		{
+			name:     "No condition - true",
+			config:   StepConfig{Config: map[string]interface{}{}},
+			expected: true,
+		},
+	}
+
+	packageJson := `{
+	"scripts": {
+		"testScript": "whatever"
+	}
+}`
+
+	filesMock := mock.FilesMock{}
+	filesMock.AddFile("conf.js", []byte("//test"))
+	filesMock.AddFile("my.postman_collection.json", []byte("{}"))
+	filesMock.AddFile("package.json", []byte(packageJson))
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			active, err := test.stepCondition.evaluateV1(test.config, &filesMock)
+			if test.expectedError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, fmt.Sprint(test.expectedError))
+			}
+			assert.Equal(t, test.expected, active)
+		})
+	}
+}
+
+func TestEvaluateConditions(t *testing.T) {
 	tests := []struct {
 		name             string
 		customConfig     *Config

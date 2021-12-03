@@ -491,7 +491,9 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 		},
 	}
-	issues, groups, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+
+	spotChecksCountByCategory := []fortify.SpotChecksAuditCount{}
+	issues, groups, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus, &spotChecksCountByCategory)
 	assert.NoError(t, err)
 	assert.Equal(t, 13, issues)
 	assert.Equal(t, 3, len(groups))
@@ -503,6 +505,7 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	assert.Equal(t, 13, influx.fortify_data.fields.spotChecksTotal)
 	assert.Equal(t, 11, influx.fortify_data.fields.spotChecksAudited)
 	assert.Equal(t, 1, influx.fortify_data.fields.spotChecksGap)
+	assert.Equal(t, 3, len(spotChecksCountByCategory))
 }
 
 func TestTriggerFortifyScan(t *testing.T) {

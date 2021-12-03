@@ -11,12 +11,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type nexusUploadOptions struct {
-	Version            string `json:"version,omitempty"`
-	Format             string `json:"format,omitempty"`
+	Version            string `json:"version,omitempty" validate:"possible-values=nexus2 nexus3"`
+	Format             string `json:"format,omitempty" validate:"possible-values=maven npm"`
 	Url                string `json:"url,omitempty"`
 	MavenRepository    string `json:"mavenRepository,omitempty"`
 	NpmRepository      string `json:"npmRepository,omitempty"`
@@ -36,6 +37,8 @@ func NexusUploadCommand() *cobra.Command {
 	var stepConfig nexusUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createNexusUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -85,36 +88,48 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			nexusUpload(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			nexusUpload(stepConfig, &stepTelemetryData)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -125,7 +140,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Version, "version", `nexus3`, "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
-	cmd.Flags().StringVar(&stepConfig.Format, "format", os.Getenv("PIPER_format"), "The format/registry type. Currently supported are 'maven' and 'npm'.")
+	cmd.Flags().StringVar(&stepConfig.Format, "format", `maven`, "The format/registry type. Currently supported are 'maven' and 'npm'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported. If the 'format' option is set, the 'URL' can contain the full path including the repository ID and providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.")
 	cmd.Flags().StringVar(&stepConfig.MavenRepository, "mavenRepository", os.Getenv("PIPER_mavenRepository"), "Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.")
 	cmd.Flags().StringVar(&stepConfig.NpmRepository, "npmRepository", os.Getenv("PIPER_npmRepository"), "Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.")
@@ -178,7 +193,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_format"),
+						Default:   `maven`,
 					},
 					{
 						Name: "url",
@@ -200,7 +215,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository"}},
+						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository", Deprecated: true}},
 						Default:     os.Getenv("PIPER_mavenRepository"),
 					},
 					{
@@ -291,7 +306,7 @@ func nexusUploadMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn-npm", Image: "devxci/mbtci:1.1.1"},
+				{Name: "mvn-npm", Image: "devxci/mbtci-java11-node14"},
 			},
 		},
 	}

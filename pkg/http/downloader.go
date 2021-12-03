@@ -46,3 +46,12 @@ func (c *Client) DownloadRequest(method, url, filename string, header http.Heade
 	}
 	return err
 }
+
+// GetRequest downloads content from a given URL and returns the response instead of writing it to file
+func (c *Client) GetRequest(url string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	response, err := c.SendRequest("GET", url, nil, header, cookies)
+	if err != nil {
+		return &http.Response{}, errors.Wrapf(err, "HTTP request to %v failed with error", url)
+	}
+	return response, nil
+}

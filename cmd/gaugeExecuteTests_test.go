@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -15,7 +16,7 @@ type gaugeExecuteTestsMockUtils struct {
 
 func (utils gaugeExecuteTestsMockUtils) Getenv(key string) string {
 	if key == "HOME" {
-		return "/home/node"
+		return filepath.FromSlash("/home/node")
 	}
 	return ""
 }
@@ -29,7 +30,7 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		RunCommand:     "run",
 		TestOptions:    "specs",
 	}
-	gaugeBin := "home/node/.npm-global/bin/gauge"
+	gaugeBinRegEx := "home.node..npm-global.bin.gauge"
 
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
@@ -44,9 +45,9 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Params, []string{"install", "-g", "@getgauge/cli", "--prefix=~/.npm-global"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Params, []string{"install", "java"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Params, []string{"run", "specs"})
 	})
 
@@ -75,7 +76,7 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		badInstallConfig.LanguageRunner = "wrong"
 
 		mockUtils := gaugeExecuteTestsMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBin + " install wrong": errors.New("error installing runner")}},
+			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBinRegEx + " install wrong": errors.New("error installing runner")}},
 			FilesMock:      &mock.FilesMock{},
 		}
 
@@ -86,14 +87,14 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Params, []string{"install", "-g", "@getgauge/cli", "--prefix=~/.npm-global"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Params, []string{"install", "wrong"})
 	})
 	t.Run("fail on gauge run", func(t *testing.T) {
 		t.Parallel()
 
 		mockUtils := gaugeExecuteTestsMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBin + " run specs": errors.New("error running gauge")}},
+			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{gaugeBinRegEx + " run specs": errors.New("error running gauge")}},
 			FilesMock:      &mock.FilesMock{},
 		}
 
@@ -104,9 +105,9 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Params, []string{"install", "-g", "@getgauge/cli", "--prefix=~/.npm-global"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[1].Params, []string{"install", "java"})
-		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, "/home/node/.npm-global/bin/gauge")
+		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Exec, filepath.FromSlash("/home/node/.npm-global/bin/gauge"))
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[2].Params, []string{"run", "specs"})
 	})
 }

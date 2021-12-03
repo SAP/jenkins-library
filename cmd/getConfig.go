@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ import (
 
 type configCommandOptions struct {
 	output                        string //output format, so far only JSON
+	outputFile                    string //if set: path to file where the output should be written to
 	parametersJSON                string //parameters to be considered in JSON format
 	stageConfig                   bool
 	stageConfigAcceptedParameters []string
@@ -27,6 +29,23 @@ type configCommandOptions struct {
 }
 
 var configOptions configCommandOptions
+
+type getConfigUtils interface {
+	FileExists(filename string) (bool, error)
+	DirExists(path string) (bool, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+}
+
+type getConfigUtilsBundle struct {
+	*piperutils.Files
+}
+
+func newGetConfigUtilsUtils() getConfigUtils {
+	utils := getConfigUtilsBundle{
+		Files: &piperutils.Files{},
+	}
+	return &utils
+}
 
 // ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
@@ -43,7 +62,8 @@ func ConfigCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
-			err := generateConfig()
+			utils := newGetConfigUtilsUtils()
+			err := generateConfig(utils)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
@@ -55,8 +75,25 @@ func ConfigCommand() *cobra.Command {
 	return createConfigCmd
 }
 
-func generateConfig() error {
+func getDockerImageValue(stepName string) (string, error) {
 
+	configOptions.contextConfig = true
+	configOptions.stepName = stepName
+	stepConfig, err := getConfig()
+	if err != nil {
+		return "", err
+	}
+
+	var dockerImageValue string
+	dockerImageValue, ok := stepConfig.Config["dockerImage"].(string)
+	if !ok {
+		log.Entry().Infof("Config value of %v to compare with is not a string", stepConfig.Config["dockerImage"])
+	}
+
+	return dockerImageValue, nil
+}
+
+func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
@@ -66,7 +103,7 @@ func generateConfig() error {
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
 			}
 			customConfig = nil
 		}
@@ -76,7 +113,7 @@ func generateConfig() error {
 			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
-				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
@@ -85,13 +122,14 @@ func generateConfig() error {
 
 		stepConfig, err = myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.stageConfigAcceptedParameters, GeneralConfig.StageName)
 		if err != nil {
-			return errors.Wrap(err, "getting stage config failed")
+			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
 
 	} else {
-		metadata, err := resolveMetadata()
+		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
+		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, configOptions.stepMetadata, configOptions.stepName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to resolve metadata")
+			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
 
 		// prepare output resource directories:
@@ -108,21 +146,21 @@ func generateConfig() error {
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
 			}
 			customConfig = nil
 		}
 
 		defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
 		if err != nil {
-			return errors.Wrap(err, "defaults: retrieving step defaults failed")
+			return stepConfig, errors.Wrap(err, "defaults: retrieving step defaults failed")
 		}
 
 		for _, f := range GeneralConfig.DefaultConfig {
 			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
-				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
@@ -138,7 +176,7 @@ func generateConfig() error {
 
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
 		if err != nil {
-			return errors.Wrap(err, "getting step config failed")
+			return stepConfig, errors.Wrap(err, "getting step config failed")
 		}
 
 		// apply context conditions if context configuration is requested
@@ -146,9 +184,25 @@ func generateConfig() error {
 			applyContextConditions(metadata, &stepConfig)
 		}
 	}
+	return stepConfig, nil
+}
+
+func generateConfig(utils getConfigUtils) error {
+
+	stepConfig, err := getConfig()
+	if err != nil {
+		return err
+	}
 
 	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
 
+	if len(configOptions.outputFile) > 0 {
+		err := utils.FileWrite(configOptions.outputFile, []byte(myConfigJSON), 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write output file %v: %w", configOptions.outputFile, err)
+		}
+		return nil
+	}
 	fmt.Println(myConfigJSON)
 
 	return nil
@@ -158,6 +212,7 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	//ToDo: support more output options, like https://kubernetes.io/docs/reference/kubectl/overview/#formatting-output
 	cmd.Flags().StringVar(&configOptions.output, "output", "json", "Defines the output format")
+	cmd.Flags().StringVar(&configOptions.outputFile, "outputFile", "", "Defines a file path. f set, the output will be written to the defines file")
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().BoolVar(&configOptions.stageConfig, "stageConfig", false, "Defines if step stage configuration should be loaded and no step-specific config")
@@ -224,34 +279,4 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			os.MkdirAll(dir, 0777)
 		}
 	}
-}
-
-func resolveMetadata() (config.StepData, error) {
-	var metadata config.StepData
-	if configOptions.stepMetadata != "" {
-		metadataFile, err := configOptions.openFile(configOptions.stepMetadata, GeneralConfig.GitHubAccessTokens)
-		if err != nil {
-			return metadata, errors.Wrap(err, "open failed")
-		}
-
-		err = metadata.ReadPipelineStepData(metadataFile)
-		if err != nil {
-			return metadata, errors.Wrap(err, "read failed")
-		}
-	} else {
-		if configOptions.stepName != "" {
-			if GeneralConfig.MetaDataResolver == nil {
-				GeneralConfig.MetaDataResolver = GetAllStepMetadata
-			}
-			metadataMap := GeneralConfig.MetaDataResolver()
-			var ok bool
-			metadata, ok = metadataMap[configOptions.stepName]
-			if !ok {
-				return metadata, errors.Errorf("could not retrieve by stepName %v", configOptions.stepName)
-			}
-		} else {
-			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
-		}
-	}
-	return metadata, nil
 }

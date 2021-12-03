@@ -115,10 +115,8 @@ spec:
           - name: altDeploymentRepositoryPasswordId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/alt-deployment-repository-passowrd
-              - $(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd
-              - $(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd
+            name: altDeploymentRepositoryPasswordFileVaultSecretName
+            default: alt-deployment-repository-passowrd
       - name: altDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
@@ -178,6 +176,22 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/javaCaCertFilePath
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

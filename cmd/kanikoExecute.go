@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
 
@@ -58,7 +58,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
+		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils, "/kaniko/ssl/certs/ca-certificates.crt")
 		if err != nil {
 			return errors.Wrap(err, "failed to update certificates")
 		}
@@ -102,6 +102,22 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		}
 	}
 
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "kanikoExecute"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	kanikoConfig := buildsettings.BuildOptions{
+		DockerImage: dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
 		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
 	}
@@ -117,33 +133,6 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")
-	}
-	return nil
-}
-
-func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
-	caCerts, err := fileUtils.FileRead(caCertsFile)
-	if err != nil {
-		return errors.Wrapf(err, "failed to load file '%v'", caCertsFile)
-	}
-	for _, link := range certLinks {
-		response, err := httpClient.SendRequest(http.MethodGet, link, nil, nil, nil)
-		if err != nil {
-			return errors.Wrap(err, "failed to load certificate from url")
-		}
-
-		content, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return errors.Wrap(err, "error reading response")
-		}
-		_ = response.Body.Close()
-		content = append(content, []byte("\n")...)
-		caCerts = append(caCerts, content...)
-	}
-	err = fileUtils.FileWrite(caCertsFile, caCerts, 0644)
-	if err != nil {
-		return errors.Wrapf(err, "failed to update file '%v'", caCertsFile)
 	}
 	return nil
 }
