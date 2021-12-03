@@ -399,8 +399,7 @@ func TestPublishAllDownloadedResults(t *testing.T) {
 		//act
 		build.PublishAllDownloadedResults("MyStep", &mP)
 		//assert
-		publishedFiles := []piperutils.Path{}
-		assert.Equal(t, publishedFiles, mP.reports)
+		assert.Equal(t, 0, len(mP.reports))
 	})
 }
 

@@ -61,8 +61,7 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingIntervall tim
 
 func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
 	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervallInSeconds))
-	err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe)
-	if err != nil {
+	if err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
