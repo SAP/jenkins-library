@@ -16,14 +16,15 @@ import (
 )
 
 type githubCreateIssueOptions struct {
-	APIURL       string   `json:"apiUrl,omitempty"`
-	Assignees    []string `json:"assignees,omitempty"`
-	Body         string   `json:"body,omitempty"`
-	BodyFilePath string   `json:"bodyFilePath,omitempty"`
-	Owner        string   `json:"owner,omitempty"`
-	Repository   string   `json:"repository,omitempty"`
-	Title        string   `json:"title,omitempty"`
-	Token        string   `json:"token,omitempty"`
+	APIURL         string   `json:"apiUrl,omitempty"`
+	Assignees      []string `json:"assignees,omitempty"`
+	Body           string   `json:"body,omitempty"`
+	BodyFilePath   string   `json:"bodyFilePath,omitempty"`
+	Owner          string   `json:"owner,omitempty"`
+	Repository     string   `json:"repository,omitempty"`
+	Title          string   `json:"title,omitempty"`
+	UpdateExisting bool     `json:"updateExisting,omitempty"`
+	Token          string   `json:"token,omitempty"`
 }
 
 // GithubCreateIssueCommand Create a new GitHub issue.
@@ -34,6 +35,8 @@ func GithubCreateIssueCommand() *cobra.Command {
 	var stepConfig githubCreateIssueOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createGithubCreateIssueCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -65,6 +68,7 @@ You will be able to use this step for example for regular jobs to report into yo
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -81,29 +85,31 @@ You will be able to use this step for example for regular jobs to report into yo
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			githubCreateIssue(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			githubCreateIssue(stepConfig, &stepTelemetryData)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -120,6 +126,7 @@ func addGithubCreateIssueFlags(cmd *cobra.Command, stepConfig *githubCreateIssue
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Defines the title for the Issue.")
+	cmd.Flags().BoolVar(&stepConfig.UpdateExisting, "updateExisting", false, "Whether to update an existing open issue with the same title by adding a comment instead of creating a new one.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
@@ -215,6 +222,15 @@ func githubCreateIssueMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_title"),
+					},
+					{
+						Name:        "updateExisting",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "token",
