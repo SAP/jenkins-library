@@ -427,7 +427,7 @@ func mtaBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "mtarFilePath"},
 							{"Name": "custom/mtarPublishedUrl"},
-							{"Name": "custom/buildSettingsInfo", "type": "string"},
+							{"Name": "custom/buildSettingsInfo"},
 						},
 					},
 				},
