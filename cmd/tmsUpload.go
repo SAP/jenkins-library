@@ -59,13 +59,11 @@ func newTmsUploadUtils() tmsUploadUtils {
 	return &utils
 }
 
-func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
+func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newTmsUploadUtils()
-
 	client := &piperHttp.Client{}
-	// TODO: any options to set for the client? (see e.g. checkmarxExecuteScan.go)
 
 	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
 	if err != nil {
@@ -90,14 +88,13 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	influx.step_data.fields.tms = false
 
 	// TODO: load to config parameters from the common pipeline environment
-	if err := runTmsUpload(config, communicationInstance, utils); err != nil {
+	if err := runTmsUpload(config, communicationInstance, utils, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
 	influx.step_data.fields.tms = true
 }
 
-func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils) error {
-	// TODO: provide TMS upload logic here
+func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) error {
 	/*
 		log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
@@ -118,18 +115,18 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 
 	mtaPath := config.MtaPath
 	if mtaPath == "" {
-		// TODO: get here mtarFilePath from the common piepline environment and assign it to mtaPath
+		mtaPath = commonPipelineEnvironment.mtarFilePath
 	}
 
 	exists, _ := utils.FileExists(mtaPath)
 	if !exists {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("mta file not found '%s'", mtaPath)
+		return fmt.Errorf("mta file %s not found", mtaPath)
 	}
 
 	description := config.CustomDescription
 	if description == "" {
-		// TODO: get git commit id from common pipeline environment and assign it description
+		description = fmt.Sprintf("Git commit id: %v", commonPipelineEnvironment.git.commitID)
 	}
 
 	// TODO: get name of user, who started the job; if it exists, assign it to namedUser variable, otherwise use namedUser from the config
@@ -206,18 +203,18 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 				}
 			}
 		}
+	}
 
-		fileInfo, errUploadFile := communicationInstance.UploadFile(mtaPath, namedUser)
-		if errUploadFile != nil {
-			log.SetErrorCategory(log.ErrorService)
-			return fmt.Errorf("failed to upload file: %w", errUploadFile)
-		}
+	fileInfo, errUploadFile := communicationInstance.UploadFile(mtaPath, namedUser)
+	if errUploadFile != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return fmt.Errorf("failed to upload file: %w", errUploadFile)
+	}
 
-		_, errUploadFileToNode := communicationInstance.UploadFileToNode(nodeName, strconv.FormatInt(fileInfo.Id, 10), description, namedUser)
-		if errUploadFileToNode != nil {
-			log.SetErrorCategory(log.ErrorService)
-			return fmt.Errorf("failed to upload file to node: %w", errUploadFileToNode)
-		}
+	_, errUploadFileToNode := communicationInstance.UploadFileToNode(nodeName, strconv.FormatInt(fileInfo.Id, 10), description, namedUser)
+	if errUploadFileToNode != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return fmt.Errorf("failed to upload file to node: %w", errUploadFileToNode)
 	}
 
 	return nil
@@ -236,7 +233,7 @@ func formNodeIdExtDescriptorMappingWithValidation(utils tmsUploadUtils, nodeName
 		if exists {
 			extDescriptorMap, errGetYamlAsMap := getYamlAsMap(utils, mappedValueString)
 			if errGetYamlAsMap == nil {
-				// TODO: what, if there is no field (ID or extends) in th yaml? will it get nil or empty string
+				// TODO: what, if there is no field (ID or extends) in th yaml? will it get nil or empty string?
 				// TODO: what, if there is no both ID field in the mta.yaml and extends field in extension descriptor?
 				if fmt.Sprintf("%v", mtaYamlMap["ID"]) != fmt.Sprintf("%v", extDescriptorMap["extends"]) {
 					wrongMtaIdExtDescriptors = append(wrongMtaIdExtDescriptors, mappedValueString)

@@ -38,6 +38,9 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/commitId
       - name: namedUser
         type: string
         description: Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'.
@@ -58,6 +61,9 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
       - name: mtaVersion
         type: string
         description: Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.
@@ -86,3 +92,10 @@ spec:
             fields:
               - name: tms
                 type: bool
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: mtarFilePath
+            type: string
+          - name: git/commitId
+            type: string
