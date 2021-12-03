@@ -1,9 +1,11 @@
 package config
 
+// ReportingParams holds reporting parameters
 type ReportingParams struct {
 	Parameters []StepParameters
 }
 
+// ReportingParameters is a global variable with values of reporting parameters
 var ReportingParameters = ReportingParams{
 	Parameters: []StepParameters{
 		{
@@ -33,6 +35,7 @@ var ReportingParameters = ReportingParams{
 	},
 }
 
+// GetResourceParameters retrieves reporting parameters from a named pipeline resource with a defined path
 func (r ReportingParams) GetResourceParameters(path, name string) map[string]interface{} {
 	resourceParams := map[string]interface{}{}
 

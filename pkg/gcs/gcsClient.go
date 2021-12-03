@@ -13,14 +13,6 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Client is an interface to mock gcsClient
-type Client interface {
-	UploadFile(bucketID string, sourcePath string, targetPath string) error
-	DownloadFile(bucketID string, sourcePath string, targetPath string) error
-	ListFiles(bucketID string) ([]string, error)
-	Close() error
-}
-
 // gcsClient provides functions to interact with google cloud storage API
 type gcsClient struct {
 	context       context.Context
@@ -40,24 +32,28 @@ type EnvVar struct {
 
 type gcsOption func(*gcsClient)
 
+// WithEnvVars initializes env variables in gcsClient
 func WithEnvVars(envVars []EnvVar) gcsOption {
 	return func(g *gcsClient) {
 		g.envVars = envVars
 	}
 }
 
+// WithEnvVars initializes the openFile function in gcsClient
 func WithOpenFileFunction(openFile func(name string) (io.ReadCloser, error)) gcsOption {
 	return func(g *gcsClient) {
 		g.openFile = openFile
 	}
 }
 
+// WithEnvVars initializes the createFile function in gcsClient
 func WithCreateFileFunction(createFile func(name string) (io.WriteCloser, error)) gcsOption {
 	return func(g *gcsClient) {
 		g.createFile = createFile
 	}
 }
 
+// WithEnvVars initializes the Google Cloud Storage client options
 func WithClientOptions(opts ...option.ClientOption) gcsOption {
 	return func(g *gcsClient) {
 		g.clientOptions = append(g.clientOptions, opts...)
@@ -135,7 +131,7 @@ func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath 
 	return nil
 }
 
-// ListFiles lists all files in certain cumulus bucket
+// ListFiles lists all files in certain GCP bucket
 func (g *gcsClient) ListFiles(bucketID string) ([]string, error) {
 	fileNames := []string{}
 	it := g.client.Bucket(bucketID).Objects(g.context, nil)
