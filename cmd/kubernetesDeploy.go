@@ -5,55 +5,79 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
 
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{
-		ErrorCategoryMapping: map[string][]string{
-			log.ErrorConfiguration.String(): {
-				"Error: Get * no such host",
-				"Error: path * not found",
-				"Error: rendered manifests contain a resource that already exists.",
-				"Error: unknown flag",
-				"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
-				"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
-				"Error: UPGRADE FAILED: an error occurred * not found",
-				"Error: UPGRADE FAILED: query: failed to query with labels:",
-				"Invalid value: \"\": field is immutable",
-			},
-			log.ErrorCustom.String(): {
-				"Error: release * failed, * timed out waiting for the condition",
+type kubernetesDeployUtils interface {
+	SetEnv(env []string)
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(e string, p ...string) error
+
+	piperutils.FileUtils
+}
+
+type kubernetesDeployUtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+}
+
+func newKubernetesDeployUtilsBundle() kubernetesDeployUtils {
+	utils := kubernetesDeployUtilsBundle{
+		Command: &command.Command{
+			ErrorCategoryMapping: map[string][]string{
+				log.ErrorConfiguration.String(): {
+					"Error: Get * no such host",
+					"Error: path * not found",
+					"Error: rendered manifests contain a resource that already exists.",
+					"Error: unknown flag",
+					"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
+					"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
+					"Error: UPGRADE FAILED: an error occurred * not found",
+					"Error: UPGRADE FAILED: query: failed to query with labels:",
+					"Invalid value: \"\": field is immutable",
+				},
+				log.ErrorCustom.String(): {
+					"Error: release * failed, * timed out waiting for the condition",
+				},
 			},
 		},
+		Files: &piperutils.Files{},
 	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
-	c.Stderr(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
+
+func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
+	utils := newKubernetesDeployUtilsBundle()
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runKubernetesDeploy(config, &c, log.Writer())
+	err := runKubernetesDeploy(config, utils, log.Writer())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
+func runKubernetesDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, stdout io.Writer) error {
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		return runHelmDeploy(config, command, stdout)
+		return runHelmDeploy(config, utils, stdout)
 	} else if config.DeployTool == "kubectl" {
-		return runKubectlDeploy(config, command)
+		return runKubectlDeploy(config, utils)
 	}
 	return fmt.Errorf("Failed to execute deployments")
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
+func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, stdout io.Writer) error {
 	if len(config.ChartPath) <= 0 {
 		return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
 	}
@@ -92,29 +116,29 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
 	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
-	command.SetEnv(helmEnv)
-	command.Stdout(stdout)
+	utils.SetEnv(helmEnv)
+	utils.Stdout(stdout)
 
 	if config.DeployTool == "helm" {
 		initParams := []string{"init", "--client-only"}
-		if err := command.RunExecutable("helm", initParams...); err != nil {
+		if err := utils.RunExecutable("helm", initParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Helm init call failed")
 		}
 	}
 
 	var secretsData string
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
-		log.Entry().Info("No container registry credentials or docker config.json file provided or credentials incomplete: skipping secret creation")
+		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
 			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
 		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
-		command.Stdout(&dockerRegistrySecret)
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
+		utils.Stdout(&dockerRegistrySecret)
+		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
-		if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
+		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 		}
 
@@ -190,16 +214,16 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		upgradeParams = append(upgradeParams, config.AdditionalParameters...)
 	}
 
-	command.Stdout(stdout)
+	utils.Stdout(stdout)
 	log.Entry().Info("Calling helm upgrade ...")
 	log.Entry().Debugf("Helm parameters %v", upgradeParams)
-	if err := command.RunExecutable("helm", upgradeParams...); err != nil {
+	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
 	return nil
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) error {
+func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils) error {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -213,7 +237,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")
 		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-		command.SetEnv(kubeEnv)
+		utils.SetEnv(kubeEnv)
 		if len(config.KubeContext) > 0 {
 			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", config.KubeContext))
 		}
@@ -231,19 +255,21 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 
 		// first check if secret already exists
 		kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
-		if err := command.RunExecutable("kubectl", kubeCheckParams...); err != nil {
+
+		// ToDo: always update the secret using a yaml definition
+		if err := utils.RunExecutable("kubectl", kubeCheckParams...); err != nil {
 			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
-			kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
+			kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 			kubeSecretParams = append(kubeParams, kubeSecretParams...)
 			log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 			log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
-			if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
+			if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 				log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 			}
 		}
 	}
 
-	appTemplate, err := ioutil.ReadFile(config.AppTemplate)
+	appTemplate, err := utils.FileRead(config.AppTemplate)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
 	}
@@ -263,18 +289,21 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
 	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, fullImage)))
 
-	err = ioutil.WriteFile(config.AppTemplate, appTemplate, 0700)
+	err = utils.FileWrite(config.AppTemplate, appTemplate, 0700)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", config.AppTemplate)
 	}
 
-	kubeApplyParams := append(kubeParams, "apply", "--filename", config.AppTemplate)
-	if len(config.AdditionalParameters) > 0 {
-		kubeApplyParams = append(kubeApplyParams, config.AdditionalParameters...)
+	kubeParams = append(kubeParams, config.DeployCommand, "--filename", config.AppTemplate)
+	if config.ForceUpdates == true && config.DeployCommand == "replace" {
+		kubeParams = append(kubeParams, "--force")
 	}
 
-	if err := command.RunExecutable("kubectl", kubeApplyParams...); err != nil {
-		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
+	if len(config.AdditionalParameters) > 0 {
+		kubeParams = append(kubeParams, config.AdditionalParameters...)
+	}
+	if err := utils.RunExecutable("kubectl", kubeParams...); err != nil {
+		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil
@@ -304,7 +333,7 @@ func splitFullImageName(image string) (imageName, tag string, err error) {
 	return "", "", fmt.Errorf("Failed to split image name '%v'", image)
 }
 
-func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string) []string {
+func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils) []string {
 	kubeSecretParams := []string{
 		"create",
 		"secret",
@@ -319,6 +348,15 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	}
 
 	if len(config.DockerConfigJSON) > 0 {
+		// first enhance config.json with additional pipeline-related credentials if they have been provided
+		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
+			var err error
+			_, err = piperDocker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			if err != nil {
+				log.Entry().Warningf("failed to update Docker config.json: %v", err)
+			}
+		}
+
 		return append(
 			kubeSecretParams,
 			"generic",

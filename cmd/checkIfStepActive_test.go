@@ -58,7 +58,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"stage", "stageConfig"}
+		exp := []string{"stage", "stageConfig", "stageOutputFile", "stepOutputFile", "useV1"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 

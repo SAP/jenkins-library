@@ -18,16 +18,17 @@ import (
 )
 
 type cnbBuildOptions struct {
-	ContainerImageName        string   `json:"containerImageName,omitempty"`
-	ContainerImageTag         string   `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
-	Buildpacks                []string `json:"buildpacks,omitempty"`
-	BuildEnvVars              []string `json:"buildEnvVars,omitempty"`
-	Path                      string   `json:"path,omitempty"`
-	ProjectDescriptor         string   `json:"projectDescriptor,omitempty"`
-	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
-	AdditionalTags            []string `json:"additionalTags,omitempty"`
+	ContainerImageName        string                 `json:"containerImageName,omitempty"`
+	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
+	Buildpacks                []string               `json:"buildpacks,omitempty"`
+	BuildEnvVars              map[string]interface{} `json:"buildEnvVars,omitempty"`
+	Path                      string                 `json:"path,omitempty"`
+	ProjectDescriptor         string                 `json:"projectDescriptor,omitempty"`
+	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
+	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalTags            []string               `json:"additionalTags,omitempty"`
+	Bindings                  map[string]interface{} `json:"bindings,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -60,7 +61,7 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}
 }
 
-// CnbBuildCommand Executes a Cloud Native Buildpacks build for creating a Docker container.
+// CnbBuildCommand Executes Cloud Native Buildpacks.
 func CnbBuildCommand() *cobra.Command {
 	const STEP_NAME = "cnbBuild"
 
@@ -69,11 +70,14 @@ func CnbBuildCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment cnbBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createCnbBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Executes a Cloud Native Buildpacks build for creating a Docker container.",
-		Long:  `Executes a Cloud Native Buildpacks build for creating a Docker container.`,
+		Short: "Executes Cloud Native Buildpacks.",
+		Long: `Executes a Cloud Native Buildpacks build for creating Docker image(s).
+**Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -98,6 +102,7 @@ func CnbBuildCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -114,30 +119,32 @@ func CnbBuildCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			cnbBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
-			telemetryData.ErrorCode = "0"
+			cnbBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -150,18 +157,17 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
-	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '<hostname>/<repo>[:<tag>]'.")
-	cmd.Flags().StringSliceVar(&stepConfig.BuildEnvVars, "buildEnvVars", []string{}, "List of custom environment variables used during a build in the form of 'KEY=VALUE'.")
-	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.")
-	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Path to the project.toml file (see https://buildpacks.io/docs/reference/config/project-descriptor/ for the reference). Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file.")
+	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.")
+
+	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.\nThis property determines the input to the buildpack.\n")
+	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\nNote: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
-	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be additionally pushed to the registry, e.g. \"latest\".")
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
 
 	cmd.MarkFlagRequired("containerImageName")
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
-	cmd.MarkFlagRequired("dockerConfigJSON")
 }
 
 // retrieve step metadata
@@ -170,7 +176,7 @@ func cnbBuildMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "cnbBuild",
 			Aliases:     []config.Alias{},
-			Description: "Executes a Cloud Native Buildpacks build for creating a Docker container.",
+			Description: "Executes Cloud Native Buildpacks.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -216,22 +222,26 @@ func cnbBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
-						Name:        "buildpacks",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Name: "buildpacks",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/buildpacks",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
 					},
 					{
 						Name:        "buildEnvVars",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
 					},
 					{
 						Name:        "path",
@@ -272,7 +282,7 @@ func cnbBuildMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
@@ -293,6 +303,14 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "bindings",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

@@ -16,9 +16,17 @@ The pipeline starts with the stage "Prepare System". This stage, however, is opt
 
 This stage is responsible for cloning (or pulling) the defined software components (repositories) to the system.
 
+### Run Tests
+
+This stage will trigger the execution of the `ATC` and `AUnit` stages in parallel. Please find more information on the respective stages below.
+
 ### ATC
 
 This stage runs ATC checks on the SAP BTP, ABAP environment system. The results are returned in the "CheckStyle" format. With the help of a stage extension, a plugin can be used to visualize the check results.
+
+### AUnit
+
+This stage will triger an AUnit run on the SAP BTP, APAB environment system. You can configure the object set that should be checked during the AUnit run. The results of the test run are returned in the "JUnit" format. It is possible to further visualize the AUnit test run results with the help of a stage extension.
 
 ## Prerequisites
 

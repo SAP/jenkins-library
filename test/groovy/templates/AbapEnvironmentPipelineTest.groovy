@@ -129,6 +129,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         })
 
         helper.registerAllowedMethod('steps', [Closure], null)
+        helper.registerAllowedMethod('parallel', [Closure], null)
         helper.registerAllowedMethod('post', [Closure], {c -> c()})
         helper.registerAllowedMethod('success', [Closure], {c -> c()})
         helper.registerAllowedMethod('failure', [Closure], {c -> c()})
@@ -136,7 +137,6 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         helper.registerAllowedMethod('unstable', [Closure], {c -> c()})
         helper.registerAllowedMethod('unsuccessful', [Closure], {c -> c()})
         helper.registerAllowedMethod('cleanup', [Closure], {c -> c()})
-
         helper.registerAllowedMethod('input', [Map], {m -> return null})
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStageInit', [Map.class], {m ->
@@ -149,6 +149,10 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStageCloneRepositories', [Map.class], {m ->
             stepsCalled.add('abapEnvironmentPipelineStageCloneRepositories')
+        })
+
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageAUnit', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageAUnit')
         })
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStageATC', [Map.class], {m ->
@@ -186,23 +190,28 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
     @Test
     void testAbapEnvironmentPipelineNoPrepareNoCleanup() {
 
+
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Clone Repositories': true,
+            'Tests': true,
             'ATC': true,
+            'AUnit': true,
         ]
+
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStageCloneRepositories',
             'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStageAUnit',
             'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStagePrepareSystem')))
     }
 
     @Test
-    void testAbapEnvironmentPipelineNoCloneNoATC() {
+    void testAbapEnvironmentPipelineNoCloneNoRunTests() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true,
@@ -216,6 +225,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageCloneRepositories')))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageATC')))
+        assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageAUnit')))
     }
 
     @Test
@@ -224,7 +234,9 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true,
             'Clone Repositories': true,
+            'Tests': true,
             'ATC': true,
+            'AUnit': true,
             'Build': true,
             'Integration Tests': true,
             'Publish': true
@@ -236,6 +248,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStagePrepareSystem',
             'abapEnvironmentPipelineStageCloneRepositories',
             'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStageAUnit',
             'abapEnvironmentPipelineStagePost',
             'abapEnvironmentPipelineStageBuild',
             'abapEnvironmentPipelineStageInitialChecks',
@@ -243,5 +256,40 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStageConfirm',
             'abapEnvironmentPipelineStageIntegrationTests'
         ))
+    }
+
+    @Test
+    void testAbapEnvironmentPipelineATCOnly() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'ATC': true,
+        ]
+        jsr.step.abapEnvironmentPipeline(script: nullScript)
+
+        assertThat(stepsCalled, hasItems(
+            'abapEnvironmentPipelineStageInit',
+            'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStagePost'
+        ))
+        assertThat(stepsCalled, not(hasItems(
+            'abapEnvironmentPipelineStageAUnit'
+        )))
+    }
+    @Test
+    void testAbapEnvironmentPipelineAunitOnly() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'AUnit': true,
+        ]
+        jsr.step.abapEnvironmentPipeline(script: nullScript)
+
+        assertThat(stepsCalled, hasItems(
+            'abapEnvironmentPipelineStageInit',
+            'abapEnvironmentPipelineStageAUnit',
+            'abapEnvironmentPipelineStagePost'
+        ))
+        assertThat(stepsCalled, not(hasItems(
+            'abapEnvironmentPipelineStageATC'
+        )))
     }
 }
