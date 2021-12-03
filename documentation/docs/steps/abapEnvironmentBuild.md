@@ -31,17 +31,23 @@
 
 ### Configuration in the config.yml
 
+If you want to use this step several time in one pipeline with different phases, the steps have to be put in different stages as it is not allowed to run the same step repeatedly in one stage.
+
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
 
 ```groovy
-abapEnvironmentBuild script: this
+stage('MyPhase') {
+            steps {
+                abapEnvironmentBuild script: this
+            }
+        }
 ```
 
 If you want to provide the host and credentials of the Communication Arrangement directly or you want to run in on premise, the configuration could look as follows:
 
 ```yaml
-steps:
-  abapEnvironmentBuild:
+stages:
+  MyPhase:
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
 ```
@@ -49,8 +55,8 @@ steps:
 Or by authenticating against Cloud Foundry and reading the Service Key details from there:
 
 ```yaml
-steps:
-  abapEnvironmentBuild:
+stages:
+  MyPhase:
     abapCredentialsId: 'cfCredentialsId',
     cfApiEndpoint : 'https://test.server.com',
     cfOrg : 'cfOrg',
@@ -58,3 +64,22 @@ steps:
     cfServiceInstance: 'myServiceInstance',
     cfServiceKeyName: 'myServiceKey',
 ```
+
+One possible complete config example. Please note that the values are handed over as a string, which has inside a json structure:
+
+```yaml
+stages:
+  MyPhase:
+    abapCredentialsId: 'abapCredentialsId'
+    host: 'https://myABAPendpoint.com'
+    certificateNames: ['myCert.cer']
+    phase: 'MyPhase'
+    values: '[{"value_id":"ID1","value":"Value1"},{"value_id":"ID2","value":"Value2"}]'
+    downloadResultFilenames: ['File1','File2']
+    publishResultFilenames: ['File2']
+    subDirectoryForDownload: 'MyDir'
+    filenamePrefixForDownload: 'MyPrefix'
+    treatWarningsAsError: true
+    maxRuntimeInMinutes: 360
+    pollingIntervallInSeconds: 15
+```yaml
