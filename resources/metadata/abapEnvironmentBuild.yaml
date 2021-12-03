@@ -1,7 +1,7 @@
 metadata:
   name: abapEnvironmentBuild
   description: "Executes builds as defined with the build framework"
-  longDescription: | 
+  longDescription: |
     Executes builds as defined with the build framework. Transaction overview /n/BUILD/OVERVIEW
 spec:
   inputs:
@@ -118,15 +118,15 @@ spec:
         mandatory: true
         default: false
         description: If true, all build artefacts are downloaded
-        scope: 
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: downloadResultFilenames
         type: "[]string"
         mandatory: false
-        description: Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored 
-        scope: 
+        description: Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS
@@ -135,7 +135,7 @@ spec:
         mandatory: true
         default: false
         description: If true, it publishes all downloaded files
-        scope: 
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS
@@ -143,7 +143,7 @@ spec:
         type: "[]string"
         mandatory: false
         description: Only the specified files get published, in case the file was not downloaded before an error occures
-        scope: 
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS
@@ -151,7 +151,7 @@ spec:
         type: string
         mandatory: false
         description: Target directory to store the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly
-        scope: 
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS
@@ -160,7 +160,7 @@ spec:
         type: string
         mandatory: false
         description: Filename prefix for the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly
-        scope: 
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS

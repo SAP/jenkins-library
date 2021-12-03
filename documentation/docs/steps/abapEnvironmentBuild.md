@@ -17,9 +17,10 @@
   * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0582.
   * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
-  ## Prerequisites On Premise
-  * You need to specify the host and credentials to your system
-  * A certificate for the system needs to be stored in .pipeline/trustStore and the name of the certificate needs to be handed over via the configuration
+## Prerequisites On Premise
+
+* You need to specify the host and credentials to your system
+* A certificate for the system needs to be stored in .pipeline/trustStore and the name of the certificate needs to be handed over via the configuration
 
 ## ${docGenParameters}
 
