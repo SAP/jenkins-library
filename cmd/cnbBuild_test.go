@@ -23,7 +23,7 @@ func newCnbBuildTestsUtils() cnbutils.MockUtils {
 }
 
 func addBuilderFiles(utils *cnbutils.MockUtils) {
-	for _, path := range []string{analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
+	for _, path := range []string{creatorPath, analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
 		utils.FilesMock.AddFile(path, []byte(`xyz`))
 	}
 }
@@ -243,7 +243,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 
 		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
-		assert.EqualError(t, err, "the provided dockerImage is not a valid builder: binary '/cnb/lifecycle/analyzer' not found")
+		assert.EqualError(t, err, "the provided dockerImage is not a valid builder: binary '/cnb/lifecycle/creator' not found")
 	})
 
 	t.Run("error case: builder image does not contain tls certificates", func(t *testing.T) {

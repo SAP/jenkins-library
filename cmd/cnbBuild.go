@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/project/metadata"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -113,7 +114,7 @@ func isDir(path string) (bool, error) {
 }
 
 func isBuilder(utils cnbutils.BuildUtils) error {
-	for _, binaryPath := range []string{analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
+	for _, binaryPath := range []string{creatorPath, analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
 		exists, err := utils.FileExists(binaryPath)
 		if err != nil {
 			return err
@@ -362,6 +363,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	}
+
+	metadata.WriteProjectMetadata(GeneralConfig.EnvRootPath, utils)
 
 	var buildpacksPath = "/cnb/buildpacks"
 	var orderPath = "/cnb/order.toml"
