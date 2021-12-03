@@ -63,9 +63,27 @@ func TestCheckStepActiveCommand(t *testing.T) {
 	})
 
 	t.Run("Run", func(t *testing.T) {
-		t.Run("Success case", func(t *testing.T) {
+		t.Run("Success case - set stage and stageName parameters", func(t *testing.T) {
 			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
 			checkStepActiveOptions.stageName = "testStage1"
+			checkStepActiveOptions.stepName = "testStep"
+			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
+			GeneralConfig.CustomConfig = ".pipeline/config.yml"
+			GeneralConfig.DefaultConfig = []string{".pipeline/defaults.yaml"}
+			GeneralConfig.StageName = "testStage"
+			cmd.Run(cmd, []string{})
+		})
+		t.Run("Success case - set only stage parameter", func(t *testing.T) {
+			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
+			checkStepActiveOptions.stageName = "testStage"
+			checkStepActiveOptions.stepName = "testStep"
+			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
+			GeneralConfig.CustomConfig = ".pipeline/config.yml"
+			GeneralConfig.DefaultConfig = []string{".pipeline/defaults.yaml"}
+			cmd.Run(cmd, []string{})
+		})
+		t.Run("Success case - set only stageName parameter", func(t *testing.T) {
+			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
 			checkStepActiveOptions.stepName = "testStep"
 			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
 			GeneralConfig.CustomConfig = ".pipeline/config.yml"
