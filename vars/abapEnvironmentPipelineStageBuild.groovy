@@ -30,8 +30,8 @@ void call(Map parameters = [:]) {
         abapAddonAssemblyKitRegisterPackages script: parameters.script
         abapAddonAssemblyKitReleasePackages script: parameters.script
         abapEnvironmentAssembleConfirm script: parameters.script
-        abapAddonAssemblyKitCreateTargetVector script: parameters.script
-        abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
+        //abapAddonAssemblyKitCreateTargetVector script: parameters.script
+        //abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
     }
 
 }
