@@ -526,7 +526,21 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return nil
 	}
 
-	log.Entry().Info("execute ABAP Unit Test finished with these results:", parsedRes.File)
+	log.Entry().Info("execute ABAP Unit Test finished with these results:")
+	for _, file := range parsedRes.File {
+
+		log.Entry().Info("file path:", file.Name)
+		for _, error := range file.Error {
+
+			log.Entry().Info("error message:", error.Message)
+			log.Entry().Info("error severity:", error.Severity)
+			log.Entry().Info("error line:", error.Line)
+			log.Entry().Info("error source:", error.Source)
+
+		}
+
+	}
+
 	return nil
 }
 
@@ -767,7 +781,22 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return errors.Wrap(err, "execution of ATC Checks failed")
 	}
 
-	log.Entry().Info("execute ATC Checks finished with these results:", atcRes.File)
+	log.Entry().Info("execute ATC Checks finished with these results:")
+
+	for _, file := range atcRes.File {
+
+		log.Entry().Info("file path:", file.Name)
+		for _, error := range file.Error {
+
+			log.Entry().Info("error message:", error.Message)
+			log.Entry().Info("error severity:", error.Severity)
+			log.Entry().Info("error line:", error.Line)
+			log.Entry().Info("error source:", error.Source)
+
+		}
+
+	}
+
 	return nil
 
 }
