@@ -160,9 +160,9 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 	log.Entry().Info("get local changed objects started")
 
-	if config.CommitID == "" {
+	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: localChangedObjects you need to specify a commitId")
+		return []repoObject{}, errors.Errorf("For scope: localChangedObjects you need to specify a commit")
 
 	}
 
@@ -175,7 +175,7 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
 
 	// object delta between the commit that triggered the pipeline and the current commit in the local repository
-	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
+	resp, err := getObjectDifference(config, currentLocalCommit, config.Commit, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
@@ -199,9 +199,9 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	log.Entry().Info("get remote changed objects started")
 
-	if config.CommitID == "" {
+	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: remoteChangedObjects you need to specify a commitId")
+		return []repoObject{}, errors.Errorf("For scope: remoteChangedObjects you need to specify a commit")
 
 	}
 
@@ -212,7 +212,7 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	}
 
 	for i, commit := range commitList.Commits {
-		if commit.ID == config.CommitID {
+		if commit.ID == config.Commit {
 			currentRemoteCommit = commitList.Commits[i+1].ID
 			break
 		}
@@ -223,7 +223,7 @@ func getRemoteObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	}
 	log.Entry().Info("current commit in the remote repository: ", currentRemoteCommit)
 	// object delta between the commit that triggered the pipeline and the current commit in the remote repository
-	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
+	resp, err := getObjectDifference(config, currentRemoteCommit, config.Commit, client)
 
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get remote changed objects failed")
@@ -247,9 +247,9 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	log.Entry().Info("get local changed packages started")
 
-	if config.CommitID == "" {
+	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: localChangedPackages you need to specify a commitId")
+		return []repoObject{}, errors.Errorf("For scope: localChangedPackages you need to specify a commit")
 
 	}
 
@@ -262,7 +262,7 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
 
 	//object delta between the commit that triggered the pipeline and the current commit in the local repository
-	resp, err := getObjectDifference(config, currentLocalCommit, config.CommitID, client)
+	resp, err := getObjectDifference(config, currentLocalCommit, config.Commit, client)
 
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
@@ -300,7 +300,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 
 	log.Entry().Info("get remote changed packages started")
 
-	if config.CommitID == "" {
+	if config.Commit == "" {
 
 		return []repoObject{}, errors.Errorf("For scope: remoteChangedPackages you need to specify a commitId")
 
@@ -313,7 +313,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 	}
 
 	for i, commit := range commitList.Commits {
-		if commit.ID == config.CommitID {
+		if commit.ID == config.Commit {
 			currentRemoteCommit = commitList.Commits[i+1].ID
 			break
 		}
@@ -325,7 +325,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 	}
 	log.Entry().Info("current commit in the remote repository: ", currentRemoteCommit)
 	//object delta between the commit that triggered the pipeline and the current commit in the remote repository
-	resp, err := getObjectDifference(config, currentRemoteCommit, config.CommitID, client)
+	resp, err := getObjectDifference(config, currentRemoteCommit, config.Commit, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
 	}
@@ -710,7 +710,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		case "FUGR":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + object.Object + `/source/main"/>`
 		case "TABL":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/tables/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/tables/` + object.Object + `/source/main"/>`
 		case "DTEL":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/dataelements/` + object.Object + `"/>`
 		case "DOMA":
@@ -789,7 +789,7 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	header.Add("Accept", "application/xml")
 
 	url := config.Host +
-		"/sap/bc/adt/atc/runs?worklistId=" + worklistID + "?sap-client=" + config.Client
+		"/sap/bc/adt/atc/runs?worklistId=" + worklistID + "&sap-client=" + config.Client
 
 	resp, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xml), header, nil)
 
@@ -814,18 +814,8 @@ func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, worklistID string) (response *http.Response, err error) {
 
 	log.Entry().Info("get ATC Run Results started")
-	discHeader, discError := discoverServer(config, client)
-	if discError != nil {
-		return response, errors.Wrap(discError, "get ATC run failed")
-	}
-
-	if discHeader.Get("X-Csrf-Token") == "" {
-		return response, errors.Errorf("could not retrieve x-csrf-token from server")
-	}
 
 	header := make(http.Header)
-	header.Add("x-csrf-token", discHeader.Get("X-Csrf-Token"))
-	header.Add("Accept", "application/xml")
 
 	url := config.Host +
 		"/sap/bc/adt/atc/worklists/" + worklistID + "?sap-client=" + config.Client
@@ -847,7 +837,7 @@ func getATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender,
 func getWorklist(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (worklistID string, error error) {
 
 	url := config.Host +
-		"/sap/bc/adt/atc/worklists?checkVariant=DEFAULT_REMOTE_REF?sap-client=" + config.Client
+		"/sap/bc/adt/atc/worklists?checkVariant=" + config.AtcVariant + "&sap-client=" + config.Client
 	discHeader, discError := discoverServer(config, client)
 
 	if discError != nil {

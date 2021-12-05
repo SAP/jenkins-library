@@ -6,7 +6,7 @@ metadata:
     Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both. 
     By default, both checks are executed.
     The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred. 
-    To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in Example section.
+    To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in the Example section.
     You can use this step as of SAP S/4HANA 2020.
 
 spec:
@@ -82,8 +82,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: atcVariant
+        type: string
+        default: "DEFAULT_REMOTE_REF"
+        description: Variant for ATC checks
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: scope
         type: string
+        default: repository
         enum:
           - localChangedObjects
           - remoteChangedObjects
@@ -91,21 +100,20 @@ spec:
           - remoteChangedPackages
           - repository
           - packages
-        description: Scope of objects for which you want to execute the checks
-         localChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the local repository). The checks are executed for the individual objects.
-         remoteChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the remote repository). The checks are executed for the individual objects.
-         localChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the local repository).  All objects are resolved into packages. The checks are executed for the packages.
-         remoteChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the remote repository). All objects are resolved into packages. The checks are executed for the packages.
-         repository - All objects that are part of the local repository. The checks are executed for the individual objects.
-         packages - All packages that are part of the local repository . The checks are executed for the packages.
+        description:  Scope of objects for which you want to execute the checks
+         - localChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects.
+         - remoteChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
+         - localChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages.
+         - remoteChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
+         - repository - All objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
+         - packages - All packages that are part of the local repository . The checks are executed for the packages.
         scope:
           - PARAMETERS
           - STAGES
-          - STEPS
-        mandatory: true    
-      - name: commitId
+          - STEPS   
+      - name: commit
         type: string
-        description: ID of the commit that triggered the pipeline
+        description: ID of the commit that triggered the pipeline. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory. 
         scope:
           - PARAMETERS
           - STAGES
@@ -113,7 +121,7 @@ spec:
         mandatory: false
       - name: workspace
         type: string
-        description: Absolute path to job workspace directory 
+        description: Absolute path to directory which contains the source code that your CI/CD tool of choice checks out. For example in Jenkins the workspace parameter is /var/jenkins_home/workspace/jobName/
         scope:
           - PARAMETERS
           - STAGES

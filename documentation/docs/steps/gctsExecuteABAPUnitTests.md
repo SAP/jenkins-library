@@ -78,7 +78,7 @@ steps:
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
 
-Example configuration for the use of *recordIssue* step to make the finding visible in Jenkins interface.
+Example configuration for the use of *recordIssue* step to make the findings visible in Jenkins interface.
 
 ```groovy
 recordIssues(
@@ -88,7 +88,7 @@ recordIssues(
 	) 
 ```
 
-**Note:** If you have disabled *atcCheck* or *aUnitTest*, than you also need to remove the corresponding *ATCResults.xml* or *AUnitResults.xml* from *recordIssues* step.
+**Note:** If you have disabled *atcCheck* or *aUnitTest*, than you also need to remove the corresponding *ATCResults.xml* or *AUnitResults.xml* from *recordIssues* step. In the example below the *atcCheck* was disabled, so *ATCResults.xml* was removed.
 
 ```groovy
 recordIssues(

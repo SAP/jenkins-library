@@ -22,7 +22,7 @@ func TestDiscoverServerSuccess(t *testing.T) {
 		Username:   "testUser",
 		Password:   "testPassword",
 		Scope:      "localChangedObjects",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
 
@@ -66,7 +66,7 @@ func TestDiscoverServerFailure(t *testing.T) {
 		Username:   "testUser",
 		Password:   "testPassword",
 		Scope:      "localChangedObjects",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
 
@@ -165,7 +165,7 @@ func TestGetLocalObjectsSuccess(t *testing.T) {
 			Repository: "testRepo",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "localChangedObjects",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -220,7 +220,7 @@ func TestGetLocalObjectsSuccess(t *testing.T) {
 			Repository: "testRepo2",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "localChangedObjects",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -257,7 +257,7 @@ func TestGetLocalObjectsFailure(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "localChangedObjects",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -284,7 +284,7 @@ func TestGetRemoteObjectsSuccess(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "remoteChangedObjects",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -341,7 +341,7 @@ func TestGetRemoteObjectsSuccess(t *testing.T) {
 			Repository: "testRepo2",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "remoteChangedObjects",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -375,7 +375,7 @@ func TestGetRemoteObjectsFailure(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "remoteChangedObjects",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -402,7 +402,7 @@ func TestGetLocalPackagesSuccess(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "localChangedPackages",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -455,7 +455,7 @@ func TestGetLocalPackagesSuccess(t *testing.T) {
 			Repository: "testRepo2",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "localChangedObjects",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -490,7 +490,7 @@ func TestGetLocalPackagesFailure(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "localChangedPackages",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -516,7 +516,7 @@ func TestGetRemotePackagesSuccess(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "remoteChangedPackages",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -568,7 +568,7 @@ func TestGetRemotePackagesSuccess(t *testing.T) {
 			Repository: "testRepo2",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "remoteChangedPackages",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -603,7 +603,7 @@ func TestGetRemotePackagesFailure(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "remoteChangedPackages",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -629,7 +629,7 @@ func TestGetPackagesSuccess(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "packages",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -677,7 +677,7 @@ func TestGetPackagesSuccess(t *testing.T) {
 			Repository: "testRepo2",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "packages",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -712,7 +712,7 @@ func TestGetPackagesFailure(t *testing.T) {
 		Repository: "testRepo2",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "packages",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -738,7 +738,7 @@ func TestGetRepositoryObjectsSuccess(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "repository",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -792,7 +792,7 @@ func TestGetRepositoryObjectsSuccess(t *testing.T) {
 			Repository: "testRepo2",
 			Username:   "testUser",
 			Password:   "testPassword",
-			CommitID:   "0123456789abcdefghijkl",
+			Commit:     "0123456789abcdefghijkl",
 			Scope:      "repository",
 			Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 		}
@@ -827,7 +827,7 @@ func TestGetRepositoryObjectsFailure(t *testing.T) {
 		Repository: "testRepo",
 		Username:   "testUser",
 		Password:   "testPassword",
-		CommitID:   "0123456789abcdefghijkl",
+		Commit:     "0123456789abcdefghijkl",
 		Scope:      "repository",
 		Workspace:  "/var/jenkins_home/workspace/myFirstPipeline",
 	}
@@ -854,7 +854,7 @@ func TestExecuteAUnitTestSuccess(t *testing.T) {
 		Repository:           "testRepo",
 		Username:             "testUser",
 		Password:             "testPassword",
-		CommitID:             "0123456789abcdefghijkl",
+		Commit:               "0123456789abcdefghijkl",
 		Scope:                "repository",
 		Workspace:            "/var/jenkins_home/workspace/myFirstPipeline",
 		AtcResultsFileName:   "ATCResults.xml",
@@ -935,7 +935,7 @@ func TestExecuteAUnitTestFailure(t *testing.T) {
 		Repository:           "testRepo",
 		Username:             "testUser",
 		Password:             "testPassword",
-		CommitID:             "0123456789abcdefghijkl",
+		Commit:               "0123456789abcdefghijkl",
 		Scope:                "repository",
 		Workspace:            "/var/jenkins_home/workspace/myFirstPipeline",
 		AtcResultsFileName:   "ATCResults.xml",
@@ -970,7 +970,8 @@ func TestExecuteATCCheckSuccess(t *testing.T) {
 		Repository:         "testRepo",
 		Username:           "testUser",
 		Password:           "testPassword",
-		CommitID:           "0123456789abcdefghijkl",
+		Commit:             "0123456789abcdefghijkl",
+		AtcVariant:         "DEFAULT_REMOTE_REF",
 		Scope:              "repository",
 		Workspace:          "/var/jenkins_home/workspace/myFirstPipeline",
 		AtcResultsFileName: "ATCResults.xml",
@@ -1000,7 +1001,7 @@ func TestExecuteATCCheckSuccess(t *testing.T) {
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "http://testHost.com:50000/sap/bc/adt/atc/worklists/123Z076495C01ABCDEF9C9F6B257OD70?sap-client=000", httpClient.URL)
+				assert.Equal(t, "http://testHost.com:50000/sap/bc/cts_abapvcs/repository/testRepo?sap-client=000", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -1013,6 +1014,19 @@ func TestExecuteATCCheckSuccess(t *testing.T) {
 	t.Run("no ATC Checks were found", func(t *testing.T) {
 
 		httpClient := httpMockGctsT{StatusCode: 200}
+
+		config := gctsExecuteABAPUnitTestsOptions{
+			Host:               "http://testHost.com:50000",
+			Client:             "000",
+			Repository:         "testRepo",
+			Username:           "testUser",
+			Password:           "testPassword",
+			Commit:             "0123456789abcdefghijkl",
+			AtcVariant:         "CUSTOM_REMOTE_REF",
+			Scope:              "repository",
+			Workspace:          "/var/jenkins_home/workspace/myFirstPipeline",
+			AtcResultsFileName: "ATCResults.xml",
+		}
 
 		object := repoObject{
 			Pgmid:       "R3TR",
@@ -1028,7 +1042,7 @@ func TestExecuteATCCheckSuccess(t *testing.T) {
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "http://testHost.com:50000/sap/bc/adt/atc/worklists/123Z076495C01ABCDEF9C9F6B257OD70?sap-client=000", httpClient.URL)
+				assert.Equal(t, "http://testHost.com:50000/sap/bc/adt/atc/worklists/3E3D0764F95Z01ABCDHEF9C9F6B5C14P?sap-client=000", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -1057,7 +1071,7 @@ func TestExecuteATCCheckFailure(t *testing.T) {
 		Repository:         "testRepo",
 		Username:           "testUser",
 		Password:           "testPassword",
-		CommitID:           "0123456789abcdefghijkl",
+		Commit:             "0123456789abcdefghijkl",
 		Scope:              "repository",
 		Workspace:          "/var/jenkins_home/workspace/myFirstPipeline",
 		AtcResultsFileName: "ATCResults.xml",
@@ -1089,7 +1103,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 		Repository:           "testRepo",
 		Username:             "testUser",
 		Password:             "testPassword",
-		CommitID:             "0123456789abcdefghijkl",
+		Commit:               "0123456789abcdefghijkl",
 		Scope:                "repository",
 		Workspace:            "/var/jenkins_home/workspace/myFirstPipeline",
 		AUnitResultsFileName: "AUnitResults.xml",
@@ -1218,7 +1232,8 @@ func TestParseAUnitResultFailure(t *testing.T) {
 		Repository:           "testRepo",
 		Username:             "testUser",
 		Password:             "testPassword",
-		CommitID:             "0123456789abcdefghijkl",
+		Commit:               "0123456789abcdefghijkl",
+		AtcVariant:           "DEFAULT_REMOTE_REF",
 		Scope:                "repository",
 		Workspace:            "/var/jenkins_home/workspace/myFirstPipeline",
 		AUnitResultsFileName: "AUnitResults.xml",
@@ -1284,7 +1299,8 @@ func TestParseATCCheckResultSuccess(t *testing.T) {
 		Repository:         "testRepo",
 		Username:           "testUser",
 		Password:           "testPassword",
-		CommitID:           "0123456789abcdefghijkl",
+		Commit:             "0123456789abcdefghijkl",
+		AtcVariant:         "DEFAULT_REMOTE_REF",
 		Scope:              "repository",
 		Workspace:          "/var/jenkins_home/workspace/myFirstPipeline",
 		AtcResultsFileName: "ATCResults.xml",
@@ -1353,7 +1369,8 @@ func TestParseATCCheckResultSuccess(t *testing.T) {
 			Repository:         "testRepo",
 			Username:           "testUser",
 			Password:           "testPassword",
-			CommitID:           "0123456789abcdefghijkl",
+			Commit:             "0123456789abcdefghijkl",
+			AtcVariant:         "DEFAULT_REMOTE_REF",
 			Scope:              "repository",
 			Workspace:          "/var/jenkins_home/workspace/myFirstPipeline",
 			AtcResultsFileName: "ATCResults.xml",
@@ -1390,7 +1407,8 @@ func TestParseATCCheckResultFailure(t *testing.T) {
 		Repository:         "testRepo",
 		Username:           "testUser",
 		Password:           "testPassword",
-		CommitID:           "0123456789abcdefghijkl",
+		Commit:             "0123456789abcdefghijkl",
+		AtcVariant:         "DEFAULT_REMOTE_REF",
 		Scope:              "repsoitory",
 		Workspace:          "/var/jenkins_home/workspace/myFirstPipeline",
 		AtcResultsFileName: "ATCResults.xml",
@@ -1706,30 +1724,59 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 		</aunit:runResult>
 		`
 
-	case "http://testHost.com:50000/sap/bc/adt/atc/worklists?checkVariant=DEFAULT_REMOTE_REF?sap-client=000":
+	case "http://testHost.com:50000/sap/bc/adt/atc/worklists?checkVariant=DEFAULT_REMOTE_REF&sap-client=000":
 
 		c.Header = map[string][]string{"Location": {"/atc/worklists/worklistId/123Z076495C01ABCDEF9C9F6B257OD70"}}
+
+	case "http://testHost.com:50000/sap/bc/adt/atc/worklists?checkVariant=CUSTOM_REMOTE_REF&sap-client=000":
+
+		c.Header = map[string][]string{"Location": {"/atc/worklists/worklistId/3E3D0764F95Z01ABCDHEF9C9F6B5C14P"}}
 
 	case "http://testHost.com:50000/sap/bc/adt/atc/runs?worklistId=123Z076495C01ABCDEF9C9F6B257OD70?sap-client=000":
 
 		c.ResponseBody =
 			`<?xml version="1.0" encoding="utf-8"?>
-		<atcworklist:worklist atcworklist:id="248A076493C01EEC8FA9CEAED527BD53" atcworklist:timestamp="2021-11-04T09:08:18Z" atcworklist:usedObjectSet="99999999999999999999999999999999" atcworklist:objectSetIsComplete="true" xmlns:atcworklist="http://www.sap.com/adt/atc/worklist">
-			<atcworklist:objectSets>
-				<atcworklist:objectSet atcworklist:name="00000000000000000000000000000000" atcworklist:title="All Objects" atcworklist:kind="ALL"/>
-				<atcworklist:objectSet atcworklist:name="99999999999999999999999999999999" atcworklist:title="Last Check Run" atcworklist:kind="LAST_RUN"/>
-			</atcworklist:objectSets>
-			<atcworklist:objects>
-				<atcobject:object adtcore:uri="/sap/bc/adt/atc/objects/R3TR/CLAS/ZCL_GCTS" adtcore:type="CLAS" adtcore:name="ZCL_GCTS" adtcore:packageName="ZPL_GCTS" atcobject:author="testUser" xmlns:atcobject="http://www.sap.com/adt/atc/object" xmlns:adtcore="http://www.sap.com/adt/core">
-					<atcobject:findings>
-						<atcfinding:finding adtcore:uri="/sap/bc/adt/atc/findings/itemid/248A076493C01EEC8FA9D609860AFD93/index/233439" atcfinding:location="/sap/bc/adt/oo/classes/zcl_gcts/source/main#type=CLAS%2FOSI;name=ZCL_GCTS;start=20" atcfinding:processor="testUser" atcfinding:lastChangedBy="testUser" atcfinding:priority="1" atcfinding:checkId="78A08159CD2A822100535FBEB655BDB8" atcfinding:checkTitle="Package Check (Remote-enabled)" atcfinding:messageId="USEM" atcfinding:messageTitle="Package Violation - Error" atcfinding:exemptionApproval="" atcfinding:exemptionKind="" atcfinding:checksum="553596936" atcfinding:quickfixInfo="atc:248A076493C01EEC8FA9D609860AFD93,233439" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
-							<atom:link href="/sap/bc/adt/documentation/atc/documents/itemid/248A076493C01EEC8FA9D609860AFD93/index/233439" rel="http://www.sap.com/adt/relations/documentation" type="text/html" xmlns:atom="http://www.w3.org/2005/Atom"/>
-							<atcfinding:quickfixes atcfinding:manual="false" atcfinding:automatic="false" atcfinding:pseudo="false"/>
-						</atcfinding:finding>
-					</atcobject:findings>
-				</atcobject:object>
-			</atcworklist:objects>
-		</atcworklist:worklist>`
+			<atcworklist:worklistRun xmlns:atcworklist="http://www.sap.com/adt/atc/worklist">
+				<atcworklist:worklistId>123Z076495C01ABCDEF9C9F6B257OD70</atcworklist:worklistId>
+				<atcworklist:worklistTimestamp>2021-11-29T14:46:46Z</atcworklist:worklistTimestamp>
+				<atcworklist:infos>
+					<atcinfo:info xmlns:atcinfo="http://www.sap.com/adt/atc/info">
+						<atcinfo:type>FINDING_STATS</atcinfo:type>
+						<atcinfo:description>0,0,1</atcinfo:description>
+					</atcinfo:info>
+				</atcworklist:infos>
+			</atcworklist:worklistRun>`
+
+	case "http://testHost.com:50000/sap/bc/adt/atc/worklists/3E3D0764F95Z01ABCDHEF9C9F6B5C14P?sap-client=000":
+		c.ResponseBody =
+			`<?xml version="1.0" encoding="utf-8"?>
+			<atcworklist:worklist atcworklist:id="42010AEF3CA51EDC94AC4683B035E12D" atcworklist:timestamp="2021-11-29T22:18:58Z" atcworklist:usedObjectSet="99999999999999999999999999999999" atcworklist:objectSetIsComplete="true" xmlns:atcworklist="http://www.sap.com/adt/atc/worklist">
+				<atcworklist:objectSets>
+					<atcworklist:objectSet atcworklist:name="00000000000000000000000000000000" atcworklist:title="All Objects" atcworklist:kind="ALL"/>
+					<atcworklist:objectSet atcworklist:name="99999999999999999999999999999999" atcworklist:title="Last Check Run" atcworklist:kind="LAST_RUN"/>
+				</atcworklist:objectSets>
+				<atcworklist:objects/>
+			</atcworklist:worklist>`
+
+	case "http://testHost.com:50000/sap/bc/adt/atc/worklists/123Z076495C01ABCDEF9C9F6B257OD70?sap-client=000":
+		c.ResponseBody =
+			`<?xml version="1.0" encoding="utf-8"?>
+<atcworklist:worklist atcworklist:id="248A076493C01EEC8FA9CEAED527BD53" atcworklist:timestamp="2021-11-04T09:08:18Z" atcworklist:usedObjectSet="99999999999999999999999999999999" atcworklist:objectSetIsComplete="true" xmlns:atcworklist="http://www.sap.com/adt/atc/worklist">
+	<atcworklist:objectSets>
+		<atcworklist:objectSet atcworklist:name="00000000000000000000000000000000" atcworklist:title="All Objects" atcworklist:kind="ALL"/>
+		<atcworklist:objectSet atcworklist:name="99999999999999999999999999999999" atcworklist:title="Last Check Run" atcworklist:kind="LAST_RUN"/>
+	</atcworklist:objectSets>
+	<atcworklist:objects>
+		<atcobject:object adtcore:uri="/sap/bc/adt/atc/objects/R3TR/CLAS/ZCL_GCTS" adtcore:type="CLAS" adtcore:name="ZCL_GCTS" adtcore:packageName="ZPL_GCTS" atcobject:author="testUser" xmlns:atcobject="http://www.sap.com/adt/atc/object" xmlns:adtcore="http://www.sap.com/adt/core">
+			<atcobject:findings>
+				<atcfinding:finding adtcore:uri="/sap/bc/adt/atc/findings/itemid/248A076493C01EEC8FA9D609860AFD93/index/233439" atcfinding:location="/sap/bc/adt/oo/classes/zcl_gcts/source/main#type=CLAS%2FOSI;name=ZCL_GCTS;start=20" atcfinding:processor="testUser" atcfinding:lastChangedBy="testUser" atcfinding:priority="1" atcfinding:checkId="78A08159CD2A822100535FBEB655BDB8" atcfinding:checkTitle="Package Check (Remote-enabled)" atcfinding:messageId="USEM" atcfinding:messageTitle="Package Violation - Error" atcfinding:exemptionApproval="" atcfinding:exemptionKind="" atcfinding:checksum="553596936" atcfinding:quickfixInfo="atc:248A076493C01EEC8FA9D609860AFD93,233439" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
+					<atom:link href="/sap/bc/adt/documentation/atc/documents/itemid/248A076493C01EEC8FA9D609860AFD93/index/233439" rel="http://www.sap.com/adt/relations/documentation" type="text/html" xmlns:atom="http://www.w3.org/2005/Atom"/>
+					<atcfinding:quickfixes atcfinding:manual="false" atcfinding:automatic="false" atcfinding:pseudo="false"/>
+				</atcfinding:finding>
+			</atcobject:findings>
+		</atcobject:object>
+	</atcworklist:objects>
+</atcworklist:worklist>`
 	}
 
 	if r != nil {
