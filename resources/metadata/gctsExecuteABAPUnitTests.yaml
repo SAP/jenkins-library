@@ -2,11 +2,12 @@ metadata:
   name: gctsExecuteABAPUnitTests
   description: Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
   longDescription: |
-    This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system. 
-    Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both. 
+    This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system.
+    Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both.
     By default, both checks are executed.
-    The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred. 
+    The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred.
     To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in the Example section.
+    <br />
     You can use this step as of SAP S/4HANA 2020.
 
 spec:
@@ -52,7 +53,7 @@ spec:
         mandatory: true
       - name: repository
         type: string
-        description: Name (ID) of the local repository on the ABAP system 
+        description: Name (ID) of the local repository on the ABAP system
         scope:
           - PARAMETERS
           - STAGES
@@ -69,7 +70,7 @@ spec:
       - name: aUnitTest
         type: bool
         default: true
-        description: Indication whether you want to execute the unit test checks. 
+        description: Indication whether you want to execute the unit test checks.
         scope:
           - PARAMETERS
           - STAGES
@@ -100,20 +101,22 @@ spec:
           - remoteChangedPackages
           - repository
           - packages
-        description:  Scope of objects for which you want to execute the checks
-         - localChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects.
-         - remoteChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
-         - localChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages.
-         - remoteChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
-         - repository - All objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
-         - packages - All packages that are part of the local repository . The checks are executed for the packages.
+        description: |
+           Scope of objects for which you want to execute the checks:
+
+            * localChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects.
+            * remoteChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
+            * localChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages.
+            * remoteChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
+            * repository - all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
+            * packages - all packages that are part of the local repository . The checks are executed for the packages.
         scope:
           - PARAMETERS
           - STAGES
-          - STEPS   
+          - STEPS
       - name: commit
         type: string
-        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory. 
+        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory.
         scope:
           - PARAMETERS
           - STAGES
@@ -145,5 +148,5 @@ spec:
           - STEPS
         mandatory: false
         default: "AUnitResults.xml"
- 
- 
+
+
