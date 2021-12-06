@@ -136,8 +136,8 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 	cmd.Flags().BoolVar(&stepConfig.AtcCheck, "atcCheck", true, "Indication whether you want to execute the ATC checks.")
 	cmd.Flags().StringVar(&stepConfig.AtcVariant, "atcVariant", `DEFAULT_REMOTE_REF`, "Variant for ATC checks")
 	cmd.Flags().StringVar(&stepConfig.Scope, "scope", `repository`, "Scope of objects for which you want to execute the checks - localChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects. - remoteChangedObjects - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects. - localChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages. - remoteChangedPackages - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages. - repository - All objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope. - packages - All packages that are part of the local repository . The checks are executed for the packages.")
-	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of the commit that triggered the pipeline. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory.")
-	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to directory which contains the source code that your CI/CD tool of choice checks out. For example in Jenkins the workspace parameter is /var/jenkins_home/workspace/jobName/")
+	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory.")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to directory which contains the source code that your CI/CD tool checks out. For example in Jenkins, the workspace parameter is /var/jenkins_home/workspace/<jobName>/")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC checks")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit tests")
 
@@ -160,7 +160,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the unit tests", Type: "jenkins"},
+					{Name: "abapCredentialsId", Description: "ID taken from the Jenkins credentials store containing user name and password of the user that authenticates to the ABAP system on which you want to execute the checks.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -200,7 +200,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_repository"),
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "repository",
@@ -209,7 +209,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_host"),
+						Default:     os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "client",
@@ -227,6 +227,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "atcCheck",
@@ -235,6 +236,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "atcVariant",
@@ -243,6 +245,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `DEFAULT_REMOTE_REF`,
 					},
 					{
 						Name:        "scope",
@@ -251,6 +254,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `repository`,
 					},
 					{
 						Name:        "commit",
@@ -259,6 +263,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_commit"),
 					},
 					{
 						Name:        "workspace",
@@ -267,6 +272,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_workspace"),
 					},
 					{
 						Name:        "atcResultsFileName",
@@ -275,6 +281,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `ATCResults.xml`,
 					},
 					{
 						Name:        "aUnitResultsFileName",
@@ -283,6 +290,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `AUnitResults.xml`,
 					},
 				},
 			},

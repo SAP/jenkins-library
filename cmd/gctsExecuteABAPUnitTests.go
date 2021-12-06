@@ -166,7 +166,7 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 	}
 
-	repository, err := getRepository(config, client)
+	repository, err := getRepo(config, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
@@ -253,7 +253,7 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	}
 
-	repository, err := getRepository(config, client)
+	repository, err := getRepo(config, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
 	}
@@ -519,7 +519,7 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return nil
 	}
 
-	parsedRes, err := parseAUnitResult(config, client, &result)
+	parsedRes, err := parseUnitResult(config, client, &result)
 
 	if err != nil {
 		log.Entry().Warning(err)
@@ -565,7 +565,7 @@ func runAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 	return response, nil
 }
 
-func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *runResult) (parsedResult checkstyle, err error) {
+func parseUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, aUnitRunResult *runResult) (parsedResult checkstyle, err error) {
 
 	log.Entry().Info("parse ABAP Unit Result started")
 
@@ -1359,7 +1359,7 @@ func getTargetDir(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 
 	var targetDir string
 
-	repository, err := getRepository(config, client)
+	repository, err := getRepo(config, client)
 
 	if err != nil {
 		return targetDir, err
@@ -1395,7 +1395,7 @@ func checkReadableSource(config *gctsExecuteABAPUnitTestsOptions, client piperht
 	return readableSource, nil
 }
 
-func getRepository(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryResponse, error) {
+func getRepo(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryResponse, error) {
 
 	var repositoryResp repositoryResponse
 	url := config.Host +

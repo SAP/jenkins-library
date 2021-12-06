@@ -1131,7 +1131,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 		var resp *runResult
 		xml.Unmarshal(xmlBody, &resp)
 
-		parsedRes, err := parseAUnitResult(&config, &httpClient, resp)
+		parsedRes, err := parseUnitResult(&config, &httpClient, resp)
 
 		if assert.NoError(t, err) {
 
@@ -1187,7 +1187,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 		var resp *runResult
 		xml.Unmarshal(xmlBody, &resp)
 
-		parsedRes, err := parseAUnitResult(&config, &httpClient, resp)
+		parsedRes, err := parseUnitResult(&config, &httpClient, resp)
 
 		if assert.NoError(t, err) {
 
@@ -1276,7 +1276,7 @@ func TestParseAUnitResultFailure(t *testing.T) {
 		var resp *runResult
 		xml.Unmarshal(xmlBody, &resp)
 
-		parsedRes, err := parseAUnitResult(&config, &httpClient, resp)
+		parsedRes, err := parseUnitResult(&config, &httpClient, resp)
 
 		if assert.Error(t, err) {
 
