@@ -119,7 +119,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if aUnitFailure {
 
-			log.Entry().Error("unit test(s) has/have failed! Check " + config.AUnitResultsFileName + " for more information! If you have enabled Warnings Next Generation, you can see the issues there!")
+			log.Entry().Error("unit test(s) has/have failed! Check " + config.AUnitResultsFileName + " for more information! If you have enabled Warnings Next Generation Plug-in, you can see the issues there!")
 
 		} else {
 
@@ -139,7 +139,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if atcFailure {
 
-			log.Entry().Error(" ATC issue(s) found! Check " + config.AtcResultsFileName + " for more information! If you have enabled Warnings Next Generation, you can see the issues there!")
+			log.Entry().Error(" ATC issue(s) found! Check " + config.AtcResultsFileName + " for more information! If you have enabled Warnings Next Generation Plug-in, you can see the issues there!")
 
 		} else {
 
@@ -1243,7 +1243,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + ".clas.global.abap"
+			fileName = strings.ToLower(objName) + ".clas.abap"
 		} else {
 
 			regexmethodName := regexp.MustCompile(`name=\w*`)
@@ -1325,7 +1325,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	if clas != "" && fileName == "" {
 		if readableSource {
 
-			fileName = strings.ToLower(objName) + ".clas.global.abap"
+			fileName = strings.ToLower(objName) + ".clas.abap"
 		} else {
 
 			fileName = "CPUB " + objName + ".abap"

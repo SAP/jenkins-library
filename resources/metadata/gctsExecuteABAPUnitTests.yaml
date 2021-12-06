@@ -121,7 +121,7 @@ spec:
         mandatory: false
       - name: workspace
         type: string
-        description: Absolute path to directory which contains the source code that your CI/CD tool of choice checks out. For example in Jenkins the workspace parameter is /var/jenkins_home/workspace/jobName/
+        description: Absolute path to directory which contains the source code that your CI/CD tool checks out. For example in Jenkins, the workspace parameter is /var/jenkins_home/workspace/jobName/
         scope:
           - PARAMETERS
           - STAGES
