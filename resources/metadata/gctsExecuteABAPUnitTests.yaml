@@ -103,7 +103,6 @@ spec:
           - packages
         description: |
            Scope of objects for which you want to execute the checks:
-
             * localChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects.
             * remoteChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
             * localChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages.
