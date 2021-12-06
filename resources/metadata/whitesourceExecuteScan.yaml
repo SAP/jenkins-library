@@ -29,6 +29,12 @@ spec:
             deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        type: jenkins
+        aliases:
+          - name: dockerCredentialsId
+            deprecated: true
     params:
       - name: agentDownloadUrl
         type: string
@@ -54,7 +60,7 @@ spec:
           - STAGES
           - STEPS
       - name: agentUrl
-        alias:
+        aliases:
           - name: whitesourceAgentUrl
         type: string
         description: "URL to the WhiteSource agent endpoint."
@@ -107,6 +113,28 @@ spec:
           - STAGES
           - STEPS
         default: ./wss-unified-agent.config
+      - name: containerRegistryPassword
+        description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerRegistryUser
+        description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: createProductFromPipeline
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
@@ -144,6 +172,22 @@ spec:
           - STAGES
           - STEPS
         default: "."
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
@@ -486,7 +530,7 @@ spec:
               value: dub
             - name: buildTool
               value: docker
-    - image: devxci/mbtci:1.1.1
+    - image: devxci/mbtci-java11-node14
       workingDir: /home/mta
       env: []
       conditions:

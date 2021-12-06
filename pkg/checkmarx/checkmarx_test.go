@@ -48,13 +48,13 @@ func (sm *senderMock) SendRequest(method, url string, body io.Reader, header htt
 	}
 	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, httpError
 }
-func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
 	sm.urlCalled = url
 	sm.header = header
 	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
 }
-func (sm *senderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (sm *senderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
 	sm.urlCalled = url
 	sm.header = header

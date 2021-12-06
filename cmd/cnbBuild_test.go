@@ -3,13 +3,13 @@ package cmd
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,9 +55,11 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/platform"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/platform"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
+		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
 	})
 
 	t.Run("success case (registry without https)", func(t *testing.T) {
@@ -82,12 +84,14 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/platform"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/platform"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+		assert.Equal(t, commonPipelineEnvironment.container.registryURL, fmt.Sprintf("https://%s", registry))
+		assert.Equal(t, commonPipelineEnvironment.container.imageNameTag, "my-image:0.0.1")
 	})
 
-	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file)", func(t *testing.T) {
+	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
 		config := cnbBuildOptions{
@@ -96,7 +100,10 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerRegistryURL: registry,
 			DockerConfigJSON:     "/path/to/test.json",
 			Buildpacks:           []string{"test"},
-			BuildEnvVars:         []string{"FOO=BAR"},
+			BuildEnvVars: map[string]interface{}{
+				"FOO": "BAR",
+			},
+			AdditionalTags: []string{"latest"},
 		}
 
 		utils := newCnbBuildTestsUtils()
@@ -111,21 +118,22 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {
 		t.Parallel()
 
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Write([]byte("testCert"))
-		}))
-		// Close the server when test finishes
-		defer server.Close()
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, "https://test-cert.com/cert.crt", httpmock.NewStringResponder(200, "testCert"))
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
 		caCertsFile := "/etc/ssl/certs/ca-certificates.crt"
+		caCertsTmpFile := "/tmp/ca-certificates.crt"
 		registry := "some-registry"
 		config := cnbBuildOptions{
 			ContainerImageName:        "my-image",
@@ -133,7 +141,7 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerRegistryURL:      registry,
 			DockerConfigJSON:          "/path/to/config.json",
 			Buildpacks:                []string{"test"},
-			CustomTLSCertificateLinks: []string{server.URL, server.URL},
+			CustomTLSCertificateLinks: []string{"https://test-cert.com/cert.crt", "https://test-cert.com/cert.crt"},
 		}
 
 		utils := newCnbBuildTestsUtils()
@@ -141,22 +149,48 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, client)
 		assert.NoError(t, err)
 
-		result, err := utils.FilesMock.FileRead(caCertsFile)
+		result, err := utils.FilesMock.FileRead(caCertsTmpFile)
 		assert.NoError(t, err)
 		assert.Equal(t, "test\ntestCert\ntestCert\n", string(result))
 
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, fmt.Sprintf("SSL_CERT_FILE=%s", caCertsTmpFile))
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/platform"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/platform"}, runner.Calls[1].Params)
-		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform", "-no-color"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag)}, runner.Calls[2].Params)
+	})
+
+	t.Run("success case (additionalTags)", func(t *testing.T) {
+		t.Parallel()
+
+		registry := "some-registry"
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "3.1.5",
+			ContainerRegistryURL: registry,
+			DockerConfigJSON:     "/path/to/config.json",
+			Buildpacks:           []string{"test"},
+			AdditionalTags:       []string{"3", "3.1", "3.1", "3.1.5"},
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		assert.NoError(t, err)
+
+		runner := utils.ExecMockRunner
+		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
+		assert.ElementsMatch(t, []string{"-no-color", fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:3", registry, config.ContainerImageName), fmt.Sprintf("%s/%s:3.1", registry, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
 	t.Run("error case: Invalid DockerConfigJSON file", func(t *testing.T) {
@@ -210,5 +244,26 @@ func TestRunCnbBuild(t *testing.T) {
 
 		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "the provided dockerImage is not a valid builder")
+	})
+
+	t.Run("error case: builder image does not contain tls certificates", func(t *testing.T) {
+		t.Parallel()
+
+		registry := "some-registry"
+		config := cnbBuildOptions{
+			ContainerImageName:        "my-image",
+			ContainerImageTag:         "0.0.1",
+			ContainerRegistryURL:      registry,
+			DockerConfigJSON:          "/path/to/config.json",
+			Buildpacks:                []string{"test"},
+			CustomTLSCertificateLinks: []string{"http://example.com/certs.pem"},
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		assert.EqualError(t, err, "failed to copy certificates: cannot copy '/etc/ssl/certs/ca-certificates.crt': file does not exist")
 	})
 }

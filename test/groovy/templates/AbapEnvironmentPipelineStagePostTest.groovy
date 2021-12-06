@@ -73,4 +73,26 @@ class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
 
         assertThat(stepsCalled, not(hasItem('cloudFoundryDeleteService')))
     }
+
+    @Test
+    void testCloudFoundryDeleteServiceDebugTrue() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
+        ]
+        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript, debug: true)
+
+        assertThat(stepsCalled, not(hasItem('cloudFoundryDeleteService')))
+    }
+
+    @Test
+    void testCloudFoundryDeleteServiceDebugFalse() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
+        ]
+        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript, debug: false)
+
+        assertThat(stepsCalled, hasItem('cloudFoundryDeleteService'))
+    }
 }

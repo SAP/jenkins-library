@@ -74,6 +74,9 @@ func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*h
 	if url == "error404NotFound" {
 		return errors.New("returned with response 404 Not Found")
 	}
+	if url == "error403Forbidden" {
+		return errors.New("returned with response 403 Forbidden")
+	}
 	if m.DownloadError[url] != nil {
 		return m.DownloadError[url]
 	}

@@ -22,7 +22,8 @@ type mtaBuildOptions struct {
 	MtarGroup                       string   `json:"mtarGroup,omitempty"`
 	Version                         string   `json:"version,omitempty"`
 	Extensions                      string   `json:"extensions,omitempty"`
-	Platform                        string   `json:"platform,omitempty" validate:"oneof=CF NEO XSA"`
+	Jobs                            int      `json:"jobs,omitempty"`
+	Platform                        string   `json:"platform,omitempty" validate:"possible-values=CF NEO XSA"`
 	ApplicationName                 string   `json:"applicationName,omitempty"`
 	Source                          string   `json:"source,omitempty"`
 	Target                          string   `json:"target,omitempty"`
@@ -36,12 +37,14 @@ type mtaBuildOptions struct {
 	MtaDeploymentRepositoryURL      string   `json:"mtaDeploymentRepositoryUrl,omitempty"`
 	Publish                         bool     `json:"publish,omitempty"`
 	Profiles                        []string `json:"profiles,omitempty"`
+	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
 	mtarFilePath string
 	custom       struct {
-		mtarPublishedURL string
+		mtarPublishedURL  string
+		buildSettingsInfo string
 	}
 }
 
@@ -53,6 +56,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
 		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
 	errCount := 0
@@ -77,6 +81,8 @@ func MtaBuildCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment mtaBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createMtaBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -106,6 +112,7 @@ func MtaBuildCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -122,30 +129,32 @@ func MtaBuildCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			mtaBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
-			telemetryData.ErrorCode = "0"
+			mtaBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -159,6 +168,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtarGroup, "mtarGroup", os.Getenv("PIPER_mtarGroup"), "The group to which the mtar artifact will be uploaded. Required when publish is True.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Version of the mtar artifact")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "The path to the extension descriptor file.")
+	cmd.Flags().IntVar(&stepConfig.Jobs, "jobs", 0, "Configures the number of Make jobs that can run simultaneously. Maximum value allowed is 8")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `CF`, "The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
 	cmd.Flags().StringVar(&stepConfig.Source, "source", `./`, "The path to the MTA project.")
@@ -173,6 +183,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtaDeploymentRepositoryURL, "mtaDeploymentRepositoryUrl", os.Getenv("PIPER_mtaDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which mtar artifacts will be publised")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.")
 
 }
 
@@ -227,6 +238,15 @@ func mtaBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "extension"}},
 						Default:     os.Getenv("PIPER_extensions"),
+					},
+					{
+						Name:        "jobs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "jobs"}},
+						Default:     0,
 					},
 					{
 						Name:        "platform",
@@ -380,10 +400,24 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci:1.1.1"},
+				{Image: "devxci/mbtci-java11-node14"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -393,6 +427,7 @@ func mtaBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "mtarFilePath"},
 							{"Name": "custom/mtarPublishedUrl"},
+							{"Name": "custom/buildSettingsInfo"},
 						},
 					},
 				},

@@ -3,7 +3,7 @@ package cnbutils
 import (
 	"bytes"
 
-	"github.com/pelletier/go-toml"
+	toml "github.com/pelletier/go-toml"
 )
 
 type Order struct {

@@ -51,7 +51,7 @@ spec:
         aliases:
           - name: helmDeploymentParameters
         type: "[]string"
-        description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
+        description: Defines additional parameters for "helm install" or "kubectl apply" command.
         scope:
           - PARAMETERS
           - STAGES
@@ -70,7 +70,7 @@ spec:
         aliases:
           - name: k8sAppTemplate
         type: string
-        description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)
+        description: 'Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.'
         scope:
           - PARAMETERS
           - STAGES
@@ -96,6 +96,31 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -122,6 +147,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
         longDescription: |-
@@ -129,7 +156,6 @@ spec:
 
           **For `deployTool: helm/helm3`:**<br />
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
-          Note: the secret will not be persisted in the Kubernetes cluster.
 
           If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
 
@@ -172,8 +198,10 @@ spec:
           - helm
           - helm3
       - name: forceUpdates
+        aliases:
+          - name: force
         type: bool
-        description: "Helm only: force resource updates with helm parameter `--force`"
+        description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
         mandatory: false
         scope:
           - PARAMETERS
@@ -234,7 +262,7 @@ spec:
           - STEPS
       - name: kubeConfig
         type: string
-        description: Defines the path to the \"kubeconfig\" file.
+        description: Defines the path to the "kubeconfig" file.
         scope:
           - GENERAL
           - PARAMETERS
@@ -245,11 +273,11 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            name: kubeConfigFileSecretName
+            name: kubeConfigFileVaultSecretName
             default: kube-config
       - name: kubeContext
         type: string
-        description: Defines the context to use from the \"kubeconfig\" file.
+        description: Defines the context to use from the "kubeconfig" file.
         scope:
           - PARAMETERS
           - STAGES
@@ -295,13 +323,23 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: deployCommand
+        type: string
+        description: "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`."
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: apply
+        possibleValues:
+          - apply
+          - replace
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config

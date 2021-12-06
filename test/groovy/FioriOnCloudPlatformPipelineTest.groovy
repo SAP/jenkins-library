@@ -166,6 +166,13 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     @Test
     void straightForwardTestCF() {
 
+        def calledStep
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+        })
+
         nullScript
             .commonPipelineEnvironment
                 .configuration =  [steps:
@@ -187,10 +194,9 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         stepRule.step.fioriOnCloudPlatformPipeline(
           script: nullScript,
-          jenkinsUtilsStub: new JenkinsUtilsMock()
           )
         
-        assertThat(shellRule.shell, hasItem(containsString('cf login -u "foo" -p \'terceSpot\' -a https://api.cf.hana.example.com -o "testOrg" -s "testSpace"')))
+        assertThat(calledStep, is('cloudFoundryDeploy'))
     }
 
     @Test
