@@ -128,6 +128,7 @@ func Execute() {
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
 	rootCmd.AddCommand(CnbBuildCommand())
+	rootCmd.AddCommand(AbapEnvironmentBuildCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
