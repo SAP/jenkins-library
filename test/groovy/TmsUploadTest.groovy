@@ -234,7 +234,7 @@ public class TmsUploadTest extends BasePiperTest {
         binding.workspace = "."
         envRule.env.gitCommitId = "testCommitId"
 
-        nullScript.commonPipelineEnvironment.mtaBuildToolDesc = "path/mta.yaml"
+        nullScript.commonPipelineEnvironment.custom.mtaBuildToolDesc = "path/mta.yaml"
         readYamlRule.registerYaml('path/mta.yaml','ID: "com.sap.piper.tms.test"' + "\n" + 'version: "9.9.9"')
         fileExistsRules.existingFiles.add('path/mta.yaml')
 
