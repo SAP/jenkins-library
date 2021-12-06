@@ -316,19 +316,20 @@ func TestDeclareFetchURLSuccess(t *testing.T) {
 		productID      int
 		replaceBinary  bool
 		want           int
+		customHeaders  []string
 	}{
-		{"binary", "group1", "/api/fetch/", 1, true, 111},
-		{"binary", "group1", "/api/fetch/", -1, true, 111},
-		{"binary", "group1", "/api/fetch/", 0, true, 111},
+		{"binary", "group1", "/api/fetch/", 1, true, 111, []string{"aaa", "bbb"}},
+		{"binary", "group1", "/api/fetch/", -1, true, 111, nil},
+		{"binary", "group1", "/api/fetch/", 0, true, 111, nil},
 
-		{"binary", "group1", "/api/fetch/", 1, false, 111},
-		{"binary", "group1", "/api/fetch/", -1, false, 111},
-		{"binary", "group1", "/api/fetch/", 0, false, 111},
+		{"binary", "group1", "/api/fetch/", 1, false, 111, nil},
+		{"binary", "group1", "/api/fetch/", -1, false, 111, nil},
+		{"binary", "group1", "/api/fetch/", 0, false, 111, nil},
 	}
 	for _, c := range cases {
 
 		// pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL)
-		got := pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL, c.productID, c.replaceBinary)
+		got := pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL, c.productID, c.replaceBinary, c.customHeaders)
 
 		assert.Equal(t, requestURI, "/api/fetch/")
 		assert.Equal(t, got.Result.ProductID, c.want)
@@ -337,6 +338,8 @@ func TestDeclareFetchURLSuccess(t *testing.T) {
 		assert.Contains(t, passedHeaders, "Group")
 		assert.Contains(t, passedHeaders, "Delete-Binary")
 		assert.Contains(t, passedHeaders, "Url")
+
+		assert.Equal(t, passedHeaders["Custom-Header"], c.customHeaders)
 
 		if c.replaceBinary {
 			assert.Contains(t, passedHeaders, "Replace")

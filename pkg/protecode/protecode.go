@@ -358,7 +358,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, productID int, replaceBinary bool, customHeaders []string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
@@ -367,6 +367,9 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, produc
 		headers = map[string][]string{"Group": {group}, "Replace": {fmt.Sprintf("%v", productID)}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 	} else {
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	}
+	if len(customHeaders) > 0 {
+		headers["Custom-Header"] = customHeaders
 	}
 
 	// log.Entry().Debugf("[DEBUG] ===> Headers for fetch upload: %v", headers)

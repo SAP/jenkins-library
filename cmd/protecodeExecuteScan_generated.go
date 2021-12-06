@@ -18,25 +18,26 @@ import (
 )
 
 type protecodeExecuteScanOptions struct {
-	ExcludeCVEs                 string `json:"excludeCVEs,omitempty"`
-	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
-	ScanImage                   string `json:"scanImage,omitempty"`
-	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
-	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
-	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"possible-values=none binary complete"`
-	FilePath                    string `json:"filePath,omitempty"`
-	IncludeLayers               bool   `json:"includeLayers,omitempty"`
-	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
-	ServerURL                   string `json:"serverUrl,omitempty"`
-	ReportFileName              string `json:"reportFileName,omitempty"`
-	FetchURL                    string `json:"fetchUrl,omitempty"`
-	Group                       string `json:"group,omitempty"`
-	VerifyOnly                  bool   `json:"verifyOnly,omitempty"`
-	ReplaceProductID            int    `json:"replaceProductId,omitempty"`
-	Username                    string `json:"username,omitempty"`
-	Password                    string `json:"password,omitempty"`
-	Version                     string `json:"version,omitempty"`
-	PullRequestName             string `json:"pullRequestName,omitempty"`
+	ExcludeCVEs                 string   `json:"excludeCVEs,omitempty"`
+	FailOnSevereVulnerabilities bool     `json:"failOnSevereVulnerabilities,omitempty"`
+	ScanImage                   string   `json:"scanImage,omitempty"`
+	DockerRegistryURL           string   `json:"dockerRegistryUrl,omitempty"`
+	DockerConfigJSON            string   `json:"dockerConfigJSON,omitempty"`
+	CleanupMode                 string   `json:"cleanupMode,omitempty" validate:"possible-values=none binary complete"`
+	FilePath                    string   `json:"filePath,omitempty"`
+	IncludeLayers               bool     `json:"includeLayers,omitempty"`
+	TimeoutMinutes              string   `json:"timeoutMinutes,omitempty"`
+	ServerURL                   string   `json:"serverUrl,omitempty"`
+	ReportFileName              string   `json:"reportFileName,omitempty"`
+	FetchURL                    string   `json:"fetchUrl,omitempty"`
+	Group                       string   `json:"group,omitempty"`
+	VerifyOnly                  bool     `json:"verifyOnly,omitempty"`
+	ReplaceProductID            int      `json:"replaceProductId,omitempty"`
+	Username                    string   `json:"username,omitempty"`
+	Password                    string   `json:"password,omitempty"`
+	Version                     string   `json:"version,omitempty"`
+	PullRequestName             string   `json:"pullRequestName,omitempty"`
+	CustomHeaders               []string `json:"customHeaders,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -128,6 +129,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.CustomHeaders)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -206,6 +208,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomHeaders, "customHeaders", []string{}, "Specifies custom headers to be appending while fetching the image.")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
@@ -453,6 +456,15 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pullRequestName"),
+					},
+					{
+						Name:        "customHeaders",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

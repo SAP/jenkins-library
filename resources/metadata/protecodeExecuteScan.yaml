@@ -225,6 +225,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: customHeaders
+        type: "[]string"
+        description: Specifies custom headers to be appending while fetching the image.
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: influx
