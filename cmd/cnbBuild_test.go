@@ -23,9 +23,7 @@ func newCnbBuildTestsUtils() cnbutils.MockUtils {
 }
 
 func addBuilderFiles(utils *cnbutils.MockUtils) {
-	for _, path := range []string{creatorPath, analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
-		utils.FilesMock.AddFile(path, []byte(`xyz`))
-	}
+	utils.FilesMock.AddFile(creatorPath, []byte(`xyz`))
 }
 
 func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner) {

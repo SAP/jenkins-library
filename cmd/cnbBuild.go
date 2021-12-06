@@ -28,11 +28,6 @@ import (
 
 const (
 	creatorPath  = "/cnb/lifecycle/creator"
-	analyzerPath = "/cnb/lifecycle/analyzer"
-	detectorPath = "/cnb/lifecycle/detector"
-	builderPath  = "/cnb/lifecycle/builder"
-	restorerPath = "/cnb/lifecycle/restorer"
-	exporterPath = "/cnb/lifecycle/exporter"
 	platformPath = "/tmp/platform"
 )
 
@@ -114,16 +109,15 @@ func isDir(path string) (bool, error) {
 }
 
 func isBuilder(utils cnbutils.BuildUtils) error {
-	for _, binaryPath := range []string{creatorPath, analyzerPath, detectorPath, builderPath, restorerPath, exporterPath} {
-		exists, err := utils.FileExists(binaryPath)
-		if err != nil {
-			return err
-		}
-
-		if !exists {
-			return fmt.Errorf("binary '%s' not found", binaryPath)
-		}
+	exists, err := utils.FileExists(creatorPath)
+	if err != nil {
+		return err
 	}
+
+	if !exists {
+		return fmt.Errorf("binary '%s' not found", creatorPath)
+	}
+
 	return nil
 }
 

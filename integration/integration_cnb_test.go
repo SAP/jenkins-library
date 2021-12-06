@@ -35,7 +35,6 @@ func TestNpmProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
-	registryContainer.GetContainerID()
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -47,8 +46,7 @@ func TestNpmProject(t *testing.T) {
 
 	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config_env.yml", "--path", "TestMtaIntegration/npm", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/analyzer")
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -72,7 +70,7 @@ func TestProjectDescriptor(t *testing.T) {
 
 	container.whenRunningPiperCommand("cnbBuild", "-v", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Dockerfile doesn't match include pattern, ignoring")
 	container.assertHasOutput(t, "srv/hello.js matches include pattern")
 	container.assertHasOutput(t, "srv/hello.js matches include pattern")
@@ -102,7 +100,7 @@ func TestZipPath(t *testing.T) {
 
 	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip")
 
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Installing Go")
 	container.assertHasOutput(t, "Paketo Go Build Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -147,7 +145,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs]'")
 	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs' to /tmp/nodejs")
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
 	container.assertHasOutput(t, "*** Images (sha256:")
@@ -172,7 +170,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs]'")
 	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs' to /tmp/nodejs")
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
 	container.assertHasOutput(t, "*** Images (sha256:")
