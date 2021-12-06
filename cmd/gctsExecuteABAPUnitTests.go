@@ -1356,6 +1356,15 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 
 	}
 
+	// TABLES
+	regexTab := regexp.MustCompile(`\/sap\/bc\/adt\/ddic\/tables\/` + strings.ToLower(objName))
+	tab := regexTab.FindString(path)
+	if tab != "" && fileName == "" {
+
+		fileName = "TABL " + objName + "axs.json"
+
+	}
+
 	return fileName, nil
 
 }
