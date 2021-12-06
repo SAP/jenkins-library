@@ -31,6 +31,7 @@ gctsExecuteABAPUnitTests(
 
   )
 ```
+
 Example configuration for the use in a yaml config file (such as `.pipeline/config.yaml`).
 
 ```yaml
@@ -45,6 +46,7 @@ steps:
     commit: '38abb4814ae46b98e8e6c3e718cf1782afa9ca90'
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
+
 Example configuration when you define scope: *repository* or *packages*. For these two cases you do not need to specify a *commit*.
 
 ```yaml
@@ -58,6 +60,7 @@ steps:
     scope: 'repository'
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
+
 Example configuration when you want to execute only ABAP Unit Test.
 
 ```yaml
@@ -72,37 +75,44 @@ steps:
     scope: 'packages'
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
+
 Example configuration for the use of *recordIssue* step to make the findings visible in Jenkins interface.
 
 ```groovy
-stage('gCTS Execute ABAP Unit Test') {
-  steps {
-    script {
-      try{
-		    gctsExecuteABAPUnitTests(
-			    script : this,
-			    commitId : "${GIT_COMMIT}",
-			    workspace: "${WORKSPACE}"
-			)
-		    }catch (Exception ex){
-          currentBuild.result = 'FAILURE'
-				  unstable(message: "${STAGE_NAME} is unstable")
-          }
-	   }
-  }
-}
-stage('Results in Checkstyle') {
-    steps {
-        recordIssues(
-        enabledForFailure: true, aggregatingResults: true,
-        tools: [checkStyle(pattern: 'ATCResults.xml', reportEncoding: 'UTF8'),checkStyle(pattern: 'AUnitResults.xml', reportEncoding: 'UTF8')]
+		stage('ABAP Unit Tests') {
+		  steps {
+		    script {
+		      try {
 
-		)
+		        gctsExecuteABAPUnitTests(
+		          script: this,
+		          commit: "${GIT_COMMIT}",
+		          workspace: "${WORKSPACE}"
 
-			}
+		        )
+		      } catch (Exception ex) {
+		        currentBuild.result = 'FAILURE'
+		        unstable(message: "${STAGE_NAME} is unstable")
+		      }
 
-	}
+		    }
+		  }
+		}
+		stage('Results in Checkstyle') {
+		  steps {
+		    recordIssues(
+		      enabledForFailure: true, aggregatingResults: true,
+		      tools: [checkStyle(pattern: 'ATCResults.xml', reportEncoding: 'UTF8'),checkStyle(pattern: 'AUnitResults.xml', reportEncoding: 'UTF8')]
+
+		    )
+
+		  }
+
+		}
+
+		}
 ```
+
 **Note:** If you have disabled *atcCheck* or *aUnitTest*, than you also need to remove the corresponding *ATCResults.xml* or *AUnitResults.xml* from *recordIssues* step. In the example below the *atcCheck* was disabled, so *ATCResults.xml* was removed.
 
 ```groovy
