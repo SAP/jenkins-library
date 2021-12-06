@@ -1,0 +1,25 @@
+metadata:
+  name: gradleExecuteBuild
+  description: This step runs a gradle build command with parameters provided to the step.
+  longDescription: This step runs a gradle build command with parameters provided to the step.
+spec:
+  inputs:
+    params:
+      - name: path
+        type: string
+        description: Path to the folder with gradle.build file which should be executed.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+      - name: task
+        type: string
+        description: Gradle task that should be executed.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+        default: build
+  containers:
+    - name: gradle
+      image: gradle:4.7.0-jdk8-alpine

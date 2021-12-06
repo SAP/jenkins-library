@@ -51,6 +51,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"githubPublishRelease":                      githubPublishReleaseMetadata(),
 		"githubSetCommitStatus":                     githubSetCommitStatusMetadata(),
 		"gitopsUpdateDeployment":                    gitopsUpdateDeploymentMetadata(),
+		"gradleExecuteBuild":                        gradleExecuteBuildMetadata(),
 		"hadolintExecute":                           hadolintExecuteMetadata(),
 		"influxWriteData":                           influxWriteDataMetadata(),
 		"integrationArtifactDeploy":                 integrationArtifactDeployMetadata(),
