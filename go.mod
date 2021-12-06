@@ -25,7 +25,7 @@ require (
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.0
-	github.com/hashicorp/vault v1.8.4
+	github.com/hashicorp/vault v1.8.5
 	github.com/hashicorp/vault/api v1.1.2-0.20210713235431-1fc8af4c041f
 	github.com/influxdata/influxdb-client-go/v2 v2.5.1
 	github.com/jarcoal/httpmock v1.0.8
