@@ -485,6 +485,38 @@ func putSliceIfNotEmpty(config map[string]interface{}, key string, value []strin
 	}
 }
 
+func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map[string]StepData, stepMetadata string, stepName string) (StepData, error) {
+
+	var metadata StepData
+
+	if stepMetadata != "" {
+		metadataFile, err := OpenPiperFile(stepMetadata, gitHubTokens)
+		if err != nil {
+			return metadata, errors.Wrap(err, "open failed")
+		}
+
+		err = metadata.ReadPipelineStepData(metadataFile)
+		if err != nil {
+			return metadata, errors.Wrap(err, "read failed")
+		}
+	} else {
+		if stepName != "" {
+			if metaDataResolver == nil {
+				return metadata, errors.New("metaDataResolver is nil")
+			}
+			metadataMap := metaDataResolver()
+			var ok bool
+			metadata, ok = metadataMap[stepName]
+			if !ok {
+				return metadata, errors.Errorf("could not retrieve by stepName %v", stepName)
+			}
+		} else {
+			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
+		}
+	}
+	return metadata, nil
+}
+
 //ToDo: Enable this when the Volumes part is also implemented
 //func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
 //	e := []string{}

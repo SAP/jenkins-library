@@ -227,6 +227,5 @@ spec:
           - name: custom/mtaBuildToolDesc
           - name: custom/mtarPublishedUrl
           - name: custom/buildSettingsInfo
-            type: "string"
   containers:
     - image: devxci/mbtci-java11-node14
