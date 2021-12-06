@@ -113,7 +113,7 @@ spec:
           - STEPS   
       - name: commit
         type: string
-        description: ID of the commit that triggered the pipeline. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory. 
+        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory. 
         scope:
           - PARAMETERS
           - STAGES

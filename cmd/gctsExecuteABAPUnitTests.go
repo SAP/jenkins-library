@@ -526,7 +526,7 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return nil
 	}
 
-	log.Entry().Info("execute ABAP Unit Test finished.", parsedRes.Version)
+	log.Entry().Info("execute ABAP Unit Test finished.", parsedRes.Text)
 
 	return nil
 }
@@ -586,6 +586,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 			aUnitFailure = true
 			aUnitError.Source = objectName
 			aUnitError.Severity = "error"
+			log.Entry().Info("severity: ", aUnitError.Severity)
 			aUnitError.Message = html.UnescapeString(program.Alerts.Alert.Title + " " + program.Alerts.Alert.Details.Detail.AttrText)
 			log.Entry().Info("message: ", aUnitError.Message)
 			aUnitError.Line, err = findLine(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName, objectType)
@@ -595,10 +596,12 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 			}
 			fileName, err = getFileName(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName)
+			log.Entry().Error("file path: ", aUnitError.Line)
 			if err != nil {
 				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
 
 			}
+
 			aUnitFile.Error = append(aUnitFile.Error, aUnitError)
 			aUnitError = checkstyleError{}
 			log.Entry().Error("there is a syntax error", aUnitFile)
@@ -672,6 +675,7 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		}
 
 		aUnitFile.Name, err = constructPath(config, client, fileName, objectName, objectType)
+		log.Entry().Error("file path: ", aUnitFile.Name)
 		if err != nil {
 
 			return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
@@ -772,7 +776,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return errors.Wrap(err, "execution of ATC Checks failed")
 	}
 
-	log.Entry().Info("execute ATC Checks finished.", atcRes.Version)
+	log.Entry().Info("execute ATC Checks finished.", atcRes.Text)
 
 	return nil
 
@@ -917,18 +921,20 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 				case 1:
 					atcFailure = true
 					aTCUnitError.Severity = "error"
-					log.Entry().Error("atc issue was found with priority 1 ", aTCUnitError.Severity)
+					log.Entry().Error("atc issue with priority: 1 ")
 				case 2:
 					atcFailure = true
 					aTCUnitError.Severity = "error"
-					log.Entry().Error("atc issue was found with priority 2 ", aTCUnitError.Severity)
+					log.Entry().Error("atc issue with priority: 2 ")
 				case 3:
 					aTCUnitError.Severity = "warning"
-					log.Entry().Warning("atc issue was found with priority 3 ", aTCUnitError.Severity)
+					log.Entry().Warning("atc issue with priority: 3 ")
 				default:
 					aTCUnitError.Severity = "info"
-					log.Entry().Info("atc issue was found with low priority ", aTCUnitError.Severity)
+					log.Entry().Info("atc issue with low priority ")
 				}
+
+				log.Entry().Error("severity: ", aTCUnitError.Severity)
 
 				if aTCUnitError.Line == "" {
 
