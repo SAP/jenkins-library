@@ -119,11 +119,11 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if aUnitFailure {
 
-			log.Entry().Error("unit test(s) has/have failed! Check Warnings Next Generation tool for more information!")
+			log.Entry().Error("unit test(s) has/have failed! Check" + config.AUnitResultsFileName + " for more information! If you have enabled Warnings Next Generation, you can see the issues there!")
 
 		} else {
 
-			log.Entry().Info("AUnit test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
+			log.Entry().Info("AUnit test run completed successfully. If there are any results from the run, the results are saved in " + config.AUnitResultsFileName)
 
 		}
 	}
@@ -139,11 +139,11 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if atcFailure {
 
-			log.Entry().Error(" ATC issue(s) found! Check Warnings Next Generation tool for more information!")
+			log.Entry().Error(" ATC issue(s) found! Check " + config.AtcResultsFileName + " for more information! If you have enabled Warnings Next Generation, you can see the issues there!")
 
 		} else {
 
-			log.Entry().Info("ATCCheck test run completed successfully. If there are any results from the run, the results are saved in checkstyle file")
+			log.Entry().Info("ATCCheck test run completed successfully. If there are any results from the run, the results are saved in " + config.AtcResultsFileName)
 
 		}
 
