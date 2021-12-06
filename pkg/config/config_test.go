@@ -998,6 +998,7 @@ func TestCloneConfig(t *testing.T) {
 	}
 	clone, err := cloneConfig(testConfig)
 	assert.NoError(t, err)
-	assert.Equal(t, false, testConfig == clone)
 	assert.Equal(t, testConfig, clone)
+	testConfig.General["p0"] = "new_value"
+	assert.NotEqual(t, testConfig.General, clone.General)
 }
