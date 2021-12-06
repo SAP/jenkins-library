@@ -161,7 +161,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
-	mtaYamlFile := filepath.Join(getPath(config.Source, "./"), "mta.yaml")
+	mtaYamlFile := filepath.Join(getSourcePath(config), "mta.yaml")
 	mtaYamlFileExists, err := utils.FileExists(mtaYamlFile)
 
 	if err != nil {
@@ -201,8 +201,8 @@ func runMtaBuild(config mtaBuildOptions,
 		call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 	}
 
-	call = append(call, "--source", getPath(config.Source, "./"))
-	call = append(call, "--target", getPath(config.Target, "./"))
+	call = append(call, "--source", getSourcePath(config))
+	call = append(call, "--target", getTargetPathForMbt(config))
 
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")
@@ -241,8 +241,8 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettings
 
-	commonPipelineEnvironment.mtarFilePath = mtarName
-	commonPipelineEnvironment.mtaBuildToolDesc = mtaYamlFile
+	commonPipelineEnvironment.mtarFilePath = filepath.ToSlash(getMtarFilePath(config, mtarName))
+	commonPipelineEnvironment.custom.mtaBuildToolDesc = filepath.ToSlash(mtaYamlFile)
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
@@ -488,10 +488,41 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 	return id, nil
 }
 
-func getPath(path string, defaultPath string) string {
-	if path != "" {
-		return filepath.FromSlash(path)
-	} else {
-		return filepath.FromSlash(defaultPath)
+func getSourcePath(config mtaBuildOptions) string {
+	path := config.Source
+	if path == "" {
+		path = "./"
 	}
+	return filepath.FromSlash(path)
+}
+
+func getTargetPathForMbt(config mtaBuildOptions) string {
+	path := config.Target
+	if path == "" {
+		path = "./"
+	}
+	// pass an abolute path only in case of a config.Source value
+	// the behaviour of the mbt tool is unclear
+	if getSourcePath(config) != filepath.FromSlash("./") {
+		return filepath.FromSlash(getAbsPath(path))
+	}
+	return filepath.FromSlash(path)
+}
+
+func getAbsPath(path string) string {
+	abspath, err := filepath.Abs(path)
+	// ignore error, pass customers path value in case of trouble
+	if err != nil {
+		abspath = path
+	}
+	return filepath.FromSlash(abspath)
+}
+
+func getMtarFilePath(config mtaBuildOptions, mtarName string) string {
+	path := config.Target
+	if path == "" || path == "./" {
+		return mtarName
+	}
+
+	return filepath.FromSlash(filepath.Join(config.Target, mtarName))
 }

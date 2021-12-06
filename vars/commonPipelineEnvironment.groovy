@@ -49,7 +49,6 @@ class commonPipelineEnvironment implements Serializable {
     String configurationFile = ''
 
     String mtarFilePath = null
-    String mtaBuildToolDesc = null
 
     String abapAddonDescriptor
 
@@ -94,7 +93,6 @@ class commonPipelineEnvironment implements Serializable {
         githubRepo = null
 
         mtarFilePath = null
-        mtaBuildToolDesc = null
         valueMap = [:]
 
         changeDocumentId = null
@@ -202,7 +200,6 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
-        [filename: '.pipeline/commonPipelineEnvironment/mtaBuildToolDesc', property: 'mtaBuildToolDesc'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
     ]
 

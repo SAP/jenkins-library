@@ -41,9 +41,9 @@ type mtaBuildOptions struct {
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
-	mtarFilePath     string
-	mtaBuildToolDesc string
-	custom           struct {
+	mtarFilePath string
+	custom       struct {
+		mtaBuildToolDesc  string
 		mtarPublishedURL  string
 		buildSettingsInfo string
 	}
@@ -56,7 +56,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		value    interface{}
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
-		{category: "", name: "mtaBuildToolDesc", value: p.mtaBuildToolDesc},
+		{category: "custom", name: "mtaBuildToolDesc", value: p.custom.mtaBuildToolDesc},
 		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
@@ -428,7 +428,7 @@ func mtaBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"Name": "mtarFilePath"},
-							{"Name": "mtaBuildToolDesc"},
+							{"Name": "custom/mtaBuildToolDesc"},
 							{"Name": "custom/mtarPublishedUrl"},
 							{"Name": "custom/buildSettingsInfo"},
 						},
