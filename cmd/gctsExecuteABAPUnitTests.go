@@ -119,7 +119,7 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 
 		if aUnitFailure {
 
-			log.Entry().Error("unit test(s) has/have failed! Check" + config.AUnitResultsFileName + " for more information! If you have enabled Warnings Next Generation, you can see the issues there!")
+			log.Entry().Error("unit test(s) has/have failed! Check " + config.AUnitResultsFileName + " for more information! If you have enabled Warnings Next Generation, you can see the issues there!")
 
 		} else {
 
@@ -1042,7 +1042,7 @@ func findLine(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, 
 
 		if err != nil {
 
-			return line, errors.Wrapf(err, "object does not exists in the repository "+config.Repository)
+			return line, errors.Wrapf(err, "could not find object in the workspace of your CI/CD tool ")
 		}
 
 		file := string(rawfile)
