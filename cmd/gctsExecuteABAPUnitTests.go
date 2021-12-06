@@ -526,20 +526,7 @@ func executeAUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 		return nil
 	}
 
-	log.Entry().Info("execute ABAP Unit Test finished with these results:")
-	for _, file := range parsedRes.File {
-
-		log.Entry().Info("file path:", file.Name)
-		for _, error := range file.Error {
-
-			log.Entry().Info("error message:", error.Message)
-			log.Entry().Info("error severity:", error.Severity)
-			log.Entry().Info("error line:", error.Line)
-			log.Entry().Info("error source:", error.Source)
-
-		}
-
-	}
+	log.Entry().Info("execute ABAP Unit Test finished.", parsedRes.Version)
 
 	return nil
 }
@@ -600,7 +587,9 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 			aUnitError.Source = objectName
 			aUnitError.Severity = "error"
 			aUnitError.Message = html.UnescapeString(program.Alerts.Alert.Title + " " + program.Alerts.Alert.Details.Detail.AttrText)
+			log.Entry().Info("message: ", aUnitError.Message)
 			aUnitError.Line, err = findLine(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName, objectType)
+			log.Entry().Error("line: ", aUnitError.Line)
 			if err != nil {
 				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
 
@@ -649,11 +638,13 @@ func parseAUnitResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 							for _, subdetail := range detail.Details.Detail {
 
 								aUnitError.Message = html.UnescapeString(aUnitError.Message + " " + subdetail.AttrText)
+								log.Entry().Info("message: ", aUnitError.Message)
 							}
 
 						}
 
 						aUnitError.Line, err = findLine(config, client, testalert.Stack.StackEntry.URI, objectName, objectType)
+						log.Entry().Info("line: ", aUnitError.Line)
 						if err != nil {
 
 							log.Entry().Warning(err)
@@ -781,21 +772,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		return errors.Wrap(err, "execution of ATC Checks failed")
 	}
 
-	log.Entry().Info("execute ATC Checks finished with these results:")
-
-	for _, file := range atcRes.File {
-
-		log.Entry().Info("file path:", file.Name)
-		for _, error := range file.Error {
-
-			log.Entry().Info("error message:", error.Message)
-			log.Entry().Info("error severity:", error.Severity)
-			log.Entry().Info("error line:", error.Line)
-			log.Entry().Info("error source:", error.Source)
-
-		}
-
-	}
+	log.Entry().Info("execute ATC Checks finished.", atcRes.Version)
 
 	return nil
 
@@ -940,22 +917,23 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 				case 1:
 					atcFailure = true
 					aTCUnitError.Severity = "error"
-					log.Entry().Error("atc issue was found with priority 1")
+					log.Entry().Error("atc issue was found with priority 1 ", aTCUnitError.Severity)
 				case 2:
 					atcFailure = true
 					aTCUnitError.Severity = "error"
-					log.Entry().Error("atc issue was found with priority 2")
+					log.Entry().Error("atc issue was found with priority 2 ", aTCUnitError.Severity)
 				case 3:
 					aTCUnitError.Severity = "warning"
-					log.Entry().Warning("atc issue was found with priority 3")
+					log.Entry().Warning("atc issue was found with priority 3 ", aTCUnitError.Severity)
 				default:
 					aTCUnitError.Severity = "info"
-					log.Entry().Info("atc issue was found with low priority")
+					log.Entry().Info("atc issue was found with low priority ", aTCUnitError.Severity)
 				}
 
 				if aTCUnitError.Line == "" {
 
 					aTCUnitError.Line, err = findLine(config, client, path, objectName, objectType)
+					log.Entry().Info("line: ", aTCUnitError.Line)
 
 					if err != nil {
 						log.Entry().Info(path)
@@ -972,6 +950,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 				}
 
 				aTCUnitError.Message = html.UnescapeString(atcworklist.CheckTitle + " " + atcworklist.MessageTitle)
+				log.Entry().Info("message: ", aTCUnitError.Message)
 				atcFile.Error = append(atcFile.Error, aTCUnitError)
 				aTCUnitError = checkstyleError{}
 			}
@@ -985,6 +964,7 @@ func parseATCCheckResult(config *gctsExecuteABAPUnitTestsOptions, client piperht
 				}
 
 				atcFile.Name, err = constructPath(config, client, fileName, objectName, objectType)
+				log.Entry().Info("file path: ", atcFile.Name)
 				if err != nil {
 					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
 				}
@@ -1361,7 +1341,7 @@ func getFileName(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sende
 	tab := regexTab.FindString(path)
 	if tab != "" && fileName == "" {
 
-		fileName = "TABL " + objName + "axs.json"
+		fileName = "TABL " + objName + ".asx.json"
 
 	}
 
