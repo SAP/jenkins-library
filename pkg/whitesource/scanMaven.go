@@ -2,10 +2,11 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/maven"
 	"path/filepath"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 )
 
 // ExecuteMavenScan constructs maven parameters from the given configuration, and executes the maven goal
@@ -102,6 +103,7 @@ func generateMavenWhitesourceFlags(config *ScanOptions, utils Utils) (flags []st
 		if moduleName != "" {
 			flags = append(flags, "-pl", "!"+moduleName)
 		}
+		flags = append(flags, "--batch-mode")
 	}
 	return flags, excludes
 }
