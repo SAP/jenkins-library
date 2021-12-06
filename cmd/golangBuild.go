@@ -15,7 +15,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-const coverageFile = "cover.out"
+const (
+	coverageFile                = "cover.out"
+	golangUnitTestOutput        = "TEST-go.xml"
+	golangIntegrationTestOutput = "TEST-integration.xml"
+	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
+	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
+)
 
 type golangBuildUtils interface {
 	command.ExecRunner
@@ -68,7 +74,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
-		if err := utils.RunExecutable("go", "install", "gotest.tools/gotestsum@latest"); err != nil {
+		if err := utils.RunExecutable("go", "install", golangTestsumPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -94,7 +100,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		if err != nil {
 			return err
 		}
-		failedTests = !success
+		failedTests = failedTests || !success
 	}
 
 	if failedTests {
@@ -125,8 +131,8 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
-	if err := utils.RunExecutable("gotestsum", "--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."); err != nil {
-		exists, fileErr := utils.FileExists("TEST-go.xml")
+	if err := utils.RunExecutable("gotestsum", "--junitfile", golangUnitTestOutput, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."); err != nil {
+		exists, fileErr := utils.FileExists(golangUnitTestOutput)
 		if !exists || fileErr != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return false, fmt.Errorf("running tests failed - junit result missing: %w", err)
@@ -144,8 +150,8 @@ func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, e
 func runGolangIntegrationTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
 	// for integration tests coverage data is not meaningful and thus not being created
-	if err := utils.RunExecutable("gotestsum", "--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."); err != nil {
-		exists, fileErr := utils.FileExists("TEST-integration.xml")
+	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--", "-tags=integration", "./..."); err != nil {
+		exists, fileErr := utils.FileExists(golangIntegrationTestOutput)
 		if !exists || fileErr != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return false, fmt.Errorf("running tests failed: %w", err)
@@ -159,7 +165,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	if config.CoverageFormat == "cobertura" {
 		// execute gocover-cobertura in order to create cobertura report
 		// install pre-requisites
-		if err := utils.RunExecutable("go", "install", "github.com/boumenot/gocover-cobertura@latest"); err != nil {
+		if err := utils.RunExecutable("go", "install", golangCoberturaPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 
