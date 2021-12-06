@@ -103,8 +103,8 @@ func generateMavenWhitesourceFlags(config *ScanOptions, utils Utils) (flags []st
 		if moduleName != "" {
 			flags = append(flags, "-pl", "!"+moduleName)
 		}
-		flags = append(flags, "--batch-mode")
 	}
+	flags = append(flags, "--batch-mode")
 	return flags, excludes
 }
 
