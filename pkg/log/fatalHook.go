@@ -38,14 +38,16 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	fileName := "errorDetails.json"
 	if details["stepName"] != nil {
 		fileName = fmt.Sprintf("%v_%v", fmt.Sprint(details["stepName"]), fileName)
+		// ToDo: If step is called x times, and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
-
+	errDetails, _ := json.Marshal(&details)
+	// Logging information needed for error reporting -  do not modify.
+	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
 	_, err := ioutil.ReadFile(filePath)
-
 	if err != nil {
-		// ignore errors, since we don't want to break the logging flow
-		errDetails, _ := json.Marshal(&details)
+		// do not overwrite file in case it already exists
+		// this helps to report the first error which occured - instead of the last one
 		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
 
