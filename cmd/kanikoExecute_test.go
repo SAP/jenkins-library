@@ -37,18 +37,11 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 }
 
 type kanikoFileMock struct {
+	*mock.FilesMock
 	fileReadContent  map[string]string
 	fileReadErr      map[string]error
 	fileWriteContent map[string]string
 	fileWriteErr     map[string]error
-}
-
-func (f *kanikoFileMock) FileExists(path string) (bool, error) {
-	return true, nil
-}
-
-func (f *kanikoFileMock) Copy(src, dest string) (int64, error) {
-	return 0, nil
 }
 
 func (f *kanikoFileMock) FileRead(path string) ([]byte, error) {
@@ -64,22 +57,6 @@ func (f *kanikoFileMock) FileWrite(path string, content []byte, perm os.FileMode
 	}
 	f.fileWriteContent[path] = string(content)
 	return nil
-}
-
-func (f *kanikoFileMock) MkdirAll(path string, perm os.FileMode) error {
-	return nil
-}
-
-func (f *kanikoFileMock) Chmod(path string, mode os.FileMode) error {
-	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
-}
-
-func (f *kanikoFileMock) Abs(path string) (string, error) {
-	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
-}
-
-func (f *kanikoFileMock) Glob(pattern string) (matches []string, err error) {
-	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
 func TestRunKanikoExecute(t *testing.T) {
@@ -158,6 +135,31 @@ func TestRunKanikoExecute(t *testing.T) {
 		cwd, _ := os.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
+	})
+
+	t.Run("no error case - when cert update skipped", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
+
+		runner := &mock.ExecMockRunner{}
+
+		certClient := &kanikoMockClient{}
+		fileUtils := &kanikoFileMock{
+			fileWriteContent: map[string]string{},
+			fileReadErr:      map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")},
+		}
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoErrorf(t, err, "failed to update certificates: failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
 	})
 
 	t.Run("success case - no push, no docker config.json", func(t *testing.T) {
@@ -249,7 +251,16 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - cert update failed", func(t *testing.T) {
-		config := &kanikoExecuteOptions{}
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
 
 		runner := &mock.ExecMockRunner{}
 
@@ -298,66 +309,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to write file '/kaniko/.docker/config.json': write error")
-	})
-
-}
-
-func TestCertificateUpdate(t *testing.T) {
-	certLinks := []string{"https://my.first/cert.crt", "https://my.second/cert.crt"}
-
-	t.Run("success case", func(t *testing.T) {
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-		}
-		fileUtils := &kanikoFileMock{
-			fileReadContent:  map[string]string{"/kaniko/ssl/certs/ca-certificates.crt": "initial cert\n"},
-			fileWriteContent: map[string]string{},
-		}
-
-		err := certificateUpdate(certLinks, certClient, fileUtils)
-
-		assert.NoError(t, err)
-		assert.Equal(t, certLinks, certClient.urlsCalled)
-		assert.Equal(t, "initial cert\ntestCert\ntestCert\n", fileUtils.fileWriteContent["/kaniko/ssl/certs/ca-certificates.crt"])
-	})
-
-	t.Run("error case - read certs", func(t *testing.T) {
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-		}
-		fileUtils := &kanikoFileMock{
-			fileReadErr: map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")},
-		}
-
-		err := certificateUpdate(certLinks, certClient, fileUtils)
-		assert.EqualError(t, err, "failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
-	})
-
-	t.Run("error case - write certs", func(t *testing.T) {
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-		}
-		fileUtils := &kanikoFileMock{
-			fileReadContent: map[string]string{"/kaniko/ssl/certs/ca-certificates.crt": "initial cert\n"},
-			fileWriteErr:    map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("write error")},
-		}
-
-		err := certificateUpdate(certLinks, certClient, fileUtils)
-		assert.EqualError(t, err, "failed to update file '/kaniko/ssl/certs/ca-certificates.crt': write error")
-	})
-
-	t.Run("error case - get cert via http", func(t *testing.T) {
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-			errorMessage: "http error",
-		}
-		fileUtils := &kanikoFileMock{
-			fileReadContent:  map[string]string{"/kaniko/ssl/certs/ca-certificates.crt": "initial cert\n"},
-			fileWriteContent: map[string]string{},
-		}
-
-		err := certificateUpdate(certLinks, certClient, fileUtils)
-		assert.EqualError(t, err, "failed to load certificate from url: http error")
 	})
 
 }

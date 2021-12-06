@@ -7,7 +7,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String METADATA_FILE = 'metadata/mavenStaticCodeChecks.yaml'
+@Field String METADATA_FILE = 'metadata/mavenExecuteStaticCodeChecks.yaml'
 @Field String STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:]) {

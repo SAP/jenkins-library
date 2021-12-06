@@ -1,6 +1,6 @@
 # Clone Repositories
 
-This stage creates pulls/clones the specified software components (repositories) to the ABAP Environment system.
+This stage creates pulls/clones the specified software components (repositories) to the SAP BTP, ABAP environment system.
 
 ## Steps
 
@@ -19,7 +19,6 @@ The parameter `strategy` influences, which steps will be executed. Possible valu
 | Clone | The step `abapEnvironmentCloneGitRepo` will be executed. This is recommended, if a new system was created in the `Prepare System` stage. |
 | Pull | The step `abapEnvironmentPullGitRepo` will be executed. This is recommended, if a static system is used. The software component should be cloned beforehand. |
 | CheckoutPull | The step `abapEnvironmentCheckoutBranch`, followed by `abapEnvironmentPullGitRepo`, will be executed. The software component should be cloned beforehand. This can be used if the branch may change between pipeline executions. |
-| AddonBuild | This is recommended, if the stage has to handle both newly create systems and static systems. |
 
 ## Stage Activation
 

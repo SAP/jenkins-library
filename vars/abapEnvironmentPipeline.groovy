@@ -8,7 +8,7 @@ void call(parameters) {
 
             stage('Init') {
                 steps {
-                    abapEnvironmentPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/abapStageOrdinals.yml'].plus(parameters.customDefaults ?: [])
+                    abapEnvironmentPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/abapEnvironmentPipelineStageDefaults.yml'].plus(parameters.customDefaults ?: [])
                 }
             }
 
@@ -33,11 +33,21 @@ void call(parameters) {
                 }
             }
 
-            stage('ATC') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
-                steps {
-                    abapEnvironmentPipelineStageATC script: parameters.script
-                }
+            stage('Test') {
+                    parallel {
+                        stage('ATC') {
+                            when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                            steps {
+                                abapEnvironmentPipelineStageATC script: parameters.script
+                            }
+                        }
+                        stage('AUnit') {
+                            when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                            steps {
+                                abapEnvironmentPipelineStageAUnit script: parameters.script
+                            }
+                        }
+                    }
             }
 
             stage('Build') {

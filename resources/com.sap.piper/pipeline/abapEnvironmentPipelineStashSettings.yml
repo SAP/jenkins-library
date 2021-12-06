@@ -1,0 +1,55 @@
+Init:
+  unstash: []
+  stashes:
+  - name: "source"
+    includes: "**/*"
+
+'Initial Checks':
+  unstash:
+  - source
+  stashes: []
+
+'Prepare System':
+  unstash:
+  - source
+  stashes: []
+
+'Clone Repositories':
+  unstash:
+  - source
+  stashes: []
+
+'ATC':
+  unstash:
+  - source
+  stashes: []
+
+'AUnit':
+  unstash:
+  - source
+  stashes: []
+
+Build:
+  unstash:
+  - source
+  stashes: []
+
+'Integration Tests':
+  unstash:
+  - source
+  stashes: []
+
+Confirm:
+  unstash:
+  - source
+  stashes: []
+
+Publish:
+  unstash:
+  - source
+  stashes: []
+
+Post:
+  unstash:
+  - source
+  stashes: []

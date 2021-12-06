@@ -28,3 +28,35 @@ jobs:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
+      - env:
+          CGO_ENABLED: 0
+          GOOS: darwin
+          GOARCH: amd64
+        run: |
+          # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
+          # We use those flags to get a smaller compiled binary for faster downloads.
+          go build -ldflags "-w -s -X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
+                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
+                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
+            -o piper_master-darwin.x86_64 .
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-darwin.x86_64
+      - env:
+          CGO_ENABLED: 0
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
+          # We use those flags to get a smaller compiled binary for faster downloads.
+          go build -ldflags "-w -s -X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
+                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
+                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
+            -o piper_master-win.x86_64.exe .
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-win.x86_64.exe

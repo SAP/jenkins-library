@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
 
@@ -57,9 +57,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		return errors.Wrap(err, "failed to initialize Kaniko container")
 	}
 
-	err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
-	if err != nil {
-		return errors.Wrap(err, "failed to update certificates")
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils, "/kaniko/ssl/certs/ca-certificates.crt")
+		if err != nil {
+			return errors.Wrap(err, "failed to update certificates")
+		}
+	} else {
+		log.Entry().Info("skipping updation of certificates")
 	}
 
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
@@ -67,6 +71,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
 			containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 			}
 			containerImageTag := fmt.Sprintf("%v:%v", config.ContainerImageName, strings.ReplaceAll(config.ContainerImageTag, "+", "-"))
@@ -76,6 +81,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		} else if len(config.ContainerImage) > 0 {
 			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
 			}
 			// errors are already caught with previous call to docker.ContainerRegistryFromImage
@@ -89,11 +95,28 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	dockerConfig := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
+		var err error
 		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
 		}
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "kanikoExecute"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	kanikoConfig := buildsettings.BuildOptions{
+		DockerImage: dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
 		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
@@ -108,34 +131,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")
-	}
-	return nil
-}
-
-func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
-	caCerts, err := fileUtils.FileRead(caCertsFile)
-	if err != nil {
-		return errors.Wrapf(err, "failed to load file '%v'", caCertsFile)
-	}
-	for _, link := range certLinks {
-		response, err := httpClient.SendRequest(http.MethodGet, link, nil, nil, nil)
-		if err != nil {
-			return errors.Wrap(err, "failed to load certificate from url")
-		}
-
-		content, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return errors.Wrap(err, "error reading response")
-		}
-		_ = response.Body.Close()
-		content = append(content, []byte("\n")...)
-		caCerts = append(caCerts, content...)
-	}
-	err = fileUtils.FileWrite(caCertsFile, caCerts, 0644)
-	if err != nil {
-		return errors.Wrapf(err, "failed to update file '%v'", caCertsFile)
 	}
 	return nil
 }

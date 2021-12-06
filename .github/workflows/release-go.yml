@@ -4,33 +4,55 @@ on:
   repository_dispatch:
     types: perform-release
   schedule:
-    - cron:  '0 9 * * 1'
+    - cron: '0 9 * * 1'
 
 jobs:
   build:
+    name: Publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '8'
       - name: Prepare Release
         run: |
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper-darwin.x86_64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper-win.x86_64.exe https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-win.x86_64.exe
           cp ./piper_master ./piper
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
       - uses: SAP/project-piper-action@master
+        name: 'publish Linux master binary'
         with:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
       - uses: SAP/project-piper-action@master
+        name: 'publish Linux binary'
         with:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
+      - uses: SAP/project-piper-action@master
+        name: 'publish Mac binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper-darwin.x86_64
+      - uses: SAP/project-piper-action@master
+        name: 'publish Windows binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper-win.x86_64.exe
 
       - name: Build and publish jar for consumption in unit tests
         run: mvn package
       - uses: SAP/project-piper-action@master
+        name: 'publish Piper jar'
         with:
           piper-version: master
           command: githubPublishRelease

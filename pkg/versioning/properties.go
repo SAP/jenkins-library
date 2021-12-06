@@ -82,5 +82,6 @@ func (p *PropertiesFile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (p *PropertiesFile) GetCoordinates() (Coordinates, error) {
-	return nil, nil
+	result := Coordinates{}
+	return result, nil
 }

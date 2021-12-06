@@ -2,14 +2,18 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -19,6 +23,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -61,7 +66,7 @@ func ValueOfBuildTarget(str string) (MTABuildTarget, error) {
 	case "XSA":
 		return XSA, nil
 	default:
-		return -1, fmt.Errorf("Unknown BuildTarget/Platform: '%s'", str)
+		return -1, fmt.Errorf("Unknown Platform: '%s'", str)
 	}
 }
 
@@ -148,6 +153,11 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
+	err = handleActiveProfileUpdate(config, utils)
+	if err != nil {
+		return err
+	}
+
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
 	mtaYamlFile := "mta.yaml"
@@ -179,42 +189,30 @@ func runMtaBuild(config mtaBuildOptions,
 
 	var call []string
 
-	switch config.MtaBuildTool {
-
-	case "classic":
-
-		mtaJar := getMarJarName(config)
-
-		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
-
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return err
-		}
-
-		call = append(call, "java", "-jar", mtaJar, "--mtar", mtarName, fmt.Sprintf("--build-target=%s", buildTarget), "build")
-		if len(config.Extensions) != 0 {
-			call = append(call, fmt.Sprintf("--extension=%s", config.Extensions))
-		}
-
-	case "cloudMbt":
-
-		platform, err := ValueOfBuildTarget(config.Platform)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return err
-		}
-
-		call = append(call, "mbt", "build", "--mtar", mtarName, "--platform", platform.String())
-		if len(config.Extensions) != 0 {
-			call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
-		}
-		call = append(call, "--target", "./")
-
-	default:
-
+	platform, err := ValueOfBuildTarget(config.Platform)
+	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("Unknown mta build tool: \"%s\"", config.MtaBuildTool)
+		return err
+	}
+
+	call = append(call, "mbt", "build", "--mtar", mtarName, "--platform", platform.String())
+	if len(config.Extensions) != 0 {
+		call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
+	}
+	if config.Source != "" && config.Source != "./" {
+		call = append(call, "--source", config.Source)
+	} else {
+		call = append(call, "--source", "./")
+	}
+	if config.Target != "" && config.Target != "./" {
+		call = append(call, "--target", config.Target)
+	} else {
+		call = append(call, "--target", "./")
+	}
+
+	if config.Jobs > 0 {
+		call = append(call, "--mode=verbose")
+		call = append(call, "--jobs="+strconv.Itoa(config.Jobs))
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
@@ -236,6 +234,27 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "mtaBuild"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	mtaConfig := buildsettings.BuildOptions{
+		Profiles:           config.Profiles,
+		GlobalSettingsFile: config.GlobalSettingsFile,
+		Publish:            config.Publish,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		DockerImage:        dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
 	if config.InstallArtifacts {
@@ -250,7 +269,59 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 	}
+
+	if config.Publish {
+		log.Entry().Infof("publish detected")
+		if (len(config.MtaDeploymentRepositoryPassword) > 0) && (len(config.MtaDeploymentRepositoryUser) > 0) &&
+			(len(config.MtaDeploymentRepositoryURL) > 0) {
+			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
+				httpClient := &piperhttp.Client{}
+
+				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
+				headers := http.Header{}
+				headers.Add("Authorization", credentialsEncoded)
+
+				config.MtarGroup = strings.ReplaceAll(config.MtarGroup, ".", "/")
+
+				mtarArtifactName := mtarName
+
+				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
+				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".", "/")
+
+				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
+
+				commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
+
+				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
+
+				data, err := os.Open(mtarName)
+				if err != nil {
+					return errors.Wrap(err, "failed to open mtar archive for upload")
+				}
+				_, httpErr := httpClient.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil)
+
+				if httpErr != nil {
+					return errors.Wrap(err, "failed to upload mtar to repository")
+				}
+			} else {
+				return errors.New("mtarGroup, version not found and must be present")
+
+			}
+
+		} else {
+			return errors.New("mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found , must be present")
+		}
+	} else {
+		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
+	}
 	return err
+}
+
+func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
+	if len(config.Profiles) > 0 {
+		return maven.UpdateActiveProfileInSettingsXML(config.Profiles, utils)
+	}
+	return nil
 }
 
 func installMavenArtifacts(utils mtaBuildUtils, config mtaBuildOptions) error {
@@ -265,17 +336,6 @@ func installMavenArtifacts(utils mtaBuildUtils, config mtaBuildOptions) error {
 		}
 	}
 	return nil
-}
-
-func getMarJarName(config mtaBuildOptions) string {
-
-	mtaJar := "mta.jar"
-
-	if len(config.MtaJarLocation) > 0 {
-		mtaJar = config.MtaJarLocation
-	}
-
-	return mtaJar
 }
 
 func addNpmBinToPath(utils mtaBuildUtils) error {

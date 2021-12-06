@@ -9,7 +9,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +28,7 @@ type gitopsUpdateDeploymentOptions struct {
 	ChartPath             string   `json:"chartPath,omitempty"`
 	HelmValues            []string `json:"helmValues,omitempty"`
 	DeploymentName        string   `json:"deploymentName,omitempty"`
-	Tool                  string   `json:"tool,omitempty"`
+	Tool                  string   `json:"tool,omitempty" validate:"possible-values=kubectl helm"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -36,6 +38,9 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 	metadata := gitopsUpdateDeploymentMetadata()
 	var stepConfig gitopsUpdateDeploymentOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createGitopsUpdateDeploymentCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -51,6 +56,8 @@ For helm the whole template is generated into a file and uploaded into the repos
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -69,22 +76,49 @@ For helm the whole template is generated into a file and uploaded into the repos
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			gitopsUpdateDeployment(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
+			gitopsUpdateDeployment(stepConfig, &stepTelemetryData)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -128,6 +162,12 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "gitHttpsCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.", Type: "jenkins"},
+				},
+				Resources: []config.StepResources{
+					{Name: "deployDescriptor", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "branchName",
@@ -136,6 +176,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `master`,
 					},
 					{
 						Name:        "commitMessage",
@@ -144,6 +185,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_commitMessage"),
 					},
 					{
 						Name:        "serverUrl",
@@ -152,6 +194,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
+						Default:     `https://github.com`,
 					},
 					{
 						Name: "username",
@@ -166,6 +209,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -180,6 +224,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "filePath",
@@ -188,6 +233,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filePath"),
 					},
 					{
 						Name:        "containerName",
@@ -196,6 +242,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerName"),
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -209,6 +256,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name: "containerImageNameTag",
@@ -221,7 +269,8 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},
+						Aliases:   []config.Alias{{Name: "image", Deprecated: true}, {Name: "containerImage"}},
+						Default:   os.Getenv("PIPER_containerImageNameTag"),
 					},
 					{
 						Name:        "chartPath",
@@ -230,6 +279,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmChartPath"}},
+						Default:     os.Getenv("PIPER_chartPath"),
 					},
 					{
 						Name:        "helmValues",
@@ -238,6 +288,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "deploymentName",
@@ -246,6 +297,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
+						Default:     os.Getenv("PIPER_deploymentName"),
 					},
 					{
 						Name:        "tool",
@@ -254,12 +306,13 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `kubectl`,
 					},
 				},
 			},
 			Containers: []config.Container{
 				{Image: "dtzar/helm-kubectl:3.3.4", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:2.12.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
+				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
 			},
 		},
 	}

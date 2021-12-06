@@ -49,7 +49,9 @@ class GithubPublishReleaseTest extends BasePiperTest {
             return closure()
         })
         credentialsRule.withCredentials('githubTokenId', 'thisIsATestToken')
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/githubrelease.yaml\'', '{"githubTokenCredentialsId":"githubTokenId"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/githubPublishRelease.yaml\'', '{"githubTokenCredentialsId":"githubTokenId"}')
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
     }
 
     @Test
@@ -62,7 +64,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             testParam: "This is test content"
         )
         // asserts
-        assertThat(writeFileRule.files['.pipeline/tmp/metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/githubPublishRelease.yaml'], containsString('name: githubPublishRelease'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper githubPublishRelease'))
     }

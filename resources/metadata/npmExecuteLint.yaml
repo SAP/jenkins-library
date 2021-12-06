@@ -9,6 +9,22 @@ metadata:
 spec:
   inputs:
     params:
+      - name: install
+        type: bool
+        description: Run npm install or similar commands depending on the project structure.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: runScript
+        type: string
+        description: List of additional run scripts to execute from package.json.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "ci-lint"
       - name: failOnError
         type: bool
         description: Defines the behavior in case linting errors are found.
@@ -31,4 +47,4 @@ spec:
           - name: npm/defaultNpmRegistry
   containers:
     - name: node
-      image: node:12-buster
+      image: node:lts-stretch

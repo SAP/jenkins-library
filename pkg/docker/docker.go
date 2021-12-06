@@ -1,15 +1,71 @@
 package docker
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/google/go-containerregistry/pkg/legacy/tarball"
 	"github.com/google/go-containerregistry/pkg/name"
 )
+
+// AuthEntry defines base64 encoded username:password required inside a Docker config.json
+type AuthEntry struct {
+	Auth string `json:"auth,omitempty"`
+}
+
+// CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials
+func CreateDockerConfigJSON(registryURL, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
+
+	if len(targetPath) == 0 {
+		targetPath = configPath
+	}
+
+	dockerConfig := map[string]interface{}{}
+	if exists, _ := utils.FileExists(configPath); exists {
+		dockerConfigContent, err := utils.FileRead(configPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
+		}
+
+		err = json.Unmarshal(dockerConfigContent, &dockerConfig)
+		if err != nil {
+			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
+		}
+	}
+
+	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
+	dockerAuth := AuthEntry{Auth: credentialsBase64}
+
+	if dockerConfig["auths"] == nil {
+		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
+	} else {
+		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", configPath)
+		}
+		authEntries[registryURL] = dockerAuth
+		dockerConfig["auths"] = authEntries
+	}
+
+	jsonResult, err := json.Marshal(dockerConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
+	}
+
+	err = utils.FileWrite(targetPath, jsonResult, 0666)
+	if err != nil {
+		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
+	}
+
+	return targetPath, nil
+}
 
 // Client defines an docker client object
 type Client struct {
@@ -55,8 +111,12 @@ func (c *Client) GetImageSource() (string, error) {
 	if len(c.registryURL) > 0 && len(c.localPath) <= 0 {
 		registry := c.registryURL
 
-		url, _ := url.Parse(c.registryURL)
-		//remove protocoll from registryURL to get registry
+		url, err := url.Parse(c.registryURL)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse registryURL %v: %w", c.registryURL, err)
+		}
+
+		//remove protocol from registryURL to get registry
 		if len(url.Scheme) > 0 {
 			registry = strings.Replace(c.registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
 		}

@@ -65,6 +65,73 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: createBOM
+        type: bool
+        description: Create a BOM xml using CycloneDX.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: publish
+        type: bool
+        description: Configures npm to publish the artifact to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: repositoryUrl
+        type: string
+        description: Url to the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: repositoryPassword
+        type: string
+        description: Password for the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: repositoryUsername
+        type: string
+        description: Username for the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
   containers:
     - name: node
-      image: node:12-buster-slim
+      image: node:lts-stretch

@@ -43,13 +43,22 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'projectName',
     /**
-     * Defines the library resource containing stage/step initialization settings. Those define conditions when certain steps/stages will be activated. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
+     * Specify to execute artifact versioning in a kubernetes pod.
+     * @possibleValues `true`, `false`
+     */
+    'runArtifactVersioningOnPod',
+    /**
+     *  Defines the library resource containing stage/step initialization settings. Those define conditions when certain steps/stages will be activated. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
      */
     'stageConfigResource',
     /**
      * Defines the library resource containing the stash settings to be performed before and after each stage. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
      */
     'stashSettings',
+    /**
+    * Works as the stashSettings parameter, but allows the use of a stash settings file that is not available as a library resource.
+    */
+    'customStashSettings',
     /**
      * Whether verbose output should be produced.
      * @possibleValues `true`, `false`
@@ -69,6 +78,20 @@ import static com.sap.piper.Prerequisites.checkScript
      * Example: `[$class: 'GitSCM', branches: [[name: <branch_to_be_cloned>]], userRemoteConfigs: [[credentialsId: <credential_to_access_repository>, url: <repository_url>]]]`.
      */
     'checkoutMap',
+    /**
+     * The map returned from a Jenkins git checkout. Used to set the git information in the
+     * common pipeline environment.
+     */
+    'scmInfo',
+    /**
+     * Optional skip of checkout if checkout was done before this step already.
+     * @possibleValues `true`, `false`
+     */
+    'skipCheckout',
+    /**
+    * Mandatory if you skip the checkout. Then you need to unstash your workspace to get the e.g. configuration.
+    */
+    'stashContent',
     /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
@@ -106,7 +129,28 @@ void call(Map parameters = [:]) {
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = checkout(parameters.checkoutMap ?: scm)
+        def skipCheckout = parameters.skipCheckout
+        if (skipCheckout != null && !(skipCheckout instanceof Boolean)) {
+            error "[${STEP_NAME}] Parameter skipCheckout has to be of type boolean. Instead got '${skipCheckout.class.getName()}'"
+        }
+        def scmInfo = parameters.scmInfo
+        if (skipCheckout && !scmInfo) {
+            error "[${STEP_NAME}] Need am scmInfo map retrieved from a checkout. " +
+                "If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, " +
+                "for example as follows:\n" +
+                "  def scmInfo = checkout scm\n" +
+                "  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo"
+        }
+        if (!skipCheckout) {
+            scmInfo = checkout(parameters.checkoutMap ?: scm)
+        }
+        else {
+            def stashContent = parameters.stashContent
+            if(stashContent == null || stashContent.size() == 0) {
+                error "[${STEP_NAME}] needs stashes if you skip checkout"
+            }
+            utils.unstashAll(stashContent)
+        }
 
         setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
@@ -139,7 +183,7 @@ void call(Map parameters = [:]) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
-        initStashConfiguration(script, config.stashSettings, config.verbose?: false)
+        initStashConfiguration(script, config.stashSettings, config.customStashSettings, config.verbose ?: false)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -177,7 +221,7 @@ void call(Map parameters = [:]) {
             if (config.inferBuildTool) {
                 prepareVersionParams.buildTool = buildTool
             }
-            if (env.ON_K8S) {
+            if (env.ON_K8S && !config.runArtifactVersioningOnPod) {
                 // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
                 // Since artifactPrepareVersion may need the ".git" folder in order to push a tag, it would need to be part of the stashing.
                 // There are however problems with tar-ing this folder, which results in a failure to copy the stash back -- without a failure of the pipeline.
@@ -228,8 +272,13 @@ private String checkBuildTool(config) {
     return buildTool
 }
 
-private void initStashConfiguration (script, stashSettings, verbose) {
-    Map stashConfiguration = readYaml(text: libraryResource(stashSettings))
+private void initStashConfiguration (script, stashSettings, customStashSettings, verbose) {
+    Map stashConfiguration = null
+    if (customStashSettings){
+        stashConfiguration = readYaml(file: customStashSettings)
+    }else{
+        stashConfiguration = readYaml(text: libraryResource(stashSettings))
+    }
     if (verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }

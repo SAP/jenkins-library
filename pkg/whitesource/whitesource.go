@@ -13,6 +13,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ReportsDirectory defines the subfolder for the WhiteSource reports which are generated
+const ReportsDirectory = "whitesource"
+
 // Product defines a WhiteSource product with name and token
 type Product struct {
 	Name           string `json:"name"`
@@ -48,24 +51,41 @@ type Alert struct {
 
 // Library
 type Library struct {
-	Name     string `json:"name,omitempty"`
-	Filename string `json:"filename,omitempty"`
-	Version  string `json:"version,omitempty"`
-	Project  string `json:"project,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Filename   string `json:"filename,omitempty"`
+	ArtifactID string `json:"artifactId,omitempty"`
+	GroupID    string `json:"groupId,omitempty"`
+	Version    string `json:"version,omitempty"`
+	Project    string `json:"project,omitempty"`
 }
 
-// Vulnerability
+// Vulnerability defines a vulnerability as returned by WhiteSource
 type Vulnerability struct {
 	Name              string  `json:"name,omitempty"`
 	Type              string  `json:"type,omitempty"`
-	Level             string  `json:"level,omitempty"`
-	Description       string  `json:"description,omitempty"`
 	Severity          string  `json:"severity,omitempty"`
+	Score             float64 `json:"score,omitempty"`
 	CVSS3Severity     string  `json:"cvss3_severity,omitempty"`
 	CVSS3Score        float64 `json:"cvss3_score,omitempty"`
-	Score             float64 `json:"score,omitempty"`
-	FixResolutionText string  `json:"fixResolutionText,omitempty"`
 	PublishDate       string  `json:"publishDate,omitempty"`
+	URL               string  `json:"url,omitempty"`
+	Description       string  `json:"description,omitempty"`
+	TopFix            Fix     `json:"topFix,omitempty"`
+	AllFixes          []Fix   `json:"allFixes,omitempty"`
+	Level             string  `json:"level,omitempty"`
+	FixResolutionText string  `json:"fixResolutionText,omitempty"`
+}
+
+// Fix defines a Fix as returned by WhiteSource
+type Fix struct {
+	Vulnerability string `json:"vulnerability,omitempty"`
+	Type          string `json:"type,omitempty"`
+	Origin        string `json:"origin,omitempty"`
+	URL           string `json:"url,omitempty"`
+	FixResolution string `json:"fixResolution,omitempty"`
+	Date          string `json:"date,omitempty"`
+	Message       string `json:"message,omitempty"`
+	ExtraData     string `json:"extraData,omitempty"`
 }
 
 // Project defines a WhiteSource project with name and token
@@ -88,6 +108,7 @@ type Request struct {
 	ProjectToken         string      `json:"projectToken,omitempty"`
 	OrgToken             string      `json:"orgToken,omitempty"`
 	Format               string      `json:"format,omitempty"`
+	AlertType            string      `json:"alertType,omitempty"`
 	ProductAdmins        *Assignment `json:"productAdmins,omitempty"`
 	ProductMembership    *Assignment `json:"productMembership,omitempty"`
 	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
@@ -97,10 +118,12 @@ type Request struct {
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
 type System struct {
-	httpClient piperhttp.Sender
-	orgToken   string
-	serverURL  string
-	userToken  string
+	httpClient    piperhttp.Sender
+	orgToken      string
+	serverURL     string
+	userToken     string
+	maxRetries    int
+	retryInterval time.Duration
 }
 
 // DateTimeLayout is the layout of the time format used by the WhiteSource API.
@@ -111,10 +134,12 @@ func NewSystem(serverURL, orgToken, userToken string, timeout time.Duration) *Sy
 	httpClient := &piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: timeout})
 	return &System{
-		serverURL:  serverURL,
-		orgToken:   orgToken,
-		userToken:  userToken,
-		httpClient: httpClient,
+		serverURL:     serverURL,
+		orgToken:      orgToken,
+		userToken:     userToken,
+		httpClient:    httpClient,
+		maxRetries:    10,
+		retryInterval: 3 * time.Second,
 	}
 }
 
@@ -132,7 +157,7 @@ func (s *System) GetProductsMetaInfo() ([]Product, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return wsResponse.ProductVitals, errors.Wrap(err, "WhiteSource request failed")
+		return wsResponse.ProductVitals, err
 	}
 
 	return wsResponse.ProductVitals, nil
@@ -169,7 +194,7 @@ func (s *System) CreateProduct(productName string) (string, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return "", errors.Wrap(err, "WhiteSource request failed")
+		return "", err
 	}
 
 	return wsResponse.ProductToken, nil
@@ -187,7 +212,7 @@ func (s *System) SetProductAssignments(productToken string, membership, admins, 
 
 	err := s.sendRequestAndDecodeJSON(req, nil)
 	if err != nil {
-		return errors.Wrap(err, "WhiteSource request failed")
+		return err
 	}
 
 	return nil
@@ -208,7 +233,7 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.ProjectVitals, nil
@@ -238,7 +263,7 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return Project{}, errors.Wrap(err, "WhiteSource request failed")
+		return Project{}, err
 	}
 
 	if len(wsResponse.ProjectVitals) == 0 {
@@ -300,6 +325,15 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 			}
 		}
 	}
+
+	if len(projectNames) > 0 && len(projectTokens) == 0 {
+		return projectTokens, fmt.Errorf("no project token(s) found for provided projects")
+	}
+
+	if len(projectNames) > 0 && len(projectNames) != len(projectTokens) {
+		return projectTokens, fmt.Errorf("not all project token(s) found for provided projects")
+	}
+
 	return projectTokens, nil
 }
 
@@ -318,7 +352,7 @@ func (s *System) GetProductName(productToken string) (string, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return "", errors.Wrap(err, "WhiteSource request failed")
+		return "", err
 	}
 
 	if len(wsResponse.ProductTags) == 0 {
@@ -374,7 +408,29 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
+	}
+
+	return wsResponse.Alerts, nil
+}
+
+// GetProjectAlertsByType returns all alerts of a certain type for a given project
+func (s *System) GetProjectAlertsByType(projectToken, alertType string) ([]Alert, error) {
+	wsResponse := struct {
+		Alerts []Alert `json:"alerts"`
+	}{
+		Alerts: []Alert{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectAlertsByType",
+		ProjectToken: projectToken,
+		AlertType:    alertType,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, err
 	}
 
 	return wsResponse.Alerts, nil
@@ -395,16 +451,21 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.Libraries, nil
 }
 
 func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
+	var count int
+	return s.sendRequestAndDecodeJSONRecursive(req, result, &count)
+}
+
+func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface{}, count *int) error {
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return errors.Wrap(err, "WhiteSource request failed")
+		return errors.Wrap(err, "sending whiteSource request failed")
 	}
 
 	log.Entry().Debugf("response: %v", string(respBody))
@@ -416,6 +477,22 @@ func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error
 
 	err = json.Unmarshal(respBody, &errorResponse)
 	if err == nil && errorResponse.ErrorCode != 0 {
+		if *count < s.maxRetries && errorResponse.ErrorCode == 3000 {
+			var initial bool
+			if *count == 0 {
+				initial = true
+			}
+			log.Entry().Warnf("backend returned error 3000, retrying in %v", s.retryInterval)
+			time.Sleep(s.retryInterval)
+			*count = *count + 1
+			err = s.sendRequestAndDecodeJSONRecursive(req, result, count)
+			if err != nil {
+				if initial {
+					return errors.Wrapf(err, "WhiteSource request failed after %v retries", s.maxRetries)
+				}
+				return err
+			}
+		}
 		return fmt.Errorf("invalid request, error code %v, message '%s'",
 			errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}

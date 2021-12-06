@@ -45,27 +45,33 @@ type StepInputs struct {
 
 // StepParameters defines the parameters for a step
 type StepParameters struct {
-	Name            string              `json:"name"`
-	Description     string              `json:"description"`
-	LongDescription string              `json:"longDescription,omitempty"`
-	ResourceRef     []ResourceReference `json:"resourceRef,omitempty"`
-	Scope           []string            `json:"scope"`
-	Type            string              `json:"type"`
-	Mandatory       bool                `json:"mandatory,omitempty"`
-	Default         interface{}         `json:"default,omitempty"`
-	PossibleValues  []interface{}       `json:"possibleValues,omitempty"`
-	Aliases         []Alias             `json:"aliases,omitempty"`
-	Conditions      []Condition         `json:"conditions,omitempty"`
-	Secret          bool                `json:"secret,omitempty"`
+	Name            string                `json:"name"`
+	Description     string                `json:"description"`
+	LongDescription string                `json:"longDescription,omitempty"`
+	ResourceRef     []ResourceReference   `json:"resourceRef,omitempty"`
+	Scope           []string              `json:"scope"`
+	Type            string                `json:"type"`
+	Mandatory       bool                  `json:"mandatory,omitempty"`
+	Default         interface{}           `json:"default,omitempty"`
+	PossibleValues  []interface{}         `json:"possibleValues,omitempty"`
+	Aliases         []Alias               `json:"aliases,omitempty"`
+	Conditions      []Condition           `json:"conditions,omitempty"`
+	Secret          bool                  `json:"secret,omitempty"`
+	MandatoryIf     []ParameterDependence `json:"mandatoryIf,omitempty"`
+}
+
+type ParameterDependence struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string   `json:"name"`
-	Type    string   `json:"type,omitempty"`
-	Param   string   `json:"param,omitempty"`
-	Paths   []string `json:"paths,omitempty"`
-	Aliases []Alias  `json:"aliases,omitempty"`
+	Name    string  `json:"name"`
+	Type    string  `json:"type,omitempty"`
+	Param   string  `json:"param,omitempty"`
+	Default string  `json:"default,omitempty"`
+	Aliases []Alias `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -232,9 +238,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
-	}
+	contextFilters = addVaultContextParametersFilter(m, contextFilters)
 
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
@@ -246,6 +250,12 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	}
 	return filters
+}
+
+func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
+	contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
+	return contextFilters
 }
 
 // GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
@@ -355,7 +365,9 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, res, param)
+				if val := getParameterValue(path, res, param); val != nil {
+					resourceParams[param.Name] = val
+				}
 			}
 		}
 	}
@@ -377,7 +389,11 @@ func (container *Container) commonConfiguration(keyPrefix string, config *map[st
 }
 
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
+	paramName := res.Param
+	if param.Type != "string" {
+		paramName += ".json"
+	}
+	if val := piperenv.GetResourceParameter(path, res.Name, paramName); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
@@ -399,6 +415,23 @@ func (m *StepParameters) GetReference(refType string) *ResourceReference {
 		}
 	}
 	return nil
+}
+
+func getFilterForResourceReferences(params []StepParameters) []string {
+	var filter []string
+	for _, param := range params {
+		reference := param.GetReference("vaultSecret")
+		if reference == nil {
+			reference = param.GetReference("vaultSecretFile")
+		}
+		if reference == nil {
+			return filter
+		}
+		if reference.Name != "" {
+			filter = append(filter, reference.Name)
+		}
+	}
+	return filter
 }
 
 // HasReference checks whether StepData contains a parameter that has Reference with the given type
@@ -424,7 +457,12 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
-		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		if len(v.Value) != 0 {
+			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		} else {
+			e = append(e, fmt.Sprintf("%v=", v.Name))
+		}
+
 	}
 	return e
 }
@@ -445,6 +483,38 @@ func putSliceIfNotEmpty(config map[string]interface{}, key string, value []strin
 	if len(value) > 0 {
 		config[key] = value
 	}
+}
+
+func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map[string]StepData, stepMetadata string, stepName string) (StepData, error) {
+
+	var metadata StepData
+
+	if stepMetadata != "" {
+		metadataFile, err := OpenPiperFile(stepMetadata, gitHubTokens)
+		if err != nil {
+			return metadata, errors.Wrap(err, "open failed")
+		}
+
+		err = metadata.ReadPipelineStepData(metadataFile)
+		if err != nil {
+			return metadata, errors.Wrap(err, "read failed")
+		}
+	} else {
+		if stepName != "" {
+			if metaDataResolver == nil {
+				return metadata, errors.New("metaDataResolver is nil")
+			}
+			metadataMap := metaDataResolver()
+			var ok bool
+			metadata, ok = metadataMap[stepName]
+			if !ok {
+				return metadata, errors.Errorf("could not retrieve by stepName %v", stepName)
+			}
+		} else {
+			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
+		}
+	}
+	return metadata, nil
 }
 
 //ToDo: Enable this when the Volumes part is also implemented

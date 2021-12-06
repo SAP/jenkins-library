@@ -1,111 +1,255 @@
 package telemetry
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
+	"fmt"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/jarcoal/httpmock"
 	"net/http"
-	"os"
+	"reflect"
 	"testing"
+	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
-type clientMock struct {
-	httpMethod string
-	urlsCalled string
-}
-
-func (c *clientMock) SetOptions(opts piperhttp.ClientOptions) {}
-
-func (c *clientMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	c.httpMethod = method
-	c.urlsCalled = url
-
-	return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewReader([]byte("")))}, nil
-}
-
-var mock clientMock
-
-func TestInitialise(t *testing.T) {
-	t.Run("with disabled telemetry", func(t *testing.T) {
-		// init
-		client = nil
-		// test
-		Initialize(true, "testStep")
-		// assert
-		assert.Equal(t, nil, client)
-		assert.Equal(t, BaseData{}, baseData)
-	})
-
-	t.Run("", func(t *testing.T) {
-		// init
-		client = nil
-		// test
-		Initialize(false, "testStep")
-		// assert
-		assert.NotEqual(t, nil, client)
-		assert.Equal(t, "testStep", baseData.StepName)
-	})
-}
-func TestSend(t *testing.T) {
-	t.Run("with disabled telemetry", func(t *testing.T) {
-		// init
-		mock = clientMock{}
-		client = &mock
-		disabled = true
-		// test
-		Send(&CustomData{})
-		// assert
-		assert.Equal(t, 0, len(mock.httpMethod))
-		assert.Equal(t, 0, len(mock.urlsCalled))
-	})
-
-	t.Run("", func(t *testing.T) {
-		// init
-		mock = clientMock{}
-		client = &mock
-		disabled = false
-		baseData = BaseData{
-			ActionName: "testAction",
-		}
-		// test
-		Send(&CustomData{
-			Custom1:      "test",
-			Custom1Label: "label",
+func TestTelemetry_Initialize(t *testing.T) {
+	type fields struct {
+		baseData             BaseData
+		baseMetaData         BaseMetaData
+		data                 Data
+		provider             orchestrator.OrchestratorSpecificConfigProviding
+		disabled             bool
+		client               *piperhttp.Client
+		CustomReportingDsn   string
+		CustomReportingToken string
+		customClient         *piperhttp.Client
+		BaseURL              string
+		Endpoint             string
+		SiteID               string
+	}
+	type args struct {
+		telemetryDisabled bool
+		stepName          string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *piperhttp.Client
+	}{
+		{
+			name:   "telemetry disabled",
+			fields: fields{},
+			args: args{
+				telemetryDisabled: true,
+				stepName:          "test",
+			},
+			want: nil,
+		},
+		{
+			name:   "telemetry enabled",
+			fields: fields{},
+			args: args{
+				telemetryDisabled: false,
+				stepName:          "test",
+			},
+			want: &piperhttp.Client{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t1 *testing.T) {
+			telemetryClient := &Telemetry{}
+			telemetryClient.Initialize(tt.args.telemetryDisabled, tt.args.stepName)
+			// assert
+			assert.NotEqual(t, tt.want, telemetryClient.client)
+			assert.Equal(t, tt.args.stepName, telemetryClient.baseData.StepName)
 		})
-		// assert
-		assert.Equal(t, "GET", mock.httpMethod)
-		assert.Contains(t, mock.urlsCalled, baseURL)
-		assert.Contains(t, mock.urlsCalled, "custom26=label")
-		assert.Contains(t, mock.urlsCalled, "e_26=test")
-		assert.Contains(t, mock.urlsCalled, "action_name=testAction")
-	})
+	}
 }
-func TestEnvVars(t *testing.T) {
-	t.Run("without values", func(t *testing.T) {
-		// init
-		client = nil
-		// test
-		Initialize(false, "testStep")
-		// assert
-		assert.Equal(t, "n/a", baseData.PipelineURLHash)
-		assert.Equal(t, "n/a", baseData.BuildURLHash)
-	})
 
-	t.Run("", func(t *testing.T) {
-		// init
-		os.Setenv("JOB_URL", "someValue")
-		os.Setenv("BUILD_URL", "someValue")
-		client = nil
-		// test
-		Initialize(false, "testStep")
-		// assert
-		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", baseData.PipelineURLHash)
-		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", baseData.BuildURLHash)
-		// cleanup
-		os.Unsetenv("JOB_URL")
-		os.Unsetenv("BUILD_URL")
-	})
+func TestTelemetry_Send(t *testing.T) {
+	type fields struct {
+		baseData             BaseData
+		baseMetaData         BaseMetaData
+		data                 Data
+		provider             orchestrator.OrchestratorSpecificConfigProviding
+		disabled             bool
+		client               *piperhttp.Client
+		CustomReportingDsn   string
+		CustomReportingToken string
+		BaseURL              string
+		Endpoint             string
+		SiteID               string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		swaCalls int
+	}{
+		{
+			name: "Telemetry disabled, reporting disabled",
+			fields: fields{
+				disabled: true,
+			},
+			swaCalls: 0,
+		},
+		{
+			name: "Telemetry enabled",
+			fields: fields{
+				disabled: false,
+			},
+			swaCalls: 1,
+		},
+		{
+			name: "Telemetry disabled",
+			fields: fields{
+				disabled: true,
+			},
+			swaCalls: 0,
+		},
+	}
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			httpmock.Reset()
+			telemetryClient := &Telemetry{disabled: tt.fields.disabled}
+			telemetryClient.Initialize(tt.fields.disabled, tt.name)
+			telemetryClient.CustomReportingDsn = tt.fields.CustomReportingDsn
+			if telemetryClient.client == nil {
+				telemetryClient.client = &piperhttp.Client{}
+			}
+
+			url := telemetryClient.BaseURL + telemetryClient.Endpoint
+
+			telemetryClient.client.SetOptions(piperhttp.ClientOptions{
+				MaxRequestDuration:        5 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true,
+				MaxRetries:                -1,
+			})
+
+			if tt.fields.CustomReportingDsn != "" {
+				telemetryClient.customClient = &piperhttp.Client{}
+				telemetryClient.customClient.SetOptions(piperhttp.ClientOptions{
+					MaxRequestDuration:        5 * time.Second,
+					Token:                     "TOKEN",
+					TransportSkipVerification: true,
+					UseDefaultTransport:       true, // Needed for mocking
+					MaxRetries:                -1,
+				})
+			}
+
+			httpmock.RegisterResponder(http.MethodGet, url,
+				func(req *http.Request) (*http.Response, error) {
+					return httpmock.NewStringResponse(200, "Ok"), nil
+				},
+			)
+			httpmock.RegisterResponder(http.MethodPost, telemetryClient.CustomReportingDsn,
+				func(req *http.Request) (*http.Response, error) {
+					return httpmock.NewStringResponse(200, "Ok"), nil
+				},
+			)
+
+			// test
+			telemetryClient.SetData(&CustomData{})
+			telemetryClient.Send()
+
+			// assert
+			info := httpmock.GetCallCountInfo()
+
+			if got := info["GET "+url]; !assert.Equal(t, got, tt.swaCalls) {
+				t.Errorf("Send() = swa calls %v, wanted %v", got, tt.swaCalls)
+			}
+
+		})
+	}
+	defer httpmock.DeactivateAndReset()
+}
+
+func TestSetData(t *testing.T) {
+	type args struct {
+		customData *CustomData
+	}
+	tests := []struct {
+		name string
+		args args
+		want Data
+	}{
+		{
+			name: "Test",
+			args: args{customData: &CustomData{
+				Duration:        "100",
+				ErrorCode:       "0",
+				ErrorCategory:   "Undefined",
+				PiperCommitHash: "abcd12345",
+			},
+			},
+			want: Data{
+				BaseData: BaseData{
+					URL:             "",
+					ActionName:      "",
+					EventType:       "",
+					StepName:        "TestCreateDataObject",
+					SiteID:          "",
+					PipelineURLHash: "",
+					BuildURLHash:    "",
+					Orchestrator:    "Unknown",
+				},
+				BaseMetaData: BaseMetaData{
+					StepNameLabel:        "stepName",
+					StageNameLabel:       "stageName",
+					PipelineURLHashLabel: "pipelineUrlHash",
+					BuildURLHashLabel:    "buildUrlHash",
+					DurationLabel:        "duration",
+					ExitCodeLabel:        "exitCode",
+					ErrorCategoryLabel:   "errorCategory",
+					OrchestratorLabel:    "orchestrator",
+					PiperCommitHashLabel: "piperCommitHash",
+				},
+				CustomData: CustomData{
+					Duration:        "100",
+					ErrorCode:       "0",
+					ErrorCategory:   "Undefined",
+					PiperCommitHash: "abcd12345",
+					Custom1Label:    "",
+					Custom2Label:    "",
+					Custom3Label:    "",
+					Custom4Label:    "",
+					Custom5Label:    "",
+					Custom1:         "",
+					Custom2:         "",
+					Custom3:         "",
+					Custom4:         "",
+					Custom5:         "",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			telemetryClient := Telemetry{}
+			telemetryClient.Initialize(false, "TestCreateDataObject")
+			telemetryClient.baseData = BaseData{
+				URL:             "",
+				ActionName:      "",
+				EventType:       "",
+				StepName:        "TestCreateDataObject",
+				SiteID:          "",
+				PipelineURLHash: "",
+				BuildURLHash:    "",
+				Orchestrator:    "Unknown",
+			}
+			telemetryClient.baseMetaData = baseMetaData
+			telemetryClient.SetData(tt.args.customData)
+			fmt.Println(telemetryClient.data)
+			fmt.Println(tt.want)
+			if !reflect.DeepEqual(telemetryClient.data, tt.want) {
+				t.Errorf("CreateDataObject() t.data= %v, want %v", telemetryClient.data, tt.want)
+			}
+		})
+	}
 }

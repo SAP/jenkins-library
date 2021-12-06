@@ -41,7 +41,7 @@ func adjustMandatoryFlags(stepMetadata *config.StepData) {
 		if parameter.Mandatory {
 			if parameter.Default == nil ||
 				parameter.Default == "" ||
-				parameter.Type == "[]string" && len(parameter.Default.([]string)) == 0 {
+				parameter.Type == "[]string" && interfaceArrayLength(parameter.Default) == 0 {
 				continue
 			}
 			fmt.Printf("Changing mandatory flag to '%v' for parameter '%s', default value available '%v'.\n", false, parameter.Name, parameter.Default)
@@ -73,5 +73,17 @@ func applyCustomDefaultValues(stepMetadata *config.StepData, stepConfiguration c
 				}
 			}
 		}
+	}
+}
+
+// check length only if interface type is a slice
+func interfaceArrayLength(i interface{}) int {
+	switch i.(type) {
+	case []string:
+		return len(i.([]string))
+	case []interface{}:
+		return len(i.([]interface{}))
+	default:
+		return -1
 	}
 }

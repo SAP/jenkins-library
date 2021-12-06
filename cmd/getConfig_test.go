@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func configOpenFileMock(name string) (io.ReadCloser, error) {
+func configOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
 	switch name {
 	case "TestAddCustomDefaults_default1":
@@ -45,18 +45,19 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Required flags", func(t *testing.T) {
-		exp := []string{"stepMetadata"}
+		exp := []string{}
 		assert.Equal(t, exp, gotReq, "required flags incorrect")
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"contextConfig", "output", "parametersJSON"}
+		exp := []string{"contextConfig", "output", "outputFile", "parametersJSON", "stageConfig", "stageConfigAcceptedParams", "stepMetadata", "stepName"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
 			configOptions.openFile = configOpenFileMock
+			configOptions.stepName = "githubCreateIssue"
 			cmd.Run(cmd, []string{})
 		})
 	})
@@ -79,7 +80,7 @@ func TestDefaultsAndFilters(t *testing.T) {
 		defaults, filters, err := defaultsAndFilters(&metadata, "stepName")
 
 		assert.Equal(t, 1, len(defaults), "getting defaults failed")
-		assert.Equal(t, 0, len(filters.All), "wrong number of filter values")
+		assert.Equal(t, 3, len(filters.All), "wrong number of filter values")
 		assert.NoError(t, err, "error occurred but none expected")
 	})
 

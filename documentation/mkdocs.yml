@@ -12,11 +12,12 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Extensibility': pipelines/abapEnvironment/extensibility.md
             - 'Stages':
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
               - 'Clone Repositories': pipelines/abapEnvironment/stages/cloneRepositories.md
-              - 'ATC': pipelines/abapEnvironment/stages/ATC.md
+              - 'Test': pipelines/abapEnvironment/stages/Test.md
               - 'Build': pipelines/abapEnvironment/stages/build.md
               - 'Integration Tests': pipelines/abapEnvironment/stages/integrationTest.md
               - 'Confirm': pipelines/abapEnvironment/stages/confirm.md
@@ -42,30 +43,34 @@ nav:
         - 'Build and Deploy Hybrid Applications with SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAPUI5/SAP Fiori Applications on SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy SAP Cloud Application Programming Model Applications': scenarios/CAP_Scenario.md
-        - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
+        - 'Integrate SAP Cloud Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
         - 'Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model': scenarios/xsa-deploy/Readme.md
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System': scenarios/upload-to-transportrequest/Readme.md
-        - 'Build and Publish Add-on Products on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentAddons.md
-        - 'Continuous Testing on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentTest.md
+        - 'Build and Publish Add-on Products on SAP BTP, ABAP Environment': scenarios/abapEnvironmentAddons.md
+        - 'Continuous Testing on SAP BTP, ABAP Environment': scenarios/abapEnvironmentTest.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
-        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckPV.md
+        - abapAddonAssemblyKitCheckPV: steps/abapAddonAssemblyKitCheckPV.md
         - abapAddonAssemblyKitCreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
         - abapAddonAssemblyKitPublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
         - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
         - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
         - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
+        - abapEnvironmentBuild: steps/abapEnvironmentBuild.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
+        - abapEnvironmentAssembleConfirm: steps/abapEnvironmentAssembleConfirm.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
+        - abapEnvironmentRunAUnitTest: steps/abapEnvironmentRunAUnitTest.md
+        - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
+        - apiProxyDownload: steps/apiProxyDownload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
-        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
@@ -73,6 +78,7 @@ nav:
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
+        - cnbBuild: steps/cnbBuild.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
@@ -96,11 +102,20 @@ nav:
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
+        - gitopsUpdateDeployment: steps/gitopsUpdateDeployment.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
+        - integrationArtifactDownload: steps/integrationArtifactDownload.md
+        - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
+        - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
+        - integrationArtifactResource: steps/integrationArtifactResource.md
+        - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
+        - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
+        - integrationArtifactUpload: steps/integrationArtifactUpload.md
+        - isChangeInDevelopment: steps/isChangeInDevelopment.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
@@ -137,8 +152,12 @@ nav:
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
-        - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
+        - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
+        - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
+        - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
@@ -146,7 +165,9 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - npmExecute: steps/npmExecute.md
+        - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Command line tool': cli/index.md
 
 theme:
@@ -162,10 +183,15 @@ extra:
       code: 'Ubuntu Mono'
 markdown_extensions:
     - admonition
-    - codehilite(guess_lang=false)
-    - toc(permalink=true)
+    - attr_list
+    - codehilite:
+        guess_lang: false
+    - toc:
+        permalink: true
     - footnotes
     - pymdownx.superfences
+    - pymdownx.tabbed
+    - pymdownx.details
 extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
