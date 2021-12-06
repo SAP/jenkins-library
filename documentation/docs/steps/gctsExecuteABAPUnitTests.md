@@ -28,7 +28,7 @@ gctsExecuteABAPUnitTests(
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
   repository: 'myrepo',
   scope: 'localChangedObjects',
-  commitId: "${GIT_COMMIT}",
+  commit: "${GIT_COMMIT}",
   workspace: "${WORKSPACE}"
 
   )
@@ -45,7 +45,7 @@ steps:
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
     repository: 'myrepo'
     scope: 'remoteChangedObjects'
-    commitId: '38abb4814ae46b98e8e6c3e718cf1782afa9ca90'
+    commit: '38abb4814ae46b98e8e6c3e718cf1782afa9ca90'
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
 
@@ -81,11 +81,37 @@ steps:
 Example configuration for the use of *recordIssue* step to make the findings visible in Jenkins interface.
 
 ```groovy
-recordIssues(
-	enabledForFailure: true, aggregatingResults: true,
-	tools: [checkStyle(pattern: 'ATCResults.xml', reportEncoding: 'UTF8'),checkStyle(pattern: 'AUnitResults.xml', reportEncoding: 'UTF8')]
+stage('gCTS Execute ABAP Unit Test') {
+			steps {
+				  script {
+                    try{
+                    		
+				gctsExecuteABAPUnitTests(
+					script : this,
+					commitId : "${GIT_COMMIT}",
+					workspace: "${WORKSPACE}"
+						
+				) 
+				  }catch (Exception ex){
+                        		currentBuild.result = 'FAILURE'
+					                  unstable(message: "${STAGE_NAME} is unstable")
+                    			}
+				
+		}	
+		}
+		}
+		stage('Results in Checkstyle') {
+			
+			steps {
+				recordIssues(
+					enabledForFailure: true, aggregatingResults: true,
+					tools: [checkStyle(pattern: 'ATCResults.xml', reportEncoding: 'UTF8'),checkStyle(pattern: 'AUnitResults.xml', reportEncoding: 'UTF8')]
 
-	) 
+				) 
+				
+			}
+			
+	}		
 ```
 
 **Note:** If you have disabled *atcCheck* or *aUnitTest*, than you also need to remove the corresponding *ATCResults.xml* or *AUnitResults.xml* from *recordIssues* step. In the example below the *atcCheck* was disabled, so *ATCResults.xml* was removed.

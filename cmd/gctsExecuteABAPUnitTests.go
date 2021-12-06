@@ -302,7 +302,7 @@ func getRemotePackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp
 
 	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: remoteChangedPackages you need to specify a commitId")
+		return []repoObject{}, errors.Errorf("For scope: remoteChangedPackages you need to specify a commit")
 
 	}
 
