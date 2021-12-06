@@ -193,8 +193,8 @@ func (b *Build) Poll() error {
 	}
 }
 
-// EndedWithError : Checks the finale state of the build framework
-func (b *Build) EndedWithError(treatWarningsAsError bool) error {
+// EvaluteIfBuildSuccessful : Checks the finale state of the build framework
+func (b *Build) EvaluteIfBuildSuccessful(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
 		return errors.Errorf("Build ended with runState failed")
 	}

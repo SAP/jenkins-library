@@ -16,13 +16,13 @@ type abapEnvironmentBuildMockUtils struct {
 	*abapbuild.MockClient
 }
 
-func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildMockUtils {
+func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildUtils {
 	mC := abapbuild.GetBuildMockClient()
 	utils := abapEnvironmentBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		MockClient:     &mC,
 	}
-	return utils
+	return &utils
 }
 func (mB abapEnvironmentBuildMockUtils) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
 }
@@ -55,11 +55,11 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishAllDownloadedResultFiles = true
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
 		finalValues := `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"AunitValue1"},{"value_id":"MyId2","value":"AunitValue2"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
 		assert.NoError(t, err)
-		assert.Equal(t, finalValues, cpe.build.values)
+		assert.Equal(t, finalValues, cpe.abap.buildValues)
 	})
 
 	t.Run("happy path, download only one", func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishResultFilenames = []string{"SAR_XML"}
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -87,7 +87,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishResultFilenames = []string{"SAR_XML"}
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
 		assert.Error(t, err)
 	})
@@ -102,7 +102,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishAllDownloadedResultFiles = true
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
 		assert.Error(t, err)
 	})

@@ -177,7 +177,7 @@ func TestPoll(t *testing.T) {
 	})
 }
 
-func TestEndedWithError(t *testing.T) {
+func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	//arrange global
 	build := new(Build)
 	treatWarningsAsError := false
@@ -186,7 +186,7 @@ func TestEndedWithError(t *testing.T) {
 		build.RunState = Finished
 		build.ResultState = successful
 		//act
-		err := build.EndedWithError(treatWarningsAsError)
+		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
 		assert.NoError(t, err)
 	})
@@ -194,7 +194,7 @@ func TestEndedWithError(t *testing.T) {
 		//arrange
 		build.RunState = Failed
 		//act
-		err := build.EndedWithError(treatWarningsAsError)
+		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
 		assert.Error(t, err)
 	})
@@ -203,7 +203,7 @@ func TestEndedWithError(t *testing.T) {
 		build.RunState = Finished
 		build.ResultState = aborted
 		//act
-		err := build.EndedWithError(treatWarningsAsError)
+		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
 		assert.Error(t, err)
 	})
@@ -212,7 +212,7 @@ func TestEndedWithError(t *testing.T) {
 		build.RunState = Finished
 		build.ResultState = erroneous
 		//act
-		err := build.EndedWithError(treatWarningsAsError)
+		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
 		assert.Error(t, err)
 	})
@@ -221,7 +221,7 @@ func TestEndedWithError(t *testing.T) {
 		build.RunState = Finished
 		build.ResultState = warning
 		//act
-		err := build.EndedWithError(treatWarningsAsError)
+		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
 		assert.NoError(t, err)
 	})
@@ -231,7 +231,7 @@ func TestEndedWithError(t *testing.T) {
 		build.ResultState = warning
 		treatWarningsAsError = true
 		//act
-		err := build.EndedWithError(treatWarningsAsError)
+		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
 		assert.Error(t, err)
 	})

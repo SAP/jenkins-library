@@ -42,8 +42,8 @@ type abapEnvironmentBuildOptions struct {
 }
 
 type abapEnvironmentBuildCommonPipelineEnvironment struct {
-	build struct {
-		values string
+	abap struct {
+		buildValues string
 	}
 }
 
@@ -53,7 +53,7 @@ func (p *abapEnvironmentBuildCommonPipelineEnvironment) persist(path, resourceNa
 		name     string
 		value    interface{}
 	}{
-		{category: "build", name: "values", value: p.build.values},
+		{category: "abap", name: "buildValues", value: p.abap.buildValues},
 	}
 
 	errCount := 0
@@ -393,7 +393,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "build/values",
+								Param: "abap/buildValues",
 							},
 						},
 						Scope:     []string{},
@@ -413,7 +413,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "build/values"},
+							{"Name": "abap/buildValues"},
 						},
 					},
 				},

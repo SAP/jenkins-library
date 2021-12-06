@@ -61,12 +61,12 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingIntervall tim
 
 func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
 	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervallInSeconds))
-	if err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe); err != nil {
+	if err := runAbapEnvironmentBuild(&config, telemetryData, &utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
+func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
 	values, err := generateValues(config)
 	if err != nil {
 		return errors.Wrap(err, "Generating the values from config failed")
@@ -79,11 +79,11 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	if err != nil {
 		return errors.Wrap(err, "Error during execution of build framework")
 	}
-	cpe.build.values = finalValues
+	cpe.abap.buildValues = finalValues
 	return nil
 }
 
-func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils) error {
+func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils) error {
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg
@@ -96,16 +96,17 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 	connConfig.CertificateNames = config.CertificateNames
 
-	if err := conn.InitBuildFramework(connConfig, utils, utils); err != nil {
+	if err := conn.InitBuildFramework(connConfig, *utils, *utils); err != nil {
 		return err
 	}
-	conn.MaxRuntime = utils.getMaxRuntime()
-	conn.PollingInterval = utils.getPollingIntervall()
+
+	conn.MaxRuntime = (*utils).getMaxRuntime()
+	conn.PollingInterval = (*utils).getPollingIntervall()
 	return nil
 }
 
 // ***********************************Run Build***************************************************************
-func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, values abapbuild.Values) (string, error) {
+func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, values abapbuild.Values) (string, error) {
 	build := myBuild{
 		Build: abapbuild.Build{
 			Connector: *conn,
@@ -118,13 +119,13 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 	}
 
 	if err := build.Poll(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Error during the polling for the final state of the build run")
 	}
 
 	if err := build.PrintLogs(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Error printing the logs")
 	}
-	if err := build.EndedWithError(); err != nil {
+	if err := build.EvaluteIfBuildSuccessful(); err != nil {
 		return "", err
 	}
 	if err := build.Download(); err != nil {
@@ -153,9 +154,9 @@ func (b *myBuild) Start(values abapbuild.Values) error {
 	return nil
 }
 
-func (b *myBuild) EndedWithError() error {
-	if err := b.Build.EndedWithError(b.TreatWarningsAsError); err != nil {
-		return err
+func (b *myBuild) EvaluteIfBuildSuccessful() error {
+	if err := b.Build.EvaluteIfBuildSuccessful(b.TreatWarningsAsError); err != nil {
+		return errors.Wrap(err, "Build ended without success")
 	}
 	return nil
 }
@@ -173,11 +174,11 @@ func (b *myBuild) Download() error {
 	return nil
 }
 
-func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
+func (b *myBuild) Publish(utils *abapEnvironmentBuildUtils) error {
 	if b.PublishAllDownloadedResultFiles {
-		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
+		b.PublishAllDownloadedResults("abapEnvironmentBuild", *utils)
 	} else {
-		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, utils); err != nil {
+		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, *utils); err != nil {
 			return errors.Wrapf(err, "Error during the publish of the result files %s", b.PublishResultFilenames)
 		}
 	}
@@ -196,14 +197,14 @@ func (b *myBuild) GetFinalValues() (string, error) {
 	var cpeValues []cpeValue
 	byt, err := json.Marshal(&b.Build.Values)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Error converting the values from the build framework")
 	}
 	if err := json.Unmarshal(byt, &cpeValues); err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Error converting the values from the build framework into the structure for the commonPipelineEnvironment")
 	}
 	jsonBytes, err := json.Marshal(cpeValues)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Error converting the converted values")
 	}
 	return string(jsonBytes), nil
 }

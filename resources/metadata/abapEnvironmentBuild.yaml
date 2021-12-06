@@ -207,13 +207,13 @@ spec:
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
-            param: build/values
+            param: abap/buildValues
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: build/values
+          - name: abap/buildValues
   containers:
     - name: cf
       image: ppiper/cf-cli:7
