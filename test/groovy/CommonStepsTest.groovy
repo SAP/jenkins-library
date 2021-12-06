@@ -113,6 +113,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapAddonAssemblyKitRegisterPackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReleasePackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReserveNextPackages', //implementing new golang pattern without fields
+        'abapEnvironmentBuild', //implementing new golang pattern without fields
         'abapEnvironmentAssemblePackages', //implementing new golang pattern without fields
         'abapEnvironmentAssembleConfirm', //implementing new golang pattern without fields
         'abapEnvironmentCheckoutBranch', //implementing new golang pattern without fields

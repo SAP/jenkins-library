@@ -26,15 +26,6 @@ type BuildOptions struct {
 	DockerImage                 string   `json:"dockerImage,omitempty"`
 }
 
-func (i *BuildOptions) ToJson() ([]byte, error) {
-	tmp, err := json.Marshal(i)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate valid JSON.")
-	} else {
-		return tmp, nil
-	}
-}
-
 func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, error) {
 	currentBuildSettingsInfo := BuildOptions{
 		CreateBOM:                   config.CreateBOM,
