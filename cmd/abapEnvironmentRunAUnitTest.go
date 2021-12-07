@@ -284,27 +284,12 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	return optionsString
 }
 
-func checkOSLObjectSetsRecursive(set Set, baseSet BaseSet, exclusionSet ExclusionSet, multipropertyset MultiPropertySet) (objectSetString string) {
+func buildOSLObjectSets(multipropertyset MultiPropertySet) (objectSetString string) {
 	objectSetString += writeObjectSetProperties(multipropertyset)
 	return objectSetString
 }
 
 func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
-	for _, packageSet := range set.PackageSet {
-		objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
-	}
-	for _, flatObjectSet := range set.FlatObjectSet {
-		objectSetString += `<osl:object name="` + flatObjectSet.Name + `" type="` + flatObjectSet.Type + `"/>`
-	}
-	for _, transportSet := range set.TransportSet {
-		objectSetString += `<osl:transport number="` + transportSet.Number + `"/>`
-	}
-	for _, componentSet := range set.ComponentSet {
-		objectSetString += `<osl:component name="` + componentSet.Name + `"/>`
-	}
-	for _, objectTypeSet := range set.ObjectTypeSet {
-		objectSetString += `<osl:objectType name="` + objectTypeSet.Name + `"/>`
-	}
 	for _, packages := range set.PackageNames {
 		objectSetString += `<osl:package name="` + packages.Name + `"/>`
 	}
@@ -359,11 +344,11 @@ func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string)
 					PackageNames:   s.PackageNames,
 					ComponentNames: s.ComponentNames,
 				}
-				objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, ExclusionSet{}, mps)
+				objectSetString += buildOSLObjectSets(mps)
 			}
 
 			//If user decides to add more properties on a MPS sublevel
-			objectSetString += checkOSLObjectSetsRecursive(Set{}, BaseSet{}, ExclusionSet{}, s.MultiPropertySet)
+			objectSetString += buildOSLObjectSets(s.MultiPropertySet)
 
 			if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
 				log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
@@ -550,14 +535,6 @@ type ObjectSet struct {
 //MultiPropertySet that can possibly contain any subsets/object of the OSL
 type MultiPropertySet struct {
 	Type                  string                 `json:"type,omitempty"`
-	Set                   []Set                  `json:"set,omitempty"`
-	BaseSet               []BaseSet              `json:"baseset,omitempty"`
-	ExclusionSet          []ExclusionSet         `json:"exclusionset,omitempty"`
-	PackageSet            []AUnitPackageSet      `json:"package,omitempty"`
-	FlatObjectSet         []AUnitFlatObjectSet   `json:"object,omitempty"`
-	ComponentSet          []AUnitComponentSet    `json:"component,omitempty"`
-	TransportSet          []AUnitTransportSet    `json:"transport,omitempty"`
-	ObjectTypeSet         []AUnitObjectTypeSet   `json:"objecttype,omitempty"`
 	PackageNames          []AUnitPackage         `json:"packagenames,omitempty"`
 	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroup,omitempty"`
 	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
@@ -571,7 +548,7 @@ type MultiPropertySet struct {
 	SourceSystems         []SourceSystem         `json:"sourcesystem,omitempty"`
 }
 
-//Set in form of packages and software components to be checked
+//Set
 type Set struct {
 	Type          string               `json:"type,omitempty"`
 	Set           []Set                `json:"set,omitempty"`
@@ -584,7 +561,7 @@ type Set struct {
 	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//BaseSet in form of packages and software components to be checked
+//BaseSet
 type BaseSet struct {
 	Type          string               `json:"type,omitempty"`
 	Set           []Set                `json:"set,omitempty"`
@@ -597,7 +574,7 @@ type BaseSet struct {
 	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//ExclusionSet in form of packages and software components to be checked
+//ExclusionSet
 type ExclusionSet struct {
 	Type          string               `json:"type,omitempty"`
 	Set           []Set                `json:"set,omitempty"`
@@ -610,29 +587,29 @@ type ExclusionSet struct {
 	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//AUnitPackageSet in form of packages and software components to be checked
+//AUnitPackageSet in form of packages to be checked
 type AUnitPackageSet struct {
 	Name               string `json:"name,omitempty"`
 	IncludeSubpackages *bool  `json:"includesubpackages,omitempty"`
 }
 
-//AUnitFlatObjectSet in form of packages and software components to be checked
+//AUnitFlatObjectSet
 type AUnitFlatObjectSet struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
 }
 
-//AUnitComponentSet in form of packages and software components to be checked
+//AUnitComponentSet in form of software components to be checked
 type AUnitComponentSet struct {
 	Name string `json:"name,omitempty"`
 }
 
-//AUnitTransportSet in form of packages and software components to be checked
+//AUnitTransportSet in form of transports to be checked
 type AUnitTransportSet struct {
 	Number string `json:"number,omitempty"`
 }
 
-//AUnitObjectTypeSet in form of packages and software components to be checked
+//AUnitObjectTypeSet
 type AUnitObjectTypeSet struct {
 	Name string `json:"name,omitempty"`
 }
