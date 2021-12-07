@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -232,6 +233,27 @@ func runMtaBuild(config mtaBuildOptions,
 		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "mtaBuild"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	mtaConfig := buildsettings.BuildOptions{
+		Profiles:           config.Profiles,
+		GlobalSettingsFile: config.GlobalSettingsFile,
+		Publish:            config.Publish,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		DockerImage:        dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 

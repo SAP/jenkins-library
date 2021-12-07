@@ -13,7 +13,7 @@ func TestJenkins(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("JENKINS_URL", "FOO BAR BAZ")
 		os.Setenv("BUILD_URL", "jaas.com/foo/bar/main/42")
-		os.Setenv("GIT_BRANCH", "main")
+		os.Setenv("BRANCH_NAME", "main")
 		os.Setenv("GIT_COMMIT", "abcdef42713")
 		os.Setenv("GIT_URL", "github.com/foo/bar")
 
@@ -24,6 +24,7 @@ func TestJenkins(t *testing.T) {
 		assert.Equal(t, "main", p.GetBranch())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoUrl())
+		assert.Equal(t, "Jenkins", p.OrchestratorType())
 	})
 
 	t.Run("PR", func(t *testing.T) {
