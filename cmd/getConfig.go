@@ -127,6 +127,9 @@ func getConfig() (config.StepConfig, error) {
 
 	} else {
 		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
+		allStepMetadata := GetAllStepMetadata()
+		log.Entry().Debugf("Resolving metadata for step: %v", allStepMetadata)
+
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, configOptions.stepMetadata, configOptions.stepName)
 		if err != nil {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
