@@ -35,6 +35,9 @@ type kanikoExecuteCommonPipelineEnvironment struct {
 		registryURL  string
 		imageNameTag string
 	}
+	custom struct {
+		buildSettingsInfo string
+	}
 }
 
 func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName string) {
@@ -45,6 +48,7 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
 	errCount := 0
@@ -203,7 +207,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
+						Aliases:     []config.Alias{{Name: "containerImageNameAndTag", Deprecated: true}},
 						Default:     os.Getenv("PIPER_containerImage"),
 					},
 					{
@@ -298,7 +302,7 @@ func kanikoExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -308,6 +312,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "container/registryUrl"},
 							{"Name": "container/imageNameTag"},
+							{"Name": "custom/buildSettingsInfo"},
 						},
 					},
 				},

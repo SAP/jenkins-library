@@ -36,7 +36,7 @@ func (j *JenkinsConfigProvider) getAPIInformation() map[string]interface{} {
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		log.Entry().Error(err)
+		log.Entry().WithError(err).Error("could not get api information from Jenkins")
 		return map[string]interface{}{}
 	}
 
@@ -143,7 +143,7 @@ func (a *JenkinsConfigProvider) GetStageName() string {
 }
 
 func (j *JenkinsConfigProvider) GetBranch() string {
-	return getEnv("GIT_BRANCH", "n/a")
+	return getEnv("BRANCH_NAME", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetBuildUrl() string {
