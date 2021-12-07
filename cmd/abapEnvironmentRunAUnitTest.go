@@ -133,7 +133,6 @@ func triggerAUnitrun(config abapEnvironmentRunAUnitTestOptions, details abaputil
 	if err == nil {
 		log.Entry().Debugf("Request Body: %s", bodyString)
 		details.URL = abapEndpoint + "/sap/bc/adt/api/abapunit/runs"
-		//details.URL = abapEndpoint + "/sap/bc/adt/abapunit/testruns"
 		resp, err = runAUnit("POST", details, body, client)
 	}
 	if err != nil {
@@ -192,11 +191,6 @@ func buildAUnitTestBody(AUnitConfig AUnitConfig) (metadataString string, options
 	if AUnitConfig.Context == "" {
 		AUnitConfig.Context = "ABAP Environment Pipeline"
 	}
-	/*
-		if reflect.DeepEqual(AUnitOptions{}, AUnitConfig.Options) {
-			return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No options have been provided. Please configure the options for the respective test run")
-		}
-	*/
 	if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
 		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
 	}
@@ -237,53 +231,53 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	optionsString += `<aunit:options>`
 	if AUnitConfig.Options.Measurements != "" {
 		optionsString += `<aunit:measurements type="` + AUnitConfig.Options.Measurements + `"/>`
-	} else if AUnitConfig.Options.Measurements == "" {
+	} else {
 		optionsString += `<aunit:measurements type="none"/>`
 	}
 	//We assume there must be one scope configured
 	optionsString += `<aunit:scope`
 	if AUnitConfig.Options.Scope.OwnTests != nil {
 		optionsString += ` ownTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.OwnTests) + `"`
-	} else if AUnitConfig.Options.Scope.OwnTests == nil {
+	} else {
 		optionsString += ` ownTests="true"`
 	}
 	if AUnitConfig.Options.Scope.ForeignTests != nil {
 		optionsString += ` foreignTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.ForeignTests) + `"`
-	} else if AUnitConfig.Options.Scope.ForeignTests == nil {
+	} else {
 		optionsString += ` foreignTests="true"`
 	}
 	//We assume there must be one riskLevel configured
 	optionsString += `/><aunit:riskLevel`
 	if AUnitConfig.Options.RiskLevel.Harmless != nil {
 		optionsString += ` harmless="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Harmless) + `"`
-	} else if AUnitConfig.Options.RiskLevel.Harmless == nil {
+	} else {
 		optionsString += ` harmless="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Dangerous != nil {
 		optionsString += ` dangerous="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Dangerous) + `"`
-	} else if AUnitConfig.Options.RiskLevel.Dangerous == nil {
+	} else {
 		optionsString += ` dangerous="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Critical != nil {
 		optionsString += ` critical="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Critical) + `"`
-	} else if AUnitConfig.Options.RiskLevel.Critical == nil {
+	} else {
 		optionsString += ` critical="true"`
 	}
 	//We assume there must be one duration time configured
 	optionsString += `/><aunit:duration`
 	if AUnitConfig.Options.Duration.Short != nil {
 		optionsString += ` short="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Short) + `"`
-	} else if AUnitConfig.Options.Duration.Short == nil {
+	} else {
 		optionsString += ` short="true"`
 	}
 	if AUnitConfig.Options.Duration.Medium != nil {
 		optionsString += ` medium="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Medium) + `"`
-	} else if AUnitConfig.Options.Duration.Medium == nil {
+	} else {
 		optionsString += ` medium="true"`
 	}
 	if AUnitConfig.Options.Duration.Long != nil {
 		optionsString += ` long="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Long) + `"`
-	} else if AUnitConfig.Options.Duration.Long == nil {
+	} else {
 		optionsString += ` long="true"`
 	}
 	optionsString += `/></aunit:options>`
