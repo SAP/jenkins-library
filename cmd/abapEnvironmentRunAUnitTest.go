@@ -383,7 +383,6 @@ func fetchAUnitXcsrfToken(requestType string, details abaputils.ConnectionDetail
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Debug("Fetching Xcrsf-Token")
 
 	details.URL += "/sap/bc/adt/api/abapunit/runs/00000000000000000000000000000000"
-	//details.URL += "/sap/bc/adt/abapunit/testruns/00000000000000000000000000000000"
 	details.XCsrfToken = "fetch"
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
