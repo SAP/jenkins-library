@@ -202,7 +202,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	call = append(call, "--source", getSourcePath(config))
-	call = append(call, "--target", getTargetPathForMbt(config))
+	call = append(call, "--target", getTargetPath(config))
 
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")
@@ -496,6 +496,7 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 	return id, nil
 }
 
+// the "source" path locates the project's root
 func getSourcePath(config mtaBuildOptions) string {
 	path := config.Source
 	if path == "" {
@@ -504,33 +505,24 @@ func getSourcePath(config mtaBuildOptions) string {
 	return filepath.FromSlash(path)
 }
 
-func getTargetPathForMbt(config mtaBuildOptions) string {
+// the "target" path resides below the project's root
+// targetPath=<source>/<target>
+func getTargetPath(config mtaBuildOptions) string {
 	path := config.Target
 	if path == "" {
 		path = "./"
 	}
-	// pass an abolute path only in case of a config.Source value
-	// the behaviour of the mbt tool is unclear
-	if getSourcePath(config) != filepath.FromSlash("./") {
-		return filepath.FromSlash(getAbsPath(path))
-	}
 	return filepath.FromSlash(path)
 }
 
-func getAbsPath(path string) string {
-	abspath, err := filepath.Abs(path)
-	// ignore error, pass customers path value in case of trouble
-	if err != nil {
-		abspath = path
-	}
-	return filepath.FromSlash(abspath)
-}
-
 func getMtarFilePath(config mtaBuildOptions, mtarName string) string {
-	path := config.Target
+	sourcePath := getSourcePath(config)
+	targetPath := getTargetPath(config)
+	path := filepath.Join(sourcePath, targetPath)
+
 	if path == "" || path == "./" {
 		return mtarName
 	}
 
-	return filepath.FromSlash(filepath.Join(config.Target, mtarName))
+	return filepath.FromSlash(filepath.Join(path, mtarName))
 }
