@@ -15,7 +15,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
@@ -25,6 +24,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
+	"github.com/xuri/excelize/v2"
 )
 
 // ScanOptions is just used to make the lines less long
@@ -48,7 +48,7 @@ type whitesource interface {
 
 type whitesourceUtils interface {
 	ws.Utils
-	DirExists(path string) (bool, error)
+	piperutils.FileUtils
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
@@ -162,6 +162,8 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+	correctWhitesourceDockerConfigEnvVar(config, utils)
+
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
@@ -177,7 +179,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			if strings.Contains(fmt.Sprint(err), "no image found") {
 				log.SetErrorCategory(log.ErrorConfiguration)
 			}
-			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
+			return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
 		}
 
 	}
@@ -209,6 +211,26 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}
 	return nil
+}
+
+func correctWhitesourceDockerConfigEnvVar(config *ScanOptions, utils whitesourceUtils) {
+	path := config.DockerConfigJSON
+	if len(path) > 0 {
+		log.Entry().Infof("Docker credentials configuration: %v", path)
+		if len(config.ScanImageRegistryURL) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
+			var err error
+			path, err = piperDocker.CreateDockerConfigJSON(config.ScanImageRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			if err != nil {
+				log.Entry().Warningf("failed to update Docker config.json: %v", err)
+			}
+		}
+		path, _ := utils.Abs(path)
+		// use parent directory
+		path = filepath.Dir(path)
+		os.Setenv("DOCKER_CONFIG", path)
+	} else {
+		log.Entry().Info("Docker credentials configuration: NONE")
+	}
 }
 
 func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
@@ -926,12 +948,10 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 
 // create toolrecord file for whitesource
 //
-// Limitation: as the toolrecord file is designed to point to one scan result this generate a pointer
-// to the product only, and not to the scanned projects
-//
 func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
-	productURL := config.ServiceURL + "/Wss/WSS.html#!product;token=" + config.ProductToken
+	wsUiRoot := "https://saas.whitesourcesoftware.com"
+	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
 	err := record.AddKeyData("product",
 		config.ProductToken,
 		config.ProductName,
@@ -939,8 +959,31 @@ func createToolRecordWhitesource(workspace string, config *whitesourceExecuteSca
 	if err != nil {
 		return "", err
 	}
-	record.AddContext("scannedProjects", scan.ScannedProjectNames)
-	record.AddContext("configuredProject", config.ProjectName+" - "+config.Version)
+	max_idx := 0
+	for idx, project := range scan.ScannedProjects() {
+		max_idx = idx
+		name := project.Name
+		token := project.Token
+		projectURL := ""
+		if token != "" {
+			projectURL = wsUiRoot + "/Wss/WSS.html#!project;token=" + token
+		} else {
+			// token is empty, provide a dummy to have an indication
+			token = "unknown"
+		}
+		err = record.AddKeyData("project",
+			token,
+			name,
+			projectURL)
+		if err != nil {
+			return "", err
+		}
+	}
+	// set overall display data to product if there
+	// is more than one project
+	if max_idx > 1 {
+		record.SetOverallDisplayData(config.ProductName, productURL)
+	}
 	err = record.Persist()
 	if err != nil {
 		return "", err

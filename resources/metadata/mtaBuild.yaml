@@ -15,6 +15,27 @@ spec:
           - STEPS
         mandatory: false
         default:
+      - name: mtarGroup
+        type: string
+        description: "The group to which the mtar artifact will be uploaded. Required when publish is True."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default:
+      - name: version
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Version of the mtar artifact
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: extensions
         type: string
         description: "The path to the extension descriptor file."
@@ -26,6 +47,17 @@ spec:
         default:
         aliases:
           - name: extension
+      - name: jobs
+        type: int
+        description: "Configures the number of Make jobs that can run simultaneously. Maximum value allowed is 8"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default:
+        aliases:
+          - name: jobs
       - name: platform
         type: string
         description: "The target platform to which the mtar can be deployed."
@@ -119,11 +151,80 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: mtaDeploymentRepositoryPassword
+        type: string
+        description: Password for the alternative deployment repository to which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+          - name: mtaDeploymentRepositoryPasswordId
+            type: secret
+          - type: vaultSecretFile
+            name: mtaDeploymentRepositoryPasswordFileVaultSecretName
+            default: mta-deployment-repository-passowrd
+      - name: mtaDeploymentRepositoryUser
+        type: string
+        description: User for the alternative deployment repository to which which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: mtaDeploymentRepositoryUrl
+        type: string
+        description: Url for the alternative deployment repository to which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: publish
+        type: bool
+        description: pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        aliases:
+          - name: mta/publish
+      - name: profiles
+        type: "[]string"
+        description: Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: mtarFilePath
+          - name: custom/mtarPublishedUrl
+          - name: custom/buildSettingsInfo
   containers:
-    - image: devxci/mbtci:1.1.1
+    - image: devxci/mbtci-java11-node14

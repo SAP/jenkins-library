@@ -26,11 +26,11 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 		}
 		return GetParameterKeyMissingResponseBody()
-	case "IntegrationArtifactGetMplStatus":
+	case "IntegrationArtifactGetMplStatus", "APIKeyValueMapDownload":
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
-	case "IntegrationArtifactDownload":
+	case "IntegrationArtifactDownload", "APIProxyDownload":
 		return IntegrationArtifactDownloadCommandMockResponse(testType)
 	case "GetIntegrationDesigntimeArtifact":
 		return GetIntegrationDesigntimeArtifactMockResponse(testType)

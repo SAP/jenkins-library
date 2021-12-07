@@ -60,6 +60,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryFormat
+        default: maven
       - name: url
         type: string
         description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported. If the 'format' option is set, the 'URL' can contain the full path including the repository ID and providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.
@@ -159,4 +160,4 @@ spec:
   containers:
     # To allow both maven and mta we require an image that contains both tools. If the user configures an image for mavenExecute that also needs to contain both.
     - name: mvn-npm
-      image: devxci/mbtci:1.1.1
+      image: devxci/mbtci-java11-node14

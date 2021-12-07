@@ -140,6 +140,7 @@ func TestRunSonar(t *testing.T) {
 			Organization:              "SAP",
 			Version:                   "1.2.3",
 			VersioningModel:           "major",
+			PullRequestProvider:       "GitHub",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		// test
@@ -168,7 +169,8 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
-			Options: []string{"-Dsonar.projectKey=piper"},
+			Options:             []string{"-Dsonar.projectKey=piper"},
+			PullRequestProvider: "GitHub",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
@@ -211,7 +213,8 @@ func TestRunSonar(t *testing.T) {
 			osStat = os.Stat
 		}()
 		options := sonarExecuteScanOptions{
-			InferJavaBinaries: true,
+			InferJavaBinaries:   true,
+			PullRequestProvider: "GitHub",
 		}
 		// test
 		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
@@ -251,8 +254,9 @@ func TestRunSonar(t *testing.T) {
 			osStat = os.Stat
 		}()
 		options := sonarExecuteScanOptions{
-			Options:           []string{"-Dsonar.java.binaries=user/provided"},
-			InferJavaBinaries: true,
+			Options:             []string{"-Dsonar.java.binaries=user/provided"},
+			InferJavaBinaries:   true,
+			PullRequestProvider: "GitHub",
 		}
 		// test
 		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
@@ -276,10 +280,11 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
-			ProjectKey:         "mock-project-key",
-			M2Path:             "my/custom/m2", // assumed to be resolved via alias from mavenExecute
-			InferJavaLibraries: true,
-			CoverageExclusions: []string{"one", "**/two", "three**"},
+			ProjectKey:          "mock-project-key",
+			M2Path:              "my/custom/m2", // assumed to be resolved via alias from mavenExecute
+			InferJavaLibraries:  true,
+			CoverageExclusions:  []string{"one", "**/two", "three**"},
+			PullRequestProvider: "GitHub",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
@@ -388,15 +393,15 @@ func TestSonarLoadScanner(t *testing.T) {
 
 	t.Run("use downloaded sonar-scanner", func(t *testing.T) {
 		// init
-		url := "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip"
+		url := "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip"
 		sonar = sonarSettings{
 			binary:      "sonar-scanner",
 			environment: []string{},
 			options:     []string{},
 		}
 		execLookPath = mockExecLookPath
-		fileUtilsUnzip = mockFileUtilsUnzip(t, "sonar-scanner-cli-4.4.0.2170-linux.zip")
-		osRename = mockOsRename(t, "sonar-scanner-4.4.0.2170-linux", ".sonar-scanner")
+		fileUtilsUnzip = mockFileUtilsUnzip(t, "sonar-scanner-cli-4.6.2.2472-linux.zip")
+		osRename = mockOsRename(t, "sonar-scanner-4.6.2.2472-linux", ".sonar-scanner")
 		defer func() {
 			execLookPath = exec.LookPath
 			fileUtilsUnzip = FileUtils.Unzip
@@ -407,7 +412,7 @@ func TestSonarLoadScanner(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, url, mockClient.requestedURL[0])
-		assert.Regexp(t, "sonar-scanner-cli-4.4.0.2170-linux.zip$", mockClient.requestedFile[0])
+		assert.Regexp(t, "sonar-scanner-cli-4.6.2.2472-linux.zip$", mockClient.requestedFile[0])
 		assert.Equal(t, filepath.Join(getWorkingDir(), ".sonar-scanner", "bin", "sonar-scanner"), sonar.binary)
 	})
 }

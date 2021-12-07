@@ -3,11 +3,12 @@ package piperenv
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_writeMapToDisk(t *testing.T) {
@@ -73,6 +74,8 @@ func TestCPEMap_LoadFromDisk(t *testing.T) {
 	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(subPath, "Bruce"), []byte("Wayne"), 0644)
 	require.NoError(t, err)
+	err = ioutil.WriteFile(path.Join(subPath, "Robin"), []byte("toBeEmptied"), 0644)
+	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(subPath, "Test.json"), []byte("54"), 0644)
 	require.NoError(t, err)
 
@@ -82,6 +85,7 @@ func TestCPEMap_LoadFromDisk(t *testing.T) {
 
 	require.Equal(t, "Bar", cpe["Foo"])
 	require.Equal(t, "World", cpe["Hello"])
+	require.Equal(t, "", cpe["Batman/Robin"])
 	require.Equal(t, "Wayne", cpe["Batman/Bruce"])
 	require.Equal(t, json.Number("54"), cpe["Batman/Test"])
 }

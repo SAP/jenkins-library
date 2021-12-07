@@ -1,0 +1,129 @@
+metadata:
+  name: githubCreatePullRequest
+  description: Create a pull request on GitHub
+  longDescription: |
+    This step allows you to create a pull request on Github.
+
+    It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.
+spec:
+  inputs:
+    secrets:
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
+    params:
+      - name: assignees
+        description: Login names of users to which the PR should be assigned to.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+      - name: base
+        description: The name of the branch you want the changes pulled into.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: body
+        description: The description text of the pull request in markdown format.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: apiUrl
+        aliases:
+          - name: githubApiUrl
+        description: Set the GitHub API url.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: https://api.github.com
+        mandatory: true
+      - name: head
+        description: The name of the branch where your changes are implemented.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: Name of the GitHub organization.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: Name of the GitHub repository.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: serverUrl
+        aliases:
+          - name: githubServerUrl
+        description: GitHub server url for end-user access.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: https://github.com
+        mandatory: true
+      - name: title
+        description: Title of the pull request.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: token
+        aliases:
+          - name: githubToken
+          - name: access_token
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
+      - name: labels
+        description: Labels to be added to the pull request.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"

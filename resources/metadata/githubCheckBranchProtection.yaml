@@ -1,0 +1,101 @@
+metadata:
+  name: githubCheckBranchProtection
+  description: Check branch protection of a GitHub branch
+  longDescription: |
+    This step allows you to check if certain branch protection rules are fulfilled.
+
+    It can for example be used to verify if certain status checks are mandatory. This can be helpful to decide if a certain check needs to be performed again after merging a pull request.
+spec:
+  inputs:
+    secrets:
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
+    params:
+      - name: apiUrl
+        aliases:
+          - name: githubApiUrl
+        description: Set the GitHub API url.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: https://api.github.com
+        mandatory: true
+      - name: branch
+        description: The name of the branch for which the protection settings should be checked.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: master
+        mandatory: true
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: Name of the GitHub organization.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: Name of the GitHub repository.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: requiredChecks
+        description: List of checks which have to be set to 'required' in the GitHub repository configuration.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+      - name: requireEnforceAdmins
+        description: Check if 'Include Administrators' option is set in the GitHub repository configuration.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+      - name: requiredApprovingReviewCount
+        description: Check if 'Require pull request reviews before merging' option is set with at least the defined number of reviewers in the GitHub repository configuration.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: int
+      - name: token
+        aliases:
+          - name: githubToken
+          - name: access_token
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName

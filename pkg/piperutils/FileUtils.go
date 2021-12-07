@@ -1,9 +1,12 @@
 package piperutils
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,6 +18,7 @@ import (
 // FileUtils ...
 type FileUtils interface {
 	Abs(path string) (string, error)
+	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
@@ -23,6 +27,10 @@ type FileUtils interface {
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
 	Chdir(path string) error
+	TempDir(string, string) (string, error)
+	RemoveAll(string) error
+	FileRename(string, string) error
+	Getwd() (string, error)
 }
 
 // Files ...
@@ -181,6 +189,105 @@ func Unzip(src, dest string) ([]string, error) {
 		}
 	}
 	return filenames, nil
+}
+
+// Untar will decompress a gzipped archive and then untar it, moving all files and folders
+// within the tgz file (parameter 1) to an output directory (parameter 2).
+// some tar like the one created from npm have an addtional package folder which need to be removed during untar
+// stripComponent level acts the same like in the tar cli with level 1 corresponding to elimination of parent folder
+// stripComponentLevel = 1 -> parentFolder/someFile.Txt -> someFile.Txt
+// stripComponentLevel = 2 -> parentFolder/childFolder/someFile.Txt -> someFile.Txt
+// when stripCompenent in 0 the untar will retain the original tar folder structure
+// when stripCompmenet is greater than 0 the expectation is all files must be under that level folder and if not there is a hard check and failure condition
+
+func Untar(src string, dest string, stripComponentLevel int) error {
+	file, err := os.Open(src)
+	if err != nil {
+		fmt.Errorf("unable to open src: %v", err)
+	}
+	return untar(file, dest, stripComponentLevel)
+}
+
+func untar(r io.Reader, dir string, level int) (err error) {
+	madeDir := map[string]bool{}
+
+	zr, err := gzip.NewReader(r)
+	if err != nil {
+		return fmt.Errorf("requires gzip-compressed body: %v", err)
+	}
+	tr := tar.NewReader(zr)
+	for {
+		f, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("tar error: %v", err)
+		}
+		if !validRelPath(f.Name) {
+			return fmt.Errorf("tar contained invalid name error %q", f.Name)
+		}
+		rel := filepath.FromSlash(f.Name)
+
+		// when level X folder(s) needs to be removed we first check that the rel path must have atleast X or greater than X pathseperatorserr
+		// or else we might end in index out of range
+		if level > 0 {
+			if strings.Count(rel, string(os.PathSeparator)) >= level {
+				relSplit := strings.SplitN(rel, string(os.PathSeparator), level+1)
+				rel = relSplit[level]
+			} else {
+				return fmt.Errorf("files %q in tarball archive not under level %v", f.Name, level)
+			}
+		}
+
+		abs := filepath.Join(dir, rel)
+
+		fi := f.FileInfo()
+		mode := fi.Mode()
+		switch {
+		case mode.IsRegular():
+			// Make the directory. This is redundant because it should
+			// already be made by a directory entry in the tar
+			// beforehand. Thus, don't check for errors; the next
+			// write will fail with the same error.
+			dir := filepath.Dir(abs)
+			if !madeDir[dir] {
+				if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+					return err
+				}
+				madeDir[dir] = true
+			}
+			wf, err := os.OpenFile(abs, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode.Perm())
+			if err != nil {
+				return err
+			}
+			n, err := io.Copy(wf, tr)
+			if closeErr := wf.Close(); closeErr != nil && err == nil {
+				err = closeErr
+			}
+			if err != nil {
+				return fmt.Errorf("error writing to %s: %v", abs, err)
+			}
+			if n != f.Size {
+				return fmt.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
+			}
+		case mode.IsDir():
+			if err := os.MkdirAll(abs, 0755); err != nil {
+				return err
+			}
+			madeDir[abs] = true
+		default:
+			return fmt.Errorf("tar file entry %s contained unsupported file type %v", f.Name, mode)
+		}
+	}
+	return nil
+}
+
+func validRelPath(p string) bool {
+	if p == "" || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
+		return false
+	}
+	return true
 }
 
 // Copy ...
