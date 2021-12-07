@@ -505,8 +505,7 @@ func getSourcePath(config mtaBuildOptions) string {
 	return filepath.FromSlash(path)
 }
 
-// the "target" path resides below the project's root
-// targetPath=<source>/<target>
+// target defines a subfolder of the project's root
 func getTargetPath(config mtaBuildOptions) string {
 	path := config.Target
 	if path == "" {
@@ -515,6 +514,8 @@ func getTargetPath(config mtaBuildOptions) string {
 	return filepath.FromSlash(path)
 }
 
+// the "mtar" path resides below the project's root
+// path=<config.source>/<config.target>/<mtarname>
 func getMtarFilePath(config mtaBuildOptions, mtarName string) string {
 	sourcePath := getSourcePath(config)
 	targetPath := getTargetPath(config)
