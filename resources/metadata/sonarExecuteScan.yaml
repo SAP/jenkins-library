@@ -288,6 +288,12 @@ spec:
                 type: int
               - name: info_issues
                 type: int
+              - name: coverage
+                type: float32
+              - name: branch_coverage
+                type: float32
+              - name: line_coverage
+                type: float32
   containers:
     - name: sonar
       image: sonarsource/sonar-scanner-cli:4.6
