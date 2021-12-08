@@ -202,7 +202,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	call = append(call, "--source", getSourcePath(config))
-	call = append(call, "--target", getTargetPath(config))
+	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
 
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")
@@ -516,14 +516,28 @@ func getTargetPath(config mtaBuildOptions) string {
 
 // the "mtar" path resides below the project's root
 // path=<config.source>/<config.target>/<mtarname>
-func getMtarFilePath(config mtaBuildOptions, mtarName string) string {
+func getMtarFileRoot(config mtaBuildOptions) string {
 	sourcePath := getSourcePath(config)
 	targetPath := getTargetPath(config)
-	path := filepath.Join(sourcePath, targetPath)
 
-	if path == "" || path == "./" {
+	return filepath.FromSlash(filepath.Join(sourcePath, targetPath))
+}
+
+func getMtarFilePath(config mtaBuildOptions, mtarName string) string {
+	root := getMtarFileRoot(config)
+
+	if root == "" || root == filepath.FromSlash("./") {
 		return mtarName
 	}
 
-	return filepath.FromSlash(filepath.Join(path, mtarName))
+	return filepath.FromSlash(filepath.Join(root, mtarName))
+}
+
+func getAbsPath(path string) string {
+	abspath, err := filepath.Abs(path)
+	// ignore error, pass customers path value in case of trouble
+	if err != nil {
+		abspath = path
+	}
+	return filepath.FromSlash(abspath)
 }

@@ -172,7 +172,7 @@ func TestMtaBuild(t *testing.T) {
 
 		if assert.Len(t, utilsMock.Calls, 1) {
 			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", filepath.FromSlash("./"), "--target", filepath.FromSlash("./")}, utilsMock.Calls[0].Params)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", filepath.FromSlash("./"), "--target", filepath.FromSlash(_ignoreError(os.Getwd()))}, utilsMock.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
@@ -196,7 +196,7 @@ func TestMtaBuild(t *testing.T) {
 				assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
 				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF",
 					"--source", filepath.FromSlash("mySourcePath/"),
-					"--target", filepath.FromSlash("myTargetPath/")},
+					"--target", filepath.Join(_ignoreError(os.Getwd()), filepath.FromSlash("mySourcePath/myTargetPath/"))},
 					utilsMock.Calls[0].Params)
 			}
 			assert.Equal(t, "mySourcePath/myTargetPath/myName.mtar", cpe.mtarFilePath)
