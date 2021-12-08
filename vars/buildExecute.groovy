@@ -86,14 +86,17 @@ void call(Map parameters = [:]) {
                 npmExecuteScripts script: script, install: config.npmInstall, runScripts: config.npmRunScripts
                 break
             case ['docker', 'kaniko']:
-                kanikoExecute script: script
-                def dockerImageNameAndTag = "${config.dockerImageName}:${config.dockerImageTag}"
-                def dockerBuildImage = docker.build(dockerImageNameAndTag, "${config.containerBuildOptions ?: ''} .")
-                //only push if registry is defined
-                if (config.dockerRegistryUrl) {
-                    containerPushToRegistry script: script, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
+                if (config.buildTool == 'kaniko'){
+                    kanikoExecute script: script
+                }else{
+                    def dockerImageNameAndTag = "${config.dockerImageName}:${config.dockerImageTag}"
+                    def dockerBuildImage = docker.build(dockerImageNameAndTag, "${config.containerBuildOptions ?: ''} .")
+                    //only push if registry is defined
+                    if (config.dockerRegistryUrl) {
+                        containerPushToRegistry script: script, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
+                    }
+                    script.commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)
                 }
-                script.commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)
                 break
             default:
                 if (config.dockerImage && config.dockerCommand) {
