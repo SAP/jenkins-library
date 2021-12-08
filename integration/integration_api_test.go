@@ -53,6 +53,31 @@ func TestSonarIssueSearch(t *testing.T) {
 	// assert.NotEmpty(t, result.Organizations)
 }
 
+func TestSonarMeasuresComponentSearch(t *testing.T) {
+	t.Parallel()
+	// init
+	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
+	require.NotEmpty(t, token, "SonarQube API Token is missing")
+	host := os.Getenv("PIPER_INTEGRATION_SONAR_HOST")
+	if len(host) == 0 {
+		host = "https://sonarcloud.io"
+	}
+	organization := os.Getenv("PIPER_INTEGRATION_SONAR_ORGANIZATION")
+	if len(organization) == 0 {
+		organization = "sap-1"
+	}
+	componentKey := os.Getenv("PIPER_INTEGRATION_SONAR_PROJECT")
+	if len(componentKey) == 0 {
+		componentKey = "SAP_jenkins-library"
+	}
+
+	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, &piperhttp.Client{})
+	// test
+	_, err := componentService.GetCoverage()
+	// assert
+	assert.NoError(t, err)
+}
+
 func TestPiperGithubPublishRelease(t *testing.T) {
 	t.Parallel()
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
