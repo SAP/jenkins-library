@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
@@ -14,7 +13,7 @@ import (
 func TestCheckPVStep(t *testing.T) {
 	var config abapAddonAssemblyKitCheckPVOptions
 	var cpe abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
-	bundle := aakaas.NewAakBundleMock()
+	bundle := NewAakBundleMock()
 	bundle.SetBody(responseCheckPV)
 	utils := bundle.GetUtils()
 	config.Username = "dummyUser"
