@@ -30,7 +30,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		mc.AddData(aakaas.AAKaaSTVPublishProdPost)
 		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
 		mc.AddData(aakaas.AAKaaSGetTVPublishProdSuccess)
-		bundle := NewAakBundleMockNewMC(&mc)
+		bundle := aakaas.NewAakBundleMockNewMC(&mc)
 		utils := bundle.GetUtils()
 
 		//act
@@ -47,7 +47,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		mc.AddData(aakaas.AAKaaSTVPublishTestPost)
 		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
 		mc.AddData(aakaas.AAKaaSGetTVPublishTestSuccess)
-		bundle := NewAakBundleMockNewMC(&mc)
+		bundle := aakaas.NewAakBundleMockNewMC(&mc)
 		utils := bundle.GetUtils()
 
 		//act
@@ -58,7 +58,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 
 	t.Run("step fail http", func(t *testing.T) {
 		//arrange
-		bundle := NewAakBundleMock()
+		bundle := aakaas.NewAakBundleMock()
 		bundle.SetBody("dummy")
 		bundle.SetError("dummy")
 		utils := bundle.GetUtils()
@@ -73,7 +73,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		//arrange
 		config := abapAddonAssemblyKitPublishTargetVectorOptions{}
 		mc := abapbuild.NewMockClient()
-		bundle := NewAakBundleMockNewMC(&mc)
+		bundle := aakaas.NewAakBundleMockNewMC(&mc)
 		utils := bundle.GetUtils()
 
 		//act

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +13,7 @@ import (
 func TestReleasePackagesStep(t *testing.T) {
 	var config abapAddonAssemblyKitReleasePackagesOptions
 	var cpe abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
-	bundle := NewAakBundleMock()
+	bundle := aakaas.NewAakBundleMock()
 	bundle.SetBody(responseRelease)
 	utils := bundle.GetUtils()
 
