@@ -8,24 +8,36 @@ import (
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 
+	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
-	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
+	//utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
+
+	// for command execution use Command
+	c := command.Command{}
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+	client := piperhttp.Client{}
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &utils, cpe)
+	//err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &utils, cpe)
+	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &client, cpe, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervalInSeconds)*time.Second)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
+//func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
+	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment, maxRuntime time.Duration, pollingInterval time.Duration) error {
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
 		return err
 	}
 
@@ -39,7 +51,8 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 		return err
 	}
 
-	err = pollReserveNextPackages(packagesWithRepos, utils)
+	//err = pollReserveNextPackages(packagesWithRepos, utils)
+	err = pollReserveNextPackages(packagesWithRepos, maxRuntime, pollingInterval)
 	if err != nil {
 		return err
 	}
@@ -94,9 +107,12 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 	return repos, nil
 }
 
-func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, utils *aakaas.AakUtils) error {
-	pollingInterval := (*utils).GetPollingInterval()
-	timeout := time.After((*utils).GetMaxRuntime())
+//func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, utils *aakaas.AakUtils) error {
+//	pollingInterval := (*utils).GetPollingInterval()
+//	timeout := time.After((*utils).GetMaxRuntime())
+
+func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntime time.Duration, pollingInterval time.Duration) error {
+	timeout := time.After(maxRuntime)
 	ticker := time.Tick(pollingInterval)
 	for {
 		select {
