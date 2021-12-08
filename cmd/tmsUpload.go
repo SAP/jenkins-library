@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -199,7 +200,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 				_, errUploadMtaExtDescriptor := communicationInstance.UploadMtaExtDescriptorToNode(nodeId, mtaExtDescriptorPath, mtaVersion, description, namedUser)
 				if errUploadMtaExtDescriptor != nil {
 					log.SetErrorCategory(log.ErrorService)
-					return fmt.Errorf("failed to upload MTA extension descriptor: %w", errUploadMtaExtDescriptor)
+					return fmt.Errorf("failed to upload MTA extension descriptor to node: %w", errUploadMtaExtDescriptor)
 				}
 			}
 		}
@@ -260,17 +261,20 @@ func formNodeIdExtDescriptorMappingWithValidation(utils tmsUploadUtils, nodeName
 	}
 
 	if mtaVersion != "*" && mtaVersion != mtaYamlMap["version"] {
-		errorMessage = "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
+		errorMessage += "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
 	}
 
 	if len(wrongMtaIdExtDescriptors) > 0 || len(wrongExtDescriptorPaths) > 0 || len(wrongNodeNames) > 0 {
 		if len(wrongMtaIdExtDescriptors) > 0 {
+			sort.Strings(wrongMtaIdExtDescriptors)
 			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID\n", wrongMtaIdExtDescriptors)
 		}
 		if len(wrongExtDescriptorPaths) > 0 {
+			sort.Strings(wrongExtDescriptorPaths)
 			errorMessage += fmt.Sprintf("MTA extension descriptor files %v do not exist\n", wrongExtDescriptorPaths)
 		}
 		if len(wrongNodeNames) > 0 {
+			sort.Strings(wrongNodeNames)
 			errorMessage += fmt.Sprintf("nodes %v do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n", wrongNodeNames)
 		}
 	}
