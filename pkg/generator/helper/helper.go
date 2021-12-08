@@ -63,6 +63,8 @@ import (
 	{{ if $reportsExist -}}
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
+	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"reflect"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
@@ -156,7 +158,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				{{- range $notused, $oRes := .OutputResources }}
-				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}){{ end }}
+				{{ index $oRes "name" }}.persist({{ if eq (index $oRes "type") "reports" -}}stepConfig{{- else -}}
+					{{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
+				){{- end }}
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitCommit
@@ -712,9 +716,14 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			reportsResource.Name = res.Name
 			reportsResource.StepName = stepData.Metadata.Name
 			for _, param := range res.Parameters {
+				filePattern, _ := param["filePattern"].(string)
+				paramRef, _ := param["paramRef"].(string)
+				if filePattern == "" && paramRef == "" {
+					return outputResources, errors.New("both filePattern and paramRef cannot be empty at the same time")
+				}
 				subFolder, _ := param["subFolder"].(string)
 				stepResultType, _ := param["type"].(string)
-				reportsParam := ReportsParameter{FilePattern: fmt.Sprint(param["filePattern"]), Type: stepResultType, SubFolder: subFolder}
+				reportsParam := ReportsParameter{FilePattern: filePattern, ParamRef: paramRef, Type: stepResultType, SubFolder: subFolder}
 				reportsResource.Parameters = append(reportsResource.Parameters, reportsParam)
 			}
 			def, err := reportsResource.StructString()
@@ -754,7 +763,7 @@ func isCLIParam(myType string) bool {
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
-	funcMap["golangName"] = golangNameTitle
+	funcMap["golangName"] = GolangNameTitle
 	funcMap["title"] = strings.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
@@ -807,7 +816,8 @@ func golangName(name string) string {
 	return properName
 }
 
-func golangNameTitle(name string) string {
+// GolangNameTitle returns name in title case with abbriviations in capital (API, URL, ID, JSON, TLS)
+func GolangNameTitle(name string) string {
 	return strings.Title(golangName(name))
 }
 

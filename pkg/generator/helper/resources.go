@@ -206,6 +206,7 @@ type ReportsResource struct {
 // PiperEnvironmentParameter defines a parameter within the Piper environment
 type ReportsParameter struct {
 	FilePattern string
+	ParamRef    string
 	Type        string
 	SubFolder   string
 }
@@ -213,14 +214,15 @@ type ReportsParameter struct {
 const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 }
 
-func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
+func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanOptions) {
 	content := []struct{
 		filePattern string
+		paramRef string
 		stepResultType string
 		subFolder string
 	}{
 		{{- range $notused, $param := .Parameters }}
-		{filePattern: "{{ $param.FilePattern }}", stepResultType: "{{ $param.Type }}", subFolder: "{{ $param.SubFolder }}"},
+		{filePattern: "{{ $param.FilePattern }}", paramRef: "{{ $param.ParamRef }}", stepResultType: "{{ $param.Type }}", subFolder: "{{ $param.SubFolder }}"},
 		{{- end }}
 	}
 
@@ -235,20 +237,40 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	}
 	for _, param := range content {
 		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
-		foundFiles, err := doublestar.Glob(param.filePattern)
-		if err != nil {
-			log.Entry().Fatalf("failed to persist reports: %v", err)
-		}
-		for _, sourcePath := range foundFiles {
-			fileInfo, err := os.Stat(sourcePath)
+		if param.paramRef != "" {
+			var paramValue string
+			e := reflect.ValueOf(&stepConfig).Elem()
+			for i := 0; i < e.NumField(); i++ {
+				if e.Type().Field(i).Name == helper.GolangNameTitle(param.paramRef) {
+					if e.Type().Field(i).Type.String() != "string" {
+						log.Entry().Fatal("the paramRef must refer to a parameter of a string type")
+					}
+					paramValue, _ = e.Field(i).Interface().(string)
+					break
+				}
+			}
+			if paramValue == "" {
+				log.Entry().Fatal("the value of the parameter pointed to by the paramRef must not be empty")
+			}
+			if err := gcsClient.UploadFile(gcsBucketID, paramValue, filepath.Join(targetFolder, paramValue)); err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
+		} else {
+			foundFiles, err := doublestar.Glob(param.filePattern)
 			if err != nil {
 				log.Entry().Fatalf("failed to persist reports: %v", err)
 			}
-			if fileInfo.IsDir() {
-				continue
-			}
-			if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
-				log.Entry().Fatalf("failed to persist reports: %v", err)
+			for _, sourcePath := range foundFiles {
+				fileInfo, err := os.Stat(sourcePath)
+				if err != nil {
+					log.Entry().Fatalf("failed to persist reports: %v", err)
+				}
+				if fileInfo.IsDir() {
+					continue
+				}
+				if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
+					log.Entry().Fatalf("failed to persist reports: %v", err)
+				}
 			}
 		}
 	}

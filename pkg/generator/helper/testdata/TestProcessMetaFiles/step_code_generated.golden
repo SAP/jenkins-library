@@ -12,6 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
+	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"reflect"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -30,14 +32,15 @@ type testStepOptions struct {
 type testStepReports struct {
 }
 
-func (p *testStepReports) persist(path, resourceName string) {
+func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
 	content := []struct{
 		filePattern string
+		paramRef string
 		stepResultType string
 		subFolder string
 	}{
-		{filePattern: "test-report_*.json", stepResultType: "", subFolder: "sonarExecuteScan"},
-		{filePattern: "report1", stepResultType: "general", subFolder: ""},
+		{filePattern: "test-report_*.json", paramRef: "", stepResultType: "", subFolder: "sonarExecuteScan"},
+		{filePattern: "report1", paramRef: "", stepResultType: "general", subFolder: ""},
 	}
 
 	envVars := []gcs.EnvVar{
@@ -51,20 +54,40 @@ func (p *testStepReports) persist(path, resourceName string) {
 	}
 	for _, param := range content {
 		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
-		foundFiles, err := doublestar.Glob(param.filePattern)
-		if err != nil {
-			log.Entry().Fatalf("failed to persist reports: %v", err)
-		}
-		for _, sourcePath := range foundFiles {
-			fileInfo, err := os.Stat(sourcePath)
+		if param.paramRef != "" {
+			var paramValue string
+			e := reflect.ValueOf(&stepConfig).Elem()
+			for i := 0; i < e.NumField(); i++ {
+				if e.Type().Field(i).Name == helper.GolangNameTitle(param.paramRef) {
+					if e.Type().Field(i).Type.String() != "string" {
+						log.Entry().Fatal("the paramRef must refer to a parameter of a string type")
+					}
+					paramValue, _ = e.Field(i).Interface().(string)
+					break
+				}
+			}
+			if paramValue == "" {
+				log.Entry().Fatal("the value of the parameter pointed to by the paramRef must not be empty")
+			}
+			if err := gcsClient.UploadFile(gcsBucketID, paramValue, filepath.Join(targetFolder, paramValue)); err != nil {
+				log.Entry().Fatalf("failed to persist reports: %v", err)
+			}
+		} else {
+			foundFiles, err := doublestar.Glob(param.filePattern)
 			if err != nil {
 				log.Entry().Fatalf("failed to persist reports: %v", err)
 			}
-			if fileInfo.IsDir() {
-				continue
-			}
-			if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
-				log.Entry().Fatalf("failed to persist reports: %v", err)
+			for _, sourcePath := range foundFiles {
+				fileInfo, err := os.Stat(sourcePath)
+				if err != nil {
+					log.Entry().Fatalf("failed to persist reports: %v", err)
+				}
+				if fileInfo.IsDir() {
+					continue
+				}
+				if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
+					log.Entry().Fatalf("failed to persist reports: %v", err)
+				}
 			}
 		}
 	}
@@ -206,7 +229,7 @@ func TestStepCommand() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				reports.persist(GeneralConfig.EnvRootPath, "reports")
+				reports.persist(stepConfig)
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
