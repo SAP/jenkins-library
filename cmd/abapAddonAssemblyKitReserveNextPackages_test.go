@@ -17,7 +17,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 	config.Username = "dummy"
 	config.Password = "dummy"
 	var cpe abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
-	bundle := aakaas.NewAakBundleMock()
+	bundle := NewAakBundleMock()
 	utils := bundle.GetUtils()
 	t.Run("step success", func(t *testing.T) {
 		addonDescriptor := abaputils.AddonDescriptor{
@@ -244,7 +244,7 @@ func TestReservePackages(t *testing.T) {
 // ********************* Test pollReserveNextPackages *******************
 
 func TestPollReserveNextPackages(t *testing.T) {
-	bundle := aakaas.NewAakBundleMock()
+	bundle := NewAakBundleMock()
 	utils := bundle.GetUtils()
 	t.Run("test pollReserveNextPackages - testing loop", func(t *testing.T) {
 		bodyList := []string{responseReserveNextPackagePlanned, responseReserveNextPackageCreationTriggered}
