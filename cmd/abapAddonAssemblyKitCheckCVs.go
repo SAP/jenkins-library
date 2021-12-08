@@ -5,41 +5,32 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
-
-	client := piperhttp.Client{}
-
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &client, cpe, abaputils.ReadAddonDescriptor)
+	utils := aakaas.NewAakBundle()
+	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &utils, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment, readAdoDescriptor abaputils.ReadAddonDescriptorType) error {
+func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+	cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
 		return err
 	}
 
 	log.Entry().Infof("Reading Product Version Information from addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
-	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
+	addonDescriptor, err := (*utils).ReadAddonDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
 		return err
 	}

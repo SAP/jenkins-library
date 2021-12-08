@@ -4,62 +4,24 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func mockReadAddonDescriptor(FileName string) (abaputils.AddonDescriptor, error) {
-	var addonDescriptor abaputils.AddonDescriptor
-	var err error
-	switch FileName {
-	case "success":
-		{
-			addonDescriptor = abaputils.AddonDescriptor{
-				AddonProduct:     "/DRNMSPC/PRD01",
-				AddonVersionYAML: "3.2.1",
-				Repositories: []abaputils.Repository{
-					{
-						Name:        "/DRNMSPC/COMP01",
-						VersionYAML: "1.2.3",
-						CommitID:    "HUGO1234",
-					},
-				},
-			}
-		}
-	case "noCommitID":
-		{
-			addonDescriptor = abaputils.AddonDescriptor{
-				AddonProduct:     "/DRNMSPC/PRD01",
-				AddonVersionYAML: "3.2.1",
-				Repositories: []abaputils.Repository{
-					{
-						Name:        "/DRNMSPC/COMP01",
-						VersionYAML: "1.2.3",
-					},
-				},
-			}
-		}
-	case "failing":
-		{
-			err = errors.New("error in ReadAddonDescriptor")
-		}
-	}
-	return addonDescriptor, err
-}
-
 func TestCheckCVsStep(t *testing.T) {
 	var config abapAddonAssemblyKitCheckCVsOptions
 	var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
-	client := &abaputils.ClientMock{
-		Body: responseCheckCVs,
-	}
+	bundle := aakaas.NewAakBundleMock()
+	bundle.SetBody(responseCheckCVs)
+	utils := bundle.GetUtils()
 	config.Username = "dummyUser"
 	config.Password = "dummyPassword"
 	t.Run("step success", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
-		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -70,23 +32,21 @@ func TestCheckCVsStep(t *testing.T) {
 	})
 	t.Run("step error - in validate(no CommitID)", func(t *testing.T) {
 		config.AddonDescriptorFileName = "noCommitID"
-		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Must end with error")
 		assert.Contains(t, err.Error(), "CommitID missing in repo")
 	})
 	t.Run("step error - in ReadAddonDescriptor", func(t *testing.T) {
 		config.AddonDescriptorFileName = "failing"
-		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Must end with error")
 		assert.Contains(t, "error in ReadAddonDescriptor", err.Error())
 	})
 	t.Run("step error - in validate", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
-		client := &abaputils.ClientMock{
-			Body:  "ErrorBody",
-			Error: errors.New("error during validation"),
-		}
-		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		bundle.SetBody("ErrorBody")
+		bundle.SetError("error during validation")
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Must end with error")
 	})
 }

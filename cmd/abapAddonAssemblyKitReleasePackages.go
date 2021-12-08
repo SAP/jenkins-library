@@ -7,33 +7,25 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
-
-	client := piperhttp.Client{}
+	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollingIntervalInSeconds)*time.Second)
+	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &utils, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment, maxRuntime time.Duration, pollingInterval time.Duration) error {
+func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
 		return err
 	}
 	var addonDescriptor abaputils.AddonDescriptor
@@ -44,7 +36,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 		return err
 	}
 	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
-	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, maxRuntime, pollingInterval)
+	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, utils)
 	if err != nil {
 		return err
 	}
@@ -95,9 +87,9 @@ func sortByStatus(repos []abaputils.Repository, conn abapbuild.Connector) ([]aak
 	return packagesWithReposLocked, packagesWithReposNotLocked
 }
 
-func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntime time.Duration, pollingInterval time.Duration) ([]aakaas.PackageWithRepository, error) {
-	timeout := time.After(maxRuntime)
-	ticker := time.Tick(pollingInterval)
+func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, utils *aakaas.AakUtils) ([]aakaas.PackageWithRepository, error) {
+	timeout := time.After((*utils).GetMaxRuntime())
+	ticker := time.Tick((*utils).GetPollingInterval())
 
 	for {
 		select {
@@ -110,7 +102,7 @@ func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntime time.Durat
 					err := pckgWR[i].Package.Release()
 					// if there is an error, release is not yet finished
 					if err != nil {
-						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollingInterval)
+						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, (*utils).GetPollingInterval())
 						allFinished = false
 					}
 				}
