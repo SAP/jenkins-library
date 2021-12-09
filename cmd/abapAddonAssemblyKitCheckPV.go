@@ -16,8 +16,7 @@ import (
 func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundle()
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, &utils, cpe)
-	if err != nil {
+	if err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, &utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
