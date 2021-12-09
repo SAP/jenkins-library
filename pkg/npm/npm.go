@@ -365,7 +365,7 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 				path,
 				"--include-license-text", "false",
 				"--include-dev", "false", // Include devDependencies
-				"--output", path + "/bom.xml",
+				"--output", filepath.Join(path, "bom.xml"),
 			}
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {
