@@ -15,8 +15,7 @@ import (
 
 func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundle()
-	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &utils, cpe)
-	if err != nil {
+	if err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
