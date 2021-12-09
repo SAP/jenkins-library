@@ -15,7 +15,7 @@ func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishT
 	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &utils, cpe); err != nil {
+	if err := runAbapAddonAssemblyKitPublishTargetVector(&config, telemetryData, &utils); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
