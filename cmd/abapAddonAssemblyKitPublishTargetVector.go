@@ -58,6 +58,6 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 		return err
 	}
 
-	log.Entry().Info("Success: Publishing finised")
+	log.Entry().Info("Success: Publishing finished")
 	return nil
 }
