@@ -96,23 +96,8 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 }
 
 func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) error {
-	/*
-		log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
-
-		// Example of calling methods from external dependencies directly on utils:
-		exists, err := utils.FileExists("file.txt")
-		if err != nil {
-			// It is good practice to set an error category.
-			// Most likely you want to do this at the place where enough context is known.
-			log.SetErrorCategory(log.ErrorConfiguration)
-			// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-			return fmt.Errorf("failed to check for important file: %w", err)
-		}
-		if !exists {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return fmt.Errorf("cannot run without important file")
-		}
-	*/
+	// TODO: remove the commented line
+	// log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
 	mtaPath := config.MtaPath
 	if mtaPath == "" {
