@@ -1,0 +1,153 @@
+metadata:
+  name: golangBuild
+  description: This step will execute a golang build.
+  longDescription: |
+    This step will build a golang project.
+    It will also execute golang-based tests using [gotestsum](https://github.com/gotestyourself/gotestsum) and with that allows for reporting test results and test coverage.
+
+    Besides execution of the default tests the step allows for running an additional integration test run using `-tags=integration` using pattern `./...`
+
+    If the build is successful the resulting artifact can be uploaded to e.g. a binary repository automatically.
+spec:
+  inputs:
+    params:
+      - name: buildFlags
+        type: "[]string"
+        description: Defines list of build flags to be used.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: cgoEnabled
+        type: bool
+        description: "If active: enables the creation of Go packages that call C code."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: coverageFormat
+        type: string
+        description: Defines the format of the coverage repository.
+        possibleValues:
+          - cobertura
+          - html
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: html
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: excludeGeneratedFromCoverage
+        type: bool
+        description: "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode)."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: ldflagsTemplate
+        type: string
+        description: Defines the content of -ldflags option in a golang template format.
+        longDescription: |
+          The template allows using commonPipelineEnvironment parameters in the form `.CPE["<paramName>"]`
+
+          Examples
+
+              * `-X github.com/SAP/jenkins-library/pkg/log.Version={{index .CPE "artifactVersion"}}`.
+              * `-X github.com/SAP/jenkins-library/pkg/log.LibraryRepository={{index .CPE "custom/repositoryId"}}`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: output
+        type: string
+        description: Defines the build result or output directory as per `go build` documentation.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: packages
+        type: "[]string"
+        description: List of packages to be build as per `go build` documentation.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: publish
+        type: bool
+        description: Configures the build to publish artifacts to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: reportCoverage
+        type: bool
+        description: Defines if a coverage report should be created.
+        default: true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runTests
+        type: bool
+        description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).
+        default: true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runIntegrationTests
+        type: bool
+        description: Activates execution of a second test run using tag `integration`.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: targetArchitectures
+        type: "[]string"
+        description: Defines the target architectures for which the build should run using OS and architecture separated by a comma.
+        default: linux,amd64
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: true
+      - name: testOptions
+        type: "[]string"
+        description: Options to pass to test as per `go test` documentation (comprises e.g. flags, packages).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: testResultFormat
+        type: "string"
+        description: Defines the output format of the test results.
+        possibleValues:
+          - junit
+          - standard
+        default: junit
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+  containers:
+    - name: golang
+      image: golang:1
+      options:
+        - name: -u
+          value: "0"
