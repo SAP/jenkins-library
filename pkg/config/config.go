@@ -245,6 +245,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
 			resolveVaultTestCredentials(&stepConfig, vaultClient)
+			resolveVaultCredentials(&stepConfig, vaultClient)
 		}
 	}
 
