@@ -63,8 +63,8 @@ import (
 	{{ if $reportsExist -}}
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
 	"reflect"
+	"strings"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}

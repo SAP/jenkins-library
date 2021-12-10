@@ -10,7 +10,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -19,6 +18,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 	"reflect"
+	"strings"
 )
 
 type sonarExecuteScanOptions struct {
@@ -55,63 +55,33 @@ type sonarExecuteScanReports struct {
 }
 
 func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
-	content := []struct {
-		filePattern    string
-		paramRef       string
-		stepResultType string
-		subFolder      string
-	}{
-		{filePattern: "sonarscan.json", paramRef: "", stepResultType: "general", subFolder: "sonarExecuteScan"},
-		{filePattern: "sonarExecuteScan_*.json", paramRef: "", stepResultType: "general", subFolder: ""},
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "general", SubFolder: "sonarExecuteScan"},
+		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "general", SubFolder: ""},
 	}
+	gcsFolderPath := GeneralConfig.GCSFolderPath
+	gcsBucketID := GeneralConfig.GCSBucketId
 
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
 	}
-	gcsFolderPath := GeneralConfig.GCSFolderPath
-	gcsBucketID := GeneralConfig.GCSBucketId
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
-		log.Entry().Fatalf("failed to persist reports: %v", err)
+		log.Entry().Fatalf("creation GCS client failed: %v", err)
 	}
-	for _, param := range content {
-		targetFolder := gcs.GetTargetFolder(gcsFolderPath, param.stepResultType, param.subFolder)
-		if param.paramRef != "" {
-			var paramValue string
-			e := reflect.ValueOf(&stepConfig).Elem()
-			for i := 0; i < e.NumField(); i++ {
-				if e.Type().Field(i).Name == helper.GolangNameTitle(param.paramRef) {
-					if e.Type().Field(i).Type.String() != "string" {
-						log.Entry().Fatal("the paramRef must refer to a parameter of a string type")
-					}
-					paramValue, _ = e.Field(i).Interface().(string)
-					break
-				}
-			}
-			if paramValue == "" {
-				log.Entry().Fatal("the value of the parameter pointed to by the paramRef must not be empty")
-			}
-			if err := gcsClient.UploadFile(gcsBucketID, paramValue, filepath.Join(targetFolder, paramValue)); err != nil {
-				log.Entry().Fatalf("failed to persist reports: %v", err)
-			}
-		} else {
-			foundFiles, err := doublestar.Glob(param.filePattern)
-			if err != nil {
-				log.Entry().Fatalf("failed to persist reports: %v", err)
-			}
-			for _, sourcePath := range foundFiles {
-				fileInfo, err := os.Stat(sourcePath)
-				if err != nil {
-					log.Entry().Fatalf("failed to persist reports: %v", err)
-				}
-				if fileInfo.IsDir() {
-					continue
-				}
-				if err := gcsClient.UploadFile(gcsBucketID, sourcePath, filepath.Join(targetFolder, sourcePath)); err != nil {
-					log.Entry().Fatalf("failed to persist reports: %v", err)
-				}
-			}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
 		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketID, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Fatalf("failed to persist reports: %v", err)
 	}
 }
 

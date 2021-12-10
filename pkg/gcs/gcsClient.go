@@ -13,6 +13,14 @@ import (
 	"google.golang.org/api/option"
 )
 
+// Client is an interface to mock gcsClient
+type Client interface {
+	UploadFile(bucketID string, sourcePath string, targetPath string) error
+	DownloadFile(bucketID string, sourcePath string, targetPath string) error
+	ListFiles(bucketID string) ([]string, error)
+	Close() error
+}
+
 // gcsClient provides functions to interact with google cloud storage API
 type gcsClient struct {
 	context       context.Context
