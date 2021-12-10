@@ -22,13 +22,16 @@ const MTA_ID = "com.sap.tms.upload.test"
 const MTA_EXT_ID = "com.sap.tms.upload.test_ext"
 const MTA_YAML_PATH_LOCAL = "mta.yaml"
 const MTA_YAML_PATH = "./testdata/TestRunTmsUpload/valid/mta.yaml"
-const INVALID_MTA_YAML_PATH = "./testdata/TestRunTmsUpload/invalid/mta.yaml"
+const INVALID_MTA_YAML_PATH = "./testdata/TestRunTmsUpload/invalid/mta_not_a_yaml.yaml"
+const INVALID_MTA_YAML_PATH_2 = "./testdata/TestRunTmsUpload/invalid/mta_no_id_and_version_parameters.yaml"
 const MTA_EXT_DESCRIPTOR_PATH_LOCAL = "test.mtaext"
 const INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL = "wrong_content.mtaext"
 const INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2 = "wrong_extends_parameter.mtaext"
+const INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3 = "missing_extends_parameter.mtaext"
 const MTA_EXT_DESCRIPTOR_PATH = "./testdata/TestRunTmsUpload/valid/test.mtaext"
 const INVALID_MTA_EXT_DESCRIPTOR_PATH = "./testdata/TestRunTmsUpload/invalid/wrong_content.mtaext"
 const INVALID_MTA_EXT_DESCRIPTOR_PATH_2 = "./testdata/TestRunTmsUpload/invalid/wrong_extends_parameter.mtaext"
+const INVALID_MTA_EXT_DESCRIPTOR_PATH_3 = "./testdata/TestRunTmsUpload/invalid/missing_extends_parameter.mtaext"
 const CUSTOM_DESCRIPTION = "This is a test description"
 const NAMED_USER = "techUser"
 const MTA_VERSION = "1.0.0"
@@ -199,6 +202,25 @@ func TestRunTmsUpload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("happy path: no mapping between node nmaes and MTA extension descriptors is provided -> only upload file and upload file to node calls will be executed", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
+		communicationInstance := communicationInstanceMock{uploadFileResponse: fileInfo}
+
+		utils := newTmsUploadTestsUtils()
+		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
+
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION}
+
+		// test
+		err := runTmsUpload(config, &communicationInstance, utils, nil)
+
+		// assert
+		assert.NoError(t, err)
+	})
+
 	t.Run("happy path: 1. get nodes 2. get MTA ext descriptor 3. update the MTA ext descriptor 4. upload file 5. upload file to node", func(t *testing.T) {
 		t.Parallel()
 
@@ -334,6 +356,32 @@ func TestRunTmsUpload(t *testing.T) {
 		assert.EqualError(t, err, "failed to get mta.yaml as map: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type map[string]interface {}")
 	})
 
+	t.Run("error path: no 'ID' and 'version' parameters found in mta.yaml", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
+		communicationInstance := communicationInstanceMock{getNodesResponse: nodes}
+		utils := newTmsUploadTestsUtils()
+		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
+
+		mtaYamlBytes, _ := os.ReadFile(INVALID_MTA_YAML_PATH_2)
+		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
+
+		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
+
+		// test
+		err := runTmsUpload(config, &communicationInstance, utils, nil)
+
+		// assert
+		var expectedErrorMessage string
+		expectedErrorMessage += "parameter 'ID' is not found in mta.yaml\n"
+		expectedErrorMessage += "parameter 'version' is not found in mta.yaml\n"
+
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+
 	t.Run("error path: errors on validating the mapping between node names and MTA extension descriptor paths", func(t *testing.T) {
 		t.Parallel()
 
@@ -355,7 +403,10 @@ func TestRunTmsUpload(t *testing.T) {
 		invalidMtaExtDescriptorBytes2, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_2)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, invalidMtaExtDescriptorBytes2)
 
-		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL, "UNEXISTING_NODE": "unexisting.mtaext", "ONE_MORE_UNEXISTING_NODE": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, "ONE_MORE_UNEXISTING_NODE_2": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2}
+		invalidMtaExtDescriptorBytes3, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_3)
+		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3, invalidMtaExtDescriptorBytes3)
+
+		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL, "UNEXISTING_NODE": "unexisting.mtaext", "ONE_MORE_UNEXISTING_NODE": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, "ONE_MORE_UNEXISTING_NODE_2": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, "ONE_MORE_UNEXISTING_NODE_3": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3}
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: WRONG_MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
@@ -365,9 +416,9 @@ func TestRunTmsUpload(t *testing.T) {
 		var expectedErrorMessage string
 		expectedErrorMessage += "tried to parse wrong_content.mtaext as yaml, but got an error: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type map[string]interface {}\n"
 		expectedErrorMessage += "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
-		expectedErrorMessage += "parameter 'extends' in MTA extension descriptor files [wrong_extends_parameter.mtaext] is not the same as MTA ID\n"
+		expectedErrorMessage += "parameter 'extends' in MTA extension descriptor files [missing_extends_parameter.mtaext wrong_extends_parameter.mtaext] is not the same as MTA ID or is missing at all\n"
 		expectedErrorMessage += "MTA extension descriptor files [unexisting.mtaext] do not exist\n"
-		expectedErrorMessage += "nodes [ONE_MORE_UNEXISTING_NODE ONE_MORE_UNEXISTING_NODE_2 UNEXISTING_NODE] do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n"
+		expectedErrorMessage += "nodes [ONE_MORE_UNEXISTING_NODE ONE_MORE_UNEXISTING_NODE_2 ONE_MORE_UNEXISTING_NODE_3 UNEXISTING_NODE] do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n"
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 

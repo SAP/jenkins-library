@@ -88,7 +88,6 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	// TODO: understand, what does this influx part do
 	influx.step_data.fields.tms = false
 
-	// TODO: load to config parameters from the common pipeline environment
 	if err := runTmsUpload(config, communicationInstance, utils, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
@@ -96,9 +95,6 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 }
 
 func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) error {
-	// TODO: remove the commented line
-	// log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
-
 	mtaPath := config.MtaPath
 	if mtaPath == "" {
 		mtaPath = commonPipelineEnvironment.mtarFilePath
@@ -125,7 +121,6 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		mtaVersion = "*"
 	}
 
-	// TODO: what we receive in the map, when the parameter is not defined?
 	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
 
 	// TODO: does it take into consideration the "verbose" parameter of the step or only the genearl configuration?
@@ -133,7 +128,6 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		log.Entry().Info("The step will use the following values:")
 		log.Entry().Infof("- description: %v", description)
 
-		// TODO: will this check be enough?
 		if len(nodeNameExtDescriptorMapping) != 0 {
 			log.Entry().Infof("- mapping between node names and MTA extension descriptor file paths: %v", nodeNameExtDescriptorMapping)
 		}
@@ -145,7 +139,6 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		log.Entry().Infof("- node name: %v", nodeName)
 	}
 
-	// TODO: will this check be enough?
 	if len(nodeNameExtDescriptorMapping) != 0 {
 		nodes, errGetNodes := communicationInstance.GetNodes()
 		if errGetNodes != nil {
@@ -158,6 +151,19 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("failed to get mta.yaml as map: %w", errGetMtaYamlAsMap)
 		}
+		_, isIdParameterInMap := mtaYamlMap["ID"]
+		_, isVersionParameterInMap := mtaYamlMap["version"]
+		if !isIdParameterInMap || !isVersionParameterInMap {
+			var errorMessage string
+			if !isIdParameterInMap {
+				errorMessage += "parameter 'ID' is not found in mta.yaml\n"
+			}
+			if !isVersionParameterInMap {
+				errorMessage += "parameter 'version' is not found in mta.yaml\n"
+			}
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.New(errorMessage)
+		}
 
 		// validate the whole mapping and then throw errors together, so that user can get them in one pipeline run
 		nodeIdExtDescriptorMapping, errGetNodeIdExtDescriptorMapping := formNodeIdExtDescriptorMappingWithValidation(utils, nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
@@ -167,7 +173,6 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		}
 
 		for nodeId, mtaExtDescriptorPath := range nodeIdExtDescriptorMapping {
-			// TODO: what if ID field in mta.yaml file does not exist?
 			obtainedMtaExtDescriptor, errGetMtaExtDescriptor := communicationInstance.GetMtaExtDescriptor(nodeId, fmt.Sprintf("%v", mtaYamlMap["ID"]), mtaVersion)
 			if errGetMtaExtDescriptor != nil {
 				log.SetErrorCategory(log.ErrorService)
@@ -219,8 +224,6 @@ func formNodeIdExtDescriptorMappingWithValidation(utils tmsUploadUtils, nodeName
 		if exists {
 			extDescriptorMap, errGetYamlAsMap := getYamlAsMap(utils, mappedValueString)
 			if errGetYamlAsMap == nil {
-				// TODO: what, if there is no field (ID or extends) in th yaml? will it get nil or empty string?
-				// TODO: what, if there is no both ID field in the mta.yaml and extends field in extension descriptor?
 				if fmt.Sprintf("%v", mtaYamlMap["ID"]) != fmt.Sprintf("%v", extDescriptorMap["extends"]) {
 					wrongMtaIdExtDescriptors = append(wrongMtaIdExtDescriptors, mappedValueString)
 				}
@@ -252,7 +255,7 @@ func formNodeIdExtDescriptorMappingWithValidation(utils tmsUploadUtils, nodeName
 	if len(wrongMtaIdExtDescriptors) > 0 || len(wrongExtDescriptorPaths) > 0 || len(wrongNodeNames) > 0 {
 		if len(wrongMtaIdExtDescriptors) > 0 {
 			sort.Strings(wrongMtaIdExtDescriptors)
-			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID\n", wrongMtaIdExtDescriptors)
+			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID or is missing at all\n", wrongMtaIdExtDescriptors)
 		}
 		if len(wrongExtDescriptorPaths) > 0 {
 			sort.Strings(wrongExtDescriptorPaths)
