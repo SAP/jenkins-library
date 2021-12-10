@@ -134,8 +134,6 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("Authorization", "Basic "+encodedUsernameColonPassword)
 
-	// TODO: somewhere here the proxy should be considered as well
-
 	urlFormData := url.Values{
 		"username":   {communicationInstance.clientId},
 		"password":   {communicationInstance.clientSecret},
@@ -209,8 +207,6 @@ func (communicationInstance *CommunicationInstance) GetNodes() ([]Node, error) {
 	header := http.Header{}
 	header.Add("Content-Type", "application/json")
 
-	// TODO: somewhere here the proxy should be considered as well
-
 	var aNodes []Node
 	var data []byte
 	data, err := sendRequest(communicationInstance, http.MethodGet, "/v2/nodes", nil, header, http.StatusOK, false)
@@ -235,8 +231,6 @@ func (communicationInstance *CommunicationInstance) GetMtaExtDescriptor(nodeId i
 
 	header := http.Header{}
 	header.Add("Content-Type", "application/json")
-
-	// TODO: somewhere here the proxy should be considered as well
 
 	var mtaExtDescriptor MtaExtDescriptor
 	var data []byte
@@ -270,8 +264,6 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, f
 
 	header := http.Header{}
 	header.Add("Content-Type", "application/json")
-
-	// TODO: somewhere here the proxy should be considered as well
 
 	var nodeUploadResponseEntity NodeUploadResponseEntity
 	entry := Entry{Uri: fileId}
