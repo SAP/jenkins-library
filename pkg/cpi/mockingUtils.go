@@ -70,34 +70,6 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	}
 }
 
-//Handle file download scenarios of cpi and api management
-func StoreResponseBodyAndErrorNil(downloadresponse string, FilePath string) (*http.Response, error) {
-	file, err := os.Create(FilePath)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create file")
-	}
-	if err != nil {
-		res := http.Response{
-			StatusCode: 400,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-						"code": "Bad Request",
-						"message": {
-						"@lang": "en",
-						"#text": "Invalid file path"
-						}
-					}`))),
-	}
-	_, err = io.Copy(file, downloadresponse)
-	responseBody, readErr := ioutil.ReadAll(downloadresponse)
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", responseBody.StatusCode)
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 //GetEmptyHTTPResponseBodyAndErrorNil -Empty http respose body
 func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	res := http.Response{
@@ -105,6 +77,24 @@ func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &res, nil
+}
+
+//StoreFileInOsAndErrorNil - Method to store read artifacts in the file system
+func StoreFileInOsAndErrorNil(FilePath string, resp *http.Response) error {
+	file, createErr := os.Create(FilePath)
+	if createErr != nil {
+		return errors.Wrapf(createErr, "Failed to create file")
+	}
+	_, err := io.Copy(file, resp.Body)
+	if err != nil {
+		return err
+	}
+	_, readErr := ioutil.ReadAll(resp.Body)
+
+	if readErr != nil {
+		return errors.Wrapf(readErr, "File content could not be read")
+	}
+	return nil
 }
 
 //GetParameterKeyMissingResponseBody -Parameter key missing http respose body
