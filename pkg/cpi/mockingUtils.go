@@ -4,8 +4,10 @@ package cpi
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -26,7 +28,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 		}
 		return GetParameterKeyMissingResponseBody()
-	case "IntegrationArtifactGetMplStatus", "APIKeyValueMapDownload":
+	case "IntegrationArtifactGetMplStatus", "APIKeyValueMapDownload", "APIProviderDownload":
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
@@ -66,6 +68,34 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		}
 		return &res, errors.New("Service not Found")
 	}
+}
+
+//Handle file download scenarios of cpi and api management
+func StoreResponseBodyAndErrorNil(downloadresponse string, FilePath string) (*http.Response, error) {
+	file, err := os.Create(FilePath)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file")
+	}
+	if err != nil {
+		res := http.Response{
+			StatusCode: 400,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+						"code": "Bad Request",
+						"message": {
+						"@lang": "en",
+						"#text": "Invalid file path"
+						}
+					}`))),
+	}
+	_, err = io.Copy(file, downloadresponse)
+	responseBody, readErr := ioutil.ReadAll(downloadresponse)
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", responseBody.StatusCode)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //GetEmptyHTTPResponseBodyAndErrorNil -Empty http respose body
