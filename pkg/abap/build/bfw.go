@@ -3,6 +3,7 @@ package build
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"path"
 	"path/filepath"
 	"sort"
@@ -43,15 +44,33 @@ const (
 )
 
 //******** structs needed for json convertion ********
-
 type jsonBuild struct {
-	Build *Build `json:"d"`
+	Build struct {
+		BuildID     string      `json:"build_id"`
+		RunState    RunState    `json:"run_state"`
+		ResultState resultState `json:"result_state"`
+		Phase       string      `json:"phase"`
+		Entitytype  string      `json:"entitytype"`
+		Startedby   string      `json:"startedby"`
+		StartedAt   string      `json:"started_at"`
+		FinishedAt  string      `json:"finished_at"`
+	} `json:"d"`
 }
 
 type jsonTasks struct {
 	ResultTasks struct {
-		Tasks []task `json:"results"`
+		Tasks []jsonTask `json:"results"`
 	} `json:"d"`
+}
+
+type jsonTask struct {
+	BuildID     string      `json:"build_id"`
+	TaskID      int         `json:"task_id"`
+	LogID       string      `json:"log_id"`
+	PluginClass string      `json:"plugin_class"`
+	StartedAt   string      `json:"started_at"`
+	FinishedAt  string      `json:"finished_at"`
+	ResultState resultState `json:"result_state"`
 }
 
 type jsonLogs struct {
@@ -162,7 +181,9 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	}
 
 	var jBuild jsonBuild
-	json.Unmarshal(body, &jBuild)
+	if err := json.Unmarshal(body, &jBuild); err != nil {
+		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+	}
 	b.BuildID = jBuild.Build.BuildID
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
@@ -209,13 +230,15 @@ func (b *Build) EvaluteIfBuildSuccessful(treatWarningsAsError bool) error {
 
 // Get : Get all Build tasks
 func (b *Build) Get() error {
-	appendum := "/builds('" + b.BuildID + "')"
+	appendum := "/builds('" + url.QueryEscape(b.BuildID) + "')"
 	body, err := b.Connector.Get(appendum)
 	if err != nil {
 		return err
 	}
 	var jBuild jsonBuild
-	json.Unmarshal(body, &jBuild)
+	if err := json.Unmarshal(body, &jBuild); err != nil {
+		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+	}
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
 	b.Phase = jBuild.Build.Phase
@@ -228,20 +251,18 @@ func (b *Build) Get() error {
 
 func (b *Build) getTasks() error {
 	if len(b.Tasks) == 0 {
-		appendum := "/builds('" + b.BuildID + "')/tasks"
+		appendum := "/builds('" + url.QueryEscape(b.BuildID) + "')/tasks"
 		body, err := b.Connector.Get(appendum)
 		if err != nil {
 			return err
 		}
-		var jTasks jsonTasks
-		json.Unmarshal(body, &jTasks)
-		b.Tasks = jTasks.ResultTasks.Tasks
+		b.Tasks, err = unmarshalTasks(body, b.Connector)
+		if err != nil {
+			return err
+		}
 		sort.Slice(b.Tasks, func(i, j int) bool {
 			return b.Tasks[i].TaskID < b.Tasks[j].TaskID
 		})
-		for i := range b.Tasks {
-			b.Tasks[i].connector = b.Connector
-		}
 	}
 	return nil
 }
@@ -249,13 +270,15 @@ func (b *Build) getTasks() error {
 // GetValues : Gets all Build values
 func (b *Build) GetValues() error {
 	if len(b.Values) == 0 {
-		appendum := "/builds('" + b.BuildID + "')/values"
+		appendum := "/builds('" + url.QueryEscape(b.BuildID) + "')/values"
 		body, err := b.Connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jValues jsonValues
-		json.Unmarshal(body, &jValues)
+		if err := json.Unmarshal(body, &jValues); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		b.Values = jValues.ResultValues.Values
 		for i := range b.Values {
 			b.Values[i].connector = b.Connector
@@ -346,13 +369,15 @@ func (b *Build) IsFinished() bool {
 
 func (t *task) getLogs() error {
 	if len(t.Logs) == 0 {
-		appendum := fmt.Sprint("/tasks(build_id='", t.BuildID, "',task_id=", t.TaskID, ")/logs")
+		appendum := fmt.Sprint("/tasks(build_id='", url.QueryEscape(t.BuildID), "',task_id=", t.TaskID, ")/logs")
 		body, err := t.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jLogs jsonLogs
-		json.Unmarshal(body, &jLogs)
+		if err := json.Unmarshal(body, &jLogs); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		t.Logs = jLogs.ResultLogs.Logs
 	}
 	return nil
@@ -360,13 +385,15 @@ func (t *task) getLogs() error {
 
 func (t *task) getResults() error {
 	if len(t.Results) == 0 {
-		appendum := fmt.Sprint("/tasks(build_id='", t.BuildID, "',task_id=", t.TaskID, ")/results")
+		appendum := fmt.Sprint("/tasks(build_id='", url.QueryEscape(t.BuildID), "',task_id=", t.TaskID, ")/results")
 		body, err := t.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
 		var jResults jsonResults
-		json.Unmarshal(body, &jResults)
+		if err := json.Unmarshal(body, &jResults); err != nil {
+			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		}
 		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
 			t.Results[i].connector = t.connector
@@ -452,7 +479,7 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string, pu
 
 // Download : Provides the atrefact of build step
 func (result *Result) Download(downloadPath string) error {
-	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
+	appendum := fmt.Sprint("/results(build_id='", url.QueryEscape(result.BuildID), "',task_id=", result.TaskID, ",name='", url.QueryEscape(result.Name), "')/$value")
 	err := result.connector.Download(appendum, downloadPath)
 	return err
 }
@@ -541,6 +568,29 @@ func (vs Values) String() string {
 
 func (in inputForPost) String() string {
 	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
+}
+
+//******** unmarshal function  ************
+func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
+
+	var tasks []task
+	var append_task task
+	var jTasks jsonTasks
+	if err := json.Unmarshal(body, &jTasks); err != nil {
+		return tasks, errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+	}
+	for _, jTask := range jTasks.ResultTasks.Tasks {
+		append_task.connector = connector
+		append_task.BuildID = jTask.BuildID
+		append_task.TaskID = jTask.TaskID
+		append_task.LogID = jTask.LogID
+		append_task.PluginClass = jTask.PluginClass
+		append_task.StartedAt = jTask.StartedAt
+		append_task.FinishedAt = jTask.FinishedAt
+		append_task.ResultState = jTask.ResultState
+		tasks = append(tasks, append_task)
+	}
+	return tasks, nil
 }
 
 // *****************publish *******************************

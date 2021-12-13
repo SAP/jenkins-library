@@ -162,7 +162,7 @@ func TestPoll(t *testing.T) {
 	t.Run("Poll timeout", func(t *testing.T) {
 		//arrange
 		build.BuildID = "AKO22FYOFYPOXHOBVKXUTX3A3Q"
-		conn.MaxRuntime = time.Duration(2 * time.Microsecond)
+		conn.MaxRuntime = time.Duration(1 * time.Microsecond)
 		conn.PollingInterval = time.Duration(1 * time.Microsecond)
 		mc := NewMockClient()
 		mc.AddData(buildGet1)
