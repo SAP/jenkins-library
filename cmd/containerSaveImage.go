@@ -51,6 +51,8 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 	tarfilePath := config.FilePath
 	if len(tarfilePath) == 0 {
 		tarfilePath = filenameFromContainer(rootPath, config.ContainerImage)
+	} else {
+		tarfilePath = filenameFromContainer(rootPath, tarfilePath)
 	}
 
 	tarFile, err := os.Create(tarfilePath)

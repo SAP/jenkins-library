@@ -135,6 +135,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+          - GENERAL
         mandatory: false
   containers:
     - name: cf
