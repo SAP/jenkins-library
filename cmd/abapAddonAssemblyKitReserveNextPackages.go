@@ -7,35 +7,25 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
-
-	client := piperhttp.Client{}
-	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
-	pollIntervalsInSeconds := time.Duration(30 * time.Second)
+	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
-	if err != nil {
+	if err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
 		return err
 	}
 
@@ -49,8 +39,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 		return err
 	}
 
-	err = pollReserveNextPackages(packagesWithRepos, maxRuntimeInMinutes, pollIntervalsInSeconds)
-	if err != nil {
+	if err = pollReserveNextPackages(packagesWithRepos, utils); err != nil {
 		return err
 	}
 
@@ -104,9 +93,10 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 	return repos, nil
 }
 
-func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, utils *aakaas.AakUtils) error {
+	pollingInterval := (*utils).GetPollingInterval()
+	timeout := time.After((*utils).GetMaxRuntime())
+	ticker := time.Tick(pollingInterval)
 	for {
 		select {
 		case <-timeout:
@@ -117,14 +107,14 @@ func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeIn
 				err := pckgWR[i].Package.GetPackageAndNamespace()
 				// if there is an error, reservation is not yet finished
 				if err != nil {
-					log.Entry().Infof("Reservation of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
+					log.Entry().Infof("Reservation of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollingInterval)
 					allFinished = false
 				} else {
 					switch pckgWR[i].Package.Status {
 					case aakaas.PackageStatusLocked:
 						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].Package.PackageName)
 					case aakaas.PackageStatusCreationTriggered:
-						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %s", pckgWR[i].Package.PackageName, pollingInterval)
 						allFinished = false
 					case aakaas.PackageStatusPlanned:
 						log.Entry().Infof("Reservation of %s was successful with status 'planned'", pckgWR[i].Package.PackageName)
