@@ -153,6 +153,12 @@ func hadolintExecuteMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+
+							{
+								Name:    "hadolintConfigSecretName",
+								Type:    "vaultSecret",
+								Default: "hadolintConfig",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -167,6 +173,12 @@ func hadolintExecuteMetadata() config.StepData {
 								Name:  "configurationCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "hadolintConfigSecretName",
+								Type:    "vaultSecret",
+								Default: "hadolintConfig",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

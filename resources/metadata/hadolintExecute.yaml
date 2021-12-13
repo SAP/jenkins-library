@@ -29,9 +29,12 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: configurationCredentialsId
-            type: secret
+          - type: secret
+            name: configurationCredentialsId
             param: username
+          - type: vaultSecret
+            name: hadolintConfigSecretName
+            default: hadolintConfig
       - name: configurationPassword
         type: string
         description: The password to authenticate
@@ -41,9 +44,12 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: configurationCredentialsId
-            type: secret
+          - type: secret
+            name: configurationCredentialsId
             param: password
+          - type: vaultSecret
+            name: hadolintConfigSecretName
+            default: hadolintConfig
       - name: dockerFile
         aliases:
           - name: dockerfile
