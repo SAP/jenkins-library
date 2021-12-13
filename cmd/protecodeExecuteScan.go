@@ -23,6 +23,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 const (
@@ -436,12 +437,28 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	if index := strings.Index(fileName, sha256); index > -1 {
 		fileName = fileName[:index]
 	}
+
 	// append trimmed version
-	if version := handleArtifactVersion(config.Version); len(version) > 0 {
-		fileName = fileName + "_" + version
-	}
+	// if version := handleArtifactVersion(config.Version); len(version) > 0 {
+	// 	fileName = fileName + "_" + version
+	// }
+
+	version := getProcessedVersion(config)
+	fileName = fileName + "_" + version
+
 	fileName = strings.ReplaceAll(fileName, "/", "_")
 	return fileName + ".tar"
+}
+
+// Calculate version based on versioning model and artifact version or return custom scan version provided by user
+func getProcessedVersion(config *protecodeExecuteScanOptions) string {
+	processedVersion := config.CustomScanVersion
+	if len(processedVersion) > 0 {
+		log.Entry().Infof("Using custom version: %v", processedVersion)
+	} else {
+		processedVersion = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+	}
+	return processedVersion
 }
 
 // create toolrecord file for protecode

@@ -36,6 +36,8 @@ type protecodeExecuteScanOptions struct {
 	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
 	Version                     string `json:"version,omitempty"`
+	CustomScanVersion           string `json:"customScanVersion,omitempty"`
+	VersioningModel             string `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
 }
 
@@ -205,6 +207,8 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
+	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
 
 	cmd.MarkFlagRequired("serverUrl")
@@ -444,6 +448,24 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
+					},
+					{
+						Name:        "customScanVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customScanVersion"),
+					},
+					{
+						Name:        "versioningModel",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `major`,
 					},
 					{
 						Name:        "pullRequestName",
