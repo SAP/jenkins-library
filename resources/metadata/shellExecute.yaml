@@ -1,26 +1,10 @@
 metadata:
   name: shellExecute
   description: Step executes defined script
-  longDescription: Step executes defined script with Vault credentials, or created them on this step
+  longDescription: Step executes defined script with using test vault credentials
 spec:
   inputs:
     params:
-      - name: vaultServerUrl
-        type: string
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        description: The URL for the Vault server to use
-      - name: vaultNamespace
-        type: string
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        description: The vault namespace that should be used (optional)
       - name: sources
         type: "[]string"
         scope:
@@ -28,3 +12,7 @@ spec:
           - STAGES
           - STEPS
         description: Scripts names for execution or links to scripts
+  containers:
+    - name: shell
+      image: node:lts-stretch
+      workingDir: /home/node
