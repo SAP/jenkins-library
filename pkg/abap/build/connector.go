@@ -16,10 +16,12 @@ import (
 
 // Connector : Connector Utility Wrapping http client
 type Connector struct {
-	Client         piperhttp.Sender
-	DownloadClient piperhttp.Downloader
-	Header         map[string][]string
-	Baseurl        string
+	Client          piperhttp.Sender
+	DownloadClient  piperhttp.Downloader
+	Header          map[string][]string
+	Baseurl         string
+	MaxRuntime      time.Duration // just as handover parameter for polling functions
+	PollingInterval time.Duration // just as handover parameter for polling functions
 }
 
 // ConnectorConfiguration : Handover Structure for Connector Creation
@@ -34,6 +36,7 @@ type ConnectorConfiguration struct {
 	Password            string
 	AddonDescriptor     string
 	MaxRuntimeInMinutes int
+	CertificateNames    []string
 }
 
 // HTTPSendLoader : combine both interfaces [sender, downloader]
@@ -168,9 +171,10 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	})
 	cookieJar, _ := cookiejar.New(nil)
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  connectionDetails.User,
-		Password:  connectionDetails.Password,
-		CookieJar: cookieJar,
+		Username:     connectionDetails.User,
+		Password:     connectionDetails.Password,
+		CookieJar:    cookieJar,
+		TrustedCerts: config.CertificateNames,
 	})
 	conn.Baseurl = connectionDetails.URL
 

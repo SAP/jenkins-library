@@ -41,10 +41,10 @@ func TestInitialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Initialize(tt.args.correlationID, tt.args.dsn, tt.args.token, tt.args.index, tt.args.sendLogs); (err != nil) != tt.wantErr {
+			splunkClient := &Splunk{}
+			if err := splunkClient.Initialize(tt.args.correlationID, tt.args.dsn, tt.args.token, tt.args.index, tt.args.sendLogs); (err != nil) != tt.wantErr {
 				t.Errorf("Initialize() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
 		})
 	}
 }
@@ -52,10 +52,10 @@ func TestInitialize(t *testing.T) {
 func TestSend(t *testing.T) {
 
 	type args struct {
-		customTelemetryData *telemetry.CustomData
-		logCollector        *log.CollectorHook
-		sendLogs            bool
-		maxBatchSize        int
+		telemetryData *telemetry.Data
+		logCollector  *log.CollectorHook
+		sendLogs      bool
+		maxBatchSize  int
 	}
 	tests := []struct {
 		name          string
@@ -66,10 +66,14 @@ func TestSend(t *testing.T) {
 	}{
 		{name: "Testing Success Step - Send Telemetry Only",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:      "100",
-					ErrorCode:     "0",
-					ErrorCategory: "DEBUG",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "0",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -94,10 +98,14 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing Success Step - Send Telemetry Only Although sendLogs Active",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:      "100",
-					ErrorCode:     "0",
-					ErrorCategory: "DEBUG",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "0",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -122,9 +130,14 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing Failure Step - Send Telemetry Only",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "0",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -150,9 +163,14 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing Failure Step - Send Telemetry and Logs",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "100",
+						ErrorCode:     "1",
+						ErrorCategory: "DEBUG",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -178,9 +196,13 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing len(maxBatchSize)==len(logMessages)",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:  "100",
+						ErrorCode: "1",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -206,9 +228,13 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing len(maxBatchSize)<len(logMessages)",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:  "100",
+						ErrorCode: "1",
+					},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -234,9 +260,10 @@ func TestSend(t *testing.T) {
 		},
 		{name: "Testing len(maxBatchSize)>len(logMessages)",
 			args: args{
-				customTelemetryData: &telemetry.CustomData{
-					Duration:  "100",
-					ErrorCode: "1",
+				telemetryData: &telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData:   telemetry.CustomData{},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -296,7 +323,7 @@ func TestSend(t *testing.T) {
 				MaxRetries:                -1,
 			})
 
-			SplunkClient = &Splunk{
+			splunkClient := &Splunk{
 				splunkClient:          client,
 				splunkDsn:             fakeUrl,
 				splunkIndex:           "index",
@@ -304,7 +331,7 @@ func TestSend(t *testing.T) {
 				postMessagesBatchSize: tt.args.maxBatchSize,
 				sendLogs:              tt.args.sendLogs,
 			}
-			if err := Send(tt.args.customTelemetryData, tt.args.logCollector); (err != nil) != tt.wantErr {
+			if err := splunkClient.Send(*tt.args.telemetryData, tt.args.logCollector); (err != nil) != tt.wantErr {
 				t.Errorf("Send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if len(payloads) != tt.payloadLength {
@@ -315,14 +342,14 @@ func TestSend(t *testing.T) {
 			if len(payloads[0].Event.Messages) != tt.logLength {
 				t.Errorf("Send() error, wanted %v event messages, got %v.", tt.logLength, len(payloads[0].Event.Messages))
 			}
-			SplunkClient = nil
+			splunkClient = nil
 		})
 	}
 }
 
 func Test_prepareTelemetry(t *testing.T) {
 	type args struct {
-		customTelemetryData telemetry.CustomData
+		telemetryData telemetry.Data
 	}
 	tests := []struct {
 		name string
@@ -331,10 +358,14 @@ func Test_prepareTelemetry(t *testing.T) {
 	}{
 		{name: "Testing prepare telemetry information",
 			args: args{
-				customTelemetryData: telemetry.CustomData{
-					Duration:      "1234",
-					ErrorCode:     "0",
-					ErrorCategory: "Undefined",
+				telemetryData: telemetry.Data{
+					BaseData:     telemetry.BaseData{},
+					BaseMetaData: telemetry.BaseMetaData{},
+					CustomData: telemetry.CustomData{
+						Duration:      "1234",
+						ErrorCode:     "0",
+						ErrorCategory: "Undefined",
+					},
 				},
 			},
 			want: MonitoringData{
@@ -357,11 +388,12 @@ func Test_prepareTelemetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
+			splunkClient := &Splunk{}
+			err := splunkClient.Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
 			if err != nil {
 				t.Errorf("Error Initalizing Splunk. %v", err)
 			}
-			if got := prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
+			if got := splunkClient.prepareTelemetry(tt.args.telemetryData); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("prepareTelemetry() = %v, want %v", got, tt.want)
 			}
 		})
@@ -459,14 +491,14 @@ func Test_tryPostMessages(t *testing.T) {
 				UseDefaultTransport:       true,
 				MaxRetries:                -1,
 			})
-			SplunkClient = &Splunk{
+			splunkClient := &Splunk{
 				splunkClient:          client,
 				splunkDsn:             fakeUrl,
 				splunkIndex:           "index",
 				correlationID:         "DEBUG",
 				postMessagesBatchSize: 1000,
 			}
-			if err := tryPostMessages(tt.args.telemetryData, tt.args.messages); (err != nil) != tt.wantErr {
+			if err := splunkClient.tryPostMessages(tt.args.telemetryData, tt.args.messages); (err != nil) != tt.wantErr {
 				t.Errorf("tryPostMessages() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -49,8 +49,8 @@ This can be done accordingly:
 
 ```groovy
 abapEnvironmentRunAUnitTest(
-    cfApiEndpoint : 'https://test.server.com',
-    cfOrg : 'cfOrg',
+    cfApiEndpoint: 'https://test.server.com',
+    cfOrg: 'cfOrg',
     cfSpace: 'cfSpace',
     cfServiceInstance: 'myServiceInstance',
     cfServiceKeyName: 'myServiceKey',

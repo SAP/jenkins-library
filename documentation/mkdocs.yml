@@ -57,6 +57,7 @@ nav:
         - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
         - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
         - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
+        - abapEnvironmentBuild: steps/abapEnvironmentBuild.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentAssembleConfirm: steps/abapEnvironmentAssembleConfirm.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
@@ -65,6 +66,7 @@ nav:
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - abapEnvironmentRunAUnitTest: steps/abapEnvironmentRunAUnitTest.md
+        - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
         - apiProxyDownload: steps/apiProxyDownload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
@@ -143,6 +145,7 @@ nav:
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - shellExecute: steps/shellExecute.md
         - slackSendNotification: steps/slackSendNotification.md
         - snykExecute: steps/snykExecute.md
         - sonarExecuteScan: steps/sonarExecuteScan.md

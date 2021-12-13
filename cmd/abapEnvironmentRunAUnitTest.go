@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -95,7 +96,7 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 		resp, err = triggerAUnitrun(*config, details, client)
 	}
 	if err == nil {
-		err = handleAUnitResults(resp, details, client, config.AUnitResultsFileName)
+		err = handleAUnitResults(resp, details, client, config.AUnitResultsFileName, config.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -156,7 +157,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	return subOptions
 }
 
-func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string) error {
+func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -174,7 +175,7 @@ func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetails
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseAUnitResult(body, aunitResultFileName)
+		err = parseAUnitResult(body, aunitResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling AUnit result failed: %w", err)
@@ -441,7 +442,7 @@ func getResultAUnitRun(requestType string, details abaputils.ConnectionDetailsHT
 	return req, err
 }
 
-func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
+func parseAUnitResult(body []byte, aunitResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing AUnit result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -459,6 +460,8 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	log.Entry().Infof("Writing %s file was successful.", aunitResultFileName)
+	var reports []piperutils.Path
+	//Return before processing empty AUnit results --> XML can still be written with response body
 	if len(parsedXML.Testsuite.Testcase) == 0 {
 		log.Entry().Infof("There were no AUnit findings from this run. The response has been saved in the %s file", aunitResultFileName)
 	} else {
@@ -475,12 +478,53 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 				log.Entry().Debugf("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
+		if generateHTML == true {
+			htmlString := generateHTMLDocumentAUnit(parsedXML)
+			htmlStringByte := []byte(htmlString)
+			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
+			err = ioutil.WriteFile(aUnitResultHTMLFileName, htmlStringByte, 0644)
+			if err != nil {
+				return fmt.Errorf("Writing HTML document failed: %w", err)
+			}
+			log.Entry().Info("Writing " + aUnitResultHTMLFileName + " file was successful")
+			reports = append(reports, piperutils.Path{Target: aUnitResultHTMLFileName, Name: "ATC Results HTML file", Mandatory: true})
+		}
 	}
 	//Persist findings afterwards
-	var reports []piperutils.Path
 	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
 	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
 	return nil
+}
+
+func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString string) {
+	htmlDocumentString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit Results</h1><table><tr><th>Run title</th><td style="padding-right: 20px">` + parsedXML.Title + `</td><th>System</th><td style="padding-right: 20px">` + parsedXML.System + `</td><th>Client</th><td style="padding-right: 20px">` + parsedXML.Client + `</td><th>ExecutedBy</th><td style="padding-right: 20px">` + parsedXML.ExecutedBy + `</td><th>Duration</th><td style="padding-right: 20px">` + parsedXML.Time + `s</td><th>Timestamp</th><td style="padding-right: 20px">` + parsedXML.Timestamp + `</td></tr><tr><th>Failures</th><td style="padding-right: 20px">` + parsedXML.Failures + `</td><th>Errors</th><td style="padding-right: 20px">` + parsedXML.Errors + `</td><th>Skipped</th><td style="padding-right: 20px">` + parsedXML.Skipped + `</td><th>Asserts</th><td style="padding-right: 20px">` + parsedXML.Asserts + `</td><th>Tests</th><td style="padding-right: 20px">` + parsedXML.Tests + `</td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr>`
+
+	var htmlDocumentStringError, htmlDocumentStringWarning, htmlDocumentStringInfo, htmlDocumentStringDefault string
+	for _, s := range parsedXML.Testsuite.Testcase {
+		//Add coloring of lines inside of the respective severities, e.g. failures in red
+		trBackgroundColorTestcase := "grey"
+		trBackgroundColorError := "rgba(227,85,0)"
+		trBackgroundColorFailure := "rgba(227,85,0)"
+		trBackgroundColorSkipped := "rgba(255,175,0, 0.2)"
+		if (len(s.Error) != 0) || (len(s.Failure) != 0) || (len(s.Skipped) != 0) {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorTestcase + `"><td colspan="5"><b>Testcase: ` + s.Name + ` for class ` + s.Classname + `</b></td></tr>`
+		}
+		for _, t := range s.Error {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorError + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">` + t.Type + `</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
+		}
+		for _, t := range s.Failure {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorFailure + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">` + t.Type + `</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
+		}
+		for _, t := range s.Skipped {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorSkipped + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
+		}
+	}
+	if len(parsedXML.Testsuite.Testcase) == 0 {
+		htmlDocumentString += `<tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr>`
+	}
+	htmlDocumentString += htmlDocumentStringError + htmlDocumentStringWarning + htmlDocumentStringInfo + htmlDocumentStringDefault + `</table></body></html>`
+
+	return htmlDocumentString
 }
 
 //
