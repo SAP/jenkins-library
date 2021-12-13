@@ -1,14 +1,27 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type gradleExecuteBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+type gradleExecuteBuildFileMock struct {
+	*mock.FilesMock
+	fileReadContent map[string]string
+	fileReadErr     map[string]error
+}
+
+func (f *gradleExecuteBuildFileMock) FileExists(path string) (bool, error) {
+	return strings.EqualFold(path, "path/to/gradle.build"), nil
 }
 
 func newGradleExecuteBuildTestsUtils() gradleExecuteBuildMockUtils {
@@ -20,34 +33,29 @@ func newGradleExecuteBuildTestsUtils() gradleExecuteBuildMockUtils {
 }
 
 func TestRunGradleExecuteBuild(t *testing.T) {
-	t.Parallel()
 
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := gradleExecuteBuildOptions{}
+	t.Run("negative case - build.gradle isn't present", func(t *testing.T) {
+		options := &gradleExecuteBuildOptions{
+			Path: "path/to/project/build.gradle",
+		}
+		u := newShellExecuteTestsUtils()
 
-		utils := newGradleExecuteBuildTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
+		m := &gradleExecuteBuildFileMock{}
 
-		// test
-		err := runGradleExecuteBuild(&config, nil, utils)
+		err := runGradleExecuteBuild(options, nil, u, m)
+		assert.EqualError(t, err, "the specified gradle script could not be found")
+	})
 
-		// assert
+	t.Run("success case - build.gradle is present", func(t *testing.T) {
+		o := &gradleExecuteBuildOptions{
+			Path: "path/to/gradle.build",
+		}
+
+		u := newGradleExecuteBuildTestsUtils()
+		m := &gradleExecuteBuildFileMock{}
+
+		err := runGradleExecuteBuild(o, nil, u, m)
 		assert.NoError(t, err)
 	})
 
-	t.Run("error path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := gradleExecuteBuildOptions{}
-
-		utils := newGradleExecuteBuildTestsUtils()
-
-		// test
-		err := runGradleExecuteBuild(&config, nil, utils)
-
-		// assert
-		assert.EqualError(t, err, "cannot run without important file")
-	})
 }

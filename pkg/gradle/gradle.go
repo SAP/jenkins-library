@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const exec = "gradle"
@@ -23,16 +24,18 @@ type ExecuteOptions struct {
 	ReturnStdout    bool   `json:"returnStdout,omitempty"`
 }
 
-func Execute(options *ExecuteOptions, utils Utils) (string, error) {
+func Execute(options *ExecuteOptions, utils Utils, fileUtils piperutils.FileUtils) (string, error) {
+
+	exists, err := fileUtils.FileExists(options.BuildGradlePath)
+	if !exists {
+		return "", fmt.Errorf("the specified gradle script could not be found")
+	}
 
 	stdOutBuf, stdOut := evaluateStdOut(options)
 	utils.Stdout(stdOut)
 	utils.Stderr(log.Writer())
 
-	parameters, err := getParametersFromOptions(options, utils)
-	if err != nil {
-		return "", fmt.Errorf("failed to construct parameters from options: %w", err)
-	}
+	parameters := getParametersFromOptions(options)
 
 	err = utils.RunExecutable(exec, parameters...)
 	if err != nil {
@@ -57,7 +60,7 @@ func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	return stdOutBuf, stdOut
 }
 
-func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, error) {
+func getParametersFromOptions(options *ExecuteOptions) []string {
 	var parameters []string
 
 	// default value for task is 'build', so no necessary to checking for empty parameter
@@ -69,5 +72,5 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 		parameters = append(parameters, options.BuildGradlePath)
 	}
 
-	return parameters, nil
+	return parameters
 }
