@@ -132,5 +132,5 @@ return this
 ```
 
 Note that in above example the AUnit test run results, stored in the `AUnitResults.html` file that is pinned to the Jenkins job, will be sent as an attachment using the `attachmentsPattern` parameter as well as being parsed and attached to the E-Mail body using the `body` parameter. Both methods are possible. If you chose to include the AUnit test run results in the E-Mail body make sure to read the file content properly, e.g. using the `readFile()` method.
-The `subject` parameter defines the subject of the E-Mail that will be sent. The `to` parameter specifies a list of recipients separated by a comma. You can also set a Distribution Lists as a recipient.
+The `subject` parameter defines the subject of the E-Mail that will be sent. The `to` parameter specifies a list of recipients separated by a comma. You can also set a distribution list as a recipient.
 For all parameters it is also possible to use Jenkins environment variables like `${env.BUILD_ID}` or `${env.JENKINS_URL}`.
