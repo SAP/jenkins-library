@@ -5,5 +5,5 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     List credentials = [[type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']]]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
 }
