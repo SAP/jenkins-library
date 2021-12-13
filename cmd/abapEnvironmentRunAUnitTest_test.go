@@ -526,7 +526,6 @@ func TestTriggerAUnitrun(t *testing.T) {
 	t.Parallel()
 
 	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
-		t.Parallel()
 
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
@@ -585,7 +584,6 @@ objectset:
 	})
 
 	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
-		t.Parallel()
 
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
@@ -647,7 +645,6 @@ objectset:
 	})
 
 	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
-		t.Parallel()
 
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
@@ -712,7 +709,6 @@ func TestParseAUnitResult(t *testing.T) {
 	t.Parallel()
 
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
-		t.Parallel()
 
 		dir, err := ioutil.TempDir("", "test get result AUnit test run")
 		if err != nil {
@@ -732,7 +728,6 @@ func TestParseAUnitResult(t *testing.T) {
 	})
 
 	t.Run("succes case: test parsing empty AUnit run XML result", func(t *testing.T) {
-		t.Parallel()
 
 		dir, err := ioutil.TempDir("", "test get result AUnit test run")
 		if err != nil {
@@ -752,7 +747,6 @@ func TestParseAUnitResult(t *testing.T) {
 	})
 
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
-		t.Parallel()
 
 		var bodyString string
 		body := []byte(bodyString)
