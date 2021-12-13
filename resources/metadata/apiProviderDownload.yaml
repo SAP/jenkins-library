@@ -38,3 +38,4 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+        
