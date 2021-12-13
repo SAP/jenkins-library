@@ -37,5 +37,4 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
-        
+        mandatory: true   
