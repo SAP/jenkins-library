@@ -294,7 +294,7 @@ func createPipelineOverviewDocumentation(stageRunConfig *config.RunConfigV1, sta
 const stepConditionDetails = `!!! note "Step condition details"
     There are currently several conditions which can be checked.<br />**Important: It will be sufficient that any one condition per step is met.**
 
-    * ` + "`" + `config key` + "`" + `: Checks if a defined configuration parameter is set.
+    * ` + "`" + `config` + "`" + `: Checks if a defined configuration parameter is set.
     * ` + "`" + `config value` + "`" + `: Checks if a configuration parameter has a defined value.
     * ` + "`" + `file pattern` + "`" + `: Checks if files according a defined pattern exist in the project.
 	* ` + "`" + `file pattern from config` + "`" + `: Checks if files according a pattern defined in the custom configuration exist in the project.
@@ -313,47 +313,49 @@ func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageT
 	for _, stage := range stageRunConfig.PipelineConfig.Spec.Stages {
 		stageDoc := fmt.Sprintf("# %v\n\n", stage.DisplayName)
 		stageDoc += fmt.Sprintf("%v\n\n", stage.Description)
-		stageDoc += "## Stage Content\n\nThis stage comprises following steps which are activated depending on your use-case/configuration:\n\n"
 
-		for i, step := range stage.Steps {
-			if i == 0 {
-				stageDoc += "| step | step description |\n"
-				stageDoc += "| ---- | ---------------- |\n"
+		if len(stage.Steps) > 0 {
+			stageDoc += "## Stage Content\n\nThis stage comprises following steps which are activated depending on your use-case/configuration:\n\n"
+
+			for i, step := range stage.Steps {
+				if i == 0 {
+					stageDoc += "| step | step description |\n"
+					stageDoc += "| ---- | ---------------- |\n"
+				}
+
+				orchestratorBadges := ""
+				for _, orchestrator := range step.Orchestrators {
+					orchestratorBadges += getBadge(orchestrator) + " "
+				}
+
+				stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v%v |\n", step.Name, relativeStepsPath, step.Name, orchestratorBadges, step.Description)
 			}
 
-			orchestratorBadges := ""
-			for _, orchestrator := range step.Orchestrators {
-				orchestratorBadges += getBadge(orchestrator) + " "
+			stageDoc += "\n"
+
+			stageDoc += "## Stage & Step Activation\n\nThis stage will be active in case one of following conditions are met:\n\n"
+			stageDoc += "* One of the steps is explicitly activated by using `<stepName>: true` in the stage configuration\n"
+			stageDoc += "* At least one of the step conditions is met and steps are not explicitly deactivated by using `<stepName>: false` in the stage configuration\n\n"
+
+			stageDoc += stepConditionDetails
+			stageDoc += overrulingStepActivation
+
+			stageDoc += "Following conditions apply for activation of steps contained in the stage:\n\n"
+
+			stageDoc += "| step | active if one of following conditions is met |\n"
+			stageDoc += "| ---- | -------------------------------------------- |\n"
+
+			// add step condition details
+			for _, step := range stage.Steps {
+				stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v |\n", step.Name, relativeStepsPath, step.Name, getStepConditionDetails(step))
 			}
 
-			stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v%v |\n", step.Name, relativeStepsPath, step.Name, orchestratorBadges, step.Description)
+			stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
+			fmt.Println("writing file", stageFilePath)
+			if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
+				return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
+			}
 		}
-
-		stageDoc += "\n"
-
-		stageDoc += "## Stage & Step Activation\n\nThis stage will be active in case one of following conditions are met:\n\n"
-		stageDoc += "* One of the steps is explicitly activated by using `<stepName>: true` in the stage configuration\n"
-		stageDoc += "* At least one of the step conditions is met and steps are not explicitly deactivated by using `<stepName>: false` in the stage configuration\n\n"
-
-		stageDoc += stepConditionDetails
-		stageDoc += overrulingStepActivation
-
-		stageDoc += "Following conditions apply for activation of steps contained in the stage:\n\n"
-
-		stageDoc += "| step | active if one of following conditions is met |\n"
-		stageDoc += "| ---- | -------------------------------------------- |\n"
-
-		// add step condition details
-		for _, step := range stage.Steps {
-			stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v |\n", step.Name, relativeStepsPath, step.Name, getStepConditionDetails(step))
-		}
-
-		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
-		fmt.Println("writing file", stageFilePath)
-		if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
-			return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
-		}
-
 	}
 	return nil
 }
@@ -395,22 +397,22 @@ func getStepConditionDetails(step config.Step) string {
 		}
 
 		if len(condition.ConfigKey) > 0 {
-			stepConditions += fmt.Sprintf("<i>config key:</i><ul><li>`%v`</li></ul>", condition.ConfigKey)
+			stepConditions += fmt.Sprintf("<i>config key:</i>&nbsp;`%v`<br />", condition.ConfigKey)
 			continue
 		}
 
 		if len(condition.FilePattern) > 0 {
-			stepConditions += fmt.Sprintf("<i>file pattern:</i><ul><li>`%v`</li></ul>", condition.FilePattern)
+			stepConditions += fmt.Sprintf("<i>file pattern:</i>&nbsp;`%v`<br />", condition.FilePattern)
 			continue
 		}
 
 		if len(condition.FilePatternFromConfig) > 0 {
-			stepConditions += fmt.Sprintf("<i>file pattern from config:</i><ul><li>`%v`</li></ul>", condition.FilePatternFromConfig)
+			stepConditions += fmt.Sprintf("<i>file pattern from config:</i>&nbsp;`%v`<br />", condition.FilePatternFromConfig)
 			continue
 		}
 
 		if len(condition.NpmScript) > 0 {
-			stepConditions += fmt.Sprintf("<i>npm script:</i><ul><li>`%v`</li></ul>", condition.NpmScript)
+			stepConditions += fmt.Sprintf("<i>npm script:</i>&nbsp;`%v`<br />", condition.NpmScript)
 			continue
 		}
 

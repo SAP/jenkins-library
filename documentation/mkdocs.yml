@@ -57,6 +57,7 @@ nav:
         - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
         - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
         - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
+        - abapEnvironmentBuild: steps/abapEnvironmentBuild.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentAssembleConfirm: steps/abapEnvironmentAssembleConfirm.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
