@@ -27,8 +27,8 @@ type HttpCPIUtils interface {
 	HandleHTTPFileDownloadResponse() error
 }
 
-//HttpUploadUtils for CPI
-type HttpUploadUtils interface {
+//HTTPUploadUtils for CPI
+type HTTPUploadUtils interface {
 	HandleHTTPFileUploadResponse() error
 }
 
@@ -44,11 +44,11 @@ type HttpFileDownloadRequestParameters struct {
 	Response                     *http.Response
 }
 
-//HttpUploadParameters struct
+//HTTPFileUploadRequestParameters struct
 type HttpFileUploadRequestParameters struct {
-	ErrMessage, FilePath, HttpMethod, HttpUrl, SuccessMessage string
+	ErrMessage, FilePath, HTTPMethod, HTTPURL, SuccessMessage string
 	Response                                                  *http.Response
-	HttpErr                                                   error
+	HTTPErr                                                   error
 }
 
 // ServiceKey contains information about a CPI service key
@@ -164,7 +164,7 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 // HandleHTTPFileUploadResponse - Handle the file upload response
 func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTTPFileUploadResponse() error {
 	response := httpFileUploadRequestParameters.Response
-	httpErr := httpFileUploadRequestParameters.HttpErr
+	httpErr := httpFileUploadRequestParameters.HTTPErr
 	if response != nil && response.Body != nil {
 		defer response.Body.Close()
 	}
@@ -185,7 +185,7 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HttpMethod, httpFileUploadRequestParameters.HttpUrl, string(responseBody))
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody))
 	}
 	return errors.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
 }

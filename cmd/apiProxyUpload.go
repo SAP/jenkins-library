@@ -63,9 +63,9 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 		ErrMessage:     failureMessage,
 		FilePath:       config.FilePath,
 		Response:       apiProxyUploadStatusResp,
-		HttpMethod:     httpMethod,
-		HttpUrl:        uploadApiProxyStatusURL,
-		HttpErr:        httpErr,
+		HTTPMethod:     httpMethod,
+		HTTPURL:        uploadApiProxyStatusURL,
+		HTTPErr:        httpErr,
 		SuccessMessage: successMessage}
-	return cpi.HttpUploadUtils.HandleHTTPFileUploadResponse(httpFileUploadRequestParameters)
+	return cpi.HTTPUploadUtils.HandleHTTPFileUploadResponse(httpFileUploadRequestParameters)
 }
