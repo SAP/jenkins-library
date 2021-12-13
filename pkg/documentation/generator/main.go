@@ -349,12 +349,12 @@ func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageT
 			for _, step := range stage.Steps {
 				stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v |\n", step.Name, relativeStepsPath, step.Name, getStepConditionDetails(step))
 			}
+		}
 
-			stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
-			fmt.Println("writing file", stageFilePath)
-			if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
-				return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
-			}
+		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
+		fmt.Println("writing file", stageFilePath)
+		if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
+			return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
 		}
 	}
 	return nil
