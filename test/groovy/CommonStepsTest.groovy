@@ -205,6 +205,7 @@ public class CommonStepsTest extends BasePiperTest{
         'golangBuild', //implementing new golang pattern without fields
         'apiProxyDownload', //implementing new golang pattern without fields
         'apiKeyValueMapDownload', //implementing new golang pattern without fields
+        'shellExecute', //implementing new golang pattern without fields
 		'apiProviderDownload', //implementing new golang pattern without fields
     ]
 
