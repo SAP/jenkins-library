@@ -163,7 +163,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "username"}},
 						Default:   os.Getenv("PIPER_configurationUsername"),
 					},
 					{
@@ -184,7 +184,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "password"}},
 						Default:   os.Getenv("PIPER_configurationPassword"),
 					},
 					{

@@ -21,6 +21,8 @@ spec:
           - STEPS
         default: null
       - name: configurationUsername
+        aliases:
+          - name: username
         type: string
         description: The username to authenticate
         scope:
@@ -36,6 +38,8 @@ spec:
             name: hadolintConfigSecretName
             default: hadolintConfig
       - name: configurationPassword
+        aliases:
+          - name: password
         type: string
         description: The password to authenticate
         scope:
