@@ -425,7 +425,7 @@ func TestGenerateHTMLDocumentAUnit(t *testing.T) {
 	t.Run("Test empty XML Result", func(t *testing.T) {
 		t.Parallel()
 
-		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px"></td><th>System</th><td style="padding-right: 20px"></td><th>Client</th><td style="padding-right: 20px"></td><th>ExecutedBy</th><td style="padding-right: 20px"></td><th>Duration</th><td style="padding-right: 20px">s</td><th>Timestamp</th><td style="padding-right: 20px"></td></tr><tr><th>Failures</th><td style="padding-right: 20px"></td><th>Errors</th><td style="padding-right: 20px"></td><th>Skipped</th><td style="padding-right: 20px"></td><th>Asserts</th><td style="padding-right: 20px"></td><th>Tests</th><td style="padding-right: 20px"></td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr></table></body></html>`
+		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit Results</h1><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px"></td><th>System</th><td style="padding-right: 20px"></td><th>Client</th><td style="padding-right: 20px"></td><th>ExecutedBy</th><td style="padding-right: 20px"></td><th>Duration</th><td style="padding-right: 20px">s</td><th>Timestamp</th><td style="padding-right: 20px"></td></tr><tr><th>Failures</th><td style="padding-right: 20px"></td><th>Errors</th><td style="padding-right: 20px"></td><th>Skipped</th><td style="padding-right: 20px"></td><th>Asserts</th><td style="padding-right: 20px"></td><th>Tests</th><td style="padding-right: 20px"></td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr></table></body></html>`
 
 		result := AUnitResult{}
 
@@ -437,7 +437,7 @@ func TestGenerateHTMLDocumentAUnit(t *testing.T) {
 	t.Run("Test AUnit XML Result", func(t *testing.T) {
 		t.Parallel()
 
-		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px">Test title</td><th>System</th><td style="padding-right: 20px">Test system</td><th>Client</th><td style="padding-right: 20px">000</td><th>ExecutedBy</th><td style="padding-right: 20px">CC00000</td><th>Duration</th><td style="padding-right: 20px">0.15s</td><th>Timestamp</th><td style="padding-right: 20px">2021-00-00T00:00:00Z</td></tr><tr><th>Failures</th><td style="padding-right: 20px">4</td><th>Errors</th><td style="padding-right: 20px">4</td><th>Skipped</th><td style="padding-right: 20px">4</td><th>Asserts</th><td style="padding-right: 20px">12</td><th>Tests</th><td style="padding-right: 20px">12</td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr style="background-color: grey"><td colspan="5"><b>Testcase: my_test for class ZCL_my_test</b></td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage</td><td style="border: 1px solid black">Assert Error</td><td style="border: 1px solid black">testError</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage2</td><td style="border: 1px solid black">Assert Error2</td><td style="border: 1px solid black">testError2</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage</td><td style="border: 1px solid black">Assert Failure</td><td style="border: 1px solid black">testFailure</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage2</td><td style="border: 1px solid black">Assert Failure2</td><td style="border: 1px solid black">testFailure2</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testSkipped</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testSkipped2</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped2</td></tr></table></body></html>`
+		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit Results</h1><table style="border: 1px solid black"><tr><th>Run title</th><td style="padding-right: 20px">Test title</td><th>System</th><td style="padding-right: 20px">Test system</td><th>Client</th><td style="padding-right: 20px">000</td><th>ExecutedBy</th><td style="padding-right: 20px">CC00000</td><th>Duration</th><td style="padding-right: 20px">0.15s</td><th>Timestamp</th><td style="padding-right: 20px">2021-00-00T00:00:00Z</td></tr><tr><th>Failures</th><td style="padding-right: 20px">4</td><th>Errors</th><td style="padding-right: 20px">4</td><th>Skipped</th><td style="padding-right: 20px">4</td><th>Asserts</th><td style="padding-right: 20px">12</td><th>Tests</th><td style="padding-right: 20px">12</td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr style="background-color: grey"><td colspan="5"><b>Testcase: my_test for class ZCL_my_test</b></td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage</td><td style="border: 1px solid black">Assert Error</td><td style="border: 1px solid black">testError</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage2</td><td style="border: 1px solid black">Assert Error2</td><td style="border: 1px solid black">testError2</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage</td><td style="border: 1px solid black">Assert Failure</td><td style="border: 1px solid black">testFailure</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage2</td><td style="border: 1px solid black">Assert Failure2</td><td style="border: 1px solid black">testFailure2</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testSkipped</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testSkipped2</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped2</td></tr></table></body></html>`
 
 		result := AUnitResult{
 			XMLName:    xml.Name{Space: "testSpace", Local: "testLocal"},
@@ -554,12 +554,53 @@ func TestGenerateHTMLDocumentAUnit(t *testing.T) {
 						Text:    "testSkipped2",
 						Message: "testSkipped2",
 					}},
+				}, {
+					Asserts:   "4",
+					Time:      "0.15",
+					Name:      "my_test2",
+					Classname: "ZCL_my_test2",
+					Error: []struct {
+						Text    string "xml:\",chardata\""
+						Type    string "xml:\"type,attr\""
+						Message string "xml:\"message,attr\""
+					}{{
+						Text:    "testError3",
+						Type:    "Assert Error3",
+						Message: "testMessage3",
+					}, {
+						Text:    "testError4",
+						Type:    "Assert Error4",
+						Message: "testMessage4",
+					}},
+					Failure: []struct {
+						Text    string "xml:\",chardata\""
+						Type    string "xml:\"type,attr\""
+						Message string "xml:\"message,attr\""
+					}{{
+						Text:    "testFailure5",
+						Type:    "Assert Failure5",
+						Message: "testMessage5",
+					}, {
+						Text:    "testFailure6",
+						Type:    "Assert Failure6",
+						Message: "testMessage6",
+					}},
+					Skipped: []struct {
+						Text    string "xml:\",chardata\""
+						Message string "xml:\"message,attr\""
+					}{{
+						Text:    "testSkipped7",
+						Message: "testSkipped7",
+					}, {
+						Text:    "testSkipped8",
+						Message: "testSkipped8",
+					}},
 				}},
 			},
 		}
 
 		resultString := generateHTMLDocumentAUnit(&result)
-
+		fmt.Println(resultString)
 		assert.Equal(t, expectedString, resultString)
 	})
 
