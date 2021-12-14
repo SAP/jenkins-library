@@ -306,7 +306,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 func getCredentialKeys(config *StepConfig) []string {
 	keysRaw, ok := config.Config[vaultCredentialKeys].([]interface{})
 	if !ok {
-		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
+		log.Entry().Debugf("Not fetching general purpose credentials from vault since they are not (properly) configured")
 		return nil
 	}
 	keys := make([]string, 0, len(keysRaw))
