@@ -288,7 +288,7 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		t.Parallel()
 		// init
 		vaultMock := &mocks.VaultMock{}
-		envPrefix := "CUSTOM_CREDENTIAL_"
+		envPrefix := "CUSTOM_MYCRED_"
 		standardEnvPrefix := "PIPER_VAULTCREDENTIAL_"
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":                "team1",
@@ -297,8 +297,8 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 			"vaultCredentialEnvPrefix": envPrefix,
 		}}
 
-		defer os.Unsetenv("CUSTOM_CREDENTIAL_APPUSER")
-		defer os.Unsetenv("CUSTOM_CREDENTIAL_APPUSERPW")
+		defer os.Unsetenv("CUSTOM_MYCRED_APPUSER")
+		defer os.Unsetenv("CUSTOM_MYCRED_APPUSERPW")
 		defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSER")
 		defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSERPW")
 
