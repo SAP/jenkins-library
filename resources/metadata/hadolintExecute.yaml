@@ -82,4 +82,4 @@ spec:
           - STEPS
   containers:
     - name: hadolint
-      image: hadolint/hadolint:latest-debian
+      image: hadolint/hadolint:latest-alpine
