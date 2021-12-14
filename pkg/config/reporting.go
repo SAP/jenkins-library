@@ -66,6 +66,7 @@ func (r ReportingParams) getReportingFilter() []string {
 	for _, param := range r.Parameters {
 		reportingFilter = append(reportingFilter, param.Name)
 	}
+	reportingFilter = append(reportingFilter, getFilterForResourceReferences(r.Parameters)...)
 	return reportingFilter
 }
 
