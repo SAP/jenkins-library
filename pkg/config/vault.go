@@ -285,7 +285,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 		}
 	}
 
-	// we always create the env variable with the default prefx so that
+	// we always create a standard env variable with the default prefx so that
 	// we can always refer to it in steps if its to be hard-coded
 	if !isCredentialEnvPrefixDefault {
 		for secretKey, secretValue := range secret {
