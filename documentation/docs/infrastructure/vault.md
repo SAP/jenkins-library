@@ -95,7 +95,6 @@ steps:
     skipVault: true   # Skip Vault Secret Lookup for this step
 ```
 
-
 ## Using vault for general purpose and test credentials
 
 Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to custom piper extensions. The configuration for vault general purpose credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
@@ -126,7 +125,6 @@ The `vaultCredentialKeys`parameter is a list of credential IDs. The secret value
 
 Extended logging for vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
 
-
 ## Using vault for test credentials (Deprecated : use general purpose and test credentials as above)
 
 Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to test command. The configuration for vault test credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
@@ -156,4 +154,3 @@ The `vaultTestCredentialKeys`parameter is a list of credential IDs. The secret v
     With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
 
 Extended logging for vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
-
