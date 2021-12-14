@@ -278,7 +278,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 			if secretKey == key {
 				log.RegisterSecret(secretValue)
 				envVariable := vaultCredentialEnvPrefix + convertEnvVar(secretKey)
-				log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
+				log.Entry().Debugf("Exposing general purpose credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, secretValue)
 				matched = true
 			}
@@ -293,7 +293,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 				if secretKey == key {
 					log.RegisterSecret(secretValue)
 					envVariable := vaultCredentialEnvPrefixDefault + convertEnvVar(secretKey)
-					log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
+					log.Entry().Debugf("Exposing general purpose credential '%v' as '%v'", key, envVariable)
 					os.Setenv(envVariable, secretValue)
 					matched = true
 				}

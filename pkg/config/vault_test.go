@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
 	"github.com/stretchr/testify/assert"
@@ -245,6 +246,35 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 
 		// test
 		resolveVaultTestCredentials(&stepConfig, vaultMock)
+
+		// assert
+		for k, v := range vaultData {
+			env := envPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(env))
+			assert.Equal(t, os.Getenv(env), v)
+		}
+	})
+
+	t.Run("Default general purpose credential prefix", func(t *testing.T) {
+		t.Parallel()
+		// init
+		vaultMock := &mocks.VaultMock{}
+		envPrefix := "PIPER_VAULTCREDENTIAL_"
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath":           "team1",
+			"vaultCredentialPath": "appCredentials",
+			"vaultCredentialKeys": []interface{}{"appUser", "appUserPw"},
+		}}
+
+		defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSER")
+		defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSERPW")
+
+		// mock
+		vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+		vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+		// test
+		resolveVaultCredentials(&stepConfig, vaultMock)
 
 		// assert
 		for k, v := range vaultData {
