@@ -226,7 +226,7 @@ func addAlias(param *StepParameters, aliasName string) {
 
 func TestResolveVaultTestCredentials(t *testing.T) {
 	t.Parallel()
-	t.Run("Default credential prefix", func(t *testing.T) {
+	t.Run("Default test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
 		vaultMock := &mocks.VaultMock{}
@@ -284,7 +284,7 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		}
 	})
 
-	t.Run("Custom general purpose credential prefix along with fixed standard", func(t *testing.T) {
+	t.Run("Custom general purpose credential prefix along with fixed standard prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
 		vaultMock := &mocks.VaultMock{}
@@ -320,7 +320,7 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		}
 	})
 
-	t.Run("Custom credential prefix", func(t *testing.T) {
+	t.Run("Custom test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
 		vaultMock := &mocks.VaultMock{}

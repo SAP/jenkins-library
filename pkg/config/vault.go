@@ -29,6 +29,7 @@ const (
 	skipVault                           = "skipVault"
 	vaultDisableOverwrite               = "vaultDisableOverwrite"
 	vaultTestCredentialEnvPrefix        = "vaultTestCredentialEnvPrefix"
+	vaultCredentialEnvPrefix            = "vaultCredentialEnvPrefix"
 	vaultTestCredentialEnvPrefixDefault = "PIPER_TESTCREDENTIAL_"
 	vaultCredentialEnvPrefixDefault     = "PIPER_VAULTCREDENTIAL_"
 )
@@ -50,7 +51,7 @@ var (
 		vaultTestCredentialEnvPrefix,
 		vaultCredentialPath,
 		vaultCredentialKeys,
-		vaultCredentialEnvPrefixDefault,
+		vaultCredentialEnvPrefix,
 	}
 
 	// VaultRootPaths are the lookup paths piper tries to use during the vault lookup.
