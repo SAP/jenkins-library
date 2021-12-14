@@ -156,11 +156,11 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
+				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist({{ if eq (index $oRes "type") "reports" -}}stepConfig{{- else -}}
 					{{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
 				){{- end }}
-				config.RemoveVaultSecretFiles()
-				{{- range $notused, $oRes := .OutputResources }}
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitCommit
