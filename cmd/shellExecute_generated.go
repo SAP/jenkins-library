@@ -16,9 +16,7 @@ import (
 )
 
 type shellExecuteOptions struct {
-	VaultServerURL string   `json:"vaultServerUrl,omitempty"`
-	VaultNamespace string   `json:"vaultNamespace,omitempty"`
-	Sources        []string `json:"sources,omitempty"`
+	Sources []string `json:"sources,omitempty"`
 }
 
 // ShellExecuteCommand Step executes defined script
@@ -35,7 +33,7 @@ func ShellExecuteCommand() *cobra.Command {
 	var createShellExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Step executes defined script",
-		Long:  `Step executes defined script with Vault credentials, or created them on this step`,
+		Long:  `Step executes defined script with using test vault credentials`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -110,8 +108,6 @@ func ShellExecuteCommand() *cobra.Command {
 }
 
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
-	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The vault namespace that should be used (optional)")
 	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
 
 }
@@ -128,24 +124,6 @@ func shellExecuteMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "vaultServerUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultServerUrl"),
-					},
-					{
-						Name:        "vaultNamespace",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultNamespace"),
-					},
-					{
 						Name:        "sources",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -155,6 +133,9 @@ func shellExecuteMetadata() config.StepData {
 						Default:     []string{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "shell", Image: "node:lts-stretch", WorkingDir: "/home/node"},
 			},
 		},
 	}
