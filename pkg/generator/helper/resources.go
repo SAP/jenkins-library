@@ -214,7 +214,7 @@ type ReportsParameter struct {
 const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 }
 
-func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanOptions) {
+func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanOptions) error {
 	content := []gcs.ReportOutputParam{
 		{{- range $notused, $param := .Parameters }}
 		{FilePattern: "{{ $param.FilePattern }}", ParamRef: "{{ $param.ParamRef }}", StepResultType: "{{ $param.Type }}", SubFolder: "{{ $param.SubFolder }}"},
@@ -228,7 +228,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanO
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
-		log.Entry().Fatalf("creation GCS client failed: %v", err)
+		return fmt.Errorf("creation of GCS client failed: %w", err)
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -242,8 +242,9 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanO
 		}
 	}
 	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketID, doublestar.Glob, os.Stat); err != nil {
-		log.Entry().Fatalf("failed to persist reports: %v", err)
+		return fmt.Errorf("failed to persist reports: %w", err)
 	}
+	return nil
 }`
 
 // StructName returns the name of the environment resource struct
