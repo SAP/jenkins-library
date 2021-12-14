@@ -350,7 +350,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "whitesourceAgentUrl"}},
 						Default:     `https://saas.whitesourcesoftware.com/agent`,
 					},
 					{

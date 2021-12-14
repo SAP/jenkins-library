@@ -19,7 +19,7 @@ func writeToFileMock(f string, d []byte, p os.FileMode) error {
 
 func TestWriteReport(t *testing.T) {
 	// init
-	const expected = `{"serverUrl":"https://sonarcloud.io","projectKey":"Piper-Validation/Golang","taskId":"mock.Anything","numberOfIssues":{"blocker":0,"critical":1,"major":2,"minor":3,"info":4}}`
+	const expected = `{"serverUrl":"https://sonarcloud.io","projectKey":"Piper-Validation/Golang","taskId":"mock.Anything","numberOfIssues":{"blocker":0,"critical":1,"major":2,"minor":3,"info":4},"coverage":{"coverage":13.7,"lineCoverage":37.1,"branchCoverage":42}}`
 	testData := ReportData{
 		ServerURL:  "https://sonarcloud.io",
 		ProjectKey: "Piper-Validation/Golang",
@@ -29,6 +29,11 @@ func TestWriteReport(t *testing.T) {
 			Major:    2,
 			Minor:    3,
 			Info:     4,
+		},
+		Coverage: SonarCoverage{
+			Coverage:       13.7,
+			BranchCoverage: 42,
+			LineCoverage:   37.1,
 		},
 	}
 	// test
