@@ -256,7 +256,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "sonarSecretName",
+								Name:    "sonarVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "sonar",
 							},
