@@ -274,7 +274,6 @@ spec:
         params:
           - filePattern: "sonarscan.json"
             type: sonarqube
-            subFolder: "sonarExecuteScan"
           - filePattern: "sonarExecuteScan_*.json"
             type: sonarqube
       - name: influx
