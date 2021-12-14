@@ -444,7 +444,10 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	// }
 
 	version := getProcessedVersion(config)
-	fileName = fileName + "_" + version
+
+	if len(version) > 0 {
+		fileName = fileName + "_" + version
+	}
 
 	fileName = strings.ReplaceAll(fileName, "/", "_")
 	return fileName + ".tar"
