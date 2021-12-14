@@ -120,7 +120,7 @@ func TestReportsResource_StructString(t *testing.T) {
 			expected: `type testStepReports struct {
 }
 
-func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
+func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) error {
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "pattern1", ParamRef: "", StepResultType: "general", SubFolder: "sub/folder"},
 		{FilePattern: "pattern2", ParamRef: "", StepResultType: "", SubFolder: ""},
@@ -134,7 +134,7 @@ func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
-		log.Entry().Fatalf("creation GCS client failed: %v", err)
+		return fmt.Errorf("creation of GCS client failed: %w", err)
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -148,8 +148,9 @@ func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
 		}
 	}
 	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketID, doublestar.Glob, os.Stat); err != nil {
-		log.Entry().Fatalf("failed to persist reports: %v", err)
+		return fmt.Errorf("failed to persist reports: %w", err)
 	}
+	return nil
 }`,
 		},
 	}
