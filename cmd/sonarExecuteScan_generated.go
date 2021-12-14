@@ -56,8 +56,8 @@ type sonarExecuteScanReports struct {
 
 func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "general", SubFolder: "sonarExecuteScan"},
-		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "general", SubFolder: ""},
+		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: "sonarExecuteScan"},
+		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: ""},
 	}
 	gcsFolderPath := GeneralConfig.GCSFolderPath
 	gcsBucketID := GeneralConfig.GCSBucketId
@@ -197,8 +197,8 @@ func SonarExecuteScanCommand() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				reports.persist(stepConfig)
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -565,8 +565,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "sonarscan.json", "type": "general", "subFolder": "sonarExecuteScan"},
-							{"filePattern": "sonarExecuteScan_*.json", "type": "general"},
+							{"filePattern": "sonarscan.json", "type": "sonarqube", "subFolder": "sonarExecuteScan"},
+							{"filePattern": "sonarExecuteScan_*.json", "type": "sonarqube"},
 						},
 					},
 					{
