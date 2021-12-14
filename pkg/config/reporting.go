@@ -13,7 +13,7 @@ var ReportingParameters = ReportingParams{
 			Aliases: []Alias{{Name: "jsonKeyFilePath"}},
 			ResourceRef: []ResourceReference{
 				{
-					Name:    "gcpVaultSecretName",
+					Name:    "gcpFileVaultSecretName",
 					Type:    "vaultSecretFile",
 					Default: "gcp",
 				},
