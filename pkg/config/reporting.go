@@ -14,7 +14,7 @@ var ReportingParameters = ReportingParams{
 			ResourceRef: []ResourceReference{
 				{
 					Name:    "gcpJsonKeyFilePathVaultSecretName",
-					Type:    "vaultSecret",
+					Type:    "vaultSecretFile",
 					Default: "gcp",
 				},
 			},
