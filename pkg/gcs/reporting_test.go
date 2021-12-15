@@ -54,6 +54,7 @@ func TestPersistReportsToGCS(t *testing.T) {
 	var testCases = []struct {
 		testName      string
 		gcsFolderPath string
+		gcsSubFolder  string
 		outputParams  []ReportOutputParam
 		expected      []Task
 		detectedFiles []string
@@ -63,20 +64,21 @@ func TestPersistReportsToGCS(t *testing.T) {
 		{
 			testName:      "success case",
 			gcsFolderPath: "test/folder/path",
+			gcsSubFolder:  "sub/folder",
 			outputParams: []ReportOutputParam{
-				{FilePattern: "*.json", ParamRef: "", StepResultType: "general", SubFolder: "subFolder"},
-				{FilePattern: "*/test*", ParamRef: "", StepResultType: "", SubFolder: "sub/folder"},
-				{FilePattern: "*.json", ParamRef: "firstParameter", StepResultType: "general", SubFolder: ""},
-				{FilePattern: "", ParamRef: "secondParameter", StepResultType: "general", SubFolder: "test"},
-				{FilePattern: "", ParamRef: "thirdParameter", StepResultType: "", SubFolder: ""},
+				{FilePattern: "*.json", ParamRef: "", StepResultType: "general"},
+				{FilePattern: "*/test*", ParamRef: "", StepResultType: ""},
+				{FilePattern: "*.json", ParamRef: "firstParameter", StepResultType: "general"},
+				{FilePattern: "", ParamRef: "secondParameter", StepResultType: "general"},
+				{FilePattern: "", ParamRef: "thirdParameter", StepResultType: ""},
 			},
 			expected: []Task{
-				{SourcePath: "asdf.json", TargetPath: "test/folder/path/general/subFolder/asdf.json"},
+				{SourcePath: "asdf.json", TargetPath: "test/folder/path/general/sub/folder/asdf.json"},
 				{SourcePath: "folder/test1", TargetPath: "test/folder/path/sub/folder/folder/test1"},
 				{SourcePath: "testFolder/test3", TargetPath: "test/folder/path/sub/folder/testFolder/test3"},
-				{SourcePath: "report1.json", TargetPath: "test/folder/path/general/report1.json"},
-				{SourcePath: "test-report.json", TargetPath: "test/folder/path/general/test/test-report.json"},
-				{SourcePath: "test-report2.json", TargetPath: "test/folder/path/test-report2.json"},
+				{SourcePath: "report1.json", TargetPath: "test/folder/path/general/sub/folder/report1.json"},
+				{SourcePath: "test-report.json", TargetPath: "test/folder/path/general/sub/folder/test-report.json"},
+				{SourcePath: "test-report2.json", TargetPath: "test/folder/path/sub/folder/test-report2.json"},
 			},
 			detectedFiles: []string{"asdf.json", "someFolder/someFile", "folder/test1", "folder1/test2", "testFolder/test3"},
 			uploadFileErr: nil,
@@ -85,11 +87,12 @@ func TestPersistReportsToGCS(t *testing.T) {
 		{
 			testName:      "failed upload to GCS",
 			gcsFolderPath: "test/folder/path",
+			gcsSubFolder:  "",
 			outputParams: []ReportOutputParam{
-				{FilePattern: "*.json", ParamRef: "", StepResultType: "general", SubFolder: "subFolder"},
+				{FilePattern: "*.json", ParamRef: "", StepResultType: "general"},
 			},
 			expected: []Task{
-				{SourcePath: "asdf.json", TargetPath: "test/folder/path/general/subFolder/asdf.json"},
+				{SourcePath: "asdf.json", TargetPath: "test/folder/path/general/asdf.json"},
 			},
 			detectedFiles: []string{"asdf.json", "someFolder/someFile", "folder/test1", "folder1/test2", "testFolder/test3"},
 			uploadFileErr: errors.New("upload failed"),
@@ -98,8 +101,9 @@ func TestPersistReportsToGCS(t *testing.T) {
 		{
 			testName:      "failed - input parameter does not exist",
 			gcsFolderPath: "test/folder/path",
+			gcsSubFolder:  "",
 			outputParams: []ReportOutputParam{
-				{FilePattern: "", ParamRef: "missingParameter", StepResultType: "general", SubFolder: "test"},
+				{FilePattern: "", ParamRef: "missingParameter", StepResultType: "general"},
 			},
 			expected:      []Task{},
 			detectedFiles: []string{"asdf.json", "someFolder/someFile", "folder/test1", "folder1/test2", "testFolder/test3"},
@@ -110,7 +114,7 @@ func TestPersistReportsToGCS(t *testing.T) {
 			testName:      "failed - input parameter is empty",
 			gcsFolderPath: "test/folder/path",
 			outputParams: []ReportOutputParam{
-				{FilePattern: "", ParamRef: "emptyParameter", StepResultType: "general", SubFolder: "test"},
+				{FilePattern: "", ParamRef: "emptyParameter", StepResultType: "general"},
 			},
 			expected:      []Task{},
 			detectedFiles: []string{"asdf.json", "someFolder/someFile", "folder/test1", "folder1/test2", "testFolder/test3"},
@@ -150,7 +154,7 @@ func TestPersistReportsToGCS(t *testing.T) {
 				return testFileInfo{name}, nil
 			}
 
-			err := PersistReportsToGCS(mockedClient, tt.outputParams, inputParameters, tt.gcsFolderPath, gcsBucketID, searchFn, fileInfoFn)
+			err := PersistReportsToGCS(mockedClient, tt.outputParams, inputParameters, tt.gcsFolderPath, gcsBucketID, tt.gcsSubFolder, searchFn, fileInfoFn)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {

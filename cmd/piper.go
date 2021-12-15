@@ -46,6 +46,7 @@ type GeneralConfigOptions struct {
 	GCPJsonKeyFilePath   string
 	GCSFolderPath        string
 	GCSBucketId          string
+	GCSSubFolder         string
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -211,6 +212,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCPJsonKeyFilePath, "gcpJsonKeyFilePath", "", "File path to Google Cloud Platform JSON key file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
 
 }
 
@@ -399,6 +401,9 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 	if GeneralConfig.GCSBucketId == "" {
 		GeneralConfig.GCSBucketId, _ = stepConfig.Config["gcsBucketId"].(string)
+	}
+	if GeneralConfig.GCSSubFolder == "" {
+		GeneralConfig.GCSSubFolder, _ = stepConfig.Config["gcsSubFolder"].(string)
 	}
 	return nil
 }

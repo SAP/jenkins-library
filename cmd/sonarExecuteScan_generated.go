@@ -56,12 +56,9 @@ type sonarExecuteScanReports struct {
 
 func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: ""},
-		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: ""},
+		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
+		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube"},
 	}
-	gcsFolderPath := GeneralConfig.GCSFolderPath
-	gcsBucketID := GeneralConfig.GCSBucketId
-
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
 	}
@@ -80,7 +77,7 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketID, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }

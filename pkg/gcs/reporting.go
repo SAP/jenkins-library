@@ -10,7 +10,6 @@ type ReportOutputParam struct {
 	FilePattern    string
 	ParamRef       string
 	StepResultType string
-	SubFolder      string
 }
 
 type Task struct {
@@ -18,10 +17,10 @@ type Task struct {
 	TargetPath string
 }
 
-func PersistReportsToGCS(gcsClient Client, outputParams []ReportOutputParam, inputParams map[string]string, gcsFolderPath string, gcsBucketID string, searchFilesFunc func(string) ([]string, error), fileInfo func(string) (os.FileInfo, error)) error {
+func PersistReportsToGCS(gcsClient Client, outputParams []ReportOutputParam, inputParams map[string]string, gcsFolderPath string, gcsBucketID string, gcsSubFolder string, searchFilesFunc func(string) ([]string, error), fileInfo func(string) (os.FileInfo, error)) error {
 	tasks := []Task{}
 	for _, param := range outputParams {
-		targetFolder := GetTargetFolder(gcsFolderPath, param.StepResultType, param.SubFolder)
+		targetFolder := GetTargetFolder(gcsFolderPath, param.StepResultType, gcsSubFolder)
 		if param.ParamRef != "" {
 			paramValue, ok := inputParams[param.ParamRef]
 			if !ok {

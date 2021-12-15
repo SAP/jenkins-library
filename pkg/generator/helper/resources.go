@@ -208,7 +208,6 @@ type ReportsParameter struct {
 	FilePattern string
 	ParamRef    string
 	Type        string
-	SubFolder   string
 }
 
 const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
@@ -217,12 +216,9 @@ const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanOptions) {
 	content := []gcs.ReportOutputParam{
 		{{- range $notused, $param := .Parameters }}
-		{FilePattern: "{{ $param.FilePattern }}", ParamRef: "{{ $param.ParamRef }}", StepResultType: "{{ $param.Type }}", SubFolder: "{{ $param.SubFolder }}"},
+		{FilePattern: "{{ $param.FilePattern }}", ParamRef: "{{ $param.ParamRef }}", StepResultType: "{{ $param.Type }}"},
 		{{- end }}
 	}
-	gcsFolderPath := GeneralConfig.GCSFolderPath
-	gcsBucketID := GeneralConfig.GCSBucketId
-
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
 	}
@@ -241,7 +237,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanO
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketID, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }`

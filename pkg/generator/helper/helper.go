@@ -721,9 +721,8 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				if filePattern == "" && paramRef == "" {
 					return outputResources, errors.New("both filePattern and paramRef cannot be empty at the same time")
 				}
-				subFolder, _ := param["subFolder"].(string)
 				stepResultType, _ := param["type"].(string)
-				reportsParam := ReportsParameter{FilePattern: filePattern, ParamRef: paramRef, Type: stepResultType, SubFolder: subFolder}
+				reportsParam := ReportsParameter{FilePattern: filePattern, ParamRef: paramRef, Type: stepResultType}
 				reportsResource.Parameters = append(reportsResource.Parameters, reportsParam)
 			}
 			def, err := reportsResource.StructString()

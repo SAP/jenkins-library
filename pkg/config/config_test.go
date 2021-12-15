@@ -389,7 +389,7 @@ steps:
 
 		// clean up tmp dir
 		defer os.RemoveAll(dir)
-		cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
+		cpeDir := filepath.Join(dir, "commonPipelineEnvironment/custom")
 		err = os.MkdirAll(cpeDir, 0700)
 		if err != nil {
 			t.Fatal("Failed to create sub directory")

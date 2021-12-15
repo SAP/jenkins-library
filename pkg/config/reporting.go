@@ -24,13 +24,16 @@ var ReportingParameters = ReportingParams{
 			ResourceRef: []ResourceReference{
 				{
 					Name:  "commonPipelineEnvironment",
-					Param: "gcsFolderPath",
+					Param: "custom/gcsFolderPath",
 				},
 			},
 		},
 		{
 			Name:    "gcsBucketId",
 			Aliases: []Alias{{Name: "pipelineId"}},
+		},
+		{
+			Name: "gcsSubFolder",
 		},
 	},
 }
