@@ -377,20 +377,21 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
 				"--type=kubernetes.io/dockerconfigjson",
 			)
-		} else {
-			return append(
-				kubeSecretParams,
-				"generic",
-				config.ContainerRegistrySecret,
-				"--from-file=.dockerconfigjson="+config.DockerConfigJSON,
-				//fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
-				"--type=kubernetes.io/dockerconfigjson",
-				"--save-config",
-				"--dry-run=client",
-				" -o yaml |",
-				"kubectl apply -f -",
-			)
 		}
+		// else {
+		// 	return append(
+		// 		kubeSecretParams,
+		// 		"generic",
+		// 		config.ContainerRegistrySecret,
+		// 		"--from-file=.dockerconfigjson="+config.DockerConfigJSON,
+		// 		//fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
+		// 		"--type=kubernetes.io/dockerconfigjson",
+		// 		"--save-config",
+		// 		"--dry-run=client",
+		// 		"-o yaml |",
+		// 		"kubectl apply -f -",
+		// 	)
+		// }
 
 	}
 	return append(
@@ -400,5 +401,8 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		fmt.Sprintf("--docker-server=%v", containerRegistry),
 		fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
 		fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
+		"--dry-run=client",
+		"-o yaml |",
+		"kubectl apply -f -",
 	)
 }
