@@ -214,6 +214,10 @@ const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 }
 
 func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
 	content := []gcs.ReportOutputParam{
 		{{- range $notused, $param := .Parameters }}
 		{FilePattern: "{{ $param.FilePattern }}", ParamRef: "{{ $param.ParamRef }}", StepResultType: "{{ $param.Type }}"},

@@ -55,6 +55,10 @@ type sonarExecuteScanReports struct {
 }
 
 func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
 		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube"},
