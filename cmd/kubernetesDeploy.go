@@ -135,7 +135,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils, helmEnv)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
@@ -251,7 +251,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 	} else {
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils, kubeParams)
 		//kubeSecretParams = append(kubeParams, kubeSecretParams...)
 		//kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
@@ -346,7 +346,7 @@ func splitFullImageName(image string) (imageName, tag string, err error) {
 	return "", "", fmt.Errorf("Failed to split image name '%v'", image)
 }
 
-func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils) []string {
+func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils, kubeParams []string) []string {
 	kubeSecretParams := []string{
 		"create",
 		"secret",
@@ -394,14 +394,18 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		// }
 
 	}
-	return append(
-		kubeSecretParams,
+	kubeSecretParams = append(kubeSecretParams,
 		"docker-registry",
 		config.ContainerRegistrySecret,
 		fmt.Sprintf("--docker-server=%v", containerRegistry),
 		fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
 		fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
-		"--dry-run=client",
+		"--dry-run=client")
+
+	kubeSecretParams = append(kubeSecretParams, kubeParams...)
+
+	return append(
+		kubeSecretParams,
 		"-o yaml |",
 		"kubectl apply -f -",
 	)
