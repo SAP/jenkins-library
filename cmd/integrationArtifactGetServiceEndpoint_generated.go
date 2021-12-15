@@ -195,7 +195,7 @@ func integrationArtifactGetServiceEndpointMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/integrationFlowServiceEndpoint"},
+							{"name": "custom/integrationFlowServiceEndpoint"},
 						},
 					},
 				},

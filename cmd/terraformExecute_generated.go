@@ -262,7 +262,7 @@ func terraformExecuteMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/terraformOutputs", "type": "map[string]interface{}"},
+							{"name": "custom/terraformOutputs", "type": "map[string]interface{}"},
 						},
 					},
 				},

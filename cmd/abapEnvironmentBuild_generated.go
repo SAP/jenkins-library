@@ -413,7 +413,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "abap/buildValues"},
+							{"name": "abap/buildValues"},
 						},
 					},
 				},
