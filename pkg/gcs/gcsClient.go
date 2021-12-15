@@ -139,7 +139,7 @@ func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath 
 	return nil
 }
 
-// ListFiles lists all files in certain GCP bucket
+// ListFiles lists all files in certain GCS bucket
 func (g *gcsClient) ListFiles(bucketID string) ([]string, error) {
 	fileNames := []string{}
 	it := g.client.Bucket(bucketID).Objects(g.context, nil)

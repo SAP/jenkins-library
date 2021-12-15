@@ -32,7 +32,7 @@ func TestMixinReportingConfig(t *testing.T) {
 
 	assert.Contains(t, config.Config, "gcpJsonKeyFilePath")
 	assert.Equal(t, gcpJsonKeyFilePath, config.Config["gcpJsonKeyFilePath"])
-	assert.Contains(t, config.Config, "gcpJsonKeyFilePath")
+	assert.Contains(t, config.Config, "gcsFolderPath")
 	assert.Equal(t, gcsFolderPath, config.Config["gcsFolderPath"])
 	assert.Contains(t, config.Config, "gcsBucketId")
 	assert.Equal(t, gcsBucketID, config.Config["gcsBucketId"])
