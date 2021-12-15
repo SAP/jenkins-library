@@ -46,7 +46,7 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 
-	httpMethod := "POST"
+	httpMethod := http.MethodPost
 	uploadApiProxyStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Transport.svc/APIProxies", serviceKey.OAuth.Host)
 	header := make(http.Header)
 	header.Add("Accept", "application/zip")
