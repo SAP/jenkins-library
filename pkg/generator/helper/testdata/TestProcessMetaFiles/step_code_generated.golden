@@ -10,6 +10,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/gcs"
+	"reflect"
+	"strings"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -24,6 +28,37 @@ type testStepOptions struct {
 	Param3 string `json:"param3,omitempty" validate:"possible-values=value1 value2 value3,required_if=Param1 value1 Param2 value2"`
 }
 
+
+type testStepReports struct {
+}
+
+func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "test-report_*.json", ParamRef: "", StepResultType: ""},
+		{FilePattern: "report1", ParamRef: "", StepResultType: "general"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
 
 type testStepCommonPipelineEnvironment struct {
 	artifactVersion string
@@ -106,6 +141,7 @@ func TestStepCommand() *cobra.Command {
 	metadata := testStepMetadata()
 	var stepConfig testStepOptions
 	var startTime time.Time
+	var reports testStepReports
 	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
 	var logCollector *log.CollectorHook
@@ -159,9 +195,10 @@ func TestStepCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
+				reports.persist(stepConfig)
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -256,6 +293,14 @@ func testStepMetadata() config.StepData {
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "test-report_*.json","subFolder": "sonarExecuteScan",},
+							{"filePattern": "report1","type": "general",},
+						},
+					},
+					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
@@ -263,7 +308,7 @@ func testStepMetadata() config.StepData {
 							{"name": "git/commitId",},
 							{"name": "git/headCommitId",},
 							{"name": "git/branch",},
-							{"name": "custom/customList",},
+							{"name": "custom/customList","type": "[]string",},
 						},
 					},
 					{

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStructString(t *testing.T) {
+func TestInfluxResource_StructString(t *testing.T) {
 	tt := []struct {
 		in       InfluxResource
 		expected string
@@ -79,6 +79,72 @@ func (i *TestStepTestInflux) persist(path, resourceName string) {
 	}
 	if errCount > 0 {
 		log.Entry().Error("failed to persist Influx environment")
+	}
+}`,
+		},
+	}
+
+	for run, test := range tt {
+		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
+			got, err := test.in.StructString()
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, got)
+		})
+
+	}
+}
+
+func TestReportsResource_StructString(t *testing.T) {
+	tt := []struct {
+		in       ReportsResource
+		expected string
+	}{
+		{
+			in: ReportsResource{
+				Name:     "reports",
+				StepName: "testStep",
+				Parameters: []ReportsParameter{
+					{
+						FilePattern: "pattern1",
+						Type:        "general",
+					},
+					{
+						FilePattern: "pattern2",
+					},
+					{
+						ParamRef: "testParam",
+					},
+				},
+			},
+			expected: `type testStepReports struct {
+}
+
+func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "pattern1", ParamRef: "", StepResultType: "general"},
+		{FilePattern: "pattern2", ParamRef: "", StepResultType: ""},
+		{FilePattern: "", ParamRef: "testParam", StepResultType: ""},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }`,
 		},
