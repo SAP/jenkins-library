@@ -34,7 +34,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: token
+      - name: token-dummy
         type: string
         description: "Token used to authenticate with the Sonar Server."
         scope:
