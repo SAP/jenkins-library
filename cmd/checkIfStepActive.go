@@ -163,7 +163,6 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		}
 	}
 	var flags map[string]interface{}
-	stepAliase := []config.Alias{}
 	filter := config.StepFilters{
 		All:     []string{},
 		General: []string{},
@@ -172,8 +171,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		Env:     []string{},
 	}
 
-	_, err = pConfig.GetStepConfig(flags, "", customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filter, nil, nil, nil, "", "",
-		stepAliase)
+	_, err = pConfig.GetStepConfig(flags, "", customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filter, config.StepData{}, nil, "", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "getting step config failed")
 	}
