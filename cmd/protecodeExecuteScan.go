@@ -438,15 +438,10 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 		fileName = fileName[:index]
 	}
 
-	// append trimmed version
-	// if version := handleArtifactVersion(config.Version); len(version) > 0 {
-	// 	fileName = fileName + "_" + version
-	// }
-
 	version := getProcessedVersion(config)
 
 	if len(version) > 0 {
-		fileName = fileName + "_" + version
+		fileName = fileName + " - " + version
 	}
 
 	fileName = strings.ReplaceAll(fileName, "/", "_")
