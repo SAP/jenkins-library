@@ -146,7 +146,7 @@ void call(Map parameters = [:]) {
                 // so that user can get them in one pipeline run
                 // put the validation here, because we need uri and token to call tms get nodes api
                 List nodes = tms.getNodes(uri, token).getAt("nodes");
-                Map mtaYaml = getMtaYaml();
+                Map mtaYaml = getMtaYaml(script.commonPipelineEnvironment.getValue('mtaBuildToolDesc'));
                 Map nodeIdExtDesMap = validateNodeExtDescriptorMapping(nodeExtDescriptorMapping, nodes, mtaYaml, mtaVersion)
 
                 if(nodeIdExtDesMap) {
@@ -181,22 +181,23 @@ def String getMtaId(String extDescriptorFilePath){
     return mtaId
 }
 
-def Map getMtaYaml() {
-    if(fileExists("mta.yaml")) {
-        def mtaYaml = readYaml file: "mta.yaml"
+def Map getMtaYaml(String mtaBuildToolDesc) {
+    mtaBuildToolDesc = mtaBuildToolDesc?:"mta.yaml"
+    if(fileExists(mtaBuildToolDesc)) {
+        def mtaYaml = readYaml file: mtaBuildToolDesc
         if (!mtaYaml.ID || !mtaYaml.version) {
             def errorMsg
             if (!mtaYaml.ID) {
-                errorMsg = "Property 'ID' is not found in mta.yaml."
+                errorMsg = "Property 'ID' is not found in ${mtaBuildToolDesc}."
             }
             if (!mtaYaml.version) {
-                errorMsg += "Property 'version' is not found in mta.yaml."
+                errorMsg += "Property 'version' is not found in ${mtaBuildToolDesc}."
             }
             error errorMsg
         }
         return mtaYaml
     } else {
-        error "mta.yaml is not found in the root folder of the project."
+        error "${mtaBuildToolDesc} is not found in the root folder of the project."
     }
 }
 
