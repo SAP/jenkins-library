@@ -256,7 +256,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/isChangeInDevelopment"},
+							{"name": "custom/isChangeInDevelopment"},
 						},
 					},
 				},

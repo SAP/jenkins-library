@@ -296,8 +296,8 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/changeDocumentId"},
-							{"Name": "custom/transportRequestId"},
+							{"name": "custom/changeDocumentId"},
+							{"name": "custom/transportRequestId"},
 						},
 					},
 				},

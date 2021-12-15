@@ -332,7 +332,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/buildSettingsInfo"},
+							{"name": "custom/buildSettingsInfo"},
 						},
 					},
 				},
