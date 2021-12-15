@@ -54,9 +54,9 @@ type sonarExecuteScanOptions struct {
 type sonarExecuteScanReports struct {
 }
 
-func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) error {
+func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: "sonarExecuteScan"},
+		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: ""},
 		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube", SubFolder: ""},
 	}
 	gcsFolderPath := GeneralConfig.GCSFolderPath
@@ -67,7 +67,7 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) er
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
-		return fmt.Errorf("creation of GCS client failed: %w", err)
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -81,9 +81,8 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) er
 		}
 	}
 	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketID, doublestar.Glob, os.Stat); err != nil {
-		return fmt.Errorf("failed to persist reports: %w", err)
+		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
-	return nil
 }
 
 type sonarExecuteScanInflux struct {
@@ -566,7 +565,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "sonarscan.json", "type": "sonarqube", "subFolder": "sonarExecuteScan"},
+							{"filePattern": "sonarscan.json", "type": "sonarqube"},
 							{"filePattern": "sonarExecuteScan_*.json", "type": "sonarqube"},
 						},
 					},
