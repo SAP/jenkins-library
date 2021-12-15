@@ -57,7 +57,7 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
