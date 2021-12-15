@@ -312,7 +312,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/transportRequestId"},
+							{"name": "custom/transportRequestId"},
 						},
 					},
 				},

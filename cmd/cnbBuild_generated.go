@@ -323,8 +323,8 @@ func cnbBuildMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "container/registryUrl"},
-							{"Name": "container/imageNameTag"},
+							{"name": "container/registryUrl"},
+							{"name": "container/imageNameTag"},
 						},
 					},
 				},
