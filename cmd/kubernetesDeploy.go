@@ -253,7 +253,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 	} else {
 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 		//kubeSecretParams = append(kubeParams, kubeSecretParams...)
-		kubeSecretParams = append(kubeSecretParams, kubeParams...)
+		//kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
@@ -382,9 +382,9 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				kubeSecretParams,
 				"generic",
 				config.ContainerRegistrySecret,
+				fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
 				"--save-config",
 				"--dry-run=client",
-				fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
 				" -o yaml |",
 				"kubectl apply -f -",
 			)
