@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -28,6 +30,35 @@ type npmExecuteScriptsOptions struct {
 	RepositoryURL              string   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
 	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
+	BuildSettingsInfo          string   `json:"buildSettingsInfo,omitempty"`
+}
+
+type npmExecuteScriptsCommonPipelineEnvironment struct {
+	custom struct {
+		buildSettingsInfo string
+	}
+}
+
+func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
 }
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
@@ -37,7 +68,10 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	metadata := npmExecuteScriptsMetadata()
 	var stepConfig npmExecuteScriptsOptions
 	var startTime time.Time
+	var commonPipelineEnvironment npmExecuteScriptsCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -68,6 +102,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -84,29 +119,32 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			npmExecuteScripts(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			npmExecuteScripts(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -128,6 +166,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.")
 
 }
 
@@ -268,10 +307,35 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_repositoryUsername"),
 					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Name: "node", Image: "node:lts-stretch"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+				},
 			},
 		},
 	}

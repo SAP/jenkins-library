@@ -42,7 +42,7 @@ spec:
         secret: true
         resourceRef:
           - type: vaultSecret
-            name: sonarSecretName
+            name: sonarVaultSecretName
             default: sonar
           - name: sonarTokenCredentialsId
             type: secret
