@@ -17,6 +17,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/api/option"
@@ -43,11 +44,11 @@ func Test_gcsClient(t *testing.T) {
 	}
 
 	gcsContainer, err := testcontainers.GenericContainer(ctx, req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer gcsContainer.Terminate(ctx)
 
 	ip, err := gcsContainer.Host(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	port, err := gcsContainer.MappedPort(ctx, "4443")
 	endpoint := fmt.Sprintf("https://%s:%s/storage/v1/", ip, port.Port())
 	httpclient := http.Client{
