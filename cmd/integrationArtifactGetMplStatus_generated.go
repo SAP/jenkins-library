@@ -197,8 +197,8 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/integrationFlowMplStatus"},
-							{"Name": "custom/integrationFlowMplError"},
+							{"name": "custom/integrationFlowMplStatus"},
+							{"name": "custom/integrationFlowMplError"},
 						},
 					},
 				},
