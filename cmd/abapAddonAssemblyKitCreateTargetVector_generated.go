@@ -223,7 +223,7 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "abap/addonDescriptor"},
+							{"name": "abap/addonDescriptor"},
 						},
 					},
 				},

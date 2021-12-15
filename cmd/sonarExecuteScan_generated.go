@@ -256,7 +256,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "sonarSecretName",
+								Name:    "sonarVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "sonar",
 							},
@@ -525,8 +525,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
-							{"Name": "sonarqube_data"}, {"fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "sonar"}}},
+							{"name": "sonarqube_data", "fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
 						},
 					},
 				},
