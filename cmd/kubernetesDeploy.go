@@ -252,7 +252,8 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 	} else {
 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
-		kubeSecretParams = append(kubeParams, kubeSecretParams...)
+		//kubeSecretParams = append(kubeParams, kubeSecretParams...)
+		kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
