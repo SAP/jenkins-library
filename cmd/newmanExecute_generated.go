@@ -260,7 +260,7 @@ func newmanExecuteMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data", "fields": []map[string]string{{"name": "newman"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "newman"}}},
 						},
 					},
 				},

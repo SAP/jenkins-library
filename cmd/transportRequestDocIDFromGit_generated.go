@@ -195,7 +195,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/changeDocumentId"},
+							{"name": "custom/changeDocumentId"},
 						},
 					},
 				},
