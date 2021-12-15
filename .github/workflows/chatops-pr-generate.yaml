@@ -1,0 +1,42 @@
+name: Chatops
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  chatops:
+    name: generate
+
+    runs-on: ubuntu-latest
+    if: github.event.comment.body == '/generate' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
+
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-generate
+            ${{ runner.os }}-golang-
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: generate
+        run: go generate
+      - name: verify
+        run: git diff --name-only
+      - name: push
+        uses: github-actions-x/commit@v2.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push-branch: 'master'
+          files: cmd/*_generated.go
+          commit-message: 'update generated sources'
+
+      #- run: git add cmd/*_generated.go
+      #- run: git commit -m "update generated sources"
+      #- run: git push
