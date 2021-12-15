@@ -62,9 +62,6 @@ type sonarExecuteScanInflux struct {
 			major_issues    int
 			minor_issues    int
 			info_issues     int
-			coverage        float32
-			branch_coverage float32
-			line_coverage   float32
 		}
 		tags struct {
 		}
@@ -84,9 +81,6 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "sonarqube_data", name: "major_issues", value: i.sonarqube_data.fields.major_issues},
 		{valType: config.InfluxField, measurement: "sonarqube_data", name: "minor_issues", value: i.sonarqube_data.fields.minor_issues},
 		{valType: config.InfluxField, measurement: "sonarqube_data", name: "info_issues", value: i.sonarqube_data.fields.info_issues},
-		{valType: config.InfluxField, measurement: "sonarqube_data", name: "coverage", value: i.sonarqube_data.fields.coverage},
-		{valType: config.InfluxField, measurement: "sonarqube_data", name: "branch_coverage", value: i.sonarqube_data.fields.branch_coverage},
-		{valType: config.InfluxField, measurement: "sonarqube_data", name: "line_coverage", value: i.sonarqube_data.fields.line_coverage},
 	}
 
 	errCount := 0
@@ -262,7 +256,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "sonarSecretName",
+								Name:    "sonarVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "sonar",
 							},
@@ -531,8 +525,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
-							{"Name": "sonarqube_data"}, {"fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}, {"name": "coverage"}, {"name": "branch_coverage"}, {"name": "line_coverage"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "sonar"}}},
+							{"name": "sonarqube_data", "fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
 						},
 					},
 				},

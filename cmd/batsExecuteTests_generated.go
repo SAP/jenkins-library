@@ -227,7 +227,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "bats"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "bats"}}},
 						},
 					},
 				},
