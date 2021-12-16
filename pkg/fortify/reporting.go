@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	pipergithub "github.com/SAP/jenkins-library/pkg/github"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -157,17 +157,17 @@ func UploadReportToGithub(scanReport reporting.ScanReport, token, APIURL, owner,
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	// ignore JSON errors since structure is in our hands
 	markdownReport, _ := scanReport.ToMarkdown()
-	options := pipergithub.GithubCreateIssueOptions{
-		Token: token,
-		APIURL: APIURL,
-		Owner: owner,
-		Repository: repository,
-		Title: "Fortify SAST Results",
-		Body: markdownReport,
-		Assignees: assignees,
+	options := piperGithub.CreateIssueOptions{
+		Token:          token,
+		APIURL:         APIURL,
+		Owner:          owner,
+		Repository:     repository,
+		Title:          "Fortify SAST Results",
+		Body:           markdownReport,
+		Assignees:      assignees,
 		UpdateExisting: true,
-	}	
-	err := pipergithub.CreateIssue(&options)
+	}
+	err := piperGithub.CreateIssue(&options)
 	if err != nil {
 		return errors.Wrap(err, "failed to upload fortify results into GitHub issue")
 	}

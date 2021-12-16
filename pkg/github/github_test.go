@@ -106,7 +106,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 			issueID: 1,
 		}
 		ghCreateCommentMock := ghCreateCommentMock{}
-		config := GithubCreateIssueOptions{
+		config := CreateIssueOptions{
 			Owner:      "TEST",
 			Repository: "test",
 			Body:       []byte("This is my test body"),
@@ -134,7 +134,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 			issueID: 1,
 		}
 		ghCreateCommentMock := ghCreateCommentMock{}
-		config := GithubCreateIssueOptions{
+		config := CreateIssueOptions{
 			Owner:          "TEST",
 			Repository:     "test",
 			Body:           []byte("This is my test body"),
@@ -164,7 +164,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 			issueID: 1,
 		}
 		ghCreateCommentMock := ghCreateCommentMock{}
-		config := GithubCreateIssueOptions{
+		config := CreateIssueOptions{
 			Owner:          "TEST",
 			Repository:     "test",
 			Body:           []byte(""),
@@ -190,7 +190,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		ghCreateIssueService := ghCreateIssueMock{
 			issueError: fmt.Errorf("error creating issue"),
 		}
-		config := GithubCreateIssueOptions{
+		config := CreateIssueOptions{
 			Body: []byte("test content"),
 		}
 

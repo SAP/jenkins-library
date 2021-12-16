@@ -24,8 +24,8 @@ type githubCreateCommentService interface {
 	CreateComment(ctx context.Context, owner string, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error)
 }
 
-// GithubCreateIssueOptions to configure the creation
-type GithubCreateIssueOptions struct {
+// CreateIssueOptions to configure the creation
+type CreateIssueOptions struct {
 	APIURL         string   `json:"apiUrl,omitempty"`
 	Assignees      []string `json:"assignees,omitempty"`
 	Body           []byte   `json:"body,omitempty"`
@@ -67,7 +67,7 @@ func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client
 	return ctx, client, nil
 }
 
-func CreateIssue(ghCreateIssueOptions *GithubCreateIssueOptions) error {
+func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) error {
 	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "")
 	if err != nil {
 		return errors.Wrap(err, "failed to get GitHub client")
@@ -75,7 +75,7 @@ func CreateIssue(ghCreateIssueOptions *GithubCreateIssueOptions) error {
 	return createIssueLocal(ctx, ghCreateIssueOptions, client.Issues, client.Search, client.Issues)
 }
 
-func createIssueLocal(ctx context.Context, ghCreateIssueOptions *GithubCreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) error {
+func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) error {
 
 	issue := github.IssueRequest{
 		Title: &ghCreateIssueOptions.Title,
