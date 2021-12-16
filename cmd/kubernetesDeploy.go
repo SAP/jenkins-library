@@ -397,17 +397,16 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	kubeSecretParams = append(kubeSecretParams,
 		"docker-registry",
 		config.ContainerRegistrySecret,
-		fmt.Sprintf("--docker-server=%v \\", containerRegistry),
-		fmt.Sprintf("--docker-username=%v \\", config.ContainerRegistryUser),
-		fmt.Sprintf("--docker-password=%v \\", config.ContainerRegistryPassword),
-		"--dry-run=client \\")
+		fmt.Sprintf("--docker-server=%v", containerRegistry),
+		fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
+		fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
+		"--dry-run=client")
 
 	kubeSecretParams = append(kubeSecretParams, kubeParams...)
 
 	return append(
 		kubeSecretParams,
-		"-o yaml",
-		"|",
+		"-o yaml |",
 		"kubectl apply -f -",
 	)
 }
