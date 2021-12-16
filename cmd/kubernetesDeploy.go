@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -72,7 +75,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, utils kubernetesDeployU
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		return runHelmDeploy(config, utils, stdout)
 	} else if config.DeployTool == "kubectl" {
-		return runKubectlDeploy(config, utils)
+		return runKubectlDeploy(config, utils, stdout)
 	}
 	return fmt.Errorf("Failed to execute deployments")
 }
@@ -223,7 +226,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	return nil
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils) error {
+func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, stdout io.Writer) error {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -248,10 +251,14 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 		kubeParams = append(kubeParams, fmt.Sprintf("--token=%v", config.KubeToken))
 	}
 
+	utils.Stdout(stdout)
+
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 	} else {
 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils, kubeParams)
+		var dockerRegistrySecret bytes.Buffer
+		utils.Stdout(&dockerRegistrySecret)
 		//kubeSecretParams = append(kubeParams, kubeSecretParams...)
 		//kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
@@ -259,6 +266,24 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 		}
+
+		var dockerRegistrySecretData map[string]interface{}
+
+		if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
+			log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
+		}
+
+		// write the json output to a file
+		tmpFolder := getTempDirForKubeCtlJson()
+		defer os.RemoveAll(tmpFolder) // clean up
+		jsonData, _ := json.Marshal(dockerRegistrySecretData)
+		ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0644)
+
+		kubeSecretApplyParams := []string{"apply", "-f", filepath.Join(tmpFolder, "secret.json")}
+		if err := utils.RunExecutable("kubectl", kubeSecretApplyParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
+		}
+
 	}
 
 	// if config.CreateDockerRegistrySecret {
@@ -320,6 +345,14 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil
+}
+
+func getTempDirForKubeCtlJson() string {
+	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	if err != nil {
+		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("creating temp directory failed")
+	}
+	return tmpFolder
 }
 
 func splitRegistryURL(registryURL string) (protocol, registry string, err error) {
@@ -406,7 +439,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 
 	return append(
 		kubeSecretParams,
-		"--output=yaml | kubectl apply -f -",
+		"--output=json",
 		//"-o yaml | kubectl apply -f -",
 	)
 }
