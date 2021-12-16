@@ -256,7 +256,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 		//kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
-		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
+		if err := utils.RunExecutable("kubectl", strings.Join(kubeSecretParams, " ")); err != nil {
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 		}
 	}
