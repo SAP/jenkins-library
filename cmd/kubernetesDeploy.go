@@ -406,7 +406,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 
 	return append(
 		kubeSecretParams,
-		"--output=yaml",
+		"--output=yaml | kubectl apply -f -",
 		//"-o yaml | kubectl apply -f -",
 	)
 }
