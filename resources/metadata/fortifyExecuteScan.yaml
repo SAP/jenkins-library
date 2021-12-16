@@ -606,6 +606,18 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: createResultIssue
+        type: bool
+        description: "Whether the step creates a GitHub issue containing the scan results in the originating repo.
+        Since optimized pipelines are headless the creation is implicitly activated for schedules runs."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: optimizedAndScheduled
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - image: ""
   outputs:
