@@ -411,21 +411,6 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				"--type=kubernetes.io/dockerconfigjson",
 			)
 		}
-		// else {
-		// 	return append(
-		// 		kubeSecretParams,
-		// 		"generic",
-		// 		config.ContainerRegistrySecret,
-		// 		"--from-file=.dockerconfigjson="+config.DockerConfigJSON,
-		// 		//fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
-		// 		"--type=kubernetes.io/dockerconfigjson",
-		// 		"--save-config",
-		// 		"--dry-run=client",
-		// 		"-o yaml |",
-		// 		"kubectl apply -f -",
-		// 	)
-		// }
-
 	}
 	kubeSecretParams = append(kubeSecretParams,
 		"docker-registry",
@@ -440,6 +425,5 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	return append(
 		kubeSecretParams,
 		"--output=json",
-		//"-o yaml | kubectl apply -f -",
 	)
 }
