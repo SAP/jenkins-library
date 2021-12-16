@@ -108,6 +108,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
       - name: containerImageTag
         aliases:
           - name: artifactVersion
