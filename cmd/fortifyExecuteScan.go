@@ -304,9 +304,11 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 	}
 	reports = append(reports, paths...)
 
-	err = fortify.UploadReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees)
-	if err != nil {
-		return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
+	if len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0  && len(config.Repository) > 0 {
+		err = fortify.UploadReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees)
+		if err != nil {
+			return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
+		}
 	}
 
 	jsonReport := fortify.CreateJSONReport(fortifyReportingData, spotChecksCountByCategory, config.ServerURL)
