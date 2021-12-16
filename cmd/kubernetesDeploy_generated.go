@@ -264,18 +264,13 @@ func kubernetesDeployMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_containerRegistryPassword"),
 					},
 					{
-						Name: "containerImageName",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "container/imageNameTag",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "dockerImageName"}},
-						Default:   os.Getenv("PIPER_containerImageName"),
+						Name:        "containerImageName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Default:     os.Getenv("PIPER_containerImageName"),
 					},
 					{
 						Name: "containerImageTag",
