@@ -49,7 +49,7 @@ func (p *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) persist(path, res
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
@@ -117,8 +117,8 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -205,7 +205,7 @@ func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 					{
 						Name:        "addonDescriptorFileName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
@@ -233,7 +233,7 @@ func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "abap/addonDescriptor"},
+							{"name": "abap/addonDescriptor"},
 						},
 					},
 				},

@@ -89,7 +89,7 @@ func (i *detectExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -155,8 +155,8 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -252,7 +252,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken"}, {Name: "detect/apiToken"}},
+						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken", Deprecated: true}, {Name: "detect/apiToken", Deprecated: true}},
 						Default:   os.Getenv("PIPER_token"),
 					},
 					{
@@ -478,8 +478,8 @@ func detectExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "detect"}}},
-							{"Name": "detect_data"}, {"fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "components"}, {"name": "policy_violations"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "detect"}}},
+							{"name": "detect_data", "fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "components"}, {"name": "policy_violations"}}},
 						},
 					},
 				},

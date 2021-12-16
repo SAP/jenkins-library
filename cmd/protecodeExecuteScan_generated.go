@@ -86,7 +86,7 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -155,8 +155,8 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -278,6 +278,11 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/dockerConfigJSON",
+							},
+
+							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
 							},
@@ -372,7 +377,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "reuseExisting"}},
+						Aliases:     []config.Alias{{Name: "reuseExisting", Deprecated: true}},
 						Default:     false,
 					},
 					{
@@ -402,7 +407,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "user"}},
+						Aliases:   []config.Alias{{Name: "user", Deprecated: true}},
 						Default:   os.Getenv("PIPER_username"),
 					},
 					{
@@ -437,7 +442,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -457,8 +462,8 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "protecode"}}},
-							{"Name": "protecode_data"}, {"fields": []map[string]string{{"name": "excluded_vulnerabilities"}, {"name": "historical_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "vulnerabilities"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "protecode"}}},
+							{"name": "protecode_data", "fields": []map[string]string{{"name": "excluded_vulnerabilities"}, {"name": "historical_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "vulnerabilities"}}},
 						},
 					},
 				},

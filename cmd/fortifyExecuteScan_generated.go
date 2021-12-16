@@ -138,7 +138,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -214,8 +214,8 @@ Besides triggering a scan the step verifies the results after they have been upl
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -496,7 +496,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "fortifyProjectVersion"}},
+						Aliases:   []config.Alias{{Name: "fortifyProjectVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -734,7 +734,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl"}},
+						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl", Deprecated: true}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -779,7 +779,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "defaultVersioningModel"}},
+						Aliases:     []config.Alias{{Name: "defaultVersioningModel", Deprecated: true}},
 						Default:     `major`,
 					},
 					{
@@ -892,8 +892,8 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
-							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "fortify"}}},
+							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 				},
