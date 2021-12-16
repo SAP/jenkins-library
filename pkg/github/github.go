@@ -76,7 +76,7 @@ func CreateIssue(ghCreateIssueOptions *GithubCreateIssueOptions) error {
 }
 
 func createIssueLocal(ctx context.Context, ghCreateIssueOptions *GithubCreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) error {
-	
+
 	issue := github.IssueRequest{
 		Title: &ghCreateIssueOptions.Title,
 	}

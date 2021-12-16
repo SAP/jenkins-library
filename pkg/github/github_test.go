@@ -128,7 +128,6 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		assert.Nil(t, ghCreateCommentMock.issueComment)
 	})
 
-
 	t.Run("Success update existing", func(t *testing.T) {
 		// init
 		ghSearchIssuesMock := ghSearchIssuesMock{
