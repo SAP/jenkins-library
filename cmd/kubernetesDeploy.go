@@ -388,7 +388,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 
 	// )
 	/* } */
-
+	targetPath := ""
 	log.Entry().Infof("Anil test container registry : %v", containerRegistry)
 	log.Entry().Infof("Anil test container dockerconfig : %v", config.DockerConfigJSON)
 	log.Entry().Infof("Anil test container user : %v", config.ContainerRegistryUser)
@@ -398,7 +398,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
 			var err error
-			_, err = tmpCreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			targetPath, err = tmpCreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 			if err != nil {
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 			}
@@ -411,7 +411,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		"secret",
 		"generic",
 		config.ContainerRegistrySecret,
-		fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
+		fmt.Sprintf("--from-file=.dockerconfigjson=%v", targetPath),
 		"--type=kubernetes.io/dockerconfigjson",
 		"--insecure-skip-tls-verify=true",
 		"--dry-run=client",
@@ -464,8 +464,9 @@ func tmpCreateDockerConfigJSON(registryURL, username, password, targetPath, conf
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
 	} else {
+		targetPath = ".pipeline/docker/config.json"
 		err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
-		return "", fmt.Errorf("failed to create the Docker config.json file %v:%w", targetPath, err)
+		return "", fmt.Errorf("anil failed to create the Docker config.json file %v:%w", targetPath, err)
 	}
 
 	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
