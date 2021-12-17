@@ -229,7 +229,7 @@ func getTestCredentialKeys(config *StepConfig) []string {
 	for _, keyRaw := range keysRaw {
 		key, ok := keyRaw.(string)
 		if !ok {
-			log.Entry().Warnf("%s is needs to be an array of strings", vaultTestCredentialKeys)
+			log.Entry().Warnf("%s needs to be an array of strings", vaultTestCredentialKeys)
 			return nil
 		}
 		keys = append(keys, key)
