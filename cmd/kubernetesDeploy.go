@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,8 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -399,7 +398,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
 			var err error
-			_, err = piperDocker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			_, err = tmpCreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 			if err != nil {
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 			}
@@ -440,4 +439,58 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	// 	kubeSecretParams,
 	// 	"--output=json",
 	// )
+}
+
+// AuthEntry defines base64 encoded username:password required inside a Docker config.json
+type AuthEntry struct {
+	Auth string `json:"auth,omitempty"`
+}
+
+func tmpCreateDockerConfigJSON(registryURL, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
+
+	if len(targetPath) == 0 {
+		targetPath = configPath
+	}
+
+	dockerConfig := map[string]interface{}{}
+	if exists, _ := utils.FileExists(configPath); exists {
+		dockerConfigContent, err := utils.FileRead(configPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
+		}
+
+		err = json.Unmarshal(dockerConfigContent, &dockerConfig)
+		if err != nil {
+			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
+		}
+	} else {
+		err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
+		return "", fmt.Errorf("failed to create the Docker config.json file %v:%w", targetPath, err)
+	}
+
+	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
+	dockerAuth := AuthEntry{Auth: credentialsBase64}
+
+	if dockerConfig["auths"] == nil {
+		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
+	} else {
+		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", configPath)
+		}
+		authEntries[registryURL] = dockerAuth
+		dockerConfig["auths"] = authEntries
+	}
+
+	jsonResult, err := json.Marshal(dockerConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
+	}
+
+	err = utils.FileWrite(targetPath, jsonResult, 0666)
+	if err != nil {
+		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
+	}
+
+	return targetPath, nil
 }
