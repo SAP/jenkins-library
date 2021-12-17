@@ -464,9 +464,10 @@ func tmpCreateDockerConfigJSON(registryURL, username, password, targetPath, conf
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
 	} else {
-		targetPath = ".pipeline/docker/config.json"
 		err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
-		return "", fmt.Errorf("anil failed to create the Docker config.json file %v:%w", targetPath, err)
+		if err != nil {
+			return "", fmt.Errorf("anil failed to create the Docker config.json file %v:%w", targetPath, err)
+		}
 	}
 
 	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
