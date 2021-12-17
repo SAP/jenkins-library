@@ -253,6 +253,9 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 
 	utils.Stdout(stdout)
 
+	log.Entry().Infof("Anil test : docker config json is is %v", config.DockerConfigJSON)
+	log.Entry().Infof("Anil test : container user is%v", config.ContainerRegistryUser)
+	log.Entry().Infof("Anil test : container password is is %v", config.ContainerRegistryPassword)
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 	} else {

@@ -480,11 +480,6 @@ func kubernetesDeployMetadata() config.StepData {
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
-							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
 							},
@@ -493,6 +488,11 @@ func kubernetesDeployMetadata() config.StepData {
 								Name:    "dockerConfigFileVaultSecretName",
 								Type:    "vaultSecretFile",
 								Default: "docker-config",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/dockerConfigJSON",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
