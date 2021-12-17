@@ -40,6 +40,8 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
 	} else {
+		// hard coding the target path
+		targetPath = ".pipeline/docker/config.json"
 		err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
 		return "", fmt.Errorf("failed to create the Docker config.json file %v:%w", targetPath, err)
 	}
