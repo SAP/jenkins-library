@@ -5,6 +5,7 @@ import (
 	b64 "encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -53,6 +54,9 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {
 		return errors.Wrapf(readError, "Error reading file")
+	}
+	if !strings.Contains(config.FilePath, "zip") {
+		return errors.New("not valid zip archive")
 	}
 	payload := []byte(b64.StdEncoding.EncodeToString(fileContent))
 	apiProxyUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiProxyStatusURL, bytes.NewBuffer(payload), header, nil)
