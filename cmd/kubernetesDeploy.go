@@ -254,14 +254,13 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 	utils.Stdout(stdout)
 
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
-		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
+		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 	} else {
 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils, kubeParams)
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
-		//kubeSecretParams = append(kubeParams, kubeSecretParams...)
-		//kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
+		kubeSecretParams = append(kubeSecretParams, kubeParams...)
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
@@ -384,16 +383,16 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		"create",
 		"secret",
 	}
-	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		kubeSecretParams = append(
-			kubeSecretParams,
-			"--insecure-skip-tls-verify=true",
-			"--dry-run=true",
-			"--output=json",
-		)
-	}
+	/* if config.DeployTool == "helm" || config.DeployTool == "helm3" { */
+	kubeSecretParams = append(
+		kubeSecretParams,
+		"--insecure-skip-tls-verify=true",
+		"--dry-run=client",
+		"--output=json",
+	)
+	/* } */
 
-	if len(config.DockerConfigJSON) > 0 && (config.DeployTool == "helm" || config.DeployTool == "helm3") {
+	if len(config.DockerConfigJSON) > 0 {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
 			var err error
@@ -402,26 +401,28 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 			}
 		}
-		return append(
-			kubeSecretParams,
-			"generic",
-			config.ContainerRegistrySecret,
-			fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
-			"--type=kubernetes.io/dockerconfigjson",
-		)
-	}
-	kubeSecretParams = append(kubeSecretParams,
-		"docker-registry",
-		config.ContainerRegistrySecret,
-		fmt.Sprintf("--docker-server=%v", containerRegistry),
-		fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
-		fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
-		"--dry-run=client")
 
-	kubeSecretParams = append(kubeSecretParams, kubeParams...)
+	}
 
 	return append(
 		kubeSecretParams,
-		"--output=json",
+		"generic",
+		config.ContainerRegistrySecret,
+		fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
+		"--type=kubernetes.io/dockerconfigjson",
 	)
+	// kubeSecretParams = append(kubeSecretParams,
+	// 	"docker-registry",
+	// 	config.ContainerRegistrySecret,
+	// 	fmt.Sprintf("--docker-server=%v", containerRegistry),
+	// 	fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
+	// 	fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
+	// 	"--dry-run=client")
+
+	// kubeSecretParams = append(kubeSecretParams, kubeParams...)
+
+	// return append(
+	// 	kubeSecretParams,
+	// 	"--output=json",
+	// )
 }
