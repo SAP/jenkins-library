@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -37,6 +39,14 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		err = json.Unmarshal(dockerConfigContent, &dockerConfig)
 		if err != nil {
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
+		}
+	} else {
+		// if the targetPath is a directory path then we must create it before we write
+		if strings.Contains(targetPath, string(os.PathSeparator)) {
+			err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
+			if err != nil {
+				return "", fmt.Errorf("failed to create the Docker config.json file %v:%w", targetPath, err)
+			}
 		}
 	}
 
