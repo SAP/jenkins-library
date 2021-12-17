@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/project/metadata"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -26,9 +27,7 @@ import (
 )
 
 const (
-	detectorPath = "/cnb/lifecycle/detector"
-	builderPath  = "/cnb/lifecycle/builder"
-	exporterPath = "/cnb/lifecycle/exporter"
+	creatorPath  = "/cnb/lifecycle/creator"
 	platformPath = "/tmp/platform"
 )
 
@@ -109,14 +108,17 @@ func isDir(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
-func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
-	for _, path := range []string{detectorPath, builderPath, exporterPath} {
-		exists, err := utils.FileExists(path)
-		if err != nil || !exists {
-			return exists, err
-		}
+func isBuilder(utils cnbutils.BuildUtils) error {
+	exists, err := utils.FileExists(creatorPath)
+	if err != nil {
+		return err
 	}
-	return true, nil
+
+	if !exists {
+		return fmt.Errorf("binary '%s' not found", creatorPath)
+	}
+
+	return nil
 }
 
 func isZip(path string) bool {
@@ -124,7 +126,7 @@ func isZip(path string) bool {
 
 	switch {
 	case err == nil:
-		r.Close()
+		_ = r.Close()
 		return true
 	case err == zip.ErrFormat:
 		return false
@@ -189,8 +191,7 @@ func copyProject(source, target string, include, exclude *ignore.GitIgnore, util
 	return nil
 }
 
-func extractZip(source, target string, utils cnbutils.BuildUtils) error {
-
+func extractZip(source, target string) error {
 	if isZip(source) {
 		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
 		_, err := piperutils.Unzip(source, target)
@@ -241,15 +242,10 @@ func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
-	exists, err := isBuilder(utils)
-
+	err = isBuilder(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to check if dockerImage is a valid builder")
-	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("the provided dockerImage is not a valid builder")
+		return errors.Wrap(err, "the provided dockerImage is not a valid builder")
 	}
 
 	include := ignore.CompileIgnoreLines("**/*")
@@ -355,12 +351,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	} else {
-		err = extractZip(source, target, utils)
+		err = extractZip(source, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	}
+
+	metadata.WriteProjectMetadata(GeneralConfig.EnvRootPath, utils)
 
 	var buildpacksPath = "/cnb/buildpacks"
 	var orderPath = "/cnb/order.toml"
@@ -398,17 +396,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
 	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 
-	targets := []string{
-		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
-	}
-
-	for _, tag := range config.AdditionalTags {
-		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(targets, target) {
-			targets = append(targets, target)
-		}
-	}
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -424,24 +411,28 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		log.Entry().Info("skipping certificates update")
 	}
 
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath, "-no-color")
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
-	}
-
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath, "-no-color")
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
-	}
-
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	exporterArgs := append([]string{"-no-color"}, targets...)
-	err = utils.RunExecutable(exporterPath, exporterArgs...)
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
+
+	creatorArgs := []string{
+		"-no-color",
+		"-buildpacks", buildpacksPath,
+		"-order", orderPath,
+		"-platform", platformPath,
+	}
+
+	for _, tag := range config.AdditionalTags {
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		if !piperutils.ContainsString(creatorArgs, target) {
+			creatorArgs = append(creatorArgs, "-tag", target)
+		}
+	}
+
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, containerImageTag))
+	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
+		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
 
 	return nil

@@ -188,7 +188,7 @@ stages:
 			filter := StepFilters{All: []string{}, General: []string{}, Stages: []string{}, Steps: []string{}, Env: []string{}}
 			projectConfig := Config{}
 			_, err := projectConfig.GetStepConfig(map[string]interface{}{}, "", tt.customConfig,
-				[]io.ReadCloser{}, false, filter, nil, nil, nil, "", "", []Alias{})
+				[]io.ReadCloser{}, false, filter, StepData{}, nil, "", "")
 			assert.NoError(t, err)
 			err = runConfig.InitRunConfig(&projectConfig, nil, nil, nil, nil, initRunConfigGlobMock, nil)
 			if tt.wantErr {
