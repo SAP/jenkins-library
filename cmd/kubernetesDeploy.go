@@ -253,9 +253,6 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 
 	utils.Stdout(stdout)
 
-	log.Entry().Infof("Anil test : docker config json is is %v", config.DockerConfigJSON)
-	log.Entry().Infof("Anil test : container user is%v", config.ContainerRegistryUser)
-	log.Entry().Infof("Anil test : container password is is %v", config.ContainerRegistryPassword)
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No/incomplete container registry credentials and no docker config.json file provided: skipping secret creation")
 	} else {
@@ -396,7 +393,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		)
 	}
 
-	if len(config.DockerConfigJSON) > 0 {
+	if len(config.DockerConfigJSON) > 0 && (config.DeployTool == "helm" || config.DeployTool == "helm3") {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
 			var err error
@@ -405,15 +402,13 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 			}
 		}
-		if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-			return append(
-				kubeSecretParams,
-				"generic",
-				config.ContainerRegistrySecret,
-				fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
-				"--type=kubernetes.io/dockerconfigjson",
-			)
-		}
+		return append(
+			kubeSecretParams,
+			"generic",
+			config.ContainerRegistrySecret,
+			fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
+			"--type=kubernetes.io/dockerconfigjson",
+		)
 	}
 	kubeSecretParams = append(kubeSecretParams,
 		"docker-registry",
