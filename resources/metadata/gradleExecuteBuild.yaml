@@ -6,6 +6,9 @@ spec:
   inputs:
     params:
       - name: path
+        aliases:
+          - name: buildGradlePath
+            deprecated: false
         type: string
         description: Path to the folder with gradle.build file which should be executed.
         scope:
@@ -17,6 +20,7 @@ spec:
         description: Gradle task that should be executed.
         scope:
           - PARAMETERS
+          - STAGES
           - STEPS
         mandatory: false
         default: build
