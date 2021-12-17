@@ -146,6 +146,7 @@ nav:
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - shellExecute: steps/shellExecute.md
         - slackSendNotification: steps/slackSendNotification.md
         - snykExecute: steps/snykExecute.md
         - sonarExecuteScan: steps/sonarExecuteScan.md
