@@ -888,7 +888,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "optimizedAndScheduled",
+								Param: "custom/optimizedAndScheduled",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
