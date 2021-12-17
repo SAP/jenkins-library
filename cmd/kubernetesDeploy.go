@@ -390,6 +390,11 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	// )
 	/* } */
 
+	log.Entry().Infof("Anil test container registry : %v", containerRegistry)
+	log.Entry().Infof("Anil test container dockerconfig : %v", config.DockerConfigJSON)
+	log.Entry().Infof("Anil test container user : %v", config.ContainerRegistryUser)
+	log.Entry().Infof("Anil test container password : %v", config.ContainerRegistryPassword)
+
 	if len(config.DockerConfigJSON) > 0 {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
