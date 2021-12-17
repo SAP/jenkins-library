@@ -184,10 +184,14 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		log.Entry().Infof("replaceProductID is not provided and automatic search starts from group: %v ... ", config.Group)
 		// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID hasn't provided and automatic search starts... ")
 		productID = client.LoadExistingProduct(config.Group, fileName)
-	}
 
-	log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
-	// log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
+		if productID > 0 {
+			log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
+			// log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
+		} else {
+			log.Entry().Infof("Automatic search completed but not found any similar product scan, now starts new scan creation")
+		}
+	}
 
 	// check if no existing is found
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)

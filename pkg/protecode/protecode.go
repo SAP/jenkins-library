@@ -144,9 +144,9 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 
 	// Prepare Query Parameters
 	if len(fParam) > 0 {
-		encodedFParam := url.QueryEscape(fParam)
+		// encodedFParam := url.QueryEscape(fParam)
 		params := url.Values{}
-		params.Add("q", fmt.Sprintf("file:%v", encodedFParam))
+		params.Add("q", fmt.Sprintf("file:%v", fParam))
 
 		// Add Query Parameters to the URL
 		protecodeURL.RawQuery = params.Encode() // Escape Query Parameters
