@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
-	t.Run("Load secret from vault with path override", func(t *testing.T) {
+	t.Run("Load secret from Vault with path override", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":           "team1",

@@ -18,7 +18,7 @@ since Piper is able to regularly rotate the SecretID, which is not possible with
 To authenticate against Vault, using [AppRole](https://www.vaultproject.io/docs/auth/approle) authentication you need to
 do the following things
 
-- Enable AppRole authentication in your vault instance.
+- Enable AppRole authentication in your Vault instance.
 - After that you have
   to [create an AppRole Role](https://www.vaultproject.io/api-docs/auth/approle#create-update-approle) for Piper
 - Assign the necessary policies to your newly created AppRole.
@@ -30,8 +30,8 @@ do the following things
 ### Token Authentication
 
 First step to use Token authentication is
-to [Create a vault Token](https://www.vaultproject.io/api/auth/token#create-token)
-In order to use a Vault Token for authentication you need to store the vault token inside your Jenkins instance as shown
+to [Create a Vault Token](https://www.vaultproject.io/api/auth/token#create-token)
+In order to use a Vault token for authentication you need to store the Vault token inside your Jenkins instance as shown
 below.
 
 ![Create a Jenkins secret text credential](../images/jenkins-vault-token-credential.png)
@@ -95,13 +95,13 @@ steps:
     skipVault: true   # Skip Vault Secret Lookup for this step
 ```
 
-## Using vault for test credentials
+## Using Vault for test credentials
 
-Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to test command. The configuration for vault test credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
+Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to test command. The configuration for Vault test credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
 
 ```yaml
 general:
-  < your vault configuration > # see above
+  < your Vault configuration > # see above
 ...
 steps:
   < piper go step >:
@@ -123,4 +123,4 @@ The `vaultTestCredentialKeys`parameter is a list of credential IDs. The secret v
     It is possible to use a custom prefix by setting for example `vaultTestCredentialEnvPrefix: MY_CUSTOM_PREFIX` in your configuration.
     With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
 
-Extended logging for vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
+Extended logging for Vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
