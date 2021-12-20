@@ -120,6 +120,10 @@ func TestReportsResource_StructString(t *testing.T) {
 }
 
 func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "pattern1", ParamRef: "", StepResultType: "general"},
 		{FilePattern: "pattern2", ParamRef: "", StepResultType: ""},
