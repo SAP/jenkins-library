@@ -143,13 +143,18 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	return repositories, nil
 }
 
-//GetCommitStrings for getting the commit_id property for the http request and a string for logging output
-func GetCommitStrings(commitID string) (commitQuery string, commitString string) {
+func CreateAdditionalBodyParameters(commitID string, tag string) (query string, logString string) {
 	if commitID != "" {
-		commitQuery = `, "commit_id":"` + commitID + `"`
-		commitString = ", commit '" + commitID + "'"
+		query = `, "commit_id":"` + commitID + `"`
+		logString = ", commit '" + commitID + "'"
+		if tag != "" {
+			log.Entry().WithField("Tag", tag).WithField("Commit ID", commitID).Debug("The commit ID takes precedence over the tag")
+		}
+	} else if tag != "" {
+		query = `, "tag_name":"` + tag + `"`
+		logString = ", tag '" + tag + "'"
 	}
-	return commitQuery, commitString
+	return query, logString
 }
 
 /****************************************

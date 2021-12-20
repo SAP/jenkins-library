@@ -216,15 +216,25 @@ repositories:
 	})
 }
 
-func TestGetCommitStrings(t *testing.T) {
+func TestCreateAdditionalBodyParameters(t *testing.T) {
 	t.Run("CommitID available", func(t *testing.T) {
-		commitQuery, commitString := GetCommitStrings("ABCD1234")
+		commitQuery, commitString := CreateAdditionalBodyParameters("ABCD1234", "")
 		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
 		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
 	})
-	t.Run("CommitID available", func(t *testing.T) {
-		commitQuery, commitString := GetCommitStrings("")
+	t.Run("CommitID not available", func(t *testing.T) {
+		commitQuery, commitString := CreateAdditionalBodyParameters("", "")
 		assert.Equal(t, ``, commitQuery, "Expected empty query")
 		assert.Equal(t, ``, commitString, "Expected empty string")
+	})
+	t.Run("Tag available", func(t *testing.T) {
+		tagQuery, tagString := CreateAdditionalBodyParameters("", "ABCD1234")
+		assert.Equal(t, `, "tag_name":"ABCD1234"`, tagQuery, "Expected different query")
+		assert.Equal(t, `, tag 'ABCD1234'`, tagString, "Expected different string")
+	})
+	t.Run("Both available", func(t *testing.T) {
+		commitQuery, commitString := CreateAdditionalBodyParameters("ABCD1234", "DEFG5678")
+		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
+		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
 	})
 }

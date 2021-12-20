@@ -97,20 +97,20 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 
 	startPullLogs(repo)
 
-	_, commitString := abaputils.GetCommitStrings(repo.CommitID)
+	_, logString := abaputils.CreateAdditionalBodyParameters(repo.CommitID, repo.Tag)
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
 	if err != nil {
-		return errors.Wrapf(err, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
+		return errors.Wrapf(err, "Pull of '%s'%s failed on the ABAP System", repo.Name, logString)
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
 	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
 	if errorPollEntity != nil {
-		return errors.Wrapf(errorPollEntity, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
+		return errors.Wrapf(errorPollEntity, "Pull of '%s'%s failed on the ABAP System", repo.Name, logString)
 	}
 	if status == "E" {
-		return errors.New("Pull of '" + repo.Name + "'" + commitString + " failed on the ABAP System")
+		return errors.New("Pull of '" + repo.Name + "'" + logString + " failed on the ABAP System")
 	}
 	log.Entry().Info(repo.Name + " was pulled successfully")
 	return err
@@ -138,11 +138,11 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
-	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + commitQuery + `}`)
+	query, logString := abaputils.CreateAdditionalBodyParameters(repo.CommitID, repo.Tag)
+	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + query + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component '"+repo.Name+"'"+commitString, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component '"+repo.Name+"'"+logString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -179,9 +179,9 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func startPullLogs(repo abaputils.Repository) {
-	_, commitString := abaputils.GetCommitStrings(repo.CommitID)
+	_, logString := abaputils.CreateAdditionalBodyParameters(repo.CommitID, repo.Tag)
 	log.Entry().Info("-------------------------")
-	log.Entry().Info("Start pulling '" + repo.Name + "'" + commitString)
+	log.Entry().Info("Start pulling '" + repo.Name + "'" + logString)
 	log.Entry().Info("-------------------------")
 }
 
