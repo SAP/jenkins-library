@@ -158,11 +158,17 @@ func hadolintExecuteMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+
+							{
+								Name:    "hadolintConfigSecretName",
+								Type:    "vaultSecret",
+								Default: "hadolintConfig",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "username"}},
 						Default:   os.Getenv("PIPER_configurationUsername"),
 					},
 					{
@@ -173,11 +179,17 @@ func hadolintExecuteMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:    "hadolintConfigSecretName",
+								Type:    "vaultSecret",
+								Default: "hadolintConfig",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "password"}},
 						Default:   os.Getenv("PIPER_configurationPassword"),
 					},
 					{
@@ -219,7 +231,7 @@ func hadolintExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "hadolint", Image: "hadolint/hadolint:latest-debian"},
+				{Name: "hadolint", Image: "hadolint/hadolint:latest-alpine"},
 			},
 		},
 	}

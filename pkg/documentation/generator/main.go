@@ -48,12 +48,10 @@ func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []st
 		defaultFiles,
 		false,
 		filters,
-		stepMetadata.Spec.Inputs.Parameters,
-		stepMetadata.Spec.Inputs.Secrets,
+		stepMetadata,
 		map[string]interface{}{},
 		"",
 		stepMetadata.Metadata.Name,
-		stepMetadata.Metadata.Aliases,
 	)
 	checkError(err)
 	return stepConfiguration
@@ -281,10 +279,10 @@ func createPipelineOverviewDocumentation(stageRunConfig *config.RunConfigV1, sta
 	overviewFileName := "overview.md"
 	overviewDoc := fmt.Sprintf("# %v\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName)
 	overviewDoc += fmt.Sprintf("%v\n\n", stageRunConfig.PipelineConfig.Metadata.Description)
-	overviewDoc += fmt.Sprintf("The %v comprises following stages\n\n", stageRunConfig.PipelineConfig.Metadata.Description)
+	overviewDoc += fmt.Sprintf("The %v comprises following stages\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName)
 	for _, stage := range stageRunConfig.PipelineConfig.Spec.Stages {
 		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
-		overviewDoc += fmt.Sprintf("* [%v Stage](%v)", stage.DisplayName, stageFilePath)
+		overviewDoc += fmt.Sprintf("* [%v Stage](%v)\n", stage.DisplayName, stageFilePath)
 	}
 	overviewFilePath := filepath.Join(stageTargetPath, overviewFileName)
 	fmt.Println("writing file", overviewFilePath)
@@ -294,8 +292,8 @@ func createPipelineOverviewDocumentation(stageRunConfig *config.RunConfigV1, sta
 const stepConditionDetails = `!!! note "Step condition details"
     There are currently several conditions which can be checked.<br />**Important: It will be sufficient that any one condition per step is met.**
 
-    * ` + "`" + `config` + "`" + `: Checks if a defined configuration parameter is set.
-    * ` + "`" + `config value` + "`" + `: Checks if a configuration parameter has a defined value.
+    * ` + "`" + `config` + "`" + `: Checks if a configuration parameter has a defined value.
+	* ` + "`" + `config key` + "`" + `: Checks if a defined configuration parameter is set.
     * ` + "`" + `file pattern` + "`" + `: Checks if files according a defined pattern exist in the project.
 	* ` + "`" + `file pattern from config` + "`" + `: Checks if files according a pattern defined in the custom configuration exist in the project.
     * ` + "`" + `npm script` + "`" + `: Checks if a npm script exists in one of the package.json files in the repositories.
@@ -349,12 +347,12 @@ func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageT
 			for _, step := range stage.Steps {
 				stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v |\n", step.Name, relativeStepsPath, step.Name, getStepConditionDetails(step))
 			}
+		}
 
-			stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
-			fmt.Println("writing file", stageFilePath)
-			if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
-				return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
-			}
+		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
+		fmt.Println("writing file", stageFilePath)
+		if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
+			return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
 		}
 	}
 	return nil
