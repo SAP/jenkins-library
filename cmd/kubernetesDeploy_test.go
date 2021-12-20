@@ -879,10 +879,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 	t.Run("test kubectl - use replace --force deploy command", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
-			AppTemplate:                "test.yaml",
-			ContainerRegistryURL:       "https://my.registry:55555",
-			ContainerRegistryUser:      "registryUser",
-			ContainerRegistryPassword:  "********",
+			AppTemplate:          "test.yaml",
+			ContainerRegistryURL: "https://my.registry:55555",
+			// ContainerRegistryUser:      "registryUser",
+			// ContainerRegistryPassword:  "********",
 			ContainerRegistrySecret:    "regSecret",
 			CreateDockerRegistrySecret: true,
 			DeployTool:                 "kubectl",
@@ -895,6 +895,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ForceUpdates:               true,
 		}
 
+		// dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
+
 		kubeYaml := `kind: Deployment
 	metadata:
 	spec:
@@ -903,6 +905,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.AddFile("test.yaml", []byte(kubeYaml))
+		// mockUtils.AddFile(".pipeline/docker/config.json", []byte(dockerConfigJSON))
 
 		var stdout bytes.Buffer
 		err := runKubernetesDeploy(opts, mockUtils, &stdout)
@@ -910,7 +913,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
 
-		assert.Equal(t, "kubectl", mockUtils.Calls[1].Exec, "Wrong replace command")
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong replace command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
@@ -921,7 +924,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--force",
 			"--testParam",
 			"testValue",
-		}, mockUtils.Calls[1].Params, "kubectl parameters incorrect")
+		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
 
 		appTemplate, err := mockUtils.FileRead(opts.AppTemplate)
 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
