@@ -54,15 +54,18 @@ and the configuration file `repositories.yml` would look like this:
 
 ```yaml
 repositories:
-  - name: '/DMO/GIT_REPOSITORY'
-    branch: 'master'
-  - name: '/DMO/SOFTWARE_COMPONENT'
+  - name: '/DMO/REPO'
+    branch: 'main'
+  - name: '/DMO/REPO_COMMIT'
     branch: 'feature'
     commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
+  - name: '/DMO/REPO_TAG'
+    branch: 'release'
+    tag: 'myTag'
 ```
 
 Using such a configuration file is the recommended approach. Please note that you need to use the YAML data structure as in the example above when using the `repositories.yml` config file.
-If you want to pull a specific commit, the `commitID` can be specified optionally for a repository.
+If you want to clone a specific commit, either a `commitID` or a `tag` can be specified.
 
 ## Example: Configuration in the Jenkinsfile
 
