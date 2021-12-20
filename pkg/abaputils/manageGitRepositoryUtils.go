@@ -143,16 +143,16 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	return repositories, nil
 }
 
-func CreateAdditionalBodyParameters(commitID string, tag string) (query string, logString string) {
-	if commitID != "" {
-		query = `, "commit_id":"` + commitID + `"`
-		logString = ", commit '" + commitID + "'"
-		if tag != "" {
-			log.Entry().WithField("Tag", tag).WithField("Commit ID", commitID).Debug("The commit ID takes precedence over the tag")
+func CreateAdditionalBodyParameters(repo Repository) (query string, logString string) {
+	if repo.CommitID != "" {
+		query = `, "commit_id":"` + repo.CommitID + `"`
+		logString = ", commit '" + repo.CommitID + "'"
+		if repo.Tag != "" {
+			log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Debug("The commit ID takes precedence over the tag")
 		}
-	} else if tag != "" {
-		query = `, "tag_name":"` + tag + `"`
-		logString = ", tag '" + tag + "'"
+	} else if repo.Tag != "" {
+		query = `, "tag_name":"` + repo.Tag + `"`
+		logString = ", tag '" + repo.Tag + "'"
 	}
 	return query, logString
 }

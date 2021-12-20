@@ -94,7 +94,7 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 
 	startPullLogs(repo)
 
-	_, logString := abaputils.CreateAdditionalBodyParameters(repo.CommitID, repo.Tag)
+	_, logString := abaputils.CreateAdditionalBodyParameters(repo)
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
 	if err != nil {
@@ -135,7 +135,7 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	query, logString := abaputils.CreateAdditionalBodyParameters(repo.CommitID, repo.Tag)
+	query, logString := abaputils.CreateAdditionalBodyParameters(repo)
 	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + query + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
@@ -176,7 +176,7 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func startPullLogs(repo abaputils.Repository) {
-	_, logString := abaputils.CreateAdditionalBodyParameters(repo.CommitID, repo.Tag)
+	_, logString := abaputils.CreateAdditionalBodyParameters(repo)
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("Start pulling '" + repo.Name + "'" + logString)
 	log.Entry().Info("-------------------------")
