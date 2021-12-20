@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -40,14 +39,6 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		if err != nil {
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
-	} else {
-		// if the targetPath is a directory path then we must create it before we write
-		if strings.Contains(targetPath, string(os.PathSeparator)) {
-			err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
-			if err != nil {
-				return "", fmt.Errorf("failed to create the Docker config.json file %v:%w", targetPath, err)
-			}
-		}
 	}
 
 	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
@@ -69,6 +60,11 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
+	//always create the target path directories if any before writing
+	err = utils.MkdirAll(filepath.Dir(targetPath), 0666)
+	if err != nil {
+		return "", fmt.Errorf("failed to create the Docker config.json file %v:%w", targetPath, err)
+	}
 	err = utils.FileWrite(targetPath, jsonResult, 0666)
 	if err != nil {
 		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
