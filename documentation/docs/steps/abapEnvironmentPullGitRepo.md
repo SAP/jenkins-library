@@ -56,7 +56,7 @@ repositories:
 ```
 
 It is optional to provide a branch. However, if you also want to use this file for the abapEnvironmentCheckoutBranch step it is recommended to follow the above structure.
-If you want to pull a specific commit, either a `commitID` or a `tag` can be specified.
+If you want to pull a specific commit, either a `commitID` or a `tag` can be specified. If both are specified, the `tag` will be ignored.
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
 

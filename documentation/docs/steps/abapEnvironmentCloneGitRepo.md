@@ -65,7 +65,7 @@ repositories:
 ```
 
 Using such a configuration file is the recommended approach. Please note that you need to use the YAML data structure as in the example above when using the `repositories.yml` config file.
-If you want to clone a specific commit, either a `commitID` or a `tag` can be specified.
+If you want to clone a specific commit, either a `commitID` or a `tag` can be specified. If both are specified, the `tag` will be ignored.
 
 ## Example: Configuration in the Jenkinsfile
 
