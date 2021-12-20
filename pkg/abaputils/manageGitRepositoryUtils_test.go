@@ -218,23 +218,37 @@ repositories:
 
 func TestCreateAdditionalBodyParameters(t *testing.T) {
 	t.Run("CommitID available", func(t *testing.T) {
-		commitQuery, commitString := CreateAdditionalBodyParameters(Repository{CommitID: "ABCD1234", Tag: ""})
+		repo := Repository{CommitID: "ABCD1234", Tag: ""}
+		commitQuery := repo.GetRequestBodyForCommitOrTag()
+		commitString := repo.GetLogStringForCommitOrTag()
 		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
 		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
 	})
 	t.Run("CommitID not available", func(t *testing.T) {
-		commitQuery, commitString := CreateAdditionalBodyParameters(Repository{CommitID: "", Tag: ""})
+		repo := Repository{CommitID: "", Tag: ""}
+		commitQuery := repo.GetRequestBodyForCommitOrTag()
+		commitString := repo.GetLogStringForCommitOrTag()
 		assert.Equal(t, ``, commitQuery, "Expected empty query")
 		assert.Equal(t, ``, commitString, "Expected empty string")
 	})
 	t.Run("Tag available", func(t *testing.T) {
-		tagQuery, tagString := CreateAdditionalBodyParameters(Repository{CommitID: "", Tag: "DEFG5678"})
+		repo := Repository{CommitID: "", Tag: "DEFG5678"}
+		tagQuery := repo.GetRequestBodyForCommitOrTag()
+		tagString := repo.GetLogStringForCommitOrTag()
 		assert.Equal(t, `, "tag_name":"DEFG5678"`, tagQuery, "Expected different query")
 		assert.Equal(t, `, tag 'DEFG5678'`, tagString, "Expected different string")
 	})
 	t.Run("Both available", func(t *testing.T) {
-		commitQuery, commitString := CreateAdditionalBodyParameters(Repository{CommitID: "ABCD1234", Tag: "DEFG5678"})
+		repo := Repository{CommitID: "ABCD1234", Tag: "DEFG5678"}
+		commitQuery := repo.GetRequestBodyForCommitOrTag()
+		commitString := repo.GetLogStringForCommitOrTag()
 		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
 		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
+	})
+}
+
+func TestCreateRequestBodies(t *testing.T) {
+	t.Run("Clone Body", func(t *testing.T) {
+		assert.Fail(t, "fail")
 	})
 }

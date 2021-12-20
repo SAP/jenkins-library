@@ -179,7 +179,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Pull of '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -238,7 +238,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Pull of '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
 	})
 

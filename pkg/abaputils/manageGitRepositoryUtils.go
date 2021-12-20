@@ -143,18 +143,52 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	return repositories, nil
 }
 
-func CreateAdditionalBodyParameters(repo Repository) (query string, logString string) {
+func (repo *Repository) GetRequestBodyForCommitOrTag() (requestBodyString string) {
 	if repo.CommitID != "" {
-		query = `, "commit_id":"` + repo.CommitID + `"`
-		logString = ", commit '" + repo.CommitID + "'"
-		if repo.Tag != "" {
-			log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Debug("The commit ID takes precedence over the tag")
-		}
+		requestBodyString = `, "commit_id":"` + repo.CommitID + `"`
 	} else if repo.Tag != "" {
-		query = `, "tag_name":"` + repo.Tag + `"`
+		requestBodyString = `, "tag_name":"` + repo.Tag + `"`
+	}
+	return requestBodyString
+}
+
+func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
+	if repo.CommitID != "" {
+		logString = ", commit '" + repo.CommitID + "'"
+	} else if repo.Tag != "" {
 		logString = ", tag '" + repo.Tag + "'"
 	}
-	return query, logString
+	return logString
+}
+
+func (repo *Repository) GetCloneRequestBody() (body string) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	body = `{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
+	return body
+}
+
+func (repo *Repository) GetCloneLogString() (logString string) {
+	commitOrTag := repo.GetLogStringForCommitOrTag()
+	logString = "repository / software component " + repo.Name + ", branch '" + repo.Branch + "'" + commitOrTag
+	return logString
+}
+
+func (repo *Repository) GetPullRequestBody() (body string) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	body = `{"sc_name":"` + repo.Name + `"` + requestBodyString + `}`
+	return body
+}
+
+func (repo *Repository) GetPullLogString() (logString string) {
+	commitOrTag := repo.GetLogStringForCommitOrTag()
+	logString = "repository / software component '" + repo.Name + "'" + commitOrTag
+	return logString
 }
 
 /****************************************

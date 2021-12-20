@@ -92,22 +92,25 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 
 func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
 
-	startPullLogs(repo)
+	logString := repo.GetPullLogString()
+	errorString := "Pull of the " + logString + " failed on the ABAP system"
 
-	_, logString := abaputils.CreateAdditionalBodyParameters(repo)
+	log.Entry().Info("-------------------------")
+	log.Entry().Info("Start pulling the" + logString)
+	log.Entry().Info("-------------------------")
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
 	if err != nil {
-		return errors.Wrapf(err, "Pull of '%s'%s failed on the ABAP System", repo.Name, logString)
+		return errors.Wrapf(err, errorString)
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
 	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
 	if errorPollEntity != nil {
-		return errors.Wrapf(errorPollEntity, "Pull of '%s'%s failed on the ABAP System", repo.Name, logString)
+		return errors.Wrapf(errorPollEntity, errorString)
 	}
 	if status == "E" {
-		return errors.New("Pull of '" + repo.Name + "'" + logString + " failed on the ABAP System")
+		return errors.New(errorString)
 	}
 	log.Entry().Info(repo.Name + " was pulled successfully")
 	return err
@@ -135,15 +138,15 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	query, logString := abaputils.CreateAdditionalBodyParameters(repo)
-	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + query + `}`)
+
+	jsonBody := []byte(repo.GetPullRequestBody())
 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component '"+repo.Name+"'"+logString, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the "+repo.GetPullLogString(), uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Debug("Triggered Pull of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Debug("Triggered Pull of repository / software component")
 
 	// Parse Response
 	var body abaputils.PullEntity
@@ -155,7 +158,7 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Error("Could not pull the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not pull the repository / software component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
@@ -173,13 +176,6 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"))
 	}
 	return nil
-}
-
-func startPullLogs(repo abaputils.Repository) {
-	_, logString := abaputils.CreateAdditionalBodyParameters(repo)
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Start pulling '" + repo.Name + "'" + logString)
-	log.Entry().Info("-------------------------")
 }
 
 func finishPullLogs() {
