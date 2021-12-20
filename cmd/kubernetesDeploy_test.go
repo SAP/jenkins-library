@@ -653,236 +653,186 @@ func TestRunKubernetesDeploy(t *testing.T) {
 	// 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
 	// 	})
 
-	// 	t.Run("test kubectl - create secret from docker config.json", func(t *testing.T) {
+	t.Run("test kubectl - create secret from docker config.json", func(t *testing.T) {
 
-	// 		opts := kubernetesDeployOptions{
-	// 			AppTemplate:                "path/to/test.yaml",
-	// 			DockerConfigJSON:           "/path/to/.docker/config.json",
-	// 			ContainerRegistryURL:       "https://my.registry:55555",
-	// 			ContainerRegistryUser:      "registryUser",
-	// 			ContainerRegistryPassword:  "********",
-	// 			ContainerRegistrySecret:    "regSecret",
-	// 			CreateDockerRegistrySecret: true,
-	// 			DeployTool:                 "kubectl",
-	// 			Image:                      "path/to/Image:latest",
-	// 			AdditionalParameters:       []string{"--testParam", "testValue"},
-	// 			KubeConfig:                 "This is my kubeconfig",
-	// 			KubeContext:                "testCluster",
-	// 			Namespace:                  "deploymentNamespace",
-	// 			DeployCommand:              "apply",
-	// 		}
+		opts := kubernetesDeployOptions{
+			AppTemplate:                "path/to/test.yaml",
+			DockerConfigJSON:           "/path/to/.docker/config.json",
+			ContainerRegistryURL:       "https://my.registry:55555",
+			ContainerRegistryUser:      "registryUser",
+			ContainerRegistryPassword:  "********",
+			ContainerRegistrySecret:    "regSecret",
+			CreateDockerRegistrySecret: true,
+			DeployTool:                 "kubectl",
+			Image:                      "path/to/Image:latest",
+			AdditionalParameters:       []string{"--testParam", "testValue"},
+			KubeConfig:                 "This is my kubeconfig",
+			KubeContext:                "testCluster",
+			Namespace:                  "deploymentNamespace",
+			DeployCommand:              "apply",
+		}
 
-	// 		kubeYaml := `kind: Deployment
-	// metadata:
-	// spec:
-	//   spec:
-	//     image: <image-name>`
+		kubeYaml := `kind: Deployment
+	metadata:
+	spec:
+	  spec:
+	    image: <image-name>`
 
-	// 		mockUtils := newKubernetesDeployMockUtils()
-	// 		mockUtils.AddFile(opts.AppTemplate, []byte(kubeYaml))
-	// 		mockUtils.ShouldFailOnCommand = map[string]error{
-	// 			"kubectl --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster get secret regSecret": fmt.Errorf("secret not found"),
-	// 		}
-	// 		var stdout bytes.Buffer
-	// 		runKubernetesDeploy(opts, mockUtils, &stdout)
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile(opts.AppTemplate, []byte(kubeYaml))
 
-	// 		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, mockUtils, &stdout)
 
-	// 		assert.Equal(t, []string{
-	// 			"--insecure-skip-tls-verify=true",
-	// 			fmt.Sprintf("--namespace=%v", opts.Namespace),
-	// 			fmt.Sprintf("--context=%v", opts.KubeContext),
-	// 			"create",
-	// 			"secret",
-	// 			"generic",
-	// 			opts.ContainerRegistrySecret,
-	// 			fmt.Sprintf("--from-file=.dockerconfigjson=%v", opts.DockerConfigJSON),
-	// 			`--type=kubernetes.io/dockerconfigjson`,
-	// 		}, mockUtils.Calls[1].Params, "kubectl parameters incorrect")
-	// 	})
+		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
 
-	// 	t.Run("test kubectl - lookup secret/kubeconfig", func(t *testing.T) {
+		assert.Equal(t, []string{
+			"create",
+			"secret",
+			"generic",
+			opts.ContainerRegistrySecret,
+			fmt.Sprintf("--from-file=.dockerconfigjson=%v", opts.DockerConfigJSON),
+			`--type=kubernetes.io/dockerconfigjson`,
+			"--insecure-skip-tls-verify=true",
+			"--dry-run=client",
+			"--output=json",
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+		}, mockUtils.Calls[1].Params, "kubectl parameters incorrect")
+	})
 
-	// 		opts := kubernetesDeployOptions{
-	// 			AppTemplate:                "path/to/test.yaml",
-	// 			ContainerRegistryURL:       "https://my.registry:55555",
-	// 			ContainerRegistryUser:      "registryUser",
-	// 			ContainerRegistryPassword:  "********",
-	// 			ContainerRegistrySecret:    "regSecret",
-	// 			CreateDockerRegistrySecret: true,
-	// 			DeployTool:                 "kubectl",
-	// 			Image:                      "path/to/Image:latest",
-	// 			KubeConfig:                 "This is my kubeconfig",
-	// 			Namespace:                  "deploymentNamespace",
-	// 			DeployCommand:              "apply",
-	// 		}
+	t.Run("test kubectl - token only", func(t *testing.T) {
 
-	// 		mockUtils := newKubernetesDeployMockUtils()
-	// 		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "path/to/test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			Image:                   "path/to/Image:latest",
+			KubeToken:               "testToken",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+		}
 
-	// 		var stdout bytes.Buffer
-	// 		runKubernetesDeploy(opts, mockUtils, &stdout)
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
+		mockUtils.ShouldFailOnCommand = map[string]error{}
 
-	// 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret lookup command")
-	// 		assert.Equal(t, []string{
-	// 			"--insecure-skip-tls-verify=true",
-	// 			fmt.Sprintf("--namespace=%v", opts.Namespace),
-	// 			"get",
-	// 			"secret",
-	// 			opts.ContainerRegistrySecret,
-	// 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, mockUtils, &stdout)
 
-	// 		assert.Equal(t, "kubectl", mockUtils.Calls[1].Exec, "Wrong apply command")
-	// 		assert.Equal(t, []string{
-	// 			"--insecure-skip-tls-verify=true",
-	// 			fmt.Sprintf("--namespace=%v", opts.Namespace),
-	// 			"apply",
-	// 			"--filename",
-	// 			opts.AppTemplate,
-	// 		}, mockUtils.Calls[1].Params, "kubectl parameters incorrect")
-	// 	})
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--server=%v", opts.APIServer),
+			fmt.Sprintf("--token=%v", opts.KubeToken),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
+	})
 
-	// 	t.Run("test kubectl - token only", func(t *testing.T) {
+	t.Run("test kubectl - with containerImageName and containerImageTag instead of image", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			ContainerImageTag:       "latest",
+			ContainerImageName:      "path/to/Image",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+		}
 
-	// 		opts := kubernetesDeployOptions{
-	// 			APIServer:                 "https://my.api.server",
-	// 			AppTemplate:               "path/to/test.yaml",
-	// 			ContainerRegistryURL:      "https://my.registry:55555",
-	// 			ContainerRegistryUser:     "registryUser",
-	// 			ContainerRegistryPassword: "********",
-	// 			ContainerRegistrySecret:   "regSecret",
-	// 			DeployTool:                "kubectl",
-	// 			Image:                     "path/to/Image:latest",
-	// 			KubeToken:                 "testToken",
-	// 			Namespace:                 "deploymentNamespace",
-	// 			DeployCommand:             "apply",
-	// 		}
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte("image: <image-name>"))
 
-	// 		mockUtils := newKubernetesDeployMockUtils()
-	// 		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
-	// 		mockUtils.ShouldFailOnCommand = map[string]error{}
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, mockUtils, &stdout)
 
-	// 		var stdout bytes.Buffer
-	// 		runKubernetesDeploy(opts, mockUtils, &stdout)
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
 
-	// 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
-	// 		assert.Equal(t, []string{
-	// 			"--insecure-skip-tls-verify=true",
-	// 			fmt.Sprintf("--namespace=%v", opts.Namespace),
-	// 			fmt.Sprintf("--server=%v", opts.APIServer),
-	// 			fmt.Sprintf("--token=%v", opts.KubeToken),
-	// 			"apply",
-	// 			"--filename",
-	// 			opts.AppTemplate,
-	// 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
-	// 	})
+		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		assert.NoError(t, err)
+		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
+	})
 
-	// 	t.Run("test kubectl - with containerImageName and containerImageTag instead of image", func(t *testing.T) {
-	// 		opts := kubernetesDeployOptions{
-	// 			APIServer:                 "https://my.api.server",
-	// 			AppTemplate:               "test.yaml",
-	// 			ContainerRegistryURL:      "https://my.registry:55555",
-	// 			ContainerRegistryUser:     "registryUser",
-	// 			ContainerRegistryPassword: "********",
-	// 			ContainerRegistrySecret:   "regSecret",
-	// 			DeployTool:                "kubectl",
-	// 			ContainerImageTag:         "latest",
-	// 			ContainerImageName:        "path/to/Image",
-	// 			KubeConfig:                "This is my kubeconfig",
-	// 			Namespace:                 "deploymentNamespace",
-	// 			DeployCommand:             "apply",
-	// 		}
+	t.Run("test kubectl - fails without image information", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+		}
 
-	// 		mockUtils := newKubernetesDeployMockUtils()
-	// 		mockUtils.AddFile("test.yaml", []byte("image: <image-name>"))
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte("testYaml"))
 
-	// 		var stdout bytes.Buffer
-	// 		runKubernetesDeploy(opts, mockUtils, &stdout)
+		var stdout bytes.Buffer
 
-	// 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
+	})
 
-	// 		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
-	// 		assert.NoError(t, err)
-	// 		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
-	// 	})
+	t.Run("test kubectl - use replace deploy command", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			AppTemplate:                "test.yaml",
+			ContainerRegistryURL:       "https://my.registry:55555",
+			ContainerRegistrySecret:    "regSecret",
+			CreateDockerRegistrySecret: true,
+			DeployTool:                 "kubectl",
+			Image:                      "path/to/Image:latest",
+			AdditionalParameters:       []string{"--testParam", "testValue"},
+			KubeConfig:                 "This is my kubeconfig",
+			KubeContext:                "testCluster",
+			Namespace:                  "deploymentNamespace",
+			DeployCommand:              "replace",
+		}
 
-	// 	t.Run("test kubectl - fails without image information", func(t *testing.T) {
-	// 		opts := kubernetesDeployOptions{
-	// 			APIServer:                 "https://my.api.server",
-	// 			AppTemplate:               "test.yaml",
-	// 			ContainerRegistryURL:      "https://my.registry:55555",
-	// 			ContainerRegistryUser:     "registryUser",
-	// 			ContainerRegistryPassword: "********",
-	// 			ContainerRegistrySecret:   "regSecret",
-	// 			DeployTool:                "kubectl",
-	// 			KubeConfig:                "This is my kubeconfig",
-	// 			Namespace:                 "deploymentNamespace",
-	// 			DeployCommand:             "apply",
-	// 		}
+		kubeYaml := `kind: Deployment
+	metadata:
+	spec:
+	  spec:
+	    image: <image-name>`
 
-	// 		mockUtils := newKubernetesDeployMockUtils()
-	// 		mockUtils.AddFile("test.yaml", []byte("testYaml"))
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte(kubeYaml))
 
-	// 		var stdout bytes.Buffer
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		assert.NoError(t, err, "Command should not fail")
 
-	// 		err := runKubernetesDeploy(opts, mockUtils, &stdout)
-	// 		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
-	// 	})
+		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
 
-	// 	t.Run("test kubectl - use replace deploy command", func(t *testing.T) {
-	// 		opts := kubernetesDeployOptions{
-	// 			AppTemplate:                "test.yaml",
-	// 			ContainerRegistryURL:       "https://my.registry:55555",
-	// 			ContainerRegistryUser:      "registryUser",
-	// 			ContainerRegistryPassword:  "********",
-	// 			ContainerRegistrySecret:    "regSecret",
-	// 			CreateDockerRegistrySecret: true,
-	// 			DeployTool:                 "kubectl",
-	// 			Image:                      "path/to/Image:latest",
-	// 			AdditionalParameters:       []string{"--testParam", "testValue"},
-	// 			KubeConfig:                 "This is my kubeconfig",
-	// 			KubeContext:                "testCluster",
-	// 			Namespace:                  "deploymentNamespace",
-	// 			DeployCommand:              "replace",
-	// 		}
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong replace command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"replace",
+			"--filename",
+			opts.AppTemplate,
+			"--testParam",
+			"testValue",
+		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
 
-	// 		kubeYaml := `kind: Deployment
-	// metadata:
-	// spec:
-	//   spec:
-	//     image: <image-name>`
-
-	// 		mockUtils := newKubernetesDeployMockUtils()
-	// 		mockUtils.AddFile("test.yaml", []byte(kubeYaml))
-
-	// 		var stdout bytes.Buffer
-	// 		err := runKubernetesDeploy(opts, mockUtils, &stdout)
-	// 		assert.NoError(t, err, "Command should not fail")
-
-	// 		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
-
-	// 		assert.Equal(t, "kubectl", mockUtils.Calls[1].Exec, "Wrong replace command")
-	// 		assert.Equal(t, []string{
-	// 			"--insecure-skip-tls-verify=true",
-	// 			fmt.Sprintf("--namespace=%v", opts.Namespace),
-	// 			fmt.Sprintf("--context=%v", opts.KubeContext),
-	// 			"replace",
-	// 			"--filename",
-	// 			opts.AppTemplate,
-	// 			"--testParam",
-	// 			"testValue",
-	// 		}, mockUtils.Calls[1].Params, "kubectl parameters incorrect")
-
-	// 		appTemplate, err := mockUtils.FileRead(opts.AppTemplate)
-	// 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
-	// 	})
+		appTemplate, err := mockUtils.FileRead(opts.AppTemplate)
+		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
+	})
 
 	t.Run("test kubectl - use replace --force deploy command", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
-			AppTemplate:          "test.yaml",
-			ContainerRegistryURL: "https://my.registry:55555",
-			// ContainerRegistryUser:      "registryUser",
-			// ContainerRegistryPassword:  "********",
+			AppTemplate:                "test.yaml",
+			ContainerRegistryURL:       "https://my.registry:55555",
 			ContainerRegistrySecret:    "regSecret",
 			CreateDockerRegistrySecret: true,
 			DeployTool:                 "kubectl",
@@ -895,8 +845,6 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ForceUpdates:               true,
 		}
 
-		// dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
-
 		kubeYaml := `kind: Deployment
 	metadata:
 	spec:
@@ -905,7 +853,6 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.AddFile("test.yaml", []byte(kubeYaml))
-		// mockUtils.AddFile(".pipeline/docker/config.json", []byte(dockerConfigJSON))
 
 		var stdout bytes.Buffer
 		err := runKubernetesDeploy(opts, mockUtils, &stdout)

@@ -179,7 +179,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.KubeToken, "kubeToken", os.Getenv("PIPER_kubeToken"), "Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.")
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
-	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
+	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", `.pipeline/docker/config.json`, "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`.")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -480,11 +480,6 @@ func kubernetesDeployMetadata() config.StepData {
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
-							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
 							},
@@ -499,7 +494,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_dockerConfigJSON"),
+						Default:   `.pipeline/docker/config.json`,
 					},
 					{
 						Name:        "deployCommand",
