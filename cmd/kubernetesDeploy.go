@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -137,7 +136,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		if err != nil {
+			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
+		}
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
@@ -255,7 +257,10 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 	} else {
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		if err != nil {
+			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
+		}
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
@@ -273,7 +278,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 
 		// write the json output to a file
 		tmpFolder := getTempDirForKubeCtlJson()
-		defer os.RemoveAll(tmpFolder) // clean up
+		//defer os.RemoveAll(tmpFolder) // clean up
 		jsonData, _ := json.Marshal(dockerRegistrySecretData)
 		ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0644)
 
@@ -356,7 +361,7 @@ func splitFullImageName(image string) (imageName, tag string, err error) {
 	return "", "", fmt.Errorf("Failed to split image name '%v'", image)
 }
 
-func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils) []string {
+func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils) (error, []string) {
 	targetPath := ""
 	if len(config.DockerConfigJSON) > 0 {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
@@ -365,11 +370,12 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 			targetPath, err = docker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 			if err != nil {
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
+				return err, []string{}
 			}
 		}
 
 	}
-	return []string{
+	return nil, []string{
 		"create",
 		"secret",
 		"generic",
