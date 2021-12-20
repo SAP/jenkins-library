@@ -62,21 +62,18 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 
 	repositories := []abaputils.Repository{}
 	err = checkPullRepositoryConfiguration(*options)
-
-	if err == nil {
-		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories})
-		handleIgnoreCommit(repositories, options.IgnoreCommit)
-	}
-
-	if err == nil {
-		err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
-	}
-
 	if err != nil {
-		return fmt.Errorf("Something failed during the pull of the repositories: %w", err)
+		return err
+	}
+	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories})
+	handleIgnoreCommit(repositories, options.IgnoreCommit)
+	if err != nil {
+		return err
 	}
 
+	err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
 	return err
+
 }
 
 func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
