@@ -67,31 +67,29 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	for _, repo := range repositories {
 
-		commitString := ""
-		if repo.CommitID != "" {
-			commitString = ", commit '" + repo.CommitID + "'"
-		}
+		logString := repo.GetCloneLogString()
+		errorString := "Clone of " + logString + " failed on the ABAP system"
 
 		log.Entry().Info("-------------------------")
-		log.Entry().Info("Start cloning " + repo.Name + ", branch " + repo.Branch + commitString)
+		log.Entry().Info("Start cloning " + logString)
 		log.Entry().Info("-------------------------")
 
 		// Triggering the Clone of the repository into the ABAP Environment system
 		uriConnectionDetails, errorTriggerClone := triggerClone(repo, connectionDetails, client)
 		if errorTriggerClone != nil {
-			return errors.Wrapf(errorTriggerClone, "Clone of '%s', branch '%s'%s failed on the ABAP System", repo.Name, repo.Branch, commitString)
+			return errors.Wrapf(errorTriggerClone, errorString)
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
 		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
 		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, "Clone of '%s', branch '%s'%s failed on the ABAP System", repo.Name, repo.Branch, commitString)
+			return errors.Wrapf(errorPollEntity, errorString)
 		}
 		if status == "E" {
-			return errors.New("Clone of '" + repo.Name + "', branch '" + repo.Branch + "'" + commitString + " failed on the ABAP System")
+			return errors.New("Clone of " + logString + " failed on the ABAP System")
 		}
 
-		log.Entry().Info(repo.Name + ", branch  " + repo.Branch + commitString + " was cloned successfully")
+		log.Entry().Info("The " + logString + " was cloned successfully")
 	}
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were cloned successfully")
@@ -122,16 +120,14 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 
-	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
-
-	jsonBody := []byte(`{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + commitQuery + `}`)
+	jsonBody := []byte(repo.GetCloneRequestBody())
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repo.Name+", branch "+repo.Branch+commitString, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not clone the "+repo.GetCloneLogString(), uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).Info("Triggered Clone of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Info("Triggered Clone of Repository / Software Component")
 
 	// Parse Response
 	var body abaputils.CloneEntity
@@ -143,7 +139,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abaputils.CloneEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).Error("Could not Clone the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}

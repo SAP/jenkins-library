@@ -43,6 +43,10 @@ type GeneralConfigOptions struct {
 	VaultPath            string
 	HookConfig           HookConfiguration
 	MetaDataResolver     func() map[string]config.StepData
+	GCPJsonKeyFilePath   string
+	GCSFolderPath        string
+	GCSBucketId          string
+	GCSSubFolder         string
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -205,6 +209,10 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The vault server which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultNamespace, "vaultNamespace", "", "The vault namespace which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultPath, "vaultPath", "", "The path which should be used to fetch credentials")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCPJsonKeyFilePath, "gcpJsonKeyFilePath", "", "File path to Google Cloud Platform JSON key file")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
 
 }
 
@@ -301,7 +309,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	filters.General = append(filters.General, "collectTelemetryData")
 	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
 
-	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	envParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	reportingEnvParams := config.ReportingParameters.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	resourceParams := mergeResourceParameters(envParams, reportingEnvParams)
+
 	flagValues := config.AvailableFlagValues(cmd, &filters)
 
 	var myConfig config.Config
@@ -358,7 +369,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 				defaultConfig = append(defaultConfig, fc)
 			}
 		}
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, *metadata, resourceParams, GeneralConfig.StageName, stepName)
 		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
 			log.SetVerbose(verbose)
 			GeneralConfig.Verbose = verbose
@@ -382,6 +393,18 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
+	if GeneralConfig.GCPJsonKeyFilePath == "" {
+		GeneralConfig.GCPJsonKeyFilePath, _ = stepConfig.Config["gcpJsonKeyFilePath"].(string)
+	}
+	if GeneralConfig.GCSFolderPath == "" {
+		GeneralConfig.GCSFolderPath, _ = stepConfig.Config["gcsFolderPath"].(string)
+	}
+	if GeneralConfig.GCSBucketId == "" {
+		GeneralConfig.GCSBucketId, _ = stepConfig.Config["gcsBucketId"].(string)
+	}
+	if GeneralConfig.GCSSubFolder == "" {
+		GeneralConfig.GCSSubFolder, _ = stepConfig.Config["gcsSubFolder"].(string)
+	}
 	return nil
 }
 
@@ -558,4 +581,14 @@ func getProjectConfigFile(name string) string {
 		return altName
 	}
 	return name
+}
+
+func mergeResourceParameters(resParams ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, m := range resParams {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
 }
