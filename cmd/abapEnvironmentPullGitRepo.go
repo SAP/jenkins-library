@@ -96,7 +96,7 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
 
 	log.Entry().Info("-------------------------")
-	log.Entry().Info("Start pulling the" + logString)
+	log.Entry().Info("Start pulling the " + logString)
 	log.Entry().Info("-------------------------")
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
