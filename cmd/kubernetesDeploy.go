@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -284,27 +284,6 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtil
 
 	}
 
-	// if config.CreateDockerRegistrySecret {
-	// 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
-	// 		log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password or docker config.json file")
-	// 	}
-
-	// 	// first check if secret already exists
-	// 	kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
-
-	// 	// ToDo: always update the secret using a yaml definition
-	// 	if err := utils.RunExecutable("kubectl", kubeCheckParams...); err != nil {
-	// 		log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
-	// 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
-	// 		kubeSecretParams = append(kubeParams, kubeSecretParams...)
-	// 		log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
-	// 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
-	// 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
-	// 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
-	// 		}
-	// 	}
-	// }
-
 	appTemplate, err := utils.FileRead(config.AppTemplate)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
@@ -378,34 +357,18 @@ func splitFullImageName(image string) (imageName, tag string, err error) {
 }
 
 func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetesDeployUtils) []string {
-	// kubeSecretParams := []string{
-	// 	"create",
-	// 	"secret",
-	// }
-	/* if config.DeployTool == "helm" || config.DeployTool == "helm3" { */
-	// kubeSecretParams = append(
-	// 	kubeSecretParams,
-
-	// )
-	/* } */
 	targetPath := ""
-	log.Entry().Infof("Anil test container registry : %v", containerRegistry)
-	log.Entry().Infof("Anil test container dockerconfig : %v", config.DockerConfigJSON)
-	log.Entry().Infof("Anil test container user : %v", config.ContainerRegistryUser)
-	log.Entry().Infof("Anil test container password : %v", config.ContainerRegistryPassword)
-
 	if len(config.DockerConfigJSON) > 0 {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
 			var err error
-			targetPath, err = tmpCreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			targetPath, err = docker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 			if err != nil {
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 			}
 		}
 
 	}
-
 	return []string{
 		"create",
 		"secret",
@@ -417,82 +380,4 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		"--dry-run=client",
 		"--output=json",
 	}
-
-	// return append(
-	// 	kubeSecretParams,
-	// 	"generic",
-	// 	config.ContainerRegistrySecret,
-	// 	fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
-	// 	"--type=kubernetes.io/dockerconfigjson",
-	// )
-	// // kubeSecretParams = append(kubeSecretParams,
-	// 	"docker-registry",
-	// 	config.ContainerRegistrySecret,
-	// 	fmt.Sprintf("--docker-server=%v", containerRegistry),
-	// 	fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
-	// 	fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
-	// 	"--dry-run=client")
-
-	// kubeSecretParams = append(kubeSecretParams, kubeParams...)
-
-	// return append(
-	// 	kubeSecretParams,
-	// 	"--output=json",
-	// )
-}
-
-// AuthEntry defines base64 encoded username:password required inside a Docker config.json
-type AuthEntry struct {
-	Auth string `json:"auth,omitempty"`
-}
-
-func tmpCreateDockerConfigJSON(registryURL, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
-
-	if len(targetPath) == 0 {
-		targetPath = configPath
-	}
-
-	dockerConfig := map[string]interface{}{}
-	if exists, _ := utils.FileExists(configPath); exists {
-		dockerConfigContent, err := utils.FileRead(configPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
-		}
-
-		err = json.Unmarshal(dockerConfigContent, &dockerConfig)
-		if err != nil {
-			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
-		}
-	} else {
-		err := utils.MkdirAll(filepath.Dir(targetPath), 0666)
-		if err != nil {
-			return "", fmt.Errorf("anil failed to create the Docker config.json file %v:%w", targetPath, err)
-		}
-	}
-
-	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
-	dockerAuth := AuthEntry{Auth: credentialsBase64}
-
-	if dockerConfig["auths"] == nil {
-		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
-	} else {
-		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
-		if !ok {
-			return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", configPath)
-		}
-		authEntries[registryURL] = dockerAuth
-		dockerConfig["auths"] = authEntries
-	}
-
-	jsonResult, err := json.Marshal(dockerConfig)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
-	}
-
-	err = utils.FileWrite(targetPath, jsonResult, 0666)
-	if err != nil {
-		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
-	}
-
-	return targetPath, nil
 }
