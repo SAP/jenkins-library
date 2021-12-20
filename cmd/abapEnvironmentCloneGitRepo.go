@@ -67,33 +67,29 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	for _, repo := range repositories {
 
-		commitString := ""
-		if repo.CommitID != "" {
-			commitString = ", commit '" + repo.CommitID + "'"
-		}
+		logString := repo.GetCloneLogString()
+		errorString := "Clone of " + logString + " failed on the ABAP system"
 
 		log.Entry().Info("-------------------------")
-		log.Entry().Info("Start cloning " + repo.Name + ", branch " + repo.Branch + commitString)
+		log.Entry().Info("Start cloning " + logString)
 		log.Entry().Info("-------------------------")
-
-		errorString := "Clone of " + repo.GetCloneLogString() + " failed on the ABAP system"
 
 		// Triggering the Clone of the repository into the ABAP Environment system
 		uriConnectionDetails, errorTriggerClone := triggerClone(repo, connectionDetails, client)
 		if errorTriggerClone != nil {
-			return errors.Wrapf(errorTriggerClone, "Clone of %s failed on the ABAP System", errorString)
+			return errors.Wrapf(errorTriggerClone, errorString)
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
 		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
 		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, "Clone of %s failed on the ABAP System", errorString)
+			return errors.Wrapf(errorPollEntity, errorString)
 		}
 		if status == "E" {
-			return errors.New("Clone of '" + repo.Name + "', branch '" + repo.Branch + "'" + commitString + " failed on the ABAP System")
+			return errors.New("Clone of " + logString + " failed on the ABAP System")
 		}
 
-		log.Entry().Info(repo.Name + ", branch  " + repo.Branch + commitString + " was cloned successfully")
+		log.Entry().Info("The " + logString + " was cloned successfully")
 	}
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were cloned successfully")

@@ -216,39 +216,84 @@ repositories:
 	})
 }
 
-func TestCreateAdditionalBodyParameters(t *testing.T) {
-	t.Run("CommitID available", func(t *testing.T) {
-		repo := Repository{CommitID: "ABCD1234", Tag: ""}
-		commitQuery := repo.GetRequestBodyForCommitOrTag()
-		commitString := repo.GetLogStringForCommitOrTag()
-		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
-		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
+func TestCreateLogStrings(t *testing.T) {
+	t.Run("Clone LogString Tag and Commit", func(t *testing.T) {
+		repo := Repository{
+			Name:     "/DMO/REPO",
+			Branch:   "main",
+			CommitID: "1234567",
+			Tag:      "myTag",
+		}
+		logString := repo.GetCloneLogString()
+		assert.Equal(t, "repository / software component '/DMO/REPO', branch 'main', commit '1234567'", logString, "Expected different string")
 	})
-	t.Run("CommitID not available", func(t *testing.T) {
-		repo := Repository{CommitID: "", Tag: ""}
-		commitQuery := repo.GetRequestBodyForCommitOrTag()
-		commitString := repo.GetLogStringForCommitOrTag()
-		assert.Equal(t, ``, commitQuery, "Expected empty query")
-		assert.Equal(t, ``, commitString, "Expected empty string")
+	t.Run("Clone LogString Tag", func(t *testing.T) {
+		repo := Repository{
+			Name:   "/DMO/REPO",
+			Branch: "main",
+			Tag:    "myTag",
+		}
+		logString := repo.GetCloneLogString()
+		assert.Equal(t, "repository / software component '/DMO/REPO', branch 'main', tag 'myTag'", logString, "Expected different string")
 	})
-	t.Run("Tag available", func(t *testing.T) {
-		repo := Repository{CommitID: "", Tag: "DEFG5678"}
-		tagQuery := repo.GetRequestBodyForCommitOrTag()
-		tagString := repo.GetLogStringForCommitOrTag()
-		assert.Equal(t, `, "tag_name":"DEFG5678"`, tagQuery, "Expected different query")
-		assert.Equal(t, `, tag 'DEFG5678'`, tagString, "Expected different string")
+	t.Run("Pull LogString Tag and Commit", func(t *testing.T) {
+		repo := Repository{
+			Name:     "/DMO/REPO",
+			Branch:   "main",
+			CommitID: "1234567",
+			Tag:      "myTag",
+		}
+		logString := repo.GetPullLogString()
+		assert.Equal(t, "repository / software component '/DMO/REPO', commit '1234567'", logString, "Expected different string")
 	})
-	t.Run("Both available", func(t *testing.T) {
-		repo := Repository{CommitID: "ABCD1234", Tag: "DEFG5678"}
-		commitQuery := repo.GetRequestBodyForCommitOrTag()
-		commitString := repo.GetLogStringForCommitOrTag()
-		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
-		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
+	t.Run("Pull LogString Tag", func(t *testing.T) {
+		repo := Repository{
+			Name:   "/DMO/REPO",
+			Branch: "main",
+			Tag:    "myTag",
+		}
+		logString := repo.GetPullLogString()
+		assert.Equal(t, "repository / software component '/DMO/REPO', tag 'myTag'", logString, "Expected different string")
 	})
 }
 
 func TestCreateRequestBodies(t *testing.T) {
-	t.Run("Clone Body", func(t *testing.T) {
-		assert.Fail(t, "fail")
+	t.Run("Clone Body Tag and Commit", func(t *testing.T) {
+		repo := Repository{
+			Name:     "/DMO/REPO",
+			Branch:   "main",
+			CommitID: "1234567",
+			Tag:      "myTag",
+		}
+		body := repo.GetCloneRequestBody()
+		assert.Equal(t, `{"sc_name":"/DMO/REPO", "branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
+	})
+	t.Run("Clone Body Tag", func(t *testing.T) {
+		repo := Repository{
+			Name:   "/DMO/REPO",
+			Branch: "main",
+			Tag:    "myTag",
+		}
+		body := repo.GetCloneRequestBody()
+		assert.Equal(t, `{"sc_name":"/DMO/REPO", "branch_name":"main", "tag_name":"myTag"}`, body, "Expected different body")
+	})
+	t.Run("Pull Body Tag and Commit", func(t *testing.T) {
+		repo := Repository{
+			Name:     "/DMO/REPO",
+			Branch:   "main",
+			CommitID: "1234567",
+			Tag:      "myTag",
+		}
+		body := repo.GetPullRequestBody()
+		assert.Equal(t, `{"sc_name":"/DMO/REPO", "commit_id":"1234567"}`, body, "Expected different body")
+	})
+	t.Run("Pull Body Tag", func(t *testing.T) {
+		repo := Repository{
+			Name:   "/DMO/REPO",
+			Branch: "main",
+			Tag:    "myTag",
+		}
+		body := repo.GetPullRequestBody()
+		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
 	})
 }

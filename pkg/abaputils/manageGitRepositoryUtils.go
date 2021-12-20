@@ -172,7 +172,7 @@ func (repo *Repository) GetCloneRequestBody() (body string) {
 
 func (repo *Repository) GetCloneLogString() (logString string) {
 	commitOrTag := repo.GetLogStringForCommitOrTag()
-	logString = "repository / software component " + repo.Name + ", branch '" + repo.Branch + "'" + commitOrTag
+	logString = "repository / software component '" + repo.Name + "', branch '" + repo.Branch + "'" + commitOrTag
 	return logString
 }
 
