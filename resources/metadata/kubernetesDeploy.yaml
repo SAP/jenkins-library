@@ -322,14 +322,13 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        default: '.pipeline/docker/config.json'
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
-            default: docker-config
+            default: docker-config      
       - name: deployCommand
         type: string
         description: "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`."
