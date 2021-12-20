@@ -220,6 +220,9 @@ void call(Map parameters = [:], body) {
                     body()
                 }
             }
+        } else if (!config.dockerImage){
+            echo "[INFO][${STEP_NAME}] Running on local environment."
+            body()
         } else {
             boolean executeInsideDocker = true
             if (!JenkinsUtils.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
@@ -232,7 +235,7 @@ void call(Map parameters = [:], body) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
                 executeInsideDocker = false
             }
-            if (executeInsideDocker && config.dockerImage) {
+            if (executeInsideDocker) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
                 pullWrapper(config.dockerPullImage, image, config.dockerRegistryUrl, config.dockerRegistryCredentialsId) {
