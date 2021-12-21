@@ -80,7 +80,7 @@ func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 }
 
 //StoreFileInOsAndErrorNil - Method to store read artifacts in the file system
-func StoreFileInOsAndErrorNil(FilePath string, resp *http.Response) error {
+func StoreFileInOs(FilePath string, resp *http.Response) error {
 	file, createErr := os.Create(FilePath)
 	if createErr != nil {
 		return errors.Wrapf(createErr, "Failed to create file")

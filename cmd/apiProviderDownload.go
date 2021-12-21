@@ -57,7 +57,7 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 	}
 	if downloadResp.StatusCode == 200 {
 		jsonFilePath := config.DownloadPath
-		error := cpi.StoreFileInOsAndErrorNil(jsonFilePath, downloadResp)
+		error := cpi.StoreFileInOs(jsonFilePath, downloadResp)
 		if error != nil {
 			return error
 		}
