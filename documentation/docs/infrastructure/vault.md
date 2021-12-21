@@ -95,13 +95,13 @@ steps:
     skipVault: true   # Skip Vault Secret Lookup for this step
 ```
 
-## Using vault for general purpose and test credentials
+## Using Vault for general purpose and test credentials
 
-Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to custom piper extensions or when they need to be appended to test command. The configuration for vault general purpose credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
+Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to custom piper extensions or when they need to be appended to test command. The configuration for Vault general purpose credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
 
 ```yaml
 general:
-  < your vault configuration > # see above
+  < your Vault configuration > # see above
 ...
 steps:
   < piper go step >:
@@ -109,7 +109,7 @@ steps:
     vaultCredentialKeys: ['myAppId', 'myAppSecret']
 ```
 
-The `vaultCredentialPath` parameter is the endpoint of your credential path in vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations. The first path with found general purpose credentials will be used.
+The `vaultCredentialPath` parameter is the endpoint of your credential path in Vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations. The first path with found general purpose credentials will be used.
 
 1. `<vaultPath>/<vaultCredentialPath>`
 2. `<vaultBasePath>/<vaultPipelineName>/<vaultCredentialPath>`
@@ -123,7 +123,7 @@ The `vaultCredentialKeys`parameter is a list of credential IDs. The secret value
     It is possible to use a custom prefix by setting for example `vaultCredentialEnvPrefix: MY_CUSTOM_PREFIX` in your configuration.
     With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
 
-Extended logging for vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
+Extended logging for Vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
 
 ## Using Vault for test credentials (Deprecated : use general purpose and test credentials as above)
 
