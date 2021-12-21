@@ -89,7 +89,7 @@ This file must be stored in the same Git folder where the `Jenkinsfile` is store
 You can specify a Multi Property Set containing multiple properties that should be checked. Each property that is specified in the Multi Property Set acts like an additional rule.
 This means if you specify e.g. a Multi Property Set containing the owner and package properties that an ABAP Unit test run will be started testing all objects belonging to this owner inside of the given package. If you additionally define the Version to be `ACTIVE` for the ABAP Unit test run inside of the Multi Property Set, only objects belonging to this owner which are active inside of the package would be tested.
 This must be in the same format as below examples for a `aUnitConfig.yml` file.
-Note that if you want to check complete software components we reccommend to use the `component` property over the `package` property as this may cause issues for structure packages.
+Note that if you want to check complete software components we recommend to use the `softwareComponent` property over the `package` property.
 
 See below example for an `aUnitConfig.yml` file containing a minimal configuration for the package `Z_TEST_PACKAGE` to be checked:
 
