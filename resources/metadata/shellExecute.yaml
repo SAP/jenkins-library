@@ -1,7 +1,7 @@
 metadata:
   name: shellExecute
   description: Step executes defined script
-  longDescription: Step executes defined script with using test vault credentials
+  longDescription: Step executes defined script with using test Vault credentials
 spec:
   inputs:
     params:
