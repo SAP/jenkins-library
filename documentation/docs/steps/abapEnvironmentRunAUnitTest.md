@@ -97,8 +97,8 @@ See below example for an `aUnitConfig.yml` file containing a minimal configurati
 title: My AUnit run
 context: My unit tests
 objectset:
-  - packages:
-    - name: Z_TEST_PACKAGE
+  - softwareComponents:
+    - name: /DMO/SWC
 ```
 
 See below example for an `aUnitConfig.yml` file with the configured options containing the package `Z_TEST_PACKAGE` to be checked:
