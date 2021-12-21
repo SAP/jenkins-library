@@ -91,7 +91,7 @@ This means if you specify e.g. a Multi Property Set containing the owner and pac
 This must be in the same format as below examples for a `aUnitConfig.yml` file.
 Note that if you want to check complete software components we recommend to use the `softwareComponent` property over the `package` property.
 
-See below example for an `aUnitConfig.yml` file containing a minimal configuration for the package `Z_TEST_PACKAGE` to be checked:
+See below example for an `aUnitConfig.yml` file containing a minimal configuration for the software component `/DMO/SWC` to be checked:
 
 ```yaml
 title: My AUnit run
