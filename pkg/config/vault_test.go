@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
 	"github.com/stretchr/testify/assert"
@@ -225,7 +226,7 @@ func addAlias(param *StepParameters, aliasName string) {
 
 func TestResolveVaultTestCredentials(t *testing.T) {
 	t.Parallel()
-	t.Run("Default credential prefix", func(t *testing.T) {
+	t.Run("Default test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
 		vaultMock := &mocks.VaultMock{}
@@ -254,7 +255,43 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		}
 	})
 
-	t.Run("Custom credential prefix", func(t *testing.T) {
+	t.Run("Custom general purpose credential prefix along with fixed standard prefix", func(t *testing.T) {
+		t.Parallel()
+		// init
+		vaultMock := &mocks.VaultMock{}
+		envPrefix := "CUSTOM_MYCRED_"
+		standardEnvPrefix := "PIPER_VAULTCREDENTIAL_"
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath":                "team1",
+			"vaultCredentialPath":      "appCredentials",
+			"vaultCredentialKeys":      []interface{}{"appUser", "appUserPw"},
+			"vaultCredentialEnvPrefix": envPrefix,
+		}}
+
+		defer os.Unsetenv("CUSTOM_MYCRED_APPUSER")
+		defer os.Unsetenv("CUSTOM_MYCRED_APPUSERPW")
+		defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSER")
+		defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSERPW")
+
+		// mock
+		vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+		vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+		// test
+		resolveVaultCredentials(&stepConfig, vaultMock)
+
+		// assert
+		for k, v := range vaultData {
+			env := envPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(env))
+			assert.Equal(t, os.Getenv(env), v)
+			standardEnv := standardEnvPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(standardEnv))
+			assert.Equal(t, os.Getenv(standardEnv), v)
+		}
+	})
+
+	t.Run("Custom test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
 		vaultMock := &mocks.VaultMock{}
