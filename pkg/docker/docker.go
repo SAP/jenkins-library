@@ -61,7 +61,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 	}
 
 	//always create the target path directories if any before writing
-	err = utils.MkdirAll(filepath.Dir(targetPath), 0666)
+	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", targetPath, err)
 	}
