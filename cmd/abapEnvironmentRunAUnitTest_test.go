@@ -698,6 +698,7 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 	t.Parallel()
 
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
+
 		t.Parallel()
 
 		tokenExpected := "myToken"
