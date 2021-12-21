@@ -27,7 +27,7 @@ func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockU
 	return utils
 }
 
-func TestBuildAUnitTestBody(t *testing.T) {
+func TestbuildAUnitRequestBody(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Test AUnit test run body with no data", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 		var config AUnitConfig
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -111,7 +111,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -177,7 +177,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -234,7 +234,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -291,7 +291,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -347,7 +347,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -369,7 +369,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -401,7 +401,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -433,7 +433,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -455,7 +455,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 
 		var metadataString, optionsString, objectSetString string
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(config)
 
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -512,9 +512,9 @@ options:
     medium: true
     long: true
 objectset:
-- packages: 
+- packages:
   - name: Z_TEST
-  softwarecomponents: 
+  softwarecomponents:
   - name: Z_TEST
 `
 
@@ -575,7 +575,7 @@ objectset:
     - type: componentSet
       component:
       - name: Z_TEST_SC
-- packages: 
+- packages:
   - name: Z_TEST_PACKAGE2
 `
 
