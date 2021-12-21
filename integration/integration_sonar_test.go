@@ -1,21 +1,18 @@
+//go:build integration
 // +build integration
+
 // can be execute with go test -tags=integration ./integration/...
 
 package main
 
 import (
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/sonar"
 )
 
