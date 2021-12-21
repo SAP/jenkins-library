@@ -31,7 +31,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
-	t.Run("Load secret from vault with path override", func(t *testing.T) {
+	t.Run("Load secret from Vault with path override", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":           "team1",
