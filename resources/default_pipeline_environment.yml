@@ -211,10 +211,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 'ppiper/cf-cli:6'
+      dockerImage: 'ppiper/cf-cli:v10'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 'ppiper/cf-cli:6'
+      dockerImage: 'ppiper/cf-cli:v10'
       dockerWorkspace: '/home/piper'
     mta:
       deployTool: 'mtaDeployPlugin'
