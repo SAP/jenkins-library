@@ -322,6 +322,7 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        default: '.pipeline/docker/config.json'
         resourceRef:
           - name: dockerConfigJsonCredentialsId
             type: secret
