@@ -91,7 +91,17 @@ This means if you specify e.g. a Multi Property Set containing the owner and pac
 This must be in the same format as below examples for a `aUnitConfig.yml` file.
 Note that if you want to check complete software components we reccommend to use the `component` property over the `package` property as this may cause issues for structure packages.
 
-See below example for an `aUnitConfig.yml` file containing the package `Z_TEST_PACKAGE` to be checked:
+See below example for an `aUnitConfig.yml` file containing a minimal configuration for the package `Z_TEST_PACKAGE` to be checked:
+
+```yaml
+title: My AUnit run
+context: My unit tests
+objectset:
+  - packages:
+    - name: Z_TEST_PACKAGE
+```
+
+See below example for an `aUnitConfig.yml` file with the configured options containing the package `Z_TEST_PACKAGE` to be checked:
 
 ```yaml
 title: My AUnit run
@@ -110,7 +120,7 @@ options:
     medium: true
     long: true
 objectset:
-  - packagenames:
+  - packages:
     - name: Z_TEST_PACKAGE
 ```
 
@@ -133,7 +143,7 @@ options:
     medium: true
     long: true
 objectset:
-  - componentnames:
+  - softwarecomponents:
     - name: Z_TESTSC
 ```
 
@@ -160,12 +170,12 @@ objectset:
     multipropertyset:
       owner:
         - name: demoOwner
-      componentnames:
+      softwarecomponents:
         - component:
           name: demoSoftwareComponent
       version:
         - value: ACTIVE
-      packagenames:
+      packages:
         - package:
           name: demoPackage
       objectnamepattern:
