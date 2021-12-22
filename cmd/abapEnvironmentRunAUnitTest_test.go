@@ -436,7 +436,7 @@ options:
     medium: true
     long: true
 objectset:
-- packages: 
+  packages: 
   - name: Z_TEST
   softwarecomponents: 
   - name: Z_TEST
@@ -494,13 +494,11 @@ options:
     medium: true
     long: true
 objectset:
-- type: unionSet
+  type: unionSet
   set:
     - type: componentSet
       component:
       - name: Z_TEST_SC
-- packages: 
-  - name: Z_TEST_PACKAGE2
 `
 
 		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
