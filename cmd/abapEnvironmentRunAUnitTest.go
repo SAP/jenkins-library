@@ -136,12 +136,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
-		result, err := readAUnitConfigFile(config.Repositories)
-		if err != nil {
-			return aUnitConfig, err
-		}
-		repos := []abaputils.Repository{}
-		err = json.Unmarshal(result, &repos)
+		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
 		if err != nil {
 			return aUnitConfig, err
 		}
@@ -219,7 +214,7 @@ func fetchAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsH
 
 func buildAUnitRequestBody(config abapEnvironmentRunAUnitTestOptions) (bodyString string, err error) {
 
-	bodyString = `<?xml version="1.0" encoding="UTF-8"?>`
+	bodyString = ""
 	AUnitConfig, err := resolveAUnitConfiguration(config)
 	if err != nil {
 		return bodyString, err
@@ -240,12 +235,10 @@ func buildAUnitRequestBody(config abapEnvironmentRunAUnitTestOptions) (bodyStrin
 	optionsString := buildAUnitOptionsString(AUnitConfig)
 	//Build metadata string
 	metadataString := `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
-
 	//Build Object Set
 	objectSetString := buildAUnitObjectSetString(AUnitConfig)
-	objectSetString += `</aunit:run>`
 
-	bodyString += metadataString + optionsString + objectSetString
+	bodyString += `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString + `</aunit:run>`
 
 	return bodyString, nil
 }

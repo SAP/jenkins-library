@@ -27,7 +27,7 @@ func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockU
 	return utils
 }
 
-func TestbuildAUnitRequestBody(t *testing.T) {
+func TestBuildAUnitRequestBody(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Test AUnit test run body with no data", func(t *testing.T) {
@@ -40,14 +40,14 @@ func TestbuildAUnitRequestBody(t *testing.T) {
 		expectedBodyString := ""
 
 		assert.Equal(t, expectedBodyString, bodyString)
-		assert.EqualError(t, err, "Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
+		assert.EqualError(t, err, "No configuration provided")
 	})
 
 	t.Run("Test AUnit test run body with example yaml config of not supported Object Sets", func(t *testing.T) {
 		t.Parallel()
 
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `</aunit:run>`
+		expectedobjectSetString := ``
 
 		config := AUnitConfig{
 			Title:   "Test Title",
@@ -110,7 +110,7 @@ func TestbuildAUnitRequestBody(t *testing.T) {
 		t.Parallel()
 
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet>`
 
 		config := AUnitConfig{
 			Title:   "Test Title",
@@ -158,7 +158,7 @@ func TestbuildAUnitRequestBody(t *testing.T) {
 		t.Parallel()
 
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet>`
 
 		config := AUnitConfig{
 			Title:   "Test Title",
@@ -206,7 +206,7 @@ func TestbuildAUnitRequestBody(t *testing.T) {
 		t.Parallel()
 
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:package name="testPackage1"/><osl:package name="testPackage2"/><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:package name="testPackage1"/><osl:package name="testPackage2"/><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet>`
 
 		config := AUnitConfig{
 			Title:   "Test Title",
@@ -265,6 +265,38 @@ func TestbuildAUnitRequestBody(t *testing.T) {
 
 		optionsString := buildAUnitOptionsString(config)
 		assert.Equal(t, expectedoptionsString, optionsString)
+	})
+
+	t.Run("Config with repository-yml", func(t *testing.T) {
+
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitResultsFileName: "aUnitResults.xml",
+			Repositories:         "repositories.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		repositories := `repositories:
+  - name: /DMO/REPO
+    branch: main
+`
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"AUnit Test Run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:softwareComponent name=\"/DMO/REPO\"/></osl:objectSet></aunit:run>"
+		err = ioutil.WriteFile(config.Repositories, []byte(repositories), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := buildAUnitRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
 	})
 }
 
