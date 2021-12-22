@@ -335,7 +335,7 @@ objectset:
 		}
 	})
 
-	t.Run("Empty AUnit config", func(t *testing.T) {
+	t.Run("No AUnit config file - expect no panic", func(t *testing.T) {
 
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig: "aunit.yml",
@@ -345,7 +345,7 @@ objectset:
 		assert.Equal(t, "Could not find aunit.yml", err.Error())
 	})
 
-	t.Run("Empty Repositories config", func(t *testing.T) {
+	t.Run("No Repo config file - expect no panic", func(t *testing.T) {
 
 		config := abapEnvironmentRunAUnitTestOptions{
 			Repositories: "repo.yml",
