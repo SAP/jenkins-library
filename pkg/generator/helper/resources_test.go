@@ -119,7 +119,7 @@ func TestReportsResource_StructString(t *testing.T) {
 			expected: `type testStepReports struct {
 }
 
-func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
+func (p *testStepReports) persist(stepConfig testStepOptions) {
 	if GeneralConfig.GCSBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return

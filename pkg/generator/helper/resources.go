@@ -213,7 +213,7 @@ type ReportsParameter struct {
 const reportsStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 }
 
-func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig sonarExecuteScanOptions) {
+func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig {{ .StepName }}Options) {
 	if GeneralConfig.GCSBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
