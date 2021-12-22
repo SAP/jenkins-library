@@ -79,99 +79,33 @@ func TestBuildAUnitTestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: []ObjectSet{
-				{
-					Type: "testSet",
-					Set: []Set{
-						{
-							Type: "testSet",
-							Set: []Set{
-								{
-									Type: "testAUnitFlatObjectSet",
-									FlatObjectSet: []AUnitFlatObjectSet{
-										{
-											Name: "TestCLAS",
-											Type: "CLAS",
-										},
-										{
-											Name: "TestINTF",
-											Type: "INTF",
-										}},
-								},
-								{
-									Type: "testAUnitObjectTypeSet",
-									ObjectTypeSet: []AUnitObjectTypeSet{
-										{
-											Name: "TestObjectType",
-										}},
-								}},
-						}},
-				}},
-		}
+			ObjectSet: ObjectSet{
 
-		var metadataString, optionsString, objectSetString string
-
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
-		assert.Equal(t, expectedoptionsString, optionsString)
-		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, nil, err)
-	})
-
-	t.Run("Test AUnit test run body with example yaml config of Multi Property Set and not supported Objects Sets combined", func(t *testing.T) {
-		t.Parallel()
-
-		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
-		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		//Ensure that each Set besides MPS will be empty. Full empty object sets can be send via the XML request body, they simply do nothing
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
-
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{
-			Title:   "Test Title",
-			Context: "Test Context",
-			Options: AUnitOptions{
-				Measurements: "none",
-				Scope: Scope{
-					OwnTests:     new(bool),
-					ForeignTests: new(bool),
-				},
-				RiskLevel: RiskLevel{
-					Harmless:  new(bool),
-					Dangerous: new(bool),
-					Critical:  new(bool),
-				},
-				Duration: Duration{
-					Short:  new(bool),
-					Medium: new(bool),
-					Long:   new(bool),
-				},
-			},
-			ObjectSet: []ObjectSet{
-				{
-					Type: "testSet",
-					Set: []Set{
-						{
-							Type: "testBaseSet",
-						},
-					},
-				},
-				{
-					Type: "multiPropertySet",
-					MultiPropertySet: MultiPropertySet{
-						SoftwareComponents: []SoftwareComponents{
+				Type: "testSet",
+				Set: []Set{
+					{
+						Type: "testSet",
+						Set: []Set{
 							{
-								Name: "testComponent1",
+								Type: "testAUnitFlatObjectSet",
+								FlatObjectSet: []AUnitFlatObjectSet{
+									{
+										Name: "TestCLAS",
+										Type: "CLAS",
+									},
+									{
+										Name: "TestINTF",
+										Type: "INTF",
+									}},
 							},
 							{
-								Name: "testComponent2",
-							},
-						},
-					},
-				},
+								Type: "testAUnitObjectTypeSet",
+								ObjectTypeSet: []AUnitObjectTypeSet{
+									{
+										Name: "TestObjectType",
+									}},
+							}},
+					}},
 			},
 		}
 
@@ -215,17 +149,15 @@ func TestBuildAUnitTestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: []ObjectSet{
-				{
-					Type: "multiPropertySet",
-					MultiPropertySet: MultiPropertySet{
-						SoftwareComponents: []SoftwareComponents{
-							{
-								Name: "testComponent1",
-							},
-							{
-								Name: "testComponent2",
-							},
+			ObjectSet: ObjectSet{
+				Type: "multiPropertySet",
+				MultiPropertySet: MultiPropertySet{
+					SoftwareComponents: []SoftwareComponents{
+						{
+							Name: "testComponent1",
+						},
+						{
+							Name: "testComponent2",
 						},
 					},
 				},
@@ -272,17 +204,15 @@ func TestBuildAUnitTestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: []ObjectSet{
-				{
-					Type: "",
-					MultiPropertySet: MultiPropertySet{
-						SoftwareComponents: []SoftwareComponents{
-							{
-								Name: "testComponent1",
-							},
-							{
-								Name: "testComponent2",
-							},
+			ObjectSet: ObjectSet{
+				Type: "",
+				MultiPropertySet: MultiPropertySet{
+					SoftwareComponents: []SoftwareComponents{
+						{
+							Name: "testComponent1",
+						},
+						{
+							Name: "testComponent2",
 						},
 					},
 				},
@@ -329,19 +259,17 @@ func TestBuildAUnitTestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: []ObjectSet{
-				{
-					PackageNames: []AUnitPackage{{
-						Name: "testPackage1",
-					}, {
-						Name: "testPackage2",
-					}},
-					SoftwareComponents: []SoftwareComponents{{
-						Name: "testComponent1",
-					}, {
-						Name: "testComponent2",
-					}},
-				},
+			ObjectSet: ObjectSet{
+				PackageNames: []AUnitPackage{{
+					Name: "testPackage1",
+				}, {
+					Name: "testPackage2",
+				}},
+				SoftwareComponents: []SoftwareComponents{{
+					Name: "testComponent1",
+				}, {
+					Name: "testComponent2",
+				}},
 			},
 		}
 
@@ -388,15 +316,13 @@ func TestBuildAUnitTestBody(t *testing.T) {
 		var config AUnitConfig
 
 		config = AUnitConfig{Title: "Test",
-			ObjectSet: []ObjectSet{
-				{
-					PackageNames: []AUnitPackage{{
-						Name: "testPackage1",
-					}},
-					SoftwareComponents: []SoftwareComponents{{
-						Name: "testComponent1",
-					}},
-				},
+			ObjectSet: ObjectSet{
+				PackageNames: []AUnitPackage{{
+					Name: "testPackage1",
+				}},
+				SoftwareComponents: []SoftwareComponents{{
+					Name: "testComponent1",
+				}},
 			}}
 
 		var metadataString, optionsString, objectSetString string
@@ -420,15 +346,13 @@ func TestBuildAUnitTestBody(t *testing.T) {
 		var config AUnitConfig
 
 		config = AUnitConfig{Title: "Test", Context: "Test",
-			ObjectSet: []ObjectSet{
-				{
-					PackageNames: []AUnitPackage{{
-						Name: "testPackage1",
-					}},
-					SoftwareComponents: []SoftwareComponents{{
-						Name: "testComponent1",
-					}},
-				},
+			ObjectSet: ObjectSet{
+				PackageNames: []AUnitPackage{{
+					Name: "testPackage1",
+				}},
+				SoftwareComponents: []SoftwareComponents{{
+					Name: "testComponent1",
+				}},
 			}}
 
 		var metadataString, optionsString, objectSetString string
@@ -460,7 +384,7 @@ func TestBuildAUnitTestBody(t *testing.T) {
 		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
 		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.EqualError(t, err, "Error while parsing AUnit test run object set config. No object set has been provided. Please configure the set of objects you want to be checked for the respective test run")
+		assert.EqualError(t, err, "Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
 	})
 }
 
@@ -512,7 +436,7 @@ options:
     medium: true
     long: true
 objectset:
-- packages: 
+  packages: 
   - name: Z_TEST
   softwarecomponents: 
   - name: Z_TEST
@@ -570,13 +494,11 @@ options:
     medium: true
     long: true
 objectset:
-- type: unionSet
+  type: unionSet
   set:
     - type: componentSet
       component:
       - name: Z_TEST_SC
-- packages: 
-  - name: Z_TEST_PACKAGE2
 `
 
 		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
