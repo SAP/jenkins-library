@@ -97,8 +97,8 @@ See below example for an `aUnitConfig.yml` file containing a minimal configurati
 title: My AUnit run
 context: My unit tests
 objectset:
-  - softwareComponents:
-    - name: /DMO/SWC
+  softwareComponents:
+  - name: /DMO/SWC
 ```
 
 See below example for an `aUnitConfig.yml` file with the configured options containing the package `Z_TEST_PACKAGE` to be checked:
@@ -120,8 +120,8 @@ options:
     medium: true
     long: true
 objectset:
-  - packages:
-    - name: Z_TEST_PACKAGE
+  packages:
+  - name: Z_TEST_PACKAGE
 ```
 
 The following example of an `aUnitConfig.yml` file containing the software component `Z_TESTSC` to be checked:
@@ -143,8 +143,8 @@ options:
     medium: true
     long: true
 objectset:
-  - softwarecomponents:
-    - name: Z_TESTSC
+  softwarecomponents:
+  - name: Z_TESTSC
 ```
 
 The following example of an `aUnitConfig.yml` file contains all possible properties of the Multi Property Set that can be used. Please take note that this is not the reccommended approach. If you want to check packages or software components please use the two above examples. The usage of the Multi Property Set is only reccommended for ABAP Unit tests that require these rules for the test execution. There is no official documentation on the usage of the Multi Property Set.
@@ -166,32 +166,32 @@ options:
     medium: true
     long: true
 objectset:
-  - type: multiPropertySet
-    multipropertyset:
-      owner:
-        - name: demoOwner
-      softwarecomponents:
+  type: multiPropertySet
+  multipropertyset:
+    owner:
+      - name: demoOwner
+    softwarecomponents:
         - component:
-          name: demoSoftwareComponent
-      version:
-        - value: ACTIVE
-      packages:
-        - package:
-          name: demoPackage
-      objectnamepattern:
-        - value: 'ZCL_*'
-      language:
-        - value: EN
-      sourcesystem:
-        - name: H01
-      objecttype:
-        - name: CLAS
-      objecttypegroup:
-        - name: CLAS
-      releasestate:
-        - value: RELEASED
-      applicationcomponent:
-        - name: demoApplicationComponent
-      transportlayer:
-        - name: H01
+        name: demoSoftwareComponent
+    version:
+      - value: ACTIVE
+    packages:
+      - package:
+        name: demoPackage
+    objectnamepattern:
+      - value: 'ZCL_*'
+    language:
+      - value: EN
+    sourcesystem:
+      - name: H01
+    objecttype:
+      - name: CLAS
+    objecttypegroup:
+      - name: CLAS
+    releasestate:
+      - value: RELEASED
+    applicationcomponent:
+      - name: demoApplicationComponent
+    transportlayer:
+      - name: H01
 ```
