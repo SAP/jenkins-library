@@ -434,6 +434,7 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 }
 
 func getTarName(config *protecodeExecuteScanOptions) string {
+
 	// remove original version
 	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.Version)
 	// remove sha digest if exists
@@ -443,12 +444,12 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	}
 
 	version := getProcessedVersion(config)
-
 	if len(version) > 0 {
 		fileName = fileName + " - " + version
 	}
 
 	fileName = strings.ReplaceAll(fileName, "/", "_")
+
 	return fileName + ".tar"
 }
 
@@ -458,7 +459,12 @@ func getProcessedVersion(config *protecodeExecuteScanOptions) string {
 	if len(processedVersion) > 0 {
 		log.Entry().Infof("Using custom version: %v", processedVersion)
 	} else {
-		processedVersion = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+		if len(config.VersioningModel) > 0 {
+			processedVersion = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+		} else {
+			// By default 'major' if <config.VersioningModel> not provided
+			processedVersion = versioning.ApplyVersioningModel("major", config.Version)
+		}
 	}
 	return processedVersion
 }

@@ -400,12 +400,12 @@ func TestGetTarName(t *testing.T) {
 		"with version suffix": {
 			"com.sap.piper/sample-k8s-app-multistage:1.11-20200902040158_97a5cc34f1796ad735159f020dd55c0f3670a4cb",
 			"1.11-20200902040158_97a5cc34f1796ad735159f020dd55c0f3670a4cb",
-			"com.sap.piper_sample-k8s-app-multistage_1.tar",
+			"com.sap.piper_sample-k8s-app-multistage - 1.tar",
 		},
 		"without version suffix": {
 			"abc",
 			"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e",
-			"abc_3.tar",
+			"abc - 3.tar",
 		},
 		"without version": {
 			"abc",
@@ -420,7 +420,7 @@ func TestGetTarName(t *testing.T) {
 		"ScanImage with sha as artifactVersion": {
 			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
 			"c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
-			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
+			"ppiper_cf-cli - c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
 		},
 	}
 	for name, c := range cases {
