@@ -106,24 +106,17 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 }
 
 func triggerAUnitrun(config abapEnvironmentRunAUnitTestOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
+
 	abapEndpoint := details.URL
-
-	AUnitConfig, err := resolveAUnitConfiguration(config)
-	if err != nil {
-		return nil, err
-	}
-
-	var metadataString, optionsString, objectSetString string
-	metadataString, optionsString, objectSetString, err = buildAUnitRequestBody(AUnitConfig)
+	bodyString, err := buildAUnitRequestBody(config)
 	if err != nil {
 		return nil, err
 	}
 
 	//Trigger AUnit run
 	var resp *http.Response
-	var bodyString = `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString
-	var body = []byte(bodyString)
 
+	var body = []byte(bodyString)
 	log.Entry().Debugf("Request Body: %s", bodyString)
 	details.URL = abapEndpoint + "/sap/bc/adt/api/abapunit/runs"
 	resp, err = runAUnit("POST", details, body, client)
@@ -155,6 +148,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 		for _, repo := range repos {
 			aUnitConfig.ObjectSet.SoftwareComponents = append(aUnitConfig.ObjectSet.SoftwareComponents, SoftwareComponents{Name: repo.Name})
 		}
+		aUnitConfig.Title = "AUnit Test Run"
 		return aUnitConfig, nil
 	} else {
 		// Fail if no configuration is provided
@@ -223,29 +217,37 @@ func fetchAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsH
 	return nil
 }
 
-func buildAUnitRequestBody(AUnitConfig AUnitConfig) (metadataString string, optionsString string, objectSetString string, err error) {
+func buildAUnitRequestBody(config abapEnvironmentRunAUnitTestOptions) (bodyString string, err error) {
+
+	bodyString = `<?xml version="1.0" encoding="UTF-8"?>`
+	AUnitConfig, err := resolveAUnitConfiguration(config)
+	if err != nil {
+		return bodyString, err
+	}
 
 	//Checks before building the XML body
 	if AUnitConfig.Title == "" {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
+		return bodyString, fmt.Errorf("Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
 	}
 	if AUnitConfig.Context == "" {
 		AUnitConfig.Context = "ABAP Environment Pipeline"
 	}
 	if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+		return bodyString, fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
 	}
 
 	//Build Options
-	optionsString += buildAUnitOptionsString(AUnitConfig)
+	optionsString := buildAUnitOptionsString(AUnitConfig)
 	//Build metadata string
-	metadataString += `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
+	metadataString := `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 
 	//Build Object Set
-	objectSetString += buildAUnitObjectSetString(AUnitConfig)
+	objectSetString := buildAUnitObjectSetString(AUnitConfig)
 	objectSetString += `</aunit:run>`
 
-	return metadataString, optionsString, objectSetString, nil
+	bodyString += metadataString + optionsString + objectSetString
+
+	return bodyString, nil
 }
 
 func runAUnit(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
