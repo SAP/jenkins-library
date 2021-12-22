@@ -133,3 +133,5 @@ spec:
       env:
         - name: container
           value: docker
+        - name: PATH
+          value: /busybox:/kaniko:$PATH
