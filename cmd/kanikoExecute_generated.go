@@ -302,7 +302,7 @@ func kanikoExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}, {Name: "PATH", Value: "$PATH:/busybox:/kaniko:"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}, {Name: "PATH", Value: "$PATH:/busybox/sh"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
