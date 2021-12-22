@@ -157,6 +157,9 @@ func readAUnitConfigFile(path string) (file []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(filelocation) == 0 {
+		return nil, errors.New("Could not find " + path)
+	}
 	filename, err := filepath.Abs(filelocation[0])
 	if err != nil {
 		return nil, err
