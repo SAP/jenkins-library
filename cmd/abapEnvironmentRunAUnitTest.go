@@ -152,9 +152,8 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 		if err != nil {
 			return aUnitConfig, err
 		}
-		aUnitConfig.ObjectSet = append(aUnitConfig.ObjectSet, ObjectSet{})
 		for _, repo := range repos {
-			aUnitConfig.ObjectSet[0].SoftwareComponents = append(aUnitConfig.ObjectSet[0].SoftwareComponents, SoftwareComponents{Name: repo.Name})
+			aUnitConfig.ObjectSet.SoftwareComponents = append(aUnitConfig.ObjectSet.SoftwareComponents, SoftwareComponents{Name: repo.Name})
 		}
 		return aUnitConfig, nil
 	} else {
