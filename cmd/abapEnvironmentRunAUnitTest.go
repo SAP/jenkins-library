@@ -195,9 +195,6 @@ func buildAUnitTestBody(AUnitConfig AUnitConfig) (metadataString string, options
 	if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
 		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
 	}
-	if len(AUnitConfig.ObjectSet) == 0 {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the set of objects you want to be checked for the respective test run")
-	}
 
 	//Build Options
 	optionsString += buildAUnitOptionsString(AUnitConfig)
@@ -330,35 +327,34 @@ func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
 func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string) {
 
 	//Build ObjectSets
-	for _, s := range AUnitConfig.ObjectSet {
-		if s.Type == "" {
-			s.Type = "multiPropertySet"
+	s := AUnitConfig.ObjectSet
+	if s.Type == "" {
+		s.Type = "multiPropertySet"
+	}
+	if s.Type != "multiPropertySet" {
+		log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
+	} else {
+		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
+
+		if !(reflect.DeepEqual(s.PackageNames, AUnitPackage{})) || !(reflect.DeepEqual(s.SoftwareComponents, SoftwareComponents{})) {
+			//To ensure Scomps and packages can be assigned on this level
+			mps := MultiPropertySet{
+				PackageNames:       s.PackageNames,
+				SoftwareComponents: s.SoftwareComponents,
+			}
+			objectSetString += buildOSLObjectSets(mps)
 		}
-		if s.Type != "multiPropertySet" {
-			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
-		} else {
-			objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
 
-			if !(reflect.DeepEqual(s.PackageNames, AUnitPackage{})) || !(reflect.DeepEqual(s.SoftwareComponents, SoftwareComponents{})) {
-				//To ensure Scomps and packages can be assigned on this level
-				mps := MultiPropertySet{
-					PackageNames:       s.PackageNames,
-					SoftwareComponents: s.SoftwareComponents,
-				}
-				objectSetString += buildOSLObjectSets(mps)
-			}
+		objectSetString += buildOSLObjectSets(s.MultiPropertySet)
 
-			objectSetString += buildOSLObjectSets(s.MultiPropertySet)
-
-			if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
-				log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
-			}
-
-			for _, t := range s.Set {
-				log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
-			}
-			objectSetString += `</osl:objectSet>`
+		if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
+			log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
 		}
+
+		for _, t := range s.Set {
+			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
+		}
+		objectSetString += `</osl:objectSet>`
 	}
 	return objectSetString
 }
@@ -535,7 +531,7 @@ type AUnitConfig struct {
 	Title     string       `json:"title,omitempty"`
 	Context   string       `json:"context,omitempty"`
 	Options   AUnitOptions `json:"options,omitempty"`
-	ObjectSet []ObjectSet  `json:"objectset,omitempty"`
+	ObjectSet ObjectSet    `json:"objectset,omitempty"`
 }
 
 //AUnitOptions in form of packages and software components to be checked
