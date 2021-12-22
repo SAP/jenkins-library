@@ -328,3 +328,14 @@ spec:
               - name: preset
               - name: deep_link
               - name: report_creation_time
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/CxSASTReport_*.pdf"
+            type: checkmarx
+          - filePattern: "**/*CxSAST*.html"
+            type: checkmarx
+          - filePattern: "**/ScanReport.*"
+            type: checkmarx
+          - filePattern: "**/toolrun_checkmarx_*.json"
+            type: checkmarx
