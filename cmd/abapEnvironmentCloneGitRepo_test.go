@@ -112,7 +112,7 @@ repositories:
 
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"', branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 
 	})
@@ -173,7 +173,7 @@ repositories:
 
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of repository / software component '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -209,7 +209,7 @@ repositories:
 
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"', branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -244,7 +244,7 @@ repositories:
 
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"', branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 	})
 
