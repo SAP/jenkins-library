@@ -4,10 +4,8 @@ package cpi
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -77,24 +75,6 @@ func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &res, nil
-}
-
-//StoreFileInOsAndErrorNil - Method to store read artifacts in the file system
-func StoreFileInOs(FilePath string, resp *http.Response) error {
-	file, createErr := os.Create(FilePath)
-	if createErr != nil {
-		return errors.Wrapf(createErr, "Failed to create file")
-	}
-	_, err := io.Copy(file, resp.Body)
-	if err != nil {
-		return err
-	}
-	_, readErr := ioutil.ReadAll(resp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "File content could not be read")
-	}
-	return nil
 }
 
 //GetParameterKeyMissingResponseBody -Parameter key missing http respose body
