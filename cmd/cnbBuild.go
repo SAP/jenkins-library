@@ -239,8 +239,23 @@ func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 	}
 }
 
+func setTelemetryData(telemetryData *telemetry.CustomData) error {
+	dockerImage, err := getDockerImageValue("cnbBuild")
+
+	telemetryData.Custom1Label = "builder"
+	telemetryData.Custom1 = dockerImage
+
+	return err
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
+
+	err = setTelemetryData(telemetryData)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		return errors.Wrap(err, "failed to set telemetry data")
+	}
 
 	err = isBuilder(utils)
 	if err != nil {
