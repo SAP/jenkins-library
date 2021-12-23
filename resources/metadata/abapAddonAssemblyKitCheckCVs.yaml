@@ -67,3 +67,8 @@ spec:
         type: piperEnvironment
         params:
           - name: abap/addonDescriptor
+      - name: reports
+        type: reports
+        params:
+          - paramRef: addonDescriptorFileName
+            type: abap

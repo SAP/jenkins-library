@@ -9,12 +9,16 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"reflect"
+	"strings"
 )
 
 type abapAddonAssemblyKitCheckCVsOptions struct {
@@ -53,6 +57,40 @@ func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, re
 	}
 }
 
+type abapAddonAssemblyKitCheckCVsReports struct {
+}
+
+func (p *abapAddonAssemblyKitCheckCVsReports) persist(stepConfig abapAddonAssemblyKitCheckCVsOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "", ParamRef: "addonDescriptorFileName", StepResultType: "abap"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // AbapAddonAssemblyKitCheckCVsCommand This step checks the validity of ABAP Software Component Versions.
 func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitCheckCVs"
@@ -61,6 +99,7 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 	var stepConfig abapAddonAssemblyKitCheckCVsOptions
 	var startTime time.Time
 	var commonPipelineEnvironment abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+	var reports abapAddonAssemblyKitCheckCVsReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -118,6 +157,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -234,6 +274,13 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "abap/addonDescriptor"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"type": "abap"},
 						},
 					},
 				},
