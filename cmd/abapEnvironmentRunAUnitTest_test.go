@@ -436,10 +436,71 @@ options:
     medium: true
     long: true
 objectset:
-  packages: 
+  package:
   - name: Z_TEST
-  softwarecomponents: 
+  softwarecomponent:
   - name: Z_TEST
+`
+
+		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		if assert.Equal(t, err, nil) {
+			_, err := triggerAUnitrun(config, con, client)
+			assert.Equal(t, nil, err)
+		}
+	})
+
+	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
+
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitConfig:          "aUnitConfig.yml",
+			AUnitResultsFileName: "aUnitResults.xml",
+		}
+
+		client := &abaputils.ClientMock{
+			Body:       `AUnit test result body`,
+			StatusCode: 200,
+		}
+
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "Test",
+			Password: "Test",
+			URL:      "https://api.endpoint.com/Entity/",
+		}
+
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		yamlBody := `title: My AUnit run
+context: AIE integration tests
+options:
+  measurements: none
+  scope:
+    owntests: true
+    foreigntests: true
+  riskLevel:
+    harmless: true
+    dangerous: true
+    critical: true
+  duration:
+    short: true
+    medium: true
+    long: true
+objectset:
+  type: multiPropertySet
+  multiPropertySet:
+    softwarecomponent:
+      - name: Z_TEST
+    package:
+      - name: Z_TEST
 `
 
 		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)

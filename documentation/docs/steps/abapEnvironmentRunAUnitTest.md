@@ -97,7 +97,7 @@ See below example for an `aUnitConfig.yml` file containing a minimal configurati
 title: My AUnit run
 context: My unit tests
 objectset:
-  softwareComponents:
+  softwarecomponent:
   - name: /DMO/SWC
 ```
 
@@ -106,25 +106,12 @@ See below example for an `aUnitConfig.yml` file with the configured options cont
 ```yaml
 title: My AUnit run
 context: My unit tests
-options:
-  measurements: none
-  scope:
-    ownTests: true
-    foreignTests: true
-  riskLevel:
-    harmless: true
-    dangerous: true
-    critical: true
-  duration:
-    short: true
-    medium: true
-    long: true
 objectset:
-  packages:
+  package:
   - name: Z_TEST_PACKAGE
 ```
 
-The following example of an `aUnitConfig.yml` file containing the software component `Z_TESTSC` to be checked:
+The following example of an `aUnitConfig.yml` file containing the software component `Z_TESTSC` and shows the available options:
 
 ```yaml
 title: My AUnit run
@@ -143,7 +130,7 @@ options:
     medium: true
     long: true
 objectset:
-  softwarecomponents:
+  softwarecomponent:
   - name: Z_TESTSC
 ```
 
@@ -170,14 +157,12 @@ objectset:
   multipropertyset:
     owner:
       - name: demoOwner
-    softwarecomponents:
-        - component:
-        name: demoSoftwareComponent
+    softwarecomponent:
+      - name: demoSoftwareComponent
     version:
       - value: ACTIVE
-    packages:
-      - package:
-        name: demoPackage
+    package:
+      - name: demoPackage
     objectnamepattern:
       - value: 'ZCL_*'
     language:

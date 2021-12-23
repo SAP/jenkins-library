@@ -125,7 +125,7 @@ options:
     medium: true
     long: true
 objectSet:
-  softwarecomponents:
+  softwarecomponent:
   - name: Z_TEST_SC
   - name: Z_TEST_SC2
 ```
