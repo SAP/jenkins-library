@@ -133,4 +133,3 @@ spec:
       env:
         - name: container
           value: docker
-
