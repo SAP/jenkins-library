@@ -192,9 +192,11 @@ The `version` of a software component influcences two aspects:
 - The given version will be used as part of the target vector
 - If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
 
-As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built no new package is built. Only a new target vector is created.
-If the `version` of a software component (repository) is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
-If the add-on product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
+As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built, no new delivery package is built but only a new target vector is created. During add-on update the import of such a target vector that does not reference any new software component versions, the update of already software components is skipped.
+
+If the `version` of a software component is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
+
+If the add-on product consists of multiple software component versions , but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
 
 `branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
 The `commitID` should only be changed while also adjusting the `version` number of a software component.
