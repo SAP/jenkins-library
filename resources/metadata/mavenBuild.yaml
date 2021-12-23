@@ -193,6 +193,15 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "env.json"
+            type: root
+          - filePattern: "build-settings.json"
+            type: settings
+          - filePattern: "**/bom.xml"
+            type: sbom
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
