@@ -23,6 +23,11 @@ type binding struct {
 	FromURL *string `json:"fromUrl,omitempty"`
 }
 
+// Return error if:
+// 1. Content is set + File or FromURL
+// 2. File is set + FromURL or Content
+// 3. FromURL is set + File or Content
+// 4. Everything is set
 func (b *binding) validate() error {
 	if !validName(b.Key) {
 		return fmt.Errorf("invalid key: '%s'", b.Key)
@@ -32,15 +37,11 @@ func (b *binding) validate() error {
 		return errors.New("one of 'file', 'content' or 'fromUrl' properties must be specified for binding")
 	}
 
-	// Return error if:
-	// 1. Content is set + File or FromURL
-	// 2. File is set + FromURL or Content
-	// 3. FromURL is set + File or Content
-	// 4. Everything is set
-	if (b.Content != nil && (b.File != nil || b.FromURL != nil)) ||
-		(b.File != nil && (b.FromURL != nil || b.Content != nil)) ||
-		(b.FromURL != nil && (b.File != nil || b.Content != nil)) ||
-		(b.Content != nil && b.File != nil && b.FromURL != nil) {
+	onlyOneSet := (b.Content != nil && b.File == nil && b.FromURL == nil) ||
+		(b.Content == nil && b.File != nil && b.FromURL == nil) ||
+		(b.Content == nil && b.File == nil && b.FromURL != nil)
+
+	if !onlyOneSet {
 		return errors.New("only one of 'content', 'file' or 'fromUrl' can be set for a binding")
 	}
 
@@ -84,33 +85,35 @@ func processBinding(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, plat
 		return errors.Wrap(err, "failed to write the 'type' binding file")
 	}
 
-	if binding.Content != nil {
-		err = utils.FileWrite(filepath.Join(bindingDir, binding.Key), []byte(*binding.Content), 0644)
-		if err != nil {
-			return errors.Wrap(err, "failed to write binding")
-		}
-	} else if binding.File != nil {
+	if binding.File != nil {
 		_, err = utils.Copy(*binding.File, filepath.Join(bindingDir, binding.Key))
 		if err != nil {
 			return errors.Wrap(err, "failed to copy binding file")
 		}
 	} else {
-		response, err := httpClient.SendRequest(http.MethodGet, *binding.FromURL, nil, nil, nil)
-		if err != nil {
-			return errors.Wrap(err, "failed to load binding from url")
+		var bindingContent []byte
+
+		if binding.Content == nil {
+			response, err := httpClient.SendRequest(http.MethodGet, *binding.FromURL, nil, nil, nil)
+			if err != nil {
+				return errors.Wrap(err, "failed to load binding from url")
+			}
+
+			bindingContent, err = ioutil.ReadAll(response.Body)
+			defer response.Body.Close()
+			if err != nil {
+				return errors.Wrap(err, "error reading response")
+			}
+		} else {
+			bindingContent = []byte(*binding.Content)
 		}
 
-		content, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return errors.Wrap(err, "error reading response")
-		}
-		_ = response.Body.Close()
-
-		err = utils.FileWrite(filepath.Join(bindingDir, binding.Key), content, 0644)
+		err = utils.FileWrite(filepath.Join(bindingDir, binding.Key), bindingContent, 0644)
 		if err != nil {
 			return errors.Wrap(err, "failed to write binding")
 		}
 	}
+
 	return nil
 }
 
