@@ -97,7 +97,7 @@ See below example for an `aUnitConfig.yml` file containing a minimal configurati
 title: My AUnit run
 context: My unit tests
 objectset:
-  softwarecomponent:
+  softwarecomponents:
   - name: /DMO/SWC
 ```
 
@@ -107,7 +107,7 @@ See below example for an `aUnitConfig.yml` file with the configured options cont
 title: My AUnit run
 context: My unit tests
 objectset:
-  package:
+  packages:
   - name: Z_TEST_PACKAGE
 ```
 
@@ -130,7 +130,7 @@ options:
     medium: true
     long: true
 objectset:
-  softwarecomponent:
+  softwarecomponents:
   - name: Z_TESTSC
 ```
 
@@ -155,28 +155,28 @@ options:
 objectset:
   type: multiPropertySet
   multipropertyset:
-    owner:
+    owners:
       - name: demoOwner
-    softwarecomponent:
+    softwarecomponents:
       - name: demoSoftwareComponent
-    version:
+    versions:
       - value: ACTIVE
-    package:
+    packages:
       - name: demoPackage
-    objectnamepattern:
+    objectnamepatterns:
       - value: 'ZCL_*'
-    language:
+    languages:
       - value: EN
-    sourcesystem:
+    sourcesystems:
       - name: H01
-    objecttype:
+    objecttypes:
       - name: CLAS
-    objecttypegroup:
+    objecttypegroups:
       - name: CLAS
-    releasestate:
+    releasestates:
       - value: RELEASED
-    applicationcomponent:
+    applicationcomponents:
       - name: demoApplicationComponent
-    transportlayer:
+    transportlayers:
       - name: H01
 ```

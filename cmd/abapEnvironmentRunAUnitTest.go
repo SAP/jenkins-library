@@ -564,8 +564,8 @@ type Duration struct {
 
 //ObjectSet in form of packages and software components to be checked
 type ObjectSet struct {
-	PackageNames       []AUnitPackage       `json:"package,omitempty"`
-	SoftwareComponents []SoftwareComponents `json:"softwarecomponent,omitempty"`
+	PackageNames       []AUnitPackage       `json:"packages,omitempty"`
+	SoftwareComponents []SoftwareComponents `json:"softwarecomponents,omitempty"`
 	Type               string               `json:"type,omitempty"`
 	MultiPropertySet   MultiPropertySet     `json:"multipropertyset,omitempty"`
 	Set                []Set                `json:"set,omitempty"`
@@ -574,17 +574,17 @@ type ObjectSet struct {
 //MultiPropertySet that can possibly contain any subsets/object of the OSL
 type MultiPropertySet struct {
 	Type                  string                 `json:"type,omitempty"`
-	PackageNames          []AUnitPackage         `json:"package,omitempty"`
-	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroup,omitempty"`
-	ObjectTypes           []ObjectType           `json:"objecttype,omitempty"`
-	Owners                []Owner                `json:"owner,omitempty"`
-	ReleaseStates         []ReleaseState         `json:"releasestate,omitempty"`
-	Versions              []Version              `json:"version,omitempty"`
-	ApplicationComponents []ApplicationComponent `json:"applicationcomponent,omitempty"`
-	SoftwareComponents    []SoftwareComponents   `json:"softwarecomponent,omitempty"`
-	TransportLayers       []TransportLayer       `json:"transportlayer,omitempty"`
-	Languages             []Language             `json:"language,omitempty"`
-	SourceSystems         []SourceSystem         `json:"sourcesystem,omitempty"`
+	PackageNames          []AUnitPackage         `json:"packages,omitempty"`
+	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroups,omitempty"`
+	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
+	Owners                []Owner                `json:"owners,omitempty"`
+	ReleaseStates         []ReleaseState         `json:"releasestates,omitempty"`
+	Versions              []Version              `json:"versions,omitempty"`
+	ApplicationComponents []ApplicationComponent `json:"applicationcomponents,omitempty"`
+	SoftwareComponents    []SoftwareComponents   `json:"softwarecomponents,omitempty"`
+	TransportLayers       []TransportLayer       `json:"transportlayers,omitempty"`
+	Languages             []Language             `json:"languages,omitempty"`
+	SourceSystems         []SourceSystem         `json:"sourcesystems,omitempty"`
 }
 
 //Set

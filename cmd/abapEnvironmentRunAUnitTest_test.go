@@ -436,9 +436,9 @@ options:
     medium: true
     long: true
 objectset:
-  package:
+  packages:
   - name: Z_TEST
-  softwarecomponent:
+  softwarecomponents:
   - name: Z_TEST
 `
 
@@ -497,9 +497,9 @@ options:
 objectset:
   type: multiPropertySet
   multiPropertySet:
-    softwarecomponent:
+    softwarecomponents:
       - name: Z_TEST
-    package:
+    packages:
       - name: Z_TEST
 `
 
