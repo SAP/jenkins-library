@@ -295,11 +295,6 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	return optionsString
 }
 
-func buildOSLObjectSets(multipropertyset MultiPropertySet) (objectSetString string) {
-	objectSetString += writeObjectSetProperties(multipropertyset)
-	return objectSetString
-}
-
 func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
 	for _, packages := range set.PackageNames {
 		objectSetString += `<osl:package name="` + packages.Name + `"/>`
@@ -355,10 +350,10 @@ func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string)
 				PackageNames:       s.PackageNames,
 				SoftwareComponents: s.SoftwareComponents,
 			}
-			objectSetString += buildOSLObjectSets(mps)
+			objectSetString += writeObjectSetProperties(mps)
 		}
 
-		objectSetString += buildOSLObjectSets(s.MultiPropertySet)
+		objectSetString += writeObjectSetProperties(s.MultiPropertySet)
 
 		if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
 			log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
