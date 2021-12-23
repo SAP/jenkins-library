@@ -273,9 +273,6 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 	}
 	defer req.Body.Close()
 
-	// workaround until golang version 1.16 is used
-	time.Sleep(1 * time.Second)
-
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
 }
@@ -312,8 +309,6 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 }
 
 func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
-	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Polling ATC run status")
 
 	header := make(map[string][]string)
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
