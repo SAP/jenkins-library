@@ -15,25 +15,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type shellExecuteOptions struct {
-	Sources []string `json:"sources,omitempty"`
+type gradleExecuteBuildOptions struct {
+	Path string `json:"path,omitempty"`
+	Task string `json:"task,omitempty"`
 }
 
-// ShellExecuteCommand Step executes defined script
-func ShellExecuteCommand() *cobra.Command {
-	const STEP_NAME = "shellExecute"
+// GradleExecuteBuildCommand This step runs a gradle build command with parameters provided to the step.
+func GradleExecuteBuildCommand() *cobra.Command {
+	const STEP_NAME = "gradleExecuteBuild"
 
-	metadata := shellExecuteMetadata()
-	var stepConfig shellExecuteOptions
+	metadata := gradleExecuteBuildMetadata()
+	var stepConfig gradleExecuteBuildOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createShellExecuteCmd = &cobra.Command{
+	var createGradleExecuteBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Step executes defined script",
-		Long:  `Step executes defined script with using test Vault credentials`,
+		Short: "This step runs a gradle build command with parameters provided to the step.",
+		Long:  `This step runs a gradle build command with parameters provided to the step.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -97,45 +98,55 @@ func ShellExecuteCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			shellExecute(stepConfig, &stepTelemetryData)
+			gradleExecuteBuild(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addShellExecuteFlags(createShellExecuteCmd, &stepConfig)
-	return createShellExecuteCmd
+	addGradleExecuteBuildFlags(createGradleExecuteBuildCmd, &stepConfig)
+	return createGradleExecuteBuildCmd
 }
 
-func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
+func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
+	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with gradle.build file which should be executed.")
+	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed.")
 
 }
 
 // retrieve step metadata
-func shellExecuteMetadata() config.StepData {
+func gradleExecuteBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "shellExecute",
+			Name:        "gradleExecuteBuild",
 			Aliases:     []config.Alias{},
-			Description: "Step executes defined script",
+			Description: "This step runs a gradle build command with parameters provided to the step.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "sources",
+						Name:        "path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "buildGradlePath"}},
+						Default:     os.Getenv("PIPER_path"),
+					},
+					{
+						Name:        "task",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     `build`,
 					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "shell", Image: "node:lts-stretch", WorkingDir: "/home/node"},
+				{Name: "gradle", Image: "gradle:4.7.0-jdk8-alpine"},
 			},
 		},
 	}

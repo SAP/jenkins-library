@@ -65,7 +65,7 @@ As explained above, the shipment of a software takes place via add-on product ve
 
 In ABAP Environment Pipeline stage [*Build*](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/) a target vector for the particular add-on product version is published in test scope. This makes it possible to perform an add-on test installation in stage [*Integration Tests*](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/). At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning in the *Integration Tests* stage.
 
-In stage *Publish* the target vector is then published in production scope, so that the new version will become available for addon update and installation during system provisioning.
+In stage *Publish* the target vector is then published in production scope, so that the new version will become available for add-on update and installation during system provisioning.
 
 ## Building the Add-on Product
 
@@ -178,7 +178,7 @@ The section `repositories` contains one or multiple software component versions:
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
-`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple addon products).
+`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple add-on products).
 
 As a rule of thumb, the `addonVersion` should be increased analogous to the `version` of the leading software component.
 An exception can be the patch level in the `addonVersion` string: In case of an add-on product with a reuse software component, the patch level of the `addonVersion` might be higher than the patch level of the leading software component `version`.
@@ -194,7 +194,7 @@ The `version` of a software component influcences two aspects:
 
 As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built no new package is built. Only a new target vector is created.
 If the `version` of a software component (repository) is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
-If the addon product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
+If the add-on product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
 
 `branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
 The `commitID` should only be changed while also adjusting the `version` number of a software component.
