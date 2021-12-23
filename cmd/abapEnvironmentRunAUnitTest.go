@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -127,7 +125,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 
 	if config.AUnitConfig != "" {
 		// Configuration defaults to AUnitConfig
-		result, err := readAUnitConfigFile(config.AUnitConfig)
+		result, err := abaputils.ReadConfigFile(config.AUnitConfig)
 		if err != nil {
 			return aUnitConfig, err
 		}
@@ -149,29 +147,6 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 		// Fail if no configuration is provided
 		return aUnitConfig, errors.New("No configuration provided")
 	}
-}
-
-func readAUnitConfigFile(path string) (file []byte, err error) {
-	filelocation, err := filepath.Glob(path)
-	//Parse YAML AUnit run configuration as body for AUnit run trigger
-	if err != nil {
-		return nil, err
-	}
-	if len(filelocation) == 0 {
-		return nil, errors.New("Could not find " + path)
-	}
-	filename, err := filepath.Abs(filelocation[0])
-	if err != nil {
-		return nil, err
-	}
-	aUnitConfigYamlFile, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	var aUnitConfigJsonFile []byte
-	aUnitConfigJsonFile, err = yaml.YAMLToJSON(aUnitConfigYamlFile)
-	return aUnitConfigJsonFile, err
-
 }
 
 func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.AbapEnvironmentOptions {

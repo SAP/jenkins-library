@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -61,10 +59,10 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 	if err == nil {
-		resp, err = triggerATCrun(options, details, &client)
+		resp, err = triggerATCRun(options, details, &client)
 	}
 	if err == nil {
-		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
+		err = fetchATCResults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -73,7 +71,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
+func fetchATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -99,80 +97,102 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	return nil
 }
 
-func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
-	var atcConfigyamlFile []byte
-	abapEndpoint := details.URL
-	filelocation, err := filepath.Glob(config.AtcConfig)
-	//Parse YAML ATC run configuration as body for ATC run trigger
-	if err == nil {
-		filename, err := filepath.Abs(filelocation[0])
-		if err == nil {
-			atcConfigyamlFile, err = ioutil.ReadFile(filename)
-		}
-	}
-	var ATCConfig ATCconfig
-	if err == nil {
-		var result []byte
-		result, err = yaml.YAMLToJSON(atcConfigyamlFile)
-		json.Unmarshal(result, &ATCConfig)
-	}
-	var checkVariantString, packageString, softwareComponentString string
-	if err == nil {
-		checkVariantString, packageString, softwareComponentString, err = buildATCCheckBody(ATCConfig)
-	}
+func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
 
-	//Trigger ATC run
+	bodyString, err := getATCRequestBody(config)
+	if err != nil {
+		return nil, err
+	}
 	var resp *http.Response
-	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + checkVariantString + `><obj:objectSet>` + softwareComponentString + packageString + `</obj:objectSet></atc:runparameters>`
+	abapEndpoint := details.URL
+
 	log.Entry().Debugf("Request Body: %s", bodyString)
 	var body = []byte(bodyString)
-	if err == nil {
-		details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
-		resp, err = runATC("POST", details, body, client)
-	}
-	if err != nil {
-		return resp, fmt.Errorf("Triggering ATC run failed: %w", err)
-	}
-	return resp, nil
+	details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
+	resp, err = runATC("POST", details, body, client)
+	return resp, err
 }
 
-func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageString string, softwareComponentString string, err error) {
-	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", "", "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
+func getATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString string, err error) {
+
+	atcConfig, err := resolveATCConfiguration(config)
+	if err != nil {
+		return "", err
 	}
 
-	//Build Check Variant and Configuration XML Body
-	if len(ATCConfig.CheckVariant) != 0 {
-		checkVariantString += ` checkVariant="` + ATCConfig.CheckVariant + `"`
-		log.Entry().Infof("ATC Check Variant: %s", ATCConfig.CheckVariant)
-		if len(ATCConfig.Configuration) != 0 {
-			checkVariantString += ` configuration="` + ATCConfig.Configuration + `"`
+	// Create string for the run parameters
+	variant := "SAP_CLOUD_PLATFORM_ATC_DEFAULT"
+	if atcConfig.CheckVariant != "" {
+		variant = atcConfig.CheckVariant
+	}
+	log.Entry().Infof("ATC Check Variant: %s", variant)
+	runParameters := ` checkVariant="` + variant + `"`
+	if atcConfig.Configuration != "" {
+		runParameters += ` configuration="` + atcConfig.Configuration + `"`
+	}
+
+	objectSet, err := getATCObjectSet(atcConfig)
+
+	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSet + `</atc:runparameters>`
+	return bodyString, err
+}
+
+func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfig ATCConfiguration, err error) {
+
+	if config.AtcConfig != "" {
+		// Configuration defaults to AUnitConfig
+		atcConfigFile, err := abaputils.ReadConfigFile(config.AtcConfig)
+		if err != nil {
+			return atcConfig, err
 		}
+		json.Unmarshal(atcConfigFile, &atcConfig)
+		return atcConfig, err
+
+	} else if config.Repositories != "" {
+		// Fallback / EasyMode is the Repositories configuration
+		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
+		if err != nil {
+			return atcConfig, err
+		}
+		for _, repo := range repos {
+			atcConfig.Objects.SoftwareComponent = append(atcConfig.Objects.SoftwareComponent, SoftwareComponent{Name: repo.Name})
+		}
+		return atcConfig, nil
 	} else {
-		const defaultCheckVariant = "SAP_CLOUD_PLATFORM_ATC_DEFAULT"
-		checkVariantString += ` checkVariant="` + defaultCheckVariant + `"`
-		log.Entry().Infof("ATC Check Variant: %s", checkVariantString)
+		// Fail if no configuration is provided
+		return atcConfig, errors.New("No configuration provided")
+	}
+}
+
+func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
+	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
+	}
+
+	objectSet += `<obj:objectSet>`
+
+	//Build SC XML body
+	if len(ATCConfig.Objects.SoftwareComponent) != 0 {
+		objectSet += "<obj:softwarecomponents>"
+		for _, s := range ATCConfig.Objects.SoftwareComponent {
+			objectSet += `<obj:softwarecomponent value="` + s.Name + `"/>`
+		}
+		objectSet += "</obj:softwarecomponents>"
 	}
 
 	//Build Package XML body
 	if len(ATCConfig.Objects.Package) != 0 {
-		packageString += "<obj:packages>"
+		objectSet += "<obj:packages>"
 		for _, s := range ATCConfig.Objects.Package {
-			packageString += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
+			objectSet += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
 		}
-		packageString += "</obj:packages>"
+		objectSet += "</obj:packages>"
 	}
 
-	//Build SC XML body
-	if len(ATCConfig.Objects.SoftwareComponent) != 0 {
-		softwareComponentString += "<obj:softwarecomponents>"
-		for _, s := range ATCConfig.Objects.SoftwareComponent {
-			softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
-		}
-		softwareComponentString += "</obj:softwarecomponents>"
-	}
-	return checkVariantString, packageString, softwareComponentString, nil
+	objectSet += `</obj:objectSet>`
+
+	return objectSet, nil
 }
 
 func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
@@ -364,8 +384,8 @@ func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
 	return htmlDocumentString
 }
 
-//ATCconfig object for parsing yaml config of software components and packages
-type ATCconfig struct {
+//ATCConfiguration object for parsing yaml config of software components and packages
+type ATCConfiguration struct {
 	CheckVariant  string     `json:"checkvariant,omitempty"`
 	Configuration string     `json:"configuration,omitempty"`
 	Objects       ATCObjects `json:"atcobjects"`
