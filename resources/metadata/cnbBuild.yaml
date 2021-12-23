@@ -162,14 +162,22 @@ spec:
               file: path/to/settings.xml
           ```
 
-          or inline
-
+          inline:
           ```yaml
           bindings:
             maven-settings:
               type: maven
               key: settings.xml
               content: "inline settings.xml"
+          ```
+
+          from url:
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              fromUrl: https://url-to/setting.xml
           ```
         scope:
           - PARAMETERS

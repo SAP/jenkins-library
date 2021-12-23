@@ -288,7 +288,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	err = bindings.ProcessBindings(utils, platformPath, config.Bindings)
+	err = bindings.ProcessBindings(utils, httpClient, platformPath, config.Bindings)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed process bindings")
