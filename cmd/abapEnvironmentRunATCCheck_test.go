@@ -489,4 +489,14 @@ atcobjects:
 		assert.Equal(t, "", bodyString)
 
 	})
+
+	t.Run("Config file not specified", func(t *testing.T) {
+
+		config := abapEnvironmentRunATCCheckOptions{}
+
+		bodyString, err := getATCRequestBody(config)
+		assert.Equal(t, "No configuration provided", err.Error())
+		assert.Equal(t, "", bodyString)
+
+	})
 }
