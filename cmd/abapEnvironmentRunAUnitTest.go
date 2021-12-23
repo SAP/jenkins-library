@@ -94,7 +94,7 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 		resp, err = triggerAUnitrun(*config, details, client)
 	}
 	if err == nil {
-		err = fetchAUnitResults(resp, details, client, config.AUnitResultsFileName, config.GenerateHTML)
+		err = fetchAndPersistAUnitResults(resp, details, client, config.AUnitResultsFileName, config.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -164,7 +164,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	return subOptions
 }
 
-func fetchAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
+func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -173,7 +173,7 @@ func fetchAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsH
 	location, err = pollAUnitRun(details, nil, client)
 	if err == nil {
 		details.URL = abapEndpoint + location
-		resp, err = getResultAUnitRun("GET", details, nil, client)
+		resp, err = getAUnitResults("GET", details, nil, client)
 	}
 	//Parse response
 	var body []byte
@@ -182,7 +182,7 @@ func fetchAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsH
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseAUnitResult(body, aunitResultFileName, generateHTML)
+		err = persistAUnitResult(body, aunitResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling AUnit result failed: %w", err)
@@ -430,7 +430,7 @@ func getHTTPResponseAUnitRun(requestType string, details abaputils.ConnectionDet
 	return req, err
 }
 
-func getResultAUnitRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func getAUnitResults(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Getting AUnit results")
 
@@ -445,7 +445,7 @@ func getResultAUnitRun(requestType string, details abaputils.ConnectionDetailsHT
 	return req, err
 }
 
-func parseAUnitResult(body []byte, aunitResultFileName string, generateHTML bool) (err error) {
+func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing AUnit result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}

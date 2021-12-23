@@ -62,7 +62,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCRun(options, details, &client)
 	}
 	if err == nil {
-		err = fetchATCResults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
+		err = fetchAndPersistATCResults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -71,7 +71,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func fetchATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
+func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -89,7 +89,7 @@ func fetchATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTT
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseATCResult(body, atcResultFileName, generateHTML)
+		err = persistATCResult(body, atcResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -195,7 +195,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
+func persistATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}

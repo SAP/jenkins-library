@@ -533,7 +533,7 @@ func TestParseAUnitResult(t *testing.T) {
 		}()
 		bodyString := `<?xml version="1.0" encoding="utf-8"?><testsuites title="My AUnit run" system="TST" client="100" executedBy="TESTUSER" time="000.000" timestamp="2021-01-01T00:00:00Z" failures="2" errors="2" skipped="0" asserts="0" tests="2"><testsuite name="" tests="2" failures="2" errors="0" skipped="0" asserts="0" package="testpackage" timestamp="2021-01-01T00:00:00ZZ" time="0.000" hostname="test"><testcase classname="test" name="execute" time="0.000" asserts="2"><failure message="testMessage1" type="Assert Failure">Test1</failure><failure message="testMessage2" type="Assert Failure">Test2</failure></testcase></testsuite></testsuites>`
 		body := []byte(bodyString)
-		err = parseAUnitResult(body, "AUnitResults.xml", false)
+		err = persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -552,7 +552,7 @@ func TestParseAUnitResult(t *testing.T) {
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
-		err = parseAUnitResult(body, "AUnitResults.xml", false)
+		err = persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -561,7 +561,7 @@ func TestParseAUnitResult(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := parseAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.EqualError(t, err, "Parsing AUnit result failed: Body is empty, can't parse empty body")
 	})
 }
@@ -581,7 +581,7 @@ func TestGetResultAUnitRun(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		resp, err := getResultAUnitRun("GET", con, []byte(client.Body), client)
+		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
@@ -608,7 +608,7 @@ func TestGetResultAUnitRun(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		resp, err := getResultAUnitRun("GET", con, []byte(client.Body), client)
+		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
 		defer resp.Body.Close()
 		if assert.EqualError(t, err, "Getting AUnit run results failed: Test fail") {
 			buf := new(bytes.Buffer)
