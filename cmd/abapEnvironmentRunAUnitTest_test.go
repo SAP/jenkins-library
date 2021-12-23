@@ -335,6 +335,44 @@ objectset:
 		}
 	})
 
+	t.Run("Config with aunitconfig-yml mps", func(t *testing.T) {
+
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitResultsFileName: "aUnitResults.xml",
+			AUnitConfig:          "aunit.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		yamlBody := `title: My AUnit run
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    packages:
+      - name: Z_TEST
+    softwarecomponents:
+      - name: Z_TEST
+      - name: /DMO/SWC
+`
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
+		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := buildAUnitRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
+	})
+
 	t.Run("No AUnit config file - expect no panic", func(t *testing.T) {
 
 		config := abapEnvironmentRunAUnitTestOptions{
