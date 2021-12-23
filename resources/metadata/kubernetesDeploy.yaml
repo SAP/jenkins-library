@@ -22,7 +22,7 @@ metadata:
 
     * `yourRegistry` will be retrieved from `containerRegistryUrl`
     * `yourImageName`, `yourImageTag` will be retrieved from `image`
-    * `dockerSecret` will be calculated with a call to `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'`
+    * `dockerSecret` will be calculated with a call to `kubectl create secret generic <containerRegistrySecret> --from-file=.dockerconfigjson=<dockerConfigJson> --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json`
 spec:
   inputs:
     secrets:
@@ -157,10 +157,11 @@ spec:
           **For `deployTool: helm/helm3`:**<br />
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
 
-          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
-
           **For `deployTool: kubectl`:**<br />
-          If `createDockerRegistrySecret: true` and `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster unless a secret with the name already exists.
+          If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster.
+
+          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
+          
         type: string
         scope:
           - PARAMETERS
