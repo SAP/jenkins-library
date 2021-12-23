@@ -405,11 +405,11 @@ func TestGenerateHTMLDocument(t *testing.T) {
 	})
 }
 
-func testResolveConfiguration(t *testing.T) {
+func TestResolveConfiguration(t *testing.T) {
 
 	t.Run("resolve atcConfig-yml", func(t *testing.T) {
 
-		expectedBodyString := ``
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents><obj:packages><obj:package value=\"Z_TEST\" includeSubpackages=\"false\"/></obj:packages></obj:objectSet></atc:runparameters>"
 		config := abapEnvironmentRunATCCheckOptions{
 			AtcConfig: "atc.yml",
 		}
@@ -428,11 +428,12 @@ func testResolveConfiguration(t *testing.T) {
 
 		yamlBody := `checkvariant: MY_TEST
 configuration: MY_CONFIG
-packages:
-  - name: Z_TEST
-softwarecomponents:
-  - name: Z_TEST
-  - name: /DMO/SWC
+atcobjects:
+  package:
+    - name: Z_TEST
+  softwarecomponent:
+    - name: Z_TEST
+    - name: /DMO/SWC
 `
 
 		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
@@ -441,6 +442,51 @@ softwarecomponents:
 			assert.Equal(t, nil, err)
 			assert.Equal(t, expectedBodyString, bodyString)
 		}
+
+	})
+
+	t.Run("resolve repo-yml", func(t *testing.T) {
+
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"ABAP_CLOUD_DEVELOPMENT_DEFAULT\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents></obj:objectSet></atc:runparameters>"
+		config := abapEnvironmentRunATCCheckOptions{
+			Repositories: "repo.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		yamlBody := `repositories:
+  - name: Z_TEST
+  - name: /DMO/SWC
+`
+
+		err = ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := getATCRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
+
+	})
+
+	t.Run("Missing config files", func(t *testing.T) {
+
+		config := abapEnvironmentRunATCCheckOptions{
+			AtcConfig: "atc.yml",
+		}
+
+		bodyString, err := getATCRequestBody(config)
+		assert.Equal(t, "Could not find atc.yml", err.Error())
+		assert.Equal(t, "", bodyString)
 
 	})
 }
