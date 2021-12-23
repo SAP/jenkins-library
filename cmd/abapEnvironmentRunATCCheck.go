@@ -121,7 +121,7 @@ func getATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString str
 	}
 
 	// Create string for the run parameters
-	variant := "SAP_CLOUD_PLATFORM_ATC_DEFAULT"
+	variant := "ABAP_CLOUD_DEVELOPMENT_DEFAULT"
 	if atcConfig.CheckVariant != "" {
 		variant = atcConfig.CheckVariant
 	}
