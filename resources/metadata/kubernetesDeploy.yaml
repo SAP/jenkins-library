@@ -161,7 +161,6 @@ spec:
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster.
 
           If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
-          
         type: string
         scope:
           - PARAMETERS
