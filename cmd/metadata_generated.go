@@ -54,6 +54,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gitopsUpdateDeployment":                    gitopsUpdateDeploymentMetadata(),
 		"golangBuild":                               golangBuildMetadata(),
 		"hadolintExecute":                           hadolintExecuteMetadata(),
+		"helmExecute":                               helmExecuteMetadata(),
 		"influxWriteData":                           influxWriteDataMetadata(),
 		"integrationArtifactDeploy":                 integrationArtifactDeployMetadata(),
 		"integrationArtifactDownload":               integrationArtifactDownloadMetadata(),
