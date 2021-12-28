@@ -429,6 +429,24 @@ func TestUploadFile(t *testing.T) {
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Contains(t, err.Error(), fmt.Sprintf("unable to locate file %v", filePath), "Error text does not contain expected string")
 	})
+
+	t.Run("test error due unexpected positive http status code", func(t *testing.T) {
+		fileId := int64(333)
+		fileName := "cf_example.mtar"
+
+		uploadFileResponse := fmt.Sprintf(`{"fileId": %v,"fileName": "%v"}`, fileId, fileName)
+		uploaderMock := uploaderMock{responseBody: uploadFileResponse, httpStatusCode: http.StatusOK}
+
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		filePath := "./resources/cf_example.mtar"
+		namedUser := "testUser"
+		_, err := communicationInstance.UploadFile(filePath, namedUser)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, "https://tms.dummy.sap.com/v2/files/upload", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "unexpected positive HTTP status code 200, while it was expected 201", err.Error(), "Error text incorrect")
+	})
 }
 
 func TestUploadFileToNode(t *testing.T) {
