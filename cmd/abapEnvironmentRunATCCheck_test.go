@@ -414,7 +414,7 @@ func TestResolveConfiguration(t *testing.T) {
 			AtcConfig: "atc.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		dir, err := ioutil.TempDir("", "atcDir")
 		if err != nil {
 			t.Fatal("Failed to create temporary directory")
 		}
@@ -495,7 +495,7 @@ atcobjects:
 		config := abapEnvironmentRunATCCheckOptions{}
 
 		bodyString, err := buildATCRequestBody(config)
-		assert.Equal(t, "No configuration provided", err.Error())
+		assert.Equal(t, "No configuration provided - please provide either an ATC configuration file or a repository configuration file", err.Error())
 		assert.Equal(t, "", bodyString)
 
 	})

@@ -145,7 +145,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 		return aUnitConfig, nil
 	} else {
 		// Fail if no configuration is provided
-		return aUnitConfig, errors.New("No configuration provided")
+		return aUnitConfig, errors.New("No configuration provided - please provide either an AUnit configuration file or a repository configuration file")
 	}
 }
 

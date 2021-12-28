@@ -160,7 +160,7 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 		return atcConfig, nil
 	} else {
 		// Fail if no configuration is provided
-		return atcConfig, errors.New("No configuration provided")
+		return atcConfig, errors.New("No configuration provided - please provide either an ATC configuration file or a repository configuration file")
 	}
 }
 

@@ -40,7 +40,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 		expectedBodyString := ""
 
 		assert.Equal(t, expectedBodyString, bodyString)
-		assert.EqualError(t, err, "No configuration provided")
+		assert.EqualError(t, err, "No configuration provided - please provide either an AUnit configuration file or a repository configuration file")
 	})
 
 	t.Run("Test AUnit test run body with example yaml config of not supported Object Sets", func(t *testing.T) {
