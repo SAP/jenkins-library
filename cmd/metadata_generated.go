@@ -25,6 +25,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"abapEnvironmentRunAUnitTest":               abapEnvironmentRunAUnitTestMetadata(),
 		"apiKeyValueMapDownload":                    apiKeyValueMapDownloadMetadata(),
 		"apiProxyDownload":                          apiProxyDownloadMetadata(),
+		"apiProxyUpload":                            apiProxyUploadMetadata(),
 		"artifactPrepareVersion":                    artifactPrepareVersionMetadata(),
 		"batsExecuteTests":                          batsExecuteTestsMetadata(),
 		"checkmarxExecuteScan":                      checkmarxExecuteScanMetadata(),
