@@ -99,7 +99,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 
 func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
 
-	bodyString, err := getATCRequestBody(config)
+	bodyString, err := buildATCRequestBody(config)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	return resp, err
 }
 
-func getATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString string, err error) {
+func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString string, err error) {
 
 	atcConfig, err := resolveATCConfiguration(config)
 	if err != nil {
