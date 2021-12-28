@@ -99,7 +99,6 @@ func TestGetOAuthToken(t *testing.T) {
 
 		token, err := communicationInstance.getOAuthToken()
 
-		// TODO: how to check that certain messages were printed into the log?
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://dummy.sap.com/oauth/token/?grant_type=client_credentials&response_type=token", uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
@@ -115,7 +114,6 @@ func TestGetOAuthToken(t *testing.T) {
 
 		_, err := communicationInstance.getOAuthToken()
 
-		// TODO: how to check that certain messages were printed into the log?
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "https://dummy.sap.com/oauth/token/?grant_type=client_credentials&response_type=token", uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
