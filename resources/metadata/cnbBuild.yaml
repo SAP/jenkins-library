@@ -1,7 +1,9 @@
 metadata:
   name: cnbBuild
-  description: Executes a Cloud Native Buildpacks build for creating a Docker container.
-  longDescription: Executes a Cloud Native Buildpacks build for creating a Docker container.
+  description: Executes Cloud Native Buildpacks.
+  longDescription: |-
+    Executes a Cloud Native Buildpacks build for creating Docker image(s).
+    **Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.
 spec:
   inputs:
     secrets:
@@ -160,14 +162,22 @@ spec:
               file: path/to/settings.xml
           ```
 
-          or inline
-
+          inline:
           ```yaml
           bindings:
             maven-settings:
               type: maven
               key: settings.xml
               content: "inline settings.xml"
+          ```
+
+          from url:
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              fromUrl: https://url-to/setting.xml
           ```
         scope:
           - PARAMETERS

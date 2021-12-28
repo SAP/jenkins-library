@@ -57,11 +57,11 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
-// CnbBuildCommand Executes a Cloud Native Buildpacks build for creating a Docker container.
+// CnbBuildCommand Executes Cloud Native Buildpacks.
 func CnbBuildCommand() *cobra.Command {
 	const STEP_NAME = "cnbBuild"
 
@@ -75,8 +75,9 @@ func CnbBuildCommand() *cobra.Command {
 
 	var createCnbBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Executes a Cloud Native Buildpacks build for creating a Docker container.",
-		Long:  `Executes a Cloud Native Buildpacks build for creating a Docker container.`,
+		Short: "Executes Cloud Native Buildpacks.",
+		Long: `Executes a Cloud Native Buildpacks build for creating Docker image(s).
+**Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -121,8 +122,8 @@ func CnbBuildCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -175,7 +176,7 @@ func cnbBuildMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "cnbBuild",
 			Aliases:     []config.Alias{},
-			Description: "Executes a Cloud Native Buildpacks build for creating a Docker container.",
+			Description: "Executes Cloud Native Buildpacks.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -322,8 +323,8 @@ func cnbBuildMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "container/registryUrl"},
-							{"Name": "container/imageNameTag"},
+							{"name": "container/registryUrl"},
+							{"name": "container/imageNameTag"},
 						},
 					},
 				},

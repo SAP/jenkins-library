@@ -95,7 +95,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -162,8 +162,8 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -563,7 +563,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "deployment_data"}, {"fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}}, {"tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
+							{"name": "deployment_data", "fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}, "tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
 						},
 					},
 				},
