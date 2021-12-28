@@ -150,12 +150,12 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
-		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
+		repositories, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
 		if err != nil {
 			return atcConfig, err
 		}
-		for _, repo := range repos {
-			atcConfig.Objects.SoftwareComponent = append(atcConfig.Objects.SoftwareComponent, SoftwareComponent{Name: repo.Name})
+		for _, repository := range repositories {
+			atcConfig.Objects.SoftwareComponent = append(atcConfig.Objects.SoftwareComponent, SoftwareComponent{Name: repository.Name})
 		}
 		return atcConfig, nil
 	} else {
