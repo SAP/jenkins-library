@@ -89,7 +89,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = persistATCResult(body, atcResultFileName, generateHTML)
+		err = logAndPersistATCResult(body, atcResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -195,7 +195,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func persistATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
+func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
