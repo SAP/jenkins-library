@@ -129,7 +129,7 @@ func triggerAUnitrun(config abapEnvironmentRunAUnitTestOptions, details abaputil
 
 	//Trigger AUnit run
 	var resp *http.Response
-	var bodyString = `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString + `</aunit:run>`
+	var bodyString = `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString
 	var body = []byte(bodyString)
 	if err == nil {
 		log.Entry().Debugf("Request Body: %s", bodyString)
@@ -188,24 +188,22 @@ func buildAUnitTestBody(AUnitConfig AUnitConfig) (metadataString string, options
 	//Checks before building the XML body
 	if AUnitConfig.Title == "" {
 		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
-	} else if AUnitConfig.Context == "" {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No context for the AUnit run has been provided. Please configure an appropriate context for the respective test run")
-	} else if reflect.DeepEqual(AUnitOptions{}, AUnitConfig.Options) {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No options have been provided. Please configure the options for the respective test run")
-	} else if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
-	} else if len(AUnitConfig.ObjectSet) == 0 {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the set of objects you want to be checked for the respective test run")
 	}
-
-	//Build metadata string
-	metadataString += `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
+	if AUnitConfig.Context == "" {
+		AUnitConfig.Context = "ABAP Environment Pipeline"
+	}
+	if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
+		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+	}
 
 	//Build Options
 	optionsString += buildAUnitOptionsString(AUnitConfig)
+	//Build metadata string
+	metadataString += `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 
 	//Build Object Set
 	objectSetString += buildAUnitObjectSetString(AUnitConfig)
+	objectSetString += `</aunit:run>`
 
 	return metadataString, optionsString, objectSetString, nil
 }
@@ -231,55 +229,131 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	optionsString += `<aunit:options>`
 	if AUnitConfig.Options.Measurements != "" {
 		optionsString += `<aunit:measurements type="` + AUnitConfig.Options.Measurements + `"/>`
+	} else {
+		optionsString += `<aunit:measurements type="none"/>`
 	}
+	//We assume there must be one scope configured
 	optionsString += `<aunit:scope`
 	if AUnitConfig.Options.Scope.OwnTests != nil {
 		optionsString += ` ownTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.OwnTests) + `"`
+	} else {
+		optionsString += ` ownTests="true"`
 	}
 	if AUnitConfig.Options.Scope.ForeignTests != nil {
 		optionsString += ` foreignTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.ForeignTests) + `"`
+	} else {
+		optionsString += ` foreignTests="true"`
 	}
+	//We assume there must be one riskLevel configured
 	optionsString += `/><aunit:riskLevel`
 	if AUnitConfig.Options.RiskLevel.Harmless != nil {
 		optionsString += ` harmless="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Harmless) + `"`
+	} else {
+		optionsString += ` harmless="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Dangerous != nil {
 		optionsString += ` dangerous="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Dangerous) + `"`
+	} else {
+		optionsString += ` dangerous="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Critical != nil {
 		optionsString += ` critical="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Critical) + `"`
+	} else {
+		optionsString += ` critical="true"`
 	}
+	//We assume there must be one duration time configured
 	optionsString += `/><aunit:duration`
 	if AUnitConfig.Options.Duration.Short != nil {
 		optionsString += ` short="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Short) + `"`
+	} else {
+		optionsString += ` short="true"`
 	}
 	if AUnitConfig.Options.Duration.Medium != nil {
 		optionsString += ` medium="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Medium) + `"`
+	} else {
+		optionsString += ` medium="true"`
 	}
 	if AUnitConfig.Options.Duration.Long != nil {
 		optionsString += ` long="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Long) + `"`
+	} else {
+		optionsString += ` long="true"`
 	}
 	optionsString += `/></aunit:options>`
 	return optionsString
 }
 
+func buildOSLObjectSets(multipropertyset MultiPropertySet) (objectSetString string) {
+	objectSetString += writeObjectSetProperties(multipropertyset)
+	return objectSetString
+}
+
+func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
+	for _, packages := range set.PackageNames {
+		objectSetString += `<osl:package name="` + packages.Name + `"/>`
+	}
+	for _, objectTypeGroup := range set.ObjectTypeGroups {
+		objectSetString += `<osl:objectTypeGroup name="` + objectTypeGroup.Name + `"/>`
+	}
+	for _, objectType := range set.ObjectTypes {
+		objectSetString += `<osl:objectType name="` + objectType.Name + `"/>`
+	}
+	for _, owner := range set.Owners {
+		objectSetString += `<osl:owner name="` + owner.Name + `"/>`
+	}
+	for _, releaseState := range set.ReleaseStates {
+		objectSetString += `<osl:releaseState value="` + releaseState.Value + `"/>`
+	}
+	for _, version := range set.Versions {
+		objectSetString += `<osl:version value="` + version.Value + `"/>`
+	}
+	for _, applicationComponent := range set.ApplicationComponents {
+		objectSetString += `<osl:applicationComponent name="` + applicationComponent.Name + `"/>`
+	}
+	for _, component := range set.SoftwareComponents {
+		objectSetString += `<osl:softwareComponent name="` + component.Name + `"/>`
+	}
+	for _, transportLayer := range set.TransportLayers {
+		objectSetString += `<osl:transportLayer name="` + transportLayer.Name + `"/>`
+	}
+	for _, language := range set.Languages {
+		objectSetString += `<osl:language value="` + language.Value + `"/>`
+	}
+	for _, sourceSystem := range set.SourceSystems {
+		objectSetString += `<osl:sourceSystem name="` + sourceSystem.Name + `"/>`
+	}
+	return objectSetString
+}
+
 func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string) {
 
-	//Build ObjectSets {
-	for _, s := range AUnitConfig.ObjectSet {
-		//Write object set
+	//Build ObjectSets
+	s := AUnitConfig.ObjectSet
+	if s.Type == "" {
+		s.Type = "multiPropertySet"
+	}
+	if s.Type != "multiPropertySet" {
+		log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
+	} else {
 		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
-		for _, t := range s.Set {
-			objectSetString += `<osl:set xsi:type="` + t.Type + `">`
-			for _, packageSet := range t.PackageSet {
-				objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
+
+		if !(reflect.DeepEqual(s.PackageNames, AUnitPackage{})) || !(reflect.DeepEqual(s.SoftwareComponents, SoftwareComponents{})) {
+			//To ensure Scomps and packages can be assigned on this level
+			mps := MultiPropertySet{
+				PackageNames:       s.PackageNames,
+				SoftwareComponents: s.SoftwareComponents,
 			}
-			for _, flatObjectSet := range t.FlatObjectSet {
-				objectSetString += `<osl:object name="` + flatObjectSet.Name + `" type="` + fmt.Sprintf("%v", *&flatObjectSet.Type) + `"/>`
-			}
-			objectSetString += `</osl:set>`
+			objectSetString += buildOSLObjectSets(mps)
 		}
 
+		objectSetString += buildOSLObjectSets(s.MultiPropertySet)
+
+		if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
+			log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
+		}
+
+		for _, t := range s.Set {
+			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
+		}
 		objectSetString += `</osl:objectSet>`
 	}
 	return objectSetString
@@ -391,6 +465,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string, generateHTML bool
 		log.Entry().Infof(`Here are the results for the AUnit test run '%s' executed by User %s on System %s in Client %s at %s. The AUnit run took %s seconds and contains %s tests with %s failures, %s errors, %s skipped and %s assert findings`, parsedXML.Title, parsedXML.System, parsedXML.ExecutedBy, parsedXML.Client, parsedXML.Timestamp, parsedXML.Time, parsedXML.Tests, parsedXML.Failures, parsedXML.Errors, parsedXML.Skipped, parsedXML.Asserts)
 		for _, s := range parsedXML.Testsuite.Testcase {
 			//Log Infos for testcase
+			//HTML Procesing can be done here
 			for _, failure := range s.Failure {
 				log.Entry().Debugf("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
 			}
@@ -456,7 +531,7 @@ type AUnitConfig struct {
 	Title     string       `json:"title,omitempty"`
 	Context   string       `json:"context,omitempty"`
 	Options   AUnitOptions `json:"options,omitempty"`
-	ObjectSet []ObjectSet  `json:"objectset,omitempty"`
+	ObjectSet ObjectSet    `json:"objectset,omitempty"`
 }
 
 //AUnitOptions in form of packages and software components to be checked
@@ -489,32 +564,120 @@ type Duration struct {
 
 //ObjectSet in form of packages and software components to be checked
 type ObjectSet struct {
-	Type string `json:"type,omitempty"`
-	Set  []Set  `json:"set,omitempty"`
+	PackageNames       []AUnitPackage       `json:"packages,omitempty"`
+	SoftwareComponents []SoftwareComponents `json:"softwarecomponents,omitempty"`
+	Type               string               `json:"type,omitempty"`
+	MultiPropertySet   MultiPropertySet     `json:"multipropertyset,omitempty"`
+	Set                []Set                `json:"set,omitempty"`
 }
 
-//Set in form of packages and software components to be checked
+//MultiPropertySet that can possibly contain any subsets/object of the OSL
+type MultiPropertySet struct {
+	Type                  string                 `json:"type,omitempty"`
+	PackageNames          []AUnitPackage         `json:"packages,omitempty"`
+	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroups,omitempty"`
+	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
+	Owners                []Owner                `json:"owners,omitempty"`
+	ReleaseStates         []ReleaseState         `json:"releasestates,omitempty"`
+	Versions              []Version              `json:"versions,omitempty"`
+	ApplicationComponents []ApplicationComponent `json:"applicationcomponents,omitempty"`
+	SoftwareComponents    []SoftwareComponents   `json:"softwarecomponents,omitempty"`
+	TransportLayers       []TransportLayer       `json:"transportlayers,omitempty"`
+	Languages             []Language             `json:"languages,omitempty"`
+	SourceSystems         []SourceSystem         `json:"sourcesystems,omitempty"`
+}
+
+//Set
 type Set struct {
-	//Set  []Set  `json:"set,omitempty"`
-	Type          string         `json:"type,omitempty"`
-	PackageSet    []AUnitPackage `json:"package,omitempty"`
-	FlatObjectSet []AUnitObject  `json:"object,omitempty"`
-	/*FlatSet       []FlatObjectSet `json:"flatobjectset,omitempty"`
-	ObjectTypeSet []ObjectTypeSet `json:"objecttypeset,omitempty"`
-	ComponentSet  []ComponentSet  `json:"componentset,omitempty"`
-	TransportSet  []TransportSet  `json:"transportset,omitempty"`*/
+	Type          string               `json:"type,omitempty"`
+	Set           []Set                `json:"set,omitempty"`
+	PackageSet    []AUnitPackageSet    `json:"package,omitempty"`
+	FlatObjectSet []AUnitFlatObjectSet `json:"object,omitempty"`
+	ComponentSet  []AUnitComponentSet  `json:"component,omitempty"`
+	TransportSet  []AUnitTransportSet  `json:"transport,omitempty"`
+	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//AUnitPackage in form of packages and software components to be checked
-type AUnitPackage struct {
+//AUnitPackageSet in form of packages to be checked
+type AUnitPackageSet struct {
 	Name               string `json:"name,omitempty"`
 	IncludeSubpackages *bool  `json:"includesubpackages,omitempty"`
 }
 
-//AUnitObject in form of packages and software components to be checked
-type AUnitObject struct {
+//AUnitFlatObjectSet
+type AUnitFlatObjectSet struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
+}
+
+//AUnitComponentSet in form of software components to be checked
+type AUnitComponentSet struct {
+	Name string `json:"name,omitempty"`
+}
+
+//AUnitTransportSet in form of transports to be checked
+type AUnitTransportSet struct {
+	Number string `json:"number,omitempty"`
+}
+
+//AUnitObjectTypeSet
+type AUnitObjectTypeSet struct {
+	Name string `json:"name,omitempty"`
+}
+
+//AUnitPackage for MPS
+type AUnitPackage struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ObjectTypeGroup
+type ObjectTypeGroup struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ObjectType
+type ObjectType struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Owner
+type Owner struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ReleaseState
+type ReleaseState struct {
+	Value string `json:"value,omitempty"`
+}
+
+//Version
+type Version struct {
+	Value string `json:"value,omitempty"`
+}
+
+//ApplicationComponent
+type ApplicationComponent struct {
+	Name string `json:"name,omitempty"`
+}
+
+//SoftwareComponents
+type SoftwareComponents struct {
+	Name string `json:"name,omitempty"`
+}
+
+//TransportLayer
+type TransportLayer struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Language
+type Language struct {
+	Value string `json:"value,omitempty"`
+}
+
+//SourceSystem
+type SourceSystem struct {
+	Name string `json:"name,omitempty"`
 }
 
 //
