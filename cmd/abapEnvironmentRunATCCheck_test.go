@@ -248,7 +248,7 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = persistATCResult(body, "ATCResults.xml", false)
+		err = logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
@@ -267,14 +267,14 @@ func TestParseATCResult(t *testing.T) {
 		<checkstyle>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = persistATCResult(body, "ATCResults.xml", false)
+		err = logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := persistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
 	})
 	t.Run("failure case: html response", func(t *testing.T) {
@@ -291,7 +291,7 @@ func TestParseATCResult(t *testing.T) {
 		}()
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
-		err = persistATCResult(body, "ATCResults.xml", false)
+		err = logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
@@ -438,7 +438,7 @@ atcobjects:
 
 		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
-			bodyString, err := getATCRequestBody(config)
+			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, expectedBodyString, bodyString)
 		}
@@ -471,7 +471,7 @@ atcobjects:
 
 		err = ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
-			bodyString, err := getATCRequestBody(config)
+			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, expectedBodyString, bodyString)
 		}
@@ -484,7 +484,7 @@ atcobjects:
 			AtcConfig: "atc.yml",
 		}
 
-		bodyString, err := getATCRequestBody(config)
+		bodyString, err := buildATCRequestBody(config)
 		assert.Equal(t, "Could not find atc.yml", err.Error())
 		assert.Equal(t, "", bodyString)
 
@@ -494,7 +494,7 @@ atcobjects:
 
 		config := abapEnvironmentRunATCCheckOptions{}
 
-		bodyString, err := getATCRequestBody(config)
+		bodyString, err := buildATCRequestBody(config)
 		assert.Equal(t, "No configuration provided", err.Error())
 		assert.Equal(t, "", bodyString)
 
