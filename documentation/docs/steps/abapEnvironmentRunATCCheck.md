@@ -89,6 +89,7 @@ You can specify a list of packages and/or software components to be checked. Thi
 For each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
 Please note that if you chose to provide both packages and software components to be checked with the `atcconfig.yml` file, the set of packages and the set of software components will be combinend by the API using a logical AND operation.
 Therefore, we advise to specify either the software components or packages.
+Additionally, if you don't specify a dedicated ATC check variant to be used, the `ABAP_CLOUD_DEVELOPMENT_DEFAULT` variant will be used as default. For more information on how to configure a check variant for an ATC run please check the last example on this page.
 
 See below example for an `atcconfig.yml` file with both packages and software components to be checked:
 

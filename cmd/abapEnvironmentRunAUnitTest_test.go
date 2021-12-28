@@ -28,6 +28,7 @@ func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockU
 }
 
 func TestBuildAUnitTestBody(t *testing.T) {
+
 	t.Parallel()
 
 	t.Run("Test AUnit test run body with no data", func(t *testing.T) {
@@ -436,9 +437,9 @@ options:
     medium: true
     long: true
 objectset:
-  packages: 
+  packages:
   - name: Z_TEST
-  softwarecomponents: 
+  softwarecomponents:
   - name: Z_TEST
 `
 
