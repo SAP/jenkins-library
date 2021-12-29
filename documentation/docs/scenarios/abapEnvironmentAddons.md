@@ -196,7 +196,7 @@ As a result, if the `addonVersion` is increased but references a software compon
 
 If the `version` of a software component is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
 
-If the add-on product consists of multiple software component versions , but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
+If the add-on product consists of multiple software component versions, but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package will be created. If, at the same time, the `addonVersion` is increased a new target Vector will be created.
 
 `branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
 The `commitID` should only be changed while also adjusting the `version` number of a software component.
