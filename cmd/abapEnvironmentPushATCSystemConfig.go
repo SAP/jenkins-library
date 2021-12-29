@@ -2,7 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"net/http/cookiejar"
+
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -37,6 +41,7 @@ func newAbapEnvironmentPushATCSystemConfigUtils() abapEnvironmentPushATCSystemCo
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
+
 	return &utils
 }
 
@@ -58,15 +63,13 @@ func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfi
 }
 
 func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentPushATCSystemConfigUtils) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
-	// Example of calling methods from external dependencies directly on utils:
-	exists, err := utils.FileExists("file.txt")
+	log.Entry().WithField("func", "runAbapEnvironmentPushATCSystemConfig").Info("Enter Function runAbapEnvironmentPushATCSystemConfig successful.")
+
+	exists, err := utils.FileExists("atcSystemConfig.json")
 	if err != nil {
-		// It is good practice to set an error category.
-		// Most likely you want to do this at the place where enough context is known.
 		log.SetErrorCategory(log.ErrorConfiguration)
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
+
 		return fmt.Errorf("failed to check for important file: %w", err)
 	}
 	if !exists {
@@ -74,5 +77,32 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 		return fmt.Errorf("cannot run without important file")
 	}
 
+	//Define Client
+	var details abaputils.ConnectionDetailsHTTP
+	client := piperhttp.Client{}
+	cookieJar, _ := cookiejar.New(nil)
+	clientOptions := piperhttp.ClientOptions{
+		CookieJar: cookieJar,
+	}
+
+	//Fetch Xcrsf-Token
+	if err == nil {
+		client.SetOptions(clientOptions)
+		credentialsOptions := piperhttp.ClientOptions{
+			Username:  details.User,
+			Password:  details.Password,
+			CookieJar: cookieJar,
+		}
+		client.SetOptions(credentialsOptions)
+		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
+	}
+	if err == nil {
+		return pushATCSystemConfig(config, details, &client)
+	}
+
+	return nil
+}
+
+func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	return nil
 }
