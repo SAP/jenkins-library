@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -149,16 +148,18 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	}
 
 	// 5. Upload file
-	fileInfo, err5 := communicationInstance.UploadFile(config.MtaPath, config.NamedUser)
-	if err5 != nil {
-		return fmt.Errorf("failed to upload file: %w", err5)
-	}
+	/*
+		fileInfo, err5 := communicationInstance.UploadFile(config.MtaPath, config.NamedUser)
+		if err5 != nil {
+			return fmt.Errorf("failed to upload file: %w", err5)
+		}
 
-	// 6. Uplaod file to node
-	_, err6 := communicationInstance.UploadFileToNode(config.NodeName, strconv.FormatInt(fileInfo.Id, 10), config.CustomDescription, config.NamedUser)
-	if err6 != nil {
-		return fmt.Errorf("failed to upload file to node: %w", err6)
-	}
+		// 6. Uplaod file to node
+		_, err6 := communicationInstance.UploadFileToNode(config.NodeName, strconv.FormatInt(fileInfo.Id, 10), config.CustomDescription, config.NamedUser)
+		if err6 != nil {
+			return fmt.Errorf("failed to upload file to node: %w", err6)
+		}
+	*/
 
 	return nil
 }
