@@ -20,7 +20,7 @@ There are no specifc stage parameters.
 
 ### Stage Activation
 
-This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage..
+This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
 
 ### Configuration Example
 
