@@ -125,6 +125,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 
 	if config.AUnitConfig != "" {
 		// Configuration defaults to AUnitConfig
+		log.Entry().Infof("AUnit Configuration: %s", config.AUnitConfig)
 		result, err := abaputils.ReadConfigFile(config.AUnitConfig)
 		if err != nil {
 			return aUnitConfig, err
@@ -134,6 +135,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
+		log.Entry().Infof("AUnit Configuration derived from: %s", config.Repositories)
 		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
 		if err != nil {
 			return aUnitConfig, err

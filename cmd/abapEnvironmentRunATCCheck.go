@@ -141,6 +141,7 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 
 	if config.AtcConfig != "" {
 		// Configuration defaults to AUnitConfig
+		log.Entry().Infof("ATC Configuration: %s", config.AtcConfig)
 		atcConfigFile, err := abaputils.ReadConfigFile(config.AtcConfig)
 		if err != nil {
 			return atcConfig, err
@@ -150,6 +151,7 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
+		log.Entry().Infof("ATC Configuration derived from: %s", config.Repositories)
 		repositories, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
 		if err != nil {
 			return atcConfig, err
