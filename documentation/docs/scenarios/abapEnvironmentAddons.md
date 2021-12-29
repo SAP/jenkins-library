@@ -192,7 +192,7 @@ The `version` of a software component influcences two aspects:
 - The given version will be used as part of the target vector
 - If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
 
-As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built, no new delivery package is built but only a new target vector is created. During add-on update the import of such a target vector that does not reference any new software component versions, the update of already software components is skipped.
+As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built, no new delivery package is built but only a new target vector is created. During add-on update such a target vector does not reference any new software component versions and the update of software components is skipped.
 
 If the `version` of a software component is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
 
