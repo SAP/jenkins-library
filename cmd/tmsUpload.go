@@ -64,7 +64,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	proxy := config.Proxy
 	transportProxy, err := url.Parse(proxy)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to parse proxy string %v into a URL structure", proxy)
+		log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
 	}
 	options := piperHttp.ClientOptions{TransportProxy: transportProxy}
 
