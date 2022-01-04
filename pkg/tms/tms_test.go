@@ -537,6 +537,8 @@ func TestSendRequest(t *testing.T) {
 
 	t.Run("test success with trimming url slash in the end", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusOK}
+
+		// the slash in the end of the used url will be trimmed
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com/", tmsUrl: "https://tms.dummy.sap.com/", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, http.StatusOK, false)
