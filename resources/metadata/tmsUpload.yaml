@@ -51,7 +51,7 @@ spec:
         mandatory: true
       - name: mtaPath
         type: string
-        description: Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management Service. If not specified, it will use the *.mtar file created in mtaBuild.
+        description: Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.
         scope:
           - PARAMETERS
           - STEPS

@@ -222,7 +222,7 @@ func TestGetMtaExtDescriptor(t *testing.T) {
 
 func TestUpdateMtaExtDescriptor(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
-	t.Run("test success", func(t *testing.T) {
+	t.Run("test success with trimming url slash in the end", func(t *testing.T) {
 		idOfMtaExtDescriptor := int64(777)
 		mtaExtDescription := "This is an updated description"
 		mtaId := "fs-storage"
@@ -233,7 +233,8 @@ func TestUpdateMtaExtDescriptor(t *testing.T) {
 		updateMtaExtDescriptorResponse := fmt.Sprintf(`{"id": %v,"description": "%v","mtaId": "%v","mtaExtId": "%v","mtaVersion": "%v","lastChangedAt": "%v"}`, idOfMtaExtDescriptor, mtaExtDescription, mtaId, mtaExtId, mtaVersion, lastChangedAt)
 		uploaderMock := uploaderMock{responseBody: updateMtaExtDescriptorResponse, httpStatusCode: http.StatusOK}
 
-		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+		// the slash in the end of the url will be trimmed
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com/", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		nodeId := int64(111)
 		filePath := "./resources/cf_example.mtaext"
@@ -299,7 +300,7 @@ func TestUpdateMtaExtDescriptor(t *testing.T) {
 
 func TestUploadMtaExtDescriptorToNode(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
-	t.Run("test success", func(t *testing.T) {
+	t.Run("test success with trimming url slash in the end", func(t *testing.T) {
 		idOfMtaExtDescriptor := int64(777)
 		mtaExtDescription := "This is a test description"
 		mtaId := "fs-storage"
@@ -310,7 +311,8 @@ func TestUploadMtaExtDescriptorToNode(t *testing.T) {
 		uploadMtaExtDescriptorResponse := fmt.Sprintf(`{"id": %v,"description": "%v","mtaId": "%v","mtaExtId": "%v","mtaVersion": "%v","lastChangedAt": "%v"}`, idOfMtaExtDescriptor, mtaExtDescription, mtaId, mtaExtId, mtaVersion, lastChangedAt)
 		uploaderMock := uploaderMock{responseBody: uploadMtaExtDescriptorResponse, httpStatusCode: http.StatusCreated}
 
-		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+		// the slash in the end of the url will be trimmed
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com/", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		nodeId := int64(111)
 		filePath := "./resources/cf_example.mtaext"
@@ -374,14 +376,15 @@ func TestUploadMtaExtDescriptorToNode(t *testing.T) {
 
 func TestUploadFile(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
-	t.Run("test success", func(t *testing.T) {
+	t.Run("test success with trimming url slash in the end", func(t *testing.T) {
 		fileId := int64(333)
 		fileName := "cf_example.mtar"
 
 		uploadFileResponse := fmt.Sprintf(`{"fileId": %v,"fileName": "%v"}`, fileId, fileName)
 		uploaderMock := uploaderMock{responseBody: uploadFileResponse, httpStatusCode: http.StatusCreated}
 
-		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+		// the slash in the end of the url will be trimmed
+		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com/", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		filePath := "./resources/cf_example.mtar"
 		namedUser := "testUser"
