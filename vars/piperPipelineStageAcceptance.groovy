@@ -88,6 +88,12 @@ void call(Map parameters = [:]) {
                     neoDeploy script: script
                 }
             }
+
+            if (config.kubernetesDeploy){
+                durationMeasure(script: script, measurementName: 'deploy_release_kubernetes_duration') {
+                    kubernetesDeploy script: script
+                }
+            }
         }
 
         if (config.healthExecuteCheck) {
