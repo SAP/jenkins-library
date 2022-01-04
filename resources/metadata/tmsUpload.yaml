@@ -83,6 +83,12 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+      - name: stashContent
+        type: '[]string'
+        description: 'If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: ["deployDescriptor", "buildResult", …].'
+        scope:
+          - PARAMETERS
+          - STEPS
   outputs:
     resources:
       - name: influx

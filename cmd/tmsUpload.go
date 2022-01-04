@@ -83,15 +83,11 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
 
-	// TODO: how to organize telemetry reporting?
 	// TODO: is unstashing done before the step? are all required artifacts in place?
-	// TODO: understand, what does this influx part do
-	influx.step_data.fields.tms = false
 
 	if err := runTmsUpload(config, communicationInstance, utils, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
-	influx.step_data.fields.tms = true
 }
 
 func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) error {
@@ -111,9 +107,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		description = fmt.Sprintf("Git commit id: %v", commonPipelineEnvironment.git.commitID)
 	}
 
-	// TODO: get name of user, who started the job; if it exists, assign it to namedUser variable, otherwise use namedUser from the config
 	namedUser := config.NamedUser
-
 	nodeName := config.NodeName
 
 	mtaVersion := config.MtaVersion
