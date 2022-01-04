@@ -16,6 +16,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org. */
     'cloudFoundryDeploy',
     /** Performs behavior-driven tests using Gauge test framework against the deployed application/service. */
+    /** For Kubernetes use-cases: Performs deployment to Kubernetes landscape. */
+    'kubernetesDeploy',
     'gaugeExecuteTests',
     /**
      * Performs health check in order to prove one aspect of operational readiness.
@@ -58,6 +60,7 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('multicloudDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.multicloudDeploy)
         .addIfEmpty('cloudFoundryDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.cloudFoundryDeploy)
+        .addIfEmpty('kubernetesDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.kubernetesDeploy)
         .addIfEmpty('gaugeExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.gaugeExecuteTests)
         .addIfEmpty('healthExecuteCheck', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.healthExecuteCheck)
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
