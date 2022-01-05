@@ -83,8 +83,6 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
 
-	// TODO: is unstashing done before the step? are all required artifacts in place?
-
 	if err := runTmsUpload(config, communicationInstance, utils, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
@@ -117,7 +115,6 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 
 	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
 
-	// TODO: does it take into consideration the "verbose" parameter of the step or only the genearl configuration?
 	if GeneralConfig.Verbose {
 		log.Entry().Info("The step will use the following values:")
 		log.Entry().Infof("- description: %v", description)
