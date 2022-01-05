@@ -13,17 +13,31 @@ type FetchCommitOptions struct {
 	SHA        string `json:"sha,omitempty"`
 }
 
+// FetchCommitResult to handle the lookup result
+type FetchCommitResult struct {
+	Files     int
+	Total     int
+	Additions int
+	Deletions int
+}
+
 // https://docs.github.com/en/rest/reference/commits#get-a-commit
-func FetchCommitStatistics(options *FetchCommitOptions) (int, int, int, int, error) {
+// FetchCommitStatistics looks up the statistics for a certain commit SHA.
+func FetchCommitStatistics(options *FetchCommitOptions) (FetchCommitResult, error) {
 	// create GitHub client
 	ctx, client, err := NewClient(options.Token, options.APIURL, "")
 	if err != nil {
-		return 0, 0, 0, 0, errors.Wrap(err, "failed to get GitHub client")
+		return FetchCommitResult{}, errors.Wrap(err, "failed to get GitHub client")
 	}
 	// fetch commit by SAH
 	result, _, err := client.Repositories.GetCommit(ctx, options.Owner, options.Repository, options.SHA)
 	if err != nil {
-		return 0, 0, 0, 0, errors.Wrap(err, "failed to get GitHub commit")
+		return FetchCommitResult{}, errors.Wrap(err, "failed to get GitHub commit")
 	}
-	return result.Stats.GetAdditions(), result.Stats.GetDeletions(), result.Stats.GetTotal(), len(result.Files), nil
+	return FetchCommitResult{
+		Files:     len(result.Files),
+		Total:     result.Stats.GetTotal(),
+		Additions: result.Stats.GetAdditions(),
+		Deletions: result.Stats.GetDeletions(),
+	}, nil
 }

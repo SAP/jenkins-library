@@ -84,13 +84,13 @@ func TestGithubFetchCommitStatistics(t *testing.T) {
 		repository = "piper-integration"
 	}
 	// test
-	a, b, c, d, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
+	result, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
 		Owner: owner, Repository: repository, APIURL: "https://api.github.com", Token: token, SHA: "3601ed6"})
 
 	// assert
 	assert.NoError(t, err)
-	assert.Equal(t, 2, a)
-	assert.Equal(t, 0, b)
-	assert.Equal(t, 2, c)
-	assert.Equal(t, 1, d)
+	assert.Equal(t, 2, result.Additions)
+	assert.Equal(t, 0, result.Deletions)
+	assert.Equal(t, 2, result.Total)
+	assert.Equal(t, 1, result.Files)
 }
