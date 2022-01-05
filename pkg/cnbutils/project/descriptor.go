@@ -3,13 +3,12 @@ package project
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/registry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	toml "github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -45,7 +44,7 @@ type projectDescriptor struct {
 type Descriptor struct {
 	Exclude    *ignore.GitIgnore
 	Include    *ignore.GitIgnore
-	EnvVars    []string
+	EnvVars    map[string]interface{}
 	Buildpacks []string
 }
 
@@ -73,7 +72,7 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 	}
 
 	if rawDescriptor.Build.Env != nil && len(rawDescriptor.Build.Env) > 0 {
-		descriptor.EnvVars = rawDescriptor.Build.envToStringSlice()
+		descriptor.EnvVars = rawDescriptor.Build.envToMap()
 	}
 
 	if len(rawDescriptor.Build.Exclude) > 0 && len(rawDescriptor.Build.Include) > 0 {
@@ -91,17 +90,18 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 	return descriptor, nil
 }
 
-func (b *build) envToStringSlice() []string {
-	strSlice := []string{}
+func (b *build) envToMap() map[string]interface{} {
+	envMap := map[string]interface{}{}
 
 	for _, e := range b.Env {
 		if len(e.Name) == 0 || len(e.Value) == 0 {
 			continue
 		}
-		strSlice = append(strSlice, fmt.Sprintf("%s=%s", e.Name, e.Value))
+
+		envMap[e.Name] = e.Value
 	}
 
-	return strSlice
+	return envMap
 }
 
 func (b *build) searchBuildpacks(httpClient piperhttp.Sender) ([]string, error) {

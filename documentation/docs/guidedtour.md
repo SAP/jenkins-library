@@ -218,5 +218,5 @@ The **Configuration** pattern supports simple pipelines that can be reused by mu
 [jenkins-io-multibranch]:            https://jenkins.io/doc/book/pipeline/multibranch/
 
 [github-create-org]:                 https://help.github.com/en/articles/creating-a-new-organization-from-scratch
-[github-duplicate-repo]:             [https://help.github.com/en/articles/duplicating-a-repository]
-[github-set-repo-visible]:           [https://help.github.com/en/articles/setting-repository-visibility]
+[github-duplicate-repo]:             https://help.github.com/en/articles/duplicating-a-repository
+[github-set-repo-visible]:           https://help.github.com/en/articles/setting-repository-visibility
