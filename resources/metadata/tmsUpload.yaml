@@ -16,6 +16,9 @@ spec:
       - name: credentialsId
         description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.
         type: jenkins
+    resources:
+      - name: buildResult
+        type: stash
     params:
       - name: tmsServiceKey
         type: string

@@ -186,6 +186,9 @@ func tmsUploadMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.", Type: "jenkins"},
 				},
+				Resources: []config.StepResources{
+					{Name: "buildResult", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "tmsServiceKey",
