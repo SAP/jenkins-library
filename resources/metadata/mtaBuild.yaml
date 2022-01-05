@@ -227,5 +227,12 @@ spec:
           - name: custom/mtaBuildToolDesc
           - name: custom/mtarPublishedUrl
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "env.json"
+            type: root
+          - filePattern: "build-settings.json"
+            type: settings
   containers:
     - image: devxci/mbtci-java11-node14
