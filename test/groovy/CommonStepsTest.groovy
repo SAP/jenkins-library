@@ -208,6 +208,7 @@ public class CommonStepsTest extends BasePiperTest{
         'apiProxyUpload', //implementing new golang pattern without fields
         'gradleExecuteBuild', //implementing new golang pattern without fields
         'shellExecute', //implementing new golang pattern without fields
+        'apiKeyValueMapUpload', //implementing new golang pattern without fields
     ]
 
     @Test

@@ -52,7 +52,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return TriggerIntegrationTestMockResponse(testType)
 	case "IntegrationArtifactGetMplStatusError":
 		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
-	case "IntegrationArtifactResourceCreate":
+	case "IntegrationArtifactResourceCreate", "ApiKeyValueMapUpload":
 		if testType == "Negative" {
 			return GetRespBodyHTTPStatusServiceErrorResponse()
 		}
