@@ -26,10 +26,8 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 			KeyValueMapName: "demoMap",
 		}
 		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "PositiveCase"}
-
 		// test
 		err := runApiKeyValueMapUpload(&config, nil, &httpClient)
-
 		// assert
 		if assert.NoError(t, err) {
 			t.Run("check url", func(t *testing.T) {
