@@ -157,7 +157,13 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				{{- range $notused, $oRes := .OutputResources }}
-				{{ index $oRes "name" }}.persist({{ if eq (index $oRes "type") "reports" -}}stepConfig{{- else -}}
+				{{ index $oRes "name" }}.persist(
+				{{- if eq (index $oRes "type") "reports" -}}stepConfig, 
+					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCPJsonKeyFilePath, 
+					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSBucketId, 
+					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSFolderPath, 
+					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSSubFolder
+				{{- else -}}
 					{{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
 				){{- end }}
 				config.RemoveVaultSecretFiles()
