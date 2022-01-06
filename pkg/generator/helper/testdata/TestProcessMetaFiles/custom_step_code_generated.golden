@@ -5,6 +5,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"path/filepath"
 	"time"
 
@@ -13,8 +15,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
-	"reflect"
-	"strings"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"

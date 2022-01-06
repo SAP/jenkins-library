@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -17,8 +19,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
-	"reflect"
-	"strings"
 )
 
 type sonarExecuteScanOptions struct {
