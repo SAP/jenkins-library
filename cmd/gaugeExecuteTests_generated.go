@@ -9,12 +9,16 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"reflect"
+	"strings"
 )
 
 type gaugeExecuteTestsOptions struct {
@@ -57,6 +61,42 @@ func (i *gaugeExecuteTestsInflux) persist(path, resourceName string) {
 	}
 }
 
+type gaugeExecuteTestsReports struct {
+}
+
+func (p *gaugeExecuteTestsReports) persist(stepConfig gaugeExecuteTestsOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "acceptance-test"},
+		{FilePattern: "**/requirement.mapping", ParamRef: "", StepResultType: "requirement-mapping"},
+		{FilePattern: "**/delivery.mapping", ParamRef: "", StepResultType: "delivery-mapping"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // GaugeExecuteTestsCommand Installs gauge and executes specified gauge tests.
 func GaugeExecuteTestsCommand() *cobra.Command {
 	const STEP_NAME = "gaugeExecuteTests"
@@ -65,6 +105,7 @@ func GaugeExecuteTestsCommand() *cobra.Command {
 	var stepConfig gaugeExecuteTestsOptions
 	var startTime time.Time
 	var influx gaugeExecuteTestsInflux
+	var reports gaugeExecuteTestsReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -127,6 +168,7 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				reports.persist(stepConfig)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -235,6 +277,15 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "gauge"}}},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/TEST-*.xml", "type": "acceptance-test"},
+							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
+							{"filePattern": "**/delivery.mapping", "type": "delivery-mapping"},
 						},
 					},
 				},
