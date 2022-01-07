@@ -15,6 +15,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	keytool "github.com/SAP/jenkins-library/pkg/java"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -364,43 +365,41 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 }
 
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
-	trustStorePath := filepath.Join(getWorkingDir(), ".certificates")
-	trustStoreFile := filepath.Join(trustStorePath, "cacerts")
+	truststorePath := filepath.Join(getWorkingDir(), ".certificates")
+	truststoreFile := filepath.Join(truststorePath, "cacerts")
 
-	if exists, _ := fileUtilsExists(trustStoreFile); exists {
+	if exists, _ := fileUtilsExists(truststoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
-		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else if len(certificateList) > 0 {
-		// use local created trust store with downloaded certificates
-		keytoolOptions := []string{
-			"-import",
-			"-noprompt",
-			"-storepass", "changeit",
-			"-keystore", trustStoreFile,
-		}
+		// create download temp dir
 		tmpFolder := getTempDir()
-		os.MkdirAll(trustStorePath, 0777)
 		defer os.RemoveAll(tmpFolder) // clean up
-
+		os.MkdirAll(truststorePath, 0777)
+		// copying existing truststore
+		defaultTruststorePath := keytool.GetDefaultTruststorePath()
+		if exists, _ := fileUtilsExists(defaultTruststorePath); exists {
+			if err := keytool.ImportTruststore(runner, truststoreFile, defaultTruststorePath); err != nil {
+				return errors.Wrap(err, "Copying existing keystore failed")
+			}
+		}
+		// use local created trust store with downloaded certificates
 		for _, certificate := range certificateList {
-			filename := path.Base(certificate) // decode?
-			target := filepath.Join(tmpFolder, filename)
-
+			target := filepath.Join(tmpFolder, path.Base(certificate))
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
 				return errors.Wrapf(err, "Download of TLS certificate failed")
 			}
-			options := append(keytoolOptions, "-file", target)
-			options = append(options, "-alias", filename)
 			// add certificate to keystore
-			if err := runner.RunExecutable("keytool", options...); err != nil {
-				return errors.Wrap(err, "Adding certificate to keystore failed")
+			if err := keytool.ImportCert(runner, truststoreFile, target); err != nil {
+				log.Entry().Warnf("Adding certificate to keystore failed")
+				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
-		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
