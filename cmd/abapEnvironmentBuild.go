@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"reflect"
 	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
@@ -267,4 +268,32 @@ func (vE *valuesEvaluator) appendValues(stringValues string) error {
 		vE.values = append(vE.values, values...)
 	}
 	return nil
+}
+
+func (vE *valuesEvaluator) getField(field string) string {
+	r := reflect.ValueOf(vE)
+	f := reflect.Indirect(r).FieldByName(field)
+	return string(f.String())
+}
+
+func (vE *valuesEvaluator) amI(field string, operator string, comp string) (bool, error) {
+	operators := OperatorCallback{
+		"==": Equal,
+		"!=": Unequal,
+	}
+	name := vE.getField(field)
+	if fn, ok := operators[operator]; ok {
+		return fn(name, comp), nil
+	}
+	return false, errors.Errorf("Invalid operator %s", operator)
+}
+
+type OperatorCallback map[string]func(string, string) bool
+
+func Equal(a, b string) bool {
+	return a == b
+}
+
+func Unequal(a, b string) bool {
+	return a != b
 }

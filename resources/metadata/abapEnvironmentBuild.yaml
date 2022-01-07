@@ -208,6 +208,17 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/buildValues
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
   outputs:
     resources:
       - name: commonPipelineEnvironment

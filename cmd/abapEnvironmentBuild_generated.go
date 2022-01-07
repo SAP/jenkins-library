@@ -39,6 +39,7 @@ type abapEnvironmentBuildOptions struct {
 	PollingIntervallInSeconds       int      `json:"pollingIntervallInSeconds,omitempty"`
 	CertificateNames                []string `json:"certificateNames,omitempty"`
 	CpeValues                       string   `json:"cpeValues,omitempty"`
+	AddonDescriptor                 string   `json:"addonDescriptor,omitempty"`
 }
 
 type abapEnvironmentBuildCommonPipelineEnvironment struct {
@@ -183,6 +184,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
 	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -401,6 +403,20 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_cpeValues"),
+					},
+					{
+						Name: "addonDescriptor",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "abap/addonDescriptor",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},
