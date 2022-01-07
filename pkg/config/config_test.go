@@ -1002,3 +1002,9 @@ func TestCloneConfig(t *testing.T) {
 	testConfig.General["p0"] = "new_value"
 	assert.NotEqual(t, testConfig.General, clone.General)
 }
+
+func TestConfig_GetDefaultConfig(t *testing.T) {
+
+	testConfig := &Config{}
+	testConfig.GetDefaultConfig()
+}

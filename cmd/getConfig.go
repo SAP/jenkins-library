@@ -25,6 +25,7 @@ type configCommandOptions struct {
 	stepMetadata                  string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	stepName                      string
 	contextConfig                 bool
+	defaultConfig                 bool
 	openFile                      func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
@@ -97,7 +98,22 @@ func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	if configOptions.stageConfig {
+	if configOptions.defaultConfig {
+
+		defaultConfig := []io.ReadCloser{}
+		for _, f := range GeneralConfig.DefaultConfig {
+			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
+			// only create error for non-default values
+			if err != nil && f != ".pipeline/defaults.yaml" {
+				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			}
+			if err == nil {
+				defaultConfig = append(defaultConfig, fc)
+			}
+		}
+		myConfig.GetDefaultConfig(defaultConfig)
+
+	} else if configOptions.stageConfig {
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
@@ -225,6 +241,7 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
+	cmd.Flags().BoolVar(&configOptions.defaultConfig, "defaultConfig", false, "Defines if step context configuration should be loaded instead of step config")
 
 }
 
