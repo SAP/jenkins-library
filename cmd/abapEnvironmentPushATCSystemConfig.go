@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/http/cookiejar"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -10,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 type abapEnvironmentPushATCSystemConfigUtils interface {
@@ -110,5 +115,50 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 }
 
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+
+	filelocation, err := filepath.Glob(config.AtcSystemConfig)
+	//check ATC system configuration json
+	var resp *http.Response
+	var atcSystemConfiguartionJsonFile []byte
+	if err == nil {
+		filename, err := filepath.Abs(filelocation[0])
+		if err == nil {
+			atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
+		}
+		if err == nil {
+			resp, err = getOdataResponse("POST", details, atcSystemConfiguartionJsonFile, client)
+			err = parseOdataResponse(resp)
+		}
+	}
+
+	return err
+}
+
+func parseOdataResponse(resp *http.Response) error {
+	//Parse response
+	var err error
+	var body []byte
+	body, err = ioutil.ReadAll(resp.Body)
+	if err == nil {
+		defer resp.Body.Close()
+		if len(body) == 0 {
+			return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("Parsing oData result failed: %w", err)
+	}
 	return nil
+}
+
+func getOdataResponse(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+
+	header := make(map[string][]string)
+	header["x-csrf-token"] = []string{details.XCsrfToken}
+	header["Accept"] = []string{"application/vnd.sap.adt.api.junit.run-result.v1+xml"}
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	if err != nil {
+		return resp, fmt.Errorf("Deploying ATC System Configuration failed: %w", err)
+	}
+	return resp, err
 }
