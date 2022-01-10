@@ -44,3 +44,5 @@ debug.test
 # Result files
 ATCResults.xml
 AUnitResults.xml
+ATCResults.html
+AUnitResults.html
