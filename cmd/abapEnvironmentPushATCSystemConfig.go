@@ -99,7 +99,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 			CookieJar: cookieJar,
 		}
 		client.SetOptions(credentialsOptions)
-		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
+		details.XCsrfToken, err = fetchATCXcsrfToken("GET", details, nil, &client)
 	}
 	if err == nil {
 		err = pushATCSystemConfig(config, details, &client)
@@ -161,4 +161,22 @@ func getOdataResponse(requestType string, details abaputils.ConnectionDetailsHTT
 		return resp, fmt.Errorf("Deploying ATC System Configuration failed: %w", err)
 	}
 	return resp, err
+}
+
+func fetchATCXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
+
+	log.Entry().WithField("ABAP Endpoint: ", details.URL).Debug("Fetching Xcrsf-Token")
+
+	details.URL += "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001"
+	details.XCsrfToken = "fetch"
+	header := make(map[string][]string)
+	header["X-Csrf-Token"] = []string{details.XCsrfToken}
+	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	if err != nil {
+		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
+	}
+	defer req.Body.Close()
+
+	token := req.Header.Get("X-Csrf-Token")
+	return token, err
 }
