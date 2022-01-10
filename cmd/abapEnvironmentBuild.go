@@ -76,6 +76,12 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	if err := initConnection(conn, config, utils); err != nil {
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
+
+	addonDescriptor := new(abaputils.AddonDescriptor)
+	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err == nil {
+		//aus dem addonDescriptor values bauen, prüfen, jeweils den run laufen lassen
+	}
+
 	finalValues, err := runBuild(conn, config, utils, values)
 	if err != nil {
 		return errors.Wrap(err, "Error during execution of build framework")
@@ -217,7 +223,7 @@ func generateValues(config *abapEnvironmentBuildOptions) (abapbuild.Values, erro
 	if err := vE.initialize(config.Values); err != nil {
 		return values, err
 	}
-	if err := vE.appendValues(config.CpeValues); err != nil {
+	if err := vE.appendStringValues(config.CpeValues); err != nil {
 		return values, err
 	}
 	values.Values = vE.values
@@ -251,37 +257,58 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 	return nil
 }
 
-func (vE *valuesEvaluator) appendValues(stringValues string) error {
+func (vE *valuesEvaluator) appendStringValues(stringValues string) error {
 	var values []abapbuild.Value
 	if len(stringValues) > 0 {
 		if err := json.Unmarshal([]byte(stringValues), &values); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "Could not convert the values %s from the commonPipelineEnvironment", stringValues)
 		}
-		for i := len(values) - 1; i >= 0; i-- {
-			_, present := vE.m[values[i].ValueID]
-			if present || (values[i].ValueID == "PHASE") {
-				log.Entry().Infof("Value %s already exists in config -> discard this value", values[i])
-				values = append(values[:i], values[i+1:]...)
-			}
-		}
-		vE.values = append(vE.values, values...)
+		vE.appendValues(values)
 	}
 	return nil
 }
 
-func (vE *valuesEvaluator) getField(field string) string {
-	r := reflect.ValueOf(vE)
+func (vE *valuesEvaluator) appendValues(values []abapbuild.Value) {
+	for i := len(values) - 1; i >= 0; i-- {
+		_, present := vE.m[values[i].ValueID]
+		if present || (values[i].ValueID == "PHASE") {
+			log.Entry().Infof("Value %s already exists in config -> discard this value", values[i])
+			values = append(values[:i], values[i+1:]...)
+		}
+	}
+	vE.values = append(vE.values, values...)
+}
+
+type valuesAddonDescriptor struct {
+	values []abapbuild.Value
+	m      map[string]string
+}
+
+func (vAD *valuesAddonDescriptor) initialize(repository abaputils.Repository) error {
+	fields := reflect.ValueOf(repository)
+	typeOfS := fields.Type()
+	for i := 0; i < fields.NumField(); i++ {
+		var value abapbuild.Value
+		value.ValueID = typeOfS.Field(i).Name
+		value.Value = fields.Field(i).String()
+		vAD.values = append(vAD.values, value)
+	}
+	return nil
+}
+
+func (vAD *valuesAddonDescriptor) getField(field string) string {
+	r := reflect.ValueOf(vAD)
 	f := reflect.Indirect(r).FieldByName(field)
 	return string(f.String())
 }
 
-func (vE *valuesEvaluator) amI(field string, operator string, comp string) (bool, error) {
+func (vAD *valuesAddonDescriptor) amI(field string, operator string, comp string) (bool, error) {
 	operators := OperatorCallback{
 		"==": Equal,
 		"!=": Unequal,
 	}
-	name := vE.getField(field)
+	name := vAD.getField(field)
 	if fn, ok := operators[operator]; ok {
 		return fn(name, comp), nil
 	}
