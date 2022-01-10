@@ -57,7 +57,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetRespBodyHTTPStatusServiceErrorResponse()
 		}
 		return GetRespBodyHTTPStatusCreated()
-	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete":
+	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete", "ApiProxyUpload":
 		return GetRespBodyHTTPStatusOK()
 	default:
 		res := http.Response{

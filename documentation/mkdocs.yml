@@ -69,6 +69,7 @@ nav:
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
         - apiProxyDownload: steps/apiProxyDownload.md
         - apiProviderDownload: steps/apiProviderDownload.md
+        - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
