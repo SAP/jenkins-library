@@ -64,7 +64,7 @@ func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfi
 
 func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentPushATCSystemConfigUtils) error {
 
-	log.Entry().WithField("func", "runAbapEnvironmentPushATCSystemConfig").Info("Enter Function runAbapEnvironmentPushATCSystemConfig successful.")
+	log.Entry().WithField("func", "Enter: runAbapEnvironmentPushATCSystemConfig").Info("successful")
 
 	exists, err := utils.FileExists("atcSystemConfig.json")
 	if err != nil {
@@ -73,8 +73,8 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 		return fmt.Errorf("failed to check for important file: %w", err)
 	}
 	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
+		log.Entry().WithField("func", "Leave: runAbapEnvironmentPushATCSystemConfig").Info("No ATC System Configuguration file (%w). Push of ATC System Configuration skipped.")
+		return err
 	}
 
 	//Define Client
@@ -97,10 +97,16 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 	if err == nil {
-		return pushATCSystemConfig(config, details, &client)
+		err = pushATCSystemConfig(config, details, &client)
 	}
 
-	return nil
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+	} else {
+		log.Entry().WithField("func", "Leave: runAbapEnvironmentPushATCSystemConfig").Info("ATC System Configuration successfully pushed to system")
+	}
+
+	return err
 }
 
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
