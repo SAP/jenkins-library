@@ -117,6 +117,12 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks/order.toml")
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName))
+
+		initialFileExists, _ := utils.FileExists("/path/to/test.json")
+		renamedFileExists, _ := utils.FileExists("/path/to/config.json")
+
+		assert.False(t, initialFileExists)
+		assert.False(t, renamedFileExists)
 	})
 
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {

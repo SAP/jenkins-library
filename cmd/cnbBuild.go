@@ -354,10 +354,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
 	}
 
-	err = utils.FileRemove(dockerConfigFile)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to remove docker config.json file")
+	if dockerConfigFile != "" {
+		err = utils.FileRemove(dockerConfigFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrap(err, "failed to remove docker config.json file")
+		}
 	}
 
 	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
