@@ -36,7 +36,7 @@ func ApiKeyValueMapUploadCommand() *cobra.Command {
 	var createApiKeyValueMapUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Upload an api key value map artifact into the API Portal",
-		Long: `With this step you can upload an api key value map artifact into the API Portal using the OData API.
+		Long: `With this step, you can upload an API key value map artifact to the API Portal using the OData API.
 Learn more about the SAP API Management API for uploading an api key value map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
