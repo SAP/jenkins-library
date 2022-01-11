@@ -98,10 +98,4 @@ spec:
             fields:
               - name: tms
                 type: bool
-      - name: commonPipelineEnvironment
-        type: piperEnvironment
-        params:
-          - name: mtarFilePath
-            type: string
-          - name: git/commitId
-            type: string
+                

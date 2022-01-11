@@ -37,7 +37,6 @@ const NAMED_USER = "techUser"
 const MTA_VERSION = "1.0.0"
 const WRONG_MTA_VERSION = "3.2.1"
 const LAST_CHANGED_AT = "2021-11-16T13:06:05.711Z"
-const GIT_COMMIT_ID = "7f654c6d1cabaf6902337fad3865b6f8de876c52"
 const INVALID_INPUT_MSG = "Invalid input parameter(s) when getting MTA extension descriptor"
 
 type tmsUploadMockUtils struct {
@@ -70,7 +69,6 @@ type communicationInstanceMock struct {
 	isErrorOnUploadMtaExtDescriptorToNode bool
 	isErrorOnUploadFile                   bool
 	isErrorOnUploadFileToNode             bool
-	isExpectingParametersFromEnvironment  bool
 }
 
 func (cim *communicationInstanceMock) GetNodes() ([]tms.Node, error) {
@@ -84,13 +82,7 @@ func (cim *communicationInstanceMock) GetNodes() ([]tms.Node, error) {
 
 func (cim *communicationInstanceMock) GetMtaExtDescriptor(nodeId int64, mtaId, mtaVersion string) (tms.MtaExtDescriptor, error) {
 	var mtaExtDescriptor tms.MtaExtDescriptor
-
-	// check for input parameters
-	// this type of check might not be sufficient/correct, if there are more than one calls of this client method during the single test execution
-	if cim.isExpectingParametersFromEnvironment && mtaVersion != "*" || !cim.isExpectingParametersFromEnvironment && mtaVersion != MTA_VERSION {
-		return mtaExtDescriptor, errors.New(INVALID_INPUT_MSG)
-	}
-	if nodeId != NODE_ID || mtaId != MTA_ID {
+	if mtaVersion != MTA_VERSION || nodeId != NODE_ID || mtaId != MTA_ID {
 		return mtaExtDescriptor, errors.New(INVALID_INPUT_MSG)
 	}
 
@@ -103,13 +95,7 @@ func (cim *communicationInstanceMock) GetMtaExtDescriptor(nodeId int64, mtaId, m
 
 func (cim *communicationInstanceMock) UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (tms.MtaExtDescriptor, error) {
 	var mtaExtDescriptor tms.MtaExtDescriptor
-
-	// check for input parameters
-	// this type of check might not be sufficient/correct, if there are more than one calls of this client method during the single test execution
-	if cim.isExpectingParametersFromEnvironment && (mtaVersion != "*" || description != fmt.Sprintf("Git commit id: %v", GIT_COMMIT_ID)) || !cim.isExpectingParametersFromEnvironment && (mtaVersion != MTA_VERSION || description != CUSTOM_DESCRIPTION) {
-		return mtaExtDescriptor, errors.New(INVALID_INPUT_MSG)
-	}
-	if nodeId != NODE_ID || idOfMtaExtDescriptor != ID_OF_MTA_EXT_DESCRIPTOR || file != MTA_EXT_DESCRIPTOR_PATH_LOCAL || namedUser != NAMED_USER {
+	if mtaVersion != MTA_VERSION || description != CUSTOM_DESCRIPTION || nodeId != NODE_ID || idOfMtaExtDescriptor != ID_OF_MTA_EXT_DESCRIPTOR || file != MTA_EXT_DESCRIPTOR_PATH_LOCAL || namedUser != NAMED_USER {
 		return mtaExtDescriptor, errors.New(INVALID_INPUT_MSG)
 	}
 
@@ -122,13 +108,7 @@ func (cim *communicationInstanceMock) UpdateMtaExtDescriptor(nodeId, idOfMtaExtD
 
 func (cim *communicationInstanceMock) UploadMtaExtDescriptorToNode(nodeId int64, file, mtaVersion, description, namedUser string) (tms.MtaExtDescriptor, error) {
 	var mtaExtDescriptor tms.MtaExtDescriptor
-
-	// check for input parameters
-	// this type of check might not be sufficient/correct, if there are more than one calls of this client method during the single test execution
-	if cim.isExpectingParametersFromEnvironment && (mtaVersion != "*" || description != fmt.Sprintf("Git commit id: %v", GIT_COMMIT_ID)) || !cim.isExpectingParametersFromEnvironment && (mtaVersion != MTA_VERSION || description != CUSTOM_DESCRIPTION) {
-		return mtaExtDescriptor, errors.New(INVALID_INPUT_MSG)
-	}
-	if nodeId != NODE_ID || file != MTA_EXT_DESCRIPTOR_PATH_LOCAL || namedUser != NAMED_USER {
+	if mtaVersion != MTA_VERSION || description != CUSTOM_DESCRIPTION || nodeId != NODE_ID || file != MTA_EXT_DESCRIPTOR_PATH_LOCAL || namedUser != NAMED_USER {
 		return mtaExtDescriptor, errors.New(INVALID_INPUT_MSG)
 	}
 
@@ -141,8 +121,6 @@ func (cim *communicationInstanceMock) UploadMtaExtDescriptorToNode(nodeId int64,
 
 func (cim *communicationInstanceMock) UploadFile(file, namedUser string) (tms.FileInfo, error) {
 	var fileInfo tms.FileInfo
-
-	// check for input parameters
 	if file != MTA_PATH_LOCAL || namedUser != NAMED_USER {
 		return fileInfo, errors.New(INVALID_INPUT_MSG)
 	}
@@ -156,12 +134,7 @@ func (cim *communicationInstanceMock) UploadFile(file, namedUser string) (tms.Fi
 
 func (cim *communicationInstanceMock) UploadFileToNode(nodeName, fileId, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
 	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
-
-	// check for input parameters
-	if cim.isExpectingParametersFromEnvironment && description != fmt.Sprintf("Git commit id: %v", GIT_COMMIT_ID) || !cim.isExpectingParametersFromEnvironment && description != CUSTOM_DESCRIPTION {
-		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
-	}
-	if nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
+	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
 		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
 	}
 
@@ -196,7 +169,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.NoError(t, err)
@@ -215,7 +188,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.NoError(t, err)
@@ -243,38 +216,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
-
-		// assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("happy path: no MtaPath, CustomDescription, MtaVersion provided in configuration", func(t *testing.T) {
-		t.Parallel()
-
-		// init
-		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
-		mtaExtDescriptor := tms.MtaExtDescriptor{Id: ID_OF_MTA_EXT_DESCRIPTOR, Description: "Some existing description", MtaId: MTA_ID, MtaExtId: MTA_EXT_ID, MtaVersion: MTA_VERSION, LastChangedAt: LAST_CHANGED_AT}
-		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
-		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, getMtaExtDescriptorResponse: mtaExtDescriptor, uploadFileResponse: fileInfo, isExpectingParametersFromEnvironment: true}
-
-		utils := newTmsUploadTestsUtils()
-		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
-
-		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
-		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
-
-		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
-		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
-
-		gitStruct := gitMock{commitID: GIT_COMMIT_ID}
-		commonPipelineEnvironment := tmsUploadCommonPipelineEnvironment{mtarFilePath: MTA_PATH_LOCAL, git: gitStruct}
-
-		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		config := tmsUploadOptions{NamedUser: NAMED_USER, NodeName: NODE_NAME, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
-
-		// test
-		err := runTmsUpload(config, &communicationInstance, utils, &commonPipelineEnvironment)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.NoError(t, err)
@@ -291,7 +233,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, fmt.Sprintf("mta file %s not found", MTA_PATH_LOCAL))
@@ -309,7 +251,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to get nodes: Something went wrong on getting nodes")
@@ -328,7 +270,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to get mta.yaml as map: could not read 'mta.yaml'")
@@ -350,7 +292,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to get mta.yaml as map: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type map[string]interface {}")
@@ -372,7 +314,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		var expectedErrorMessage string
@@ -410,7 +352,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: WRONG_MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		var expectedErrorMessage string
@@ -441,7 +383,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to get MTA extension descriptor: Something went wrong on getting MTA extension descriptor")
@@ -468,7 +410,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to update MTA extension descriptor: Something went wrong on updating MTA extension descriptor")
@@ -494,7 +436,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to upload MTA extension descriptor to node: Something went wrong on uploading MTA extension descriptor to node")
@@ -520,7 +462,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to upload file: Something went wrong on uploading file")
@@ -547,7 +489,7 @@ func TestRunTmsUpload(t *testing.T) {
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
-		err := runTmsUpload(config, &communicationInstance, utils, nil)
+		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
 		assert.EqualError(t, err, "failed to upload file to node: Something went wrong on uploading file to node")

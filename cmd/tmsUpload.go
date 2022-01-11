@@ -60,7 +60,7 @@ func newTmsUploadUtils() tmsUploadUtils {
 	return &utils
 }
 
-func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) {
+func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newTmsUploadUtils()
@@ -83,17 +83,13 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
 
-	if err := runTmsUpload(config, communicationInstance, utils, commonPipelineEnvironment); err != nil {
+	if err := runTmsUpload(config, communicationInstance, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
 }
 
-func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils, commonPipelineEnvironment *tmsUploadCommonPipelineEnvironment) error {
+func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils) error {
 	mtaPath := config.MtaPath
-	if mtaPath == "" {
-		mtaPath = commonPipelineEnvironment.mtarFilePath
-	}
-
 	exists, _ := utils.FileExists(mtaPath)
 	if !exists {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -101,18 +97,9 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	}
 
 	description := config.CustomDescription
-	if description == "" {
-		description = fmt.Sprintf("Git commit id: %v", commonPipelineEnvironment.git.commitID)
-	}
-
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
-
 	mtaVersion := config.MtaVersion
-	if mtaVersion == "" {
-		mtaVersion = "*"
-	}
-
 	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
 
 	if GeneralConfig.Verbose {

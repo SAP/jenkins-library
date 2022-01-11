@@ -58,37 +58,7 @@ func (i *tmsUploadInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
-	}
-}
-
-type tmsUploadCommonPipelineEnvironment struct {
-	mtarFilePath string
-	git          struct {
-		commitID string
-	}
-}
-
-func (p *tmsUploadCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
-		category string
-		name     string
-		value    interface{}
-	}{
-		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
-		{category: "git", name: "commitId", value: p.git.commitID},
-	}
-
-	errCount := 0
-	for _, param := range content {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
-		if err != nil {
-			log.Entry().WithError(err).Error("Error persisting piper environment.")
-			errCount++
-		}
-	}
-	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -100,7 +70,6 @@ func TmsUploadCommand() *cobra.Command {
 	var stepConfig tmsUploadOptions
 	var startTime time.Time
 	var influx tmsUploadInflux
-	var commonPipelineEnvironment tmsUploadCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -160,9 +129,8 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -182,7 +150,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			tmsUpload(stepConfig, &stepTelemetryData, &influx, &commonPipelineEnvironment)
+			tmsUpload(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -328,15 +296,7 @@ func tmsUploadMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "tms"}}},
-						},
-					},
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"Name": "mtarFilePath"},
-							{"Name": "git/commitId"},
+							{"name": "step_data", "fields": []map[string]string{{"name": "tms"}}},
 						},
 					},
 				},
