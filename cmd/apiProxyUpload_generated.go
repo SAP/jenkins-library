@@ -15,25 +15,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type shellExecuteOptions struct {
-	Sources []string `json:"sources,omitempty"`
+type apiProxyUploadOptions struct {
+	APIServiceKey string `json:"apiServiceKey,omitempty"`
+	FilePath      string `json:"filePath,omitempty"`
 }
 
-// ShellExecuteCommand Step executes defined script
-func ShellExecuteCommand() *cobra.Command {
-	const STEP_NAME = "shellExecute"
+// ApiProxyUploadCommand Upload an api proxy artifact in to the API Portal
+func ApiProxyUploadCommand() *cobra.Command {
+	const STEP_NAME = "apiProxyUpload"
 
-	metadata := shellExecuteMetadata()
-	var stepConfig shellExecuteOptions
+	metadata := apiProxyUploadMetadata()
+	var stepConfig apiProxyUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createShellExecuteCmd = &cobra.Command{
+	var createApiProxyUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Step executes defined script",
-		Long:  `Step executes defined script with using test Vault credentials`,
+		Short: "Upload an api proxy artifact in to the API Portal",
+		Long: `With this step you can upload an api proxy artifact in to the API Portal using the OData API.
+Learn more about the SAP API Management API for uploading an api proxy artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -50,6 +52,7 @@ func ShellExecuteCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.APIServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -97,45 +100,63 @@ func ShellExecuteCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			shellExecute(stepConfig, &stepTelemetryData)
+			apiProxyUpload(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addShellExecuteFlags(createShellExecuteCmd, &stepConfig)
-	return createShellExecuteCmd
+	addApiProxyUploadFlags(createApiProxyUploadCmd, &stepConfig)
+	return createApiProxyUploadCmd
 }
 
-func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
+func addApiProxyUploadFlags(cmd *cobra.Command, stepConfig *apiProxyUploadOptions) {
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies api proxy zip artifact relative file path")
 
+	cmd.MarkFlagRequired("apiServiceKey")
+	cmd.MarkFlagRequired("filePath")
 }
 
 // retrieve step metadata
-func shellExecuteMetadata() config.StepData {
+func apiProxyUploadMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "shellExecute",
+			Name:        "apiProxyUpload",
 			Aliases:     []config.Alias{},
-			Description: "Step executes defined script",
+			Description: "Upload an api proxy artifact in to the API Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "sources",
+						Name: "apiServiceKey",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "apimApiServiceKeyCredentialsId",
+								Param: "apiServiceKey",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_apiServiceKey"),
+					},
+					{
+						Name:        "filePath",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
+						Type:        "string",
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_filePath"),
 					},
 				},
-			},
-			Containers: []config.Container{
-				{Name: "shell", Image: "node:lts-stretch", WorkingDir: "/home/node"},
 			},
 		},
 	}

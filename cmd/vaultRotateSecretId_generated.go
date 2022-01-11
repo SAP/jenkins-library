@@ -31,7 +31,7 @@ type vaultRotateSecretIdOptions struct {
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
 }
 
-// VaultRotateSecretIdCommand Rotate vault AppRole Secret ID
+// VaultRotateSecretIdCommand Rotate Vault AppRole Secret ID
 func VaultRotateSecretIdCommand() *cobra.Command {
 	const STEP_NAME = "vaultRotateSecretId"
 
@@ -44,7 +44,7 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 
 	var createVaultRotateSecretIdCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Rotate vault AppRole Secret ID",
+		Short: "Rotate Vault AppRole Secret ID",
 		Long:  `This step takes the given Vault secret ID and checks whether it needs to be renewed and if so it will update the secret ID in the configured secret store.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -131,7 +131,7 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.JenkinsToken, "jenkinsToken", os.Getenv("PIPER_jenkinsToken"), "The jenkins token")
 	cmd.Flags().StringVar(&stepConfig.VaultAppRoleSecretTokenCredentialsID, "vaultAppRoleSecretTokenCredentialsId", os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"), "The Jenkins credential ID or Azure DevOps variable name for the Vault AppRole Secret ID credential")
 	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
-	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The vault namespace that should be used (optional)")
+	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The Vault namespace that should be used (optional)")
 	cmd.Flags().IntVar(&stepConfig.DaysBeforeExpiry, "daysBeforeExpiry", 15, "The amount of days before expiry until the secret ID gets rotated")
 	cmd.Flags().StringVar(&stepConfig.AdoOrganization, "adoOrganization", os.Getenv("PIPER_adoOrganization"), "The Azure DevOps organization name")
 	cmd.Flags().StringVar(&stepConfig.AdoPersonalAccessToken, "adoPersonalAccessToken", os.Getenv("PIPER_adoPersonalAccessToken"), "The Azure DevOps personal access token")
@@ -148,7 +148,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "vaultRotateSecretId",
 			Aliases:     []config.Alias{},
-			Description: "Rotate vault AppRole Secret ID",
+			Description: "Rotate Vault AppRole Secret ID",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
