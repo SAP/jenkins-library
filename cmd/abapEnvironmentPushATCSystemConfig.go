@@ -43,6 +43,7 @@ func newAbapEnvironmentPushATCSystemConfigUtils() abapEnvironmentPushATCSystemCo
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
 	}
+
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -61,6 +62,7 @@ func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfi
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
+
 	err := runAbapEnvironmentPushATCSystemConfig(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -71,7 +73,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 	log.Entry().WithField("func", "Enter: runAbapEnvironmentPushATCSystemConfig").Info("successful")
 
-	exists, err := utils.FileExists("atcSystemConfig.json")
+	exists, err := utils.FileExists(config.AtcSystemConfig)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 
@@ -82,8 +84,14 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 		return err
 	}
 
+	subOptions := convertATCSysOptions(config)
+
 	//Define Client
 	var details abaputils.ConnectionDetailsHTTP
+	var abapCom abaputils.Communication
+
+	abapCom = GetABAPCom()
+	details, err = abapCom.GetAbapCommunicationArrangementInfo(subOptions, "")
 	client := piperhttp.Client{}
 	cookieJar, _ := cookiejar.New(nil)
 	clientOptions := piperhttp.ClientOptions{
@@ -120,17 +128,22 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, deta
 	//check ATC system configuration json
 	var resp *http.Response
 	var atcSystemConfiguartionJsonFile []byte
+
 	if err == nil {
 		filename, err := filepath.Abs(filelocation[0])
 		if err == nil {
 			atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
 		}
-		if err == nil {
-			resp, err = getOdataResponse("POST", details, atcSystemConfiguartionJsonFile, client)
-			err = parseOdataResponse(resp)
-		}
 	}
-
+	if err == nil {
+		resp, err = getOdataResponse("POST", details, atcSystemConfiguartionJsonFile, client)
+	}
+	if err == nil {
+		err = parseOdataResponse(resp)
+	}
+	if err != nil {
+		return fmt.Errorf("Pushing ATC System Configuration failed: %w", err)
+	}
 	return err
 }
 
@@ -155,12 +168,15 @@ func getOdataResponse(requestType string, details abaputils.ConnectionDetailsHTT
 
 	header := make(map[string][]string)
 	header["x-csrf-token"] = []string{details.XCsrfToken}
-	header["Accept"] = []string{"application/vnd.sap.adt.api.junit.run-result.v1+xml"}
+	header["Accept"] = []string{"application/json"}
+	header["Content-Type"] = []string{"application/json"}
+	abapEndpoint := details.URL
+	details.URL = abapEndpoint + "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001/configuration"
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return resp, fmt.Errorf("Deploying ATC System Configuration failed: %w", err)
+		return resp, fmt.Errorf("Sending Request for ATC System Configuration failed: %w", err)
 	}
-	return resp, err
+	return resp, nil
 }
 
 func fetchATCXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -179,4 +195,33 @@ func fetchATCXcsrfToken(requestType string, details abaputils.ConnectionDetailsH
 
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
+}
+
+func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
+	subOptions.CfServiceInstance = options.CfServiceInstance
+	subOptions.CfServiceKeyName = options.CfServiceKeyName
+	subOptions.CfOrg = options.CfOrg
+	subOptions.CfSpace = options.CfSpace
+	subOptions.Host = options.Host
+	subOptions.Password = options.Password
+	subOptions.Username = options.Username
+
+	return subOptions
+}
+
+func GetABAPCom() abaputils.Communication {
+	// for command execution use Command
+	c := command.Command{}
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
+
+	return &autils
 }
