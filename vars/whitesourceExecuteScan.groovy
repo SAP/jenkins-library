@@ -16,6 +16,7 @@ void call(Map parameters = [:]) {
     List credentials = [
         [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
         [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
+        [type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']],
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
