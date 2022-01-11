@@ -22,7 +22,7 @@ type apiKeyValueMapUploadOptions struct {
 	KeyValueMapName string `json:"keyValueMapName,omitempty"`
 }
 
-// ApiKeyValueMapUploadCommand Upload an api key value map artifact into the API Portal
+// ApiKeyValueMapUploadCommand Upload an API key value map artifact into the API Portal
 func ApiKeyValueMapUploadCommand() *cobra.Command {
 	const STEP_NAME = "apiKeyValueMapUpload"
 
@@ -35,9 +35,9 @@ func ApiKeyValueMapUploadCommand() *cobra.Command {
 
 	var createApiKeyValueMapUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Upload an api key value map artifact into the API Portal",
+		Short: "Upload an API key value map artifact into the API Portal",
 		Long: `With this step, you can upload an API key value map artifact to the API Portal using the OData API.
-Learn more about the SAP API Management API for uploading an api key value map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
+Learn more about the SAP API Management API for uploading an API key value map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -114,9 +114,9 @@ Learn more about the SAP API Management API for uploading an api key value map a
 
 func addApiKeyValueMapUploadFlags(cmd *cobra.Command, stepConfig *apiKeyValueMapUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.Key, "key", os.Getenv("PIPER_key"), "Specifies api key name of api key value map")
-	cmd.Flags().StringVar(&stepConfig.Value, "value", os.Getenv("PIPER_value"), "Specifies api key value of api key value map")
-	cmd.Flags().StringVar(&stepConfig.KeyValueMapName, "keyValueMapName", os.Getenv("PIPER_keyValueMapName"), "Specifies the name of the api key value map")
+	cmd.Flags().StringVar(&stepConfig.Key, "key", os.Getenv("PIPER_key"), "Specifies API key name of API key value map")
+	cmd.Flags().StringVar(&stepConfig.Value, "value", os.Getenv("PIPER_value"), "Specifies API key value of API key value map")
+	cmd.Flags().StringVar(&stepConfig.KeyValueMapName, "keyValueMapName", os.Getenv("PIPER_keyValueMapName"), "Specifies the name of the API key value map")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("key")
@@ -130,7 +130,7 @@ func apiKeyValueMapUploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "apiKeyValueMapUpload",
 			Aliases:     []config.Alias{},
-			Description: "Upload an api key value map artifact into the API Portal",
+			Description: "Upload an API key value map artifact into the API Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

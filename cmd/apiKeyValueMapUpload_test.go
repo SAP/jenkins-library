@@ -65,4 +65,81 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 		// assert
 		assert.EqualError(t, err, "HTTP \"POST\" request to \"https://demo/apiportal/api/1.0/Management.svc/KeyMapEntries\" failed with error: 401 Unauthorized")
 	})
+
+	t.Run("Test API Key Value Map payload", func(t *testing.T) {
+		// init
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+		config := apiKeyValueMapUploadOptions{
+			APIServiceKey:   apiServiceKey,
+			Key:             "demo",
+			Value:           "name",
+			KeyValueMapName: "demoMap",
+		}
+
+		// test
+		payload, err := createJSONPayload(&config)
+		// assert
+		assert.NoError(t, err)
+		assert.NotNil(t, payload)
+	})
+
+	t.Run("Http Response not accepted Test case", func(t *testing.T) {
+		// init
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+		config := apiKeyValueMapUploadOptions{
+			APIServiceKey:   apiServiceKey,
+			Key:             "demo",
+			Value:           "name",
+			KeyValueMapName: "demoMap",
+		}
+
+		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "HttpResponseNotAccepted"}
+
+		// test
+		err := runApiKeyValueMapUpload(&config, nil, &httpClient)
+
+		// assert
+		assert.EqualError(t, err, "Failed to upload API key value map artefact, Response Status code: 202")
+	})
+
+	t.Run("Http Response not accepted Test case", func(t *testing.T) {
+		// init
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+		config := apiKeyValueMapUploadOptions{
+			APIServiceKey:   apiServiceKey,
+			Key:             "demo",
+			Value:           "name",
+			KeyValueMapName: "demoMap",
+		}
+
+		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "NilHttpResponse"}
+
+		// test
+		err := runApiKeyValueMapUpload(&config, nil, &httpClient)
+
+		// assert
+		assert.EqualError(t, err, "HTTP \"POST\" request to \"https://demo/apiportal/api/1.0/Management.svc/KeyMapEntries\" failed with error: invalid payalod")
+	})
+
 }

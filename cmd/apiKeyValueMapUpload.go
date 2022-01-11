@@ -47,25 +47,15 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 
-	httpMethod := "POST"
+	httpMethod := http.MethodPost
 	uploadApiKeyValueMapStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/KeyMapEntries", serviceKey.OAuth.Host)
 	header := make(http.Header)
 	header.Add("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
-	jsonObj := gabs.New()
-	jsonObj.Set(config.Key, "name")
-	jsonObj.Set(config.KeyValueMapName, "map_name")
-	jsonObj.Set(config.Value, "value")
-	jsonRootObj := gabs.New()
-	jsonRootObj.Set(config.KeyValueMapName, "name")
-	jsonRootObj.Set(true, "encrypted")
-	jsonRootObj.Set("ENV", "scope")
-	jsonRootObj.ArrayAppend(jsonObj, "keyMapEntryValues")
-	jsonBody, jsonErr := json.Marshal(jsonRootObj)
+	payload, jsonErr := createJSONPayload(config)
 	if jsonErr != nil {
-		return errors.Wrapf(jsonErr, "json payload is invalid for key value map %q", config.KeyValueMapName)
+		return jsonErr
 	}
-	payload := bytes.NewBuffer([]byte(string(jsonBody)))
 	apiProxyUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiKeyValueMapStatusURL, payload, header, nil)
 
 	if httpErr != nil {
@@ -94,4 +84,23 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(response), apiProxyUploadStatusResp.StatusCode)
 	return errors.Errorf("Failed to upload API key value map artefact, Response Status code: %v", apiProxyUploadStatusResp.StatusCode)
+}
+
+//createJSONPayload -return http payload as byte array
+func createJSONPayload(config *apiKeyValueMapUploadOptions) (*bytes.Buffer, error) {
+	jsonObj := gabs.New()
+	jsonObj.Set(config.Key, "name")
+	jsonObj.Set(config.KeyValueMapName, "map_name")
+	jsonObj.Set(config.Value, "value")
+	jsonRootObj := gabs.New()
+	jsonRootObj.Set(config.KeyValueMapName, "name")
+	jsonRootObj.Set(true, "encrypted")
+	jsonRootObj.Set("ENV", "scope")
+	jsonRootObj.ArrayAppend(jsonObj, "keyMapEntryValues")
+	jsonBody, jsonErr := json.Marshal(jsonRootObj)
+	if jsonErr != nil {
+		return nil, errors.Wrapf(jsonErr, "json payload is invalid for key value map %q", config.KeyValueMapName)
+	}
+	payload := bytes.NewBuffer([]byte(string(jsonBody)))
+	return payload, nil
 }

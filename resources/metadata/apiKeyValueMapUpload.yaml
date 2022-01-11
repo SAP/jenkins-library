@@ -1,9 +1,9 @@
 metadata:
   name: apiKeyValueMapUpload
-  description: Upload an api key value map artifact into the API Portal
+  description: Upload an API key value map artifact into the API Portal
   longDescription: |
     With this step, you can upload an API key value map artifact to the API Portal using the OData API.
-    Learn more about the SAP API Management API for uploading an api key value map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
+    Learn more about the SAP API Management API for uploading an API key value map artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
 
 spec:
   inputs:
@@ -25,7 +25,7 @@ spec:
             param: apiServiceKey
       - name: key
         type: string
-        description: Specifies api key name of api key value map
+        description: Specifies API key name of API key value map
         scope:
           - PARAMETERS
           - STAGES
@@ -33,7 +33,7 @@ spec:
         mandatory: true
       - name: value
         type: string
-        description: Specifies api key value of api key value map
+        description: Specifies API key value of API key value map
         scope:
           - PARAMETERS
           - STAGES
@@ -41,7 +41,7 @@ spec:
         mandatory: true
       - name: keyValueMapName
         type: string
-        description: Specifies the name of the api key value map
+        description: Specifies the name of the API key value map
         scope:
           - PARAMETERS
           - STAGES

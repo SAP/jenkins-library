@@ -56,6 +56,12 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		if testType == "Negative" {
 			return GetRespBodyHTTPStatusServiceErrorResponse()
 		}
+		if testType == "HttpResponseNotAccepted" {
+			return GetEmptyHTTPResponseBodyAndErrorNil()
+		}
+		if testType == "NilHttpResponse" {
+			return nil, errors.New("invalid payalod")
+		}
 		return GetRespBodyHTTPStatusCreated()
 	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete", "ApiProxyUpload":
 		return GetRespBodyHTTPStatusOK()
