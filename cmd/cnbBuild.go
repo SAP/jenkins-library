@@ -221,6 +221,27 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 	return source, nil
 }
 
+func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
+	var err error
+	linkPath := filepath.Join(target, "target")
+	targetPath := filepath.Join(source, "target")
+	if ok, _ := utils.DirExists(targetPath); !ok {
+		err = utils.MkdirAll(targetPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	if ok, _ := utils.DirExists(linkPath); ok {
+		err = utils.RemoveAll(linkPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return os.Symlink(targetPath, linkPath)
+}
+
 func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 	if c.BuildEnvVars == nil {
 		c.BuildEnvVars = vars
@@ -329,6 +350,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
+		}
+	}
+
+	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
+		err = linkTargetFolder(utils, source, target)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return err
 		}
 	}
 
