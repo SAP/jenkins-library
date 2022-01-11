@@ -130,7 +130,7 @@ func apiKeyValueMapUploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "apiKeyValueMapUpload",
 			Aliases:     []config.Alias{},
-			Description: "Upload an API key value map artifact into the API Portal",
+			Description: "Create an API key value map artifact in the API Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
