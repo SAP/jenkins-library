@@ -480,7 +480,7 @@ func TestMethod(t *testing.T) {
 
 ### Test pipeline for your fork (Jenkins)
 
-Piper is ececuting the steps of each stage within an docker container. If you want to test your developments you have to ensure they are part of the docker image which is used in your test pipeline.
+Piper is ececuting the steps of each stage within a  container. If you want to test your developments you have to ensure they are part of the image which is used in your test pipeline.
 
 #### Testing Pipeline or Stage Definition changes (Jenkins)
 
@@ -494,36 +494,36 @@ abapEnvironmentPipeline script: this
 
 #### Testing changes on Step Level (Jenkins)
 
-To trigger the creation of an "custom" container with your changes you can reuse a feature in piper which is originally meant for executing the integration tests. If the environment variables 'REPOSITORY_UNDER_TEST' (pointing to your forked repo) and 'LIBRARY_VERSION_UNDER_TEST' (pointing to a tag in your forked repo) are set a corresponding container gets created on the fly upon first usage in the pipeline. The drawback is that this takes extra time (1-2 minutes) you have to spend for every execution of the pipeline.
+To trigger the creation of a "custom" container with your changes you can reuse a feature in piper which is originally meant for executing the integration tests. If the environment variables 'REPOSITORY_UNDER_TEST' (pointing to your forked repo) and 'LIBRARY_VERSION_UNDER_TEST' (pointing to a tag in your forked repo) are set a corresponding container gets created on the fly upon first usage in the pipeline. The drawback is that this takes extra time (1-2 minutes) you have to spend for every execution of the pipeline.
 
 ```groovy
 @Library('piper-lib-os') _
 
-env.REPOSITORY_UNDER_TEST		= 'myfork e.g. myUser/jenkins-library'
-env.LIBRARY_VERSION_UNDER_TEST	= 'MyTag'
+env.REPOSITORY_UNDER_TEST       = 'myfork e.g. myUser/jenkins-library'
+env.LIBRARY_VERSION_UNDER_TEST  = 'MyTag'
 
 abapEnvironmentPipeline script: this
 ```
 
 #### Using Parameterized Pipelines (Jenkins)
 
-For Test Purpose it can be useful to utilize a parameterized pipeline. E.g. to toggle creation of the custom container: 
+For Test Purpose it can be useful to utilize a parameterized pipeline. E.g. to toggle creation of the custom container:
 
 ```groovy
 @Library('my-piper-lib-os-fork@MyTest') _
 
 properties([
-	parameters([
-		booleanParam(name: 'toggleSomething', defaultValue: false, description: 'dito'),
-		booleanParam(name: 'testPiperFork', defaultValue: false, description: 'dito'),
-		string(name: 'repoUnderTest', defaultValue: '<MyUser>/jenkins-library', description: 'dito'),
-		string(name: 'tag', defaultValue: 'MyTest', description: 'dito')
-	])
+    parameters([
+        booleanParam(name: 'toggleSomething', defaultValue: false, description: 'dito'),
+        booleanParam(name: 'testPiperFork', defaultValue: false, description: 'dito'),
+        string(name: 'repoUnderTest', defaultValue: '<MyUser>/jenkins-library', description: 'dito'),
+        string(name: 'tag', defaultValue: 'MyTest', description: 'dito')
+    ])
 ])
 
 if (params.testPiperFork == true) {
-	env.REPOSITORY_UNDER_TEST		= params.repoUnderTest
-	env.LIBRARY_VERSION_UNDER_TEST	= params.tag
+    env.REPOSITORY_UNDER_TEST       = params.repoUnderTest
+    env.LIBRARY_VERSION_UNDER_TEST  = params.tag
 }
 
 abapEnvironmentPipeline script: this
