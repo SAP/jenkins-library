@@ -4,61 +4,70 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/SAP/jenkins-library/pkg/helm"
+	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
-	helmExecuteOption := helm.ExecutorOptions{}
-	helmExecutor := helm.NewExecutor(helmExecuteOption)
-	// utils := helm.NewHelmDeployUtilsBundle()
+	utils := kubernetes.NewDeployUtilsBundle()
 
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		err := runHelmExecute(helmExecutor, &config, log.Writer())
+		err := runHelmExecute(config, utils, log.Writer())
 		if err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed")
 		}
 	} else {
-		fmt.Errorf("Failed to execute deployments")
+		log.Entry().Error("Failed to execute deployments since '%v' tool is not a helm", config.DeployTool)
 	}
 }
 
-func runHelmExecute(helmExecutor helm.Executor, config *helmExecuteOptions, stdout io.Writer) error {
-	if len(config.ChartPath) <= 0 {
-		return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
-	}
-	if len(config.DeploymentName) <= 0 {
-		return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
+func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils, stdout io.Writer) error {
+	helmConfig := kubernetes.HelmExecuteOptions{
+		ChartPath:            config.ChartPath,
+		DeploymentName:       config.DeploymentName,
+		ContainerRegistryURL: config.ContainerRegistryURL,
+		Image:                config.Image,
+		ContainerImageName:   config.ContainerImageName,
+		ContainerImageTag:    config.ContainerImageTag,
+		Namespace:            config.Namespace,
+		KubeContext:          config.KubeContext,
+		KubeConfig:           config.KubeConfig,
+		DeployTool:           config.DeployTool,
+		TillerNamespace:      config.TillerNamespace,
 	}
 
-	_, containerRegistry, err := helm.SplitRegistryURL(config.ContainerRegistryURL)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
-	}
-	//support either image or containerImageName and containerImageTag
-	containerImageName := ""
-	containerImageTag := ""
-
-	if len(config.Image) > 0 {
-		containerImageName, containerImageTag, err = helm.SplitFullImageName(config.Image)
+	if config.DeployCommand == "upgrade" {
+		err := kubernetes.RunHelmUpgrade(helmConfig, utils, stdout)
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+			return fmt.Errorf("failed to execute deployments")
 		}
-	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		containerImageName = config.ContainerImageName
-		containerImageTag = config.ContainerImageTag
-	} else {
-		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
 
-	helmConfig := helm.HelmExecuteOptions{
-		AdditionalParameters: config.AdditionalParameters,
+	// ToDo: helm lint
+	if config.DeployCommand == "lint" {
+		kubernetes.RunHelmLint()
 	}
 
-	err = helmExecutor.RunHelmLint(containerRegistry, containerImageName, containerImageTag, helmConfig, stdout)
-	if err != nil {
-		log.Entry().Warnf("failed to execute helm lint: %v", err)
+	// ToDo: helm install
+	if config.DeployCommand == "install" {
+		kubernetes.RunHelmInstall()
+	}
+
+	// ToDo: helm test
+	if config.DeployCommand == "test" {
+		kubernetes.RunHelmTest()
+	}
+
+	// ToDo: helm delete
+	if config.DeployCommand == "delete" {
+		kubernetes.RunHelmDelete()
+	}
+
+	// ToDo: helm package
+	if config.DeployCommand == "package" {
+		kubernetes.RunHelmPackage()
 	}
 
 	return nil

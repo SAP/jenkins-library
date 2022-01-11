@@ -322,18 +322,22 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
-      # - name: deployCommand
-      #   type: string
-      #   description: "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`."
-      #   mandatory: false
-      #   scope:
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
-      #   default: apply
-      #   possibleValues:
-      #     - apply
-      #     - replace
+      - name: deployCommand
+        type: string
+        description: "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `upgrade`."
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: upgrade
+        possibleValues:
+          - upgrade
+          - lint
+          - install
+          - test
+          - delete
+          - package
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config

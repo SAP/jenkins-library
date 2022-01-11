@@ -1,4 +1,4 @@
-package helm
+package kubernetes
 
 import (
 	"testing"
