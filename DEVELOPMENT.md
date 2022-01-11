@@ -480,7 +480,7 @@ func TestMethod(t *testing.T) {
 
 ### Test pipeline for your fork (Jenkins)
 
-Piper is ececuting the steps of each stage within a  container. If you want to test your developments you have to ensure they are part of the image which is used in your test pipeline.
+Piper is ececuting the steps of each stage within a container. If you want to test your developments you have to ensure they are part of the image which is used in your test pipeline.
 
 #### Testing Pipeline or Stage Definition changes (Jenkins)
 
@@ -499,7 +499,7 @@ To trigger the creation of a "custom" container with your changes you can reuse 
 ```groovy
 @Library('piper-lib-os') _
 
-env.REPOSITORY_UNDER_TEST       = 'myfork e.g. myUser/jenkins-library'
+env.REPOSITORY_UNDER_TEST       = 'myfork' // e.g. 'myUser/jenkins-library'
 env.LIBRARY_VERSION_UNDER_TEST  = 'MyTag'
 
 abapEnvironmentPipeline script: this
@@ -507,7 +507,7 @@ abapEnvironmentPipeline script: this
 
 #### Using Parameterized Pipelines (Jenkins)
 
-For Test Purpose it can be useful to utilize a parameterized pipeline. E.g. to toggle creation of the custom container:
+For test purpose it can be useful to utilize a parameterized pipeline. E.g. to toggle creation of the custom container:
 
 ```groovy
 @Library('my-piper-lib-os-fork@MyTest') _
