@@ -54,9 +54,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	if err := npmignore.Write(); err != nil {
 		return errors.Wrapf(err, "failed to update %s file", npmignore.filepath)
 	}
+	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
 	if len(registry) > 0 {
-		npmrc := NewNPMRC(filepath.Dir(packageJSON))
 		// check existing .npmrc file
 		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
 			if err != nil {
@@ -67,7 +67,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
 			}
 		} else {
-			log.Entry().Debug("creating .npmrc file")
+			log.Entry().Debugf("creating new npmrc file at %s", npmrc.filepath)
 		}
 		// set registry
 		log.Entry().Debugf("adding registry %s", registry)
@@ -86,7 +86,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Debug("no registry provided")
 	}
 
-	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON))
+	err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath)
 	if err != nil {
 		return err
 	}
