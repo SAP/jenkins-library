@@ -52,10 +52,6 @@ func newTmsUploadTestsUtils() tmsUploadMockUtils {
 	return utils
 }
 
-type gitMock struct {
-	commitID string
-}
-
 type communicationInstanceMock struct {
 	getNodesResponse                      []tms.Node
 	getMtaExtDescriptorResponse           tms.MtaExtDescriptor
