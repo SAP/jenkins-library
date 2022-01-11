@@ -36,9 +36,11 @@ type abapEnvironmentBuildOptions struct {
 	FilenamePrefixForDownload       string   `json:"filenamePrefixForDownload,omitempty"`
 	TreatWarningsAsError            bool     `json:"treatWarningsAsError,omitempty"`
 	MaxRuntimeInMinutes             int      `json:"maxRuntimeInMinutes,omitempty"`
-	PollingIntervallInSeconds       int      `json:"pollingIntervallInSeconds,omitempty"`
+	PollingIntervalInSeconds        int      `json:"pollingIntervalInSeconds,omitempty"`
 	CertificateNames                []string `json:"certificateNames,omitempty"`
 	CpeValues                       string   `json:"cpeValues,omitempty"`
+	ConditionOnAddonDescriptor      string   `json:"conditionOnAddonDescriptor,omitempty"`
+	UseAddonDescriptor              bool     `json:"useAddonDescriptor,omitempty"`
 	AddonDescriptor                 string   `json:"addonDescriptor,omitempty"`
 }
 
@@ -181,9 +183,11 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringVar(&stepConfig.FilenamePrefixForDownload, "filenamePrefixForDownload", os.Getenv("PIPER_filenamePrefixForDownload"), "Filename prefix for the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly")
 	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "If a warrning occures, the step will be set to unstable")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
-	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
+	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 60, "wait time in seconds till next status request in the backend system")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
 	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
+	cmd.Flags().StringVar(&stepConfig.ConditionOnAddonDescriptor, "conditionOnAddonDescriptor", os.Getenv("PIPER_conditionOnAddonDescriptor"), "TODO")
+	cmd.Flags().BoolVar(&stepConfig.UseAddonDescriptor, "useAddonDescriptor", false, "TODO")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("username")
@@ -193,7 +197,8 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.MarkFlagRequired("publishAllDownloadedResultFiles")
 	cmd.MarkFlagRequired("treatWarningsAsError")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
-	cmd.MarkFlagRequired("pollingIntervallInSeconds")
+	cmd.MarkFlagRequired("pollingIntervalInSeconds")
+	cmd.MarkFlagRequired("useAddonDescriptor")
 }
 
 // retrieve step metadata
@@ -373,7 +378,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Default:     360,
 					},
 					{
-						Name:        "pollingIntervallInSeconds",
+						Name:        "pollingIntervalInSeconds",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
@@ -403,6 +408,24 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_cpeValues"),
+					},
+					{
+						Name:        "conditionOnAddonDescriptor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_conditionOnAddonDescriptor"),
+					},
+					{
+						Name:        "useAddonDescriptor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "addonDescriptor",

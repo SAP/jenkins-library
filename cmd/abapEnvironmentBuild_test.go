@@ -148,3 +148,50 @@ func TestGenerateValues(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestEvaluateAddonDescriptor(t *testing.T) {
+	t.Parallel()
+	t.Run("", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := abapEnvironmentBuildOptions{}
+		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
+		config.AddonDescriptor = addonDescriptor
+		config.UseAddonDescriptor = true
+		config.ConditionOnAddonDescriptor = `[{"field":"Name","operator":"==","value":"/ITAPC1/I_CURRENCY"},{"field":"Status","operator":"!=","value":"R"}]`
+		// test
+		values, err := evaluateAddonDescriptor(&config)
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(values))
+	})
+}
+
+var addonDescriptor = `{
+	"addonProduct":"/ITAPC1/I_CURRENCZPRODUCT",
+	"addonVersion":"1.0.0",
+	"addonVersionAAK":"0001",
+	"AddonSpsLevel":"0000",
+	"AddonPatchLevel":"0000",
+	"TargetVectorID":"",
+	"repositories":[
+	  {
+		"name":"/ITAPC1/I_CURRENCY",
+		"tag":"",
+		"branch":"v1.0.0",
+		"commitID":"1cb96a82",
+		"version":"1.0.0",
+		"versionAAK":"0001",
+		"PackageName":"SAPK-004AAINITAPC1",
+		"PackageType":"AOI",
+		"SpLevel":"0000",
+		"PatchLevel":"0000",
+		"PredecessorCommitID":"",
+		"Status":"P",
+		"Namespace":"/ITAPC1/",
+		"SarXMLFilePath":"",
+		"languages":null,
+		"InBuildScope":false
+		}
+	  ]
+	}`

@@ -61,32 +61,48 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingIntervall tim
 }
 
 func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
-	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervallInSeconds))
+	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
 	if err := runAbapEnvironmentBuild(&config, telemetryData, &utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
-	values, err := generateValues(config)
-	if err != nil {
-		return errors.Wrap(err, "Generating the values from config failed")
-	}
+
 	conn := new(abapbuild.Connector)
 	if err := initConnection(conn, config, utils); err != nil {
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
-	addonDescriptor := new(abaputils.AddonDescriptor)
-	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err == nil {
-		//aus dem addonDescriptor values bauen, prüfen, jeweils den run laufen lassen
-	}
-
-	finalValues, err := runBuild(conn, config, utils, values)
+	valuesList, err := evaluateAddonDescriptor(config)
 	if err != nil {
-		return errors.Wrap(err, "Error during execution of build framework")
+		//TODO fehlerbehandlung
+		return errors.Wrap(err, "??")
 	}
-	cpe.abap.buildValues = finalValues
+	//TODO zwei methoden für die zwei zweige
+	if len(valuesList) > 0 {
+		for _, values := range valuesList {
+			//TODO die values mit den configvalues usw vermischen
+			//TODO damit die builds laufen lassen
+
+			finalValues, err := runBuild(conn, config, utils, values)
+			if err != nil {
+				return errors.Wrap(err, "Error during execution of build framework")
+			}
+			//TODO mit den finalValues muss ich das irgendiwe anders machen, aufakkumulieren oder so
+			cpe.abap.buildValues = finalValues
+		}
+	} else {
+		values, err := generateValues(config)
+		if err != nil {
+			return errors.Wrap(err, "Generating the values from config failed")
+		}
+		finalValues, err := runBuild(conn, config, utils, values)
+		if err != nil {
+			return errors.Wrap(err, "Error during execution of build framework")
+		}
+		cpe.abap.buildValues = finalValues
+	}
 	return nil
 }
 
@@ -280,39 +296,87 @@ func (vE *valuesEvaluator) appendValues(values []abapbuild.Value) {
 	vE.values = append(vE.values, values...)
 }
 
-type valuesAddonDescriptor struct {
-	values []abapbuild.Value
-	m      map[string]string
+//**********************************Evaluate AddonDescriptor**************************************************************
+type myRepo struct {
+	abaputils.Repository
 }
 
-func (vAD *valuesAddonDescriptor) initialize(repository abaputils.Repository) error {
-	fields := reflect.ValueOf(repository)
+type condition struct {
+	Field    string `json:"field"`
+	Operator string `json:"operator"`
+	Value    string `json:"value"`
+}
+
+func (mR *myRepo) checkCondition(config *abapEnvironmentBuildOptions) bool {
+	var conditions []condition
+	if err := json.Unmarshal([]byte(config.ConditionOnAddonDescriptor), &conditions); err != nil {
+		//TODO fehlerbehandlung
+	}
+	for _, cond := range conditions {
+		use, err := mR.amI(cond.Field, cond.Operator, cond.Value)
+		if err != nil {
+			//TODO fehlerbehandlung
+		}
+		if !use {
+			return use //false
+		}
+	}
+	return true
+}
+
+func (mR *myRepo) generateValues() abapbuild.Values {
+	var values abapbuild.Values
+
+	fields := reflect.ValueOf(mR.Repository)
 	typeOfS := fields.Type()
 	for i := 0; i < fields.NumField(); i++ {
 		var value abapbuild.Value
 		value.ValueID = typeOfS.Field(i).Name
 		value.Value = fields.Field(i).String()
-		vAD.values = append(vAD.values, value)
+		values.Values = append(values.Values, value)
 	}
-	return nil
+	return values
 }
 
-func (vAD *valuesAddonDescriptor) getField(field string) string {
-	r := reflect.ValueOf(vAD)
+func (mR *myRepo) getField(field string) string {
+	//TODO das müsste doch eigentlich auch ein fehler geben? wenn man nach einem feld sucht das es nicht gibt?
+	r := reflect.ValueOf(mR)
 	f := reflect.Indirect(r).FieldByName(field)
 	return string(f.String())
 }
 
-func (vAD *valuesAddonDescriptor) amI(field string, operator string, comp string) (bool, error) {
+func (mR *myRepo) amI(field string, operator string, comp string) (bool, error) {
 	operators := OperatorCallback{
 		"==": Equal,
 		"!=": Unequal,
 	}
-	name := vAD.getField(field)
+	name := mR.getField(field)
 	if fn, ok := operators[operator]; ok {
 		return fn(name, comp), nil
 	}
 	return false, errors.Errorf("Invalid operator %s", operator)
+}
+
+func evaluateAddonDescriptor(config *abapEnvironmentBuildOptions) ([]abapbuild.Values, error) {
+	var valuesList []abapbuild.Values
+	if len(config.AddonDescriptor) > 0 && config.UseAddonDescriptor {
+		addonDescriptor := new(abaputils.AddonDescriptor)
+		if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
+			//TODO fehlerbehandlung
+			return valuesList, errors.Wrap(err, "??")
+		}
+		for _, repo := range addonDescriptor.Repositories {
+			myRepo := myRepo{
+				Repository: repo,
+			}
+			use := myRepo.checkCondition(config)
+			if use {
+				values := myRepo.generateValues()
+				valuesList = append(valuesList, values)
+			}
+		}
+	}
+	return valuesList, nil
 }
 
 type OperatorCallback map[string]func(string, string) bool
