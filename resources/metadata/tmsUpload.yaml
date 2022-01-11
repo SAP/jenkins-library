@@ -34,13 +34,13 @@ spec:
             param: tmsServiceKey
       - name: customDescription
         type: string
-        description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit-ID.
+        description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.
         scope:
           - PARAMETERS
           - STEPS
       - name: namedUser
         type: string
-        description: Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'.
+        description: Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.
         default: Piper-Pipeline
         scope:
           - PARAMETERS
@@ -71,7 +71,7 @@ spec:
           - STEPS
       - name: nodeExtDescriptorMapping
         type: map[string]interface{}
-        description: 'Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: [nodeName: "example.mtaext", nodeName2: "example2.mtaext", …].'
+        description: 'Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: {"nodeName": "example.mtaext", "nodeName2": "example2.mtaext"}.'
         scope:
           - PARAMETERS
           - STEPS
