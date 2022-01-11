@@ -41,7 +41,7 @@ version = "5.9.1"
 [[build.buildpacks]]
 id = "paketo-buildpacks/nodejs"
 `
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
@@ -92,7 +92,7 @@ id = "test/inline"
 	shell = "/bin/bash"
 	inline = "date"
 `
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
@@ -119,7 +119,7 @@ exclude = [
 ]
 `
 
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 		utils.AddFile("project.toml", []byte(projectToml))
@@ -131,7 +131,7 @@ exclude = [
 	})
 
 	t.Run("fails with file not found", func(t *testing.T) {
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
@@ -143,7 +143,7 @@ exclude = [
 
 	t.Run("fails to parse corrupted project.toml", func(t *testing.T) {
 		projectToml := "test123"
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 		utils.AddFile("project.toml", []byte(projectToml))
