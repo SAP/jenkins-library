@@ -22,11 +22,11 @@ spec:
     params:
       - name: tmsServiceKey
         type: string
-        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
+        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used. 
         scope:
           - PARAMETERS
           - STEPS
-        mandatory: true
+          - STAGES
         secret: true
         resourceRef:
           - name: credentialsId
@@ -38,6 +38,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+          - STAGES
       - name: namedUser
         type: string
         description: Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.
@@ -45,12 +46,14 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+          - STAGES
       - name: nodeName
         type: string
         description: Defines the name of the node to which the *.mtar file should be uploaded.
         scope:
           - PARAMETERS
           - STEPS
+          - STAGES
         mandatory: true
       - name: mtaPath
         type: string
@@ -58,7 +61,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        mandatory: false
+          - STAGES
         resourceRef:
           - name: commonPipelineEnvironment
             param: mtarFilePath
@@ -69,18 +72,21 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+          - STAGES
       - name: nodeExtDescriptorMapping
         type: map[string]interface{}
         description: 'Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: {"nodeName": "example.mtaext", "nodeName2": "example2.mtaext"}.'
         scope:
           - PARAMETERS
           - STEPS
+          - STAGES
       - name: proxy
         type: string
         description: Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.
         scope:
           - PARAMETERS
           - STEPS
+          - STAGES
   outputs:
     resources:
       - name: influx
