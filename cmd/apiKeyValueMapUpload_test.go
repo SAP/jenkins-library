@@ -11,20 +11,7 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 
 	t.Run("Successfull Api Key Value Map Create Test", func(t *testing.T) {
 		// init
-		apiServiceKey := `{
-			"oauth": {
-				"url": "https://demo",
-				"clientid": "demouser",
-				"clientsecret": "******",
-				"tokenurl": "https://demo/oauth/token"
-			}
-		}`
-		config := apiKeyValueMapUploadOptions{
-			APIServiceKey:   apiServiceKey,
-			Key:             "demo",
-			Value:           "name",
-			KeyValueMapName: "demoMap",
-		}
+		config := getDefaultOptions()
 		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "PositiveCase"}
 		// test
 		err := runApiKeyValueMapUpload(&config, nil, &httpClient)
@@ -42,20 +29,7 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 
 	t.Run("Failed case of API Key Value Map Create Test", func(t *testing.T) {
 		// init
-		apiServiceKey := `{
-			"oauth": {
-				"url": "https://demo",
-				"clientid": "demouser",
-				"clientsecret": "******",
-				"tokenurl": "https://demo/oauth/token"
-			}
-		}`
-		config := apiKeyValueMapUploadOptions{
-			APIServiceKey:   apiServiceKey,
-			Key:             "demo",
-			Value:           "name",
-			KeyValueMapName: "demoMap",
-		}
+		config := getDefaultOptions()
 
 		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "Negative"}
 
@@ -68,20 +42,7 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 
 	t.Run("Test API Key Value Map payload", func(t *testing.T) {
 		// init
-		apiServiceKey := `{
-			"oauth": {
-				"url": "https://demo",
-				"clientid": "demouser",
-				"clientsecret": "******",
-				"tokenurl": "https://demo/oauth/token"
-			}
-		}`
-		config := apiKeyValueMapUploadOptions{
-			APIServiceKey:   apiServiceKey,
-			Key:             "demo",
-			Value:           "name",
-			KeyValueMapName: "demoMap",
-		}
+		config := getDefaultOptions()
 
 		// test
 		payload, err := createJSONPayload(&config)
@@ -92,20 +53,7 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 
 	t.Run("Http Response not accepted Test case", func(t *testing.T) {
 		// init
-		apiServiceKey := `{
-			"oauth": {
-				"url": "https://demo",
-				"clientid": "demouser",
-				"clientsecret": "******",
-				"tokenurl": "https://demo/oauth/token"
-			}
-		}`
-		config := apiKeyValueMapUploadOptions{
-			APIServiceKey:   apiServiceKey,
-			Key:             "demo",
-			Value:           "name",
-			KeyValueMapName: "demoMap",
-		}
+		config := getDefaultOptions()
 
 		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "HttpResponseNotAccepted"}
 
@@ -118,20 +66,7 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 
 	t.Run("Http Response not accepted Test case", func(t *testing.T) {
 		// init
-		apiServiceKey := `{
-			"oauth": {
-				"url": "https://demo",
-				"clientid": "demouser",
-				"clientsecret": "******",
-				"tokenurl": "https://demo/oauth/token"
-			}
-		}`
-		config := apiKeyValueMapUploadOptions{
-			APIServiceKey:   apiServiceKey,
-			Key:             "demo",
-			Value:           "name",
-			KeyValueMapName: "demoMap",
-		}
+		config := getDefaultOptions()
 
 		httpClient := httpMockCpis{CPIFunction: "ApiKeyValueMapUpload", ResponseBody: ``, TestType: "NilHttpResponse"}
 
@@ -142,4 +77,20 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 		assert.EqualError(t, err, "HTTP \"POST\" request to \"https://demo/apiportal/api/1.0/Management.svc/KeyMapEntries\" failed with error: invalid payalod")
 	})
 
+}
+
+func getDefaultOptions() apiKeyValueMapUploadOptions {
+	return apiKeyValueMapUploadOptions{
+		APIServiceKey: `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`,
+		Key:             "demo",
+		Value:           "name",
+		KeyValueMapName: "demoMap",
+	}
 }
