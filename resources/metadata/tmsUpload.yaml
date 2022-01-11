@@ -22,7 +22,7 @@ spec:
     params:
       - name: tmsServiceKey
         type: string
-        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used. 
+        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
         scope:
           - PARAMETERS
           - STEPS
