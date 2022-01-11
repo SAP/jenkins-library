@@ -169,9 +169,8 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
 
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.")
-	cmd.Flags().StringSliceVar(&stepConfig.StashContent, "stashContent", []string{}, "If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: [\"deployDescriptor\", \"buildResult\", …].")
+	cmd.Flags().StringSliceVar(&stepConfig.StashContent, "stashContent", []string{`buildResult`}, "If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: [\"deployDescriptor\", \"buildResult\"]. By default, the build result is considered.")
 
-	cmd.MarkFlagRequired("tmsServiceKey")
 	cmd.MarkFlagRequired("nodeName")
 }
 
@@ -201,9 +200,9 @@ func tmsUploadMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STEPS"},
+						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_tmsServiceKey"),
 					},
@@ -215,7 +214,7 @@ func tmsUploadMetadata() config.StepData {
 								Param: "git/commitId",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STEPS"},
+						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -224,7 +223,7 @@ func tmsUploadMetadata() config.StepData {
 					{
 						Name:        "namedUser",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -233,7 +232,7 @@ func tmsUploadMetadata() config.StepData {
 					{
 						Name:        "nodeName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
@@ -247,7 +246,7 @@ func tmsUploadMetadata() config.StepData {
 								Param: "mtarFilePath",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STEPS"},
+						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -256,7 +255,7 @@ func tmsUploadMetadata() config.StepData {
 					{
 						Name:        "mtaVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -265,7 +264,7 @@ func tmsUploadMetadata() config.StepData {
 					{
 						Name:        "nodeExtDescriptorMapping",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -273,7 +272,7 @@ func tmsUploadMetadata() config.StepData {
 					{
 						Name:        "proxy",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -282,11 +281,11 @@ func tmsUploadMetadata() config.StepData {
 					{
 						Name:        "stashContent",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     []string{`buildResult`},
 					},
 				},
 			},
