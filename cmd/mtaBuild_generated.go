@@ -43,6 +43,7 @@ type mtaBuildOptions struct {
 type mtaBuildCommonPipelineEnvironment struct {
 	mtarFilePath string
 	custom       struct {
+		mtaBuildToolDesc  string
 		mtarPublishedURL  string
 		buildSettingsInfo string
 	}
@@ -55,6 +56,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		value    interface{}
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
+		{category: "custom", name: "mtaBuildToolDesc", value: p.custom.mtaBuildToolDesc},
 		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
@@ -68,7 +70,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
@@ -132,8 +134,8 @@ func MtaBuildCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -425,9 +427,10 @@ func mtaBuildMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "mtarFilePath"},
-							{"Name": "custom/mtarPublishedUrl"},
-							{"Name": "custom/buildSettingsInfo"},
+							{"name": "mtarFilePath"},
+							{"name": "custom/mtaBuildToolDesc"},
+							{"name": "custom/mtarPublishedUrl"},
+							{"name": "custom/buildSettingsInfo"},
 						},
 					},
 				},
