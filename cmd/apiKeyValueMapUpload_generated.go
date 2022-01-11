@@ -22,7 +22,7 @@ type apiKeyValueMapUploadOptions struct {
 	KeyValueMapName string `json:"keyValueMapName,omitempty"`
 }
 
-// ApiKeyValueMapUploadCommand Upload an API key value map artifact into the API Portal
+// ApiKeyValueMapUploadCommand Create an API key value map artifact in the API Portal
 func ApiKeyValueMapUploadCommand() *cobra.Command {
 	const STEP_NAME = "apiKeyValueMapUpload"
 
