@@ -88,9 +88,8 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 	//Define Client
 	var details abaputils.ConnectionDetailsHTTP
-	var abapCom abaputils.Communication
 
-	abapCom = GetABAPCom()
+	abapCom := GetABAPCom()
 	details, err = abapCom.GetAbapCommunicationArrangementInfo(subOptions, "")
 	client := piperhttp.Client{}
 	cookieJar, _ := cookiejar.New(nil)
@@ -136,7 +135,10 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, deta
 		}
 	}
 	if err == nil {
-		resp, err = getOdataResponse("POST", details, atcSystemConfiguartionJsonFile, client)
+		abapEndpoint := details.URL
+		details.URL = abapEndpoint + "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001/configuration"
+		log.Entry().Debugf("Request Body: %s", atcSystemConfiguartionJsonFile)
+		resp, err = triggerOdata("POST", details, atcSystemConfiguartionJsonFile, client)
 	}
 	if err == nil {
 		err = parseOdataResponse(resp)
@@ -144,7 +146,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, deta
 	if err != nil {
 		return fmt.Errorf("Pushing ATC System Configuration failed: %w", err)
 	}
-	return err
+	return nil
 }
 
 func parseOdataResponse(resp *http.Response) error {
@@ -157,6 +159,7 @@ func parseOdataResponse(resp *http.Response) error {
 		if len(body) == 0 {
 			return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
 		}
+
 	}
 	if err != nil {
 		return fmt.Errorf("Parsing oData result failed: %w", err)
@@ -164,18 +167,18 @@ func parseOdataResponse(resp *http.Response) error {
 	return nil
 }
 
-func getOdataResponse(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func triggerOdata(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	header := make(map[string][]string)
 	header["x-csrf-token"] = []string{details.XCsrfToken}
 	header["Accept"] = []string{"application/json"}
 	header["Content-Type"] = []string{"application/json"}
-	abapEndpoint := details.URL
-	details.URL = abapEndpoint + "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001/configuration"
+
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
 		return resp, fmt.Errorf("Sending Request for ATC System Configuration failed: %w", err)
 	}
+
 	return resp, nil
 }
 
