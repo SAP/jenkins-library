@@ -13,6 +13,7 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 
 	"github.com/SAP/jenkins-library/pkg/format"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
