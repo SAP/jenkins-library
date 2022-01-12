@@ -1,6 +1,7 @@
 package npm
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -20,9 +21,9 @@ func TestNewNPMRC(t *testing.T) {
 		want string
 	}{
 		{name: "current dir", args: args{""}, want: configFilename},
-		{name: "sub dir", args: args{mock.Anything}, want: mock.Anything + "/.npmrc"},
-		{name: "file path in current dir", args: args{".npmrc"}, want: ".npmrc"},
-		{name: "file path in sub dir", args: args{mock.Anything + "/.npmrc"}, want: mock.Anything + "/.npmrc"},
+		{name: "sub dir", args: args{mock.Anything}, want: filepath.Join(mock.Anything, ".piperStagingNpmrc")},
+		{name: "file path in current dir", args: args{".piperStagingNpmrc"}, want: ".piperStagingNpmrc"},
+		{name: "file path in sub dir", args: args{filepath.Join(mock.Anything, ".piperStagingNpmrc")}, want: filepath.Join(mock.Anything, ".piperStagingNpmrc")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
