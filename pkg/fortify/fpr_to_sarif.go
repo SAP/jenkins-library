@@ -44,19 +44,20 @@ type CreatedTS struct {
 	Time    string   `xml:"time,attr"`
 }
 
-// UUID
+// UUIF
 type UUID struct {
 	XMLName xml.Name `xml:"UUID"`
 	Uuid    string   `xml:",innerxml"`
 }
 
-// LOC These structures are relevant to the Build object
+// LOC
 type LOC struct {
 	XMLName  xml.Name `xml:"LOC"`
 	LocType  string   `xml:"type,attr"`
 	LocValue string   `xml:",innerxml"`
 }
 
+// These structures are relevant to the Build object
 // Build
 type Build struct {
 	XMLName        xml.Name `xml:"Build"`
