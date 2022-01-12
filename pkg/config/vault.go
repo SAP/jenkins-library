@@ -284,6 +284,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 				envVariable = vaultCredentialEnvPrefix + convertEnvVar(secretKey) + "_BASE64"
 				log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, CredentialUtils.EncodeString(secretValue))
+				log.Entry().Debugf("value is %v", os.Getenv(envVariable))
 				matched = true
 			}
 		}
