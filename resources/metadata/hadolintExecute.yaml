@@ -1,0 +1,95 @@
+metadata:
+  name: hadolintExecute
+  description: Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
+  longDescription: |-
+    Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
+    The linter is parsing the Dockerfile into an abstract syntax tree (AST) and performs rules on top of the AST.
+spec:
+  inputs:
+    secrets:
+      - name: configurationCredentialsId
+        type: jenkins
+        description: Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.
+    params:
+      - name: configurationUrl
+        type: string
+        description: URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: null
+      - name: configurationUsername
+        aliases:
+          - name: username
+        type: string
+        description: The username to authenticate
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - type: secret
+            name: configurationCredentialsId
+            param: username
+          - type: vaultSecret
+            name: hadolintConfigSecretName
+            default: hadolintConfig
+      - name: configurationPassword
+        aliases:
+          - name: password
+        type: string
+        description: The password to authenticate
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - type: secret
+            name: configurationCredentialsId
+            param: password
+          - type: vaultSecret
+            name: hadolintConfigSecretName
+            default: hadolintConfig
+      - name: dockerFile
+        aliases:
+          - name: dockerfile
+        type: string
+        description: Dockerfile to be used for the assessment.
+        mandatory: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ./Dockerfile
+      - name: configurationFile
+        type: string
+        description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: .hadolint.yaml
+      - name: reportFile
+        type: string
+        description: Name of the result file used locally within the step.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: hadolint.xml
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - name: hadolint
+      image: hadolint/hadolint:latest-alpine

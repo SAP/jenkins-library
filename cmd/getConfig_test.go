@@ -50,7 +50,7 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"contextConfig", "output", "parametersJSON", "stageConfig", "stageConfigAcceptedParams", "stepMetadata", "stepName"}
+		exp := []string{"contextConfig", "output", "outputFile", "parametersJSON", "stageConfig", "stageConfigAcceptedParams", "stepMetadata", "stepName"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
@@ -310,26 +310,4 @@ func TestPrepareOutputEnvironment(t *testing.T) {
 	assert.NoDirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path2", "param2"))
 	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement0", "influx0_0"))
 	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement1", "influx0_1"))
-}
-
-func TestResolveMetadata(t *testing.T) {
-
-	t.Run("Succes - stepName", func(t *testing.T) {
-		configOptions.stepName = "githubCreateIssue"
-		stepData, err := resolveMetadata()
-		assert.NoError(t, err)
-		assert.Equal(t, "githubCreateIssue", stepData.Metadata.Name)
-	})
-
-	t.Run("Error - wrong stepName", func(t *testing.T) {
-		configOptions.stepName = "notExisting"
-		_, err := resolveMetadata()
-		assert.EqualError(t, err, "could not retrieve by stepName notExisting")
-	})
-
-	t.Run("Error - missing input", func(t *testing.T) {
-		configOptions.stepName = ""
-		_, err := resolveMetadata()
-		assert.EqualError(t, err, "either one of stepMetadata or stepName parameter has to be passed")
-	})
 }

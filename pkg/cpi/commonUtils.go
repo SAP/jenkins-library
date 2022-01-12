@@ -3,9 +3,14 @@ package cpi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
+	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -17,10 +22,33 @@ type CommonUtils interface {
 	GetBearerToken() (string, error)
 }
 
+//HttpCPIUtils for CPI
+type HttpCPIUtils interface {
+	HandleHTTPFileDownloadResponse() error
+}
+
+//HTTPUploadUtils for CPI
+type HTTPUploadUtils interface {
+	HandleHTTPFileUploadResponse() error
+}
+
 //TokenParameters struct
 type TokenParameters struct {
 	TokenURL, Username, Password string
 	Client                       piperhttp.Sender
+}
+
+//HttpParameters struct
+type HttpFileDownloadRequestParameters struct {
+	ErrMessage, FileDownloadPath string
+	Response                     *http.Response
+}
+
+//HTTPFileUploadRequestParameters struct
+type HttpFileUploadRequestParameters struct {
+	ErrMessage, FilePath, HTTPMethod, HTTPURL, SuccessMessage string
+	Response                                                  *http.Response
+	HTTPErr                                                   error
 }
 
 // ServiceKey contains information about a CPI service key
@@ -90,4 +118,74 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
+}
+
+// HandleHTTPFileDownloadResponse - Handle the file download response for http multipart response
+func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) HandleHTTPFileDownloadResponse() error {
+	response := httpFileDownloadRequestParameters.Response
+	contentDisposition := response.Header.Get("Content-Disposition")
+	disposition, params, err := mime.ParseMediaType(contentDisposition)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition %s", disposition)
+	}
+	filename := params["filename"]
+
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
+
+	if response.StatusCode == 200 {
+		workspaceRelativePath := httpFileDownloadRequestParameters.FileDownloadPath
+		err = os.MkdirAll(workspaceRelativePath, 0755)
+		// handling error while creating a workspce directoy for file download, if one not exist already!
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create workspace directory")
+		}
+		zipFileName := filepath.Join(workspaceRelativePath, filename)
+		file, err := os.Create(zipFileName)
+		// handling error while creating a file in the filesystem
+		if err != nil {
+			return errors.Wrap(err, "failed to create zip archive of api proxy")
+		}
+		_, err = io.Copy(file, response.Body)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	responseBody, readErr := ioutil.ReadAll(response.Body)
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+	}
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, response.StatusCode)
+	return errors.Errorf("%s, Response Status code: %v", httpFileDownloadRequestParameters.ErrMessage, response.StatusCode)
+}
+
+// HandleHTTPFileUploadResponse - Handle the file upload response
+func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTTPFileUploadResponse() error {
+	response := httpFileUploadRequestParameters.Response
+	httpErr := httpFileUploadRequestParameters.HTTPErr
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
+
+	if response == nil {
+		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
+	if response.StatusCode == http.StatusOK {
+		log.Entry().
+			WithField("Created Artifact", httpFileUploadRequestParameters.FilePath).
+			Info(httpFileUploadRequestParameters.SuccessMessage)
+		return nil
+	}
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(response.Body)
+		if readErr != nil {
+			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody))
+	}
+	return errors.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
 }

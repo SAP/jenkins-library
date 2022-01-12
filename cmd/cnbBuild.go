@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -12,22 +11,22 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/project/metadata"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/docker/cli/cli/config/configfile"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
 const (
-	detectorPath = "/cnb/lifecycle/detector"
-	builderPath  = "/cnb/lifecycle/builder"
-	exporterPath = "/cnb/lifecycle/exporter"
+	creatorPath  = "/cnb/lifecycle/creator"
+	platformPath = "/tmp/platform"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -107,14 +106,17 @@ func isDir(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
-func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
-	for _, path := range []string{detectorPath, builderPath, exporterPath} {
-		exists, err := utils.FileExists(path)
-		if err != nil || !exists {
-			return exists, err
-		}
+func isBuilder(utils cnbutils.BuildUtils) error {
+	exists, err := utils.FileExists(creatorPath)
+	if err != nil {
+		return err
 	}
-	return true, nil
+
+	if !exists {
+		return fmt.Errorf("binary '%s' not found", creatorPath)
+	}
+
+	return nil
 }
 
 func isZip(path string) bool {
@@ -122,7 +124,7 @@ func isZip(path string) bool {
 
 	switch {
 	case err == nil:
-		r.Close()
+		_ = r.Close()
 		return true
 	case err == zip.ErrFormat:
 		return false
@@ -154,7 +156,12 @@ func copyFile(source, target string, utils cnbutils.BuildUtils) error {
 func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
 	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
 	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile, include, exclude) {
+		relPath, err := filepath.Rel(source, sourceFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+		}
+		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
 			dir, err := isDir(sourceFile)
 			if err != nil {
@@ -182,8 +189,7 @@ func copyProject(source, target string, include, exclude *ignore.GitIgnore, util
 	return nil
 }
 
-func extractZip(source, target string, utils cnbutils.BuildUtils) error {
-
+func extractZip(source, target string) error {
 	if isZip(source) {
 		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
 		_, err := piperutils.Unzip(source, target)
@@ -215,18 +221,29 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 	return source, nil
 }
 
+func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
+	if c.BuildEnvVars == nil {
+		c.BuildEnvVars = vars
+
+		return
+	}
+
+	for k, v := range vars {
+		_, exists := c.BuildEnvVars[k]
+
+		if !exists {
+			c.BuildEnvVars[k] = v
+		}
+	}
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
-	exists, err := isBuilder(utils)
-
+	err = isBuilder(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to check if dockerImage is a valid builder")
-	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("the provided dockerImage is not a valid builder")
+		return errors.Wrap(err, "the provided dockerImage is not a valid builder")
 	}
 
 	include := ignore.CompileIgnoreLines("**/*")
@@ -245,12 +262,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
 		}
 
+		config.mergeEnvVars(descriptor.EnvVars)
+
 		if (config.Buildpacks == nil || len(config.Buildpacks) == 0) && len(descriptor.Buildpacks) > 0 {
 			config.Buildpacks = descriptor.Buildpacks
-		}
-
-		if (config.BuildEnvVars == nil || len(config.BuildEnvVars) == 0) && len(descriptor.EnvVars) > 0 {
-			config.BuildEnvVars = descriptor.EnvVars
 		}
 
 		if descriptor.Exclude != nil {
@@ -262,10 +277,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	platformPath := "/platform"
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
-		platformPath = "/tmp/platform"
 		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -273,37 +286,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	err = bindings.ProcessBindings(utils, httpClient, platformPath, config.Bindings)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed process bindings")
+	}
+
 	dockerConfigFile := ""
-	dockerConfig := &configfile.ConfigFile{}
-	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
 		}
-		dockerConfigJSON, err = utils.FileRead(dockerConfigFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read DockerConfigJSON file '%v'", config.DockerConfigJSON)
-		}
-	}
-
-	err = json.Unmarshal(dockerConfigJSON, dockerConfig)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to parse DockerConfigJSON file '%v'", config.DockerConfigJSON)
-	}
-
-	auth := map[string]string{}
-	for registry, value := range dockerConfig.AuthConfigs {
-		auth[registry] = fmt.Sprintf("Basic %s", value.Auth)
-	}
-
-	cnbRegistryAuth, err := json.Marshal(auth)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to marshal DockerConfigJSON")
 	}
 
 	target := "/workspace"
@@ -330,12 +325,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	} else {
-		err = extractZip(source, target, utils)
+		err = extractZip(source, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	}
+
+	metadata.WriteProjectMetadata(GeneralConfig.EnvRootPath, utils)
 
 	var buildpacksPath = "/cnb/buildpacks"
 	var orderPath = "/cnb/order.toml"
@@ -351,29 +348,41 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	var containerImage string
-	var containerImageTag string
+	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(dockerConfigFile, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
+	}
 
-	if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		var containerRegistry string
-		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-			containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-			}
-		} else {
-			containerRegistry = config.ContainerRegistryURL
+	if dockerConfigFile != "" {
+		err = utils.FileRemove(dockerConfigFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrap(err, "failed to remove docker config.json file")
 		}
+	}
 
-		containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
-		containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.imageNameTag = containerImage
-	} else {
+	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
+
+	var containerRegistry string
+	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
+		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
+		}
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+	} else {
+		containerRegistry = config.ContainerRegistryURL
+		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
+	}
+
+	containerImage := path.Join(containerRegistry, config.ContainerImageName)
+	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
@@ -387,37 +396,31 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
-		log.Entry().Info("skipping updation of certificates")
+		log.Entry().Info("skipping certificates update")
 	}
 
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
-	}
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
 
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
-	}
-
-	targets := []string{
-		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+	creatorArgs := []string{
+		"-no-color",
+		"-buildpacks", buildpacksPath,
+		"-order", orderPath,
+		"-platform", platformPath,
 	}
 
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(targets, target) {
-			targets = append(targets, target)
+		if !piperutils.ContainsString(creatorArgs, target) {
+			creatorArgs = append(creatorArgs, "-tag", target)
 		}
 	}
 
-	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable(exporterPath, targets...)
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, containerImageTag))
+	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
+		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
 
 	return nil

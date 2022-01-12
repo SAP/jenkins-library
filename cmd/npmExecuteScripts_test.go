@@ -26,6 +26,8 @@ func newNpmMockUtilsBundle() NpmMockUtilsBundle {
 }
 
 func TestNpmExecuteScripts(t *testing.T) {
+	cpe := npmExecuteScriptsCommonPipelineEnvironment{}
+
 	t.Run("Call with packagesList", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"src/package.json"}}
 		utils := npm.NewNpmMockUtilsBundle()
@@ -33,7 +35,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, PackagesList: config.BuildDescriptorList}}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -45,7 +47,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, ExcludeList: config.BuildDescriptorExcludeList}}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -57,7 +59,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, ScriptOptions: config.ScriptOptions}}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -69,7 +71,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts}}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -81,7 +83,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts}}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -93,7 +95,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, VirtualFrameBuffer: config.VirtualFrameBuffer}}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -109,7 +111,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		npmExecutor := npm.Execute{Utils: &utils, Options: options}
 
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
@@ -130,7 +132,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		npmExecutor := npm.Execute{Utils: &utils, Options: options}
-		err := runNpmExecuteScripts(&npmExecutor, &config)
+		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
 
 		assert.NoError(t, err)
 	})

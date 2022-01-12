@@ -8,6 +8,7 @@ The following steps are executed in this stage:
 
 - [abapAddonAssemblyKitCheckPV](../../../steps/abapAddonAssemblyKitCheckPV.md)
 - [abapAddonAssemblyKitCheckCVs](../../../steps/abapAddonAssemblyKitCheckCVs.md)
+- [abapAddonAssemblyKitReserveNextPackages](../../../steps/abapAddonAssemblyKitReserveNextPackages.md)
 
 ## Stage Parameters
 

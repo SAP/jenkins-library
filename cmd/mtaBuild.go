@@ -8,10 +8,13 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -158,7 +161,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
-	mtaYamlFile := "mta.yaml"
+	mtaYamlFile := filepath.Join(getSourcePath(config), "mta.yaml")
 	mtaYamlFileExists, err := utils.FileExists(mtaYamlFile)
 
 	if err != nil {
@@ -197,15 +200,13 @@ func runMtaBuild(config mtaBuildOptions,
 	if len(config.Extensions) != 0 {
 		call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 	}
-	if config.Source != "" && config.Source != "./" {
-		call = append(call, "--source", config.Source)
-	} else {
-		call = append(call, "--source", "./")
-	}
-	if config.Target != "" && config.Target != "./" {
-		call = append(call, "--target", config.Target)
-	} else {
-		call = append(call, "--target", "./")
+
+	call = append(call, "--source", getSourcePath(config))
+	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
+
+	if config.Jobs > 0 {
+		call = append(call, "--mode=verbose")
+		call = append(call, "--jobs="+strconv.Itoa(config.Jobs))
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
@@ -227,7 +228,29 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	commonPipelineEnvironment.mtarFilePath = mtarName
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "mtaBuild"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	mtaConfig := buildsettings.BuildOptions{
+		Profiles:           config.Profiles,
+		GlobalSettingsFile: config.GlobalSettingsFile,
+		Publish:            config.Publish,
+		BuildSettingsInfo:  config.BuildSettingsInfo,
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		DockerImage:        dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&mtaConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
+	commonPipelineEnvironment.mtarFilePath = filepath.ToSlash(getMtarFilePath(config, mtarName))
+	commonPipelineEnvironment.custom.mtaBuildToolDesc = filepath.ToSlash(mtaYamlFile)
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
@@ -471,4 +494,50 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 	}
 
 	return id, nil
+}
+
+// the "source" path locates the project's root
+func getSourcePath(config mtaBuildOptions) string {
+	path := config.Source
+	if path == "" {
+		path = "./"
+	}
+	return filepath.FromSlash(path)
+}
+
+// target defines a subfolder of the project's root
+func getTargetPath(config mtaBuildOptions) string {
+	path := config.Target
+	if path == "" {
+		path = "./"
+	}
+	return filepath.FromSlash(path)
+}
+
+// the "mtar" path resides below the project's root
+// path=<config.source>/<config.target>/<mtarname>
+func getMtarFileRoot(config mtaBuildOptions) string {
+	sourcePath := getSourcePath(config)
+	targetPath := getTargetPath(config)
+
+	return filepath.FromSlash(filepath.Join(sourcePath, targetPath))
+}
+
+func getMtarFilePath(config mtaBuildOptions, mtarName string) string {
+	root := getMtarFileRoot(config)
+
+	if root == "" || root == filepath.FromSlash("./") {
+		return mtarName
+	}
+
+	return filepath.FromSlash(filepath.Join(root, mtarName))
+}
+
+func getAbsPath(path string) string {
+	abspath, err := filepath.Abs(path)
+	// ignore error, pass customers path value in case of trouble
+	if err != nil {
+		abspath = path
+	}
+	return filepath.FromSlash(abspath)
 }

@@ -16,10 +16,12 @@ import (
 
 // Connector : Connector Utility Wrapping http client
 type Connector struct {
-	Client         piperhttp.Sender
-	DownloadClient piperhttp.Downloader
-	Header         map[string][]string
-	Baseurl        string
+	Client          piperhttp.Sender
+	DownloadClient  piperhttp.Downloader
+	Header          map[string][]string
+	Baseurl         string
+	MaxRuntime      time.Duration // just as handover parameter for polling functions
+	PollingInterval time.Duration // just as handover parameter for polling functions
 }
 
 // ConnectorConfiguration : Handover Structure for Connector Creation
@@ -34,6 +36,7 @@ type ConnectorConfiguration struct {
 	Password            string
 	AddonDescriptor     string
 	MaxRuntimeInMinutes int
+	CertificateNames    []string
 }
 
 // HTTPSendLoader : combine both interfaces [sender, downloader]
@@ -114,7 +117,7 @@ func (conn Connector) Download(appendum string, downloadPath string) error {
 }
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
-func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) {
+func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
@@ -128,6 +131,12 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 		CookieJar: cookieJar,
 	})
 	conn.Baseurl = aAKaaSEndpoint
+
+	if username == "" || password == "" {
+		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
+	} else {
+		return nil
+	}
 }
 
 // InitBuildFramework : initialize Connector for communication with ABAP SCP instance
@@ -162,9 +171,10 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	})
 	cookieJar, _ := cookiejar.New(nil)
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  connectionDetails.User,
-		Password:  connectionDetails.Password,
-		CookieJar: cookieJar,
+		Username:     connectionDetails.User,
+		Password:     connectionDetails.Password,
+		CookieJar:    cookieJar,
+		TrustedCerts: config.CertificateNames,
 	})
 	conn.Baseurl = connectionDetails.URL
 
@@ -211,9 +221,13 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
 		if err != nil {
-			errorbody, _ := ioutil.ReadAll(response.Body)
-			response.Body.Close()
-			return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+			if response != nil && response.Body != nil {
+				errorbody, _ := ioutil.ReadAll(response.Body)
+				response.Body.Close()
+				return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+			} else {
+				return err
+			}
 		}
 
 		response.Body.Close()

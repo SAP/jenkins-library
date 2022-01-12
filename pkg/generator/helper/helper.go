@@ -56,6 +56,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	{{ if .OutputResources -}}
+	{{ $reportsExist := false -}}
+	{{ range $notused, $oRes := .OutputResources -}}
+	{{ if eq (index $oRes "type") "reports" -}}{{ $reportsExist = true -}}{{ end -}}
+	{{ end -}}
+	{{ if $reportsExist -}}
+	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/gcs"
+	"reflect"
+	"strings"
+	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -70,7 +80,7 @@ type {{ .StepName }}Options struct {
 	{{ if ne (has $value.Name $names) true -}}
 	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"" +
 	"{{ if or $value.PossibleValues $value.MandatoryIf}} validate:\"" +
-	"{{ if $value.PossibleValues }}oneof={{ range $i,$a := $value.PossibleValues }}{{if gt $i 0 }} {{ end }}{{.}}{{ end }}{{ end }}" +
+	"{{ if $value.PossibleValues }}possible-values={{ range $i,$a := $value.PossibleValues }}{{if gt $i 0 }} {{ end }}{{.}}{{ end }}{{ end }}" +
 	"{{ if and $value.PossibleValues $value.MandatoryIf }},{{ end }}" +
 	"{{ if $value.MandatoryIf }}required_if={{ range $i,$a := $value.MandatoryIf }}{{ if gt $i 0 }} {{ end }}{{ $a.Name | title }} {{ $a.Value }}{{ end }}{{ end }}" +
 	"\"{{ end }}`" + `
@@ -93,6 +103,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
@@ -124,6 +136,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -140,31 +153,35 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				{{- range $notused, $oRes := .OutputResources }}
-				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}){{ end }}
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				{{ index $oRes "name" }}.persist({{ if eq (index $oRes "type") "reports" -}}stepConfig{{- else -}}
+					{{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
+				){{- end }}
+				config.RemoveVaultSecretFiles()
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
+				splunkClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Token,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
-			telemetryData.ErrorCode = "0"
+			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -237,7 +254,7 @@ func {{ .StepName }}Metadata() config.StepData {
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}{{ $scope | quote }},{{ end }}{{ "}" }},
 						Type:      {{ $value.Type | quote }},
 						Mandatory: {{ $value.Mandatory }},
-						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: {{ $alias.Name | quote }}{{ "}" }},{{ end }}{{ "}" }},
+						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: {{ $alias.Name | quote }}{{ if $alias.Deprecated }}, Deprecated: {{$alias.Deprecated}}{{ end }}{{ "}" }},{{ end }}{{ "}" }},
 						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
 						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{- end }}
 					},{{ end }}
@@ -278,9 +295,14 @@ func {{ .StepName }}Metadata() config.StepData {
 						{{ if $res.Type }}Type: {{ $res.Type | quote }}, {{- end }}
 						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
 						{{ range $i, $p := $res.Parameters }}
-							{{ if $p.name}}{"Name": {{ $p.name | quote }}},{{ end -}}
-							{{ if $p.fields}}{"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} } },{{ end -}}
-							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} } },{{ end -}}
+							{{ if $p }}{ {{- end -}}
+							{{ if $p.name}}"name": {{ $p.name | quote }},{{ end -}}
+							{{ if $p.fields}}"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} },{{ end -}}
+							{{ if $p.tags}}"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} },{{ end -}}
+							{{ if $p.filePattern}}"filePattern": {{ $p.filePattern | quote }},{{ end -}}
+							{{ if $p.type}}"type": {{ $p.type | quote }},{{ end -}}
+							{{ if $p.subFolder}}"subFolder": {{ $p.subFolder | quote }},{{ end -}}
+							{{ if $p }}}, {{- end -}}
 						{{ end }}
 						{{ if $res.Parameters -}} }, {{- end }}
 						{{- if $res.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $res.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}
@@ -484,6 +506,10 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		stepName := stepData.Metadata.Name
 		fmt.Printf("Step name: %v\n", stepName)
+		if stepName+".yaml" != filepath.Base(configFilePath) {
+			fmt.Printf("Expected file %s to have name %s.yaml (<stepName>.yaml)\n", configFilePath, filepath.Join(filepath.Dir(configFilePath), stepName))
+			os.Exit(1)
+		}
 		allSteps.Steps = append(allSteps.Steps, stepName)
 
 		for _, parameter := range stepData.Spec.Inputs.Parameters {
@@ -627,6 +653,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 	for _, res := range stepData.Spec.Outputs.Resources {
 		currentResource := map[string]string{}
 		currentResource["name"] = res.Name
+		currentResource["type"] = res.Type
 
 		switch res.Type {
 		case "piperEnvironment":
@@ -684,6 +711,27 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["def"] = def
 			currentResource["objectname"] = influxResource.StructName()
 			outputResources = append(outputResources, currentResource)
+		case "reports":
+			var reportsResource ReportsResource
+			reportsResource.Name = res.Name
+			reportsResource.StepName = stepData.Metadata.Name
+			for _, param := range res.Parameters {
+				filePattern, _ := param["filePattern"].(string)
+				paramRef, _ := param["paramRef"].(string)
+				if filePattern == "" && paramRef == "" {
+					return outputResources, errors.New("both filePattern and paramRef cannot be empty at the same time")
+				}
+				stepResultType, _ := param["type"].(string)
+				reportsParam := ReportsParameter{FilePattern: filePattern, ParamRef: paramRef, Type: stepResultType}
+				reportsResource.Parameters = append(reportsResource.Parameters, reportsParam)
+			}
+			def, err := reportsResource.StructString()
+			if err != nil {
+				return outputResources, err
+			}
+			currentResource["def"] = def
+			currentResource["objectname"] = reportsResource.StructName()
+			outputResources = append(outputResources, currentResource)
 		}
 	}
 
@@ -714,7 +762,7 @@ func isCLIParam(myType string) bool {
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
-	funcMap["golangName"] = golangNameTitle
+	funcMap["golangName"] = GolangNameTitle
 	funcMap["title"] = strings.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
@@ -767,7 +815,8 @@ func golangName(name string) string {
 	return properName
 }
 
-func golangNameTitle(name string) string {
+// GolangNameTitle returns name in title case with abbriviations in capital (API, URL, ID, JSON, TLS)
+func GolangNameTitle(name string) string {
 	return strings.Title(golangName(name))
 }
 

@@ -48,7 +48,7 @@ type whitesource interface {
 
 type whitesourceUtils interface {
 	ws.Utils
-	DirExists(path string) (bool, error)
+	piperutils.FileUtils
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
@@ -162,6 +162,8 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+	correctWhitesourceDockerConfigEnvVar(config, utils)
+
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
@@ -169,6 +171,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			ContainerImage:       config.ScanImage,
 			ContainerRegistryURL: config.ScanImageRegistryURL,
 			IncludeLayers:        config.ScanImageIncludeLayers,
+			FilePath:             config.ProjectName,
 		}
 		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
 		dClient := &piperDocker.Client{}
@@ -177,7 +180,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			if strings.Contains(fmt.Sprint(err), "no image found") {
 				log.SetErrorCategory(log.ErrorConfiguration)
 			}
-			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
+			return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
 		}
 
 	}
@@ -209,6 +212,26 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}
 	return nil
+}
+
+func correctWhitesourceDockerConfigEnvVar(config *ScanOptions, utils whitesourceUtils) {
+	path := config.DockerConfigJSON
+	if len(path) > 0 {
+		log.Entry().Infof("Docker credentials configuration: %v", path)
+		if len(config.ScanImageRegistryURL) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
+			var err error
+			path, err = piperDocker.CreateDockerConfigJSON(config.ScanImageRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			if err != nil {
+				log.Entry().Warningf("failed to update Docker config.json: %v", err)
+			}
+		}
+		path, _ := utils.Abs(path)
+		// use parent directory
+		path = filepath.Dir(path)
+		os.Setenv("DOCKER_CONFIG", path)
+	} else {
+		log.Entry().Info("Docker credentials configuration: NONE")
+	}
 }
 
 func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -126,6 +127,56 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		}
 		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
 		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+	})
+}
+
+func TestCorrectWhitesourceDockerConfigEnvVar(t *testing.T) {
+	t.Run("with credentials", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.CurrentDir = "/tmp/test"
+
+		dockerConfigFile := "myConfig/docker.json"
+		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+
+		// test
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile}, utilsMock)
+		// assert
+		absolutePath, _ := utilsMock.Abs(filepath.Dir(dockerConfigFile))
+		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
+	})
+	t.Run("with added credentials", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.CurrentDir = "/tmp/test"
+
+		dockerConfigFile := "myConfig/docker.json"
+		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+
+		// test
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{DockerConfigJSON: dockerConfigFile, ScanImageRegistryURL: "https://test.registry", ContainerRegistryUser: "testuser", ContainerRegistryPassword: "testPassword"}, utilsMock)
+		// assert
+		absoluteDirPath, _ := utilsMock.Abs(filepath.Dir(dockerConfigFile))
+		absoluteFilePath, _ := utilsMock.Abs(dockerConfigFile)
+		assert.Equal(t, absoluteDirPath, os.Getenv("DOCKER_CONFIG"))
+		content, _ := utilsMock.FileRead(absoluteFilePath)
+		assert.Contains(t, string(content), "https://test.registry")
+	})
+	t.Run("without credentials", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctWhitesourceDockerConfigEnvVar(&ScanOptions{}, utilsMock)
+		// assert
+		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
 }
 

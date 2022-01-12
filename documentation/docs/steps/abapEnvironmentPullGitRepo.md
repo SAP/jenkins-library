@@ -46,14 +46,17 @@ The associated config file, e.g. `repositories.yml` could look as follows:
 ```yaml
 repositories:
 - name: '/DMO/GIT_REPOSITORY'
-  branch: 'master'
-- name: '/DMO/GIT_REPO'
-  branch: 'master'
+  branch: 'main'
+- name: '/DMO/GIT_REPO_COMMIT'
+  branch: 'feature'
   commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
+  - name: '/DMO/GIT_REPO_TAG'
+  branch: 'realease'
+  tag: 'myTag'
 ```
 
 It is optional to provide a branch. However, if you also want to use this file for the abapEnvironmentCheckoutBranch step it is recommended to follow the above structure.
-If you want to pull a specific commit, the `commitID` can be specified optionally for a repository.
+If you want to pull a specific commit, either a `commitID` or a `tag` can be specified. If both are specified, the `tag` will be ignored.
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
 

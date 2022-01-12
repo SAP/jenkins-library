@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -46,7 +47,7 @@ func newMtaBuildTestUtilsBundle() *mtaBuildTestUtilsBundle {
 	return &utilsBundle
 }
 
-func TestMarBuild(t *testing.T) {
+func TestMtaBuild(t *testing.T) {
 
 	cpe := mtaBuildCommonPipelineEnvironment{}
 
@@ -171,7 +172,7 @@ func TestMarBuild(t *testing.T) {
 
 		if assert.Len(t, utilsMock.Calls, 1) {
 			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "./", "--target", "./"}, utilsMock.Calls[0].Params)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", filepath.FromSlash("./"), "--target", filepath.FromSlash(_ignoreError(os.Getwd()))}, utilsMock.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
@@ -193,9 +194,13 @@ func TestMarBuild(t *testing.T) {
 
 			if assert.Len(t, utilsMock.Calls, 1) {
 				assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "mySourcePath/", "--target", "myTargetPath/"}, utilsMock.Calls[0].Params)
+				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF",
+					"--source", filepath.FromSlash("mySourcePath/"),
+					"--target", filepath.Join(_ignoreError(os.Getwd()), filepath.FromSlash("mySourcePath/myTargetPath/"))},
+					utilsMock.Calls[0].Params)
 			}
-			assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
+			assert.Equal(t, "mySourcePath/myTargetPath/myName.mtar", cpe.mtarFilePath)
+			assert.Equal(t, "mySourcePath/mta.yaml", cpe.custom.mtaBuildToolDesc)
 		})
 	})
 
@@ -277,4 +282,122 @@ func TestMarBuild(t *testing.T) {
 			assert.Equal(t, "mtarGroup, version not found and must be present", err.Error())
 		})
 	})
+}
+
+func TestMtaBuildSourceDir(t *testing.T) {
+
+	t.Run("getSourcePath", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("getPath dir unset", func(t *testing.T) {
+			options := mtaBuildOptions{Source: "", Target: ""}
+			assert.Equal(t, filepath.FromSlash("./"), getSourcePath(options))
+			assert.Equal(t, filepath.FromSlash("./"), getTargetPath(options))
+		})
+		t.Run("getPath source set", func(t *testing.T) {
+			options := mtaBuildOptions{Source: "spath", Target: ""}
+			assert.Equal(t, filepath.FromSlash("spath"), getSourcePath(options))
+			assert.Equal(t, filepath.FromSlash("./"), getTargetPath(options))
+		})
+		t.Run("getPath target set", func(t *testing.T) {
+			options := mtaBuildOptions{Source: "", Target: "tpath"}
+			assert.Equal(t, filepath.FromSlash("./"), getSourcePath(options))
+			assert.Equal(t, filepath.FromSlash("tpath"), getTargetPath(options))
+		})
+		t.Run("getPath dir set to relative path", func(t *testing.T) {
+			options := mtaBuildOptions{Source: "spath", Target: "tpath"}
+			assert.Equal(t, filepath.FromSlash("spath"), getSourcePath(options))
+			assert.Equal(t, filepath.FromSlash("tpath"), getTargetPath(options))
+		})
+		t.Run("getPath dir ends with seperator", func(t *testing.T) {
+			options := mtaBuildOptions{Source: "spath/", Target: "tpath/"}
+			assert.Equal(t, filepath.FromSlash("spath/"), getSourcePath(options))
+			assert.Equal(t, filepath.FromSlash("tpath/"), getTargetPath(options))
+		})
+		t.Run("getPath dir set to absolute path", func(t *testing.T) {
+			sourcePath := filepath.Join(_ignoreError(os.Getwd()), "spath")
+			targetPath := filepath.Join(_ignoreError(os.Getwd()), "tpath")
+			options := mtaBuildOptions{Source: sourcePath, Target: targetPath}
+			assert.Equal(t, filepath.FromSlash(sourcePath), getSourcePath(options))
+			assert.Equal(t, filepath.FromSlash(targetPath), getTargetPath(options))
+		})
+	})
+
+	t.Run("find build tool descriptor from configuration", func(t *testing.T) {
+		t.Parallel()
+		cpe := mtaBuildCommonPipelineEnvironment{}
+		t.Run("default mta.yaml", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			utilsMock.AddFile("mta.yaml", []byte("already there"))
+
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp"}, &cpe, utilsMock)
+
+			assert.False(t, utilsMock.HasWrittenFile("mta.yaml"))
+		})
+		t.Run("create mta.yaml from config.source", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "create"}, &cpe, utilsMock)
+
+			assert.True(t, utilsMock.HasWrittenFile("create/mta.yaml"))
+		})
+		t.Run("read yaml from config.source", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			utilsMock.AddFile("path/mta.yaml", []byte("already there"))
+
+			_ = runMtaBuild(mtaBuildOptions{ApplicationName: "myApp", Source: "path"}, &cpe, utilsMock)
+
+			assert.False(t, utilsMock.HasWrittenFile("path/mta.yaml"))
+		})
+	})
+
+}
+
+func TestMtaBuildMtar(t *testing.T) {
+
+	t.Run("getMtarName", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("mtar name from yaml", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"nameFromMtar\""))
+
+			assert.Equal(t, filepath.FromSlash("nameFromMtar.mtar"), _ignoreError(getMtarName(mtaBuildOptions{MtarName: ""}, "mta.yaml", utilsMock)))
+		})
+		t.Run("mtar name from config", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"nameFromMtar\""))
+
+			assert.Equal(t, filepath.FromSlash("nameFromConfig.mtar"), _ignoreError(getMtarName(mtaBuildOptions{MtarName: "nameFromConfig.mtar"}, "mta.yaml", utilsMock)))
+		})
+	})
+
+	t.Run("getMtarFilePath", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("plain mtar name", func(t *testing.T) {
+			assert.Equal(t, "mta.mtar", getMtarFilePath(mtaBuildOptions{Source: "", Target: ""}, "mta.mtar"))
+		})
+		t.Run("plain mtar name from default", func(t *testing.T) {
+			assert.Equal(t, "mta.mtar", getMtarFilePath(mtaBuildOptions{Source: "./", Target: "./"}, "mta.mtar"))
+		})
+		t.Run("source path", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("source/mta.mtar"), getMtarFilePath(mtaBuildOptions{Source: "source", Target: ""}, "mta.mtar"))
+		})
+		t.Run("target path", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("target/mta.mtar"), getMtarFilePath(mtaBuildOptions{Source: "", Target: "target"}, "mta.mtar"))
+		})
+		t.Run("source and target path", func(t *testing.T) {
+			assert.Equal(t, filepath.FromSlash("source/target/mta.mtar"), getMtarFilePath(mtaBuildOptions{Source: "source", Target: "target"}, "mta.mtar"))
+		})
+	})
+
+}
+
+func _ignoreError(s string, e error) string {
+	return s
 }

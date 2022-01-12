@@ -26,11 +26,11 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 		}
 		return GetParameterKeyMissingResponseBody()
-	case "IntegrationArtifactGetMplStatus":
+	case "IntegrationArtifactGetMplStatus", "APIKeyValueMapDownload":
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
-	case "IntegrationArtifactDownload":
+	case "IntegrationArtifactDownload", "APIProxyDownload":
 		return IntegrationArtifactDownloadCommandMockResponse(testType)
 	case "GetIntegrationDesigntimeArtifact":
 		return GetIntegrationDesigntimeArtifactMockResponse(testType)
@@ -57,7 +57,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetRespBodyHTTPStatusServiceErrorResponse()
 		}
 		return GetRespBodyHTTPStatusCreated()
-	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete":
+	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete", "ApiProxyUpload":
 		return GetRespBodyHTTPStatusOK()
 	default:
 		res := http.Response{

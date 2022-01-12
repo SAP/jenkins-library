@@ -314,7 +314,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
-		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
+		expectedcheckvariantstring := " checkVariant=\"ABAP_CLOUD_DEVELOPMENT_DEFAULT\""
 		expectedpackagestring := "<obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages>"
 		expectedsoftwarecomponentstring := "<obj:softwarecomponents><obj:softwarecomponent value=\"testSoftwareComponent\"/><obj:softwarecomponent value=\"testSoftwareComponent2\"/></obj:softwarecomponents>"
 
@@ -346,7 +346,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
-		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
+		expectedcheckvariantstring := " checkVariant=\"ABAP_CLOUD_DEVELOPMENT_DEFAULT\""
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := ""
 
@@ -375,7 +375,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
-		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
+		expectedcheckvariantstring := " checkVariant=\"ABAP_CLOUD_DEVELOPMENT_DEFAULT\""
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
 

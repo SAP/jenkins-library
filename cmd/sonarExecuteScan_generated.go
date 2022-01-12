@@ -9,12 +9,16 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"reflect"
+	"strings"
 )
 
 type sonarExecuteScanOptions struct {
@@ -24,7 +28,7 @@ type sonarExecuteScanOptions struct {
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
-	VersioningModel           string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
+	VersioningModel           string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	Version                   string   `json:"version,omitempty"`
 	CustomScanVersion         string   `json:"customScanVersion,omitempty"`
 	ProjectKey                string   `json:"projectKey,omitempty"`
@@ -37,7 +41,7 @@ type sonarExecuteScanOptions struct {
 	ChangeID                  string   `json:"changeId,omitempty"`
 	ChangeBranch              string   `json:"changeBranch,omitempty"`
 	ChangeTarget              string   `json:"changeTarget,omitempty"`
-	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"oneof=GitHub"`
+	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"possible-values=GitHub"`
 	Owner                     string   `json:"owner,omitempty"`
 	Repository                string   `json:"repository,omitempty"`
 	GithubToken               string   `json:"githubToken,omitempty"`
@@ -45,6 +49,41 @@ type sonarExecuteScanOptions struct {
 	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
 	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
 	M2Path                    string   `json:"m2Path,omitempty"`
+}
+
+type sonarExecuteScanReports struct {
+}
+
+func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
+		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
 }
 
 type sonarExecuteScanInflux struct {
@@ -92,7 +131,7 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -103,8 +142,11 @@ func SonarExecuteScanCommand() *cobra.Command {
 	metadata := sonarExecuteScanMetadata()
 	var stepConfig sonarExecuteScanOptions
 	var startTime time.Time
+	var reports sonarExecuteScanReports
 	var influx sonarExecuteScanInflux
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createSonarExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -135,6 +177,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -151,30 +194,33 @@ func SonarExecuteScanCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
+				reports.persist(stepConfig)
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				config.RemoveVaultSecretFiles()
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			sonarExecuteScan(stepConfig, &telemetryData, &influx)
-			telemetryData.ErrorCode = "0"
+			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -251,7 +297,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "sonarSecretName",
+								Name:    "sonarVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "sonar",
 							},
@@ -314,7 +360,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "projectVersion"}},
+						Aliases:   []config.Alias{{Name: "projectVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -368,7 +414,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarProperties"}},
+						Aliases:     []config.Alias{{Name: "sonarProperties", Deprecated: true}},
 						Default:     []string{},
 					},
 					{
@@ -517,11 +563,19 @@ func sonarExecuteScanMetadata() config.StepData {
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "sonarscan.json", "type": "sonarqube"},
+							{"filePattern": "sonarExecuteScan_*.json", "type": "sonarqube"},
+						},
+					},
+					{
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
-							{"Name": "sonarqube_data"}, {"fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "sonar"}}},
+							{"name": "sonarqube_data", "fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
 						},
 					},
 				},

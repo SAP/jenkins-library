@@ -10,7 +10,7 @@ import (
 func TestMavenProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci:1.1.1",
+		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven"},
 	})
@@ -29,7 +29,7 @@ func TestMavenProject(t *testing.T) {
 func TestMavenSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci:1.1.1",
+		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
 	})
@@ -49,7 +49,7 @@ func TestMavenSpringProject(t *testing.T) {
 func TestNPMProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci:1.1.1",
+		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
@@ -59,13 +59,13 @@ func TestNPMProject(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t, "INFO the MTA archive generated at: test-mta-js.mtar")
+	container.assertHasOutput(t, "INFO the MTA archive generated at: /project/test-mta-js.mtar")
 }
 
 func TestNPMProjectInstallsDevDependencies(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci:1.1.1",
+		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
 	})

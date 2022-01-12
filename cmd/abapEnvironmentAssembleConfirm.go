@@ -54,14 +54,14 @@ func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOpt
 	if err != nil {
 		return err
 	}
-	delayBetweenPostsInSeconds := time.Duration(3 * time.Second)
-	builds, err := startingConfirm(addonDescriptor.Repositories, *conn, delayBetweenPostsInSeconds)
+	delayBetweenPosts := time.Duration(3 * time.Second)
+	builds, err := startingConfirm(addonDescriptor.Repositories, *conn, delayBetweenPosts)
 	if err != nil {
 		return err
 	}
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
-	pollIntervalsInSeconds := time.Duration(60 * time.Second)
-	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	pollInterval := time.Duration(60 * time.Second)
+	err = polling(builds, maxRuntimeInMinutes, pollInterval)
 	if err != nil {
 		return err
 	}
@@ -72,9 +72,8 @@ func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOpt
 	return nil
 }
 
-func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, delayBetweenPostsInSeconds time.Duration) ([]buildWithRepository, error) {
-	var builds []buildWithRepository
-	var buildsAlreadyReleased []buildWithRepository
+func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, delayBetweenPosts time.Duration) ([]buildWithRepository, error) {
+	var confirmedBuilds []buildWithRepository
 	for _, repo := range repos {
 		assemblyBuild := abapbuild.Build{
 			Connector: conn,
@@ -83,26 +82,25 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			build: assemblyBuild,
 			repo:  repo,
 		}
-		if repo.Status != "R" {
+		if repo.InBuildScope {
 			err := buildRepo.startConfirm()
 			if err != nil {
-				return builds, err
+				return confirmedBuilds, err
 			}
-			builds = append(builds, buildRepo)
+			confirmedBuilds = append(confirmedBuilds, buildRepo)
 		} else {
-			log.Entry().Infof("Packages %s is in status '%s'. No need assembly done, no need to confirm", repo.PackageName, repo.Status)
-			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
+			log.Entry().Infof("Packages %s was not assembled in this pipeline run, thus no need to confirm", repo.PackageName)
 		}
 
 		//as batch events in the ABAP Backend need a little time
-		time.Sleep(delayBetweenPostsInSeconds)
+		time.Sleep(delayBetweenPosts)
 	}
-	return builds, nil
+	return confirmedBuilds, nil
 }
 
-func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollInterval time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+	ticker := time.Tick(pollInterval)
 	for {
 		select {
 		case <-timeout:
@@ -112,7 +110,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 			for i := range builds {
 				builds[i].build.Get()
 				if !builds[i].build.IsFinished() {
-					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
+					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollInterval)
 					allFinished = false
 				}
 			}
