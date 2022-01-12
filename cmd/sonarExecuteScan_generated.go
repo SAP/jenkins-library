@@ -59,6 +59,7 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions, gc
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
 		{FilePattern: "**/sonarscan-result.json", ParamRef: "", StepResultType: "sonarqube"},

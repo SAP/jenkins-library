@@ -124,6 +124,7 @@ func (p *testStepReports) persist(stepConfig testStepOptions, gcpJsonKeyFilePath
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "pattern1", ParamRef: "", StepResultType: "general"},
 		{FilePattern: "pattern2", ParamRef: "", StepResultType: ""},

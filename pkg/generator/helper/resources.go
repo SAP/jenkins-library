@@ -218,6 +218,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig {{ .StepName }}Op
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{{- range $notused, $param := .Parameters }}
 		{FilePattern: "{{ $param.FilePattern }}", ParamRef: "{{ $param.ParamRef }}", StepResultType: "{{ $param.Type }}"},
