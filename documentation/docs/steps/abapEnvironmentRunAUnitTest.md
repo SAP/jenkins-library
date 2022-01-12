@@ -83,6 +83,8 @@ To trigger the AUnit run an AUnit config file `aUnitConfig.yml` will be needed. 
 
 ### AUnit config file example
 
+Providing a specifc AUnit configuration is optional. If you are using a `repositories.yml` file for the `Clone` stage of the ABAP environment pipeline, a default AUnit configuration will be derived if no explicit AUnit configuration is available.
+
 The following section contains an example of an `aUnitConfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This repository containing the `Jenkinsfile` must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
@@ -98,7 +100,7 @@ title: My AUnit run
 context: My unit tests
 objectset:
   softwarecomponents:
-  - name: /DMO/SWC
+    - name: /DMO/SWC
 ```
 
 See below example for an `aUnitConfig.yml` file with the configured options containing the package `Z_TEST_PACKAGE` to be checked:
@@ -108,7 +110,7 @@ title: My AUnit run
 context: My unit tests
 objectset:
   packages:
-  - name: Z_TEST_PACKAGE
+    - name: Z_TEST_PACKAGE
 ```
 
 The following example of an `aUnitConfig.yml` file containing the software component `Z_TESTSC` and shows the available options:
@@ -131,7 +133,7 @@ options:
     long: true
 objectset:
   softwarecomponents:
-  - name: Z_TESTSC
+    - name: Z_TESTSC
 ```
 
 The following example of an `aUnitConfig.yml` file contains all possible properties of the Multi Property Set that can be used. Please take note that this is not the reccommended approach. If you want to check packages or software components please use the two above examples. The usage of the Multi Property Set is only reccommended for ABAP Unit tests that require these rules for the test execution. There is no official documentation on the usage of the Multi Property Set.
