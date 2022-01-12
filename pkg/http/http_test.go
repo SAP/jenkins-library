@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -56,6 +57,24 @@ func TestSend(t *testing.T) {
 		response, err := client.Send(request)
 		// then
 		assert.Error(t, err)
+		assert.Nil(t, response)
+	})
+	t.Run("failure when calling via proxy", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		transportProxy, _ := url.Parse("https://proxy.dummy.sap.com")
+		client.SetOptions(ClientOptions{MaxRetries: -1, TransportProxy: transportProxy})
+
+		// when
+		response, err := client.Send(request)
+
+		// then
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "lookup proxy.dummy.sap.com: no such host")
 		assert.Nil(t, response)
 	})
 }
@@ -177,10 +196,12 @@ func TestSendRequest(t *testing.T) {
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	transportProxy, _ := url.Parse("https://proxy.dummy.sap.com")
+	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, TransportProxy: transportProxy, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
+	assert.Equal(t, opts.TransportProxy, c.transportProxy)
 	assert.Equal(t, opts.TransportSkipVerification, c.transportSkipVerification)
 	assert.Equal(t, opts.MaxRequestDuration, c.maxRequestDuration)
 	assert.Equal(t, opts.Username, c.username)

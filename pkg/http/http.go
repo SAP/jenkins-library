@@ -224,6 +224,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.useDefaultTransport = options.UseDefaultTransport
 	c.transportTimeout = options.TransportTimeout
 	c.transportSkipVerification = options.TransportSkipVerification
+	c.transportProxy = options.TransportProxy
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
