@@ -77,24 +77,6 @@ func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey ServiceKey, err err
 	return
 }
 
-//StoreFileInOs - Method to store read artifacts in the file system
-func StoreFileInOs(FilePath string, resp *http.Response) error {
-	file, err := os.Create(FilePath)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create file")
-	}
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to copy file")
-	}
-	_, err = ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return errors.Wrapf(err, "File content could not be read")
-	}
-	return nil
-}
-
 // GetBearerToken -Provides the bearer token for making CPI OData calls
 func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 

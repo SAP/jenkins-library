@@ -2,14 +2,49 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
+
+type apiProviderDownloadUtils interface {
+	command.ExecRunner
+
+	FileExists(filename string) (bool, error)
+
+	// Add more methods here, or embed additional interfaces, or remove/replace as required.
+	// The apiProviderDownloadUtils interface should be descriptive of your runtime dependencies,
+	// i.e. include everything you need to be able to mock in tests.
+	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
+}
+
+type apiProviderDownloadUtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+
+	// Embed more structs as necessary to implement methods or interfaces you add to apiProviderDownloadUtils.
+	// Structs embedded in this way must each have a unique set of methods attached.
+	// If there is no struct which implements the method you need, attach the method to
+	// apiProviderDownloadUtilsBundle and forward to the implementation of the dependency.
+}
+
+func newApiProviderDownloadUtils() apiProviderDownloadUtils {
+	utils := apiProviderDownloadUtilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+	}
+	// Reroute command output to logging framework
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
 
 func apiProviderDownload(config apiProviderDownloadOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
@@ -57,7 +92,12 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 	}
 	if downloadResp.StatusCode == 200 {
 		jsonFilePath := config.DownloadPath
-		error := cpi.StoreFileInOs(jsonFilePath, downloadResp)
+		bodyBytes, err := ioutil.ReadAll(downloadResp.Body)
+		if err != nil {
+			return err
+		}
+		error := ioutil.WriteFile(jsonFilePath, []byte(bodyBytes), 0775)
+		//error := cpi.StoreFileInOs(jsonFilePath, downloadResp)
 		if error != nil {
 			return error
 		}
