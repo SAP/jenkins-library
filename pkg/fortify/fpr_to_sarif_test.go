@@ -4,6 +4,6 @@ import "testing"
 
 func TestConvertFprToSarif(t *testing.T) {
 
-	_ = ConvertFprToSarif("test.zip")
+	_ = ConvertFprToSarif("test.fpr")
 
 }
