@@ -35,6 +35,68 @@ func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner) {
 func TestRunCnbBuild(t *testing.T) {
 	t.Parallel()
 
+	t.Run("preferes direct configuration", func(t *testing.T) {
+		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
+		registry := "some-registry"
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", registry),
+			DockerConfigJSON:     "/path/to/config.json",
+		}
+
+		projectToml := `[project]
+		id = "io.buildpacks.my-app"
+		`
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+
+		assert.NoError(t, err)
+		runner := utils.ExecMockRunner
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assertLifecycleCalls(t, runner)
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Equal(t, fmt.Sprintf("https://%s", registry), commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, fmt.Sprintf("%s/%s", registry, "my-image:0.0.1"), commonPipelineEnvironment.container.imageNameTag) // Double check if that was intended!
+	})
+
+	t.Run("preferes project descriptor", func(t *testing.T) {
+		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
+		registry := "some-registry"
+		config := cnbBuildOptions{
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", registry),
+			DockerConfigJSON:     "/path/to/config.json",
+			ProjectDescriptor:    "project.toml",
+		}
+
+		projectToml := `[project]
+		id = "io.buildpacks.my-app"
+		`
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+
+		assert.NoError(t, err)
+		runner := utils.ExecMockRunner
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assertLifecycleCalls(t, runner)
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", registry, "io-buildpacks-my-app", config.ContainerImageTag))
+		assert.Equal(t, fmt.Sprintf("https://%s", registry), commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, fmt.Sprintf("%s/%s", registry, "io-buildpacks-my-app:0.0.1"), commonPipelineEnvironment.container.imageNameTag)
+	})
+
 	t.Run("success case (registry with https)", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}

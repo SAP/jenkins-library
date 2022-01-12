@@ -18,6 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
@@ -256,10 +257,10 @@ type targetImage struct {
 	containerRegistryURL string
 }
 
-func getTargetImage(config *cnbBuildOptions) (*targetImage, error) {
-	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
+func getTargetImage(config *cnbBuildOptions, projectDescriptor *project.Descriptor) (*targetImage, error) {
+	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageTag) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return nil, errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
+		return nil, errors.New("containerRegistryUrl and containerImageTag must be present")
 	}
 
 	targetImage := &targetImage{
@@ -280,7 +281,17 @@ func getTargetImage(config *cnbBuildOptions) (*targetImage, error) {
 		targetImage.containerRegistryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
 	}
 
-	targetImage.containerImage = path.Join(containerRegistry, config.ContainerImageName)
+	cpePath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	repository := piperenv.GetResourceParameter(cpePath, "git", "repository")
+
+	if len(config.ContainerImageName) > 0 {
+		targetImage.containerImage = path.Join(containerRegistry, config.ContainerImageName)
+	} else if len(projectDescriptor.ProjectID) > 0 {
+		name := strings.ReplaceAll(projectDescriptor.ProjectID, ".", "-") // Sanitize image name
+		targetImage.containerImage = path.Join(containerRegistry, name)
+	} else if len(repository) > 0 {
+		targetImage.containerImage = path.Join(containerRegistry, repository) // Sanitize image name?
+	}
 
 	return targetImage, nil
 }
@@ -303,8 +314,9 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
 
+	descriptor := &project.Descriptor{}
 	if projDescExists {
-		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
+		descriptor, err = project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
@@ -421,7 +433,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	targetImage, err := getTargetImage(config)
+	targetImage, err := getTargetImage(config, descriptor)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
