@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -139,8 +140,6 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, deta
 		details.URL = abapEndpoint + "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001/configuration"
 		log.Entry().Debugf("Request Body: %s", atcSystemConfiguartionJsonFile)
 		resp, err = triggerOdata("POST", details, atcSystemConfiguartionJsonFile, client)
-	}
-	if err == nil {
 		err = parseOdataResponse(resp)
 	}
 	if err != nil {
@@ -150,20 +149,38 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, deta
 }
 
 func parseOdataResponse(resp *http.Response) error {
-	//Parse response
-	var err error
-	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
-	if err == nil {
-		defer resp.Body.Close()
-		if len(body) == 0 {
-			return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
+
+	switch resp.StatusCode {
+	case 201: //CREATED
+		log.Entry().WithField("func", "parsedOdataResp: StatusCode").Info(resp.Status)
+		return nil
+
+	case 400: //BAD REQUEST
+		//Parse response
+		var err error
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		if err == nil {
+			defer resp.Body.Close()
+			if len(body) == 0 {
+				return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
+			}
+			//responseBody := string(body)
+			//parsedOdataErrors := new(oDataResponseErrors)
+			var parsedOdataErrors interface{}
+			err = json.Unmarshal(body, &parsedOdataErrors)
+
+			log.Entry().Debugf("Response body: %s", parsedOdataErrors)
+			return fmt.Errorf("Bad Request Errors: %w", parsedOdataErrors)
+		}
+		if err != nil {
+			return fmt.Errorf("Parsing oData result failed: %w", err)
 		}
 
+	default: //unhandled OK Code
+		return fmt.Errorf("Unhandled StatusCode: %w", resp.Status)
 	}
-	if err != nil {
-		return fmt.Errorf("Parsing oData result failed: %w", err)
-	}
+
 	return nil
 }
 
@@ -174,12 +191,8 @@ func triggerOdata(requestType string, details abaputils.ConnectionDetailsHTTP, b
 	header["Accept"] = []string{"application/json"}
 	header["Content-Type"] = []string{"application/json"}
 
-	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	if err != nil {
-		return resp, fmt.Errorf("Sending Request for ATC System Configuration failed: %w", err)
-	}
+	return client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 
-	return resp, nil
 }
 
 func fetchATCXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -190,13 +203,13 @@ func fetchATCXcsrfToken(requestType string, details abaputils.ConnectionDetailsH
 	details.XCsrfToken = "fetch"
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
 	}
-	defer req.Body.Close()
+	defer resp.Body.Close()
 
-	token := req.Header.Get("X-Csrf-Token")
+	token := resp.Header.Get("X-Csrf-Token")
 	return token, err
 }
 
@@ -227,4 +240,22 @@ func GetABAPCom() abaputils.Communication {
 	}
 
 	return &autils
+}
+
+type oDataResponseErrors struct {
+	error []oDataResponseError
+}
+
+type oDataResponseError struct {
+	code       string
+	message    string
+	target     string
+	details    []oDataResponseErrorDetail
+	innererror struct{}
+}
+
+type oDataResponseErrorDetail struct {
+	code    string
+	message string
+	target  string
 }
