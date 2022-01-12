@@ -250,6 +250,41 @@ func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 	}
 }
 
+type targetImage struct {
+	containerImage       string
+	containerImageTag    string
+	containerRegistryURL string
+}
+
+func getTargetImage(config *cnbBuildOptions) (*targetImage, error) {
+	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return nil, errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
+	}
+
+	targetImage := &targetImage{
+		containerImageTag: strings.ReplaceAll(config.ContainerImageTag, "+", "-"),
+	}
+
+	var containerRegistry string
+	var err error
+	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
+		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return nil, errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
+		}
+		targetImage.containerRegistryURL = config.ContainerRegistryURL
+	} else {
+		containerRegistry = config.ContainerRegistryURL
+		targetImage.containerRegistryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
+	}
+
+	targetImage.containerImage = path.Join(containerRegistry, config.ContainerImageName)
+
+	return targetImage, nil
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
@@ -386,27 +421,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
+	targetImage, err := getTargetImage(config)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
 
-	var containerRegistry string
-	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-		}
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-	} else {
-		containerRegistry = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
-	}
-
-	containerImage := path.Join(containerRegistry, config.ContainerImageName)
-	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+	commonPipelineEnvironment.container.registryURL = targetImage.containerRegistryURL
+	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.containerImage, targetImage.containerImageTag)
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
@@ -434,13 +456,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	for _, tag := range config.AdditionalTags {
-		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		target := fmt.Sprintf("%s:%s", targetImage.containerImage, tag)
 		if !piperutils.ContainsString(creatorArgs, target) {
 			creatorArgs = append(creatorArgs, "-tag", target)
 		}
 	}
 
-	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, containerImageTag))
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", targetImage.containerImage, targetImage.containerImageTag))
 	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
