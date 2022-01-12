@@ -272,9 +272,9 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "sonarscan.json"
+          - filePattern: "**/sonarscan.json"
             type: sonarqube
-          - filePattern: "sonarExecuteScan_*.json"
+          - filePattern: "**/sonarscan-result.json"
             type: sonarqube
       - name: influx
         type: influx
