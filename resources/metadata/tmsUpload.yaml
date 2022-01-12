@@ -82,7 +82,7 @@ spec:
           - STAGES
       - name: proxy
         type: string
-        description: Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.
+        description: Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.
         scope:
           - PARAMETERS
           - STEPS

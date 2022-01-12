@@ -167,7 +167,7 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.")
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
 
-	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
 
 	cmd.MarkFlagRequired("nodeName")
 }

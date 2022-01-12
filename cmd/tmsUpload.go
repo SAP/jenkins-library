@@ -62,17 +62,19 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	// It can also be used for example as a mavenExecRunner.
 	// utils := newTmsUploadUtils()
 
-	proxy := config.Proxy
-	transportProxy, err := url.Parse(proxy)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
-	}
-	options := piperHttp.ClientOptions{TransportProxy: transportProxy}
-
 	client := &piperHttp.Client{}
-	client.SetOptions(options)
-	if GeneralConfig.Verbose && proxy != "" {
-		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
+	proxy := config.Proxy
+	if proxy != "" {
+		transportProxy, err := url.Parse(proxy)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
+		}
+
+		options := piperHttp.ClientOptions{TransportProxy: transportProxy}
+		client.SetOptions(options)
+		if GeneralConfig.Verbose {
+			log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
+		}
 	}
 
 	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
