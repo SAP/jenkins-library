@@ -110,7 +110,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
-	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
+	filelocation, err := filepath.Glob(config.AtcSystemConfig)
 	//check ATC system configuration json
 	var atcSystemConfiguartionJsonFile []byte
 	if err == nil {
