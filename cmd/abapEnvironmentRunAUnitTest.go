@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -18,7 +18,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -95,7 +94,7 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 		resp, err = triggerAUnitrun(*config, details, client)
 	}
 	if err == nil {
-		err = handleAUnitResults(resp, details, client, config.AUnitResultsFileName)
+		err = fetchAndPersistAUnitResults(resp, details, client, config.AUnitResultsFileName, config.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -105,40 +104,51 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 }
 
 func triggerAUnitrun(config abapEnvironmentRunAUnitTestOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
-	var aUnitConfigYamlFile []byte
+
 	abapEndpoint := details.URL
-	filelocation, err := filepath.Glob(config.AUnitConfig)
-	//Parse YAML AUnit run configuration as body for AUnit run trigger
-	if err == nil {
-		filename, err := filepath.Abs(filelocation[0])
-		if err == nil {
-			aUnitConfigYamlFile, err = ioutil.ReadFile(filename)
-		}
-	}
-	var AUnitConfig AUnitConfig
-	if err == nil {
-		var result []byte
-		result, err = yaml.YAMLToJSON(aUnitConfigYamlFile)
-		json.Unmarshal(result, &AUnitConfig)
-	}
-	var metadataString, optionsString, objectSetString string
-	if err == nil {
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(AUnitConfig)
+	bodyString, err := buildAUnitRequestBody(config)
+	if err != nil {
+		return nil, err
 	}
 
 	//Trigger AUnit run
 	var resp *http.Response
-	var bodyString = `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString + `</aunit:run>`
+
 	var body = []byte(bodyString)
-	if err == nil {
-		log.Entry().Debugf("Request Body: %s", bodyString)
-		details.URL = abapEndpoint + "/sap/bc/adt/api/abapunit/runs"
-		resp, err = runAUnit("POST", details, body, client)
+	log.Entry().Debugf("Request Body: %s", bodyString)
+	details.URL = abapEndpoint + "/sap/bc/adt/api/abapunit/runs"
+	resp, err = runAUnit("POST", details, body, client)
+	return resp, err
+}
+
+func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnitConfig AUnitConfig, err error) {
+
+	if config.AUnitConfig != "" {
+		// Configuration defaults to AUnitConfig
+		log.Entry().Infof("AUnit Configuration: %s", config.AUnitConfig)
+		result, err := abaputils.ReadConfigFile(config.AUnitConfig)
+		if err != nil {
+			return aUnitConfig, err
+		}
+		err = json.Unmarshal(result, &aUnitConfig)
+		return aUnitConfig, err
+
+	} else if config.Repositories != "" {
+		// Fallback / EasyMode is the Repositories configuration
+		log.Entry().Infof("AUnit Configuration derived from: %s", config.Repositories)
+		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
+		if err != nil {
+			return aUnitConfig, err
+		}
+		for _, repo := range repos {
+			aUnitConfig.ObjectSet.SoftwareComponents = append(aUnitConfig.ObjectSet.SoftwareComponents, SoftwareComponents{Name: repo.Name})
+		}
+		aUnitConfig.Title = "AUnit Test Run"
+		return aUnitConfig, nil
+	} else {
+		// Fail if no configuration is provided
+		return aUnitConfig, errors.New("No configuration provided - please provide either an AUnit configuration file or a repository configuration file")
 	}
-	if err != nil {
-		return resp, fmt.Errorf("Triggering AUnit test run failed: %w", err)
-	}
-	return resp, nil
 }
 
 func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.AbapEnvironmentOptions {
@@ -156,7 +166,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	return subOptions
 }
 
-func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string) error {
+func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -165,7 +175,7 @@ func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetails
 	location, err = pollAUnitRun(details, nil, client)
 	if err == nil {
 		details.URL = abapEndpoint + location
-		resp, err = getResultAUnitRun("GET", details, nil, client)
+		resp, err = getAUnitResults("GET", details, nil, client)
 	}
 	//Parse response
 	var body []byte
@@ -174,7 +184,7 @@ func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetails
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseAUnitResult(body, aunitResultFileName)
+		err = persistAUnitResult(body, aunitResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling AUnit result failed: %w", err)
@@ -182,31 +192,35 @@ func handleAUnitResults(resp *http.Response, details abaputils.ConnectionDetails
 	return nil
 }
 
-func buildAUnitTestBody(AUnitConfig AUnitConfig) (metadataString string, optionsString string, objectSetString string, err error) {
+func buildAUnitRequestBody(config abapEnvironmentRunAUnitTestOptions) (bodyString string, err error) {
+
+	bodyString = ""
+	AUnitConfig, err := resolveAUnitConfiguration(config)
+	if err != nil {
+		return bodyString, err
+	}
 
 	//Checks before building the XML body
 	if AUnitConfig.Title == "" {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
-	} else if AUnitConfig.Context == "" {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No context for the AUnit run has been provided. Please configure an appropriate context for the respective test run")
-	} else if reflect.DeepEqual(AUnitOptions{}, AUnitConfig.Options) {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run config. No options have been provided. Please configure the options for the respective test run")
-	} else if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
-	} else if len(AUnitConfig.ObjectSet) == 0 {
-		return "", "", "", fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the set of objects you want to be checked for the respective test run")
+		return bodyString, fmt.Errorf("Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
+	}
+	if AUnitConfig.Context == "" {
+		AUnitConfig.Context = "ABAP Environment Pipeline"
+	}
+	if reflect.DeepEqual(ObjectSet{}, AUnitConfig.ObjectSet) {
+		return bodyString, fmt.Errorf("Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
 	}
 
-	//Build metadata string
-	metadataString += `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
-
 	//Build Options
-	optionsString += buildAUnitOptionsString(AUnitConfig)
-
+	optionsString := buildAUnitOptionsString(AUnitConfig)
+	//Build metadata string
+	metadataString := `<aunit:run title="` + AUnitConfig.Title + `" context="` + AUnitConfig.Context + `" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 	//Build Object Set
-	objectSetString += buildAUnitObjectSetString(AUnitConfig)
+	objectSetString := buildAUnitObjectSetString(AUnitConfig)
 
-	return metadataString, optionsString, objectSetString, nil
+	bodyString += `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString + `</aunit:run>`
+
+	return bodyString, nil
 }
 
 func runAUnit(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -230,55 +244,126 @@ func buildAUnitOptionsString(AUnitConfig AUnitConfig) (optionsString string) {
 	optionsString += `<aunit:options>`
 	if AUnitConfig.Options.Measurements != "" {
 		optionsString += `<aunit:measurements type="` + AUnitConfig.Options.Measurements + `"/>`
+	} else {
+		optionsString += `<aunit:measurements type="none"/>`
 	}
+	//We assume there must be one scope configured
 	optionsString += `<aunit:scope`
 	if AUnitConfig.Options.Scope.OwnTests != nil {
 		optionsString += ` ownTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.OwnTests) + `"`
+	} else {
+		optionsString += ` ownTests="true"`
 	}
 	if AUnitConfig.Options.Scope.ForeignTests != nil {
 		optionsString += ` foreignTests="` + fmt.Sprintf("%v", *AUnitConfig.Options.Scope.ForeignTests) + `"`
+	} else {
+		optionsString += ` foreignTests="true"`
 	}
+	//We assume there must be one riskLevel configured
 	optionsString += `/><aunit:riskLevel`
 	if AUnitConfig.Options.RiskLevel.Harmless != nil {
 		optionsString += ` harmless="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Harmless) + `"`
+	} else {
+		optionsString += ` harmless="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Dangerous != nil {
 		optionsString += ` dangerous="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Dangerous) + `"`
+	} else {
+		optionsString += ` dangerous="true"`
 	}
 	if AUnitConfig.Options.RiskLevel.Critical != nil {
 		optionsString += ` critical="` + fmt.Sprintf("%v", *AUnitConfig.Options.RiskLevel.Critical) + `"`
+	} else {
+		optionsString += ` critical="true"`
 	}
+	//We assume there must be one duration time configured
 	optionsString += `/><aunit:duration`
 	if AUnitConfig.Options.Duration.Short != nil {
 		optionsString += ` short="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Short) + `"`
+	} else {
+		optionsString += ` short="true"`
 	}
 	if AUnitConfig.Options.Duration.Medium != nil {
 		optionsString += ` medium="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Medium) + `"`
+	} else {
+		optionsString += ` medium="true"`
 	}
 	if AUnitConfig.Options.Duration.Long != nil {
 		optionsString += ` long="` + fmt.Sprintf("%v", *AUnitConfig.Options.Duration.Long) + `"`
+	} else {
+		optionsString += ` long="true"`
 	}
 	optionsString += `/></aunit:options>`
 	return optionsString
 }
 
+func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
+	for _, packages := range set.PackageNames {
+		objectSetString += `<osl:package name="` + packages.Name + `"/>`
+	}
+	for _, objectTypeGroup := range set.ObjectTypeGroups {
+		objectSetString += `<osl:objectTypeGroup name="` + objectTypeGroup.Name + `"/>`
+	}
+	for _, objectType := range set.ObjectTypes {
+		objectSetString += `<osl:objectType name="` + objectType.Name + `"/>`
+	}
+	for _, owner := range set.Owners {
+		objectSetString += `<osl:owner name="` + owner.Name + `"/>`
+	}
+	for _, releaseState := range set.ReleaseStates {
+		objectSetString += `<osl:releaseState value="` + releaseState.Value + `"/>`
+	}
+	for _, version := range set.Versions {
+		objectSetString += `<osl:version value="` + version.Value + `"/>`
+	}
+	for _, applicationComponent := range set.ApplicationComponents {
+		objectSetString += `<osl:applicationComponent name="` + applicationComponent.Name + `"/>`
+	}
+	for _, component := range set.SoftwareComponents {
+		objectSetString += `<osl:softwareComponent name="` + component.Name + `"/>`
+	}
+	for _, transportLayer := range set.TransportLayers {
+		objectSetString += `<osl:transportLayer name="` + transportLayer.Name + `"/>`
+	}
+	for _, language := range set.Languages {
+		objectSetString += `<osl:language value="` + language.Value + `"/>`
+	}
+	for _, sourceSystem := range set.SourceSystems {
+		objectSetString += `<osl:sourceSystem name="` + sourceSystem.Name + `"/>`
+	}
+	return objectSetString
+}
+
 func buildAUnitObjectSetString(AUnitConfig AUnitConfig) (objectSetString string) {
 
-	//Build ObjectSets {
-	for _, s := range AUnitConfig.ObjectSet {
-		//Write object set
+	//Build ObjectSets
+	s := AUnitConfig.ObjectSet
+	if s.Type == "" {
+		s.Type = "multiPropertySet"
+	}
+	if s.Type != "multiPropertySet" {
+		log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
+	} else {
 		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
-		for _, t := range s.Set {
-			objectSetString += `<osl:set xsi:type="` + t.Type + `">`
-			for _, packageSet := range t.PackageSet {
-				objectSetString += `<osl:package name="` + packageSet.Name + `" includeSubpackages="` + fmt.Sprintf("%v", *packageSet.IncludeSubpackages) + `"/>`
+
+		if !(reflect.DeepEqual(s.PackageNames, AUnitPackage{})) || !(reflect.DeepEqual(s.SoftwareComponents, SoftwareComponents{})) {
+			//To ensure Scomps and packages can be assigned on this level
+			mps := MultiPropertySet{
+				PackageNames:       s.PackageNames,
+				SoftwareComponents: s.SoftwareComponents,
 			}
-			for _, flatObjectSet := range t.FlatObjectSet {
-				objectSetString += `<osl:object name="` + flatObjectSet.Name + `" type="` + fmt.Sprintf("%v", *&flatObjectSet.Type) + `"/>`
-			}
-			objectSetString += `</osl:set>`
+			objectSetString += writeObjectSetProperties(mps)
 		}
 
+		objectSetString += writeObjectSetProperties(s.MultiPropertySet)
+
+		if !(reflect.DeepEqual(s.MultiPropertySet, MultiPropertySet{})) {
+			log.Entry().Info("Wrong configuration has been detected: MultiPropertySet has been used. Please note that there is no official documentation for this usage. Please check the step documentation for more information")
+		}
+
+		for _, t := range s.Set {
+			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
+		}
 		objectSetString += `</osl:objectSet>`
 	}
 	return objectSetString
@@ -347,7 +432,7 @@ func getHTTPResponseAUnitRun(requestType string, details abaputils.ConnectionDet
 	return req, err
 }
 
-func getResultAUnitRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func getAUnitResults(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Getting AUnit results")
 
@@ -362,7 +447,7 @@ func getResultAUnitRun(requestType string, details abaputils.ConnectionDetailsHT
 	return req, err
 }
 
-func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
+func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing AUnit result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -380,6 +465,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	log.Entry().Infof("Writing %s file was successful.", aunitResultFileName)
+	var reports []piperutils.Path
 	//Return before processing empty AUnit results --> XML can still be written with response body
 	if len(parsedXML.Testsuite.Testcase) == 0 {
 		log.Entry().Infof("There were no AUnit findings from this run. The response has been saved in the %s file", aunitResultFileName)
@@ -389,6 +475,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		log.Entry().Infof(`Here are the results for the AUnit test run '%s' executed by User %s on System %s in Client %s at %s. The AUnit run took %s seconds and contains %s tests with %s failures, %s errors, %s skipped and %s assert findings`, parsedXML.Title, parsedXML.System, parsedXML.ExecutedBy, parsedXML.Client, parsedXML.Timestamp, parsedXML.Time, parsedXML.Tests, parsedXML.Failures, parsedXML.Errors, parsedXML.Skipped, parsedXML.Asserts)
 		for _, s := range parsedXML.Testsuite.Testcase {
 			//Log Infos for testcase
+			//HTML Procesing can be done here
 			for _, failure := range s.Failure {
 				log.Entry().Debugf("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
 			}
@@ -396,12 +483,53 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 				log.Entry().Debugf("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
+		if generateHTML == true {
+			htmlString := generateHTMLDocumentAUnit(parsedXML)
+			htmlStringByte := []byte(htmlString)
+			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
+			err = ioutil.WriteFile(aUnitResultHTMLFileName, htmlStringByte, 0644)
+			if err != nil {
+				return fmt.Errorf("Writing HTML document failed: %w", err)
+			}
+			log.Entry().Info("Writing " + aUnitResultHTMLFileName + " file was successful")
+			reports = append(reports, piperutils.Path{Target: aUnitResultHTMLFileName, Name: "ATC Results HTML file", Mandatory: true})
+		}
 	}
 	//Persist findings afterwards
-	var reports []piperutils.Path
 	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
 	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
 	return nil
+}
+
+func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString string) {
+	htmlDocumentString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit Results</h1><table><tr><th>Run title</th><td style="padding-right: 20px">` + parsedXML.Title + `</td><th>System</th><td style="padding-right: 20px">` + parsedXML.System + `</td><th>Client</th><td style="padding-right: 20px">` + parsedXML.Client + `</td><th>ExecutedBy</th><td style="padding-right: 20px">` + parsedXML.ExecutedBy + `</td><th>Duration</th><td style="padding-right: 20px">` + parsedXML.Time + `s</td><th>Timestamp</th><td style="padding-right: 20px">` + parsedXML.Timestamp + `</td></tr><tr><th>Failures</th><td style="padding-right: 20px">` + parsedXML.Failures + `</td><th>Errors</th><td style="padding-right: 20px">` + parsedXML.Errors + `</td><th>Skipped</th><td style="padding-right: 20px">` + parsedXML.Skipped + `</td><th>Asserts</th><td style="padding-right: 20px">` + parsedXML.Asserts + `</td><th>Tests</th><td style="padding-right: 20px">` + parsedXML.Tests + `</td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr>`
+
+	var htmlDocumentStringError, htmlDocumentStringWarning, htmlDocumentStringInfo, htmlDocumentStringDefault string
+	for _, s := range parsedXML.Testsuite.Testcase {
+		//Add coloring of lines inside of the respective severities, e.g. failures in red
+		trBackgroundColorTestcase := "grey"
+		trBackgroundColorError := "rgba(227,85,0)"
+		trBackgroundColorFailure := "rgba(227,85,0)"
+		trBackgroundColorSkipped := "rgba(255,175,0, 0.2)"
+		if (len(s.Error) != 0) || (len(s.Failure) != 0) || (len(s.Skipped) != 0) {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorTestcase + `"><td colspan="5"><b>Testcase: ` + s.Name + ` for class ` + s.Classname + `</b></td></tr>`
+		}
+		for _, t := range s.Error {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorError + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">` + t.Type + `</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
+		}
+		for _, t := range s.Failure {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorFailure + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">` + t.Type + `</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
+		}
+		for _, t := range s.Skipped {
+			htmlDocumentString += `<tr style="background-color: ` + trBackgroundColorSkipped + `"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">` + s.Classname + `</td><td style="border: 1px solid black">` + t.Message + `</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">` + t.Text + `</td></tr>`
+		}
+	}
+	if len(parsedXML.Testsuite.Testcase) == 0 {
+		htmlDocumentString += `<tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr>`
+	}
+	htmlDocumentString += htmlDocumentStringError + htmlDocumentStringWarning + htmlDocumentStringInfo + htmlDocumentStringDefault + `</table></body></html>`
+
+	return htmlDocumentString
 }
 
 //
@@ -413,7 +541,7 @@ type AUnitConfig struct {
 	Title     string       `json:"title,omitempty"`
 	Context   string       `json:"context,omitempty"`
 	Options   AUnitOptions `json:"options,omitempty"`
-	ObjectSet []ObjectSet  `json:"objectset,omitempty"`
+	ObjectSet ObjectSet    `json:"objectset,omitempty"`
 }
 
 //AUnitOptions in form of packages and software components to be checked
@@ -446,32 +574,120 @@ type Duration struct {
 
 //ObjectSet in form of packages and software components to be checked
 type ObjectSet struct {
-	Type string `json:"type,omitempty"`
-	Set  []Set  `json:"set,omitempty"`
+	PackageNames       []AUnitPackage       `json:"packages,omitempty"`
+	SoftwareComponents []SoftwareComponents `json:"softwarecomponents,omitempty"`
+	Type               string               `json:"type,omitempty"`
+	MultiPropertySet   MultiPropertySet     `json:"multipropertyset,omitempty"`
+	Set                []Set                `json:"set,omitempty"`
 }
 
-//Set in form of packages and software components to be checked
+//MultiPropertySet that can possibly contain any subsets/object of the OSL
+type MultiPropertySet struct {
+	Type                  string                 `json:"type,omitempty"`
+	PackageNames          []AUnitPackage         `json:"packages,omitempty"`
+	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroups,omitempty"`
+	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
+	Owners                []Owner                `json:"owners,omitempty"`
+	ReleaseStates         []ReleaseState         `json:"releasestates,omitempty"`
+	Versions              []Version              `json:"versions,omitempty"`
+	ApplicationComponents []ApplicationComponent `json:"applicationcomponents,omitempty"`
+	SoftwareComponents    []SoftwareComponents   `json:"softwarecomponents,omitempty"`
+	TransportLayers       []TransportLayer       `json:"transportlayers,omitempty"`
+	Languages             []Language             `json:"languages,omitempty"`
+	SourceSystems         []SourceSystem         `json:"sourcesystems,omitempty"`
+}
+
+//Set
 type Set struct {
-	//Set  []Set  `json:"set,omitempty"`
-	Type          string         `json:"type,omitempty"`
-	PackageSet    []AUnitPackage `json:"package,omitempty"`
-	FlatObjectSet []AUnitObject  `json:"object,omitempty"`
-	/*FlatSet       []FlatObjectSet `json:"flatobjectset,omitempty"`
-	ObjectTypeSet []ObjectTypeSet `json:"objecttypeset,omitempty"`
-	ComponentSet  []ComponentSet  `json:"componentset,omitempty"`
-	TransportSet  []TransportSet  `json:"transportset,omitempty"`*/
+	Type          string               `json:"type,omitempty"`
+	Set           []Set                `json:"set,omitempty"`
+	PackageSet    []AUnitPackageSet    `json:"package,omitempty"`
+	FlatObjectSet []AUnitFlatObjectSet `json:"object,omitempty"`
+	ComponentSet  []AUnitComponentSet  `json:"component,omitempty"`
+	TransportSet  []AUnitTransportSet  `json:"transport,omitempty"`
+	ObjectTypeSet []AUnitObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//AUnitPackage in form of packages and software components to be checked
-type AUnitPackage struct {
+//AUnitPackageSet in form of packages to be checked
+type AUnitPackageSet struct {
 	Name               string `json:"name,omitempty"`
 	IncludeSubpackages *bool  `json:"includesubpackages,omitempty"`
 }
 
-//AUnitObject in form of packages and software components to be checked
-type AUnitObject struct {
+//AUnitFlatObjectSet
+type AUnitFlatObjectSet struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
+}
+
+//AUnitComponentSet in form of software components to be checked
+type AUnitComponentSet struct {
+	Name string `json:"name,omitempty"`
+}
+
+//AUnitTransportSet in form of transports to be checked
+type AUnitTransportSet struct {
+	Number string `json:"number,omitempty"`
+}
+
+//AUnitObjectTypeSet
+type AUnitObjectTypeSet struct {
+	Name string `json:"name,omitempty"`
+}
+
+//AUnitPackage for MPS
+type AUnitPackage struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ObjectTypeGroup
+type ObjectTypeGroup struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ObjectType
+type ObjectType struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Owner
+type Owner struct {
+	Name string `json:"name,omitempty"`
+}
+
+//ReleaseState
+type ReleaseState struct {
+	Value string `json:"value,omitempty"`
+}
+
+//Version
+type Version struct {
+	Value string `json:"value,omitempty"`
+}
+
+//ApplicationComponent
+type ApplicationComponent struct {
+	Name string `json:"name,omitempty"`
+}
+
+//SoftwareComponents
+type SoftwareComponents struct {
+	Name string `json:"name,omitempty"`
+}
+
+//TransportLayer
+type TransportLayer struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Language
+type Language struct {
+	Value string `json:"value,omitempty"`
+}
+
+//SourceSystem
+type SourceSystem struct {
+	Name string `json:"name,omitempty"`
 }
 
 //

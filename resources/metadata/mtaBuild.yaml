@@ -224,6 +224,7 @@ spec:
         type: piperEnvironment
         params:
           - name: mtarFilePath
+          - name: custom/mtaBuildToolDesc
           - name: custom/mtarPublishedUrl
           - name: custom/buildSettingsInfo
   containers:

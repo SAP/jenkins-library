@@ -127,7 +127,10 @@ func getConfig() (config.StepConfig, error) {
 
 	} else {
 		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
-		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GetAllStepMetadata, configOptions.stepMetadata, configOptions.stepName)
+		if GeneralConfig.MetaDataResolver == nil {
+			GeneralConfig.MetaDataResolver = GetAllStepMetadata
+		}
+		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.stepMetadata, configOptions.stepName)
 		if err != nil {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
@@ -139,7 +142,9 @@ func getConfig() (config.StepConfig, error) {
 
 		prepareOutputEnvironment(metadata.Spec.Outputs.Resources, GeneralConfig.EnvRootPath)
 
-		resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+		envParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+		reportingEnvParams := config.ReportingParameters.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+		resourceParams := mergeResourceParameters(envParams, reportingEnvParams)
 
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
@@ -169,12 +174,11 @@ func getConfig() (config.StepConfig, error) {
 
 		var flags map[string]interface{}
 
-		params := []config.StepParameters{}
-		if !configOptions.contextConfig {
-			params = metadata.Spec.Inputs.Parameters
+		if configOptions.contextConfig {
+			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
 		}

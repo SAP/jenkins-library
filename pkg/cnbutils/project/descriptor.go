@@ -8,7 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils/registry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	toml "github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 

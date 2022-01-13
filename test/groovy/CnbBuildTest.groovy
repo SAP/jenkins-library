@@ -8,6 +8,7 @@ import util.JenkinsStepRule
 import util.Rules
 
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.allOf
@@ -29,17 +30,19 @@ public class CnbBuildTest extends BasePiperTest {
         def calledWithParameters,
             calledWithStepName,
             calledWithMetadata,
-            calledWithCredentials
+            calledWithCredentials,
+            calledWithFailOnError
 
         helper.registerAllowedMethod(
             'piperExecuteBin',
-            [Map, String, String, List],
+            [Map, String, String, List, Boolean, Boolean, Boolean],
             {
-                params, stepName, metaData, creds ->
+                params, stepName, metaData, creds, failOnMissingReports, failOnMissingLinks, failOnError  ->
                 calledWithParameters = params
                 calledWithStepName = stepName
                 calledWithMetadata = metaData
                 calledWithCredentials = creds
+                calledWithFailOnError = failOnError
             }
         )
 
@@ -68,6 +71,8 @@ public class CnbBuildTest extends BasePiperTest {
         assertThat(calledWithCredentials.size(), is(1))
         assertThat(calledWithCredentials[0].size(), is(3))
         assertThat(calledWithCredentials[0], allOf(hasEntry('type','file'), hasEntry('id','dockerConfigJsonCredentialsId'), hasEntry('env',['PIPER_dockerConfigJSON'])))
+
+        assertTrue(calledWithFailOnError)
 
     }
 }
