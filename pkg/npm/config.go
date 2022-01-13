@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	configFilename = ".piperStagingNpmrc"
+	configFilename = ".piperNpmrc"
 )
 
 var (

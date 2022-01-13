@@ -21,9 +21,9 @@ func TestNewNPMRC(t *testing.T) {
 		want string
 	}{
 		{name: "current dir", args: args{""}, want: configFilename},
-		{name: "sub dir", args: args{mock.Anything}, want: filepath.Join(mock.Anything, ".piperStagingNpmrc")},
-		{name: "file path in current dir", args: args{".piperStagingNpmrc"}, want: ".piperStagingNpmrc"},
-		{name: "file path in sub dir", args: args{filepath.Join(mock.Anything, ".piperStagingNpmrc")}, want: filepath.Join(mock.Anything, ".piperStagingNpmrc")},
+		{name: "sub dir", args: args{mock.Anything}, want: filepath.Join(mock.Anything, ".piperNpmrc")},
+		{name: "file path in current dir", args: args{".piperNpmrc"}, want: ".piperNpmrc"},
+		{name: "file path in sub dir", args: args{filepath.Join(mock.Anything, ".piperNpmrc")}, want: filepath.Join(mock.Anything, ".piperNpmrc")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
