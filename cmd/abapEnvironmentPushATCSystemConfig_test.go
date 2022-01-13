@@ -1,23 +1,11 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/stretchr/testify/assert"
 )
-
-type abapEnvironmentPushATCSystemConfigMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAbapEnvironmentPushATCSystemConfigTestsUtils() abapEnvironmentPushATCSystemConfigMockUtils {
-	utils := abapEnvironmentPushATCSystemConfigMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	t.Parallel()
@@ -27,11 +15,11 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 		// init
 		config := abapEnvironmentPushATCSystemConfigOptions{}
 
-		utils := newAbapEnvironmentPushATCSystemConfigTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
 
 		// test
-		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, utils)
+		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, nil)
 
 		// assert
 		assert.NoError(t, err)
@@ -42,10 +30,11 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 		// init
 		config := abapEnvironmentPushATCSystemConfigOptions{}
 
-		utils := newAbapEnvironmentPushATCSystemConfigTestsUtils()
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
 
 		// test
-		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, utils)
+		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, nil)
 
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")
