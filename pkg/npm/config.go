@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	configFilename = ".npmrc"
+	configFilename = ".piperNpmrc"
 )
 
 var (
