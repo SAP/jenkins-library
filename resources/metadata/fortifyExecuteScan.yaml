@@ -636,3 +636,16 @@ spec:
                 type: int
               - name: suppressed
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/*.PDF"
+            type: fortify
+          - filePattern: "**/*.fpr"
+            type: fortify
+          - filePattern: "**/fortify-scan.*"
+            type: fortify
+          - filePattern: "**/toolrun_fortify_*.json"
+            type: fortify
+          - filePattern: "**/piper_fortify_report.json"
+            type: fortify
