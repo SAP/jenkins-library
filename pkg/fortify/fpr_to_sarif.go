@@ -20,7 +20,7 @@ type FVDL struct {
 	Created         CreatedTS
 	Uuid            UUID
 	Buildinfo       Build
-	Vulnerabilities []Vulnerability `xml:"Vulnerabilities>Vulnerability"`
+	Vulnerabilities Vulnerabilities `xml:"Vulnerabilities"`
 }
 
 type CreatedTS struct {
@@ -73,6 +73,11 @@ type ScanTime struct {
 
 // These structures are relevant to the Vulnerabilities object
 
+type Vulnerabilities struct {
+	XMLName       xml.Name        `xml:"Vulnerabilities"`
+	Vulnerability []Vulnerability `xml:"Vulnerability"`
+}
+
 type Vulnerability struct {
 	XMLName      xml.Name `xml:"Vulnerability"`
 	ClassInfo    ClassInfo
@@ -85,6 +90,7 @@ type ClassInfo struct {
 	ClassID         string   `xml:"ClassID"`
 	Kingdom         string   `xml:"Kingdom"`
 	Type            string   `xml:"Type"`
+	Subtype         string   `xml:"Subtype,omitempty"`
 	AnalyzerName    string   `xml:"AnalyzerName"`
 	DefaultSeverity string   `xml:"DefaultSeverity"`
 }
@@ -99,7 +105,7 @@ type InstanceInfo struct {
 type AnalysisInfo struct { //Note that this is directly the "Unified" object
 	Context                Context
 	ReplacementDefinitions []Def `xml:"ReplacementDefinitions>Def"`
-	Trace                  Trace
+	Trace                  Trace `xml:"Trace"`
 }
 
 type Context struct {
@@ -130,6 +136,74 @@ type Def struct {
 }
 
 type Trace struct {
+	XMLName xml.Name `xml:"Trace"`
+	Primary Primary  `xml:"Primary"`
+}
+
+type Primary struct {
+	XMLName xml.Name `xml:"Primary"`
+	Entry   []Entry  `xml:"Entry"`
+}
+
+type Entry struct {
+	XMLName xml.Name `xml:"Entry"`
+	NodeRef NodeRef  `xml:"NodeRef,omitempty"`
+	Node    Node     `xml:"Node,omitempty"`
+}
+
+type NodeRef struct {
+	XMLName xml.Name `xml:"NodeRef"`
+	RefId   string   `xml:"id,attr"`
+}
+
+type Node struct {
+	XMLName        xml.Name       `xml:"Node"`
+	IsDefault      string         `xml:"isDefault,attr,omitempty"`
+	NodeLabel      string         `xml:"label,attr,omitempty"`
+	SourceLocation SourceLocation `xml:"SourceLocation"`
+	Action         Action         `xml:"Action,omitempty"`
+	Reason         Reason         `xml:"Reason,omitempty"`
+	Knowledge      Knowledge      `xml:"Knowledge,omitempty"`
+}
+
+type SourceLocation struct {
+	XMLName   xml.Name `xml:"SourceLocation"`
+	Path      string   `xml:"path,attr"`
+	Line      string   `xml:"line,attr"`
+	LineEnd   string   `xml:"lineEnd,attr"`
+	ColStart  string   `xml:"colStart,attr"`
+	ColEnd    string   `xml:"colEnd,attr"`
+	ContextId string   `xml:"contextId,attr"`
+	Snippet   string   `xml:"snippet,attr"`
+}
+
+type Action struct {
+	XMLName    xml.Name `xml:"Action"`
+	Type       string   `xml:"type,attr"`
+	ActionData string   `xml:",innerxml"`
+}
+
+type Reason struct {
+	XMLName xml.Name `xml:"Reason"`
+	Rule    Rule     `xml:"Rule,omitempty"`
+	Trace   Trace    `xml:"Trace,omitempty"`
+}
+
+type Rule struct {
+	XMLName xml.Name `xml:"Rule"`
+	RuleID  string   `xml:"ruleID,attr"`
+}
+
+type Knowledge struct {
+	XMLName xml.Name `xml:"Knowledge"`
+	Facts   []Fact   `xml:"Fact"`
+}
+
+type Fact struct {
+	XMLName  xml.Name `xml:"Fact"`
+	Primary  string   `xml:"primary,attr"`
+	Type     string   `xml:"type,attr,omitempty"`
+	FactData string   `xml:",innerxml"`
 }
 
 func ConvertFprToSarif(resultFilePath string) error {
