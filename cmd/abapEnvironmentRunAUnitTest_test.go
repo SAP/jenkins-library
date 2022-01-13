@@ -27,39 +27,29 @@ func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockU
 	return utils
 }
 
-func TestBuildAUnitTestBody(t *testing.T) {
+func TestBuildAUnitRequestBody(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Test AUnit test run body with no data", func(t *testing.T) {
+
 		t.Parallel()
 
-		expectedmetadataString := ""
-		expectedoptionsString := ""
-		expectedobjectSetString := ""
+		var config abapEnvironmentRunAUnitTestOptions
 
-		var err error
-		var config AUnitConfig
-		var metadataString, optionsString, objectSetString string
+		bodyString, err := buildAUnitRequestBody(config)
+		expectedBodyString := ""
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
-		assert.Equal(t, expectedoptionsString, optionsString)
-		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.EqualError(t, err, "Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
+		assert.Equal(t, expectedBodyString, bodyString)
+		assert.EqualError(t, err, "No configuration provided - please provide either an AUnit configuration file or a repository configuration file")
 	})
 
 	t.Run("Test AUnit test run body with example yaml config of not supported Object Sets", func(t *testing.T) {
 		t.Parallel()
 
-		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `</aunit:run>`
+		expectedobjectSetString := ``
 
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{
+		config := AUnitConfig{
 			Title:   "Test Title",
 			Context: "Test Context",
 			Options: AUnitOptions{
@@ -109,27 +99,20 @@ func TestBuildAUnitTestBody(t *testing.T) {
 			},
 		}
 
-		var metadataString, optionsString, objectSetString string
+		objectSetString := buildAUnitObjectSetString(config)
+		optionsString := buildAUnitOptionsString(config)
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
 		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, nil, err)
 	})
 
 	t.Run("Test AUnit test run body with example yaml config of only Multi Property Set", func(t *testing.T) {
 		t.Parallel()
 
-		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet>`
 
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{
+		config := AUnitConfig{
 			Title:   "Test Title",
 			Context: "Test Context",
 			Options: AUnitOptions{
@@ -164,27 +147,20 @@ func TestBuildAUnitTestBody(t *testing.T) {
 			},
 		}
 
-		var metadataString, optionsString, objectSetString string
+		objectSetString := buildAUnitObjectSetString(config)
+		optionsString := buildAUnitOptionsString(config)
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
 		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, nil, err)
 	})
 
 	t.Run("Test AUnit test run body with example yaml config of only Multi Property Set but empty type", func(t *testing.T) {
 		t.Parallel()
 
-		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet>`
 
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{
+		config := AUnitConfig{
 			Title:   "Test Title",
 			Context: "Test Context",
 			Options: AUnitOptions{
@@ -219,27 +195,20 @@ func TestBuildAUnitTestBody(t *testing.T) {
 			},
 		}
 
-		var metadataString, optionsString, objectSetString string
+		objectSetString := buildAUnitObjectSetString(config)
+		optionsString := buildAUnitOptionsString(config)
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
 		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, nil, err)
 	})
 
 	t.Run("Test AUnit test run body with example yaml config of only Multi Property Set with scomps & packages on top level", func(t *testing.T) {
 		t.Parallel()
 
-		expectedmetadataString := `<aunit:run title="Test Title" context="Test Context" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="false" foreignTests="false"/><aunit:riskLevel harmless="false" dangerous="false" critical="false"/><aunit:duration short="false" medium="false" long="false"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:package name="testPackage1"/><osl:package name="testPackage2"/><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet></aunit:run>`
+		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:package name="testPackage1"/><osl:package name="testPackage2"/><osl:softwareComponent name="testComponent1"/><osl:softwareComponent name="testComponent2"/></osl:objectSet>`
 
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{
+		config := AUnitConfig{
 			Title:   "Test Title",
 			Context: "Test Context",
 			Options: AUnitOptions{
@@ -273,79 +242,18 @@ func TestBuildAUnitTestBody(t *testing.T) {
 			},
 		}
 
-		var metadataString, optionsString, objectSetString string
+		objectSetString := buildAUnitObjectSetString(config)
+		optionsString := buildAUnitOptionsString(config)
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
 		assert.Equal(t, expectedoptionsString, optionsString)
 		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, nil, err)
-	})
-
-	t.Run("Test AUnit test run body with example yaml config fail: no Title", func(t *testing.T) {
-		t.Parallel()
-
-		expectedmetadataString := ""
-		expectedoptionsString := ""
-		expectedobjectSetString := ""
-
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{}
-
-		var metadataString, optionsString, objectSetString string
-
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
-		assert.Equal(t, expectedoptionsString, optionsString)
-		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.EqualError(t, err, "Error while parsing AUnit test run config. No title for the AUnit run has been provided. Please configure an appropriate title for the respective test run")
-	})
-
-	t.Run("Test AUnit test run body with example yaml config: no Context", func(t *testing.T) {
-		t.Parallel()
-
-		expectedmetadataString := `<aunit:run title="Test" context="ABAP Environment Pipeline" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
-		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="true" foreignTests="true"/><aunit:riskLevel harmless="true" dangerous="true" critical="true"/><aunit:duration short="true" medium="true" long="true"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:package name="testPackage1"/><osl:softwareComponent name="testComponent1"/></osl:objectSet></aunit:run>`
-
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{Title: "Test",
-			ObjectSet: ObjectSet{
-				PackageNames: []AUnitPackage{{
-					Name: "testPackage1",
-				}},
-				SoftwareComponents: []SoftwareComponents{{
-					Name: "testComponent1",
-				}},
-			}}
-
-		var metadataString, optionsString, objectSetString string
-
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
-		assert.Equal(t, expectedoptionsString, optionsString)
-		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, err, nil)
 	})
 
 	t.Run("Test AUnit test run body with example yaml config: no Options", func(t *testing.T) {
 		t.Parallel()
 
-		expectedmetadataString := `<aunit:run title="Test" context="Test" xmlns:aunit="http://www.sap.com/adt/api/aunit">`
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="true" foreignTests="true"/><aunit:riskLevel harmless="true" dangerous="true" critical="true"/><aunit:duration short="true" medium="true" long="true"/></aunit:options>`
-		expectedobjectSetString := `<osl:objectSet xsi:type="multiPropertySet" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><osl:package name="testPackage1"/><osl:softwareComponent name="testComponent1"/></osl:objectSet></aunit:run>`
-
-		var err error
-		var config AUnitConfig
-
-		config = AUnitConfig{Title: "Test", Context: "Test",
+		config := AUnitConfig{Title: "Test", Context: "Test",
 			ObjectSet: ObjectSet{
 				PackageNames: []AUnitPackage{{
 					Name: "testPackage1",
@@ -355,36 +263,134 @@ func TestBuildAUnitTestBody(t *testing.T) {
 				}},
 			}}
 
-		var metadataString, optionsString, objectSetString string
-
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
-
-		assert.Equal(t, expectedmetadataString, metadataString)
+		optionsString := buildAUnitOptionsString(config)
 		assert.Equal(t, expectedoptionsString, optionsString)
-		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.Equal(t, err, nil)
 	})
 
-	t.Run("Test AUnit test run body with example yaml config fail: no ObjectSet", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Config with repository-yml", func(t *testing.T) {
 
-		expectedmetadataString := ""
-		expectedoptionsString := ""
-		expectedobjectSetString := ""
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitResultsFileName: "aUnitResults.xml",
+			Repositories:         "repositories.yml",
+		}
 
-		var err error
-		var config AUnitConfig
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
 
-		config = AUnitConfig{Title: "Test", Context: "Test", Options: AUnitOptions{Measurements: "Test"}}
+		repositories := `repositories:
+  - name: /DMO/REPO
+    branch: main
+`
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"AUnit Test Run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:softwareComponent name=\"/DMO/REPO\"/></osl:objectSet></aunit:run>"
+		err = ioutil.WriteFile(config.Repositories, []byte(repositories), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := buildAUnitRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
+	})
 
-		var metadataString, optionsString, objectSetString string
+	t.Run("Config with aunitconfig-yml", func(t *testing.T) {
 
-		metadataString, optionsString, objectSetString, err = buildAUnitTestBody(config)
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitResultsFileName: "aUnitResults.xml",
+			AUnitConfig:          "aunit.yml",
+		}
 
-		assert.Equal(t, expectedmetadataString, metadataString)
-		assert.Equal(t, expectedoptionsString, optionsString)
-		assert.Equal(t, expectedobjectSetString, objectSetString)
-		assert.EqualError(t, err, "Error while parsing AUnit test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		yamlBody := `title: My AUnit run
+objectset:
+  packages:
+  - name: Z_TEST
+  softwarecomponents:
+  - name: Z_TEST
+  - name: /DMO/SWC
+`
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
+		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := buildAUnitRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
+	})
+
+	t.Run("Config with aunitconfig-yml mps", func(t *testing.T) {
+
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitResultsFileName: "aUnitResults.xml",
+			AUnitConfig:          "aunit.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		yamlBody := `title: My AUnit run
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    packages:
+      - name: Z_TEST
+    softwarecomponents:
+      - name: Z_TEST
+      - name: /DMO/SWC
+`
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
+		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := buildAUnitRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
+	})
+
+	t.Run("No AUnit config file - expect no panic", func(t *testing.T) {
+
+		config := abapEnvironmentRunAUnitTestOptions{
+			AUnitConfig: "aunit.yml",
+		}
+
+		_, err := buildAUnitRequestBody(config)
+		assert.Equal(t, "Could not find aunit.yml", err.Error())
+	})
+
+	t.Run("No Repo config file - expect no panic", func(t *testing.T) {
+
+		config := abapEnvironmentRunAUnitTestOptions{
+			Repositories: "repo.yml",
+		}
+
+		_, err := buildAUnitRequestBody(config)
+		assert.Equal(t, "Could not find repo.yml", err.Error())
 	})
 }
 
@@ -436,9 +442,9 @@ options:
     medium: true
     long: true
 objectset:
-  packages: 
+  packages:
   - name: Z_TEST
-  softwarecomponents: 
+  softwarecomponents:
   - name: Z_TEST
 `
 
@@ -527,7 +533,7 @@ func TestParseAUnitResult(t *testing.T) {
 		}()
 		bodyString := `<?xml version="1.0" encoding="utf-8"?><testsuites title="My AUnit run" system="TST" client="100" executedBy="TESTUSER" time="000.000" timestamp="2021-01-01T00:00:00Z" failures="2" errors="2" skipped="0" asserts="0" tests="2"><testsuite name="" tests="2" failures="2" errors="0" skipped="0" asserts="0" package="testpackage" timestamp="2021-01-01T00:00:00ZZ" time="0.000" hostname="test"><testcase classname="test" name="execute" time="0.000" asserts="2"><failure message="testMessage1" type="Assert Failure">Test1</failure><failure message="testMessage2" type="Assert Failure">Test2</failure></testcase></testsuite></testsuites>`
 		body := []byte(bodyString)
-		err = parseAUnitResult(body, "AUnitResults.xml", false)
+		err = persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -546,7 +552,7 @@ func TestParseAUnitResult(t *testing.T) {
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
-		err = parseAUnitResult(body, "AUnitResults.xml", false)
+		err = persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -555,7 +561,7 @@ func TestParseAUnitResult(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := parseAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.EqualError(t, err, "Parsing AUnit result failed: Body is empty, can't parse empty body")
 	})
 }
@@ -575,7 +581,7 @@ func TestGetResultAUnitRun(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		resp, err := getResultAUnitRun("GET", con, []byte(client.Body), client)
+		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
@@ -602,7 +608,7 @@ func TestGetResultAUnitRun(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		resp, err := getResultAUnitRun("GET", con, []byte(client.Body), client)
+		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
 		defer resp.Body.Close()
 		if assert.EqualError(t, err, "Getting AUnit run results failed: Test fail") {
 			buf := new(bytes.Buffer)
