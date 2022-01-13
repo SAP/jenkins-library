@@ -155,7 +155,7 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 		return err
 	}
 
-	return parseOdataResponse(resp)
+	return nil
 
 }
 
