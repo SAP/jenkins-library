@@ -56,6 +56,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	}
 	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
+	log.Entry().Debugf("adding piper npmrc file %v to ignore", npmrc.filepath)
+	npmignore.Add(npmrc.filepath)
+
 	if len(registry) > 0 {
 		// check existing .npmrc file
 		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
