@@ -192,6 +192,55 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3.1.5", registry, config.ContainerImageName))
 	})
 
+	t.Run("pom.xml exists (symlink for the target folder)", func(t *testing.T) {
+		t.Parallel()
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "3.1.5",
+			ContainerRegistryURL: "some-registry",
+			DockerConfigJSON:     "/path/to/config.json",
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.CurrentDir = "/jenkins"
+		utils.FilesMock.AddDir("/jenkins")
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile("/workspace/pom.xml", []byte("test"))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
+		assert.NoError(t, err)
+
+		runner := utils.ExecMockRunner
+		assertLifecycleCalls(t, runner)
+
+		assert.True(t, utils.FilesMock.HasCreatedSymlink("/jenkins/target", "/workspace/target"))
+	})
+
+	t.Run("no pom.xml exists (no symlink for the target folder)", func(t *testing.T) {
+		t.Parallel()
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "3.1.5",
+			ContainerRegistryURL: "some-registry",
+			DockerConfigJSON:     "/path/to/config.json",
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.CurrentDir = "/jenkins"
+		utils.FilesMock.AddDir("/jenkins")
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
+		assert.NoError(t, err)
+
+		runner := utils.ExecMockRunner
+		assertLifecycleCalls(t, runner)
+
+		assert.False(t, utils.FilesMock.HasCreatedSymlink("/jenkins/target", "/workspace/target"))
+	})
+
 	t.Run("error case: Invalid DockerConfigJSON file", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}

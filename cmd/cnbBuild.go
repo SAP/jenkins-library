@@ -98,14 +98,6 @@ func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
 	return false
 }
 
-func isDir(path string) (bool, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-	return info.IsDir(), nil
-}
-
 func isBuilder(utils cnbutils.BuildUtils) error {
 	exists, err := utils.FileExists(creatorPath)
 	if err != nil {
@@ -163,7 +155,7 @@ func copyProject(source, target string, include, exclude *ignore.GitIgnore, util
 		}
 		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := isDir(sourceFile)
+			dir, err := utils.DirExists(sourceFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "Checking file info '%s' failed", target)
@@ -239,7 +231,7 @@ func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
 		}
 	}
 
-	return os.Symlink(targetPath, linkPath)
+	return utils.Symlink(targetPath, linkPath)
 }
 
 func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
@@ -323,20 +315,23 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	target := "/workspace"
-	source, err := utils.Getwd()
+	pwd, err := utils.Getwd()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "failed to get current working directory")
 	}
 
+	var source string
 	if len(config.Path) > 0 {
 		source = config.Path
+	} else {
+		source = pwd
 	}
 
-	dir, err := isDir(source)
+	dir, err := utils.DirExists(source)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "Checking file info '%s' failed", target)
+		return errors.Wrapf(err, "Checking file info '%s' failed", source)
 	}
 
 	if dir {
@@ -354,7 +349,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
-		err = linkTargetFolder(utils, source, target)
+		err = linkTargetFolder(utils, pwd, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return err
