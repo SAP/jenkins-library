@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -117,6 +119,30 @@ func (abaputils *AbapUtils) GetPollIntervall() time.Duration {
 		return abaputils.Intervall
 	}
 	return 10 * time.Second
+}
+
+/*
+ReadCOnfigFile reads a file from a specific path and returns the json string as []byte
+*/
+func ReadConfigFile(path string) (file []byte, err error) {
+	filelocation, err := filepath.Glob(path)
+	if err != nil {
+		return nil, err
+	}
+	if len(filelocation) == 0 {
+		return nil, errors.New("Could not find " + path)
+	}
+	filename, err := filepath.Abs(filelocation[0])
+	if err != nil {
+		return nil, err
+	}
+	yamlFile, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var jsonFile []byte
+	jsonFile, err = yaml.YAMLToJSON(yamlFile)
+	return jsonFile, err
 }
 
 // GetHTTPResponse wraps the SendRequest function of piperhttp

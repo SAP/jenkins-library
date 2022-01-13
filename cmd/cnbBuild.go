@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -21,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/docker/cli/cli/config/configfile"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
 )
@@ -295,36 +293,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	dockerConfigFile := ""
-	dockerConfig := &configfile.ConfigFile{}
-	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
 		}
-		dockerConfigJSON, err = utils.FileRead(dockerConfigFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read DockerConfigJSON file '%v'", config.DockerConfigJSON)
-		}
-	}
-
-	err = json.Unmarshal(dockerConfigJSON, dockerConfig)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to parse DockerConfigJSON file '%v'", config.DockerConfigJSON)
-	}
-
-	auth := map[string]string{}
-	for registry, value := range dockerConfig.AuthConfigs {
-		auth[registry] = fmt.Sprintf("Basic %s", value.Auth)
-	}
-
-	cnbRegistryAuth, err := json.Marshal(auth)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to marshal DockerConfigJSON")
 	}
 
 	target := "/workspace"
@@ -374,6 +348,20 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(dockerConfigFile, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
+	}
+
+	if dockerConfigFile != "" {
+		err = utils.FileRemove(dockerConfigFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrap(err, "failed to remove docker config.json file")
+		}
+	}
+
 	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
@@ -411,7 +399,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		log.Entry().Info("skipping certificates update")
 	}
 
-	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
 	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
 
 	creatorArgs := []string{
