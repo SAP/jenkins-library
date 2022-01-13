@@ -21,6 +21,9 @@ type FVDL struct {
 	Uuid            UUID
 	Buildinfo       Build
 	Vulnerabilities Vulnerabilities `xml:"Vulnerabilities"`
+	ContextPool     ContextPool     `xml:"ContextPool"`
+	UnifiedNodePool UnifiedNodePool `xml:"UnifiedNodePool"`
+	Description     []Description   `xml:"Description"`
 }
 
 type CreatedTS struct {
@@ -109,8 +112,10 @@ type AnalysisInfo struct { //Note that this is directly the "Unified" object
 }
 
 type Context struct {
-	Function Function
-	FDSL     FunctionDeclarationSourceLocation
+	XMLName   xml.Name `xml:"Context"`
+	ContextId string   `xml:"id,attr,omitempty"`
+	Function  Function
+	FDSL      FunctionDeclarationSourceLocation
 }
 
 type Function struct {
@@ -204,6 +209,69 @@ type Fact struct {
 	Primary  string   `xml:"primary,attr"`
 	Type     string   `xml:"type,attr,omitempty"`
 	FactData string   `xml:",innerxml"`
+}
+
+// These structures are relevant to the ContextPool object
+
+type ContextPool struct {
+	XMLName xml.Name  `xml:"ContextPool"`
+	Context []Context `xml:"Context"`
+}
+
+// These structures are relevant to the UnifiedNodePool object
+
+type UnifiedNodePool struct {
+	XMLName xml.Name `xml:"UnifiedNodePool"`
+	Node    []Node   `xml:"Node"`
+}
+
+// These structures are relevant to the Description object
+
+type Description struct {
+	XMLName           xml.Name          `xml:"Description"`
+	ContentType       string            `xml:"contentType,attr"`
+	ClassID           string            `xml:"classID,attr"`
+	Abstract          Abstract          `xml:"Abstract"`
+	Explanation       Explanation       `xml:"Explanation"`
+	Recommendations   Recommendations   `xml:"Recommendations"`
+	Tips              []Tip             `xml:"Tips>Tip,omitempty"`
+	References        []Reference       `xml:"References>Reference"`
+	CustomDescription CustomDescription `xml:"CustomDescription,omitempty"`
+}
+
+type Abstract struct {
+	XMLName xml.Name `xml:"Abstract"`
+	Text    string   `xml:",innerxml"`
+}
+
+type Explanation struct {
+	XMLName xml.Name `xml:"Explanation"`
+	Text    string   `xml:",innerxml"`
+}
+
+type Recommendations struct {
+	XMLName xml.Name `xml:"Recommendations"`
+	Text    string   `xml:",innerxml"`
+}
+
+type Reference struct {
+	XMLName xml.Name `xml:"Reference"`
+	Title   string   `xml:"Title"`
+	Author  string   `xml:"Author"`
+}
+
+type Tip struct {
+	XMLName xml.Name `xml:"Tip"`
+	Tip     string   `xml:",innerxml"`
+}
+
+type CustomDescription struct {
+	XMLName         xml.Name        `xml:"CustomDescription"`
+	ContentType     string          `xml:"contentType,attr"`
+	RuleID          string          `xml:"ruleID,attr"`
+	Explanation     Explanation     `xml:"Explanation"`
+	Recommendations Recommendations `xml:"Recommendations"`
+	References      []Reference     `xml:"References>Reference"`
 }
 
 func ConvertFprToSarif(resultFilePath string) error {
