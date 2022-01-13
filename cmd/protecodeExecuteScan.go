@@ -368,9 +368,12 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 
 func uploadFile(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string, replaceBinary bool) int {
 
+	// get calculated version for Version field
+	version := getProcessedVersion(&config)
+
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, productID, replaceBinary)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
@@ -387,7 +390,7 @@ func uploadFile(config protecodeExecuteScanOptions, productID int, client protec
 			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
 		}
 
-		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, productID, replaceBinary)
+		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}
@@ -445,7 +448,7 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 
 	version := getProcessedVersion(config)
 	if len(version) > 0 {
-		fileName = fileName + " - " + version
+		fileName = fileName + "_" + version
 	}
 
 	fileName = strings.ReplaceAll(fileName, "/", "_")
