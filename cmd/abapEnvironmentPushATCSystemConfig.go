@@ -82,12 +82,12 @@ func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfi
 	}
 }
 
-func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentPushATCSystemConfigUtils, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentPushATCSystemConfigUtils, autils abaputils.Communication, client piperhttp.Sender) error {
 
 	subOptions := convertATCSysOptions(config)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
+	connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
@@ -110,7 +110,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
-	filelocation, err := filepath.Glob(config.AtcSystemConfig)
+	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	//check ATC system configuration json
 	var atcSystemConfiguartionJsonFile []byte
 	if err == nil {
@@ -154,8 +154,6 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 		err = abaputils.HandleHTTPError(resp, err, "Could not push the given ATC System Configuration from File: "+config.AtcSystemConfigFilePath, uriConnectionDetails)
 		return err
 	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).Debug("Triggered Push of ATC System Configuration File")
 
 	return parseOdataResponse(resp)
 
@@ -174,7 +172,6 @@ func parseOdataResponse(resp *http.Response) error {
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
 		if err == nil {
-			defer resp.Body.Close()
 			if len(body) == 0 {
 				return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
 			}

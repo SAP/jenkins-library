@@ -16,15 +16,15 @@ import (
 )
 
 type abapEnvironmentPushATCSystemConfigOptions struct {
-	AtcSystemConfig   string `json:"atcSystemConfig,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Host              string `json:"host,omitempty"`
+	AtcSystemConfigFilePath string `json:"atcSystemConfigFilePath,omitempty"`
+	CfAPIEndpoint           string `json:"cfApiEndpoint,omitempty"`
+	CfOrg                   string `json:"cfOrg,omitempty"`
+	CfServiceInstance       string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName        string `json:"cfServiceKeyName,omitempty"`
+	CfSpace                 string `json:"cfSpace,omitempty"`
+	Username                string `json:"username,omitempty"`
+	Password                string `json:"password,omitempty"`
+	Host                    string `json:"host,omitempty"`
 }
 
 // AbapEnvironmentPushATCSystemConfigCommand Push/Deploy ATC Configuration
@@ -41,11 +41,11 @@ func AbapEnvironmentPushATCSystemConfigCommand() *cobra.Command {
 	var createAbapEnvironmentPushATCSystemConfigCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Push/Deploy ATC Configuration",
-		Long: `This step is for triggering an [ATC](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d8cec788fc104ff9ad9c3757b4dd13d4.html) test run on an SAP Cloud Platform ABAP Environment system.
+		Long: `This step is for pushing an [ATC](https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud) system configurationon an SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0763](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0763.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
 Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.`,
@@ -125,17 +125,17 @@ Regardless of the option you chose, please make sure to provide the configuratio
 }
 
 func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *abapEnvironmentPushATCSystemConfigOptions) {
-	cmd.Flags().StringVar(&stepConfig.AtcSystemConfig, "atcSystemConfig", os.Getenv("PIPER_atcSystemConfig"), "Path to a JSON configuration file for Packages and/or Software Components to be checked during ATC run")
+	cmd.Flags().StringVar(&stepConfig.AtcSystemConfigFilePath, "atcSystemConfigFilePath", os.Getenv("PIPER_atcSystemConfigFilePath"), "Path to a JSON file with ATC System Configuration")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0763")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0763")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 
-	cmd.MarkFlagRequired("atcSystemConfig")
+	cmd.MarkFlagRequired("atcSystemConfigFilePath")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
@@ -155,13 +155,13 @@ func abapEnvironmentPushATCSystemConfigMetadata() config.StepData {
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "atcSystemConfig",
+						Name:        "atcSystemConfigFilePath",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_atcSystemConfig"),
+						Default:     os.Getenv("PIPER_atcSystemConfigFilePath"),
 					},
 					{
 						Name:        "cfApiEndpoint",

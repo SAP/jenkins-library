@@ -21,7 +21,7 @@ spec:
     params:
       - name: atcSystemConfigFilePath
         type: string
-        description: Path to a JSON configuration file with ATC System Configuration
+        description: Path to a JSON file with ATC System Configuration
         scope:
           - PARAMETERS
           - STAGES
