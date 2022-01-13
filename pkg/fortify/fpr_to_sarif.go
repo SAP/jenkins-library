@@ -97,6 +97,11 @@ type Vulnerabilities struct {
 }
 
 // Vulnerability
+type Vulnerabilities struct {
+	XMLName       xml.Name        `xml:"Vulnerabilities"`
+	Vulnerability []Vulnerability `xml:"Vulnerability"`
+}
+
 type Vulnerability struct {
 	XMLName      xml.Name     `xml:"Vulnerability"`
 	ClassInfo    ClassInfo    `xml:"ClassInfo"`
