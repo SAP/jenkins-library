@@ -81,7 +81,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 type mtaBuildReports struct {
 }
 
-func (p *mtaBuildReports) persist(stepConfig mtaBuildOptions) {
+func (p *mtaBuildReports) persist(stepConfig sonarExecuteScanOptions) {
 	if GeneralConfig.GCSBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
@@ -89,6 +89,9 @@ func (p *mtaBuildReports) persist(stepConfig mtaBuildOptions) {
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "env.json", ParamRef: "", StepResultType: "root"},
 		{FilePattern: "build-settings.json", ParamRef: "", StepResultType: "settings"},
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
+		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
@@ -480,6 +483,9 @@ func mtaBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "env.json", "type": "root"},
 							{"filePattern": "build-settings.json", "type": "settings"},
+							{"filePattern": "**/TEST-*.xml", "type": "junit"},
+							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
+							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
 						},
 					},
 				},

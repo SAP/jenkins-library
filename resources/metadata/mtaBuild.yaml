@@ -234,5 +234,11 @@ spec:
             type: root
           - filePattern: "build-settings.json"
             type: settings
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
+          - filePattern: "**/jacoco.xml"
+            type: jacoco-coverage
   containers:
     - image: devxci/mbtci-java11-node14
