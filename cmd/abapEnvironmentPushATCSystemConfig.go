@@ -165,12 +165,11 @@ func parseOdataResponse(resp *http.Response) error {
 			if len(body) == 0 {
 				return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
 			}
-			//responseBody := string(body)
-			//parsedOdataErrors := new(oDataResponseErrors)
-			var parsedOdataErrors interface{}
+			//var parsedOdataErrors interface{}
+			var parsedOdataErrors oDataResponseErrors
 			err = json.Unmarshal(body, &parsedOdataErrors)
-
-			log.Entry().Debugf("Response body: %s", parsedOdataErrors)
+			//errorMessages := extractErrorMessages(parsedOdataErrors)
+			//return fmt.Errorf("Bad Request Errors: %w", errorMessages)
 			return fmt.Errorf("Bad Request Errors: %w", parsedOdataErrors)
 		}
 		if err != nil {
@@ -182,6 +181,25 @@ func parseOdataResponse(resp *http.Response) error {
 	}
 
 	return nil
+}
+
+func extractErrorMessages(parsedOdataErrors interface{}) []string {
+	var errorMessages []string
+
+	switch parsedOdataErrors.(type) {
+	case map[string]interface{}:
+		parsedOdataErrorsTab := parsedOdataErrors.(map[string]interface{})
+		fmt.Printf("error", parsedOdataErrorsTab["error"])
+	case []interface{}:
+		parsedOdataErrorsList := parsedOdataErrors.([]interface{})
+		fmt.Printf("error", parsedOdataErrorsList[1])
+	default:
+		panic(fmt.Errorf("type %T unexpected", parsedOdataErrors))
+	}
+	/* 	if errorMessage != "" {
+		errorMessages = append(errorMessages, errorMessage)
+	} */
+	return errorMessages
 }
 
 func triggerOdata(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -242,8 +260,8 @@ func GetABAPCom() abaputils.Communication {
 	return &autils
 }
 
-type oDataResponseErrors struct {
-	error []oDataResponseError
+type oDataResponseErrors []struct {
+	error oDataResponseError
 }
 
 type oDataResponseError struct {
