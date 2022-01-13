@@ -81,6 +81,8 @@ func (p *mavenBuildReports) persist(stepConfig mavenBuildOptions) {
 		{FilePattern: "env.json", ParamRef: "", StepResultType: "root"},
 		{FilePattern: "build-settings.json", ParamRef: "", StepResultType: "settings"},
 		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
@@ -450,6 +452,8 @@ func mavenBuildMetadata() config.StepData {
 							{"filePattern": "env.json", "type": "root"},
 							{"filePattern": "build-settings.json", "type": "settings"},
 							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/TEST-*.xml", "type": "junit"},
+							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
 						},
 					},
 				},

@@ -202,6 +202,10 @@ spec:
             type: settings
           - filePattern: "**/bom.xml"
             type: sbom
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/jacoco.xml"
+            type: jacoco-coverage
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
