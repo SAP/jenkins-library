@@ -53,17 +53,6 @@ func newAbapEnvironmentPushATCSystemConfigUtils() abapEnvironmentPushATCSystemCo
 }
 
 func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData) {
-	// Utils can be used wherever the command.ExecRunner interface is expected.
-	// It can also be used for example as a mavenExecRunner.
-	utils := newAbapEnvironmentPushATCSystemConfigUtils()
-
-	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -76,13 +65,13 @@ func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfi
 
 	client := piperhttp.Client{}
 
-	err := runAbapEnvironmentPushATCSystemConfig(&config, telemetryData, &utils, &autils, &client)
+	err := runAbapEnvironmentPushATCSystemConfig(&config, telemetryData, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentPushATCSystemConfigUtils, autils abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, autils abaputils.Communication, client piperhttp.Sender) error {
 
 	subOptions := convertATCSysOptions(config)
 
@@ -160,10 +149,10 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 }
 
 func parseOdataResponse(resp *http.Response) error {
+	log.Entry().WithField("func", "parsedOdataResp: StatusCode").Info(resp.Status)
 
 	switch resp.StatusCode {
 	case 201: //CREATED
-		log.Entry().WithField("func", "parsedOdataResp: StatusCode").Info(resp.Status)
 		return nil
 
 	case 400: //BAD REQUEST
