@@ -519,6 +519,21 @@ spec:
                 type: int
               - name: policy_violations
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "whitesource/**"
+            type: whitesource-ip
+          - filePattern: "whitesource-riskReport.pdf"
+            type: whitesource-ip
+          - filePattern: "**/toolrun_whitesource_*.json"
+            type: whitesource-ip
+          - filePattern: "whitesource/**"
+            type: whitesource-security
+          - filePattern: "whitesource-riskReport.pdf"
+            type: whitesource-security
+          - filePattern: "**/toolrun_whitesource_*.json"
+            type: whitesource-security
   containers:
     - image: buildpack-deps:stretch-curl
       workingDir: /tmp
