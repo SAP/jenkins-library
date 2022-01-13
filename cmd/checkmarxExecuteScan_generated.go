@@ -178,7 +178,7 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 type checkmarxExecuteScanReports struct {
 }
 
-func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOptions) {
+func (p *checkmarxExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
 	if GeneralConfig.GCSBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
@@ -186,6 +186,7 @@ func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOpt
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/CxSASTReport_*.pdf", ParamRef: "", StepResultType: "checkmarx"},
 		{FilePattern: "**/*CxSAST*.html", ParamRef: "", StepResultType: "checkmarx"},
+		{FilePattern: "**/CxSASTResults_*.xml", ParamRef: "", StepResultType: "checkmarx"},
 		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarx"},
 		{FilePattern: "**/toolrun_checkmarx_*.json", ParamRef: "", StepResultType: "checkmarx"},
 	}
@@ -628,6 +629,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/CxSASTReport_*.pdf", "type": "checkmarx"},
 							{"filePattern": "**/*CxSAST*.html", "type": "checkmarx"},
+							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarx"},
 							{"filePattern": "**/ScanReport.*", "type": "checkmarx"},
 							{"filePattern": "**/toolrun_checkmarx_*.json", "type": "checkmarx"},
 						},
