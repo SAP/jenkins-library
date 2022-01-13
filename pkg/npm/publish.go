@@ -50,15 +50,17 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	npmignore.Add("**/piper")
 	log.Entry().Debug("adding **/sap-piper")
 	npmignore.Add("**/sap-piper")
-	// update .npmrc
+
+	npmrc := NewNPMRC(filepath.Dir(packageJSON))
+
+	log.Entry().Debugf("adding piper npmrc file %v", npmrc.filepath)
+	npmignore.Add(npmrc.filepath)
+
 	if err := npmignore.Write(); err != nil {
 		return errors.Wrapf(err, "failed to update %s file", npmignore.filepath)
 	}
-	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
-	log.Entry().Debugf("adding piper npmrc file %v to ignore", npmrc.filepath)
-	npmignore.Add(npmrc.filepath)
-
+	// update .piperNpmrc
 	if len(registry) > 0 {
 		// check existing .npmrc file
 		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
