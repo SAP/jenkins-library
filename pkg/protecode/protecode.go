@@ -322,13 +322,13 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, vers
 		log.Entry().Debugf("[DEBUG] ===> replaceBinary && version != empty ")
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}}
 	} else if replaceBinary {
-		log.Entry().Debugf("[DEBUG] ===> replaceBinary - ", fmt.Sprintf("%v", replaceBinary))
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary")
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}}
 	} else if version != "" {
 		log.Entry().Debugf("[DEBUG] ===> version != empty ")
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}}
 	} else {
-		log.Entry().Debugf("[DEBUG] ===> replaceBinary - ", fmt.Sprintf("%v", replaceBinary), " - version == empty")
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary is false and version == empty")
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
 	}
 
