@@ -9,12 +9,16 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"reflect"
+	"strings"
 )
 
 type npmExecuteScriptsOptions struct {
@@ -61,6 +65,46 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 	}
 }
 
+type npmExecuteScriptsReports struct {
+}
+
+func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "env.json", ParamRef: "", StepResultType: "root"},
+		{FilePattern: "build-settings.json", ParamRef: "", StepResultType: "settings"},
+		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
+		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
+		{FilePattern: "**/e2e/*.json", ParamRef: "", StepResultType: "cucumber"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
 func NpmExecuteScriptsCommand() *cobra.Command {
 	const STEP_NAME = "npmExecuteScripts"
@@ -69,6 +113,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	var stepConfig npmExecuteScriptsOptions
 	var startTime time.Time
 	var commonPipelineEnvironment npmExecuteScriptsCommonPipelineEnvironment
+	var reports npmExecuteScriptsReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -123,6 +168,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -333,6 +379,19 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "env.json", "type": "root"},
+							{"filePattern": "build-settings.json", "type": "settings"},
+							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/TEST-*.xml", "type": "junit"},
+							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
+							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
+							{"filePattern": "**/e2e/*.json", "type": "cucumber"},
 						},
 					},
 				},
