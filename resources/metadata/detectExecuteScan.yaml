@@ -322,6 +322,15 @@ spec:
                 type: int
               - name: policy_violations
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/*BlackDuck_RiskReport.pdf"
+            type: blackduck-ip
+          - filePattern: "blackduck-ip.json"
+            type: blackduck-ip
+          - filePattern: "**/toolrun_detectExecute_*.json"
+            type: blackduck-ip
   containers:
     - name: openjdk
       image: openjdk:11
