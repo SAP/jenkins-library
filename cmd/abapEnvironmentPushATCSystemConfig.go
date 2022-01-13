@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -64,71 +64,55 @@ func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfi
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 
-	err := runAbapEnvironmentPushATCSystemConfig(&config, telemetryData, utils)
+	// for command execution use Command
+	c := command.Command{}
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
+
+	client := piperhttp.Client{}
+
+	err := runAbapEnvironmentPushATCSystemConfig(&config, telemetryData, &utils, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentPushATCSystemConfigUtils) error {
-
-	log.Entry().WithField("func", "Enter: runAbapEnvironmentPushATCSystemConfig").Info("successful")
-
-	exists, err := utils.FileExists(config.AtcSystemConfig)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-
-		return fmt.Errorf("failed to check for important file: %w", err)
-	}
-	if !exists {
-		log.Entry().WithField("func", "Leave: runAbapEnvironmentPushATCSystemConfig").Info("No ATC System Configuguration file (%w). Push of ATC System Configuration skipped.")
-		return err
-	}
+func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentPushATCSystemConfigUtils, com abaputils.Communication, client piperhttp.Sender) error {
 
 	subOptions := convertATCSysOptions(config)
 
-	//Define Client
-	var details abaputils.ConnectionDetailsHTTP
-
-	abapCom := GetABAPCom()
-	details, err = abapCom.GetAbapCommunicationArrangementInfo(subOptions, "")
-	client := piperhttp.Client{}
-	cookieJar, _ := cookiejar.New(nil)
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-	}
-
-	//Fetch Xcrsf-Token
-	if err == nil {
-		client.SetOptions(clientOptions)
-		credentialsOptions := piperhttp.ClientOptions{
-			Username:  details.User,
-			Password:  details.Password,
-			CookieJar: cookieJar,
-		}
-		client.SetOptions(credentialsOptions)
-		details.XCsrfToken, err = fetchATCXcsrfToken("GET", details, nil, &client)
-	}
-	if err == nil {
-		err = pushATCSystemConfig(config, details, &client)
-	}
-
+	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
 	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-	} else {
-		log.Entry().WithField("func", "Leave: runAbapEnvironmentPushATCSystemConfig").Info("ATC System Configuration successfully pushed to system")
+		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
 
-	return err
+	cookieJar, err := cookiejar.New(nil)
+	if err != nil {
+		return errors.Wrap(err, "Could not create a Cookie Jar")
+	}
+	clientOptions := piperhttp.ClientOptions{
+		MaxRequestDuration: 180 * time.Second,
+		CookieJar:          cookieJar,
+		Username:           connectionDetails.User,
+		Password:           connectionDetails.Password,
+	}
+	client.SetOptions(clientOptions)
+
+	return pushATCSystemConfig(config, connectionDetails, client)
+
 }
 
-func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
-	filelocation, err := filepath.Glob(config.AtcSystemConfig)
+	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	//check ATC system configuration json
-	var resp *http.Response
 	var atcSystemConfiguartionJsonFile []byte
-
 	if err == nil {
 		filename, err := filepath.Abs(filelocation[0])
 		if err == nil {
@@ -136,16 +120,45 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, deta
 		}
 	}
 	if err == nil {
-		abapEndpoint := details.URL
-		details.URL = abapEndpoint + "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001/configuration"
-		log.Entry().Debugf("Request Body: %s", atcSystemConfiguartionJsonFile)
-		resp, err = triggerOdata("POST", details, atcSystemConfiguartionJsonFile, client)
-		err = parseOdataResponse(resp)
+		err = handlePushConfiguration(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
 	if err != nil {
 		return fmt.Errorf("Pushing ATC System Configuration failed: %w", err)
 	}
 	return nil
+}
+
+func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+	uriConnectionDetails := connectionDetails
+	uriConnectionDetails.URL = ""
+	connectionDetails.XCsrfToken = "fetch"
+
+	// Loging into the ABAP System - getting the x-csrf-token and cookies
+	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
+	if err != nil {
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", connectionDetails)
+		return err
+	}
+	defer resp.Body.Close()
+
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", connectionDetails.URL).Debug("Authentication on the ABAP system successful")
+	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
+	connectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
+
+	abapEndpoint := connectionDetails.URL
+	connectionDetails.URL = abapEndpoint + "/configuration"
+
+	jsonBody := atcSystemConfiguartionJsonFile
+	resp, err = abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
+	if err != nil {
+		err = abaputils.HandleHTTPError(resp, err, "Could not push the given ATC System Configuration from File: "+config.AtcSystemConfigFilePath, uriConnectionDetails)
+		return err
+	}
+	defer resp.Body.Close()
+	log.Entry().WithField("StatusCode", resp.Status).Debug("Triggered Push of ATC System Configuration File")
+
+	return parseOdataResponse(resp)
+
 }
 
 func parseOdataResponse(resp *http.Response) error {
@@ -165,12 +178,11 @@ func parseOdataResponse(resp *http.Response) error {
 			if len(body) == 0 {
 				return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
 			}
-			//var parsedOdataErrors interface{}
 			var parsedOdataErrors oDataResponseErrors
 			err = json.Unmarshal(body, &parsedOdataErrors)
-			//errorMessages := extractErrorMessages(parsedOdataErrors)
-			//return fmt.Errorf("Bad Request Errors: %w", errorMessages)
-			return fmt.Errorf("Bad Request Errors: %w", parsedOdataErrors)
+			errorMessages := extractErrorMessages(parsedOdataErrors)
+			return fmt.Errorf("Bad Request Errors: %w", errorMessages)
+
 		}
 		if err != nil {
 			return fmt.Errorf("Parsing oData result failed: %w", err)
@@ -183,52 +195,24 @@ func parseOdataResponse(resp *http.Response) error {
 	return nil
 }
 
-func extractErrorMessages(parsedOdataErrors interface{}) []string {
+func extractErrorMessages(parsedOdataErrors oDataResponseErrors) []string {
 	var errorMessages []string
 
-	switch parsedOdataErrors.(type) {
-	case map[string]interface{}:
-		parsedOdataErrorsTab := parsedOdataErrors.(map[string]interface{})
-		fmt.Printf("error", parsedOdataErrorsTab["error"])
-	case []interface{}:
-		parsedOdataErrorsList := parsedOdataErrors.([]interface{})
-		fmt.Printf("error", parsedOdataErrorsList[1])
-	default:
-		panic(fmt.Errorf("type %T unexpected", parsedOdataErrors))
-	}
+	/* 	switch parsedOdataErrors.(type) {
+	   	case map[string]interface{}:
+	   		parsedOdataErrorsTab := parsedOdataErrors.(map[string]interface{})
+	   		fmt.Printf("message", parsedOdataErrorsTab["error"])
+	   	case []interface{}:
+	   		parsedOdataErrorsList := parsedOdataErrors.([]interface{})
+	   		fmt.Printf("error", parsedOdataErrorsList[1])
+	   	default:
+	   		panic(fmt.Errorf("type %T unexpected", parsedOdataErrors))
+	   	} */
 	/* 	if errorMessage != "" {
 		errorMessages = append(errorMessages, errorMessage)
 	} */
+	errorMessages = append(errorMessages, "Messages:")
 	return errorMessages
-}
-
-func triggerOdata(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
-	header := make(map[string][]string)
-	header["x-csrf-token"] = []string{details.XCsrfToken}
-	header["Accept"] = []string{"application/json"}
-	header["Content-Type"] = []string{"application/json"}
-
-	return client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-
-}
-
-func fetchATCXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
-
-	log.Entry().WithField("ABAP Endpoint: ", details.URL).Debug("Fetching Xcrsf-Token")
-
-	details.URL += "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001"
-	details.XCsrfToken = "fetch"
-	header := make(map[string][]string)
-	header["X-Csrf-Token"] = []string{details.XCsrfToken}
-	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	if err != nil {
-		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	token := resp.Header.Get("X-Csrf-Token")
-	return token, err
 }
 
 func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
@@ -244,20 +228,6 @@ func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) ab
 	subOptions.Username = options.Username
 
 	return subOptions
-}
-
-func GetABAPCom() abaputils.Communication {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
-
-	var autils = abaputils.AbapUtils{
-		Exec: &c,
-	}
-
-	return &autils
 }
 
 type oDataResponseErrors []struct {
