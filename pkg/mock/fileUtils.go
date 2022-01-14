@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package mock
@@ -463,6 +464,15 @@ type FileMock struct {
 	content []byte
 }
 
+// Reads the content of the mock
+func (f *FileMock) Read(b []byte) (n int, err error) {
+	for i, p := range f.content {
+		b[i] = p
+	}
+
+	return len(f.content), nil
+}
+
 // Close mocks freeing the associated OS resources.
 func (f *FileMock) Close() error {
 	f.files = nil
@@ -500,7 +510,7 @@ func (f *FileMock) Write(p []byte) (n int, err error) {
 // Instead, it returns a pointer to a FileMock instance, which implements a number of the same methods as os.File.
 // The flag parameter is checked for os.O_CREATE and os.O_APPEND and behaves accordingly.
 func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, error) {
-	if f.files == nil && flag&os.O_CREATE == 0 {
+	if (f.files == nil || !f.HasFile(path)) && flag&os.O_CREATE == 0 {
 		return nil, fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	f.init()
