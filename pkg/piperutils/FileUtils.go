@@ -33,6 +33,7 @@ type FileUtils interface {
 	RemoveAll(string) error
 	FileRename(string, string) error
 	Getwd() (string, error)
+	Symlink(oldname string, newname string) error
 }
 
 // Files ...
@@ -384,6 +385,11 @@ func (f Files) Stat(path string) (os.FileInfo, error) {
 // Abs is a wrapper for filepath.Abs()
 func (f Files) Abs(path string) (string, error) {
 	return filepath.Abs(path)
+}
+
+// Symlink is a wrapper for os.Symlink
+func (f Files) Symlink(oldname, newname string) error {
+	return os.Symlink(oldname, newname)
 }
 
 // Computes a SHA256 for a given file

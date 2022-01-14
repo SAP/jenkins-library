@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -640,5 +641,35 @@ func TestFilesMockTempDir(t *testing.T) {
 		ok, err := files.DirExists("/tmp/patterntest")
 		assert.NoError(t, err)
 		assert.True(t, ok)
+	})
+}
+
+func TestFilesMockSymlink(t *testing.T) {
+	t.Parallel()
+	t.Run("creates a symlink", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("/backup")
+		assert.NoError(t, files.Symlink("/folder", "/backup/folder"))
+
+		assert.True(t, files.HasCreatedSymlink("/folder", "/backup/folder"))
+	})
+
+	t.Run("fails if parent directory doesn't exist", func(t *testing.T) {
+		files := FilesMock{}
+		err := files.Symlink("/non/existent/folder", "/symbolic/link")
+		assert.Error(t, err)
+		assert.Equal(t, "failed to create symlink: parent directory /symbolic doesn't exist", err.Error())
+	})
+
+	t.Run("fails if FileWriteError is specified", func(t *testing.T) {
+		expectedErr := errors.New("test")
+		files := FilesMock{
+			FileWriteErrors: map[string]error{
+				"/symbolic/link": expectedErr,
+			},
+		}
+		err := files.Symlink("/non/existent/folder", "/symbolic/link")
+		assert.Error(t, err)
+		assert.Equal(t, expectedErr, err)
 	})
 }

@@ -39,6 +39,8 @@ func (fInfo fileInfoMock) Sys() interface{}   { return nil }
 type fileProperties struct {
 	content *[]byte
 	mode    os.FileMode
+	isLink  bool
+	target  string
 }
 
 // isDir returns true when the properties describe a directory entry.
@@ -152,6 +154,18 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 // and it was written via CopyFile().
 func (f *FilesMock) HasCopiedFile(src string, dest string) bool {
 	return f.copiedFiles[f.toAbsPath(src)] == f.toAbsPath(dest)
+}
+
+// HasCreatedSymlink returns true if the virtual file system has a symlink with a specific target.
+func (f *FilesMock) HasCreatedSymlink(oldname, newname string) bool {
+	if f.files == nil {
+		return false
+	}
+	props, exists := f.files[f.toAbsPath(newname)]
+	if !exists {
+		return false
+	}
+	return props.isLink && props.target == oldname
 }
 
 // FileExists returns true if file content has been associated with the given path, false otherwise.
@@ -454,6 +468,33 @@ func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 func (f *FilesMock) Abs(path string) (string, error) {
 	f.init()
 	return f.toAbsPath(path), nil
+}
+
+func (f *FilesMock) Symlink(oldname, newname string) error {
+	if f.FileWriteError != nil {
+		return f.FileWriteError
+	}
+
+	if f.FileWriteErrors[newname] != nil {
+		return f.FileWriteErrors[newname]
+	}
+
+	parentExists, err := f.DirExists(filepath.Dir(newname))
+	if err != nil {
+		return err
+	}
+	if !parentExists {
+		return fmt.Errorf("failed to create symlink: parent directory %s doesn't exist", filepath.Dir(newname))
+	}
+
+	f.init()
+
+	f.files[newname] = &fileProperties{
+		isLink: true,
+		target: oldname,
+	}
+
+	return nil
 }
 
 // FileMock can be used in places where a io.Closer, io.StringWriter or io.Writer is expected.
