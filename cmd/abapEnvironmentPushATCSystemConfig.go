@@ -99,22 +99,23 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
-	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	//check ATC system configuration json
-	var atcSystemConfiguartionJsonFile []byte
-	if err == nil {
-		filename, err := filepath.Abs(filelocation[0])
-		if err == nil {
-			atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
-		}
-	}
-	if err == nil {
-		err = handlePushConfiguration(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
-	}
+	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	if err != nil {
-		return fmt.Errorf("Pushing ATC System Configuration failed: %w", err)
+		return fmt.Errorf("Pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
 	}
-	return nil
+	var atcSystemConfiguartionJsonFile []byte
+	filename, err := filepath.Abs(filelocation[0])
+	if err != nil {
+		return fmt.Errorf("Pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+	}
+	atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("Pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+	}
+
+	return handlePushConfiguration(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
+
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
@@ -139,16 +140,16 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 
 	jsonBody := atcSystemConfiguartionJsonFile
 	resp, err = abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
-	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not push the given ATC System Configuration from File: "+config.AtcSystemConfigFilePath, uriConnectionDetails)
-		return err
-	}
-
-	return nil
+	return parseOdataResponse(resp, err, uriConnectionDetails)
 
 }
 
-func parseOdataResponse(resp *http.Response) error {
+func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP) error {
+
+	if resp == nil {
+		return errorIn
+	}
+
 	log.Entry().WithField("func", "parsedOdataResp: StatusCode").Info(resp.Status)
 
 	switch resp.StatusCode {
@@ -165,6 +166,7 @@ func parseOdataResponse(resp *http.Response) error {
 				return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
 			}
 			var parsedOdataErrors oDataResponseErrors
+
 			err = json.Unmarshal(body, &parsedOdataErrors)
 			errorMessages := extractErrorMessages(parsedOdataErrors)
 			return fmt.Errorf("Bad Request Errors: %w", errorMessages)
