@@ -292,13 +292,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		projectID = descriptor.ProjectID
 	}
 
-	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, GeneralConfig.EnvRootPath, projectID)
+	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, projectID, GeneralConfig.EnvRootPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
 
-	commonPipelineEnvironment.container.registryURL = targetImage.ContainerRegistryURL
+	commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
 	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
@@ -422,7 +422,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		"-platform", platformPath,
 	}
 
-	containerImage := path.Join(targetImage.ContainerRegistryURL, targetImage.ContainerImageName)
+	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
 		if !piperutils.ContainsString(creatorArgs, target) {
