@@ -83,7 +83,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
-		return errors.Wrap(err, "Could not create a Cookie Jar")
+		return errors.Wrap(err, "could not create a Cookie Jar")
 	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
@@ -102,16 +102,16 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 	//check ATC system configuration json
 	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	if err != nil {
-		return fmt.Errorf("Pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
 	}
 	var atcSystemConfiguartionJsonFile []byte
 	filename, err := filepath.Abs(filelocation[0])
 	if err != nil {
-		return fmt.Errorf("Pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
 	}
 	atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("Pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
 	}
 
 	return handlePushConfiguration(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
@@ -126,7 +126,7 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", connectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
 		return err
 	}
 	defer resp.Body.Close()
@@ -135,16 +135,79 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	connectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
+	//first check, if ATC configuration with given name already exists
+	configDoesExist, configName, configUUID, err := checkConfigExists(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
+	if err != nil {
+		return err
+	}
+	if !configDoesExist || (config.OverwriteExistingSystemConfig && configDoesExist) {
+		if configDoesExist {
+			err = doPatchATCSystemConfig(configName, configUUID, connectionDetails, client)
+			if err != nil {
+				return err
+			}
+		}
+
+		return doPushATCSystemConfig(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
+	} else {
+		log.Entry().Warningf("pushing ATC Sytsem Configuration skipped - Reason: ATC Configuration with same name '" + configName + "' (UUDI " + configUUID + ") already exists but OverwriteExistingSystemConfig is set to false.")
+	}
+	return nil
+
+}
+
+func doPatchATCSystemConfig(configName string, configUUID string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+	return nil
+}
+
+func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
 	jsonBody := atcSystemConfiguartionJsonFile
-	resp, err = abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
-	return parseOdataResponse(resp, err, uriConnectionDetails)
-
+	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
+	return parseOdataResponse(resp, err, connectionDetails, config)
 }
 
-func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP) error {
+func checkConfigExists(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, error) {
+	var configName string
+	var configUUID string
+
+	//extract Configuration Name from atcSystemConfiguartionJsonFile
+	var parsedConfigurationJson parsedConfigJson
+	err := json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
+	if err != nil {
+		return false, configName, configUUID, err
+	}
+
+	//call a get on config with filter on given name
+	configName = parsedConfigurationJson.ConfName
+	abapEndpoint := connectionDetails.URL
+	connectionDetails.URL = abapEndpoint + "/configuration" + "?$filter=conf_name%20eq%20" + "'" + configName + "'"
+	if err != nil {
+		return false, configName, configUUID, err
+	}
+	resp, err := abaputils.GetHTTPResponse("GET", connectionDetails, nil, client)
+	if err != nil {
+		return false, configName, configUUID, fmt.Errorf("oData response errors: %w", err)
+	}
+	var body []byte
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, configName, configUUID, fmt.Errorf("parsing oData response failed: %w", err)
+	}
+
+	var parsedoDataResponse parsedOdataResp
+	err = json.Unmarshal(body, &parsedoDataResponse)
+	if err != nil {
+		return false, configName, configUUID, fmt.Errorf("unmarshal oData response json failed: %w", err)
+	}
+	configUUID = parsedoDataResponse.Value[0].ConfUUID
+
+	return true, configName, configUUID, nil
+}
+
+func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions) error {
 
 	if resp == nil {
 		return errorIn
@@ -153,6 +216,9 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 	log.Entry().WithField("func", "parsedOdataResp: StatusCode").Info(resp.Status)
 
 	switch resp.StatusCode {
+	case 200: //Retrieved entities
+		return nil
+
 	case 201: //CREATED
 		return nil
 
@@ -162,49 +228,33 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Parsing oData response failed: %w", err)
+			return fmt.Errorf("parsing oData response failed: %w", err)
 		}
 		if len(body) == 0 {
-			return fmt.Errorf("Parsing oData response failed: %w", errors.New("Body is empty, can't parse empty body"))
+			return fmt.Errorf("parsing oData response failed: %w", errors.New("body is empty, can't parse empty body"))
 		}
-		var parsedOdataErrors oDataResponseErrors
+		var parsedOdataErrors interface{}
 		err = json.Unmarshal(body, &parsedOdataErrors)
 		if err != nil {
-			return fmt.Errorf("Unmarshal oData response json failed: %w", err)
+			return fmt.Errorf("unmarshal oData response json failed: %w", err)
 		}
-		err = extractErrorMessages(parsedOdataErrors)
-		return fmt.Errorf("Bad Request Errors: %w", err)
-
+		err = extractErrAndLogMessages(parsedOdataErrors, config)
 		if err != nil {
-			return fmt.Errorf("Parsing oData result failed: %w", err)
+			return fmt.Errorf("bad Request Errors: %w", err)
 		}
 
 	default: //unhandled OK Code
-		return fmt.Errorf("Unhandled StatusCode: %w", resp.Status)
+		return fmt.Errorf("unhandled StatusCode: %w", errors.New(resp.Status))
 	}
 
 	defer resp.Body.Close()
 	return nil
 }
 
-func extractErrorMessages(parsedOdataErrors oDataResponseErrors) error {
-	var errorMessages []string
-	/* 	switch parsedOdataErrors.(type) {
-	   	case map[string]interface{}:
-	   		parsedOdataErrorsTab := parsedOdataErrors.(map[string]interface{})
-	   		fmt.Printf("message", parsedOdataErrorsTab["error"])
-	   	case []interface{}:
-	   		parsedOdataErrorsList := parsedOdataErrors.([]interface{})
-	   		fmt.Printf("error", parsedOdataErrorsList[1])
-	   	default:
-	   		panic(fmt.Errorf("type %T unexpected", parsedOdataErrors))
-	   	} */
-	/* 	if errorMessage != "" {
-		errorMessages = append(errorMessages, errorMessage)
-	} */
-	errorMessages = append(errorMessages, "Messages:")
-
-	return &responseError{}
+func extractErrAndLogMessages(parsedOdataMessages interface{}, config *abapEnvironmentPushATCSystemConfigOptions) error {
+	var err error
+	//find relevant messages to handle specially
+	return err
 }
 
 func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
@@ -229,16 +279,26 @@ func (responseError *responseError) Error() string {
 type responseError struct {
 }
 
+type parsedOdataResp struct {
+	Value []parsedConfigJson `json:"value"`
+}
+
+type parsedConfigJson struct {
+	RootId   string `json:"root_id"`
+	ConfName string `json:"conf_name"`
+	ConfUUID string `json:"conf_id"`
+}
+
 type oDataResponseErrors []struct {
-	error oDataResponseError `json:"error"`
+	Error oDataResponseError `json:"error"`
 }
 
 type oDataResponseError struct {
-	code       string `json:"code"`
-	message    string `json:"message"`
-	target     string `json:"target"`
-	details    []oDataResponseErrorDetail
-	innererror struct{}
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Target     string `json:"target"`
+	Details    []oDataResponseErrorDetail
+	Innererror struct{}
 }
 
 type oDataResponseErrorDetail struct {
