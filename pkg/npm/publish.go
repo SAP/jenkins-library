@@ -50,13 +50,18 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	npmignore.Add("**/piper")
 	log.Entry().Debug("adding **/sap-piper")
 	npmignore.Add("**/sap-piper")
-	// update .npmrc
+
+	npmrc := NewNPMRC(filepath.Dir(packageJSON))
+
+	log.Entry().Debugf("adding piper npmrc file %v", npmrc.filepath)
+	npmignore.Add(npmrc.filepath)
+
 	if err := npmignore.Write(); err != nil {
 		return errors.Wrapf(err, "failed to update %s file", npmignore.filepath)
 	}
 
+	// update .piperNpmrc
 	if len(registry) > 0 {
-		npmrc := NewNPMRC(filepath.Dir(packageJSON))
 		// check existing .npmrc file
 		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
 			if err != nil {
@@ -67,7 +72,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
 			}
 		} else {
-			log.Entry().Debug("creating .npmrc file")
+			log.Entry().Debugf("creating new npmrc file at %s", npmrc.filepath)
 		}
 		// set registry
 		log.Entry().Debugf("adding registry %s", registry)
@@ -86,7 +91,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Debug("no registry provided")
 	}
 
-	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON))
+	err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 	if err != nil {
 		return err
 	}
