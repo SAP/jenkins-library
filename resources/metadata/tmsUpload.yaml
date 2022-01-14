@@ -27,6 +27,7 @@ spec:
           - PARAMETERS
           - STEPS
           - STAGES
+        mandatory: true
         secret: true
         resourceRef:
           - name: credentialsId

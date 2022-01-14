@@ -169,6 +169,7 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
 
+	cmd.MarkFlagRequired("tmsServiceKey")
 	cmd.MarkFlagRequired("nodeName")
 }
 
@@ -200,7 +201,7 @@ func tmsUploadMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_tmsServiceKey"),
 					},
