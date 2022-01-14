@@ -147,8 +147,13 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 				return err
 			}
 		}
+		if !configDoesExist {
+			err = doPushATCSystemConfig(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
+			if err != nil {
+				return err
+			}
+		}
 
-		return doPushATCSystemConfig(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	} else {
 		log.Entry().Warningf("pushing ATC Sytsem Configuration skipped - Reason: ATC Configuration with same name '" + configName + "' (UUDI " + configUUID + ") already exists but OverwriteExistingSystemConfig is set to false.")
 	}
