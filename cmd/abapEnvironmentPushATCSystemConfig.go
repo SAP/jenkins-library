@@ -161,17 +161,20 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		var err error
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
-		if err == nil {
-			if len(body) == 0 {
-				return fmt.Errorf("Parsing oData result failed: %w", errors.New("Body is empty, can't parse empty body"))
-			}
-			var parsedOdataErrors oDataResponseErrors
-
-			err = json.Unmarshal(body, &parsedOdataErrors)
-			errorMessages := extractErrorMessages(parsedOdataErrors)
-			return fmt.Errorf("Bad Request Errors: %w", errorMessages)
-
+		if err != nil {
+			return fmt.Errorf("Parsing oData response failed: %w", err)
 		}
+		if len(body) == 0 {
+			return fmt.Errorf("Parsing oData response failed: %w", errors.New("Body is empty, can't parse empty body"))
+		}
+		var parsedOdataErrors oDataResponseErrors
+		err = json.Unmarshal(body, &parsedOdataErrors)
+		if err != nil {
+			return fmt.Errorf("Unmarshal oData response json failed: %w", err)
+		}
+		err = extractErrorMessages(parsedOdataErrors)
+		return fmt.Errorf("Bad Request Errors: %w", err)
+
 		if err != nil {
 			return fmt.Errorf("Parsing oData result failed: %w", err)
 		}
@@ -180,12 +183,12 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		return fmt.Errorf("Unhandled StatusCode: %w", resp.Status)
 	}
 
+	defer resp.Body.Close()
 	return nil
 }
 
-func extractErrorMessages(parsedOdataErrors oDataResponseErrors) []string {
+func extractErrorMessages(parsedOdataErrors oDataResponseErrors) error {
 	var errorMessages []string
-
 	/* 	switch parsedOdataErrors.(type) {
 	   	case map[string]interface{}:
 	   		parsedOdataErrorsTab := parsedOdataErrors.(map[string]interface{})
@@ -200,7 +203,8 @@ func extractErrorMessages(parsedOdataErrors oDataResponseErrors) []string {
 		errorMessages = append(errorMessages, errorMessage)
 	} */
 	errorMessages = append(errorMessages, "Messages:")
-	return errorMessages
+
+	return &responseError{}
 }
 
 func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
@@ -218,14 +222,21 @@ func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) ab
 	return subOptions
 }
 
+func (responseError *responseError) Error() string {
+	return "Messages: "
+}
+
+type responseError struct {
+}
+
 type oDataResponseErrors []struct {
-	error oDataResponseError
+	error oDataResponseError `json:"error"`
 }
 
 type oDataResponseError struct {
-	code       string
-	message    string
-	target     string
+	code       string `json:"code"`
+	message    string `json:"message"`
+	target     string `json:"target"`
 	details    []oDataResponseErrorDetail
 	innererror struct{}
 }
