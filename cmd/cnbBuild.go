@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -18,7 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
@@ -251,51 +249,6 @@ func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 	}
 }
 
-type targetImage struct {
-	containerImage       string
-	containerImageTag    string
-	containerRegistryURL string
-}
-
-func getTargetImage(config *cnbBuildOptions, projectDescriptor *project.Descriptor) (*targetImage, error) {
-	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageTag) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return nil, errors.New("containerRegistryUrl and containerImageTag must be present")
-	}
-
-	targetImage := &targetImage{
-		containerImageTag: strings.ReplaceAll(config.ContainerImageTag, "+", "-"),
-	}
-
-	var containerRegistry string
-	var err error
-	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return nil, errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-		}
-		targetImage.containerRegistryURL = config.ContainerRegistryURL
-	} else {
-		containerRegistry = config.ContainerRegistryURL
-		targetImage.containerRegistryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
-	}
-
-	cpePath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	repository := piperenv.GetResourceParameter(cpePath, "git", "repository")
-
-	if len(config.ContainerImageName) > 0 {
-		targetImage.containerImage = path.Join(containerRegistry, config.ContainerImageName)
-	} else if len(projectDescriptor.ProjectID) > 0 {
-		name := strings.ReplaceAll(projectDescriptor.ProjectID, ".", "-") // Sanitize image name
-		targetImage.containerImage = path.Join(containerRegistry, name)
-	} else if len(repository) > 0 {
-		targetImage.containerImage = path.Join(containerRegistry, repository) // Sanitize image name?
-	}
-
-	return targetImage, nil
-}
-
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
@@ -314,9 +267,9 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
 
-	descriptor := &project.Descriptor{}
+	var projectID string
 	if projDescExists {
-		descriptor, err = project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
+		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
@@ -335,7 +288,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		if descriptor.Include != nil {
 			include = descriptor.Include
 		}
+
+		projectID = descriptor.ProjectID
 	}
+
+	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, GeneralConfig.EnvRootPath, projectID)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to retrieve target image configuration")
+	}
+
+	commonPipelineEnvironment.container.registryURL = targetImage.ContainerRegistryURL
+	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
@@ -369,7 +333,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	var source string
-	if len(config.Path) > 0 {
+	if config.Path != "" {
 		source = config.Path
 	} else {
 		source = pwd
@@ -433,15 +397,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	targetImage, err := getTargetImage(config, descriptor)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to retrieve target image configuration")
-	}
-
-	commonPipelineEnvironment.container.registryURL = targetImage.containerRegistryURL
-	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.containerImage, targetImage.containerImageTag)
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -467,14 +422,15 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		"-platform", platformPath,
 	}
 
+	containerImage := path.Join(targetImage.ContainerRegistryURL, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
-		target := fmt.Sprintf("%s:%s", targetImage.containerImage, tag)
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
 		if !piperutils.ContainsString(creatorArgs, target) {
 			creatorArgs = append(creatorArgs, "-tag", target)
 		}
 	}
 
-	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", targetImage.containerImage, targetImage.containerImageTag))
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
 	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
