@@ -17,7 +17,6 @@ import (
 
 type helmExecuteOptions struct {
 	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
-	APIServer                 string   `json:"apiServer,omitempty"`
 	ChartPath                 string   `json:"chartPath,omitempty"`
 	ContainerRegistryPassword string   `json:"containerRegistryPassword,omitempty"`
 	ContainerImageName        string   `json:"containerImageName,omitempty"`
@@ -26,22 +25,21 @@ type helmExecuteOptions struct {
 	ContainerRegistryUser     string   `json:"containerRegistryUser,omitempty"`
 	ContainerRegistrySecret   string   `json:"containerRegistrySecret,omitempty"`
 	DeploymentName            string   `json:"deploymentName,omitempty"`
-	DeployTool                string   `json:"deployTool,omitempty" validate:"possible-values=helm helm3"`
+	DeployTool                string   `json:"deployTool,omitempty" validate:"possible-values=helm3"`
 	ForceUpdates              bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                []string `json:"helmValues,omitempty"`
 	Image                     string   `json:"image,omitempty"`
-	IngressHosts              []string `json:"ingressHosts,omitempty"`
 	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
 	KubeConfig                string   `json:"kubeConfig,omitempty"`
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
-	TillerNamespace           string   `json:"tillerNamespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	DeployCommand             string   `json:"deployCommand,omitempty" validate:"possible-values=upgrade lint install test delete package"`
+	DeployCommand             string   `json:"deployCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall package"`
+	DryRun                    bool     `json:"dryRun,omitempty"`
 }
 
-// HelmExecuteCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
+// HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
 func HelmExecuteCommand() *cobra.Command {
 	const STEP_NAME = "helmExecute"
 
@@ -54,20 +52,20 @@ func HelmExecuteCommand() *cobra.Command {
 
 	var createHelmExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.",
-		Long: `Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
+		Short: "Executes helm3 functionality as the package manager for Kubernetes.",
+		Long: `Executes helm functionality as the package manager for Kubernetes.
 
-* [Helm](https://helm.sh/) command line tool and [Helm Charts](https://docs.helm.sh/developing_charts/#charts).
+* [Helm](https://helm.sh/)  is the package manager for Kubernetes.
+* [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
+* [Helm Charts] (https://artifacthub.io/)
 
 Following helm command will be executed by default:
 
 ` + "`" + `` + "`" + `` + "`" + `
-helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespace> --wait --timeout <helmDeployWaitSeconds> --set "image.repository=<yourRegistry>/<yourImageName>,image.tag=<yourImageTag>,secret.dockerconfigjson=<dockerSecret>,ingress.hosts[0]=<ingressHosts[0]>,,ingress.hosts[1]=<ingressHosts[1]>,...
+helm install <deploymentName> <chartPath> --namespace <namespace> --create-namespace --wait --timeout <helmDeployWaitSeconds>
 ` + "`" + `` + "`" + `` + "`" + `
 
-* ` + "`" + `yourRegistry` + "`" + ` will be retrieved from ` + "`" + `containerRegistryUrl` + "`" + `
-* ` + "`" + `yourImageName` + "`" + `, ` + "`" + `yourImageTag` + "`" + ` will be retrieved from ` + "`" + `image` + "`" + `
-* ` + "`" + `dockerSecret` + "`" + ` will be calculated with a call to ` + "`" + `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'` + "`" + ``,
+Note: piper supports only helm3 version, since helm2 is deprecated.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -146,8 +144,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 }
 
 func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for \"helm install\" or \"kubectl apply\" command.")
-	cmd.Flags().StringVar(&stepConfig.APIServer, "apiServer", os.Getenv("PIPER_apiServer"), "Defines the Url of the API Server of the Kubernetes cluster.")
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for Helm like  \"helm install [NAME] [CHART] [flags]\".")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
@@ -156,19 +153,18 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
-	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `helm`, "Defines the tool which should be used for deployment.")
+	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `helm3`, "Defines the tool which should be used for deployment.")
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
-	cmd.Flags().StringSliceVar(&stepConfig.IngressHosts, "ingressHosts", []string{}, "(Deprecated) List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().BoolVar(&stepConfig.KeepFailedDeployments, "keepFailedDeployments", false, "Defines whether a failed deployment will be purged")
 	cmd.Flags().StringVar(&stepConfig.KubeConfig, "kubeConfig", os.Getenv("PIPER_kubeConfig"), "Defines the path to the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
-	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
-	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `upgrade`, "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `upgrade`.")
+	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `install`, "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `install`.")
+	cmd.Flags().BoolVar(&stepConfig.DryRun, "dryRun", false, "simulate execute command, like simulate an install")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -180,8 +176,8 @@ func helmExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "helmExecute",
-			Aliases:     []config.Alias{{Name: "deployToKubernetes", Deprecated: true}},
-			Description: "Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.",
+			Aliases:     []config.Alias{},
+			Description: "Executes helm3 functionality as the package manager for Kubernetes.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -203,15 +199,6 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentParameters"}},
 						Default:     []string{},
-					},
-					{
-						Name:        "apiServer",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "k8sAPIServer"}},
-						Default:     os.Getenv("PIPER_apiServer"),
 					},
 					{
 						Name:        "chartPath",
@@ -324,7 +311,7 @@ func helmExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     `helm`,
+						Default:     `helm3`,
 					},
 					{
 						Name:        "forceUpdates",
@@ -366,15 +353,6 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "deployImage"}},
 						Default:   os.Getenv("PIPER_image"),
-					},
-					{
-						Name:        "ingressHosts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
 					},
 					{
 						Name:        "keepFailedDeployments",
@@ -424,15 +402,6 @@ func helmExecuteMetadata() config.StepData {
 						Default:     `default`,
 					},
 					{
-						Name:        "tillerNamespace",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmTillerNamespace"}},
-						Default:     os.Getenv("PIPER_tillerNamespace"),
-					},
-					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -459,7 +428,16 @@ func helmExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `upgrade`,
+						Default:     `install`,
+					},
+					{
+						Name:        "dryRun",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

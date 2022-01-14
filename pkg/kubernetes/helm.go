@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -21,7 +20,6 @@ type HelmDeployUtils interface {
 
 type HelmExecuteOptions struct {
 	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
-	APIServer                 string   `json:"apiServer,omitempty"`
 	ChartPath                 string   `json:"chartPath,omitempty"`
 	ContainerRegistryPassword string   `json:"containerRegistryPassword,omitempty"`
 	ContainerImageName        string   `json:"containerImageName,omitempty"`
@@ -35,13 +33,13 @@ type HelmExecuteOptions struct {
 	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                []string `json:"helmValues,omitempty"`
 	Image                     string   `json:"image,omitempty"`
-	IngressHosts              []string `json:"ingressHosts,omitempty"`
 	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
 	KubeConfig                string   `json:"kubeConfig,omitempty"`
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
-	TillerNamespace           string   `json:"tillerNamespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
+	DeployCommand             string   `json:"deployCommand,omitempty"`
+	DryRun                    bool     `json:"dryRun,omitempty"`
 }
 
 type deployUtilsBundle struct {
@@ -76,7 +74,6 @@ func NewDeployUtilsBundle() HelmDeployUtils {
 	return &utils
 }
 
-// check settings for helm execution
 func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 
 	if len(config.ChartPath) <= 0 {
@@ -95,24 +92,14 @@ func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
 	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
-		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
-	}
+
 	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
 	utils.SetEnv(helmEnv)
 	utils.Stdout(stdout)
 
-	if config.DeployTool == "helm" {
-		initParams := []string{"init", "--client-only"}
-		if err := utils.RunExecutable("helm", initParams...); err != nil {
-			log.Entry().WithError(err).Fatal("Helm init call failed")
-		}
-	}
-
 	return nil
 }
 
-// ToDo RunHelmUpgrade
 func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
@@ -126,17 +113,6 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	secretsData, err := getSecretsData(config, utils, containerInfo)
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments")
-	}
-
-	// Deprecated functionality
-	// only for backward compatible handling of ingress.hosts
-	// this requires an adoption of the default ingress.yaml template
-	// Due to the way helm is implemented it is currently not possible to overwrite a part of a list:
-	// see: https://github.com/helm/helm/issues/5711#issuecomment-636177594
-	// Recommended way is to use a custom values file which contains the appropriate data
-	ingressHosts := ""
-	for i, h := range config.IngressHosts {
-		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
 	}
 
 	upgradeParams := []string{
@@ -154,21 +130,15 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 		"--install",
 		"--namespace", config.Namespace,
 		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerInfo["containerRegistry"], containerInfo["containerImageName"],
-			containerInfo["containerImageTag"], secretsData, ingressHosts),
+		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v", containerInfo["containerRegistry"], containerInfo["containerImageName"],
+			containerInfo["containerImageTag"], secretsData),
 	)
 
 	if config.ForceUpdates {
 		upgradeParams = append(upgradeParams, "--force")
 	}
 
-	if config.DeployTool == "helm" {
-		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
-	}
-
-	if config.DeployTool == "helm3" {
-		upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
-	}
+	upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
 
 	if !config.KeepFailedDeployments {
 		upgradeParams = append(upgradeParams, "--atomic")
@@ -184,7 +154,7 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 
 	utils.Stdout(stdout)
 	log.Entry().Info("Calling helm upgrade ...")
-	log.Entry().Debugf("Helm parameters %v", upgradeParams)
+	log.Entry().Debugf("Helm parameters: %v", upgradeParams)
 	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
@@ -198,21 +168,70 @@ func RunHelmLint() {
 }
 
 // ToDo RunHelmInstall
-func RunHelmInstall() {
+func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	err := runHelmInit(config, utils, stdout)
+	if err != nil {
+		return fmt.Errorf("failed to execute deployments")
+	}
+
+	upgradeParams := []string{
+		"install",
+		config.DeploymentName,
+		config.ChartPath,
+	}
+	upgradeParams = append(upgradeParams, "--namespace", config.Namespace)
+	upgradeParams = append(upgradeParams, "--create-namespace")
+	if !config.KeepFailedDeployments {
+		upgradeParams = append(upgradeParams, "--atomic")
+	}
+	if config.DryRun {
+		upgradeParams = append(upgradeParams, "--dry-run")
+	}
+	upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm install ...")
+	log.Entry().Debugf("Helm parameters: %v", upgradeParams)
+	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm install call failed")
+	}
+
+	return nil
+}
+
+// ToDo RunHelmDelete
+func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	err := runHelmInit(config, utils, stdout)
+	if err != nil {
+		return fmt.Errorf("failed to execute deployments")
+	}
+
+	upgradeParams := []string{
+		"uninstall",
+		config.DeploymentName,
+	}
+	upgradeParams = append(upgradeParams, "--namespace", config.Namespace)
+	upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	if config.DryRun {
+		upgradeParams = append(upgradeParams, "--dry-run")
+	}
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm uninstall ...")
+	log.Entry().Debugf("Helm parameters: %v", upgradeParams)
+	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm uninstall call failed")
+	}
+
+	return nil
+}
+
+// ToDo RunHelmPackage
+func RunHelmPackage() {
 
 }
 
 // ToDo RunHelmTest
 func RunHelmTest() {
-
-}
-
-// ToDo RunHelmDelete
-func RunHelmDelete() {
-
-}
-
-// ToDo RunHelmPackage
-func RunHelmPackage() {
 
 }

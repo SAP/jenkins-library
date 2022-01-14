@@ -1,23 +1,20 @@
 metadata:
   name: helmExecute
-  aliases:
-    - name: deployToKubernetes
-      deprecated: true
-  description: Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
+  description: Executes helm3 functionality as the package manager for Kubernetes.
   longDescription: |-
-    Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
+    Executes helm functionality as the package manager for Kubernetes.
 
-    * [Helm](https://helm.sh/) command line tool and [Helm Charts](https://docs.helm.sh/developing_charts/#charts).
+    * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
+    * [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
+    * [Helm Charts] (https://artifacthub.io/)
 
     Following helm command will be executed by default:
 
     ```
-    helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespace> --wait --timeout <helmDeployWaitSeconds> --set "image.repository=<yourRegistry>/<yourImageName>,image.tag=<yourImageTag>,secret.dockerconfigjson=<dockerSecret>,ingress.hosts[0]=<ingressHosts[0]>,,ingress.hosts[1]=<ingressHosts[1]>,...
+    helm install <deploymentName> <chartPath> --namespace <namespace> --create-namespace --wait --timeout <helmDeployWaitSeconds>
     ```
 
-    * `yourRegistry` will be retrieved from `containerRegistryUrl`
-    * `yourImageName`, `yourImageTag` will be retrieved from `image`
-    * `dockerSecret` will be calculated with a call to `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'`
+    Note: piper supports only helm3 version, since helm2 is deprecated.
 spec:
   inputs:
     secrets:
@@ -46,30 +43,11 @@ spec:
         aliases:
           - name: helmDeploymentParameters
         type: "[]string"
-        description: Defines additional parameters for "helm install" or "kubectl apply" command.
+        description: Defines additional parameters for Helm like  "helm install [NAME] [CHART] [flags]".
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: apiServer
-        aliases:
-          - name: k8sAPIServer
-        type: string
-        description: Defines the Url of the API Server of the Kubernetes cluster.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      # - name: appTemplate
-      #   aliases:
-      #     - name: k8sAppTemplate
-      #   type: string
-      #   description: 'Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.'
-      #   scope:
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
       - name: chartPath
         aliases:
           - name: helmChartPath
@@ -149,27 +127,16 @@ spec:
         longDescription: |-
           Name of the container registry secret used for pulling containers from the registry.
 
-          **For `deployTool: helm/helm3`:**<br />
+          **For `deployTool: helm3`:**<br />
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
 
           If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
-
-          **For `deployTool: kubectl`:**<br />
-          ???????If `createDockerRegistrySecret: true` and `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster unless a secret with the name already exists.
         type: string
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: regsecret
-      # - name: createDockerRegistrySecret
-      #   type: bool
-      #   description: "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation."
-      #   scope:
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
-      #   default: false
       - name: deploymentName
         aliases:
           - name: helmDeploymentName
@@ -187,9 +154,8 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: helm
+        default: helm3
         possibleValues:
-          - helm
           - helm3
       - name: forceUpdates
         aliases:
@@ -230,21 +196,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: ingressHosts
-        type: "[]string"
-        description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
-        longDescription: |-
-          **DEPRECATED**<br />
-          List of ingress hosts to be exposed via helm deployment.<br />
-          Host names are passed to helm template via ingress configuration.<br />
-          This requires a modification to the default helm template, thus it is not recommended.
-
-          Recommendation is to use custom values and pass them via parameter `helmValues`.<br />
-          Since helm supports multiple files on top of the `values.yaml`, landscape-specific attributes can be passed via a specific file.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: keepFailedDeployments
         type: bool
         description: Defines whether a failed deployment will be purged
@@ -276,18 +227,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      # - name: kubeToken
-      #   type: string
-      #   description: Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.
-      #   scope:
-      #     - GENERAL
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
-      #   secret: true
-      #   resourceRef:
-      #     - name: kubeTokenCredentialsId
-      #       type: secret
       - name: namespace
         aliases:
           - name: helmDeploymentNamespace
@@ -299,15 +238,6 @@ spec:
           - STAGES
           - STEPS
         default: default
-      - name: tillerNamespace
-        aliases:
-          - name: helmTillerNamespace
-        type: string
-        description: Defines optional tiller namespace for deployments using helm.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: dockerConfigJSON
         type: string
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
@@ -324,20 +254,29 @@ spec:
             default: docker-config
       - name: deployCommand
         type: string
-        description: "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `upgrade`."
+        description: "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `install`."
         mandatory: false
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: upgrade
+        default: install
         possibleValues:
           - upgrade
           - lint
           - install
           - test
-          - delete
+          - uninstall
           - package
+      - name: dryRun
+        type: bool
+        description: simulate execute command, like simulate an install
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
