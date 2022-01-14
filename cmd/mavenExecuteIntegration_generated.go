@@ -8,11 +8,15 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"reflect"
+	"strings"
 )
 
 type mavenExecuteIntegrationOptions struct {
@@ -26,6 +30,43 @@ type mavenExecuteIntegrationOptions struct {
 	LogSuccessfulMavenTransfers bool   `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
+type mavenExecuteIntegrationReports struct {
+}
+
+func (p *mavenExecuteIntegrationReports) persist(stepConfig mavenExecuteIntegrationOptions) {
+	if GeneralConfig.GCSBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/requirement.mapping", ParamRef: "", StepResultType: "requirement-mapping"},
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/integration-test/*.xml", ParamRef: "", StepResultType: "integration-test"},
+		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // MavenExecuteIntegrationCommand This step will execute backend integration tests via the Jacoco Maven-plugin.
 func MavenExecuteIntegrationCommand() *cobra.Command {
 	const STEP_NAME = "mavenExecuteIntegration"
@@ -33,6 +74,7 @@ func MavenExecuteIntegrationCommand() *cobra.Command {
 	metadata := mavenExecuteIntegrationMetadata()
 	var stepConfig mavenExecuteIntegrationOptions
 	var startTime time.Time
+	var reports mavenExecuteIntegrationReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -85,6 +127,7 @@ the integration tests via the Jacoco Maven-plugin.`,
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				reports.persist(stepConfig)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -217,6 +260,20 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 			},
 			Sidecars: []config.Container{
 				{},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
+							{"filePattern": "**/TEST-*.xml", "type": "junit"},
+							{"filePattern": "**/integration-test/*.xml", "type": "integration-test"},
+							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
+						},
+					},
+				},
 			},
 		},
 	}
