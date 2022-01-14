@@ -154,7 +154,7 @@ func CnbBuildCommand() *cobra.Command {
 }
 
 func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built\n`cnbBuild` step will try to identify a containerImageName using the following precedence:\n  1. `containerImageName` parameter.\n  2. `project.id` field of a `project.toml` file.\n  3. `git/repository` parameter of the `commonPipelineEnvironment`.\nIf none of the above was found - an error will be raised.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.")
@@ -165,7 +165,6 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
 
-	cmd.MarkFlagRequired("containerImageName")
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
 }
@@ -189,7 +188,7 @@ func cnbBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 						Default:     os.Getenv("PIPER_containerImageName"),
 					},
