@@ -349,7 +349,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
 		}
-		addProjectDescriptorTelemetryData(&customTelemetryData, descriptor)
+		addProjectDescriptorTelemetryData(&customTelemetryData, *descriptor)
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
