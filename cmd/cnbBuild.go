@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -268,6 +267,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
 
+	var projectID string
 	if projDescExists {
 		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
 		if err != nil {
@@ -288,7 +288,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		if descriptor.Include != nil {
 			include = descriptor.Include
 		}
+
+		projectID = descriptor.ProjectID
 	}
+
+	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, projectID, GeneralConfig.EnvRootPath)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to retrieve target image configuration")
+	}
+
+	commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
+	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
@@ -322,7 +333,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	var source string
-	if len(config.Path) > 0 {
+	if config.Path != "" {
 		source = config.Path
 	} else {
 		source = pwd
@@ -386,28 +397,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
-	}
-
-	var containerRegistry string
-	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-		}
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-	} else {
-		containerRegistry = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
-	}
-
-	containerImage := path.Join(containerRegistry, config.ContainerImageName)
-	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -433,6 +422,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		"-platform", platformPath,
 	}
 
+	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
 		if !piperutils.ContainsString(creatorArgs, target) {
@@ -440,7 +430,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, containerImageTag))
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
 	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
