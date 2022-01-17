@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -98,7 +100,17 @@ func generateDefaults(utils getDefaultsUtils) error {
 		return err
 	}
 
-	_ = yamlDefaults
+	var jsonOutput []byte
+	if len(yamlDefaults) > 1 {
+		jsonOutput, err = json.Marshal(yamlDefaults)
+	} else {
+		jsonOutput, err = json.Marshal(yamlDefaults[0])
+	}
+
+	if err != nil {
+		return errors.Wrapf(err, "defaults: could not embed YAML defaults into JSON")
+	}
+	fmt.Println(string(jsonOutput))
 
 	return nil
 }
