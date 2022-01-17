@@ -142,7 +142,7 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 	}
 	if !configDoesExist || (config.OverwriteExistingSystemConfig && configDoesExist) {
 		if configDoesExist {
-			err = doPatchATCSystemConfig(configName, configUUID, connectionDetails, client)
+			err = doOverwriteATCSystemConfig(configName, configUUID, connectionDetails, client)
 			if err != nil {
 				return err
 			}
@@ -155,13 +155,13 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 		}
 
 	} else {
-		log.Entry().Warningf("pushing ATC Sytsem Configuration skipped - Reason: ATC Configuration with same name '" + configName + "' (UUDI " + configUUID + ") already exists but OverwriteExistingSystemConfig is set to false.")
+		log.Entry().Warningf("pushing ATC System Configuration skipped - Reason: ATC Configuration with same name '" + configName + "' (UUDI " + configUUID + ") already exists but OverwriteExistingSystemConfig is set to false.")
 	}
 	return nil
 
 }
 
-func doPatchATCSystemConfig(configName string, configUUID string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func doOverwriteATCSystemConfig(configName string, configUUID string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	return nil
 }
 
@@ -207,9 +207,15 @@ func checkConfigExists(config *abapEnvironmentPushATCSystemConfigOptions, atcSys
 	if err != nil {
 		return false, configName, configUUID, fmt.Errorf("unmarshal oData response json failed: %w", err)
 	}
-	configUUID = parsedoDataResponse.Value[0].ConfUUID
+	if len(parsedoDataResponse.Value) > 0 {
+		configUUID = parsedoDataResponse.Value[0].ConfUUID
+	}
+	if configUUID == "" {
+		return false, configName, configUUID, nil
+	} else {
+		return true, configName, configUUID, nil
+	}
 
-	return true, configName, configUUID, nil
 }
 
 func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions) error {
