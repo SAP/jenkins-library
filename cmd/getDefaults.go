@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -63,6 +64,43 @@ func DefaultsCommand() *cobra.Command {
 
 	addDefaultsFlags(createDefaultsCmd)
 	return createDefaultsCmd
+}
+
+func getDefaults() ([]map[string]string, error) {
+
+	var yamlDefaults []map[string]string
+
+	for _, f := range defaultsOptions.defaultsFiles {
+		fc, err := defaultsOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
+		if err != nil {
+			return yamlDefaults, errors.Wrapf(err, "defaults: retrieving defaults file failed: '%v'", f)
+		}
+		if err == nil {
+			var c config.Config
+			c.ReadConfig(fc)
+
+			yaml, err := config.GetYAML(c)
+			if err != nil {
+				return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
+			}
+
+			yamlDefaults = append(yamlDefaults, map[string]string{f: yaml})
+		}
+	}
+
+	return yamlDefaults, nil
+}
+
+func generateDefaults(utils getDefaultsUtils) error {
+
+	yamlDefaults, err := getDefaults()
+	if err != nil {
+		return err
+	}
+
+	_ = yamlDefaults
+
+	return nil
 }
 
 func addDefaultsFlags(cmd *cobra.Command) {
