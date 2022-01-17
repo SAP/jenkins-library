@@ -91,7 +91,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Debug("no registry provided")
 	}
 
-	err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry, "--loglevel", "silly", "--scope", "@pipertest")
+	err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--@pipertest:registry", registry)
 	if err != nil {
 		return err
 	}
