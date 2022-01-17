@@ -14,9 +14,9 @@ type apiProviderDownloadMockUtils struct {
 	*mock.FilesMock
 }
 
-func TestRunApiProviderDownload(t *testing.T) {
+//Successful API Provider download cases
+func TestApiProviderDownloadSuccess(t *testing.T) {
 	t.Parallel()
-
 	t.Run("Successful Download of API Provider", func(t *testing.T) {
 		file, err := ioutil.TempFile("", "provider1.json")
 		if err != nil {
@@ -42,18 +42,23 @@ func TestRunApiProviderDownload(t *testing.T) {
 		errResp := runApiProviderDownload(&config, nil, &httpClient)
 
 		if assert.NoError(t, errResp) {
-			t.Run("check file", func(t *testing.T) {
+			t.Run("Check for file existence", func(t *testing.T) {
 				assert.Equal(t, fileExists(file.Name()), true)
 			})
-			t.Run("check url", func(t *testing.T) {
+			t.Run("Assert API Provider url", func(t *testing.T) {
 				assert.Equal(t, "https://demo/apiportal/api/1.0/Management.svc/APIProviders('provider1')", httpClient.URL)
 			})
 
-			t.Run("check method", func(t *testing.T) {
+			t.Run("Assert method as GET", func(t *testing.T) {
 				assert.Equal(t, "GET", httpClient.Method)
 			})
 		}
 	})
+}
+
+//API Provider download failure cases
+func TestApiProviderDownloadFailure(t *testing.T) {
+	t.Parallel()
 
 	t.Run("Failed case of API Provider Download", func(t *testing.T) {
 		apiServiceKey := `{

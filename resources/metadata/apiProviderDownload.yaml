@@ -32,7 +32,7 @@ spec:
         mandatory: true
       - name: downloadPath
         type: string
-        description: Specifies api provider download directory location. The file name should not be included in the path.
+        description: Specifies api provider download directory location. The file name must not be included in the path.
         scope:
           - PARAMETERS
           - STAGES
