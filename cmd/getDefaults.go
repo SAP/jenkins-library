@@ -114,6 +114,14 @@ func generateDefaults(utils getDefaultsUtils) error {
 	if err != nil {
 		return errors.Wrapf(err, "defaults: could not embed YAML defaults into JSON")
 	}
+
+	if len(defaultsOptions.outputFile) > 0 {
+		err := utils.FileWrite(defaultsOptions.outputFile, []byte(jsonOutput), 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write output file %v: %w", configOptions.outputFile, err)
+		}
+		return nil
+	}
 	fmt.Println(string(jsonOutput))
 
 	return nil
