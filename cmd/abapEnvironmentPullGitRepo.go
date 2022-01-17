@@ -163,8 +163,7 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 		return uriConnectionDetails, err
 	}
 
-	expandLog := "?$expand=to_Execution_log,to_Transport_log"
-	uriConnectionDetails.URL = body.Metadata.URI + expandLog
+	uriConnectionDetails.URL = body.Metadata.URI
 	return uriConnectionDetails, nil
 }
 

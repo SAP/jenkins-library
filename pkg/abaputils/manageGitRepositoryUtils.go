@@ -20,37 +20,19 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	var status string = "R"
 
 	for {
-		var resp, err = GetHTTPResponse("GET", connectionDetails, nil, client)
+		pullEntity, responseStatus, err := GetPullStatus(repositoryName, connectionDetails, client)
 		if err != nil {
-			log.SetErrorCategory(log.ErrorInfrastructure)
-			err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
-			return "", err
+			return status, err
 		}
-		defer resp.Body.Close()
+		status = pullEntity.Status
+		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
+		if pullEntity.Status != "R" {
 
-		// Parse response
-		var abapResp map[string]*json.RawMessage
-		var body PullEntity
-		bodyText, _ := ioutil.ReadAll(resp.Body)
-
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["d"], &body)
-
-		if reflect.DeepEqual(PullEntity{}, body) {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
-			log.SetErrorCategory(log.ErrorInfrastructure)
-			var err = errors.New("Request to ABAP System not successful")
-			return "", err
-		}
-
-		status = body.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
-		if body.Status != "R" {
-			if body.Status == "E" {
+			if pullEntity.Status == "E" {
 				log.SetErrorCategory(log.ErrorUndefined)
-				PrintLogs(body, true)
+				PrintLegacyLogs(repositoryName, connectionDetails, client, true)
 			} else {
-				PrintLogs(body, false)
+				PrintLegacyLogs(repositoryName, connectionDetails, client, false)
 			}
 			break
 		}
@@ -59,9 +41,54 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	return status, nil
 }
 
-// PrintLogs sorts and formats the received transport and execution log of an import
-func PrintLogs(entity PullEntity, errorOnSystem bool) {
+func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
+		return body, resp.Status, err
+	}
+	defer resp.Body.Close()
 
+	// Parse response
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal(bodyText, &abapResp)
+	json.Unmarshal(*abapResp["d"], &body)
+
+	if reflect.DeepEqual(PullEntity{}, body) {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		var err = errors.New("Request to ABAP System not successful")
+		return body, resp.Status, err
+	}
+	return body, resp.Status, nil
+}
+
+func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) (LogDoesNotExist error) {
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
+	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	if err != nil {
+		return err
+	}
+
+	// Sort logs
+	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
+		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
+	})
+
+	return nil
+}
+
+// PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
+func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) {
+
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_Log,to_Execution_Log"
+	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	if err != nil {
+		return
+	}
 	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
 		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
@@ -211,6 +238,7 @@ type PullEntity struct {
 	ChangeTime        string       `json:"change_time"`
 	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
 	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
+	ToLogOverview     AbapLogsV2   `json:"to_Log_Overview"`
 }
 
 // BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
@@ -247,6 +275,17 @@ type CloneEntity struct {
 // AbapLogs struct for ABAP logs
 type AbapLogs struct {
 	Results []LogResults `json:"results"`
+}
+
+type AbapLogsV2 struct {
+	Results []LogResultsV2 `json:"results"`
+}
+
+type LogResultsV2 struct {
+	Metadata AbapMetadata `json:"__metadata"`
+	Index    int          `json:"log_index"`
+	Name     string       `json:"log_name"`
+	Status   string       `json:"type_of_found_issues"`
 }
 
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP

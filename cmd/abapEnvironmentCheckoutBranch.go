@@ -141,8 +141,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 
-	expandLog := "?$expand=to_Execution_log,to_Transport_log"
-	uriConnectionDetails.URL = body.Metadata.URI + expandLog
+	uriConnectionDetails.URL = body.Metadata.URI
 	return uriConnectionDetails, nil
 }
 
