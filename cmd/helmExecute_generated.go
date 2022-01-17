@@ -26,7 +26,6 @@ type helmExecuteOptions struct {
 	ContainerRegistrySecret   string   `json:"containerRegistrySecret,omitempty"`
 	DeploymentName            string   `json:"deploymentName,omitempty"`
 	DeployTool                string   `json:"deployTool,omitempty" validate:"possible-values=helm3"`
-	ForceUpdates              bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                []string `json:"helmValues,omitempty"`
 	Image                     string   `json:"image,omitempty"`
@@ -37,6 +36,11 @@ type helmExecuteOptions struct {
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
 	DeployCommand             string   `json:"deployCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall package"`
 	DryRun                    bool     `json:"dryRun,omitempty"`
+	PackageVersion            string   `json:"packageVersion,omitempty"`
+	AppVersion                string   `json:"appVersion,omitempty"`
+	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
+	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
+	FilterTest                string   `json:"filterTest,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -154,7 +158,6 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `helm3`, "Defines the tool which should be used for deployment.")
-	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -165,6 +168,11 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `install`, "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `install`.")
 	cmd.Flags().BoolVar(&stepConfig.DryRun, "dryRun", false, "simulate execute command, like simulate an install")
+	cmd.Flags().StringVar(&stepConfig.PackageVersion, "packageVersion", os.Getenv("PIPER_packageVersion"), "set the version on the chart to this semver version")
+	cmd.Flags().StringVar(&stepConfig.AppVersion, "appVersion", os.Getenv("PIPER_appVersion"), "set the appVersion on the chart to this version")
+	cmd.Flags().BoolVar(&stepConfig.DependencyUpdate, "dependencyUpdate", false, "set the appVersion on the chart to this version")
+	cmd.Flags().BoolVar(&stepConfig.DumpLogs, "dumpLogs", false, "dump the logs from test pods (this runs after all tests are complete, but before any cleanup)")
+	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently \"name\") using attribute=value syntax or '!attribute=value' to exclude a test (can specify multiple or separate values with commas name=test1,name=test2)")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -314,15 +322,6 @@ func helmExecuteMetadata() config.StepData {
 						Default:     `helm3`,
 					},
 					{
-						Name:        "forceUpdates",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "force"}},
-						Default:     true,
-					},
-					{
 						Name:        "helmDeployWaitSeconds",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -439,12 +438,55 @@ func helmExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name:        "packageVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_packageVersion"),
+					},
+					{
+						Name:        "appVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_appVersion"),
+					},
+					{
+						Name:        "dependencyUpdate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "dumpLogs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "filterTest",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filterTest"),
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Image: "dtzar/helm-kubectl:3.4.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
-				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
 			},
 		},
 	}

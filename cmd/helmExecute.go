@@ -40,6 +40,12 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 		DeployCommand:         config.DeployCommand,
 		HelmDeployWaitSeconds: config.HelmDeployWaitSeconds,
 		DryRun:                config.DryRun,
+		PackageVersion:        config.PackageVersion,
+		AppVersion:            config.AppVersion,
+		DependencyUpdate:      config.DependencyUpdate,
+		HelmValues:            config.HelmValues,
+		FilterTest:            config.FilterTest,
+		DumpLogs:              config.DumpLogs,
 	}
 
 	switch config.DeployCommand {
@@ -56,14 +62,20 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 			return fmt.Errorf("failed to execute helm install")
 		}
 	case "test":
-		kubernetes.RunHelmTest()
+		err := kubernetes.RunHelmTest(helmConfig, utils, stdout)
+		if err != nil {
+			return fmt.Errorf("failed to execute helm uninstall")
+		}
 	case "uninstall":
 		err := kubernetes.RunHelmUninstall(helmConfig, utils, stdout)
 		if err != nil {
 			return fmt.Errorf("failed to execute helm uninstall")
 		}
 	case "package":
-		kubernetes.RunHelmPackage()
+		err := kubernetes.RunHelmPackage(helmConfig, utils, stdout)
+		if err != nil {
+			return fmt.Errorf("failed to execute helm uninstall")
+		}
 	default:
 		log.Entry().Error("Command '%v' is not supported Piper tool", config.DeployCommand)
 	}

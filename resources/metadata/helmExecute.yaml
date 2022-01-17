@@ -157,17 +157,17 @@ spec:
         default: helm3
         possibleValues:
           - helm3
-      - name: forceUpdates
-        aliases:
-          - name: force
-        type: bool
-        description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
-        mandatory: false
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
+      # - name: forceUpdates
+      #   aliases:
+      #     - name: force
+      #   type: bool
+      #   description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
+      #   mandatory: false
+      #   scope:
+      #     - PARAMETERS
+      #     - STAGES
+      #     - STEPS
+      #   default: true
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
@@ -277,6 +277,48 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: packageVersion
+        type: string
+        description:  set the version on the chart to this semver version
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: appVersion
+        type: string
+        description: set the appVersion on the chart to this version
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dependencyUpdate
+        type: bool
+        description: set the appVersion on the chart to this version
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dumpLogs
+        type: bool
+        description: dump the logs from test pods (this runs after all tests are complete, but before any cleanup)
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: filterTest
+        type: string
+        description: specify tests by attribute (currently "name") using attribute=value syntax or '!attribute=value' to exclude a test (can specify multiple or separate values with commas name=test1,name=test2)
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
@@ -288,23 +330,3 @@ spec:
           params:
             - name: deployTool
               value: helm3
-    - image: dtzar/helm-kubectl:2.17.0
-      workingDir: /config
-      options:
-        - name: -u
-          value: "0"
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: deployTool
-              value: helm
-    - image: dtzar/helm-kubectl:2.17.0
-      workingDir: /config
-      options:
-        - name: -u
-          value: "0"
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: deployTool
-              value: kubectl
