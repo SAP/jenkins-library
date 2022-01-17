@@ -113,7 +113,7 @@ func ApiProviderDownloadCommand() *cobra.Command {
 func addApiProviderDownloadFlags(cmd *cobra.Command, stepConfig *apiProviderDownloadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.APIProviderName, "apiProviderName", os.Getenv("PIPER_apiProviderName"), "Specifies the name of the API Provider.")
-	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies api provider download directory location. The file name should not be included in the path.")
+	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies api provider download directory location. The file name must not be included in the path.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("apiProviderName")
