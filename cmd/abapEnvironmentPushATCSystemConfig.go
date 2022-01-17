@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -100,25 +101,63 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
 	//check ATC system configuration json
-	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
+	fileExists, err := newAbapEnvironmentPushATCSystemConfigUtils().FileExists(config.AtcSystemConfigFilePath)
 	if err != nil {
-		return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		return err
 	}
-	var atcSystemConfiguartionJsonFile []byte
-	filename, err := filepath.Abs(filelocation[0])
-	if err != nil {
-		return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
-	}
-	atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
-	}
+	if fileExists {
+		filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
+		if err != nil {
+			return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		}
+		if len(filelocation) > 0 {
+			var atcSystemConfiguartionJsonFile []byte
+			filename, err := filepath.Abs(filelocation[0])
+			if err != nil {
+				return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+			}
+			atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
+			if err != nil {
+				return fmt.Errorf("pushing ATC System Configuration failed (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+			}
+			//check, if ATC configuration with given name already exists
+			configDoesExist, configName, configUUID, configLastChanged, err := checkConfigExists(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
+			if err != nil {
+				return err
+			}
+			var parsedConfigurationJson parsedConfigJson
+			err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
+			if err != nil {
+				return err
+			}
+			if !configDoesExist {
+				configUUID = ""
+				return handlePushConfiguration(config, filename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
+			}
+			if configDoesExist && configLastChanged.After(parsedConfigurationJson.LastChangedAt) && config.OverwriteExistingSystemConfig {
+				//exists but is older than current config
+				return handlePushConfiguration(config, filename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
+			}
+			if configDoesExist && !configLastChanged.After(parsedConfigurationJson.LastChangedAt) {
+				//
+				if config.OverwriteExistingSystemConfig {
+					//no push neccessary as configuration exists and is most recent
+					log.Entry().WithField("configName", "pushing ATC System Configuration skipped. Reason: ATC System Configuration with name "+configName+" exists and is most recent ("+configLastChanged.String()+") and should be overwritten (Configuration Setting).").Info(configName)
+				} else {
+					return fmt.Errorf("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name "+configName+" exists and is most recent ("+configLastChanged.String()+") and but should NOT be overwritten (Configuration Setting). - %w", err)
+				}
+			}
 
-	return handlePushConfiguration(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
-
+		} else {
+			return fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		}
+	} else {
+		return fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not exist(File: "+config.AtcSystemConfigFilePath+") - %w", err)
+	}
+	return nil
 }
 
-func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, configUUID string, validFilename string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	uriConnectionDetails := connectionDetails
 	uriConnectionDetails.URL = ""
 	connectionDetails.XCsrfToken = "fetch"
@@ -135,54 +174,54 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	connectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
-	//first check, if ATC configuration with given name already exists
-	configDoesExist, configName, configUUID, err := checkConfigExists(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
-	if err != nil {
-		return err
+	if configUUID != "" {
+		err = doPatchATCSystemConfig(config, validFilename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		if err != nil {
+			return err
+		}
 	}
-	if !configDoesExist || (config.OverwriteExistingSystemConfig && configDoesExist) {
-		if configDoesExist {
-			err = doOverwriteATCSystemConfig(configName, configUUID, connectionDetails, client)
-			if err != nil {
-				return err
-			}
+	if configUUID == "" {
+		err = doPushATCSystemConfig(config, validFilename, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		if err != nil {
+			return err
 		}
-		if !configDoesExist {
-			err = doPushATCSystemConfig(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
-			if err != nil {
-				return err
-			}
-		}
+	}
 
-	} else {
-		log.Entry().Warningf("pushing ATC System Configuration skipped - Reason: ATC Configuration with same name '" + configName + "' (UUDI " + configUUID + ") already exists but OverwriteExistingSystemConfig is set to false.")
-	}
 	return nil
 
 }
 
-func doOverwriteATCSystemConfig(configName string, configUUID string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
-	return nil
+func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+	abapEndpoint := connectionDetails.URL
+	//root ID is always 1!
+	connectionDetails.URL = abapEndpoint + "/configuration(root_id='1',conf_id=" + confUUID + ")"
+
+	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
+
+	jsonBody := atcSystemConfiguartionJsonFile
+	resp, err := abaputils.GetHTTPResponse("PATCH", connectionDetails, jsonBody, client)
+	return parseOdataResponse(resp, err, connectionDetails, config, validFilename)
 }
 
-func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
 	jsonBody := atcSystemConfiguartionJsonFile
 	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
-	return parseOdataResponse(resp, err, connectionDetails, config)
+	return parseOdataResponse(resp, err, connectionDetails, config, validFilename)
 }
 
-func checkConfigExists(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, error) {
+func checkConfigExists(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
 	var configName string
 	var configUUID string
+	var configLastChangedAt time.Time
 
 	//extract Configuration Name from atcSystemConfiguartionJsonFile
 	var parsedConfigurationJson parsedConfigJson
 	err := json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
 	if err != nil {
-		return false, configName, configUUID, err
+		return false, configName, configUUID, configLastChangedAt, err
 	}
 
 	//call a get on config with filter on given name
@@ -190,35 +229,31 @@ func checkConfigExists(config *abapEnvironmentPushATCSystemConfigOptions, atcSys
 	abapEndpoint := connectionDetails.URL
 	connectionDetails.URL = abapEndpoint + "/configuration" + "?$filter=conf_name%20eq%20" + "'" + configName + "'"
 	if err != nil {
-		return false, configName, configUUID, err
+		return false, configName, configUUID, configLastChangedAt, err
 	}
 	resp, err := abaputils.GetHTTPResponse("GET", connectionDetails, nil, client)
 	if err != nil {
-		return false, configName, configUUID, fmt.Errorf("oData response errors: %w", err)
+		return false, configName, configUUID, configLastChangedAt, fmt.Errorf("oData response errors: %w", err)
 	}
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return false, configName, configUUID, fmt.Errorf("parsing oData response failed: %w", err)
+		return false, configName, configUUID, configLastChangedAt, fmt.Errorf("parsing oData response failed: %w", err)
 	}
 
 	var parsedoDataResponse parsedOdataResp
 	err = json.Unmarshal(body, &parsedoDataResponse)
 	if err != nil {
-		return false, configName, configUUID, fmt.Errorf("unmarshal oData response json failed: %w", err)
+		return false, configName, configUUID, configLastChangedAt, fmt.Errorf("unmarshal oData response json failed: %w", err)
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
+		configLastChangedAt = parsedoDataResponse.Value[0].LastChangedAt
 	}
-	if configUUID == "" {
-		return false, configName, configUUID, nil
-	} else {
-		return true, configName, configUUID, nil
-	}
-
+	return true, configName, configUUID, configLastChangedAt, nil
 }
 
-func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions) error {
+func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions, validFilename string) error {
 
 	if resp == nil {
 		return errorIn
@@ -226,17 +261,39 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 
 	log.Entry().WithField("func", "parsedOdataResp: StatusCode").Info(resp.Status)
 
+	var err error
+	var body []byte
 	switch resp.StatusCode {
 	case 200: //Retrieved entities
 		return nil
 
 	case 201: //CREATED
+		//save response entity as
+		var createdATCSystemConfig []byte
+		var permWrite fs.FileMode
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("parsing oData response failed: %w", err)
+		}
+		createdATCSystemConfig = body
+		var parsedConfigurationJson parsedConfigJson
+		err := json.Unmarshal(createdATCSystemConfig, &parsedConfigurationJson)
+		if err != nil {
+			return err
+		}
+		createdATCSystemConfig, err = json.Marshal(&parsedConfigurationJson)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(validFilename, createdATCSystemConfig, permWrite)
+		if err != nil {
+			return err
+		}
+
 		return nil
 
 	case 400: //BAD REQUEST
 		//Parse response
-		var err error
-		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("parsing oData response failed: %w", err)
@@ -265,6 +322,7 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 func extractErrAndLogMessages(parsedOdataMessages interface{}, config *abapEnvironmentPushATCSystemConfigOptions) error {
 	var err error
 	//find relevant messages to handle specially
+
 	return err
 }
 
@@ -295,9 +353,15 @@ type parsedOdataResp struct {
 }
 
 type parsedConfigJson struct {
-	RootId   string `json:"root_id"`
-	ConfName string `json:"conf_name"`
-	ConfUUID string `json:"conf_id"`
+	RootId         string    `json:"root_id"`
+	ConfName       string    `json:"conf_name"`
+	ConfUUID       string    `json:"conf_id"`
+	Checkvariant   string    `json:"checkvariant"`
+	LastChangedAt  time.Time `json:"last_changed_at"`
+	BlockFindings  string    `json:"block_findings"`
+	InformFindings string    `json:"inform_findings"`
+	IsDefault      bool      `json:"is_default"`
+	IsProxyVariant bool      `json:"is_proxy_variant"`
 }
 
 type oDataResponseErrors []struct {
