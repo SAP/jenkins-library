@@ -72,10 +72,6 @@ func getDefaults() ([]map[string]string, error) {
 
 	var yamlDefaults []map[string]string
 
-	if len(defaultsOptions.defaultsFiles) < 1 {
-		return yamlDefaults, fmt.Errorf("no defaults files given as input")
-	}
-
 	for _, f := range defaultsOptions.defaultsFiles {
 		fc, err := defaultsOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
@@ -131,6 +127,7 @@ func addDefaultsFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&defaultsOptions.output, "output", "yaml", "Defines the format of the configs embedded into a JSON object")
 	cmd.Flags().StringVar(&defaultsOptions.outputFile, "outputFile", "", "Defines the output filename")
-	cmd.Flags().StringArrayVar(&defaultsOptions.defaultsFiles, "defaultsFiles", []string{}, "Defines the input defaults files")
+	cmd.Flags().StringArrayVar(&defaultsOptions.defaultsFiles, "defaultsFile", []string{}, "Defines the input defaults file(s)")
 
+	cmd.MarkFlagRequired("defaultsFile")
 }
