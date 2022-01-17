@@ -76,7 +76,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		}
 		// set registry
 		log.Entry().Debugf("adding registry %s", registry)
-		npmrc.Set("@pipertest:registry", registry)
+		npmrc.Set("registry", registry)
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
 			log.Entry().Debug("adding registry credentials")
