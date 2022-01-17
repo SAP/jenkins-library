@@ -59,7 +59,7 @@ func DefaultsCommand() *cobra.Command {
 			err := generateDefaults(utils)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
-				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
+				log.Entry().WithError(err).Fatal("failed to retrieve default configurations")
 			}
 		},
 	}
@@ -71,6 +71,10 @@ func DefaultsCommand() *cobra.Command {
 func getDefaults() ([]map[string]string, error) {
 
 	var yamlDefaults []map[string]string
+
+	if len(defaultsOptions.defaultsFiles) < 1 {
+		return yamlDefaults, fmt.Errorf("no defaults files given as input")
+	}
 
 	for _, f := range defaultsOptions.defaultsFiles {
 		fc, err := defaultsOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
