@@ -1,16 +1,11 @@
 # ${docGenStepName}
 
-apiProviderDownload
 ## ${docGenDescription}
 
-API Provider defines the connection details for services running on specific hosts. Apart from the details of the specific hosts, API provider can also be used to define any further details that are necessary to establish the connection.
-
-This function returns the APIProvider entity and store it in the file system by providing the name.
-
+API Provider defines the connection details for services running on specific hosts. Apart from the details of the specific hosts, API provider can also be used to define any further details that are necessary to establish the connection. This function returns the APIProvider entity and store it in the file system by providing the name.
 ## Prerequisites
 
-API Provider artifact to be downloaded should exist in the API Portal
-
+API Provider artifact to be downloaded should exist in the API Portal.
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
