@@ -157,7 +157,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 			return errors.New(errorMessage)
 		}
 
-		// validate the whole mapping and then throw errors together, so that user can get them in one pipeline run
+		// validate the whole mapping and then throw errors together, so that user can get them after a single pipeline run
 		nodeIdExtDescriptorMapping, errGetNodeIdExtDescriptorMapping := formNodeIdExtDescriptorMappingWithValidation(utils, nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
 		if errGetNodeIdExtDescriptorMapping != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
