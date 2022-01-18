@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -128,5 +129,46 @@ func TestGetImageSource(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, c.want, got)
+	}
+}
+
+func TestImageListWithFilePath(t *testing.T) {
+	t.Parallel()
+
+	imageName := "testImage"
+
+	tt := []struct {
+		name          string
+		excludes      []string
+		fileList      []string
+		expected      map[string]string
+		expectedError error
+	}{
+		{name: "Dockerfile only", fileList: []string{"Dockerfile"}, expected: map[string]string{imageName: "Dockerfile"}},
+		{name: "Dockerfile in subdir", fileList: []string{"sub/Dockerfile"}, expected: map[string]string{fmt.Sprintf("%v-sub", imageName): filepath.FromSlash("sub/Dockerfile")}},
+		{name: "Dockerfiles in multiple subdirs & parent", fileList: []string{"Dockerfile", "sub1/Dockerfile", "sub2/Dockerfile"}, expected: map[string]string{fmt.Sprintf("%v", imageName): filepath.FromSlash("Dockerfile"), fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("sub1/Dockerfile"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("sub2/Dockerfile")}},
+		{name: "Dockerfiles in multiple subdirs & parent - with excludes", excludes: []string{"Dockerfile"}, fileList: []string{"Dockerfile", "sub1/Dockerfile", "sub2/Dockerfile"}, expected: map[string]string{fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("sub1/Dockerfile"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("sub2/Dockerfile")}},
+		{name: "Dockerfiles with extensions", fileList: []string{"Dockerfile_main", "Dockerfile_sub1", "Dockerfile_sub2"}, expected: map[string]string{fmt.Sprintf("%v-main", imageName): filepath.FromSlash("Dockerfile_main"), fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("Dockerfile_sub1"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("Dockerfile_sub2")}},
+		{name: "Dockerfiles with extensions", fileList: []string{"Dockerfile_main", "Dockerfile_sub1", "Dockerfile_sub2"}, expected: map[string]string{fmt.Sprintf("%v-main", imageName): filepath.FromSlash("Dockerfile_main"), fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("Dockerfile_sub1"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("Dockerfile_sub2")}},
+		{name: "No Dockerfile", fileList: []string{"NoDockerFile"}, expectedError: fmt.Errorf("failed to retrieve Dockerfiles")},
+		{name: "Incorrect Dockerfile", fileList: []string{"DockerfileNotSupported"}, expectedError: fmt.Errorf("wrong format of Dockerfile, must be inside a sub-folder or contain a separator")},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			fileMock := mock.FilesMock{}
+			for _, file := range test.fileList {
+				fileMock.AddFile(file, []byte("someContent"))
+			}
+
+			imageList, err := ImageListWithFilePath(imageName, test.excludes, &fileMock)
+
+			if test.expectedError != nil {
+				assert.EqualError(t, err, fmt.Sprint(test.expectedError))
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, imageList)
+			}
+		})
 	}
 }

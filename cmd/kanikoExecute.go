@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -52,9 +52,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	// prepare kaniko container for running with proper Docker config.json and custom certificates
 	// custom certificates will be downloaded and appended to ca-certificates.crt file used in container
-	prepCommand := strings.Split(config.ContainerPreparationCommand, " ")
-	if err := execRunner.RunExecutable(prepCommand[0], prepCommand[1:]...); err != nil {
-		return errors.Wrap(err, "failed to initialize Kaniko container")
+	if len(config.ContainerPreparationCommand) > 0 {
+		prepCommand := strings.Split(config.ContainerPreparationCommand, " ")
+		if err := execRunner.RunExecutable(prepCommand[0], prepCommand[1:]...); err != nil {
+			return errors.Wrap(err, "failed to initialize Kaniko container")
+		}
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
@@ -66,6 +68,39 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		log.Entry().Info("skipping updation of certificates")
 	}
 
+	dockerConfig := []byte(`{"auths":{}}`)
+	if len(config.DockerConfigJSON) > 0 {
+		var err error
+		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
+		}
+	}
+
+	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
+		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
+	}
+
+	log.Entry().Debugf("preparing build settings information...")
+	stepName := "kanikoExecute"
+	// ToDo: better testability required. So far retrieval of config is rather non deterministic
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve dockerImage configuration: %w", err)
+	}
+
+	kanikoConfig := buildsettings.BuildOptions{
+		DockerImage:       dockerImage,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+	}
+
+	log.Entry().Debugf("creating build settings information...")
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
 		dest := []string{"--no-push"}
 		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
@@ -74,11 +109,50 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 			}
-			containerImageTag := fmt.Sprintf("%v:%v", config.ContainerImageName, strings.ReplaceAll(config.ContainerImageTag, "+", "-"))
-			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageTag)}
+
 			commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-			commonPipelineEnvironment.container.imageNameTag = containerImageTag
+
+			// Docker image tags don't allow plus signs in tags, thus replacing with dash
+			containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+
+			if config.ContainerMultiImageBuild {
+				log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
+				i, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, fileUtils)
+				if err != nil {
+					return fmt.Errorf("failed to identify image list for multi image build: %w", err)
+				}
+				if len(i) == 0 {
+					return fmt.Errorf("no docker files to process, please check exclude list")
+				}
+				for image, file := range i {
+					log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
+					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
+					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
+					err = runKaniko(file, config.BuildOptions, execRunner)
+					if err != nil {
+						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
+					}
+					commonPipelineEnvironment.container.multiImageNames = append(commonPipelineEnvironment.container.multiImageNames, image)
+					commonPipelineEnvironment.container.multiImageNameTags = append(commonPipelineEnvironment.container.multiImageNameTags, containerImageNameAndTag)
+				}
+
+				// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
+				// only consider if it has been built
+				// ToDo: reconsider and possibly remove at a later point
+				if len(i[config.ContainerImageName]) > 0 {
+					containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+					commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
+				}
+
+				return nil
+			}
+
+			log.Entry().Debugf("Single image build for image name '%v'", config.ContainerImageName)
+			containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
+			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		} else if len(config.ContainerImage) > 0 {
+			log.Entry().Debugf("Single image build for image '%v'", config.ContainerImage)
 			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
@@ -91,45 +165,25 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
+	} else {
+		log.Entry().Infof("Running Kaniko build with destination defined via buildOptions: %v", config.BuildOptions)
 	}
 
-	dockerConfig := []byte(`{"auths":{}}`)
-	if len(config.DockerConfigJSON) > 0 {
-		var err error
-		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
-		}
+	// no support for building multiple containers
+	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner)
+}
+
+func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner) error {
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", filepath.Dir(dockerFilepath)}
+	kanikoOpts = append(kanikoOpts, buildOptions...)
+
+	// fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
+	// as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536
+	if !piperutils.ContainsString(buildOptions, "--ignore-path") {
+		kanikoOpts = append(kanikoOpts, "--ignore-path", "/busybox")
 	}
 
-	log.Entry().Debugf("creating build settings information...")
-	stepName := "kanikoExecute"
-	dockerImage, err := getDockerImageValue(stepName)
-	if err != nil {
-		return err
-	}
-
-	kanikoConfig := buildsettings.BuildOptions{
-		DockerImage: dockerImage,
-	}
-	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&kanikoConfig, stepName)
-	if err != nil {
-		log.Entry().Warnf("failed to create build settings info: %v", err)
-	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
-
-	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "failed to get current working directory")
-	}
-	kanikoOpts := []string{"--dockerfile", config.DockerfilePath, "--context", cwd}
-	kanikoOpts = append(kanikoOpts, config.BuildOptions...)
-
-	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
+	err := execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")

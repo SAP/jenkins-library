@@ -348,6 +348,9 @@ func GetJSON(data interface{}) (string, error) {
 
 // OpenPiperFile provides functionality to retrieve configuration via file or http
 func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
+	if len(name) == 0 {
+		return nil, fmt.Errorf("no filename provided")
+	}
 	if !strings.HasPrefix(name, "http://") && !strings.HasPrefix(name, "https://") {
 		return os.Open(name)
 	}

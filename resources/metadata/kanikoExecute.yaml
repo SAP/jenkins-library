@@ -1,7 +1,24 @@
 metadata:
   name: kanikoExecute
   description: Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
-  longDescription: Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
+  longDescription: |
+    Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
+
+    ### Building multiple container images
+
+    The step allows you to build multiple container images with one run.
+    This is suitable in case you need to create multiple images for one microservice, e.g. for testing.
+
+    All images will get the same "root" name and the same versioning.<br />
+    **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos 
+    or implement a custom logic and for example execute this `kanikoExecute` step multiple times in your custom pipeline.
+
+    You can activate multiple builds using the parameters
+
+    * [containerMultiImageBuild](#containermultiimagebuild) for activation
+    * [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes
+
+    
 spec:
   inputs:
     secrets:
@@ -18,6 +35,32 @@ spec:
           - STEPS
         default:
           - --skip-tls-verify-pull
+      - name: buildSettingsInfo
+        type: string
+        description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+      - name: containerMultiImageBuild
+        type: bool
+        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildExcludes
+        type: '[]string'
+        description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: containerBuildOptions
         type: string
         description: Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.
@@ -119,6 +162,10 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: container/multiImageNames
+            type: "[]string"
+          - name: container/multiImageNameTags
+            type: "[]string"
           - name: custom/buildSettingsInfo
   containers:
     - image: gcr.io/kaniko-project/executor:debug
