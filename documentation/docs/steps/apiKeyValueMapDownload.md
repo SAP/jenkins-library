@@ -14,7 +14,7 @@ You can create API key value map in the API portal.
 
 If API key value map already exist, then command execution would fail.
 
-If API key value map already exist, then delete it and execute the piper step again, 
+If API key value map already exist, then delete it and execute the piper step again,
 which create new API Key value Map.
 
 ApiKeyValueMapUpload only supports create operation, but not either delete, get, update, which is supported in different piper steps.
