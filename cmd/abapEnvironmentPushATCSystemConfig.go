@@ -139,7 +139,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 				return handlePushConfiguration(config, filename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 			}
 			if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && !config.PatchExistingSystemConfig {
-				//config exists, is not recent but must NOT be overwritten
+				//config exists, is not recent but must NOT be patched
 				log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration).")
 				return nil
 			}
@@ -148,8 +148,8 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 				log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
 				return nil
 			}
-			if configDoesExist && configLastChangedBE.After(parsedConfigurationJson.LastChangedAt) && config.PatchExistingSystemConfig {
-				//configuration exists and is older than current config and should be overwritten
+			if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && config.PatchExistingSystemConfig {
+				//configuration exists and is older than current config and should be patched
 				return handlePushConfiguration(config, filename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 			}
 		} else {

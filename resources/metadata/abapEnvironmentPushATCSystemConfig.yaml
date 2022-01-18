@@ -33,7 +33,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
         default: true
       - name: cfApiEndpoint
         type: string
