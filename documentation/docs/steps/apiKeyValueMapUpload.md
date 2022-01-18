@@ -6,7 +6,13 @@
 
 * A typical flow would look something like
 
-You have to store API management service key in jenkins server as secret text. this is obtained from the SAP BTP sub account cockpit, under instance and subscriptions for API management under API plan. then you create new jenkins pipeline, which consumes the ApiKeyValueMapUpload piper step. you can execute the pipeline and validate step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/working-with-integration-suite-piper-commands/)
+Get the API management service key from the SAP BTP sub account cockpit, under instance and subscriptions for API management under API plan.
+
+Store API management service key in jenkins server as secret text.
+
+Create new jenkins pipeline, which consumes the ApiKeyValueMapUpload piper step.
+
+Execute the pipeline and validate step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/working-with-integration-suite-piper-commands/)
 
 * With the ApiKeyValueMapUpload step
 
