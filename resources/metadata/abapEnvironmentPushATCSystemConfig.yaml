@@ -26,9 +26,9 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: overwriteExistingSystemConfig
+      - name: patchExistingSystemConfig
         type: bool
-        description: Should an - under the given Name - existing ATC System configuration be deleted first & new one pushed then  
+        description: In case an configuration under the given name already exists in system and is outdated compared to the supplied file with the ATC Systm Configuration. Should the step Update/Patch the existing ATC Systm Configuration? 
         scope:
           - PARAMETERS
           - STAGES
