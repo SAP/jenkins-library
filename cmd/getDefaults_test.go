@@ -57,3 +57,34 @@ func TestDefaultsCommand(t *testing.T) {
 		})
 	})
 }
+
+func TestGenerateDefaults(t *testing.T) {
+	testParams := []struct {
+		name          string
+		defaultsFiles []string
+		expected      string
+	}{
+		{
+			name:          "Single defaults file",
+			defaultsFiles: []string{"test"},
+			expected:      `{"test":"general: null\nstages: null\nsteps: null\n"}`,
+		},
+		{
+			name:          "Multiple defaults files",
+			defaultsFiles: []string{"test1", "test2"},
+			expected: `[{"test1":"general: null\nstages: null\nsteps: null\n"},` +
+				`{"test2":"general: null\nstages: null\nsteps: null\n"}]`,
+		},
+	}
+
+	utils := newGetDefaultsUtilsUtils()
+	defaultsOptions.openFile = defaultsOpenFileMock
+
+	for _, test := range testParams {
+		t.Run(test.name, func(t *testing.T) {
+			defaultsOptions.defaultsFiles = test.defaultsFiles
+			result, _ := generateDefaults(utils)
+			assert.Equal(t, test.expected, string(result))
+		})
+	}
+}
