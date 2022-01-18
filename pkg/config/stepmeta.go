@@ -501,7 +501,6 @@ func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map
 		}
 	} else {
 		if stepName != "" {
-			log.Entry().Debugf("Resolving metadata for step: %s", stepName)
 			if metaDataResolver == nil {
 				return metadata, errors.New("metaDataResolver is nil")
 			}
