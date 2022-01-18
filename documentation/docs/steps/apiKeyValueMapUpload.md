@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-* This step ApiKeyValueMapUpload helps you to store one or more key value pairs of data in a grouping called a map, or key value map.
+* ApiKeyValueMapUpload stores one or more key value pairs of data in a grouping called a map, or key value map.
 
 * A typical flow would look something like
 
