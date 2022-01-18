@@ -172,7 +172,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.AppVersion, "appVersion", os.Getenv("PIPER_appVersion"), "set the appVersion on the chart to this version")
 	cmd.Flags().BoolVar(&stepConfig.DependencyUpdate, "dependencyUpdate", false, "set the appVersion on the chart to this version")
 	cmd.Flags().BoolVar(&stepConfig.DumpLogs, "dumpLogs", false, "dump the logs from test pods (this runs after all tests are complete, but before any cleanup)")
-	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently \"name\") using attribute=value syntax or '!attribute=value' to exclude a test (can specify multiple or separate values with commas name=test1,name=test2)")
+	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")

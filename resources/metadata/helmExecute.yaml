@@ -313,7 +313,7 @@ spec:
           - STEPS
       - name: filterTest
         type: string
-        description: specify tests by attribute (currently "name") using attribute=value syntax or '!attribute=value' to exclude a test (can specify multiple or separate values with commas name=test1,name=test2)
+        description: specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)
         scope:
           - GENERAL
           - PARAMETERS

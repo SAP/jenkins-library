@@ -234,7 +234,7 @@ func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout i
 func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments")
+		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
