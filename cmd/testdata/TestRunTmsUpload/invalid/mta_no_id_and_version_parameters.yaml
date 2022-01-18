@@ -1,0 +1,13 @@
+_schema-version: "2.0.0"
+
+parameters:
+  hcp-deployer-version: "1.0.0"
+
+modules:
+  - name: "openui5-sample-app"
+    type: html5
+    path: .
+    parameters:
+       version: "1.0.0"
+    build-parameters:
+       builder: grunt

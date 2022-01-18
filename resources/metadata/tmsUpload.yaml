@@ -40,6 +40,9 @@ spec:
           - PARAMETERS
           - STEPS
           - STAGES
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/commitId
       - name: namedUser
         type: string
         description: Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.
@@ -88,6 +91,14 @@ spec:
           - PARAMETERS
           - STEPS
           - STAGES
+      - name: stashContent
+        type: '[]string'
+        description: 'If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: ["deployDescriptor", "buildResult"]. By default, the build result is considered.'
+        default: ["buildResult"]
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
   outputs:
     resources:
       - name: influx
@@ -97,3 +108,4 @@ spec:
             fields:
               - name: tms
                 type: bool
+                
