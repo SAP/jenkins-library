@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"net/url"
+	"sort"
 	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"

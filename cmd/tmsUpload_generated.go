@@ -168,11 +168,10 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.")
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
 
-	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.")
-	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.")
-	cmd.Flags().StringSliceVar(&stepConfig.StashContent, "stashContent", []string{`buildResult`}, "If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: [\"deployDescriptor\", \"buildResult\"]. By default, the build result is considered.")
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
+	cmd.Flags().StringSliceVar(&stepConfig.StashContent, "stashContent", []string{`buildResult`}, "If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: [\"deployDescriptor\", \"buildResult\"]. By default, the build result is considered.")
 
+	cmd.MarkFlagRequired("tmsServiceKey")
 	cmd.MarkFlagRequired("nodeName")
 }
 
@@ -204,18 +203,11 @@ func tmsUploadMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_tmsServiceKey"),
 					},
 					{
-						Name:        "customDescription",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_customDescription"),
 						Name: "customDescription",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -228,13 +220,6 @@ func tmsUploadMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_customDescription"),
-						Name:        "customDescription",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_customDescription"),
 					},
 					{
 						Name:        "namedUser",
