@@ -60,8 +60,8 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions) {
 		return
 	}
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
-		{FilePattern: "sonarExecuteScan_*.json", ParamRef: "", StepResultType: "sonarqube"},
+		{FilePattern: "**/sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
+		{FilePattern: "**/sonarscan-result.json", ParamRef: "", StepResultType: "sonarqube"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
@@ -566,8 +566,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "sonarscan.json", "type": "sonarqube"},
-							{"filePattern": "sonarExecuteScan_*.json", "type": "sonarqube"},
+							{"filePattern": "**/sonarscan.json", "type": "sonarqube"},
+							{"filePattern": "**/sonarscan-result.json", "type": "sonarqube"},
 						},
 					},
 					{
