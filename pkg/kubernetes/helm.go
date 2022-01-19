@@ -108,7 +108,7 @@ func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments")
+		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	containerInfo, err := getContainerInfo(config)
@@ -171,7 +171,7 @@ func RunHelmLint() {
 func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments")
+		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
@@ -208,7 +208,7 @@ func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments")
+		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
@@ -265,7 +265,7 @@ func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 func RunHelmTest(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments")
+		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
