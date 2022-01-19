@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -98,14 +97,6 @@ func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
 	return false
 }
 
-func isDir(path string) (bool, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-	return info.IsDir(), nil
-}
-
 func isBuilder(utils cnbutils.BuildUtils) error {
 	exists, err := utils.FileExists(creatorPath)
 	if err != nil {
@@ -163,7 +154,7 @@ func copyProject(source, target string, include, exclude *ignore.GitIgnore, util
 		}
 		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := isDir(sourceFile)
+			dir, err := utils.DirExists(sourceFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "Checking file info '%s' failed", target)
@@ -221,6 +212,27 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 	return source, nil
 }
 
+func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
+	var err error
+	linkPath := filepath.Join(target, "target")
+	targetPath := filepath.Join(source, "target")
+	if ok, _ := utils.DirExists(targetPath); !ok {
+		err = utils.MkdirAll(targetPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	if ok, _ := utils.DirExists(linkPath); ok {
+		err = utils.RemoveAll(linkPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return utils.Symlink(targetPath, linkPath)
+}
+
 func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 	if c.BuildEnvVars == nil {
 		c.BuildEnvVars = vars
@@ -255,6 +267,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
 
+	var projectID string
 	if projDescExists {
 		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
 		if err != nil {
@@ -275,7 +288,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		if descriptor.Include != nil {
 			include = descriptor.Include
 		}
+
+		projectID = descriptor.ProjectID
 	}
+
+	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, projectID, GeneralConfig.EnvRootPath)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to retrieve target image configuration")
+	}
+
+	commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
+	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
@@ -302,20 +326,23 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	target := "/workspace"
-	source, err := utils.Getwd()
+	pwd, err := utils.Getwd()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "failed to get current working directory")
 	}
 
-	if len(config.Path) > 0 {
+	var source string
+	if config.Path != "" {
 		source = config.Path
+	} else {
+		source = pwd
 	}
 
-	dir, err := isDir(source)
+	dir, err := utils.DirExists(source)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "Checking file info '%s' failed", target)
+		return errors.Wrapf(err, "Checking file info '%s' failed", source)
 	}
 
 	if dir {
@@ -329,6 +356,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
+		}
+	}
+
+	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
+		err = linkTargetFolder(utils, pwd, target)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return err
 		}
 	}
 
@@ -362,28 +397,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	if len(config.ContainerRegistryURL) == 0 || len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
-	}
-
-	var containerRegistry string
-	if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
-		containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
-		}
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-	} else {
-		containerRegistry = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", config.ContainerRegistryURL)
-	}
-
-	containerImage := path.Join(containerRegistry, config.ContainerImageName)
-	containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -409,6 +422,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		"-platform", platformPath,
 	}
 
+	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
 		if !piperutils.ContainsString(creatorArgs, target) {
@@ -416,7 +430,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, containerImageTag))
+	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
 	err = utils.RunExecutable(creatorPath, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
