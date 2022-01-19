@@ -5,6 +5,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -15,8 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
-	"reflect"
-	"strings"
 )
 
 type mavenExecuteIntegrationOptions struct {
@@ -33,11 +33,12 @@ type mavenExecuteIntegrationOptions struct {
 type mavenExecuteIntegrationReports struct {
 }
 
-func (p *mavenExecuteIntegrationReports) persist(stepConfig mavenExecuteIntegrationOptions) {
-	if GeneralConfig.GCSBucketId == "" {
+func (p *mavenExecuteIntegrationReports) persist(stepConfig mavenExecuteIntegrationOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/requirement.mapping", ParamRef: "", StepResultType: "requirement-mapping"},
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
@@ -45,7 +46,7 @@ func (p *mavenExecuteIntegrationReports) persist(stepConfig mavenExecuteIntegrat
 		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
 	}
 	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
@@ -62,7 +63,7 @@ func (p *mavenExecuteIntegrationReports) persist(stepConfig mavenExecuteIntegrat
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -127,7 +128,7 @@ the integration tests via the Jacoco Maven-plugin.`,
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				reports.persist(stepConfig)
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
