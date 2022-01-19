@@ -31,6 +31,7 @@ type npmExecuteScriptsOptions struct {
 	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
 	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
 	BuildSettingsInfo          string   `json:"buildSettingsInfo,omitempty"`
+	PackBeforePublish          bool     `json:"packBeforePublish,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
@@ -167,6 +168,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for pack")
 
 }
 
@@ -320,6 +322,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "packBeforePublish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
