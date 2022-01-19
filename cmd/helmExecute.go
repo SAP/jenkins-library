@@ -76,8 +76,6 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 		if err != nil {
 			return fmt.Errorf("failed to execute helm uninstall")
 		}
-	default:
-		log.Entry().Error("Command '%v' is not supported Piper tool", config.DeployCommand)
 	}
 
 	return nil

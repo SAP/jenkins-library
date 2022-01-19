@@ -215,8 +215,13 @@ func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout i
 		"uninstall",
 		config.DeploymentName,
 	}
+	if len(config.Namespace) <= 0 {
+		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
+	}
 	helmParams = append(helmParams, "--namespace", config.Namespace)
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	if config.HelmDeployWaitSeconds > 0 {
+		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	}
 	if config.DryRun {
 		helmParams = append(helmParams, "--dry-run")
 	}
