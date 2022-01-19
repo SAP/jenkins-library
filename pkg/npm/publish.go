@@ -14,7 +14,7 @@ import (
 )
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
-func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string) error {
+func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error {
 	for _, packageJSON := range packageJSONFiles {
 		fileExists, err := exec.Utils.FileExists(packageJSON)
 		if err != nil {
@@ -24,7 +24,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.publish(packageJSON, registry, username, password)
+		err = exec.publish(packageJSON, registry, username, password, packBeforePublish)
 		if err != nil {
 			return err
 		}
@@ -33,7 +33,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 }
 
 // publish executes npm publish for package.json
-func (exec *Execute) publish(packageJSON, registry, username, password string) error {
+func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
@@ -93,22 +93,41 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Debug("no registry provided")
 	}
 
-	//TODO: add to a boolean config
-	tmpDirectory := getTempDirForNpmTarBall()
-	//defer os.RemoveAll(tmpDirectory)
+	if packBeforePublish {
+		tmpDirectory := getTempDirForNpmTarBall()
+		//defer os.RemoveAll(tmpDirectory)
 
-	err := execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+		err := execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+		if err != nil {
+			return err
+		}
 
-	if err != nil {
-		return err
+		FileUtils.Copy(npmrc.filepath, tmpDirectory)
+
+		tarballFileName := ""
+		err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
+			if filepath.Ext(path) == ".tgz" {
+				tarballFileName = filepath.Base(path)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		os.Chdir(tmpDirectory)
+
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
+		if err != nil {
+			return err
+		}
 	}
 
-	os.Chdir(tmpDirectory)
-
-	err = execRunner.RunExecutable("npm", "publish", "--tarball", ".", "--userconfig", npmrc.filepath, "--registry", registry)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
