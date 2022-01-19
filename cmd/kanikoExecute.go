@@ -178,12 +178,6 @@ func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.
 	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", filepath.Dir(dockerFilepath)}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
-	// fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
-	// as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536
-	if !piperutils.ContainsString(buildOptions, "--ignore-path") {
-		kanikoOpts = append(kanikoOpts, "--ignore-path", "/busybox")
-	}
-
 	err := execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)

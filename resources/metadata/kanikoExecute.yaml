@@ -10,7 +10,7 @@ metadata:
     This is suitable in case you need to create multiple images for one microservice, e.g. for testing.
 
     All images will get the same "root" name and the same versioning.<br />
-    **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos 
+    **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
     or implement a custom logic and for example execute this `kanikoExecute` step multiple times in your custom pipeline.
 
     You can activate multiple builds using the parameters
@@ -34,6 +34,10 @@ spec:
           - STEPS
         default:
           - --skip-tls-verify-pull
+        # fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
+        # as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536 
+          - --ignore-path
+          - /busybox
       - name: buildSettingsInfo
         type: string
         description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
