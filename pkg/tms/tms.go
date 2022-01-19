@@ -241,12 +241,12 @@ func (communicationInstance *CommunicationInstance) GetMtaExtDescriptor(nodeId i
 
 	var getMtaExtDescriptorsResponse mtaExtDescriptors
 	json.Unmarshal(data, &getMtaExtDescriptorsResponse)
-	if len(getMtaExtDescriptorsResponse.MtaExtDescriptors) != 0 {
+	if len(getMtaExtDescriptorsResponse.MtaExtDescriptors) > 0 {
 		mtaExtDescriptor = getMtaExtDescriptorsResponse.MtaExtDescriptors[0]
 	}
 
 	if communicationInstance.isVerbose {
-		if mtaExtDescriptor.Id != int64(0) { // the struct is initialized
+		if mtaExtDescriptor != (MtaExtDescriptor{}) {
 			communicationInstance.logger.Info("MTA extension descriptor obtained successfully")
 		} else {
 			communicationInstance.logger.Warn("No MTA extension descriptor found")

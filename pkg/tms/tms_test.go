@@ -200,7 +200,7 @@ func TestGetMtaExtDescriptor(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("https://tms.dummy.sap.com/v2/nodes/%v/mtaExtDescriptors?mtaId=%v&mtaVersion=%v", nodeId, mtaId, mtaVersion), uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, http.MethodGet, uploaderMock.httpMethod, "Http method incorrect")
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
-		assert.Equal(t, int64(0), mtaExtDescriptor.Id, "Initialized mtaExtDescriptor structure received, but a zero-valued expected")
+		assert.Equal(t, MtaExtDescriptor{}, mtaExtDescriptor, "Initialized mtaExtDescriptor structure received, but a zero-valued expected")
 	})
 
 	t.Run("test error", func(t *testing.T) {

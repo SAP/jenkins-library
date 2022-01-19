@@ -120,7 +120,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		log.Entry().Info("The step will use the following values:")
 		log.Entry().Infof("- description: %v", description)
 
-		if len(nodeNameExtDescriptorMapping) != 0 {
+		if len(nodeNameExtDescriptorMapping) > 0 {
 			log.Entry().Infof("- mapping between node names and MTA extension descriptor file paths: %v", nodeNameExtDescriptorMapping)
 		}
 		log.Entry().Infof("- MTA path: %v", mtaPath)
@@ -131,7 +131,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		log.Entry().Infof("- node name: %v", nodeName)
 	}
 
-	if len(nodeNameExtDescriptorMapping) != 0 {
+	if len(nodeNameExtDescriptorMapping) > 0 {
 		nodes, errGetNodes := communicationInstance.GetNodes()
 		if errGetNodes != nil {
 			log.SetErrorCategory(log.ErrorService)
@@ -171,9 +171,8 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 				return fmt.Errorf("failed to get MTA extension descriptor: %w", errGetMtaExtDescriptor)
 			}
 
-			idOfMtaExtDescriptor := obtainedMtaExtDescriptor.Id
-			if idOfMtaExtDescriptor != int64(0) {
-				_, errUpdateMtaExtDescriptor := communicationInstance.UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor, mtaExtDescriptorPath, mtaVersion, description, namedUser)
+			if obtainedMtaExtDescriptor != (tms.MtaExtDescriptor{}) {
+				_, errUpdateMtaExtDescriptor := communicationInstance.UpdateMtaExtDescriptor(nodeId, obtainedMtaExtDescriptor.Id, mtaExtDescriptorPath, mtaVersion, description, namedUser)
 				if errUpdateMtaExtDescriptor != nil {
 					log.SetErrorCategory(log.ErrorService)
 					return fmt.Errorf("failed to update MTA extension descriptor: %w", errUpdateMtaExtDescriptor)
