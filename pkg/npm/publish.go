@@ -127,8 +127,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		path, err := os.Getwd()
 
-		log.Entry().Debugf("current working directory is %v", path)
-
 		err = os.Chdir(tmpDirectory)
 		if err != nil {
 			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
@@ -140,6 +138,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		log.Entry().Debugf("renaming original .npmrc files from %v to %v", filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
+		err = os.Chdir(path)
+		if err != nil {
+			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
+		}
 		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
 		if err != nil {
 			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
