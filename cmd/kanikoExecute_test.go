@@ -39,8 +39,6 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 
 func TestRunKanikoExecute(t *testing.T) {
 
-	t.Parallel()
-
 	// required due to config resolution during build settings retrieval
 	// ToDo: proper mocking
 	openFileBak := configOptions.openFile
