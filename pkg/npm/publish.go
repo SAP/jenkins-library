@@ -120,7 +120,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".npmrc"), filepath.Join(filepath.Dir(packageJSON), ".oldnpmrc"))
+		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".npmrc"), filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
 		}
@@ -130,12 +130,15 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
 		}
 
-		path, err := os.Getwd()
-		log.Entry().Debugf("current directory is %v", path)
-
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry, "--loglevel", "silly")
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
 		if err != nil {
 			return err
+		}
+
+		log.Entry().Debugf("renaming original .npmrc files from %v to %v", filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
+		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
+		if err != nil {
+			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
 		}
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
