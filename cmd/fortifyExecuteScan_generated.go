@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -17,8 +19,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
-	"reflect"
-	"strings"
 )
 
 type fortifyExecuteScanOptions struct {
@@ -148,11 +148,12 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 type fortifyExecuteScanReports struct {
 }
 
-func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions) {
-	if GeneralConfig.GCSBucketId == "" {
+func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/*.PDF", ParamRef: "", StepResultType: "fortify"},
 		{FilePattern: "**/*.fpr", ParamRef: "", StepResultType: "fortify"},
@@ -161,7 +162,7 @@ func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions
 		{FilePattern: "**/piper_fortify_report.json", ParamRef: "", StepResultType: "fortify"},
 	}
 	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
@@ -178,7 +179,7 @@ func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -257,7 +258,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				reports.persist(stepConfig)
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
