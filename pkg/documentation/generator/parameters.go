@@ -107,7 +107,7 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 		if paramName == param.Name {
 			if param.Secret {
 				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
-				if param.GetReference("vaultSecret") != nil {
+				if param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil {
 					secretInfo = " [![Vault](https://img.shields.io/badge/-Vault-lightgrey)](#) [![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](/) pass via ENV, Vault or Jenkins credentials"
 
 				}
@@ -324,7 +324,7 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 }
 
 func addVaultResourceDetails(resource config.ResourceReference, resourceDetails string) string {
-	if resource.Type == "vaultSecret" {
+	if resource.Type == "vaultSecret" || resource.Type == "vaultSecretFile" {
 		resourceDetails += "<br/>Vault paths: <br />"
 		resourceDetails += "<ul>"
 		for _, rootPath := range config.VaultRootPaths {

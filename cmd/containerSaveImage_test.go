@@ -61,7 +61,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 
 		cacheFolder := filepath.Join(tmpFolder, "cache")
 
-		config.FilePath = filepath.Join(tmpFolder, "testfile")
+		config.FilePath = "testfile"
 
 		dClient := containerMock{}
 
@@ -71,7 +71,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 		assert.Equal(t, cacheFolder, dClient.filePath)
 		assert.Equal(t, "imageSource", dClient.imageSource)
 
-		content, err := ioutil.ReadFile(config.FilePath)
+		content, err := ioutil.ReadFile(filepath.Join(tmpFolder, "testfile.tar"))
 		assert.NoError(t, err)
 		assert.Equal(t, "This is a test", string(content))
 	})

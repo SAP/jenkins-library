@@ -3,6 +3,7 @@ module github.com/SAP/jenkins-library
 go 1.15
 
 require (
+	cloud.google.com/go/storage v1.10.0
 	github.com/GoogleContainerTools/container-diff v0.17.0
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
@@ -48,6 +49,7 @@ require (
 	github.com/xuri/excelize/v2 v2.4.1
 	golang.org/x/mod v0.5.1
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
+	google.golang.org/api v0.47.0
 	gopkg.in/ini.v1 v1.63.2
 	gopkg.in/yaml.v2 v2.4.0
 )

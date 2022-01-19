@@ -26,9 +26,9 @@ An add-on product version is defined by a name and a version string. The name of
 
 The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
-- The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
-- The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
+- The first number denotes the __release__. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
+- The second number denotes the __support package stack level__. A support package stack consists of support package deliveries of the contained software component versions.
+- The third number denotes the __patch level__. A Patch delivery contains patch deliveries of the contained software component versions.
 
 ### Software Component Version
 
@@ -39,9 +39,12 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contain the whole software component and carry planned, new functionalities or feature enhancements. They are provided with delivery packages of type “Add-on Installation Package”.
-- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may carry smaller, planned functional enhancements. They are provided with delivery packages of type “Component Support Package”.
-- The third number denotes the Patch level. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type “Correction Package”.
+- The first number denotes the __release__. Release deliveries contain the whole software component and carry planned, new functionalities or feature enhancements. They are provided with delivery packages of type *Add-on Installation* (AOI).
+  <br>Each AOI package contains all the objects of the software component. That means, every object is included in the object list of the package. In contrast to CSP and CPK packages, the calculation of objects to be included in the delivery is not based on a delta calculation.
+- The second number denotes the __support package level__. Support package deliveries contain a larger collection of corrections and may carry smaller, planned functional enhancements. They are provided with delivery packages of type *Component Support Package* (CSP).
+  <br>CSP packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the support package level are included to the object list of the CSP.
+- The third number denotes the __patch level__. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type *Correction Package* (CPK).
+  <br>CPK packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the patch level are included in the object list of the CPK.
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
@@ -62,7 +65,7 @@ As explained above, the shipment of a software takes place via add-on product ve
 
 In ABAP Environment Pipeline stage [*Build*](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/) a target vector for the particular add-on product version is published in test scope. This makes it possible to perform an add-on test installation in stage [*Integration Tests*](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/). At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning in the *Integration Tests* stage.
 
-In stage *Publish* the target vector is then published in production scope, so that the new version will become available for addon update and installation during system provisioning.
+In stage *Publish* the target vector is then published in production scope, so that the new version will become available for add-on update and installation during system provisioning.
 
 ## Building the Add-on Product
 
@@ -122,11 +125,11 @@ Later, during the pipeline configuration, you will specify the service plan, whi
 
 #### Register Add-on Product for a Global Account
 
-The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global production account. Therefore, the add-on product name and global production account need to be registered with SAP:
+The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global accounts. Therefore, the add-on product name and global accounts need to be registered with SAP:
 
-- As an add-on admin, create an incident using component BC-CP-ABA, and provide the following information:
-Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
+Create an incident using component BC-CP-ABA, and provide the following information:
 
+- Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
 - Global production account ID = *Account ID* in section *Global Account Info* on the overview page of your global account, e.g. `151b5fdc-58c1-4a55-95e1-467df2134c5f` (Feature Set A) or *Global Account Info* on the *Usage Analytics* page of your global account (Feature Set B).
 
 This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in systems provisioned in the global account.
@@ -142,20 +145,20 @@ The build process is controlled by an add-on descriptor file called `addon.yml`.
 
 ```YAML
 ---
-addonProduct: /NAMESPC/PRODUCTX
-addonVersion: 1.2.0
+addonProduct: "/NAMESPC/PRODUCTX"
+addonVersion: "1.2.0"
 repositories:
-  - name: /NAMESPC/COMPONENTA
-    branch: v1.2.0
-    version: 1.2.0
-    commitID: 7d4516e9
+  - name: "/NAMESPC/COMPONENTA"
+    branch: "v1.2.0"
+    version: "1.2.0"
+    commitID: "7d4516e9"
     languages:
       - DE
       - EN
-  - name: /NAMESPC/COMPONENTB
-    branch: v2.0.0
-    version: 2.0.0
-    commitID: 9f102ffb
+  - name: "/NAMESPC/COMPONENTB"
+    branch: "v2.0.0"
+    version: "2.0.0"
+    commitID: "9f102ffb"
     languages:
       - DE
       - EN
@@ -167,7 +170,7 @@ Explanation of the keys:
 - `addonProduct`: this is the technical name of the add-on product
 - `addonVersion`: This is the technical version of the add-on product `<product version>.<support package stack level>.<patch level>`
 
-The section “repositories” contains one or multiple software component versions:
+The section `repositories` contains one or multiple software component versions:
 
 - `name`: the technical name of the software component
 - `branch`: this is the branch from the git repository
@@ -175,18 +178,27 @@ The section “repositories” contains one or multiple software component versi
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
-`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple addon products).
+`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple add-on products).
+
+As a rule of thumb, the `addonVersion` should be increased analogous to the `version` of the leading software component.
+An exception can be the patch level in the `addonVersion` string: In case of an add-on product with a reuse software component, the patch level of the `addonVersion` might be higher than the patch level of the leading software component `version`.
+
+The leading software component is the software component that is, as opposed to a reuse software component, exclusively used as part of one add-on product.
+In the `repositories` section of the add-on descriptor file the leading software component should be the first, whereas a reuse software component would be the last in order.
+This is to make sure that that the software components are imported in the correct order, making sure to adhere to dependencies.
 
 The `version` of a software component influcences two aspects:
 
 - The given version will be used as part of the target vector
 - If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
 
-As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built no new package is built. Only a new target vector is created.
-If the `version` of a software component (repository) is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
-If the addon product consists of multiple software component versions (repositories), but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package is created. If at the same time the `addonVersion` was increased a new target Vector is created.
+As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built, no new delivery package is built but only a new target vector is created. During add-on update such a target vector does not reference any new software component versions and the update of software components is skipped.
 
-`branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different list of commits.
+If the `version` of a software component is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
+
+If the add-on product consists of multiple software component versions, but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package will be created. If, at the same time, the `addonVersion` is increased a new target Vector will be created.
+
+`branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
 The `commitID` should only be changed while also adjusting the `version` number of a software component.
 While adjusting the patch version or support package version of a software component, the `branch` should only be changed if the previous branch also includes the `commitID` of the previous software component version.
 
@@ -224,21 +236,44 @@ As an alternative you can refer to the [example using a permanent assembly syste
 
 If you encounter an issue with the pipeline itself, please open an issue in [GitHub](https://github.com/SAP/jenkins-library/issues).
 
-In case of an error during execution of the pipeline steps:
-
-| Stage                                                                                                  | Step                                                                                                                            | Error                                                                                                                            | Resolution                                                                                                                                                                                                                                                                                                                                               |
-|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [Prepare System](https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/)         | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)                         | `A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.` | ABAP System provisioning requires sufficient entitlements for abap/standard as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.                                                                                                                                                                               |
-| [Clone Repositories](https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/) | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)                           | e.g. `A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...`                          | Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.                                                                                                                                                                                                                                       |
-| [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)                             | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)                           | *Long-running step execution*                                                                                                    | [Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings. |
-| [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)                          | [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/) | e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`  | New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.                                                                                                                                                                                                          |
-|                                                                                                        |                                                                                                                                 | e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`                                 | New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.                                                                                                                                                                              |
-|                                                                                                        | [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)                 | e.g. `Commit 7137bcb08c675dea9e08252ea269ebba1ca83226 not found`                                                                 | New Patch Level of software component, and branch is changed in add-on descriptor: A `commitID`of previously created patch version is not available in another branch.                                                                                                                                                                                   |
-| [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)    | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)                         | `A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.` | ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.                                                                                                                                                                               |
-| [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)                            | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)                             | *Add-on assembly system is deleted unexpectedly*                                                                                 | Create a Piper extension of the `Post` stage, similar to [Post.groovy](https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy)                                                                                                                                                              |
-
 Once execution of the `Build` stage, in particular the `abapAddonAssemblyKitRegisterPackages` step, has been completed, errors must be resolved by creating new software component versions with the correct configuration.
 Pipeline steps can be restarted without causing double execution of already perfomed steps (intermediate results are stored).
+
+### Common Issues
+
+In case of an error during execution of the pipeline steps:
+
+* Stage: [Prepare System](https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/)
+      * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
+          * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
+          <br>ABAP System provisioning requires sufficient entitlements for `abap/standard` as well as `abap/hana_compute_unit` and `abap/abap_compute_unit` to be assigned to the subaccount.
+* Stage: [Clone Repositories](https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/)
+      * Step: [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)
+          * __e.g. `A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...`__
+          <br>Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.
+* Stage: [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)
+      * Step: [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)
+          * __*Long-running step execution*__
+          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings.
+* Stage: [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)
+      * Step: [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/)
+          * __e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`__
+          <br>New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.
+          * __e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`__
+          <br>New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.
+      * Step: [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)
+          * __e.g. `Commit 7137bcb08c675dea9e08252ea269ebba1ca83226 not found`__
+          <br>New Patch Level of software component, and branch is changed in add-on descriptor: A `commitID`of previously created patch version is not available in another branch.
+* Stage: [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)
+      * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
+          * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
+          <br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.
+* Stage: [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)
+      * Step: [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)
+          * __*Add-on assembly system is deleted unexpectedly*__
+          <br>Create a Piper extension of the `Post` stage, similar to [Post.groovy](https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy)
+
+### Support Components
 
 If issues cannot be resolved, please open a [support incident](https://launchpad.support.sap.com/#/notes/1296527) on the respective support component:
 

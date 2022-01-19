@@ -22,6 +22,8 @@ type abapAddonAssemblyKitReserveNextPackagesOptions struct {
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
 }
 
 type abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment struct {
@@ -48,7 +50,7 @@ func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persi
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
@@ -120,8 +122,8 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -156,6 +158,8 @@ func addAbapAddonAssemblyKitReserveNextPackagesFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
+	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 5, "Maximum runtime for status polling in minutes")
+	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 30, "Wait time in seconds between polling calls")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -218,6 +222,24 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
+					{
+						Name:        "maxRuntimeInMinutes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     5,
+					},
+					{
+						Name:        "pollingIntervalInSeconds",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
+					},
 				},
 			},
 			Outputs: config.StepOutputs{
@@ -226,7 +248,7 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "abap/addonDescriptor"},
+							{"name": "abap/addonDescriptor"},
 						},
 					},
 				},

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
@@ -13,12 +14,14 @@ import (
 func TestCheckPVStep(t *testing.T) {
 	var config abapAddonAssemblyKitCheckPVOptions
 	var cpe abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
-	client := &abaputils.ClientMock{
-		Body: responseCheckPV,
-	}
+	bundle := aakaas.NewAakBundleMock()
+	bundle.SetBody(responseCheckPV)
+	utils := bundle.GetUtils()
+	config.Username = "dummyUser"
+	config.Password = "dummyPassword"
 	t.Run("step success", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
-		err := runAbapAddonAssemblyKitCheckPV(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		err := runAbapAddonAssemblyKitCheckPV(&config, nil, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -28,17 +31,15 @@ func TestCheckPVStep(t *testing.T) {
 	})
 	t.Run("step error - in ReadAddonDescriptor", func(t *testing.T) {
 		config.AddonDescriptorFileName = "failing"
-		err := runAbapAddonAssemblyKitCheckPV(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		err := runAbapAddonAssemblyKitCheckPV(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, err.Error(), "error in ReadAddonDescriptor")
 	})
 	t.Run("step error - in validate", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
-		client := &abaputils.ClientMock{
-			Body:  "ErrorBody",
-			Error: errors.New("error during validation"),
-		}
-		err := runAbapAddonAssemblyKitCheckPV(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		bundle.SetBody("ErrorBody")
+		bundle.SetError("error during validation")
+		err := runAbapAddonAssemblyKitCheckPV(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 }
