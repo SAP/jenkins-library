@@ -126,9 +126,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		path, err := os.Getwd()
-		if err != nil {
-			log.Entry().Debugf("current directory is %v", path)
-		}
+		log.Entry().Debugf("current directory is %v", path)
 
 		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry, "--loglevel", "silly")
 		if err != nil {
