@@ -13,14 +13,38 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		config := abapEnvironmentPushATCSystemConfigOptions{}
-
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
+		config := abapEnvironmentPushATCSystemConfigOptions{
+			AtcSystemConfigFilePath:   "test.json",
+			PatchExistingSystemConfig: true,
+			CfAPIEndpoint:             "https://api.endpoint.com",
+			CfOrg:                     "testOrg",
+			CfSpace:                   "testSpace",
+			CfServiceInstance:         "testInstance",
+			CfServiceKeyName:          "testServiceKey",
+			Username:                  "testUser",
+			Password:                  "testPassword",
+			Host:                      "testHost",
+		}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
 		// test
-		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, nil)
-
+		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, client)
 		// assert
 		assert.NoError(t, err)
 	})
