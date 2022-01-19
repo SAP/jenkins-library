@@ -102,7 +102,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		_, err = FileUtils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".npmrc"))
+		_, err = FileUtils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
 				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
@@ -120,6 +120,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
+		os.Rename(filepath.Join(packageJSON, ".npmrc"), filepath.Join(packageJSON, ".oldnpmrc"))
+
 		err = os.Chdir(tmpDirectory)
 		if err != nil {
 			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
@@ -128,7 +130,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		path, err := os.Getwd()
 		log.Entry().Debugf("current directory is %v", path)
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--registry", registry, "--loglevel", "silly")
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry, "--loglevel", "silly")
 		if err != nil {
 			return err
 		}
