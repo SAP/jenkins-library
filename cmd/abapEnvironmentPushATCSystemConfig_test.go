@@ -10,7 +10,7 @@ import (
 func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("run Step Successful", func(t *testing.T) {
 		t.Parallel()
 		// init
 		var autils = abaputils.AUtilsMock{}
@@ -49,18 +49,30 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("error path", func(t *testing.T) {
+	t.Run("run Step Failure", func(t *testing.T) {
 		t.Parallel()
-		// init
-		config := abapEnvironmentPushATCSystemConfigOptions{}
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		// test
-		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, nil)
+		receivedURI := "example.com/Entity"
+		tokenExpected := "myToken"
 
-		// assert
-		assert.EqualError(t, err, "cannot run without important file")
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      tokenExpected,
+			StatusCode: 200,
+		}
+
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "test.json"}
+
+		expectedErrorMessage := "pushing ATC System Configuration failed. Reason: Configured File does not exist(File: " + config.AtcSystemConfigFilePath + ")"
+
+		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, client)
+		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 }

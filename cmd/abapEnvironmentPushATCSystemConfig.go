@@ -155,7 +155,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 			return fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: "+config.AtcSystemConfigFilePath+") - %w", err)
 		}
 	} else {
-		return fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not exist(File: "+config.AtcSystemConfigFilePath+") - %w", err)
+		return fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not exist(File: " + config.AtcSystemConfigFilePath + ")")
 	}
 	return nil
 }
