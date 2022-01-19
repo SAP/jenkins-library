@@ -24,7 +24,7 @@ func TestWriteProjectMetadata(t *testing.T) {
     commit = "012548"
     describe = "test-commit"
 `
-	mockUtils := cnbutils.MockUtils{
+	mockUtils := &cnbutils.MockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
