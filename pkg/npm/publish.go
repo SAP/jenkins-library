@@ -95,7 +95,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 
 	//TODO: add to a boolean config
 	tmpDirectory := getTempDirForNpmTarBall()
-	defer os.RemoveAll(tmpDirectory)
+	//defer os.RemoveAll(tmpDirectory)
 
 	err := execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
 
