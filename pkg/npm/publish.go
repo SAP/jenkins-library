@@ -125,6 +125,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
 		}
 
+		path, err := os.Getwd()
+
+		log.Entry().Debugf("current working directory is %v", path)
+
 		err = os.Chdir(tmpDirectory)
 		if err != nil {
 			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
