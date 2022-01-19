@@ -86,7 +86,7 @@ func getDefaults() ([]map[string]string, error) {
 				return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
 			}
 
-			yamlDefaults = append(yamlDefaults, map[string]string{f: yaml})
+			yamlDefaults = append(yamlDefaults, map[string]string{"content": yaml, "filename": f})
 		}
 	}
 
