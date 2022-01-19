@@ -2,6 +2,8 @@ package npm
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -76,7 +78,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		}
 		// set registry
 		log.Entry().Debugf("adding registry %s", registry)
-		npmrc.Set("@pipertest:registry", registry)
+		npmrc.Set("registry", registry)
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
 			log.Entry().Debug("adding registry credentials")
@@ -91,9 +93,29 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Debug("no registry provided")
 	}
 
-	err := execRunner.RunExecutable("npm", "publish", "--registry="+registry, "--userconfig", npmrc.filepath)
+	//TODO: add to a boolean config
+	tmpDirectory := getTempDirForNpmTarBall()
+	defer os.RemoveAll(tmpDirectory)
+
+	err := execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+
+	if err != nil {
+		return err
+	}
+
+	os.Chdir(tmpDirectory)
+
+	err = execRunner.RunExecutable("npm", "publish", "--tarball", ".", "--userconfig", npmrc.filepath, "--registry", registry)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func getTempDirForNpmTarBall() string {
+	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	if err != nil {
+		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
+	}
+	return tmpFolder
 }
