@@ -3,6 +3,7 @@ package npm
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -103,23 +104,26 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		_, err = FileUtils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
-			return fmt.Errorf("Error copying piperNpmrc file from %v to %v with error: %w",
+			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
 				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
 		}
 
-		// tarballFileName := ""
-		// err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
-		// 	if filepath.Ext(path) == ".tgz" {
-		// 		tarballFileName = filepath.Base(path)
-		// 		log.Entry().Debugf("found tarball file at %v", tarballFileName)
-		// 	}
-		// 	return nil
-		// })
-		// if err != nil {
-		// 	return err
-		// }
+		tarballFileName := ""
+		err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
+			if filepath.Ext(path) == ".tgz" {
+				tarballFileName = filepath.Base(path)
+				log.Entry().Debugf("found tarball file at %v", tarballFileName)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
 
-		// FileUtils. .Chdir(tmpDirectory)
+		err = os.Chdir(tmpDirectory)
+		if err != nil {
+			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
+		}
 
 		// err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
 		// if err != nil {
