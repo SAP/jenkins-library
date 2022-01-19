@@ -18,7 +18,6 @@ metadata:
     * [containerMultiImageBuild](#containermultiimagebuild) for activation
     * [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes
 
-    
 spec:
   inputs:
     secrets:

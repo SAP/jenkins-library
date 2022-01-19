@@ -56,6 +56,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
 			DockerfilePath:              "Dockerfile",
 			DockerConfigJSON:            "path/to/docker/config.json",
+			BuildSettingsInfo:           `{"mavenExecuteBuild":[{"dockerImage":"maven"}]}`,
 		}
 
 		runner := &mock.ExecMockRunner{}
@@ -83,6 +84,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", ".", "--skip-tls-verify-pull", "--destination", "myImage:tag", "--ignore-path", "/busybox"}, runner.Calls[1].Params)
 
+		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
+		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
 	})
 
 	t.Run("success case - image params", func(t *testing.T) {
