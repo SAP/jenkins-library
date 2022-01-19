@@ -128,8 +128,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
-					config.BuildOptions = append(config.BuildOptions, dest...)
-					err = runKaniko(file, config.BuildOptions, execRunner)
+					buildOpts := append(config.BuildOptions, dest...)
+					err = runKaniko(file, buildOpts, execRunner)
 					if err != nil {
 						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 					}

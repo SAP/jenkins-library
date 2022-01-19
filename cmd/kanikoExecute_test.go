@@ -49,7 +49,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	configOptions.openFile = configOpenFileMock
 
 	t.Run("success case", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImage:              "myImage:tag",
@@ -90,7 +89,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - image params", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
@@ -130,7 +128,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("no error case - when cert update skipped", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
@@ -156,7 +153,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - no push, no docker config.json", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerBuildOptions:       "--skip-tls-verify-pull",
 			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
@@ -185,7 +181,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - backward compatibility", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerBuildOptions:       "--skip-tls-verify-pull",
 			ContainerImage:              "myImage:tag",
@@ -212,7 +207,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
@@ -238,9 +232,9 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", runner.Calls[2].Exec)
 
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", ".", "--ignore-path", "/busybox"},
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "sub1", "--ignore-path", "/busybox"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "sub2", "--ignore-path", "/busybox"},
+			{"--dockerfile", "Dockerfile", "--context", ".", "--destination", "my.registry.com:50000/myImage:myTag", "--ignore-path", "/busybox"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "sub1", "--destination", "my.registry.com:50000/myImage-sub1:myTag", "--ignore-path", "/busybox"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "sub2", "--destination", "my.registry.com:50000/myImage-sub2:myTag", "--ignore-path", "/busybox"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
@@ -265,7 +259,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi image build excluding root image", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:               "myImage",
 			ContainerImageTag:                "myTag",
@@ -291,8 +284,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 
 		expectedParams := [][]string{
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "sub1", "--ignore-path", "/busybox"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "sub2", "--ignore-path", "/busybox"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "sub1", "--destination", "my.registry.com:50000/myImage-sub1:myTag", "--ignore-path", "/busybox"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "sub2", "--destination", "my.registry.com:50000/myImage-sub2:myTag", "--ignore-path", "/busybox"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
@@ -315,7 +308,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - multi image build: no docker files", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
@@ -335,7 +327,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - multi image build: no docker files to process", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:               "myImage",
 			ContainerImageTag:                "myTag",
@@ -357,7 +348,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - multi image build: build failed", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
@@ -379,7 +369,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - Kaniko init failed", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
 		}
@@ -398,7 +387,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - Kaniko execution failed", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{}
 
 		runner := &mock.ExecMockRunner{
@@ -415,7 +403,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - cert update failed", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
@@ -440,7 +427,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - dockerconfig read failed", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
@@ -458,7 +444,6 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - dockerconfig write failed", func(t *testing.T) {
-		t.Parallel()
 		config := &kanikoExecuteOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
