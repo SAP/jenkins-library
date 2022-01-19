@@ -5,6 +5,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -15,8 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
-	"reflect"
-	"strings"
 )
 
 type uiVeri5ExecuteTestsOptions struct {
@@ -30,18 +30,19 @@ type uiVeri5ExecuteTestsOptions struct {
 type uiVeri5ExecuteTestsReports struct {
 }
 
-func (p *uiVeri5ExecuteTestsReports) persist(stepConfig uiVeri5ExecuteTestsOptions) {
-	if GeneralConfig.GCSBucketId == "" {
+func (p *uiVeri5ExecuteTestsReports) persist(stepConfig uiVeri5ExecuteTestsOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "acceptance-test"},
 		{FilePattern: "**/requirement.mapping", ParamRef: "", StepResultType: "requirement-mapping"},
 		{FilePattern: "**/delivery.mapping", ParamRef: "", StepResultType: "delivery-mapping"},
 	}
 	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
@@ -58,7 +59,7 @@ func (p *uiVeri5ExecuteTestsReports) persist(stepConfig uiVeri5ExecuteTestsOptio
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -122,7 +123,7 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				reports.persist(stepConfig)
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
