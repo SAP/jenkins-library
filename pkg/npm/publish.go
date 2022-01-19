@@ -3,7 +3,6 @@ package npm
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -102,26 +101,30 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		FileUtils.Copy(npmrc.filepath, tmpDirectory)
-
-		tarballFileName := ""
-		err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
-			if filepath.Ext(path) == ".tgz" {
-				tarballFileName = filepath.Base(path)
-				log.Entry().Debugf("found tarball file at %v", tarballFileName)
-			}
-			return nil
-		})
+		_, err = FileUtils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
-			return err
+			return fmt.Errorf("Error copying piperNpmrc file from %v to %v with error: %w",
+				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
 		}
 
-		os.Chdir(tmpDirectory)
+		// tarballFileName := ""
+		// err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
+		// 	if filepath.Ext(path) == ".tgz" {
+		// 		tarballFileName = filepath.Base(path)
+		// 		log.Entry().Debugf("found tarball file at %v", tarballFileName)
+		// 	}
+		// 	return nil
+		// })
+		// if err != nil {
+		// 	return err
+		// }
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
-		if err != nil {
-			return err
-		}
+		// FileUtils. .Chdir(tmpDirectory)
+
+		// err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
+		// if err != nil {
+		// 	return err
+		// }
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
