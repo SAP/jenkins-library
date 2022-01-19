@@ -125,10 +125,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("error when changing directory to %v with error : %w", tmpDirectory, err)
 		}
 
-		// err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
-		// if err != nil {
-		// 	return err
-		// }
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", ".piperNpmrc", "--registry", registry)
+		if err != nil {
+			return err
+		}
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
