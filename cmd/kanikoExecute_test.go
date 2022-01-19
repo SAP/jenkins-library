@@ -39,6 +39,8 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 
 func TestRunKanikoExecute(t *testing.T) {
 
+	t.Parallel()
+
 	// required due to config resolution during build settings retrieval
 	// ToDo: proper mocking
 	openFileBak := configOptions.openFile
@@ -49,6 +51,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	configOptions.openFile = configOpenFileMock
 
 	t.Run("success case", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImage:              "myImage:tag",
@@ -89,6 +92,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - image params", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
@@ -128,6 +132,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("no error case - when cert update skipped", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
@@ -153,6 +158,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - no push, no docker config.json", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerBuildOptions:       "--skip-tls-verify-pull",
 			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
@@ -181,6 +187,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - backward compatibility", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerBuildOptions:       "--skip-tls-verify-pull",
 			ContainerImage:              "myImage:tag",
@@ -207,6 +214,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
@@ -259,6 +267,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi image build excluding root image", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:               "myImage",
 			ContainerImageTag:                "myTag",
@@ -308,6 +317,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - multi image build: no docker files", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
@@ -327,6 +337,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - multi image build: no docker files to process", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:               "myImage",
 			ContainerImageTag:                "myTag",
@@ -348,6 +359,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - multi image build: build failed", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
@@ -369,6 +381,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - Kaniko init failed", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
 		}
@@ -387,6 +400,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - Kaniko execution failed", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{}
 
 		runner := &mock.ExecMockRunner{
@@ -403,6 +417,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - cert update failed", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
@@ -427,6 +442,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - dockerconfig read failed", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
@@ -444,6 +460,7 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - dockerconfig write failed", func(t *testing.T) {
+		t.Parallel()
 		config := &kanikoExecuteOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
