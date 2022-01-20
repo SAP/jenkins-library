@@ -133,8 +133,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					if err != nil {
 						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 					}
-					commonPipelineEnvironment.container.multiImageNames = append(commonPipelineEnvironment.container.multiImageNames, image)
-					commonPipelineEnvironment.container.multiImageNameTags = append(commonPipelineEnvironment.container.multiImageNameTags, containerImageNameAndTag)
+					commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, image)
+					commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
 				}
 
 				// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment

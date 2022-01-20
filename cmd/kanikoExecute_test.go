@@ -250,12 +250,12 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "myImage:myTag", commonPipelineEnvironment.container.imageNameTag)
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNames, "myImage")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNames, "myImage-sub1")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNames, "myImage-sub2")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNameTags, "myImage:myTag")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNameTags, "myImage-sub1:myTag")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNameTags, "myImage-sub2:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub1")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub2")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub1:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
 	})
 
 	t.Run("success case - multi image build excluding root image", func(t *testing.T) {
@@ -301,10 +301,10 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "", commonPipelineEnvironment.container.imageNameTag)
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNames, "myImage-sub1")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNames, "myImage-sub2")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNameTags, "myImage-sub1:myTag")
-		assert.Contains(t, commonPipelineEnvironment.container.multiImageNameTags, "myImage-sub2:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub1")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub2")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub1:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
 	})
 
 	t.Run("error case - multi image build: no docker files", func(t *testing.T) {

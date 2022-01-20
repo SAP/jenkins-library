@@ -165,9 +165,9 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
-          - name: container/multiImageNames
+          - name: container/imageNames
             type: "[]string"
-          - name: container/multiImageNameTags
+          - name: container/imageNameTags
             type: "[]string"
           - name: custom/buildSettingsInfo
   containers:

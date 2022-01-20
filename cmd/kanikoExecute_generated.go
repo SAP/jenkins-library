@@ -35,10 +35,10 @@ type kanikoExecuteOptions struct {
 
 type kanikoExecuteCommonPipelineEnvironment struct {
 	container struct {
-		registryURL        string
-		imageNameTag       string
-		multiImageNames    []string
-		multiImageNameTags []string
+		registryURL   string
+		imageNameTag  string
+		imageNames    []string
+		imageNameTags []string
 	}
 	custom struct {
 		buildSettingsInfo string
@@ -53,8 +53,8 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
-		{category: "container", name: "multiImageNames", value: p.container.multiImageNames},
-		{category: "container", name: "multiImageNameTags", value: p.container.multiImageNameTags},
+		{category: "container", name: "imageNames", value: p.container.imageNames},
+		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
@@ -368,8 +368,8 @@ func kanikoExecuteMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
-							{"name": "container/multiImageNames", "type": "[]string"},
-							{"name": "container/multiImageNameTags", "type": "[]string"},
+							{"name": "container/imageNames", "type": "[]string"},
+							{"name": "container/imageNameTags", "type": "[]string"},
 							{"name": "custom/buildSettingsInfo"},
 						},
 					},
