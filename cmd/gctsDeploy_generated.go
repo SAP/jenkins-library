@@ -25,7 +25,7 @@ type gctsDeployOptions struct {
 	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
 	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
 	VSID                string                 `json:"vSID,omitempty"`
-	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT"`
+	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT GITHUB GITLAB"`
 	Branch              string                 `json:"branch,omitempty"`
 	Scope               string                 `json:"scope,omitempty"`
 	Rollback            bool                   `json:"rollback,omitempty"`
