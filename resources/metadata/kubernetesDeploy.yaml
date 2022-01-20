@@ -260,6 +260,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: runHelmTests
+        type: bool
+        description: Defines whether or not to run helm tests against the recently deployed release
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: showTestLogs
+        type: bool
+        description: Defines whether to add `--logs` to the `helm test` command
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: kubeConfig
         type: string
         description: Defines the path to the "kubeconfig" file.

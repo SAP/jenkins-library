@@ -220,6 +220,26 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
+
+	testParams := []string{
+		"test",
+		config.DeploymentName,
+		"--namespace", config.Namespace,
+	}
+
+	if config.ShowTestLogs {
+		testParams = append(
+			testParams,
+			"--logs",
+		)
+	}
+
+	if config.RunHelmTests {
+		if err := utils.RunExecutable("helm", testParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Helm test call failed")
+		}
+	}
+
 	return nil
 }
 

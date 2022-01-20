@@ -35,6 +35,8 @@ type kubernetesDeployOptions struct {
 	Image                      string   `json:"image,omitempty"`
 	IngressHosts               []string `json:"ingressHosts,omitempty"`
 	KeepFailedDeployments      bool     `json:"keepFailedDeployments,omitempty"`
+	RunHelmTests               bool     `json:"runHelmTests,omitempty"`
+	ShowTestLogs               bool     `json:"showTestLogs,omitempty"`
 	KubeConfig                 string   `json:"kubeConfig,omitempty"`
 	KubeContext                string   `json:"kubeContext,omitempty"`
 	KubeToken                  string   `json:"kubeToken,omitempty"`
@@ -174,6 +176,8 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.IngressHosts, "ingressHosts", []string{}, "(Deprecated) List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().BoolVar(&stepConfig.KeepFailedDeployments, "keepFailedDeployments", false, "Defines whether a failed deployment will be purged")
+	cmd.Flags().BoolVar(&stepConfig.RunHelmTests, "runHelmTests", false, "Defines whether or not to run helm tests against the recently deployed release")
+	cmd.Flags().BoolVar(&stepConfig.ShowTestLogs, "showTestLogs", false, "Defines whether to add `--logs` to the `helm test` command")
 	cmd.Flags().StringVar(&stepConfig.KubeConfig, "kubeConfig", os.Getenv("PIPER_kubeConfig"), "Defines the path to the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeToken, "kubeToken", os.Getenv("PIPER_kubeToken"), "Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.")
@@ -408,6 +412,24 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "keepFailedDeployments",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "runHelmTests",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "showTestLogs",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
