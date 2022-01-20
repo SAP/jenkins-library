@@ -271,7 +271,7 @@ spec:
           - STEPS
       - name: showTestLogs
         type: bool
-        description: Defines whether to add `--logs` to the `helm test` command
+        description: Defines whether to print the pod logs after running helm tests
         default: false
         scope:
           - GENERAL
