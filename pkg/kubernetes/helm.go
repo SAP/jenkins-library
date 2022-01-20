@@ -163,8 +163,25 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	return nil
 }
 
-func RunHelmLint() {
+func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	err := runHelmInit(config, utils, stdout)
+	if err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
 
+	helmParams := []string{
+		"lint",
+		config.ChartPath,
+	}
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm lint ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm lint call failed")
+	}
+
+	return nil
 }
 
 func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {

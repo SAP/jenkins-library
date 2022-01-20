@@ -55,7 +55,10 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 			return fmt.Errorf("failed to execute upgrade: %v", err)
 		}
 	case "lint":
-		kubernetes.RunHelmLint()
+		err := kubernetes.RunHelmLint(helmConfig, utils, stdout)
+		if err != nil {
+			return fmt.Errorf("failed to execute helm lint: %v", err)
+		}
 	case "install":
 		err := kubernetes.RunHelmInstall(helmConfig, utils, stdout)
 		if err != nil {
