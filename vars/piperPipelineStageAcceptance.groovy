@@ -16,9 +16,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org. */
     'cloudFoundryDeploy',
     /** Performs behavior-driven tests using Gauge test framework against the deployed application/service. */
+    'gaugeExecuteTests',
     /** For Kubernetes use-cases: Performs deployment to Kubernetes landscape. */
     'kubernetesDeploy',
-    'gaugeExecuteTests',
     /**
      * Performs health check in order to prove one aspect of operational readiness.
      * In order to be able to respond to health checks from infrastructure components (like load balancers) it is important to provide one unprotected application endpoint which allows a judgement about the health of your application.
