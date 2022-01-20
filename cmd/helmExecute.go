@@ -19,9 +19,9 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 			log.Entry().WithError(err).Fatal("step execution failed")
 		}
 	} else if config.DeployTool == "helm" {
-		log.Entry().Error("Failed to execute deployments since '%v' is not support deployment via helmExecute step, due to helm2 is deprecated", config.DeployTool)
+		log.Entry().Errorf("Failed to execute deployments since '%v' is not support deployment via helmExecute step, due to helm2 is deprecated", config.DeployTool)
 	} else {
-		log.Entry().Error("Failed to execute deployments since '%v' tool is not a helm3.", config.DeployTool)
+		log.Entry().Errorf("Failed to execute deployments since '%v' tool is not a helm3.", config.DeployTool)
 	}
 }
 
@@ -52,29 +52,29 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 	case "upgrade":
 		err := kubernetes.RunHelmUpgrade(helmConfig, utils, stdout)
 		if err != nil {
-			return fmt.Errorf("failed to execute deployments")
+			return fmt.Errorf("failed to execute upgrade: %v", err)
 		}
 	case "lint":
 		kubernetes.RunHelmLint()
 	case "install":
 		err := kubernetes.RunHelmInstall(helmConfig, utils, stdout)
 		if err != nil {
-			return fmt.Errorf("failed to execute helm install")
+			return fmt.Errorf("failed to execute helm install: %v", err)
 		}
 	case "test":
 		err := kubernetes.RunHelmTest(helmConfig, utils, stdout)
 		if err != nil {
-			return fmt.Errorf("failed to execute helm uninstall")
+			return fmt.Errorf("failed to execute helm test: %v", err)
 		}
 	case "uninstall":
 		err := kubernetes.RunHelmUninstall(helmConfig, utils, stdout)
 		if err != nil {
-			return fmt.Errorf("failed to execute helm uninstall")
+			return fmt.Errorf("failed to execute helm uninstall: %v", err)
 		}
 	case "package":
 		err := kubernetes.RunHelmPackage(helmConfig, utils, stdout)
 		if err != nil {
-			return fmt.Errorf("failed to execute helm uninstall")
+			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
 	}
 

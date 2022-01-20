@@ -177,6 +177,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
 	cmd.MarkFlagRequired("image")
+	cmd.MarkFlagRequired("deployCommand")
 }
 
 // retrieve step metadata
@@ -425,7 +426,7 @@ func helmExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     `install`,
 					},

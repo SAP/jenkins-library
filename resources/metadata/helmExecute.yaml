@@ -255,7 +255,7 @@ spec:
       - name: deployCommand
         type: string
         description: "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `install`."
-        mandatory: false
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
@@ -279,7 +279,7 @@ spec:
           - STEPS
       - name: packageVersion
         type: string
-        description:  set the version on the chart to this semver version
+        description: set the version on the chart to this semver version
         scope:
           - GENERAL
           - PARAMETERS
