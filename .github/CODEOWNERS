@@ -55,6 +55,12 @@ CnbBuild*                                       @SAP/piper-cnb
 sonarExecuteScan*                               @CCFenner
 SonarExecuteScan*                               @CCFenner
 
+abapAddonAssemblyKit*                           @tiloKo @bluesbrother84 @rosemarieB
+AbapAddonAssemblyKit*                           @tiloKo @bluesbrother84 @rosemarieB
+abapEnvironmentAssemble*                        @tiloKo @bluesbrother84 @rosemarieB
+AbapEnvironmentAssemble*                        @tiloKo @bluesbrother84 @rosemarieB
+abapEnvironmentBuild*                           @tiloKo @bluesbrother84 @rosemarieB
+AbapEnvironmentBuild*                           @tiloKo @bluesbrother84 @rosemarieB
 
 #####################
 # Integration tests #
@@ -76,12 +82,13 @@ integration/testdata/TestCnbIntegration/        @SAP/piper-cnb
 
 /pkg/orchestrator/                              @inf2381
 
+/pkg/abap/                                      @tiloKo @bluesbrother84 @rosemarieB
 
 ####################
 # Misc             #
 ####################
 
-.github/CODEOWNERS                              @phil9909 @OliverNocon
+.github/CODEOWNERS                              @phil9909 @SAP/jenkins-library-admin
 
 
 ####################
