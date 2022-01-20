@@ -45,7 +45,7 @@ func AbapEnvironmentPushATCSystemConfigCommand() *cobra.Command {
 		Long: `This step is for pushing an [ATC](https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud) system configurationon on an SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0763](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0763] (https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud).
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0763.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
