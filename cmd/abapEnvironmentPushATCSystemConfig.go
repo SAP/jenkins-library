@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -377,7 +376,6 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		log.Entry().Info("ATC System configuration successfully pushed from file " + validFilename + " to system")
 		//save response entity as
 		var createdATCSystemConfig []byte
-		var permWrite fs.FileMode
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("parsing oData response failed: %w", err)
@@ -392,7 +390,7 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(validFilename, createdATCSystemConfig, permWrite)
+		err = ioutil.WriteFile(validFilename, createdATCSystemConfig, 0644)
 		if err != nil {
 			return err
 		}
@@ -416,23 +414,12 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		}
 		defer resp.Body.Close()
 		return fmt.Errorf("bad Request Errors: %v", parsedOdataErrors)
-		/* 		err = extractErrAndLogMessages(parsedOdataErrors, config)
-		   		if err != nil {
-		   			return fmt.Errorf("bad Request Errors: %w", err)
-		   		} */
 
 	default: //unhandled OK Code
 		defer resp.Body.Close()
 		return fmt.Errorf("unhandled StatusCode: %w", errors.New(resp.Status))
 	}
 
-}
-
-func extractErrAndLogMessages(parsedOdataMessages interface{}, config *abapEnvironmentPushATCSystemConfigOptions) error {
-	var err error
-	//find relevant messages to handle specially
-
-	return err
 }
 
 func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
@@ -448,13 +435,6 @@ func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) ab
 	subOptions.Username = options.Username
 
 	return subOptions
-}
-
-func (responseError *responseError) Error() string {
-	return "Messages: "
-}
-
-type responseError struct {
 }
 
 type parsedOdataResp struct {
@@ -500,22 +480,4 @@ type parsedConfigPriority struct {
 
 type priorityJson struct {
 	Priority json.Number `json:"priority"`
-}
-
-type oDataResponseErrors []struct {
-	Error oDataResponseError `json:"error"`
-}
-
-type oDataResponseError struct {
-	Code       string `json:"code"`
-	Message    string `json:"message"`
-	Target     string `json:"target"`
-	Details    []oDataResponseErrorDetail
-	Innererror struct{}
-}
-
-type oDataResponseErrorDetail struct {
-	code    string
-	message string
-	target  string
 }
