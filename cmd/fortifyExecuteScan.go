@@ -344,6 +344,7 @@ func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportDa
 	output.Suppressed = input.suppressed
 	output.Suspicious = input.suspicious
 	output.ProjectVersionID = input.projectVersionID
+	output.Violations = input.violations
 	return output
 }
 
