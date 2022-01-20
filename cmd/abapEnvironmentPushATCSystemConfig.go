@@ -142,7 +142,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 				log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration).")
 				return nil
 			}
-			if configDoesExist && configLastChangedBE.After(parsedConfigurationJson.LastChangedAt) {
+			if configDoesExist && (configLastChangedBE.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBE == parsedConfigurationJson.LastChangedAt) {
 				//configuration exists and is most recent
 				log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
 				return nil
@@ -319,7 +319,6 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 	switch resp.StatusCode {
 	case 200: //Retrieved entities & OK in Patch
 		var patchedATCSystemConfig []byte
-		var permWrite fs.FileMode
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("parsing oData response failed: %w", err)
@@ -337,7 +336,7 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 			if err != nil {
 				return err
 			}
-			err = ioutil.WriteFile(validFilename, patchedATCSystemConfig, permWrite)
+			err = ioutil.WriteFile(validFilename, patchedATCSystemConfig, 0644)
 			if err != nil {
 				return err
 			}
@@ -365,7 +364,7 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 			if err != nil {
 				return err
 			}
-			err = ioutil.WriteFile(validFilename, patchedATCSystemConfig, permWrite)
+			err = ioutil.WriteFile(validFilename, patchedATCSystemConfig, 0644)
 			if err != nil {
 				return err
 			}
