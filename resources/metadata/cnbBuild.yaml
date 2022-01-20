@@ -38,8 +38,13 @@ spec:
         aliases:
           - name: dockerImageName
         type: string
-        mandatory: true
-        description: Name of the container which will be built
+        description: |
+          Name of the container which will be built
+          `cnbBuild` step will try to identify a containerImageName using the following precedence:
+            1. `containerImageName` parameter.
+            2. `project.id` field of a `project.toml` file.
+            3. `git/repository` parameter of the `commonPipelineEnvironment`.
+          If none of the above was found - an error will be raised.
         scope:
           - GENERAL
           - PARAMETERS
@@ -162,14 +167,22 @@ spec:
               file: path/to/settings.xml
           ```
 
-          or inline
-
+          inline:
           ```yaml
           bindings:
             maven-settings:
               type: maven
               key: settings.xml
               content: "inline settings.xml"
+          ```
+
+          from url:
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              fromUrl: https://url-to/setting.xml
           ```
         scope:
           - PARAMETERS

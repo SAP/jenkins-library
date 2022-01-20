@@ -48,7 +48,7 @@ func TestPullStep(t *testing.T) {
 	})
 
 	t.Run("Run Step Failure", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
+		expectedErrorMessage := "Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -179,7 +179,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -238,12 +238,12 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
 	})
 
 	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
+		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -291,7 +291,7 @@ repositories:
 	})
 
 	t.Run("Failure case: pull repos from wrong file config", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Could not unmarshal repositoriesTest.yml"
+		expectedErrorMessage := "Could not unmarshal repositoriesTest.yml"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
