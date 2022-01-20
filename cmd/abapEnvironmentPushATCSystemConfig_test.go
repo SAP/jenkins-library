@@ -7,51 +7,50 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFetchXcsrfTokenFromHead(t *testing.T) {
+	t.Parallel()
+	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
+		tokenExpected := "myToken"
+
+		client := &abaputils.ClientMock{
+			Body:  `Xcsrf Token test`,
+			Token: tokenExpected,
+		}
+
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "Test",
+			Password: "Test",
+			URL:      "https://api.endpoint.com/Entity/",
+		}
+		token, error := fetchXcsrfTokenFromHead(con, client)
+		if error == nil {
+			assert.Equal(t, tokenExpected, token)
+		}
+	})
+	t.Run("failure case: fetch token", func(t *testing.T) {
+		tokenExpected := ""
+
+		client := &abaputils.ClientMock{
+			Body:  `Xcsrf Token test`,
+			Token: "",
+		}
+
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "Test",
+			Password: "Test",
+			URL:      "https://api.endpoint.com/Entity/",
+		}
+		token, error := fetchXcsrfTokenFromHead(con, client)
+		if error == nil {
+			assert.Equal(t, tokenExpected, token)
+		}
+	})
+}
+
 func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	t.Parallel()
 
-	t.Run("run Step Successful", func(t *testing.T) {
-		t.Parallel()
-		// init
-		var autils = abaputils.AUtilsMock{}
-		defer autils.Cleanup()
-		autils.ReturnedConnectionDetailsHTTP.Password = "password"
-		autils.ReturnedConnectionDetailsHTTP.User = "user"
-		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
-		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
-
-		config := abapEnvironmentPushATCSystemConfigOptions{
-			AtcSystemConfigFilePath:   "test.json",
-			PatchExistingSystemConfig: true,
-			CfAPIEndpoint:             "https://api.endpoint.com",
-			CfOrg:                     "testOrg",
-			CfSpace:                   "testSpace",
-			CfServiceInstance:         "testInstance",
-			CfServiceKeyName:          "testServiceKey",
-			Username:                  "testUser",
-			Password:                  "testPassword",
-			Host:                      "testHost",
-		}
-
-		client := &abaputils.ClientMock{
-			BodyList: []string{
-				`{"d" : { "status" : "S" } }`,
-				`{"d" : { "status" : "R" } }`,
-				`{"d" : { "status" : "R" } }`,
-				`{"d" : { "status" : "R" } }`,
-			},
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-		// test
-		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, client)
-		// assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("run Step Failure", func(t *testing.T) {
-		t.Parallel()
-
+	t.Run("run Step Failure - File not exist", func(t *testing.T) {
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"

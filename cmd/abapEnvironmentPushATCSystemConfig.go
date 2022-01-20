@@ -160,22 +160,12 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, configUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
-	uriConnectionDetails := connectionDetails
-	uriConnectionDetails.URL = ""
-	connectionDetails.XCsrfToken = "fetch"
 
-	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
+	var err error
+	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
 		return err
 	}
-	defer resp.Body.Close()
-
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", connectionDetails.URL).Debug("Authentication on the ABAP system successful")
-	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
-	connectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
-
 	if configUUID != "" {
 		err = doPatchATCSystemConfig(config, validFilename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
@@ -191,6 +181,28 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 
 	return nil
 
+}
+
+func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (string, error) {
+
+	log.Entry().WithField("ABAP Endpoint: ", connectionDetails.URL).Debug("Fetching Xcrsf-Token")
+	uriConnectionDetails := connectionDetails
+	uriConnectionDetails.URL = ""
+	connectionDetails.XCsrfToken = "fetch"
+
+	// Loging into the ABAP System - getting the x-csrf-token and cookies
+	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
+	if err != nil {
+		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
+		return connectionDetails.XCsrfToken, err
+	}
+	defer resp.Body.Close()
+
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", connectionDetails.URL).Debug("Authentication on the ABAP system successful")
+	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
+	connectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
+
+	return connectionDetails.XCsrfToken, err
 }
 
 func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
