@@ -163,7 +163,6 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	return nil
 }
 
-// ToDo RunHelmInstall
 func RunHelmLint() {
 
 }
@@ -266,7 +265,6 @@ func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	return nil
 }
 
-// ToDo RunHelmTest
 func RunHelmTest(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
