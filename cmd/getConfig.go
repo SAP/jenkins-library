@@ -98,22 +98,7 @@ func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	if configOptions.defaultConfig {
-
-		defaultConfig := []io.ReadCloser{}
-		for _, f := range GeneralConfig.DefaultConfig {
-			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
-			// only create error for non-default values
-			if err != nil && f != ".pipeline/defaults.yaml" {
-				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
-			}
-			if err == nil {
-				defaultConfig = append(defaultConfig, fc)
-			}
-		}
-		myConfig.GetDefaultConfig(defaultConfig)
-
-	} else if configOptions.stageConfig {
+	if configOptions.stageConfig {
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)

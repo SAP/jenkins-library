@@ -166,33 +166,6 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetDefaultConfig(defaults []io.ReadCloser) (StepConfig, error) {
-
-	// var defaultConfig []io.ReadCloser
-	// fc, err := OpenPiperFile(
-	// 	"",
-	// 	map[string]string{"": ""})
-
-	// if err == nil {
-	// 	defaultConfig = append(defaultConfig, fc)
-	// }
-
-	if !c.initialized {
-		err = c.InitializeConfig(nil, defaults, true)
-		if err != nil {
-			return StepConfig{}, err
-		}
-	}
-
-	log.Entry().Info(c.defaults)
-
-	return StepConfig{}, nil
-
-	// stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, *metadata, resourceParams, GeneralConfig.StageName, stepName)
-
-}
-
-// GetStepConfig provides merged step configuration using defaults, config, if available
 func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, metadata StepData, envParameters map[string]interface{}, stageName, stepName string) (StepConfig, error) {
 	parameters := metadata.Spec.Inputs.Parameters
 	secrets := metadata.Spec.Inputs.Secrets
