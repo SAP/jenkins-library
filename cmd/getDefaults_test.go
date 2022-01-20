@@ -67,13 +67,13 @@ func TestGenerateDefaults(t *testing.T) {
 		{
 			name:          "Single defaults file",
 			defaultsFiles: []string{"test"},
-			expected:      `{"test":"general: null\nstages: null\nsteps: null\n"}`,
+			expected:      `{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test"}`,
 		},
 		{
 			name:          "Multiple defaults files",
 			defaultsFiles: []string{"test1", "test2"},
-			expected: `[{"test1":"general: null\nstages: null\nsteps: null\n"},` +
-				`{"test2":"general: null\nstages: null\nsteps: null\n"}]`,
+			expected: `[{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test1"},` +
+				`{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test2"}]`,
 		},
 	}
 
