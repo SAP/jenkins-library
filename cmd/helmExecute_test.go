@@ -38,15 +38,6 @@ func TestRunHelmExecute(t *testing.T) {
 			expectedConfig: []string{"test", "."},
 			expectedError:  false,
 		},
-		{
-			config: helmExecuteOptions{
-				DeploymentName: "testPackage",
-				DeployCommand:  "test",
-			},
-			expectedConfig: []string{"test", "."},
-			expectedError:  true,
-			expectedErrStr: "failed to execute helm test",
-		},
 	}
 
 	for i, testCase := range testTable {
