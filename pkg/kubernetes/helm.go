@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+// HelmDeployUtils interface
 type HelmDeployUtils interface {
 	SetEnv(env []string)
 	Stdout(out io.Writer)
@@ -18,6 +19,7 @@ type HelmDeployUtils interface {
 	piperutils.FileUtils
 }
 
+// HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
 	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
 	ChartPath                 string   `json:"chartPath,omitempty"`
@@ -47,11 +49,13 @@ type HelmExecuteOptions struct {
 	FilterTest                string   `json:"filterTest,omitempty"`
 }
 
+// deployUtilsBundle struct  for utils
 type deployUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 }
 
+// Initialize utils
 func NewDeployUtilsBundle() HelmDeployUtils {
 	utils := deployUtilsBundle{
 		Command: &command.Command{
@@ -79,6 +83,7 @@ func NewDeployUtilsBundle() HelmDeployUtils {
 	return &utils
 }
 
+// runHelmInit is used to set up env for executing helm command
 func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 
 	if len(config.ChartPath) <= 0 {
@@ -105,6 +110,7 @@ func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 	return nil
 }
 
+// RunHelmUpgrade is used to upgrade a release
 func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
@@ -163,6 +169,7 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	return nil
 }
 
+//RunHelmLint is used to examine a chart for possible issues
 func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
@@ -184,6 +191,7 @@ func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 	return nil
 }
 
+//// RunHelmUninstall is used to install a chart
 func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
@@ -221,6 +229,7 @@ func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	return nil
 }
 
+// RunHelmUninstall is used to uninstall a chart
 func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
@@ -252,6 +261,7 @@ func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout i
 	return nil
 }
 
+// RunHelmPackage is used to package a chart directory into a chart archive
 func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
@@ -282,6 +292,7 @@ func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 	return nil
 }
 
+// RunHelmTest is used to run tests for a release
 func RunHelmTest(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {

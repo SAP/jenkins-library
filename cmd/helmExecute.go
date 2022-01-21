@@ -47,7 +47,6 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 		FilterTest:            config.FilterTest,
 		DumpLogs:              config.DumpLogs,
 	}
-
 	switch config.DeployCommand {
 	case "upgrade":
 		err := kubernetes.RunHelmUpgrade(helmConfig, utils, stdout)
@@ -80,6 +79,5 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
 	}
-
 	return nil
 }
