@@ -86,12 +86,12 @@ func NewDeployUtilsBundle() HelmDeployUtils {
 // runHelmInit is used to set up env for executing helm command
 func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 
-	if len(config.ChartPath) <= 0 {
-		return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
-	}
-	if len(config.DeploymentName) <= 0 {
-		return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
-	}
+	// if len(config.ChartPath) <= 0 {
+	// 	return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
+	// }
+	// if len(config.DeploymentName) <= 0 {
+	// 	return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
+	// }
 
 	helmLogFields := map[string]interface{}{}
 	helmLogFields["Chart Path"] = config.ChartPath

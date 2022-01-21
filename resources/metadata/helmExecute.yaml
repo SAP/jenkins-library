@@ -18,12 +18,12 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: kubeConfigFileCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
-        aliases:
-          - name: kubeCredentialsId
-            deprecated: true
-        type: jenkins
+      # - name: kubeConfigFileCredentialsId
+      #   description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
+      #   aliases:
+      #     - name: kubeCredentialsId
+      #       deprecated: true
+      #   type: jenkins
       - name: kubeTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).
         aliases:
@@ -52,6 +52,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
+        mandatory: true
         description: Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
         scope:
           - PARAMETERS
@@ -142,6 +143,7 @@ spec:
           - name: helmDeploymentName
         type: string
         description: Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
@@ -157,17 +159,6 @@ spec:
         default: helm3
         possibleValues:
           - helm3
-      # - name: forceUpdates
-      #   aliases:
-      #     - name: force
-      #   type: bool
-      #   description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
-      #   mandatory: false
-      #   scope:
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
-      #   default: true
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.

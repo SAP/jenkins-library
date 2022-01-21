@@ -194,18 +194,18 @@ func TestRunHelm(t *testing.T) {
 			config        HelmExecuteOptions
 			expectedError error
 		}{
-			{
-				config: HelmExecuteOptions{
-					DeploymentName: "testPackage",
-				},
-				expectedError: errors.New("chart path has not been set, please configure chartPath parameter"),
-			},
-			{
-				config: HelmExecuteOptions{
-					ChartPath: ".",
-				},
-				expectedError: errors.New("deployment name has not been set, please configure deploymentName parameter"),
-			},
+			// {
+			// 	config: HelmExecuteOptions{
+			// 		DeploymentName: "testPackage",
+			// 	},
+			// 	expectedError: errors.New("chart path has not been set, please configure chartPath parameter"),
+			// },
+			// {
+			// 	config: HelmExecuteOptions{
+			// 		ChartPath: ".",
+			// 	},
+			// 	expectedError: errors.New("deployment name has not been set, please configure deploymentName parameter"),
+			// },
 			{
 				config: HelmExecuteOptions{
 					ChartPath:      ".",
