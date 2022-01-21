@@ -90,11 +90,11 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	return nil
 }
 
-func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, valuesList []abapbuild.Values) ([]abapbuild.Value, error) {
+func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, valuesList [][]abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
 	//No addonDescriptor involved
 	if len(valuesList) == 0 {
-		values, err := generateValues(config, []abapbuild.Value{})
+		values, err := generateValuesOnlyFromConfig(config)
 		if err != nil {
 			return finalValues, errors.Wrap(err, "Generating the values from config failed")
 		}
@@ -102,16 +102,23 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 		if err != nil {
 			return finalValues, errors.Wrap(err, "Error during execution of build framework")
 		}
-	}
-
-	//Run several times for each repository in the addonDescriptor
-	for _, values := range valuesList {
-		cummulatedValues, err := generateValues(config, values.Values)
-		if err != nil {
-			return finalValues, errors.Wrap(err, "Error during execution of build framework")
+	} else {
+		//Run several times for each repository in the addonDescriptor
+		vE := valuesEvaluator{}
+		vE.m = make(map[string]string)
+		for _, values := range valuesList {
+			cummulatedValues, err := generateValuesWithAddonDescriptor(config, values)
+			if err != nil {
+				return finalValues, errors.Wrap(err, "Error during execution of build framework")
+			}
+			finalValuesForOneBuild, err := runBuild(conn, config, utils, cummulatedValues)
+			if err != nil {
+				return finalValues, errors.Wrap(err, "Error during execution of build framework")
+			}
+			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
+			vE.appendValuesIfNotPresent(finalValuesForOneBuild)
 		}
-		finalValuesForOneBuild, err := runBuild(conn, config, utils, cummulatedValues)
-		finalValues = append(finalValues, finalValuesForOneBuild...)
+		finalValues = vE.generateValueSlice()
 	}
 	return finalValues, nil
 }
@@ -139,16 +146,18 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 }
 
 // ***********************************Run Build***************************************************************
-func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, values abapbuild.Values) ([]abapbuild.Value, error) {
+func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, values []abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
+	var inputValues abapbuild.Values
+	inputValues.Values = values
+
 	build := myBuild{
 		Build: abapbuild.Build{
 			Connector: *conn,
 		},
 		abapEnvironmentBuildOptions: config,
 	}
-
-	if err := build.Start(values); err != nil {
+	if err := build.Start(inputValues); err != nil {
 		return finalValues, err
 	}
 
@@ -227,7 +236,7 @@ func (b *myBuild) GetFinalValues() ([]abapbuild.Value, error) {
 	return b.Build.Values, nil
 }
 
-// **********************************Generate Values**************************************************************
+// **********************************Values Handling**************************************************************
 func convertValuesForCPE(values []abapbuild.Value) (string, error) {
 	type cpeValue struct {
 		ValueID string `json:"value_id"`
@@ -248,26 +257,44 @@ func convertValuesForCPE(values []abapbuild.Value) (string, error) {
 	return string(jsonBytes), nil
 }
 
-func generateValues(config *abapEnvironmentBuildOptions, repoValues []abapbuild.Value) (abapbuild.Values, error) {
-	var values abapbuild.Values
+func removeAddonDescriptorValues(finalValuesFromBuild []abapbuild.Value, valuesFromAddonDescriptor []abapbuild.Value) []abapbuild.Value {
+	var finalValues []abapbuild.Value
+	mapForAddonDescriptorValues := make(map[string]string)
+	for _, value := range valuesFromAddonDescriptor {
+		mapForAddonDescriptorValues[value.ValueID] = value.Value
+	}
+	for _, value := range finalValuesFromBuild {
+		_, present := mapForAddonDescriptorValues[value.ValueID]
+		if !present {
+			finalValues = append(finalValues, value)
+		}
+	}
+	return finalValues
+}
+
+func generateValuesWithAddonDescriptor(config *abapEnvironmentBuildOptions, repoValues []abapbuild.Value) ([]abapbuild.Value, error) {
+	var values []abapbuild.Value
 	vE := valuesEvaluator{}
 	//values from config
 	if err := vE.initialize(config.Values); err != nil {
 		return values, err
 	}
 	//values from addondescriptor
-	vE.appendValues(repoValues)
+	vE.appendValuesIfNotPresent(repoValues)
 	//values from commonepipelineEnvironment
-	if err := vE.appendStringValues(config.CpeValues); err != nil {
+	if err := vE.appendStringValuesIfNotPresent(config.CpeValues); err != nil {
 		return values, err
 	}
-	values.Values = vE.values
+	values = vE.generateValueSlice()
 	return values, nil
 }
 
+func generateValuesOnlyFromConfig(config *abapEnvironmentBuildOptions) ([]abapbuild.Value, error) {
+	return generateValuesWithAddonDescriptor(config, []abapbuild.Value{})
+}
+
 type valuesEvaluator struct {
-	values []abapbuild.Value
-	m      map[string]string
+	m map[string]string
 }
 
 func generateValuesFromString(stringValues string) ([]abapbuild.Value, error) {
@@ -286,9 +313,8 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error converting the vales from the config")
 	}
-	vE.values = values
 	vE.m = make(map[string]string)
-	for _, value := range vE.values {
+	for _, value := range values {
 		if (len(value.ValueID) == 0) || (len(value.Value) == 0) {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Errorf("Values %s from config have not the right format", stringValues)
@@ -303,28 +329,36 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 	return nil
 }
 
-func (vE *valuesEvaluator) appendStringValues(stringValues string) error {
+func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string) error {
 	var values []abapbuild.Value
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
 		errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
 	}
-	vE.appendValues(values)
+	vE.appendValuesIfNotPresent(values)
 	return nil
 }
 
-func (vE *valuesEvaluator) appendValues(values []abapbuild.Value) {
-	for i := len(values) - 1; i >= 0; i-- {
-		_, present := vE.m[values[i].ValueID]
-		if present || (values[i].ValueID == "PHASE") {
-			log.Entry().Infof("Value %s already exists in config -> discard this value", values[i])
-			values = append(values[:i], values[i+1:]...)
+func (vE *valuesEvaluator) appendValuesIfNotPresent(values []abapbuild.Value) {
+	for _, value := range values {
+		_, present := vE.m[value.ValueID]
+		if present || (value.ValueID == "PHASE") {
+			log.Entry().Infof("Value %s already exists in config -> discard this value", value)
+		} else {
+			vE.m[value.ValueID] = value.Value
 		}
 	}
-	vE.values = append(vE.values, values...)
-	for _, value := range vE.values {
-		vE.m[value.ValueID] = value.Value
+}
+
+func (vE *valuesEvaluator) generateValueSlice() []abapbuild.Value {
+	var values []abapbuild.Value
+	var value abapbuild.Value
+	for k, v := range vE.m {
+		value.ValueID = k
+		value.Value = v
+		values = append(values, value)
 	}
+	return values
 }
 
 //**********************************Evaluate AddonDescriptor**************************************************************
@@ -338,14 +372,51 @@ type condition struct {
 	Value    string `json:"value"`
 }
 
+type useField struct {
+	Use    string `json:"use"`
+	Rename string `json:"renameTo"`
+}
+
+func evaluateAddonDescriptor(config *abapEnvironmentBuildOptions) ([][]abapbuild.Value, error) {
+	var listOfValuesList [][]abapbuild.Value
+	if len(config.AddonDescriptor) > 0 {
+		addonDescriptor := new(abaputils.AddonDescriptor)
+		if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return listOfValuesList, errors.Wrap(err, "Error during the conversion of the AddonDescriptor")
+		}
+		for _, repo := range addonDescriptor.Repositories {
+			myRepo := myRepo{
+				Repository: repo,
+			}
+			use, err := myRepo.checkCondition(config)
+			if err != nil {
+				return listOfValuesList, errors.Wrapf(err, "Checking of ConditionOnAddonDescriptor failed")
+			}
+			if use {
+				values, err := myRepo.generateValues(config)
+				if err != nil {
+					return listOfValuesList, errors.Wrap(err, "Error generating values from AddonDescriptor")
+				}
+				if len(values) > 0 {
+					listOfValuesList = append(listOfValuesList, values)
+				}
+			}
+		}
+	}
+	return listOfValuesList, nil
+}
+
 func (mR *myRepo) checkCondition(config *abapEnvironmentBuildOptions) (bool, error) {
 	var conditions []condition
 	if len(config.ConditionOnAddonDescriptor) > 0 {
 		if err := json.Unmarshal([]byte(config.ConditionOnAddonDescriptor), &conditions); err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return false, errors.Wrapf(err, "Conversion of ConditionOnAddonDescriptor in the config failed")
 		}
 		for _, cond := range conditions {
 			if cond.Field == "" || cond.Operator == "" || cond.Value == "" {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return false, errors.Errorf("Invalid condition for field %s with operator %s and value %s", cond.Field, cond.Operator, cond.Value)
 			}
 			use, err := mR.amI(cond.Field, cond.Operator, cond.Value)
@@ -360,18 +431,41 @@ func (mR *myRepo) checkCondition(config *abapEnvironmentBuildOptions) (bool, err
 	return true, nil
 }
 
-func (mR *myRepo) generateValues() abapbuild.Values {
-	var values abapbuild.Values
+func (mR *myRepo) generateValues(config *abapEnvironmentBuildOptions) ([]abapbuild.Value, error) {
+	var values []abapbuild.Value
+	var useFields []useField
+	if len(config.UseFieldsOfAddonDescriptor) > 0 {
+		if err := json.Unmarshal([]byte(config.UseFieldsOfAddonDescriptor), &useFields); err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return values, errors.Wrapf(err, "Conversion of UseFieldsOfAddonDescriptor in the config failed")
+		}
+		m := make(map[string]string)
+		for _, uF := range useFields {
+			if uF.Use == "" || uF.Rename == "" {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return values, errors.Errorf("Invalid UseFieldsOfAddonDescriptor for use %s and renameTo %s", uF.Use, uF.Rename)
+			}
+			m[uF.Use] = uF.Rename
+		}
 
-	fields := reflect.ValueOf(mR.Repository)
-	typeOfS := fields.Type()
-	for i := 0; i < fields.NumField(); i++ {
-		var value abapbuild.Value
-		value.ValueID = typeOfS.Field(i).Name
-		value.Value = fields.Field(i).String()
-		values.Values = append(values.Values, value)
+		fields := reflect.ValueOf(mR.Repository)
+		typeOfS := fields.Type()
+		for i := 0; i < fields.NumField(); i++ {
+			var value abapbuild.Value
+			ValueID := typeOfS.Field(i).Name
+			rename, present := m[ValueID]
+			if present {
+				value.ValueID = rename
+				value.Value = fields.Field(i).String()
+				values = append(values, value)
+			}
+		}
+		if len(values) != len(useFields) {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return values, errors.Errorf("Not all fields in UseFieldsOfAddonDescriptor have been found. Probably a use was used which does not exist")
+		}
 	}
-	return values
+	return values, nil
 }
 
 func (mR *myRepo) getField(field string) string {
@@ -389,31 +483,8 @@ func (mR *myRepo) amI(field string, operator string, comp string) (bool, error) 
 	if fn, ok := operators[operator]; ok {
 		return fn(name, comp), nil
 	}
+	log.SetErrorCategory(log.ErrorConfiguration)
 	return false, errors.Errorf("Invalid operator %s", operator)
-}
-
-func evaluateAddonDescriptor(config *abapEnvironmentBuildOptions) ([]abapbuild.Values, error) {
-	var valuesList []abapbuild.Values
-	if len(config.AddonDescriptor) > 0 && config.UseAddonDescriptor {
-		addonDescriptor := new(abaputils.AddonDescriptor)
-		if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
-			return valuesList, errors.Wrap(err, "Error during the conversion of the AddonDescriptor")
-		}
-		for _, repo := range addonDescriptor.Repositories {
-			myRepo := myRepo{
-				Repository: repo,
-			}
-			use, err := myRepo.checkCondition(config)
-			if err != nil {
-				return valuesList, errors.Wrapf(err, "Checking of ConditionOnAddonDescriptor failed")
-			}
-			if use {
-				values := myRepo.generateValues()
-				valuesList = append(valuesList, values)
-			}
-		}
-	}
-	return valuesList, nil
 }
 
 type OperatorCallback map[string]func(string, string) bool

@@ -39,8 +39,8 @@ type abapEnvironmentBuildOptions struct {
 	PollingIntervalInSeconds        int      `json:"pollingIntervalInSeconds,omitempty"`
 	CertificateNames                []string `json:"certificateNames,omitempty"`
 	CpeValues                       string   `json:"cpeValues,omitempty"`
+	UseFieldsOfAddonDescriptor      string   `json:"useFieldsOfAddonDescriptor,omitempty"`
 	ConditionOnAddonDescriptor      string   `json:"conditionOnAddonDescriptor,omitempty"`
-	UseAddonDescriptor              bool     `json:"useAddonDescriptor,omitempty"`
 	AddonDescriptor                 string   `json:"addonDescriptor,omitempty"`
 }
 
@@ -186,8 +186,8 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 60, "wait time in seconds till next status request in the backend system")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
 	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
+	cmd.Flags().StringVar(&stepConfig.UseFieldsOfAddonDescriptor, "useFieldsOfAddonDescriptor", os.Getenv("PIPER_useFieldsOfAddonDescriptor"), "TODO")
 	cmd.Flags().StringVar(&stepConfig.ConditionOnAddonDescriptor, "conditionOnAddonDescriptor", os.Getenv("PIPER_conditionOnAddonDescriptor"), "TODO")
-	cmd.Flags().BoolVar(&stepConfig.UseAddonDescriptor, "useAddonDescriptor", false, "TODO")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("username")
@@ -198,7 +198,6 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.MarkFlagRequired("treatWarningsAsError")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
 	cmd.MarkFlagRequired("pollingIntervalInSeconds")
-	cmd.MarkFlagRequired("useAddonDescriptor")
 }
 
 // retrieve step metadata
@@ -410,6 +409,15 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_cpeValues"),
 					},
 					{
+						Name:        "useFieldsOfAddonDescriptor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_useFieldsOfAddonDescriptor"),
+					},
+					{
 						Name:        "conditionOnAddonDescriptor",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -417,15 +425,6 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_conditionOnAddonDescriptor"),
-					},
-					{
-						Name:        "useAddonDescriptor",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     false,
 					},
 					{
 						Name: "addonDescriptor",

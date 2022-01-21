@@ -17,13 +17,14 @@ type abapEnvironmentBuildMockUtils struct {
 }
 
 func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildUtils {
-	mC := abapbuild.GetBuildMockClient()
+	mC := abapbuild.GetBuildMockClientToRun2Times()
 	utils := abapEnvironmentBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		MockClient:     &mC,
 	}
 	return &utils
 }
+
 func (mB abapEnvironmentBuildMockUtils) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
 }
 func (mB abapEnvironmentBuildMockUtils) GetAbapCommunicationArrangementInfo(options abaputils.AbapEnvironmentOptions, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
@@ -44,12 +45,12 @@ func (mB abapEnvironmentBuildMockUtils) getPollingIntervall() time.Duration {
 
 func TestRunAbapEnvironmentBuild(t *testing.T) {
 	t.Parallel()
-
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		// init
 		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
 		config := abapEnvironmentBuildOptions{}
+		config.AddonDescriptor = addonDescriptor
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		config.DownloadAllResultFiles = true
 		config.PublishAllDownloadedResultFiles = true
@@ -67,6 +68,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		// init
 		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
 		config := abapEnvironmentBuildOptions{}
+		config.AddonDescriptor = addonDescriptor
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		config.DownloadResultFilenames = []string{"SAR_XML"}
 		config.PublishResultFilenames = []string{"SAR_XML"}
@@ -79,18 +81,19 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 
 	t.Run("happy path, use AddonDescriptor", func(t *testing.T) {
 		t.Parallel()
-		//TODO alles ändern
 		// init
 		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
 		config := abapEnvironmentBuildOptions{}
-		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
-		config.DownloadAllResultFiles = true
-		config.PublishAllDownloadedResultFiles = true
+		config.AddonDescriptor = addonDescriptor
+		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"}]`
+		//config.ConditionOnAddonDescriptor = `[{"field":"PackageType","operator":"!=","value":"AOI"}]`
+		//The mock client returns MyId1 & and MyId2 therefore we rename it to these values so that we can remove it from the output
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"MyId1"},{"use":"Status","renameTo":"MyId2"}]`
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
 		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
-		finalValues := `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"AunitValue1"},{"value_id":"MyId2","value":"AunitValue2"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
+		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
 		assert.NoError(t, err)
 		assert.Equal(t, finalValues, cpe.abap.buildValues)
 	})
@@ -100,6 +103,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		// init
 		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
 		config := abapEnvironmentBuildOptions{}
+		config.AddonDescriptor = addonDescriptor
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		config.DownloadResultFilenames = []string{"DELIVERY_LOGS.ZIP"}
 		config.PublishResultFilenames = []string{"SAR_XML"}
@@ -115,6 +119,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		// init
 		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
 		config := abapEnvironmentBuildOptions{}
+		config.AddonDescriptor = addonDescriptor
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		config.DownloadResultFilenames = []string{"DOES_NOT_EXIST"}
 		config.PublishAllDownloadedResultFiles = true
@@ -127,59 +132,63 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 }
 
 func TestGenerateValues(t *testing.T) {
-	t.Parallel()
 	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
 		// init
 		config := abapEnvironmentBuildOptions{}
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		config.CpeValues = `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"PACKAGES","value":"CPE_PACKAGE"},{"value_id":"MyId2","value":"Value2"}]`
 		// test
-		values, err := generateValues(&config, []abapbuild.Value{})
+		values, err := generateValuesOnlyFromConfig(&config)
 		// assert
 		assert.NoError(t, err)
-		assert.Equal(t, 3, len(values.Values))
-		assert.Equal(t, "/BUILD/AUNIT_DUMMY_TESTS", values.Values[0].Value)
-		assert.Equal(t, "Value1", values.Values[1].Value)
-		assert.Equal(t, "Value2", values.Values[2].Value)
+		assert.Equal(t, 3, len(values))
+		assert.Equal(t, "/BUILD/AUNIT_DUMMY_TESTS", values[0].Value)
+		assert.Equal(t, "Value1", values[1].Value)
+		assert.Equal(t, "Value2", values[2].Value)
 	})
 	t.Run("happy path, use addonDescriptor", func(t *testing.T) {
-		t.Parallel()
 		// init
 		config := abapEnvironmentBuildOptions{}
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		config.CpeValues = `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"PACKAGES","value":"CPE_PACKAGE"},{"value_id": "Status","value":"R"},{"value_id":"MyId2","value":"Value2"}]`
 		config.AddonDescriptor = addonDescriptor
-		config.UseAddonDescriptor = true
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		valuesAddonDescriptor, err := evaluateAddonDescriptor(&config)
-		values0, err := generateValues(&config, valuesAddonDescriptor[0].Values)
+		values0, err := generateValuesWithAddonDescriptor(&config, valuesAddonDescriptor[0])
 		// assert
 		assert.NoError(t, err)
-		assert.Equal(t, 19, len(values0.Values))
-		assert.Equal(t, "/BUILD/AUNIT_DUMMY_TESTS", values0.Values[0].Value)
-		assert.Equal(t, "Value1", values0.Values[1].Value)
-		assert.Equal(t, "/ITAPC1/I_CURRENCY", values0.Values[2].Value)
-		assert.Equal(t, "Value2", values0.Values[18].Value)
+		assert.Equal(t, 5, len(values0))
+		//values generated by map -> therefore we can not just iterate over the generated values and check them, as they are in random order
+		checkMap := map[string]string{
+			"PACKAGES": "/BUILD/AUNIT_DUMMY_TESTS",
+			"MyId1":    "Value1",
+			"MyId2":    "Value2",
+			"SWC":      "/ITAPC1/I_CURRENCY",
+			"Status":   "P",
+		}
+		for _, value := range values0 {
+			checkValue, present := checkMap[value.ValueID]
+			assert.True(t, present)
+			assert.Equal(t, checkValue, value.Value)
+		}
 	})
 	t.Run("error path - duplicate in config", func(t *testing.T) {
-		t.Parallel()
 		// init
 		config := abapEnvironmentBuildOptions{}
 		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"},{"value_id":"MyId1","value":"Value1"}]`
 		// test
-		values, err := generateValues(&config, []abapbuild.Value{})
+		values, err := generateValuesOnlyFromConfig(&config)
 		// assert
 		assert.Error(t, err)
-		assert.Equal(t, 0, len(values.Values))
+		assert.Equal(t, 0, len(values))
 	})
 	t.Run("error path - bad formating in config.Values", func(t *testing.T) {
-		t.Parallel()
 		// init
 		config := abapEnvironmentBuildOptions{}
 		config.Values = `[{"task_id":"PACKAGES","task":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
 		// test
-		_, err := generateValues(&config, []abapbuild.Value{})
+		_, err := generateValuesOnlyFromConfig(&config)
 		// assert
 		assert.Error(t, err)
 	})
@@ -189,28 +198,33 @@ func TestEvaluateAddonDescriptor(t *testing.T) {
 	//global init
 	config := abapEnvironmentBuildOptions{}
 	config.AddonDescriptor = addonDescriptor
-	config.UseAddonDescriptor = true
 	t.Run("Find one", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = `[{"field":"Name","operator":"==","value":"/ITAPC1/I_CURRENCY"},{"field":"Status","operator":"!=","value":"R"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(values))
+		assert.Equal(t, 2, len(values[0]))
 	})
 	t.Run("Find both", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = `[{"field":"PackageType","operator":"==","value":"AOI"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(values))
+		assert.Equal(t, 2, len(values[0]))
+		assert.Equal(t, 2, len(values[1]))
 	})
 	t.Run("Find none", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = `[{"field":"PackageType","operator":"!=","value":"AOI"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
@@ -220,15 +234,29 @@ func TestEvaluateAddonDescriptor(t *testing.T) {
 	t.Run("No condition", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = ``
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(values))
+		assert.Equal(t, 2, len(values[0]))
+		assert.Equal(t, 2, len(values[1]))
+	})
+	t.Run("No UseFields", func(t *testing.T) {
+		// init
+		config.ConditionOnAddonDescriptor = ``
+		config.UseFieldsOfAddonDescriptor = ``
+		// test
+		values, err := evaluateAddonDescriptor(&config)
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(values))
 	})
 	t.Run("Wrong fieldname", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = `[{"fieldxxx":"Name","operator":"==","value":"/ITAPC1/I_CURRENCY"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
@@ -238,6 +266,17 @@ func TestEvaluateAddonDescriptor(t *testing.T) {
 	t.Run("Wrong value fieldname", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = `[{"field":"Name","operator":"==","valuexxxx":"/ITAPC1/I_CURRENCY"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
+		// test
+		values, err := evaluateAddonDescriptor(&config)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, 0, len(values))
+	})
+	t.Run("Field which does not exist", func(t *testing.T) {
+		// init
+		config.ConditionOnAddonDescriptor = `[{"field":"DoesNotExist","operator":"==","valuexxxx":"/ITAPC1/I_CURRENCY"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
@@ -247,6 +286,37 @@ func TestEvaluateAddonDescriptor(t *testing.T) {
 	t.Run("Wrong operator", func(t *testing.T) {
 		// init
 		config.ConditionOnAddonDescriptor = `[{"field":"Name","operator":"()","value":"/ITAPC1/I_CURRENCY"}]`
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
+		// test
+		values, err := evaluateAddonDescriptor(&config)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, 0, len(values))
+	})
+	t.Run("Test UseFieldsOfAddonDescriptor: Bad formatting use", func(t *testing.T) {
+		// init
+		config.ConditionOnAddonDescriptor = ``
+		config.UseFieldsOfAddonDescriptor = `[{"usexxx":"Name","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
+		// test
+		values, err := evaluateAddonDescriptor(&config)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, 0, len(values))
+	})
+	t.Run("Test UseFieldsOfAddonDescriptor: Bad formatting as", func(t *testing.T) {
+		// init
+		config.ConditionOnAddonDescriptor = ``
+		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"SWC"},{"use":"Status","asxxx":"Status"}]`
+		// test
+		values, err := evaluateAddonDescriptor(&config)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, 0, len(values))
+	})
+	t.Run("Test UseFieldsOfAddonDescriptor: use which does not exist", func(t *testing.T) {
+		// init
+		config.ConditionOnAddonDescriptor = ``
+		config.UseFieldsOfAddonDescriptor = `[{"use":"DoesNotExist","renameTo":"SWC"},{"use":"Status","renameTo":"Status"}]`
 		// test
 		values, err := evaluateAddonDescriptor(&config)
 		// assert
