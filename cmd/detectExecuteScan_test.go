@@ -194,7 +194,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
+		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect7.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
