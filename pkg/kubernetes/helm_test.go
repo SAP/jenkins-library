@@ -56,11 +56,11 @@ func TestRunHelm(t *testing.T) {
 
 	t.Run("Helm install command", func(t *testing.T) {
 		t.Parallel()
-		utils := newHelmMockUtilsBundle()
 
 		testTable := []struct {
-			config         HelmExecuteOptions
-			expectedConfig []string
+			config                HelmExecuteOptions
+			expectedConfigInstall []string
+			expectedConfigAdd     []string
 		}{
 			{
 				config: HelmExecuteOptions{
@@ -69,7 +69,8 @@ func TestRunHelm(t *testing.T) {
 					Namespace:             "test-namespace",
 					HelmDeployWaitSeconds: 525,
 				},
-				expectedConfig: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"},
+				expectedConfigAdd:     []string{"add", "stable", "https://charts.helm.sh/stable"},
+				expectedConfigInstall: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"},
 			},
 			{
 				config: HelmExecuteOptions{
@@ -81,14 +82,17 @@ func TestRunHelm(t *testing.T) {
 					DryRun:                true,
 					AdditionalParameters:  []string{"--set-file my_script=dothings.sh"},
 				},
-				expectedConfig: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--dry-run", "--wait", "--timeout", "525s", "--set-file my_script=dothings.sh"},
+				expectedConfigAdd:     []string{"add", "stable", "https://charts.helm.sh/stable"},
+				expectedConfigInstall: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--dry-run", "--wait", "--timeout", "525s", "--set-file my_script=dothings.sh"},
 			},
 		}
 
-		for i, testCase := range testTable {
+		for _, testCase := range testTable {
+			utils := newHelmMockUtilsBundle()
 			err := RunHelmInstall(testCase.config, utils, log.Writer())
 			assert.NoError(t, err)
-			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfigAdd}, utils.Calls[0])
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfigInstall}, utils.Calls[1])
 		}
 	})
 

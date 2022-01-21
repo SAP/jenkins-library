@@ -102,6 +102,25 @@ func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 	return nil
 }
 
+// runHelmAdd is used to add a chart repository
+func runHelmAdd(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	helmParams := []string{
+		"add",
+		"stable",
+	}
+
+	helmParams = append(helmParams, "https://charts.helm.sh/stable")
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm add ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm add call failed")
+	}
+
+	return nil
+}
+
 // RunHelmUpgrade is used to upgrade a release
 func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
@@ -185,8 +204,11 @@ func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 
 // RunHelmInstall is used to install a chart
 func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
-	if err != nil {
+	if err := runHelmInit(config, utils, stdout); err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
+	if err := runHelmAdd(config, utils, stdout); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
