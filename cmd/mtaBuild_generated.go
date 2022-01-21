@@ -88,8 +88,6 @@ func (p *mtaBuildReports) persist(stepConfig mtaBuildOptions, gcpJsonKeyFilePath
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "env.json", ParamRef: "", StepResultType: "root"},
-		{FilePattern: "build-settings.json", ParamRef: "", StepResultType: "settings"},
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
@@ -482,8 +480,6 @@ func mtaBuildMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "env.json", "type": "root"},
-							{"filePattern": "build-settings.json", "type": "settings"},
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
