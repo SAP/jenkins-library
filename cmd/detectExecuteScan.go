@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -253,9 +254,24 @@ func exitCodeMapping(exitCodeKey int) string {
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	if config.ScanOnChanges {
+		log.Entry().Infof("Using Detect Rescan script")
 		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
 	}
-	return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	if piperutils.ContainsStringPart(config.CustomEnvironmentVariables, "DETECT_LATEST_RELEASE_VERSION") {
+		releaseVersion := ""
+		for _, i := range config.CustomEnvironmentVariables {
+			if strings.Contains(i, "DETECT_LATEST_RELEASE_VERSION") {
+				releaseVersion = strings.Split(i, "=")[1]
+			}
+		}
+		log.Entry().Infof("Using detect script Version %v ", releaseVersion)
+		detect6, _ := regexp.MatchString("6\\.\\d\\.\\d", releaseVersion)
+		if detect6 {
+			log.Entry().Infof("Using Detect 6.x")
+			return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+		}
+	}
+	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
