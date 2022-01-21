@@ -16,16 +16,16 @@ import (
 )
 
 type abapEnvironmentPushATCSystemConfigOptions struct {
-	AtcSystemConfigFilePath   string `json:"atcSystemConfigFilePath,omitempty"`
-	PatchExistingSystemConfig bool   `json:"patchExistingSystemConfig,omitempty"`
-	CfAPIEndpoint             string `json:"cfApiEndpoint,omitempty"`
-	CfOrg                     string `json:"cfOrg,omitempty"`
-	CfServiceInstance         string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName          string `json:"cfServiceKeyName,omitempty"`
-	CfSpace                   string `json:"cfSpace,omitempty"`
-	Username                  string `json:"username,omitempty"`
-	Password                  string `json:"password,omitempty"`
-	Host                      string `json:"host,omitempty"`
+	AtcSystemConfigFilePath    string `json:"atcSystemConfigFilePath,omitempty"`
+	PatchIfExistingAndOutdated bool   `json:"patchIfExistingAndOutdated,omitempty"`
+	CfAPIEndpoint              string `json:"cfApiEndpoint,omitempty"`
+	CfOrg                      string `json:"cfOrg,omitempty"`
+	CfServiceInstance          string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName           string `json:"cfServiceKeyName,omitempty"`
+	CfSpace                    string `json:"cfSpace,omitempty"`
+	Username                   string `json:"username,omitempty"`
+	Password                   string `json:"password,omitempty"`
+	Host                       string `json:"host,omitempty"`
 }
 
 // AbapEnvironmentPushATCSystemConfigCommand Push/Deploy ATC Configuration
@@ -125,7 +125,7 @@ Please provide either of the following options:
 
 func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *abapEnvironmentPushATCSystemConfigOptions) {
 	cmd.Flags().StringVar(&stepConfig.AtcSystemConfigFilePath, "atcSystemConfigFilePath", os.Getenv("PIPER_atcSystemConfigFilePath"), "Path to a JSON file with ATC System Configuration")
-	cmd.Flags().BoolVar(&stepConfig.PatchExistingSystemConfig, "patchExistingSystemConfig", true, "In case an configuration under the given name already exists in system and is outdated compared to the supplied file with the ATC Systm Configuration. Should the step Update/Patch the existing ATC Systm Configuration?")
+	cmd.Flags().BoolVar(&stepConfig.PatchIfExistingAndOutdated, "patchIfExistingAndOutdated", true, "In case an configuration under the given name already exists in system and is outdated compared to the supplied file with the ATC Systm Configuration. Should the step Update/Patch the existing ATC Systm Configuration?")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
@@ -164,7 +164,7 @@ func abapEnvironmentPushATCSystemConfigMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_atcSystemConfigFilePath"),
 					},
 					{
-						Name:        "patchExistingSystemConfig",
+						Name:        "patchIfExistingAndOutdated",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
