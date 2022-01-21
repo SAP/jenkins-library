@@ -259,30 +259,35 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, v
 	if err != nil {
 		return err
 	}
-	log.Entry().Info("ATC System configuration (Base) successfully patched from file" + validFilename)
-	defer resp.Body.Close()
 
 	if len(parsedConfigPriorities.Priorities) > 0 {
 		//Patch message priorities
 		// by now, PATCH needs to be done for each given priority
 		var priority priorityJson
+		var withError bool
 		for i, priorityLine := range parsedConfigPriorities.Priorities {
 			connectionDetails.URL = abapEndpoint + "/priority(root_id='1',conf_id=" + confUUID + ",test='" + priorityLine.Test + "',message_id='" + priorityLine.MessageId + "')"
 			priority.Priority = priorityLine.Priority
 			priorityJsonBody, err := json.Marshal(&priority)
 			if err != nil {
 				log.Entry().Errorf("problem with marshall of single priority in line "+string(rune(i)), err)
+				withError = true
 				continue
 			}
 			resp, err = abaputils.GetHTTPResponse("PATCH", connectionDetails, priorityJsonBody, client)
 			err = parseOdataResponse(resp, err, connectionDetails, config, validFilename)
-			defer resp.Body.Close()
 			if err != nil {
 				log.Entry().Errorf("problem with response of patch of single priority in line "+string(rune(i)), err)
+				withError = true
 				continue
 			}
 		}
-		log.Entry().Info("Message Priorities patched from file " + validFilename)
+		if !withError {
+			log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration Message Priority information.")
+		} else {
+			return fmt.Errorf("Problems Pushing ATC System configuration Message Priorities. %w", errors.New("ATC System configuration file updated "+validFilename+" with patched ATC System configuration Message Priority information but some errors occured. Please check log."))
+		}
+
 	}
 
 	return nil
@@ -364,7 +369,6 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		return logAndPersistResponseBody(body, validFilename, errorIn)
 
 	case 201: //CREATED
-		log.Entry().Info("ATC System configuration successfully pushed from file " + validFilename + " to system")
 		return logAndPersistResponseBody(body, validFilename, errorIn)
 
 	case 400: //BAD REQUEST
@@ -393,11 +397,13 @@ func logAndPersistResponseBody(body []byte, validFilename string, errorIn error)
 	var err error
 	var parsedConfigurationJson parsedConfigJsonWithExpand
 	err = json.Unmarshal(body, &parsedConfigurationJson)
+
 	if err != nil {
 		return err
 	}
 	//in case it was an configuration, this value may not be initial!
 	if parsedConfigurationJson.ConfName != "" {
+		log.Entry().Info("ATC System Base configuration successfully pushed from file " + validFilename + " to system")
 		//write Patched Config Base Info back to File
 		returnedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
 		if err != nil {
@@ -407,7 +413,7 @@ func logAndPersistResponseBody(body []byte, validFilename string, errorIn error)
 		if err != nil {
 			return err
 		}
-		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration information.")
+		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System Base configuration information.")
 
 		return nil
 	}
@@ -436,10 +442,9 @@ func logAndPersistResponseBody(body []byte, validFilename string, errorIn error)
 		if err != nil {
 			return err
 		}
-
+		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration Message Priority information (Test: " + parsedPriorityJson.Test + " / MessageID: " + parsedPriorityJson.MessageId + ")")
 	}
 
-	log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with created ATC System configuration information.")
 	return nil
 
 }
