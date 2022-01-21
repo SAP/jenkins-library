@@ -230,6 +230,8 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 
+	//TBD: Check if BATCH request can be formed instead of single calls!
+
 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
 	var configBaseJson parsedConfigJsonBase
 	err := json.Unmarshal(atcSystemConfiguartionJsonFile, &configBaseJson)
@@ -242,10 +244,10 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, v
 		return err
 	}
 
-	//TBD: Check if BATCH request can be formed instead of single calls!
-
 	//Patch configuration
 	//marshall into base config (no expanded priorities)
+	configBaseJson.RootId = "1"
+	configBaseJson.ConfUUID = confUUID
 	configBaseJsonBody, err := json.Marshal(&configBaseJson)
 	if err != nil {
 		return err
@@ -351,92 +353,21 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 
 	var err error
 	var body []byte
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("parsing oData response failed: %w", err)
+	}
+	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case 200: //Retrieved entities & OK in Patch
-		var patchedATCSystemConfig []byte
-		body, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("parsing oData response failed: %w", err)
-		}
-		patchedATCSystemConfig = body
-		var parsedConfigurationJson parsedConfigJsonWithExpand
-		err := json.Unmarshal(patchedATCSystemConfig, &parsedConfigurationJson)
-		if err != nil {
-			return err
-		}
-		//in case it was an pact on configuration base, this value may not be initial!
-		if parsedConfigurationJson.ConfName != "" {
-			//write Patched Config Base Info back to File
-			patchedATCSystemConfig, err = json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-			if err != nil {
-				return err
-			}
-			err = ioutil.WriteFile(validFilename, patchedATCSystemConfig, 0644)
-			if err != nil {
-				return err
-			}
-			log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration information.")
-			defer resp.Body.Close()
-			return nil
-		}
-
-		var parsedPriorityJson parsedConfigPriority
-		err = json.Unmarshal(patchedATCSystemConfig, &parsedPriorityJson)
-		if err != nil {
-			return err
-		}
-		if parsedPriorityJson.MessageId != "" {
-			atcSystemConfiguartionJsonFile, err := ioutil.ReadFile(validFilename)
-			if err != nil {
-				return err
-			}
-			err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
-			if err != nil {
-				return err
-			}
-			parsedConfigurationJson.Priorities = append(parsedConfigurationJson.Priorities, parsedPriorityJson)
-			patchedATCSystemConfig, err = json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-			if err != nil {
-				return err
-			}
-			err = ioutil.WriteFile(validFilename, patchedATCSystemConfig, 0644)
-			if err != nil {
-				return err
-			}
-			defer resp.Body.Close()
-		}
-
-		return nil
+		return logAndPersistResponseBody(body, validFilename, errorIn)
 
 	case 201: //CREATED
 		log.Entry().Info("ATC System configuration successfully pushed from file " + validFilename + " to system")
-		//save response entity as
-		var createdATCSystemConfig []byte
-		body, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("parsing oData response failed: %w", err)
-		}
-		createdATCSystemConfig = body
-		var parsedConfigurationJson parsedConfigJsonWithExpand
-		err := json.Unmarshal(createdATCSystemConfig, &parsedConfigurationJson)
-		if err != nil {
-			return err
-		}
-		createdATCSystemConfig, err = json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-		if err != nil {
-			return err
-		}
-		err = ioutil.WriteFile(validFilename, createdATCSystemConfig, 0644)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with created ATC System configuration information.")
-		return nil
+		return logAndPersistResponseBody(body, validFilename, errorIn)
 
 	case 400: //BAD REQUEST
-		//Parse response
-		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("parsing oData response failed: %w", err)
 		}
@@ -455,6 +386,61 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		defer resp.Body.Close()
 		return fmt.Errorf("unhandled StatusCode: %w", errors.New(resp.Status))
 	}
+
+}
+
+func logAndPersistResponseBody(body []byte, validFilename string, errorIn error) error {
+	var err error
+	var parsedConfigurationJson parsedConfigJsonWithExpand
+	err = json.Unmarshal(body, &parsedConfigurationJson)
+	if err != nil {
+		return err
+	}
+	//in case it was an configuration, this value may not be initial!
+	if parsedConfigurationJson.ConfName != "" {
+		//write Patched Config Base Info back to File
+		returnedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(validFilename, returnedATCSystemConfig, 0644)
+		if err != nil {
+			return err
+		}
+		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration information.")
+
+		return nil
+	}
+
+	var parsedPriorityJson parsedConfigPriority
+	err = json.Unmarshal(body, &parsedPriorityJson)
+	if err != nil {
+		return err
+	}
+	//in case it was an priority of the configuration, this value may not be initial!
+	if parsedPriorityJson.MessageId != "" {
+		atcSystemConfiguartionJsonFile, err := ioutil.ReadFile(validFilename)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
+		if err != nil {
+			return err
+		}
+		parsedConfigurationJson.Priorities = append(parsedConfigurationJson.Priorities, parsedPriorityJson)
+		updatedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(validFilename, updatedATCSystemConfig, 0644)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with created ATC System configuration information.")
+	return nil
 
 }
 
