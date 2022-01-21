@@ -52,6 +52,7 @@ type fortifyExecuteScanOptions struct {
 	PythonAdditionalPath            []string `json:"pythonAdditionalPath,omitempty"`
 	ArtifactURL                     string   `json:"artifactUrl,omitempty"`
 	ConsiderSuspicious              bool     `json:"considerSuspicious,omitempty"`
+	ConvertToSarif                  bool     `json:"convertToSarif,omitempty"`
 	FprUploadEndpoint               string   `json:"fprUploadEndpoint,omitempty"`
 	ProjectName                     string   `json:"projectName,omitempty"`
 	Reporting                       bool     `json:"reporting,omitempty"`
@@ -279,6 +280,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringSliceVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", []string{`./lib`, `.`}, "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes")
 	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/URL pointing to an additional artifact repository for resolution of additional artifacts during the build")
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
+	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", false, "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard, and upload its results. Requires uploadResults")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
@@ -689,6 +691,15 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
+					},
+					{
+						Name:        "convertToSarif",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "fprUploadEndpoint",

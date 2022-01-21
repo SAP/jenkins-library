@@ -221,8 +221,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if config.UploadResults {
 		log.Entry().Debug("Uploading results")
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
-		log.Entry().Debug("Calling conversion to SARIF function.")
-		fortify.ConvertFprToSarif(resultFilePath)
+		if config.ConvertToSarif {
+			log.Entry().Debug("Calling conversion to SARIF function.")
+			fortify.ConvertFprToSarif(resultFilePath)
+		}
 		err = sys.UploadResultFile(config.FprUploadEndpoint, resultFilePath, projectVersion.ID)
 		message = fmt.Sprintf("Failed to upload result file %v to Fortify SSC at %v", resultFilePath, config.ServerURL)
 	} else {

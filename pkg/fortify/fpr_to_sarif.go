@@ -2,6 +2,7 @@ package fortify
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"io/ioutil"
 
@@ -19,11 +20,14 @@ type FVDL struct {
 	XsiType         string   `xml:"type,attr"`
 	Created         CreatedTS
 	Uuid            UUID
-	Buildinfo       Build
+	Build           Build
 	Vulnerabilities Vulnerabilities `xml:"Vulnerabilities"`
 	ContextPool     ContextPool     `xml:"ContextPool"`
 	UnifiedNodePool UnifiedNodePool `xml:"UnifiedNodePool"`
 	Description     []Description   `xml:"Description"`
+	Snippets        []Snippet       `xml:"Snippets>Snippet"`
+	ProgramData     ProgramData     `xml:"ProgramData"`
+	EngineData      EngineData      `xml:"EngineData"`
 }
 
 type CreatedTS struct {
@@ -60,7 +64,7 @@ type Build struct {
 
 type File struct {
 	XMLName       xml.Name `xml:"File"`
-	FileSize      string   `xml:"size,attr"`
+	FileSize      int      `xml:"size,attr"`
 	FileTimestamp string   `xml:"timestamp,attr"`
 	FileLoc       int      `xml:"loc,attr,omitempty"`
 	FileType      string   `xml:"type,attr"`
@@ -82,16 +86,16 @@ type Vulnerabilities struct {
 }
 
 type Vulnerability struct {
-	XMLName      xml.Name `xml:"Vulnerability"`
-	ClassInfo    ClassInfo
-	InstanceInfo InstanceInfo
+	XMLName      xml.Name     `xml:"Vulnerability"`
+	ClassInfo    ClassInfo    `xml:"ClassInfo"`
+	InstanceInfo InstanceInfo `xml:"InstanceInfo"`
 	AnalysisInfo AnalysisInfo `xml:"AnalysisInfo>Unified"`
 }
 
 type ClassInfo struct {
 	XMLName         xml.Name `xml:"ClassInfo"`
 	ClassID         string   `xml:"ClassID"`
-	Kingdom         string   `xml:"Kingdom"`
+	Kingdom         string   `xml:"Kingdom,omitempty"`
 	Type            string   `xml:"Type"`
 	Subtype         string   `xml:"Subtype,omitempty"`
 	AnalyzerName    string   `xml:"AnalyzerName"`
@@ -107,8 +111,8 @@ type InstanceInfo struct {
 
 type AnalysisInfo struct { //Note that this is directly the "Unified" object
 	Context                Context
-	ReplacementDefinitions []Def `xml:"ReplacementDefinitions>Def"`
-	Trace                  Trace `xml:"Trace"`
+	ReplacementDefinitions []Def   `xml:"ReplacementDefinitions>Def"`
+	Trace                  []Trace `xml:"Trace"`
 }
 
 type Context struct {
@@ -158,7 +162,7 @@ type Entry struct {
 
 type NodeRef struct {
 	XMLName xml.Name `xml:"NodeRef"`
-	RefId   string   `xml:"id,attr"`
+	RefId   int      `xml:"id,attr"`
 }
 
 type Node struct {
@@ -174,10 +178,10 @@ type Node struct {
 type SourceLocation struct {
 	XMLName   xml.Name `xml:"SourceLocation"`
 	Path      string   `xml:"path,attr"`
-	Line      string   `xml:"line,attr"`
-	LineEnd   string   `xml:"lineEnd,attr"`
-	ColStart  string   `xml:"colStart,attr"`
-	ColEnd    string   `xml:"colEnd,attr"`
+	Line      int      `xml:"line,attr"`
+	LineEnd   int      `xml:"lineEnd,attr"`
+	ColStart  int      `xml:"colStart,attr"`
+	ColEnd    int      `xml:"colEnd,attr"`
 	ContextId string   `xml:"contextId,attr"`
 	Snippet   string   `xml:"snippet,attr"`
 }
@@ -197,6 +201,12 @@ type Reason struct {
 type Rule struct {
 	XMLName xml.Name `xml:"Rule"`
 	RuleID  string   `xml:"ruleID,attr"`
+}
+
+type Group struct {
+	XMLName xml.Name `xml:"Group"`
+	Name    string   `xml:"name,attr"`
+	Data    string   `xml:",innerxml"`
 }
 
 type Knowledge struct {
@@ -274,6 +284,157 @@ type CustomDescription struct {
 	References      []Reference     `xml:"References>Reference"`
 }
 
+// These structures are relevant to the Snippets object
+
+type Snippet struct {
+	XMLName   xml.Name `xml:"Snippet"`
+	SnippetId string   `xml:"id,attr"`
+	File      string   `xml:"File"`
+	StartLine int      `xml:"StartLine"`
+	EndLine   int      `xml:"EndLine"`
+	Text      string   `xml:"Text"`
+}
+
+// These structures are relevant to the ProgramData object
+
+type ProgramData struct {
+	XMLName         xml.Name         `xml:"ProgramData"`
+	Sources         []SourceInstance `xml:"Sources>SourceInstance"`
+	Sinks           []SinkInstance   `xml:"Sinks>SinkInstance"`
+	CalledWithNoDef []Function       `xml:"CalledWithNoDef>Function"`
+}
+
+type SourceInstance struct {
+	XMLName        xml.Name       `xml:"SourceInstance"`
+	RuleID         string         `xml:"ruleID,attr"`
+	FunctionCall   FunctionCall   `xml:"FunctionCall,omitempty"`
+	FunctionEntry  FunctionEntry  `xml:"FunctionEntry,omitempty"`
+	SourceLocation SourceLocation `xml:"SourceLocation,omitempty"`
+	TaintFlags     TaintFlags     `xml:"TaintFlags"`
+}
+
+type FunctionCall struct {
+	XMLName        xml.Name       `xml:"FunctionCall"`
+	SourceLocation SourceLocation `xml:"SourceLocation"`
+	Function       Function       `xml:"Function"`
+}
+
+type FunctionEntry struct {
+	XMLName        xml.Name       `xml:"FunctionEntry"`
+	SourceLocation SourceLocation `xml:"SourceLocation"`
+	Function       Function       `xml:"Function"`
+}
+
+type TaintFlags struct {
+	XMLName   xml.Name    `xml:"TaintFlags"`
+	TaintFlag []TaintFlag `xml:"TaintFlag"`
+}
+
+type TaintFlag struct {
+	XMLName       xml.Name `xml:"TaintFlag"`
+	TaintFlagName string   `xml:"name,attr"`
+}
+
+type SinkInstance struct {
+	XMLName        xml.Name       `xml:"SinkInstance"`
+	RuleID         string         `xml:"ruleID,attr"`
+	FunctionCall   FunctionCall   `xml:"FunctionCall,omitempty"`
+	SourceLocation SourceLocation `xml:"SourceLocation,omitempty"`
+}
+
+// These structures are relevant to the EngineData object
+
+type EngineData struct {
+	XMLName       xml.Name     `xml:"EngineData"`
+	EngineVersion string       `xml:"EngineVersion"`
+	RulePacks     []RulePack   `xml:"RulePacks>RulePack"`
+	Properties    []Properties `xml:"Properties"`
+	CLArguments   []string     `xml:"CommandLine>Argument"`
+	Errors        []Error      `xml:"Errors>Error"`
+	MachineInfo   MachineInfo  `xml:"MachineInfo"`
+	FilterResult  FilterResult `xml:"FilterResult"`
+	RuleInfo      []RuleInfo   `xml:"RuleInfo>Rule"`
+	LicenseInfo   LicenseInfo  `xml:"LicenseInfo"`
+}
+
+type RulePack struct {
+	XMLName    xml.Name `xml:"RulePack"`
+	RulePackID string   `xml:"RulePackID"`
+	SKU        string   `xml:"SKU"`
+	Name       string   `xml:"Name"`
+	Version    string   `xml:"Version"`
+	MAC        string   `xml:"MAC"`
+}
+
+type Properties struct {
+	XMLName        xml.Name   `xml:"Properties"`
+	PropertiesType string     `xml:"type,attr"`
+	Property       []Property `xml:"Property"`
+}
+
+type Property struct {
+	XMLName xml.Name `xml:"Property"`
+	Name    string   `xml:"name"`
+	Value   string   `xml:"value"`
+}
+
+type Error struct {
+	XMLName      xml.Name `xml:"Error"`
+	ErrorCode    string   `xml:"code,attr"`
+	ErrorMessage string   `xml:",innerxml"`
+}
+
+type MachineInfo struct {
+	XMLName  xml.Name `xml:"MachineInfo"`
+	Hostname string   `xml:"Hostname"`
+	Username string   `xml:"Username"`
+	Platform string   `xml:"Platform"`
+}
+
+type FilterResult struct {
+	XMLName xml.Name `xml:"FilterResult"`
+	//Todo? No data in sample audit file
+}
+
+type RuleInfo struct {
+	XMLName       xml.Name `xml:"Rule"`
+	RuleID        string   `xml:"id,attr"`
+	MetaInfoGroup []Group  `xml:"MetaInfo>Group,omitempty"`
+}
+
+type LicenseInfo struct {
+	XMLName    xml.Name     `xml:"LicenseInfo"`
+	Metadata   []Metadata   `xml:"Metadata"`
+	Capability []Capability `xml:"Capability"`
+}
+
+type Metadata struct {
+	XMLName xml.Name `xml:"Metadata"`
+	Name    string   `xml:"name"`
+	Value   string   `xml:"value"`
+}
+
+type Capability struct {
+	XMLName    xml.Name  `xml:"Capability"`
+	Name       string    `xml:"Name"`
+	Expiration string    `xml:"Expiration"`
+	Attribute  Attribute `xml:"Attribute"`
+}
+
+type Attribute struct {
+	XMLName xml.Name `xml:"Attribute"`
+	Name    string   `xml:"name"`
+	Value   string   `xml:"value"`
+}
+
+// JSON receptacle structs
+
+type SARIF struct {
+	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"`
+	Version string `json:"version" default:"2.1.0"`
+	Runs    []Runs `json:"runs"`
+}
+
 func ConvertFprToSarif(resultFilePath string) error {
 	log.Entry().Debug("Extracting FPR.")
 	_, err := FileUtils.Unzip(resultFilePath, "result/")
@@ -285,13 +446,22 @@ func ConvertFprToSarif(resultFilePath string) error {
 	if err != nil {
 		return err
 	}
-	//To read XML data, Unmarshal or Decode can be used. However, Unmarshal is not well-behaved when there are
-	//multiple different XML tree roots. This is why a decoder is created from a reader, which allows us to
-	//simply run Decode and get all well-formatted XML data for one type.
+
+	err = Parse(data)
+	return err
+}
+
+func Parse(data []byte) error {
+	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
 	var result FVDL
 	decoder.Decode(&result)
-	return nil
+	resultJSON, err := json.MarshalIndent(result, "", "  ") //Temporary marshal as json to write file
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("target/audit.sarif", resultJSON, 0700)
+	return err
 }
