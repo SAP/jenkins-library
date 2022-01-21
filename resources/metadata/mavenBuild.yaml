@@ -196,10 +196,6 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "env.json"
-            type: root
-          - filePattern: "build-settings.json"
-            type: settings
           - filePattern: "**/bom.xml"
             type: sbom
           - filePattern: "**/TEST-*.xml"
