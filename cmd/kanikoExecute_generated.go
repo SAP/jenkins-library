@@ -18,22 +18,26 @@ import (
 )
 
 type kanikoExecuteOptions struct {
-	BuildOptions                []string `json:"buildOptions,omitempty"`
-	ContainerBuildOptions       string   `json:"containerBuildOptions,omitempty"`
-	ContainerImage              string   `json:"containerImage,omitempty"`
-	ContainerImageName          string   `json:"containerImageName,omitempty"`
-	ContainerImageTag           string   `json:"containerImageTag,omitempty"`
-	ContainerPreparationCommand string   `json:"containerPreparationCommand,omitempty"`
-	ContainerRegistryURL        string   `json:"containerRegistryUrl,omitempty"`
-	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
-	DockerConfigJSON            string   `json:"dockerConfigJSON,omitempty"`
-	DockerfilePath              string   `json:"dockerfilePath,omitempty"`
+	BuildOptions                []string               `json:"buildOptions,omitempty"`
+	ContainerBuildOptions       string                 `json:"containerBuildOptions,omitempty"`
+	ContainerImage              string                 `json:"containerImage,omitempty"`
+	ContainerImageName          string                 `json:"containerImageName,omitempty"`
+	ContainerImageTag           string                 `json:"containerImageTag,omitempty"`
+	BuildSettingsInfo           string                 `json:"buildSettingsInfo,omitempty"`
+	ContainerDockerfiles        map[string]interface{} `json:"containerDockerfiles,omitempty"`
+	ContainerPreparationCommand string                 `json:"containerPreparationCommand,omitempty"`
+	ContainerRegistryURL        string                 `json:"containerRegistryUrl,omitempty"`
+	CustomTLSCertificateLinks   []string               `json:"customTlsCertificateLinks,omitempty"`
+	DockerConfigJSON            string                 `json:"dockerConfigJSON,omitempty"`
+	DockerfilePath              string                 `json:"dockerfilePath,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
 	container struct {
-		registryURL  string
-		imageNameTag string
+		registryURL   string
+		imageNameTag  string
+		imageNames    []string
+		imageNameTags []string
 	}
 	custom struct {
 		buildSettingsInfo string
@@ -48,6 +52,8 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "container", name: "imageNames", value: p.container.imageNames},
+		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
@@ -161,6 +167,8 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
+
 	cmd.Flags().StringVar(&stepConfig.ContainerPreparationCommand, "containerPreparationCommand", `rm -f /kaniko/.docker/config.json`, "Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
@@ -232,6 +240,28 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
+					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "containerDockerfiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "containerPreparationCommand",
@@ -312,6 +342,8 @@ func kanikoExecuteMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
+							{"name": "container/imageNames", "type": "[]string"},
+							{"name": "container/imageNameTags", "type": "[]string"},
 							{"name": "custom/buildSettingsInfo"},
 						},
 					},
