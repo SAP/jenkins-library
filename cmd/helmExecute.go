@@ -49,33 +49,27 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 	}
 	switch config.DeployCommand {
 	case "upgrade":
-		err := kubernetes.RunHelmUpgrade(helmConfig, utils, stdout)
-		if err != nil {
+		if err := kubernetes.RunHelmUpgrade(helmConfig, utils, stdout); err != nil {
 			return fmt.Errorf("failed to execute upgrade: %v", err)
 		}
 	case "lint":
-		err := kubernetes.RunHelmLint(helmConfig, utils, stdout)
-		if err != nil {
+		if err := kubernetes.RunHelmLint(helmConfig, utils, stdout); err != nil {
 			return fmt.Errorf("failed to execute helm lint: %v", err)
 		}
 	case "install":
-		err := kubernetes.RunHelmInstall(helmConfig, utils, stdout)
-		if err != nil {
+		if err := kubernetes.RunHelmInstall(helmConfig, utils, stdout); err != nil {
 			return fmt.Errorf("failed to execute helm install: %v", err)
 		}
 	case "test":
-		err := kubernetes.RunHelmTest(helmConfig, utils, stdout)
-		if err != nil {
+		if err := kubernetes.RunHelmTest(helmConfig, utils, stdout); err != nil {
 			return fmt.Errorf("failed to execute helm test: %v", err)
 		}
 	case "uninstall":
-		err := kubernetes.RunHelmUninstall(helmConfig, utils, stdout)
-		if err != nil {
+		if err := kubernetes.RunHelmUninstall(helmConfig, utils, stdout); err != nil {
 			return fmt.Errorf("failed to execute helm uninstall: %v", err)
 		}
 	case "package":
-		err := kubernetes.RunHelmPackage(helmConfig, utils, stdout)
-		if err != nil {
+		if err := kubernetes.RunHelmPackage(helmConfig, utils, stdout); err != nil {
 			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
 	}

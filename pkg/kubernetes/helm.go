@@ -55,7 +55,7 @@ type deployUtilsBundle struct {
 	*piperutils.Files
 }
 
-// Initialize NewDeployUtilsBundle using deployUtilsBundle struct
+// NewDeployUtilsBundle initialize using deployUtilsBundle struct
 func NewDeployUtilsBundle() HelmDeployUtils {
 	utils := deployUtilsBundle{
 		Command: &command.Command{
@@ -183,7 +183,7 @@ func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 	return nil
 }
 
-// RunHelmUninstall is used to install a chart
+// RunHelmInstall is used to install a chart
 func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
 	err := runHelmInit(config, utils, stdout)
 	if err != nil {
