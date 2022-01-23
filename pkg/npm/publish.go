@@ -112,7 +112,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
 			if filepath.Ext(path) == ".tgz" {
 				// tarballFileName = filepath.Base(path)
-				tarballFileName = path
+				tarballFileName = filepath.Join(".", path)
 				log.Entry().Debugf("found tarball file at %v", tarballFileName)
 			}
 			return nil
