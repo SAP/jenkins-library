@@ -132,7 +132,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// undo the renaming ot the .npmrc to keep the workspace like before
-		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".npmrc"), filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"))
+		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
 		if err != nil {
 			log.Entry().Warnf("unable to rename the .npmrc file : %w", err)
 		}
