@@ -116,7 +116,8 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 				return finalValues, errors.Wrap(err, "Error during execution of build framework")
 			}
 			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
-			vE.appendValuesIfNotPresent(finalValuesForOneBuild)
+			//This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
+			vE.appendValuesIfNotPresent(finalValuesForOneBuild, false)
 		}
 		finalValues = vE.generateValueSlice()
 	}
@@ -280,9 +281,11 @@ func generateValuesWithAddonDescriptor(config *abapEnvironmentBuildOptions, repo
 		return values, err
 	}
 	//values from addondescriptor
-	vE.appendValuesIfNotPresent(repoValues)
+	if err := vE.appendValuesIfNotPresent(repoValues, true); err != nil {
+		return values, err
+	}
 	//values from commonepipelineEnvironment
-	if err := vE.appendStringValuesIfNotPresent(config.CpeValues); err != nil {
+	if err := vE.appendStringValuesIfNotPresent(config.CpeValues, false); err != nil {
 		return values, err
 	}
 	values = vE.generateValueSlice()
@@ -329,25 +332,31 @@ func (vE *valuesEvaluator) initialize(stringValues string) error {
 	return nil
 }
 
-func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string) error {
+func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string, throwErrorIfPresent bool) error {
 	var values []abapbuild.Value
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
 		errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
 	}
-	vE.appendValuesIfNotPresent(values)
+	if err := vE.appendValuesIfNotPresent(values, throwErrorIfPresent); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (vE *valuesEvaluator) appendValuesIfNotPresent(values []abapbuild.Value) {
+func (vE *valuesEvaluator) appendValuesIfNotPresent(values []abapbuild.Value, throwErrorIfPresent bool) error {
 	for _, value := range values {
 		_, present := vE.m[value.ValueID]
 		if present || (value.ValueID == "PHASE") {
-			log.Entry().Infof("Value %s already exists in config -> discard this value", value)
+			if throwErrorIfPresent {
+				return errors.Errorf("Value_id %s already existed in the config", value.ValueID)
+			}
+			log.Entry().Infof("Value %s already existed in config -> discard this value", value)
 		} else {
 			vE.m[value.ValueID] = value.Value
 		}
 	}
+	return nil
 }
 
 func (vE *valuesEvaluator) generateValueSlice() []abapbuild.Value {
