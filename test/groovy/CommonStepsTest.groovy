@@ -113,6 +113,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapAddonAssemblyKitRegisterPackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReleasePackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReserveNextPackages', //implementing new golang pattern without fields
+        'abapEnvironmentBuild', //implementing new golang pattern without fields
         'abapEnvironmentAssemblePackages', //implementing new golang pattern without fields
         'abapEnvironmentAssembleConfirm', //implementing new golang pattern without fields
         'abapEnvironmentCheckoutBranch', //implementing new golang pattern without fields
@@ -201,8 +202,12 @@ public class CommonStepsTest extends BasePiperTest{
         'readPipelineEnv', //implementing new golang pattern without fields
         'transportRequestUploadCTS', //implementing new golang pattern without fields
         'isChangeInDevelopment', //implementing new golang pattern without fields
+        'golangBuild', //implementing new golang pattern without fields
         'apiProxyDownload', //implementing new golang pattern without fields
         'apiKeyValueMapDownload', //implementing new golang pattern without fields
+        'apiProxyUpload', //implementing new golang pattern without fields
+        'gradleExecuteBuild', //implementing new golang pattern without fields
+        'shellExecute', //implementing new golang pattern without fields
     ]
 
     @Test

@@ -60,7 +60,7 @@ spec:
           - STAGES
           - STEPS
       - name: agentUrl
-        alias:
+        aliases:
           - name: whitesourceAgentUrl
         type: string
         description: "URL to the WhiteSource agent endpoint."

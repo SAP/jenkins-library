@@ -26,7 +26,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
+      - name: repositories
+        type: string
+        description: Specifies a YAML file containing the repositories configuration
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API endpoint
@@ -128,6 +136,15 @@ spec:
           - STEPS
         mandatory: false
         default: "AUnitResults.xml"
+      - name: generateHTML
+        type: bool
+        description: Specifies whether the AUnit results should also be generated as an HTML document
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
   containers:
     - name: cf
       image: ppiper/cf-cli:7

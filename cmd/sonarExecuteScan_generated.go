@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +49,42 @@ type sonarExecuteScanOptions struct {
 	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
 	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
 	M2Path                    string   `json:"m2Path,omitempty"`
+}
+
+type sonarExecuteScanReports struct {
+}
+
+func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
+		{FilePattern: "**/sonarscan-result.json", ParamRef: "", StepResultType: "sonarqube"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
 }
 
 type sonarExecuteScanInflux struct {
@@ -92,7 +132,7 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -103,6 +143,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 	metadata := sonarExecuteScanMetadata()
 	var stepConfig sonarExecuteScanOptions
 	var startTime time.Time
+	var reports sonarExecuteScanReports
 	var influx sonarExecuteScanInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
@@ -157,8 +198,9 @@ func SonarExecuteScanCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -256,7 +298,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "sonarSecretName",
+								Name:    "sonarVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "sonar",
 							},
@@ -319,7 +361,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "projectVersion"}},
+						Aliases:   []config.Alias{{Name: "projectVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -373,7 +415,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarProperties"}},
+						Aliases:     []config.Alias{{Name: "sonarProperties", Deprecated: true}},
 						Default:     []string{},
 					},
 					{
@@ -522,11 +564,19 @@ func sonarExecuteScanMetadata() config.StepData {
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/sonarscan.json", "type": "sonarqube"},
+							{"filePattern": "**/sonarscan-result.json", "type": "sonarqube"},
+						},
+					},
+					{
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
-							{"Name": "sonarqube_data"}, {"fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "sonar"}}},
+							{"name": "sonarqube_data", "fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
 						},
 					},
 				},

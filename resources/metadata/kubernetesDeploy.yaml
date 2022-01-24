@@ -22,7 +22,7 @@ metadata:
 
     * `yourRegistry` will be retrieved from `containerRegistryUrl`
     * `yourImageName`, `yourImageTag` will be retrieved from `image`
-    * `dockerSecret` will be calculated with a call to `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'`
+    * `dockerSecret` will be calculated with a call to `kubectl create secret generic <containerRegistrySecret> --from-file=.dockerconfigjson=<dockerConfigJson> --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json`
 spec:
   inputs:
     secrets:
@@ -96,6 +96,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
       - name: containerImageName
         aliases:
           - name: dockerImageName
@@ -145,6 +147,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
         longDescription: |-
@@ -152,12 +156,11 @@ spec:
 
           **For `deployTool: helm/helm3`:**<br />
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
-          Note: the secret will not be persisted in the Kubernetes cluster.
-
-          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
 
           **For `deployTool: kubectl`:**<br />
-          If `createDockerRegistrySecret: true` and `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster unless a secret with the name already exists.
+          If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster.
+
+          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
         type: string
         scope:
           - PARAMETERS
@@ -270,7 +273,7 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            name: kubeConfigFileSecretName
+            name: kubeConfigFileVaultSecretName
             default: kube-config
       - name: kubeContext
         type: string
@@ -319,9 +322,8 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        default: '.pipeline/docker/config.json'
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile

@@ -19,6 +19,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
+	Assignees                       []string `json:"assignees,omitempty"`
 	AuthToken                       string   `json:"authToken,omitempty"`
 	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty"`
 	CustomScanVersion               string   `json:"customScanVersion,omitempty"`
@@ -72,6 +73,7 @@ type fortifyExecuteScanOptions struct {
 	M2Path                          string   `json:"m2Path,omitempty"`
 	VerifyOnly                      bool     `json:"verifyOnly,omitempty"`
 	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
+	CreateResultIssue               bool     `json:"createResultIssue,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -137,7 +139,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Influx environment")
+		log.Entry().Error("failed to persist Influx environment")
 	}
 }
 
@@ -213,8 +215,8 @@ Besides triggering a scan the step verifies the results after they have been upl
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -246,6 +248,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalScanParameters, "additionalScanParameters", []string{}, "List of additional scan parameters to be used for Fortify sourceanalyzer command execution.")
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan.")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the Fortify project used as source.")
@@ -299,6 +302,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for schedules runs.")
 
 	cmd.MarkFlagRequired("authToken")
 	cmd.MarkFlagRequired("serverUrl")
@@ -334,6 +338,15 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "assignees",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{``},
 					},
 					{
 						Name: "authToken",
@@ -485,7 +498,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "fortifyProjectVersion"}},
+						Aliases:   []config.Alias{{Name: "fortifyProjectVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -723,7 +736,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl"}},
+						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl", Deprecated: true}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -768,7 +781,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "defaultVersioningModel"}},
+						Aliases:     []config.Alias{{Name: "defaultVersioningModel", Deprecated: true}},
 						Default:     `major`,
 					},
 					{
@@ -870,6 +883,20 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name: "createResultIssue",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/optimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -881,8 +908,8 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
-							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "fortify"}}},
+							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 				},

@@ -41,7 +41,7 @@ version = "5.9.1"
 [[build.buildpacks]]
 id = "paketo-buildpacks/nodejs"
 `
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
@@ -62,8 +62,10 @@ id = "paketo-buildpacks/nodejs"
 		descriptor, err := ParseDescriptor("project.toml", utils, client)
 
 		assert.NoError(t, err)
-		assert.Contains(t, descriptor.EnvVars, "VAR1=VAL1")
-		assert.Contains(t, descriptor.EnvVars, "VAR2=VAL2")
+		assert.Equal(t, descriptor.EnvVars["VAR1"], "VAL1")
+		assert.Equal(t, descriptor.EnvVars["VAR2"], "VAL2")
+
+		assert.Equal(t, descriptor.ProjectID, "io.buildpacks.my-app")
 
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-java@5.9.1")
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-nodejs@1.1.1")
@@ -92,7 +94,7 @@ id = "test/inline"
 	shell = "/bin/bash"
 	inline = "date"
 `
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
@@ -119,7 +121,7 @@ exclude = [
 ]
 `
 
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 		utils.AddFile("project.toml", []byte(projectToml))
@@ -131,7 +133,7 @@ exclude = [
 	})
 
 	t.Run("fails with file not found", func(t *testing.T) {
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
@@ -143,7 +145,7 @@ exclude = [
 
 	t.Run("fails to parse corrupted project.toml", func(t *testing.T) {
 		projectToml := "test123"
-		utils := cnbutils.MockUtils{
+		utils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 		utils.AddFile("project.toml", []byte(projectToml))

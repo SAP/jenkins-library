@@ -119,6 +119,7 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: custom/buildSettingsInfo
   containers:
     - image: gcr.io/kaniko-project/executor:debug
       command:
@@ -128,4 +129,7 @@ spec:
         - name: -u
           value: "0"
         - name: --entrypoint
-          value: ''
+          value: ""
+      env:
+        - name: container
+          value: docker

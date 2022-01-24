@@ -1,20 +1,27 @@
-package cnbutils
+package cnbutils_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateEnvFiles(t *testing.T) {
 	t.Run("successfully writes environment files", func(t *testing.T) {
-		mockUtils := MockUtils{
+		mockUtils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 
-		err := CreateEnvFiles(mockUtils, "/tmp/platform", []string{"FOO=BAR", "BAR=BAZ", "COMPLEX={\"foo\": \"bar=3\"}"})
+		envVars := map[string]interface{}{
+			"FOO":     "BAR",
+			"BAR":     "BAZ",
+			"COMPLEX": "{\"foo\": \"bar=3\"}",
+		}
+
+		err := cnbutils.CreateEnvFiles(mockUtils, "/tmp/platform", envVars)
 
 		assert.NoError(t, err)
 		assert.True(t, mockUtils.HasWrittenFile("/tmp/platform/env/FOO"))
@@ -34,18 +41,8 @@ func TestCreateEnvFiles(t *testing.T) {
 		assert.Equal(t, "{\"foo\": \"bar=3\"}", string(result3))
 	})
 
-	t.Run("raises an error if environment variable is invalid", func(t *testing.T) {
-		mockUtils := MockUtils{
-			FilesMock: &mock.FilesMock{},
-		}
-
-		err := CreateEnvFiles(mockUtils, "/tmp/platform", []string{"FOOBAR"})
-		assert.Error(t, err)
-		assert.Equal(t, err.Error(), "invalid environment variable: FOOBAR")
-	})
-
 	t.Run("raises an error if unable to write to a file", func(t *testing.T) {
-		mockUtils := MockUtils{
+		mockUtils := &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{
 				FileWriteErrors: map[string]error{
 					"/tmp/platform/env/FOO": fmt.Errorf("unable to create dir"),
@@ -53,7 +50,7 @@ func TestCreateEnvFiles(t *testing.T) {
 			},
 		}
 
-		err := CreateEnvFiles(mockUtils, "/tmp/platform", []string{"FOO=BAR"})
+		err := cnbutils.CreateEnvFiles(mockUtils, "/tmp/platform", map[string]interface{}{"FOO": "BAR"})
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "unable to create dir")
 	})

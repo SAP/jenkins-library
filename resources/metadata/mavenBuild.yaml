@@ -20,6 +20,7 @@ spec:
         description: Path to the pom file which should be installed including all children.
         scope:
           - PARAMETERS
+          - STAGES
           - STEPS
         mandatory: false
         default: pom.xml
@@ -192,7 +193,6 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
-            type: "string"
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
