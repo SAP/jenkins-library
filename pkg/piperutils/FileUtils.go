@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -389,4 +390,21 @@ func (f Files) Abs(path string) (string, error) {
 // Symlink is a wrapper for os.Symlink
 func (f Files) Symlink(oldname, newname string) error {
 	return os.Symlink(oldname, newname)
+}
+
+// Computes a SHA256 for a given file
+func (f Files) SHA256(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
 }

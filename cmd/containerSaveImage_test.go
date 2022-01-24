@@ -65,7 +65,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 
 		dClient := containerMock{}
 
-		err = runContainerSaveImage(&config, &telemetryData, cacheFolder, tmpFolder, &dClient)
+		filePath, err := runContainerSaveImage(&config, &telemetryData, cacheFolder, tmpFolder, &dClient)
 		assert.NoError(t, err)
 
 		assert.Equal(t, cacheFolder, dClient.filePath)
@@ -74,12 +74,14 @@ func TestRunContainerSaveImage(t *testing.T) {
 		content, err := ioutil.ReadFile(filepath.Join(tmpFolder, "testfile.tar"))
 		assert.NoError(t, err)
 		assert.Equal(t, "This is a test", string(content))
+
+		assert.Contains(t, filePath, "testfile.tar")
 	})
 
 	t.Run("failure - cache creation", func(t *testing.T) {
 		config := containerSaveImageOptions{}
 		dClient := containerMock{}
-		err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient)
+		_, err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient)
 		assert.Contains(t, fmt.Sprint(err), "failed to create cache: mkdir :")
 	})
 
@@ -92,7 +94,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{imageSourceErr: "image source error"}
-		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
+		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
 		assert.EqualError(t, err, "failed to get docker image source: image source error")
 	})
 
@@ -105,7 +107,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{downloadImageErr: "download error"}
-		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
+		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
 		assert.EqualError(t, err, "failed to download docker image: download error")
 	})
 
@@ -118,7 +120,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{tarImageErr: "tar error"}
-		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
+		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
 		assert.EqualError(t, err, "failed to tar container image: tar error")
 	})
 }
