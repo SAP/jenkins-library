@@ -28,7 +28,7 @@ spec:
         mandatory: true
       - name: patchIfExistingAndOutdated
         type: bool
-        description: In case an configuration under the given name already exists in system and is outdated compared to the supplied file with the ATC Systm Configuration. Should the step Update/Patch the existing ATC Systm Configuration?
+        description: In case an configuration under the given name already exists in system and is outdated compared to the supplied file with the ATC Systm Configuration. Should the step Update/Patch the existing ATC Systm Configuration and it's priorities?
         scope:
           - PARAMETERS
           - STAGES

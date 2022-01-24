@@ -101,7 +101,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
 	//check, if given ATC System configuration File
-	parsedConfigurationJson, atcSystemConfiguartionJsonFile, validFilename, err := checkATCSystemConfigurationFile(config)
+	parsedConfigurationJson, atcSystemConfiguartionJsonFile, err := checkATCSystemConfigurationFile(config)
 	if err != nil {
 		return err
 	}
@@ -113,9 +113,9 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 	if !configDoesExist {
 		//regular push of configuration
 		configUUID = ""
-		return handlePushConfiguration(config, validFilename, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
-	if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && !config.PatchIfExistingAndOutdated {
+	if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && !parsedConfigurationJson.LastChangedAt.IsZero() && !config.PatchIfExistingAndOutdated {
 		//config exists, is not recent but must NOT be patched
 		log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
 		return nil
@@ -125,15 +125,15 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 		log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
 		return nil
 	}
-	if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && config.PatchIfExistingAndOutdated {
-		//configuration exists and is older than current config and should be patched
-		return handlePushConfiguration(config, validFilename, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
+	if configDoesExist && config.PatchIfExistingAndOutdated && (configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero()) {
+		//configuration exists and is older than current config (or does not provide information about lastChanged) and should be patched
+		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
 
 	return nil
 }
 
-func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOptions) (parsedConfigJsonWithExpand, []byte, string, error) {
+func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOptions) (parsedConfigJsonWithExpand, []byte, error) {
 	var parsedConfigurationJson parsedConfigJsonWithExpand
 	var emptyConfigurationJson parsedConfigJsonWithExpand
 	var atcSystemConfiguartionJsonFile []byte
@@ -141,47 +141,47 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	//check ATC system configuration json
 	fileExists, err := newAbapEnvironmentPushATCSystemConfigUtils().FileExists(config.AtcSystemConfigFilePath)
 	if err != nil {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, err
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if !fileExists {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not exist(File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not exist(File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	if err != nil {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, err
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
 	if err != nil {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, err
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
 	if err != nil {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, err
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
 	if err != nil {
-		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, filename, err
+		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	//check if parsedConfigurationJson is not initial
 	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
 		parsedConfigurationJson.ConfName == "" {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
-	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, filename, nil
+	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
 }
 
-func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, configUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, configUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
 	var err error
 	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
@@ -189,13 +189,13 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 		return err
 	}
 	if configDoesExist {
-		err = doPatchATCSystemConfig(config, validFilename, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		err = doPatchATCSystemConfig(config, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
 			return err
 		}
 	}
 	if !configDoesExist {
-		err = doPushATCSystemConfig(config, validFilename, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		err = doPushATCSystemConfig(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
 			return err
 		}
@@ -227,7 +227,7 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 	return connectionDetails.XCsrfToken, err
 }
 
-func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 
 	//TBD: Check if BATCH request can be formed instead of single calls!
@@ -255,7 +255,7 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, v
 	//root ID is always 1!
 	connectionDetails.URL = abapEndpoint + "/configuration(root_id='1',conf_id=" + confUUID + ")"
 	resp, err := abaputils.GetHTTPResponse("PATCH", connectionDetails, configBaseJsonBody, client)
-	err = parseOdataResponse(resp, err, connectionDetails, config, validFilename)
+	err = parseOdataResponse(resp, err, connectionDetails, config)
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, v
 				continue
 			}
 			resp, err = abaputils.GetHTTPResponse("PATCH", connectionDetails, priorityJsonBody, client)
-			err = parseOdataResponse(resp, err, connectionDetails, config, validFilename)
+			err = parseOdataResponse(resp, err, connectionDetails, config)
 			if err != nil {
 				log.Entry().Errorf("problem with response of patch of single priority in line "+string(rune(i)), err)
 				withError = true
@@ -283,9 +283,9 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, v
 			}
 		}
 		if !withError {
-			log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration Message Priority information.")
+			log.Entry().Info("ATC System configuration file successfully updated " + config.AtcSystemConfigFilePath + " with patched ATC System configuration Message Priority information.")
 		} else {
-			return fmt.Errorf("Problems Pushing ATC System configuration Message Priorities. %w", errors.New("ATC System configuration file updated "+validFilename+" with patched ATC System configuration Message Priority information but some errors occured. Please check log."))
+			return fmt.Errorf("problems Pushing ATC System configuration Message Priorities. %w", errors.New("check log."))
 		}
 
 	}
@@ -293,13 +293,13 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, v
 	return nil
 }
 
-func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, validFilename string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
 	jsonBody := atcSystemConfiguartionJsonFile
 	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
-	return parseOdataResponse(resp, err, connectionDetails, config, validFilename)
+	return parseOdataResponse(resp, err, connectionDetails, config)
 }
 
 func checkConfigExistsInBE(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
@@ -348,7 +348,7 @@ func checkConfigExistsInBE(config *abapEnvironmentPushATCSystemConfigOptions, at
 	}
 }
 
-func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions, validFilename string) error {
+func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions) error {
 
 	if resp == nil {
 		return errorIn
@@ -360,16 +360,17 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
+		defer resp.Body.Close()
 		return fmt.Errorf("parsing oData response failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case 200: //Retrieved entities & OK in Patch
-		return logAndPersistResponseBody(body, validFilename, errorIn)
+		return logAndPersistResponseBody(body, config)
 
 	case 201: //CREATED
-		return logAndPersistResponseBody(body, validFilename, errorIn)
+		return logAndPersistResponseBody(body, config)
 
 	case 400: //BAD REQUEST
 		if err != nil {
@@ -383,17 +384,15 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		if err != nil {
 			return fmt.Errorf("unmarshal oData response json failed: %w", err)
 		}
-		defer resp.Body.Close()
 		return fmt.Errorf("bad Request Errors: %v", parsedOdataErrors)
 
 	default: //unhandled OK Code
-		defer resp.Body.Close()
 		return fmt.Errorf("unhandled StatusCode: %w", errors.New(resp.Status))
 	}
 
 }
 
-func logAndPersistResponseBody(body []byte, validFilename string, errorIn error) error {
+func logAndPersistResponseBody(body []byte, config *abapEnvironmentPushATCSystemConfigOptions) error {
 	var err error
 	var parsedConfigurationJson parsedConfigJsonWithExpand
 	err = json.Unmarshal(body, &parsedConfigurationJson)
@@ -403,47 +402,47 @@ func logAndPersistResponseBody(body []byte, validFilename string, errorIn error)
 	}
 	//in case it was an configuration, this value may not be initial!
 	if parsedConfigurationJson.ConfName != "" {
-		log.Entry().Info("ATC System Base configuration successfully pushed from file " + validFilename + " to system")
-		//write Patched Config Base Info back to File
-		returnedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-		if err != nil {
-			return err
-		}
-		err = ioutil.WriteFile(validFilename, returnedATCSystemConfig, 0644)
-		if err != nil {
-			return err
-		}
-		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System Base configuration information.")
+		log.Entry().Info("ATC System Base configuration successfully pushed from file " + config.AtcSystemConfigFilePath + " to system")
+		/* 		//write Patched Config Base Info back to File
+		   		returnedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
+		   		if err != nil {
+		   			return err
+		   		}
+		   		err = ioutil.WriteFile(validFilename, returnedATCSystemConfig, 0644)
+		   		if err != nil {
+		   			return err
+		   		}
+		   		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with ATC System Base configuration information from the Backend.") */
 
 		return nil
 	}
 
-	var parsedPriorityJson parsedConfigPriority
-	err = json.Unmarshal(body, &parsedPriorityJson)
-	if err != nil {
-		return err
-	}
-	//in case it was an priority of the configuration, this value may not be initial!
-	if parsedPriorityJson.MessageId != "" {
-		atcSystemConfiguartionJsonFile, err := ioutil.ReadFile(validFilename)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
-		if err != nil {
-			return err
-		}
-		parsedConfigurationJson.Priorities = append(parsedConfigurationJson.Priorities, parsedPriorityJson)
-		updatedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-		if err != nil {
-			return err
-		}
-		err = ioutil.WriteFile(validFilename, updatedATCSystemConfig, 0644)
-		if err != nil {
-			return err
-		}
-		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration Message Priority information (Test: " + parsedPriorityJson.Test + " / MessageID: " + parsedPriorityJson.MessageId + ")")
-	}
+	/* 	var parsedPriorityJson parsedConfigPriority
+	   	err = json.Unmarshal(body, &parsedPriorityJson)
+	   	if err != nil {
+	   		return err
+	   	}
+	   	//in case it was an priority of the configuration, this value may not be initial!
+	   	if parsedPriorityJson.MessageId != "" {
+	   		atcSystemConfiguartionJsonFile, err := ioutil.ReadFile(validFilename)
+	   		if err != nil {
+	   			return err
+	   		}
+	   		err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
+	   		if err != nil {
+	   			return err
+	   		}
+	   		parsedConfigurationJson.Priorities = append(parsedConfigurationJson.Priorities, parsedPriorityJson)
+	   		updatedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
+	   		if err != nil {
+	   			return err
+	   		}
+	   		err = ioutil.WriteFile(validFilename, updatedATCSystemConfig, 0644)
+	   		if err != nil {
+	   			return err
+	   		}
+	   		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration Message Priority information (Test: " + parsedPriorityJson.Test + " / MessageID: " + parsedPriorityJson.MessageId + ")")
+	   	} */
 
 	return nil
 
