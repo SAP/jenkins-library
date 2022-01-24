@@ -969,7 +969,7 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
-		if nil != prList[0].User {
+		if prList[0].User != nil && prList[0].User.Email != nil {
 			email = *(prList[0].User.Email)
 		}
 		return number, email, nil
