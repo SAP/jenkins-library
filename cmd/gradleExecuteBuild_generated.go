@@ -128,7 +128,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 					{
 						Name:        "path",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "buildGradlePath"}},

@@ -61,6 +61,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/TEST-*.xml"
+            type: acceptance-test
+          - filePattern: "**/requirement.mapping"
+            type: requirement-mapping
+          - filePattern: "**/delivery.mapping"
+            type: delivery-mapping
   containers:
     - name: uiVeri5
       image: node:lts-stretch

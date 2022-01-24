@@ -20,8 +20,8 @@ type gradleExecuteBuildFileMock struct {
 	fileReadErr     map[string]error
 }
 
-func (f *gradleExecuteBuildFileMock) FileExists(path string) (bool, error) {
-	return strings.EqualFold(path, "path/to/gradle.build"), nil
+func (f *gradleExecuteBuildFileMock) DirExists(path string) (bool, error) {
+	return strings.EqualFold(path, "path/to/"), nil
 }
 
 func newGradleExecuteBuildTestsUtils() gradleExecuteBuildMockUtils {
@@ -36,7 +36,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 	t.Run("negative case - build.gradle isn't present", func(t *testing.T) {
 		options := &gradleExecuteBuildOptions{
-			Path: "path/to/project/build.gradle",
+			Path: "path/to/project/",
 		}
 		u := newShellExecuteTestsUtils()
 
@@ -48,7 +48,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 	t.Run("success case - build.gradle is present", func(t *testing.T) {
 		o := &gradleExecuteBuildOptions{
-			Path: "path/to/gradle.build",
+			Path: "path/to/",
 		}
 
 		u := newGradleExecuteBuildTestsUtils()
