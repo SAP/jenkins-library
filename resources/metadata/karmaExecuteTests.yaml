@@ -54,6 +54,25 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/TEST-*.xml"
+            type: karma
+          - filePattern: "**/cobertura-coverage.xml"
+            type: karma
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/jacoco.xml"
+            type: jacoco-coverage
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
+          - filePattern: "**/xmake_stage.json"
+            type: xmake
+          - filePattern: "**/requirement.mapping"
+            type: requirement-mapping
   containers:
     - name: karma
       image: node:lts-stretch
