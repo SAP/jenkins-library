@@ -120,7 +120,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		// rename the .npmrc file since it interfears with publish
+		// rename the .npmrc file since it interferes with publish
 		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".npmrc"), filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
