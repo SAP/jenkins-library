@@ -117,14 +117,14 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 			if config.ContainerMultiImageBuild {
 				log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
-				i, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, fileUtils)
+				imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, fileUtils)
 				if err != nil {
 					return fmt.Errorf("failed to identify image list for multi image build: %w", err)
 				}
-				if len(i) == 0 {
+				if len(imageListWithFilePath) == 0 {
 					return fmt.Errorf("no docker files to process, please check exclude list")
 				}
-				for image, file := range i {
+				for image, file := range imageListWithFilePath {
 					log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
@@ -140,7 +140,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
 				// only consider if it has been built
 				// ToDo: reconsider and possibly remove at a later point
-				if len(i[config.ContainerImageName]) > 0 {
+				if len(imageListWithFilePath[config.ContainerImageName]) > 0 {
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 					commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 				}
