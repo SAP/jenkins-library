@@ -86,6 +86,7 @@ func Execute() {
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
+	rootCmd.AddCommand(DefaultsCommand())
 	rootCmd.AddCommand(ContainerSaveImageCommand())
 	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
