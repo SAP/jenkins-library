@@ -974,7 +974,7 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 		}
 		return number, email, nil
 	} else {
-		log.Entry().Infof("Unable to resolve PR via commit ID : %v", config.CommitID)
+		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
 	return number, email, err
 }
