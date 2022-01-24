@@ -351,7 +351,7 @@ func (vE *valuesEvaluator) appendValuesIfNotPresent(values []abapbuild.Value, th
 			if throwErrorIfPresent {
 				return errors.Errorf("Value_id %s already existed in the config", value.ValueID)
 			}
-			log.Entry().Infof("Value %s already existed in config -> discard this value", value)
+			log.Entry().Infof("Value %s already existed -> discard this value", value)
 		} else {
 			vE.m[value.ValueID] = value.Value
 		}
@@ -433,8 +433,10 @@ func (mR *myRepo) checkCondition(config *abapEnvironmentBuildOptions) (bool, err
 				return false, errors.Wrapf(err, "Checking the field %s failed", cond.Field)
 			}
 			if !use {
+				log.Entry().Infof("addonDescriptor with the name %s does not fulfil the requierement %s%s%s from the ConditionOnAddonDescriptor, therefore it is not used", mR.Name, cond.Field, cond.Operator, cond.Value)
 				return false, nil
 			}
+			log.Entry().Infof("addonDescriptor with the name %s does fulfil the requierement %s%s%s in the ConditionOnAddonDescriptor", mR.Name, cond.Field, cond.Operator, cond.Value)
 		}
 	}
 	return true, nil
@@ -443,7 +445,9 @@ func (mR *myRepo) checkCondition(config *abapEnvironmentBuildOptions) (bool, err
 func (mR *myRepo) generateValues(config *abapEnvironmentBuildOptions) ([]abapbuild.Value, error) {
 	var values []abapbuild.Value
 	var useFields []useField
-	if len(config.UseFieldsOfAddonDescriptor) > 0 {
+	if len(config.UseFieldsOfAddonDescriptor) == 0 {
+		log.Entry().Infof("UseFieldsOfAddonDescriptor is empty, nothing is used from the addonDescriptor")
+	} else {
 		if err := json.Unmarshal([]byte(config.UseFieldsOfAddonDescriptor), &useFields); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return values, errors.Wrapf(err, "Conversion of UseFieldsOfAddonDescriptor in the config failed")
@@ -464,6 +468,7 @@ func (mR *myRepo) generateValues(config *abapEnvironmentBuildOptions) ([]abapbui
 			ValueID := typeOfS.Field(i).Name
 			rename, present := m[ValueID]
 			if present {
+				log.Entry().Infof("Use field %s from addonDescriptor and rename it to %s, the value is %s", ValueID, rename, fields.Field(i).String())
 				value.ValueID = rename
 				value.Value = fields.Field(i).String()
 				values = append(values, value)
@@ -471,7 +476,7 @@ func (mR *myRepo) generateValues(config *abapEnvironmentBuildOptions) ([]abapbui
 		}
 		if len(values) != len(useFields) {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return values, errors.Errorf("Not all fields in UseFieldsOfAddonDescriptor have been found. Probably a use was used which does not exist")
+			return values, errors.Errorf("Not all fields in UseFieldsOfAddonDescriptor have been found. Probably a 'use' was used which does not exist")
 		}
 	}
 	return values, nil
