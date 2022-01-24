@@ -71,7 +71,7 @@ func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTT
 }
 
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (LogDoesNotExist error) {
-	connectionDetails.URL = connectionDetails.URL + "/to_Log_Overview?$expand=to_Log_Protocol"
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
 	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
 	if err != nil {
 		return err
@@ -88,8 +88,8 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	}
 
 	// Print Details
-	for _, logEntry := range entity.ToLogOverview.Results {
-		printLog(logEntry)
+	for _, logEntryForDetails := range entity.ToLogOverview.Results {
+		printLog(logEntryForDetails)
 	}
 
 	return nil
