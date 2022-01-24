@@ -47,6 +47,7 @@ type GeneralConfigOptions struct {
 	GCSFolderPath        string
 	GCSBucketId          string
 	GCSSubFolder         string
+	URLReport            bool
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -215,6 +216,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
+	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.URLReport, "urlReport", false, "Creates URL report based on step's log. Report will be saved into url_report.txt file")
 
 }
 
