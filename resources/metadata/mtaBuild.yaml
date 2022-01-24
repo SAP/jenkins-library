@@ -227,5 +227,14 @@ spec:
           - name: custom/mtaBuildToolDesc
           - name: custom/mtarPublishedUrl
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
+          - filePattern: "**/jacoco.xml"
+            type: jacoco-coverage
   containers:
     - image: devxci/mbtci-java11-node14
