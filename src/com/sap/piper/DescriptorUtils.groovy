@@ -20,9 +20,9 @@ def getMavenGAV(file = 'pom.xml') {
     def artifact = descriptor.getArtifactId()
     def version = descriptor.getVersion()
     result['packaging'] = descriptor.getPackaging()
-    result['group'] = (null != group && group.length() > 0) ? group : sh(returnStdout: true, script: "mvn -f ${file} help:evaluate -Dexpression=project.groupId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
-    result['artifact'] = (null != artifact && artifact.length() > 0) ? artifact : sh(returnStdout: true, script: "mvn -f ${file} help:evaluate -Dexpression=project.artifactId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
-    result['version'] = (null != version && version.length() > 0) ? version : sh(returnStdout: true, script: "mvn -f ${file} help:evaluate -Dexpression=project.version | grep ^[0-9].*").trim()
+    result['group'] = (null != group && group.length() > 0) ? group : sh(returnStdout: true, script: "mvn -f ${file} org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.groupId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
+    result['artifact'] = (null != artifact && artifact.length() > 0) ? artifact : sh(returnStdout: true, script: "mvn -f ${file} org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.artifactId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
+    result['version'] = (null != version && version.length() > 0) ? version : sh(returnStdout: true, script: "mvn -f ${file} org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version | grep ^[0-9].*").trim()
     echo "loaded ${result} from ${file}"
     return result
 }
