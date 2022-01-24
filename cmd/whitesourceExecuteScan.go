@@ -176,7 +176,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
-		if err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
 			if strings.Contains(fmt.Sprint(err), "no image found") {
 				log.SetErrorCategory(log.ErrorConfiguration)
 			}
