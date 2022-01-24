@@ -28,11 +28,15 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
 
-			if pullEntity.Status == "E" {
-				log.SetErrorCategory(log.ErrorUndefined)
-				PrintLegacyLogs(repositoryName, connectionDetails, client, true)
-			} else {
-				PrintLegacyLogs(repositoryName, connectionDetails, client, false)
+			err := PrintLogs(repositoryName, connectionDetails, client)
+			if err != nil {
+				// Fallback
+				if pullEntity.Status == "E" {
+					log.SetErrorCategory(log.ErrorUndefined)
+					PrintLegacyLogs(repositoryName, connectionDetails, client, true)
+				} else {
+					PrintLegacyLogs(repositoryName, connectionDetails, client, false)
+				}
 			}
 			break
 		}
@@ -66,19 +70,56 @@ func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTT
 	return body, resp.Status, nil
 }
 
-func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) (LogDoesNotExist error) {
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
+func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (LogDoesNotExist error) {
+	connectionDetails.URL = connectionDetails.URL + "/to_Log_Overview?$expand=to_Log_Protocol"
 	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
 	if err != nil {
 		return err
 	}
 
 	// Sort logs
-	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
-		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
+	sort.SliceStable(entity.ToLogOverview.Results, func(i, j int) bool {
+		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
 	})
 
+	// Print Overview
+	for _, logEntry := range entity.ToLogOverview.Results {
+		log.Entry().Infof(`%s: %s`, logEntry.Name, logEntry.Status)
+	}
+
+	// Print Details
+	for _, logEntry := range entity.ToLogOverview.Results {
+		printLog(logEntry)
+	}
+
 	return nil
+}
+
+func printLog(logEntry LogResultsV2) {
+
+	sort.SliceStable(logEntry.ToLogProtocol.Results, func(i, j int) bool {
+		return logEntry.ToLogProtocol.Results[i].ProtocolLine < logEntry.ToLogProtocol.Results[j].ProtocolLine
+	})
+
+	if logEntry.Status != `Success` {
+		log.Entry().Info("-------------------------")
+		log.Entry().Info(logEntry.Name)
+		log.Entry().Info("-------------------------")
+
+		for _, entry := range logEntry.ToLogProtocol.Results {
+			log.Entry().Info(entry.Description)
+		}
+
+	} else {
+		log.Entry().Debug("-------------------------")
+		log.Entry().Debug(logEntry.Name)
+		log.Entry().Debug("-------------------------")
+
+		for _, entry := range logEntry.ToLogProtocol.Results {
+			log.Entry().Debug(entry.Description)
+		}
+	}
+
 }
 
 // PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
@@ -282,10 +323,23 @@ type AbapLogsV2 struct {
 }
 
 type LogResultsV2 struct {
-	Metadata AbapMetadata `json:"__metadata"`
-	Index    int          `json:"log_index"`
-	Name     string       `json:"log_name"`
-	Status   string       `json:"type_of_found_issues"`
+	Metadata      AbapMetadata       `json:"__metadata"`
+	Index         int                `json:"log_index"`
+	Name          string             `json:"log_name"`
+	Status        string             `json:"type_of_found_issues"`
+	ToLogProtocol LogProtocolResults `json:"to_Log_Protocol"`
+}
+
+type LogProtocolResults struct {
+	Results []LogProtocol `json:"results"`
+}
+
+type LogProtocol struct {
+	Metadata      AbapMetadata `json:"__metadata"`
+	OverviewIndex int          `json:"log_index"`
+	ProtocolLine  int          `json:"index_no"`
+	Type          string       `json:"type"`
+	Description   string       `json:"descr"`
 }
 
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
