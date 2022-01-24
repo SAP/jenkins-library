@@ -13,6 +13,7 @@ spec:
         description: Path to the folder with gradle.build file which should be executed.
         scope:
           - PARAMETERS
+          - STAGES
           - STEPS
         mandatory: false
       - name: task
