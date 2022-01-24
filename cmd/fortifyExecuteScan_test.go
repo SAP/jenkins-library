@@ -19,6 +19,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/google/go-github/v32/github"
@@ -26,6 +27,8 @@ import (
 
 	"github.com/piper-validation/fortify-client-go/models"
 )
+
+const author string = "john.doe@dummy.com"
 
 type fortifyTestUtilsBundle struct {
 	*execRunnerMock
@@ -277,11 +280,13 @@ func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64
 type pullRequestServiceMock struct{}
 
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+	authorString := author
+	user := github.User{Email: &authorString}
 	if owner == "A" {
 		result := 17
-		return []*github.PullRequest{{Number: &result}}, &github.Response{}, nil
+		return []*github.PullRequest{{Number: &result, User: &user}}, &github.Response{}, nil
 	} else if owner == "C" {
-		return []*github.PullRequest{}, &github.Response{}, errors.New("Test error")
+		return []*github.PullRequest{{User: &user}}, &github.Response{}, errors.New("Test error")
 	}
 	return []*github.PullRequest{}, &github.Response{}, nil
 }
@@ -333,6 +338,9 @@ func (er *execRunnerMock) Stderr(err io.Writer) {
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
+	if len(p) > 0 && piperutils.ContainsString(p, "--failTranslate") {
+		return errors.New("Translate failed")
+	}
 	er.currentExecution().parameters = p
 	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
 	classpathMaven := "some.jar;someother.jar"
@@ -385,6 +393,12 @@ func TestExecutions(t *testing.T) {
 			nameOfRun:             "golang verify only",
 			config:                fortifyExecuteScanOptions{BuildTool: "golang", BuildDescriptorFile: "go.mod", VerifyOnly: true},
 			expectedReportsLength: 0,
+		},
+		{
+			nameOfRun:             "maven scan and verify",
+			config:                fortifyExecuteScanOptions{BuildTool: "maven", BuildDescriptorFile: "pom.xml", UpdateRulePack: true, Reporting: true, UploadResults: true},
+			expectedReportsLength: 2,
+			expectedReports:       []string{"target/fortify-scan.*", "target/*.fpr"},
 		},
 	}
 
@@ -729,14 +743,16 @@ func TestDeterminePullRequestMerge(t *testing.T) {
 	config := fortifyExecuteScanOptions{CommitMessage: "Merge pull request #2462 from branch f-test", PullRequestMessageRegex: `(?m).*Merge pull request #(\d+) from.*`, PullRequestMessageRegexGroup: 1}
 
 	t.Run("success", func(t *testing.T) {
-		match := determinePullRequestMerge(config)
+		match, authorString := determinePullRequestMerge(config)
 		assert.Equal(t, "2462", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 
 	t.Run("no match", func(t *testing.T) {
 		config.CommitMessage = "Some test commit"
-		match := determinePullRequestMerge(config)
+		match, authorString := determinePullRequestMerge(config)
 		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 }
 
@@ -744,21 +760,24 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 	prServiceMock := pullRequestServiceMock{}
 
 	t.Run("success", func(t *testing.T) {
-		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "A"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "A"}, prServiceMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "17", match, "Expected different result")
+		assert.Equal(t, author, authorString, "Expected different result")
 	})
 
 	t.Run("no match", func(t *testing.T) {
-		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "B"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "B"}, prServiceMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 
 	t.Run("error", func(t *testing.T) {
-		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
 		assert.EqualError(t, err, "Test error")
 		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "", authorString, "Expected different result")
 	})
 }
 
@@ -793,6 +812,14 @@ func TestTranslateProject(t *testing.T) {
 		translateProject(&config, &utils, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
+	})
+
+	t.Run("failure propagated", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
+		err := translateProject(&config, &utils, "--failTranslate", "./WEB-INF/lib/*.jar")
+		assert.Error(t, err)
+		assert.Equal(t, "failed to execute sourceanalyzer translate command with options [-verbose -64 -b --failTranslate -Xmx2G -cp ./WEB-INF/lib/*.jar -extdirs tmp/ -source 1.8 -jdk 1.8.0-21 -sourcepath src/ext/ ./**/*]: Translate failed", err.Error())
 	})
 }
 
