@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -181,7 +182,7 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
 }
 
-func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, configUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
 	var err error
 	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
@@ -189,7 +190,7 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 		return err
 	}
 	if configDoesExist {
-		err = doPatchATCSystemConfig(config, configUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		err = doPatchATCSystemConfig(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
 			return err
 		}
@@ -228,10 +229,20 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 }
 
 func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+
+	return doPatchATCSystemConfigMulti(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
+
+	/* 	batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails)
+	   	if err != nil {
+	   		return err
+	   	}
+	   	return doBatchATCSystemConfig(config, batchATCSystemConfigFile, connectionDetails, client) */
+
+}
+
+func doPatchATCSystemConfigMulti(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+
 	abapEndpoint := connectionDetails.URL
-
-	//TBD: Check if BATCH request can be formed instead of single calls!
-
 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
 	var configBaseJson parsedConfigJsonBase
 	err := json.Unmarshal(atcSystemConfiguartionJsonFile, &configBaseJson)
@@ -293,12 +304,112 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, c
 	return nil
 }
 
+func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP) ([]byte, error) {
+
+	batchRequestString :=
+		`"--request-separator
+	Content-Type: multipart/mixed;boundary=changeset
+	
+	--changeset
+	Content-Type: application/http
+	Content-Transfer-Encoding: binary
+	Content-ID: 1
+	
+	PATCH configuration(root_id='1',conf_id=0246367a-ceba-1edc-9f9b-e82e0dcb3fe6) HTTP/1.1
+	Content-Type: application/json
+	
+	{"block_findings": "1", "inform_findings": "1"}
+	
+	--changeset
+	Content-Type: application/http
+	Content-Transfer-Encoding: binary
+	Content-ID: 2
+	
+	PATCH priority(root_id='1',conf_id=0246367a-ceba-1edc-9f9b-e82e0dcb3fe6,test='CL_CI_TEST_AMDP_HDB_MIGRATION',message_id='FAIL_ABAP') HTTP/1.1
+	Content-Type: application/json
+	
+	{"priority": 1}
+	
+	--changeset--
+	
+	--request-separator--"`
+
+	return []byte(batchRequestString), nil
+
+	/* 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
+		abapEndpoint := connectionDetails.URL
+	 var configBaseJson parsedConfigJsonBase
+		err := json.Unmarshal(atcSystemConfiguartionJsonFile, &configBaseJson)
+		if err != nil {
+			return nil, err
+		}
+		var parsedConfigPriorities parsedConfigPriorities
+		err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigPriorities)
+		if err != nil {
+			return nil, err
+		}
+
+		//build reuqest for Patch configuration
+		//Base configuration
+		configBaseJson.RootId = "1"
+		configBaseJson.ConfUUID = confUUID
+		configBaseJsonBody, err := json.Marshal(&configBaseJson)
+		if err != nil {
+			return nil, err
+		}
+
+		var atcSystemConfiguartionJsonBatchRequests requests
+		var atcSystemConfiguartionJsonBatchRequest request
+
+		atcSystemConfiguartionJsonBatchRequest.Headers.ContentType = "application/json"
+		atcSystemConfiguartionJsonBatchRequest.URL = abapEndpoint + "/configuration(root_id='1',conf_id=" + confUUID + ")"
+		atcSystemConfiguartionJsonBatchRequest.RootId = "1"
+		atcSystemConfiguartionJsonBatchRequest.ConfUUID = confUUID
+		atcSystemConfiguartionJsonBatchRequest.Method = "patch"
+		atcSystemConfiguartionJsonBatchRequest.Body = string(configBaseJsonBody)
+
+		atcSystemConfiguartionJsonBatchRequests.Requests = append(atcSystemConfiguartionJsonBatchRequests.Requests, atcSystemConfiguartionJsonBatchRequest)
+
+		if len(parsedConfigPriorities.Priorities) > 0 {
+			//message priorities
+			var priority priorityJson
+			for i, priorityLine := range parsedConfigPriorities.Priorities {
+				priority.Priority = priorityLine.Priority
+				priorityJsonBody, err := json.Marshal(&priority)
+				if err != nil {
+					log.Entry().Errorf("problem with marshall of single priority in line "+string(rune(i)), err)
+					continue
+				}
+				atcSystemConfiguartionJsonBatchRequest.Headers.ContentType = "application/json"
+				atcSystemConfiguartionJsonBatchRequest.URL = abapEndpoint + "/priority(root_id='1',conf_id=" + confUUID + ",test='" + priorityLine.Test + "',message_id='" + priorityLine.MessageId + "')"
+				atcSystemConfiguartionJsonBatchRequest.RootId = "1"
+				atcSystemConfiguartionJsonBatchRequest.ConfUUID = confUUID
+				atcSystemConfiguartionJsonBatchRequest.Body = string(priorityJsonBody)
+				atcSystemConfiguartionJsonBatchRequest.Method = "patch"
+				atcSystemConfiguartionJsonBatchRequests.Requests = append(atcSystemConfiguartionJsonBatchRequests.Requests, atcSystemConfiguartionJsonBatchRequest)
+			}
+		}
+
+		return json.Marshal(&atcSystemConfiguartionJsonBatchRequests) */
+}
+
 func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
-	jsonBody := atcSystemConfiguartionJsonFile
-	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, jsonBody, client)
+	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, atcSystemConfiguartionJsonFile, client)
+	return parseOdataResponse(resp, err, connectionDetails, config)
+}
+
+func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, batchRequestBodyFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+	abapEndpoint := connectionDetails.URL
+	connectionDetails.URL = abapEndpoint + "/$batch"
+
+	header := make(map[string][]string)
+	header["X-Csrf-Token"] = []string{connectionDetails.XCsrfToken}
+	header["Content-Type"] = []string{"multipart/mixed;boundary=request-separator"}
+	resp, err := client.SendRequest("POST", connectionDetails.URL, bytes.NewBuffer(batchRequestBodyFile), header, nil)
+
 	return parseOdataResponse(resp, err, connectionDetails, config)
 }
 
@@ -387,7 +498,7 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		return fmt.Errorf("bad Request Errors: %v", parsedOdataErrors)
 
 	default: //unhandled OK Code
-		return fmt.Errorf("unhandled StatusCode: %w", errors.New(resp.Status))
+		return fmt.Errorf("unhandled StatusCode: "+resp.Status, errorIn)
 	}
 
 }
@@ -506,4 +617,23 @@ type parsedConfigPriority struct {
 
 type priorityJson struct {
 	Priority json.Number `json:"priority"`
+}
+
+type requests struct {
+	Requests []request `json:"requests"`
+}
+
+type request struct {
+	RootId    string `json:"root_id"`
+	ConfUUID  string `json:"conf_id"`
+	Test      string `json:"test"`
+	MessageId string `json:"message_id"`
+	Method    string `json:"method"`
+	Headers   header `json:"headers"`
+	Body      string `json:"body"`
+	URL       string `json:"url"`
+}
+
+type header struct {
+	ContentType string `json:"content-type"`
 }
