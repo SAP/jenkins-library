@@ -176,7 +176,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"gradle": {
 			{Name: "fileSystemScan", Value: false, Force: true},
-			{Name: "ignoreSourceFiles", Value: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
 		},
 		"maven": {
