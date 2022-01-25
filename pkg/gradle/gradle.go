@@ -26,7 +26,7 @@ type ExecuteOptions struct {
 
 func Execute(options *ExecuteOptions, utils Utils, fileUtils piperutils.FileUtils) (string, error) {
 
-	exists, err := fileUtils.FileExists(options.BuildGradlePath)
+	exists, err := fileUtils.DirExists(options.BuildGradlePath)
 	if !exists {
 		return "", fmt.Errorf("the specified gradle script could not be found")
 	}
