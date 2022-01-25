@@ -2,28 +2,17 @@
 
 ## ${docGenDescription}
 
-* ApiKeyValueMapUpload stores one or more key value pairs of data in a grouping called a map, or key value map.
-
-* A typical flow would look something like
-
-Get the API management service key from the SAP BTP sub account cockpit, under instance and subscriptions for API management under API plan.
-
-Store API management service key in jenkins server as secret text.
-
-Create new jenkins pipeline, which consumes the ApiKeyValueMapUpload piper step.
-
-Execute the pipeline and validate step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/working-with-integration-suite-piper-commands/)
-
-* With the ApiKeyValueMapUpload step
-
-You can create API key value map in the API portal.
-
-If API key value map already exist, then command execution would fail.
-
-If API key value map already exist, then delete it and execute the piper step again,
-which create new API Key value Map.
-
-ApiKeyValueMapUpload only supports create operation, but not either delete, get, update, which is supported in different piper steps.
+* ApiKeyValueMapUpload step stores one or more key value pairs of data in a grouping called a map, or key value map.
+* A typical flow to consume ApiKeyValueMapUpload step involves:
+  * Get the SAP API management service key from the SAP BTP sub account cockpit, under instance and subscriptions for API management instance created under API plan.
+  * Store SAP API management service key in the jenkins server as secret text.
+  * Create a new jenkins pipeline, which consumes the ApiKeyValueMapUpload step.
+  * Execute the pipeline and validate step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/working-with-integration-suite-piper-commands/)
+* Using ApiKeyValueMapUpload step:
+  * You can create new API key value map in the API portal.
+  * If API key value map already exist, then command execution would fail.
+  * If API key value map already exist, then delete it and execute the piper step again, which create new API Key value Map.
+  * ApiKeyValueMapUpload only support create operation, but not delete, get, update, which are supported in different piper steps.
 
 ## Prerequisites
 
