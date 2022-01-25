@@ -966,18 +966,19 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string
 
 func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
 	number := "0"
-	email := ""
+	author := ""
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
-		email = prList[0].GetUser().GetLogin()
-		log.Entry().Debugf("Author login: %v", email)
-		return number, email, nil
+		if prList[0].GetUser() != nil {
+			author = prList[0].GetUser().GetLogin()
+		}
+		return number, author, nil
 	} else {
 		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
-	return number, email, err
+	return number, author, err
 }
 
 func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {
