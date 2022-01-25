@@ -77,7 +77,6 @@ func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions, 
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
-		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 		{FilePattern: "**/e2e/*.json", ParamRef: "", StepResultType: "cucumber"},
 	}
@@ -386,7 +385,6 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/bom.xml", "type": "sbom"},
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
-							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 							{"filePattern": "**/e2e/*.json", "type": "cucumber"},
 						},

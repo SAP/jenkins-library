@@ -139,8 +139,6 @@ spec:
             type: sbom
           - filePattern: "**/TEST-*.xml"
             type: junit
-          - filePattern: "**/jacoco.xml"
-            type: jacoco-coverage
           - filePattern: "**/cobertura-coverage.xml"
             type: cobertura-coverage
           - filePattern: "**/e2e/*.json"
