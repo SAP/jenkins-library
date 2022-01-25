@@ -160,14 +160,14 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"dub": {
 			{Name: "fileSystemScan", Value: false, Force: true},
-			{Name: "ignoreSourceFiles", Value: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "includes", Value: "**/*.d **/*.di"},
 		},
 		//ToDo: rename to go?
 		//ToDo: switch to gomod as dependency manager
 		"golang": {
 			{Name: "fileSystemScan", Value: false, Force: true},
-			{Name: "ignoreSourceFiles", Value: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.collectDependenciesAtRuntime", Value: false},
 			{Name: "go.modules.resolveDependencies", Value: true, Force: true},
