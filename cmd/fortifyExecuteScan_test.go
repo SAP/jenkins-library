@@ -287,6 +287,8 @@ func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.C
 		return []*github.PullRequest{{Number: &result, User: &user}}, &github.Response{}, nil
 	} else if owner == "C" {
 		return []*github.PullRequest{{User: &user}}, &github.Response{}, errors.New("Test error")
+	} else if owner == "E" {
+		return []*github.PullRequest{{User: nil}}, &github.Response{}, errors.New("Test error")
 	}
 	return []*github.PullRequest{}, &github.Response{}, nil
 }
@@ -751,7 +753,7 @@ func TestDeterminePullRequestMerge(t *testing.T) {
 	t.Run("no match", func(t *testing.T) {
 		config.CommitMessage = "Some test commit"
 		match, authorString := determinePullRequestMerge(config)
-		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "0", match, "Expected different result")
 		assert.Equal(t, "", authorString, "Expected different result")
 	})
 }
@@ -769,14 +771,14 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 	t.Run("no match", func(t *testing.T) {
 		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "B"}, prServiceMock)
 		assert.NoError(t, err)
-		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "0", match, "Expected different result")
 		assert.Equal(t, "", authorString, "Expected different result")
 	})
 
 	t.Run("error", func(t *testing.T) {
-		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
+		match, authorString, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "E"}, prServiceMock)
 		assert.EqualError(t, err, "Test error")
-		assert.Equal(t, "", match, "Expected different result")
+		assert.Equal(t, "0", match, "Expected different result")
 		assert.Equal(t, "", authorString, "Expected different result")
 	})
 }

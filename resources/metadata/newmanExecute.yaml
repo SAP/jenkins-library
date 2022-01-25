@@ -89,6 +89,15 @@ spec:
             fields:
               - name: newman
                 type: bool
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/TEST-*.xml"
+            type: acceptance-test
+          - filePattern: "**/requirement.mapping"
+            type: requirement-mapping
+          - filePattern: "**/delivery.mapping"
+            type: delivery-mapping
   containers:
     - name: newman
       image: node:lts-stretch
