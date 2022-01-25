@@ -41,6 +41,8 @@ func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 }
 
 func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
+	var maxRetries int
+	maxRetries = -1
 	cookieJar, cookieErr := cookiejar.New(nil)
 	repoState := repoStateExists
 	branchRollbackRequired := false
@@ -48,9 +50,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:  cookieJar,
+		Username:   config.Username,
+		Password:   config.Password,
+		MaxRetries: maxRetries,
 	}
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)

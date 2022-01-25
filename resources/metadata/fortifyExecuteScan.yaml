@@ -44,6 +44,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
+        mandatory: false
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
@@ -597,6 +606,18 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: createResultIssue
+        type: bool
+        description: "Whether the step creates a GitHub issue containing the scan results in the originating repo.
+        Since optimized pipelines are headless the creation is implicitly activated for schedules runs."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/optimizedAndScheduled
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - image: ""
   outputs:
