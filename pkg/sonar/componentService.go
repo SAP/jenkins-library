@@ -20,9 +20,13 @@ type ComponentService struct {
 }
 
 type SonarCoverage struct {
-	Coverage       float32 `json:"coverage,omitempty"`
-	LineCoverage   float32 `json:"lineCoverage,omitempty"`
-	BranchCoverage float32 `json:"branchCoverage,omitempty"`
+	Coverage          float32 `json:"coverage,omitempty"`
+	LineCoverage      float32 `json:"lineCoverage,omitempty"`
+	LinesToCover      int     `json:"linesToCover,omitempty"`
+	UncoveredLines    int     `json:"uncoveredLines,omitempty"`
+	BranchCoverage    float32 `json:"branchCoverage,omitempty"`
+	BranchesToCover   int     `json:"branchesToCover,omitempty"`
+	UncoveredBranches int     `json:"uncoveredBranches,omitempty"`
 }
 
 // GetCoverage ...
@@ -53,7 +57,7 @@ func (service *ComponentService) Component(options *sonargo.MeasuresComponentOpt
 func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 	options := sonargo.MeasuresComponentOption{
 		Component:  service.Project,
-		MetricKeys: "coverage,branch_coverage,line_coverage",
+		MetricKeys: "coverage,branch_coverage,line_coverage,uncovered_lines,lines_to_cover,conditions_to_cover,uncovered_conditions",
 	}
 	component, response, _ := service.Component(&options)
 
@@ -67,20 +71,30 @@ func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 	cov := &SonarCoverage{}
 
 	for _, element := range measures {
-		val, err := parseMeasureValuef32(*element)
-		if err != nil {
-			return nil, err
-		}
+
+		var err error
 
 		switch element.Metric {
 		case "coverage":
-			cov.Coverage = val
+			cov.Coverage, err = parseMeasureValuef32(*element)
 		case "branch_coverage":
-			cov.BranchCoverage = val
+			cov.BranchCoverage, err = parseMeasureValuef32(*element)
 		case "line_coverage":
-			cov.LineCoverage = val
+			cov.LineCoverage, err = parseMeasureValuef32(*element)
+		case "uncovered_lines":
+			cov.UncoveredLines, err = parseMeasureValueInt(*element)
+		case "lines_to_cover":
+			cov.LinesToCover, err = parseMeasureValueInt(*element)
+		case "conditions_to_cover":
+			cov.BranchesToCover, err = parseMeasureValueInt(*element)
+		case "uncovered_conditions":
+			cov.UncoveredBranches, err = parseMeasureValueInt(*element)
 		default:
 			log.Entry().Debugf("Received unhandled coverage metric from Sonar measures/component API. (Metric: %s, Value: %s)", element.Metric, element.Value)
+		}
+		if err != nil {
+			// there was an error in the type conversion
+			return nil, err
 		}
 	}
 	return cov, nil
@@ -102,4 +116,13 @@ func parseMeasureValuef32(measure sonargo.SonarMeasure) (float32, error) {
 		return 0.0, errors.Wrap(err, "Invalid value found in measure "+measure.Metric+": "+measure.Value)
 	}
 	return float32(f64), nil
+}
+
+func parseMeasureValueInt(measure sonargo.SonarMeasure) (int, error) {
+	str := measure.Value
+	val, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, errors.Wrap(err, "Invalid value found in measure "+measure.Metric+": "+measure.Value)
+	}
+	return int(val), nil
 }

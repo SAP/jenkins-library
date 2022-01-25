@@ -27,7 +27,13 @@ func TestComponentService(t *testing.T) {
 		cov, err := serviceUnderTest.GetCoverage()
 		// assert
 		assert.NoError(t, err)
+		assert.Equal(t, float32(80.7), cov.Coverage)
+		assert.Equal(t, float32(80.4), cov.LineCoverage)
+		assert.Equal(t, 121, cov.LinesToCover)
+		assert.Equal(t, 91, cov.UncoveredLines)
 		assert.Equal(t, float32(81), cov.BranchCoverage)
+		assert.Equal(t, 8, cov.BranchesToCover)
+		assert.Equal(t, 5, cov.UncoveredBranches)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 	t.Run("invalid metric value", func(t *testing.T) {
@@ -50,33 +56,21 @@ func TestComponentService(t *testing.T) {
 }
 
 const responseCoverage = `{
-  "component": {
-    "key": "com.sap.piper.test",
-    "name": "com.sap.piper.test",
-    "qualifier": "TRK",
-    "measures": [
-      {
-        "metric": "line_coverage",
-        "value": "80.4",
-        "bestValue": false
-      },
-      {
-        "metric": "branch_coverage",
-        "value": "81.0",
-        "bestValue": false
-      },
-      {
-        "metric": "coverage",
-        "value": "80.7",
-        "bestValue": false
-      },
-      {
-        "metric": "extra_valie",
-        "value": "42.7",
-        "bestValue": false
-      }
-    ]
-  }
+	"component": {
+		"key": "com.sap.piper.test",
+		"name": "com.sap.piper.test",
+		"qualifier": "TRK",
+		"measures": [
+			{ "metric": "line_coverage", "value": "80.4", "bestValue": false },
+			{ "metric": "branch_coverage", "value": "81.0", "bestValue": false },
+			{ "metric": "coverage", "value": "80.7", "bestValue": false },
+			{ "metric": "extra_valie", "value": "42.7", "bestValue": false },
+			{ "metric": "lines_to_cover", "value": "121" },
+			{ "metric": "uncovered_lines", "value": "91", "bestValue": false },
+			{ "metric": "conditions_to_cover", "value": "8" },
+			{ "metric": "uncovered_conditions", "value": "5", "bestValue": false }
+		]
+	}
 }`
 
 const responseCoverageInvalidValue = `{
@@ -85,11 +79,8 @@ const responseCoverageInvalidValue = `{
 	  "name": "com.sap.piper.test",
 	  "qualifier": "TRK",
 	  "measures": [
-		{
-		  "metric": "line_coverage",
-		  "value": "xyz",
-		  "bestValue": false
-		}
+		  { "metric": "line_coverage", "value": "xyz", "bestValue": false },
+		  { "metric": "uncovered_conditions", "value": "abc", "bestValue": false }
 	  ]
 	}
   }`
