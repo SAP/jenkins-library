@@ -164,6 +164,8 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
 				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
 				config.Assignees = append(config.Assignees, prAuthor)
+			} else {
+				log.Entry().Debugf("Unable to determine PR Author, using assignees: %v", config.Assignees)
 			}
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
@@ -969,8 +971,8 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
-		email = prList[0].GetUser().GetEmail()
-		log.Entry().Debugf("%v, authorAssociation: %v", email, prList[0].GetAuthorAssociation())
+		email = prList[0].GetUser().GetLogin()
+		log.Entry().Debugf("Author login: %v", email)
 		return number, email, nil
 	} else {
 		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
