@@ -970,7 +970,7 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
 		email = prList[0].GetUser().GetEmail()
-		log.Entry().Debugf("%v, %v, %v", prList[0].GetUser(), prList[0].GetAuthorAssociation(), prList[0].GetAssignee())
+		log.Entry().Debugf("%v, authorAssociation: %v", email, prList[0].GetAuthorAssociation())
 		return number, email, nil
 	} else {
 		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
