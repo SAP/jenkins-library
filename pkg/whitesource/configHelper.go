@@ -152,6 +152,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "docker.scanTarFiles", Value: true, Force: true},
 			{Name: "docker.includes", Value: ".*.tar", Force: true},
 			{Name: "fileSystemScan", Value: true},
+			{Name: "ignoreSourceFiles", Value: false},
 			{Name: "python.resolveGlobalPackages", Value: true, Force: false},
 			{Name: "resolveAllDependencies", Value: true, Force: false},
 			{Name: "updateType", Value: "OVERRIDE", Force: true},
@@ -159,12 +160,14 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"dub": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true},
 			{Name: "includes", Value: "**/*.d **/*.di"},
 		},
 		//ToDo: rename to go?
 		//ToDo: switch to gomod as dependency manager
 		"golang": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true},
 			{Name: "go.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.collectDependenciesAtRuntime", Value: false},
 			{Name: "go.modules.resolveDependencies", Value: true, Force: true},
@@ -173,10 +176,12 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"gradle": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true},
 			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
 		},
 		"maven": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "updateEmptyProject", Value: true, Force: true},
 			{Name: "maven.resolveDependencies", Value: true, Force: true},
 			{Name: "maven.ignoreSourceFiles", Value: true, Force: true},
@@ -191,6 +196,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"npm": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.resolveDependencies", Value: true, Force: true},
 			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.ignoreNpmLsErrors", Value: true},
@@ -201,6 +207,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"pip": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "python.resolveDependencies", Value: true, Force: true},
 			{Name: "python.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "python.ignorePipInstallErrors", Value: false},
@@ -216,6 +223,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"sbt": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "sbt.resolveDependencies", Value: true, Force: true},
 			{Name: "sbt.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "sbt.aggregateModules", Value: false, Force: true},
@@ -225,6 +233,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"yarn": {
 			{Name: "fileSystemScan", Value: false, Force: true},
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.resolveDependencies", Value: true, Force: true},
 			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.yarnProject", Value: true, Force: true},
