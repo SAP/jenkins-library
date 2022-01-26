@@ -107,7 +107,7 @@ spec:
           - STEPS
       - name: values
         type: string
-        description: Input values for the build framework
+        description: Input values for the build framework, please enter in the format '[{"value_id":"Id1","value":"value1"},{"value_id":"Id2","value":"value2"}]'
         scope:
           - PARAMETERS
           - STAGES
@@ -125,7 +125,7 @@ spec:
       - name: downloadResultFilenames
         type: "[]string"
         mandatory: false
-        description: Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored
+        description: Only the specified files are downloaded. If downloadAllResultFiles is true, this parameter is ignored
         scope:
           - PARAMETERS
           - STAGES
@@ -210,7 +210,7 @@ spec:
             param: abap/buildValues
       - name: useFieldsOfAddonDescriptor
         type: string
-        description: TODO
+        description: use fields of the addonDescriptor in the cpe as input values. Please enter in the format '[{"use":"Name","renameTo":"SWC"}]'
         scope:
           - PARAMETERS
           - STAGES
@@ -218,7 +218,8 @@ spec:
         mandatory: false
       - name: conditionOnAddonDescriptor
         type: string
-        description: TODO
+        description: normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions. 
+                     Please enter in the format '[{"field":"Status","operator":"==","value":"P"}]'
         scope:
           - PARAMETERS
           - STAGES
