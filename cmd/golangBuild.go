@@ -21,6 +21,8 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-go"
+	sbomFilename                = "bom.xml"
 )
 
 type golangBuildUtils interface {
@@ -79,6 +81,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	if config.CreateBOM {
+		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
+			return fmt.Errorf("failed to install pre-requisite: %w", err)
+		}
+	}
+
 	failedTests := false
 
 	if config.RunTests {
@@ -106,6 +114,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	if failedTests {
 		log.SetErrorCategory(log.ErrorTest)
 		return fmt.Errorf("some tests failed")
+	}
+
+	if config.CreateBOM {
+		if err := runBOMCreation(utils, sbomFilename); err != nil {
+			return err
+		}
 	}
 
 	ldflags := ""
@@ -265,4 +279,11 @@ func splitTargetArchitecture(architecture string) (string, string) {
 
 	architectureParts := strings.Split(architecture, ",")
 	return architectureParts[0], architectureParts[1]
+}
+
+func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
+	if err := utils.RunExecutable("cyclonedx-go", "-o", outputFilename); err != nil {
+		return fmt.Errorf("BOM creation failed: %w", err)
+	}
+	return nil
 }
