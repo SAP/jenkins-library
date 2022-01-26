@@ -64,13 +64,16 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	utils := newKubernetesDeployUtilsBundle()
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runKubernetesDeploy(config, utils, log.Writer())
+	err := runKubernetesDeploy(config, telemetryData, utils, log.Writer())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, stdout io.Writer) error {
+func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetesDeployUtils, stdout io.Writer) error {
+	telemetryData.Custom1Label = "deployTool"
+	telemetryData.Custom1 = config.DeployTool
+
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		return runHelmDeploy(config, utils, stdout)
 	} else if config.DeployTool == "kubectl" {
