@@ -218,7 +218,7 @@ spec:
         mandatory: false
       - name: conditionOnAddonDescriptor
         type: string
-        description: normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions. 
+        description: normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions.
                      Please enter in the format '[{"field":"Status","operator":"==","value":"P"}]'
         scope:
           - PARAMETERS
