@@ -190,7 +190,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
 
-		//no Configuration name supplied
+		//valid ATC System Configuration File
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
