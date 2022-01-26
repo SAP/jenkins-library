@@ -300,10 +300,6 @@ func generateValuesOnlyFromConfig(config *abapEnvironmentBuildOptions) ([]abapbu
 	return generateValuesWithAddonDescriptor(config, []abapbuild.Value{})
 }
 
-type valuesEvaluator struct {
-	m map[string]string
-}
-
 func generateValuesFromString(stringValues string) ([]abapbuild.Value, error) {
 	var values []abapbuild.Value
 	if len(stringValues) > 0 {
@@ -313,6 +309,10 @@ func generateValuesFromString(stringValues string) ([]abapbuild.Value, error) {
 		}
 	}
 	return values, nil
+}
+
+type valuesEvaluator struct {
+	m map[string]string
 }
 
 func (vE *valuesEvaluator) initialize(stringValues string) error {
