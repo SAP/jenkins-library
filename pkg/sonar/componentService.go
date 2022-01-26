@@ -3,6 +3,7 @@ package sonar
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	sonargo "github.com/magicsong/sonargo/sonar"
@@ -29,6 +30,16 @@ type SonarCoverage struct {
 	UncoveredBranches int     `json:"uncoveredBranches,omitempty"`
 }
 
+type SonarLinesOfCode struct {
+	Total                int                         `json:"total,omitempty"`
+	LanguageDistribution []SonarLanguageDistribution `json:"languageDistribution,omitempty"`
+}
+
+type SonarLanguageDistribution struct {
+	LanguageKey string `json:"languageKey,omitempty"`
+	LinesOfCode int    `json:"linesOfCode,omitempty"`
+}
+
 // GetCoverage ...
 func (service *ComponentService) Component(options *sonargo.MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
 	request, err := service.apiClient.create("GET", EndpointMeasuresComponent, options)
@@ -52,6 +63,42 @@ func (service *ComponentService) Component(options *sonargo.MeasuresComponentOpt
 		return nil, response, err
 	}
 	return result, response, nil
+}
+
+func (service *ComponentService) GetLinesOfCode() (*SonarLinesOfCode, error) {
+	options := sonargo.MeasuresComponentOption{
+		Component:  service.Project,
+		MetricKeys: "ncloc_language_distribution,ncloc",
+	}
+	component, response, _ := service.Component(&options)
+
+	// reuse response verification from sonargo
+	err := sonargo.CheckResponse(response)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get lines of code from Sonar measures/component API")
+	}
+	measures := component.Component.Measures
+
+	loc := &SonarLinesOfCode{}
+
+	for _, element := range measures {
+
+		var err error
+
+		switch element.Metric {
+		case "ncloc":
+			loc.Total, err = parseMeasureValueInt(*element)
+		case "ncloc_language_distribution":
+			loc.LanguageDistribution, err = parseMeasureLanguageDistribution(*element)
+		default:
+			log.Entry().Debugf("Received unhandled lines of code metric from Sonar measures/component API. (Metric: %s, Value: %s)", element.Metric, element.Value)
+		}
+		if err != nil {
+			// there was an error in the type conversion
+			return nil, err
+		}
+	}
+	return loc, nil
 }
 
 func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
@@ -125,4 +172,28 @@ func parseMeasureValueInt(measure sonargo.SonarMeasure) (int, error) {
 		return 0, errors.Wrap(err, "Invalid value found in measure "+measure.Metric+": "+measure.Value)
 	}
 	return int(val), nil
+}
+
+func parseMeasureLanguageDistribution(measure sonargo.SonarMeasure) ([]SonarLanguageDistribution, error) {
+	str := measure.Value // example: js=589;ts=16544;web=1377
+	var ld []SonarLanguageDistribution
+	entries := strings.Split(str, ";")
+
+	for _, entry := range entries {
+
+		dist := strings.Split(entry, "=")
+
+		if len(dist) != 2 {
+			return nil, errors.New("Not able to split value " + entry + " at '=' found in measure " + measure.Metric + ": " + measure.Value)
+		}
+
+		loc, err := strconv.Atoi(dist[1])
+		if err != nil {
+			return nil, errors.Wrap(err, "Not able to parse value "+dist[1]+" found in measure "+measure.Metric+": "+measure.Value)
+		}
+		ld = append(ld, SonarLanguageDistribution{LanguageKey: dist[0], LinesOfCode: loc})
+
+	}
+
+	return ld, nil
 }

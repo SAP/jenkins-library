@@ -13,7 +13,7 @@ import (
 
 func TestComponentService(t *testing.T) {
 	testURL := "https://example.org"
-	t.Run("success", func(t *testing.T) {
+	t.Run("Code Coverage: success", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
@@ -36,7 +36,7 @@ func TestComponentService(t *testing.T) {
 		assert.Equal(t, 5, cov.UncoveredBranches)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
-	t.Run("invalid metric value", func(t *testing.T) {
+	t.Run("Code Coverage: invalid metric value", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
@@ -51,6 +51,71 @@ func TestComponentService(t *testing.T) {
 		// assert
 		assert.Error(t, err)
 		assert.Nil(t, cov)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("Lines Of Code: success", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseLinesOfCode))
+		// create service instance
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, sender)
+		// test
+		loc, err := serviceUnderTest.GetLinesOfCode()
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 19464, loc.Total)
+
+		for _, dist := range loc.LanguageDistribution {
+
+			switch dist.LanguageKey {
+			case "js":
+				assert.Equal(t, 1504, dist.LinesOfCode)
+			case "ts":
+				assert.Equal(t, 16623, dist.LinesOfCode)
+			case "web":
+				assert.Equal(t, 1337, dist.LinesOfCode)
+			}
+
+		}
+
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("Lines Of Code: invalid metric value", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseLinesOfCodeInvalidValue))
+		// create service instance
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, sender)
+		// test
+		loc, err := serviceUnderTest.GetLinesOfCode()
+		// assert
+		assert.Error(t, err)
+		assert.Nil(t, loc)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("Lines Of Code: no separator", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseLinesOfCodeNoSeparator))
+		// create service instance
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, sender)
+		// test
+		loc, err := serviceUnderTest.GetLinesOfCode()
+		// assert
+		assert.Error(t, err)
+		assert.Nil(t, loc)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
@@ -82,5 +147,41 @@ const responseCoverageInvalidValue = `{
 		  { "metric": "line_coverage", "value": "xyz", "bestValue": false },
 		  { "metric": "uncovered_conditions", "value": "abc", "bestValue": false }
 	  ]
+	}
+  }`
+
+const responseLinesOfCode = `{
+	"component": {
+		"key": "com.sap.piper.test",
+		"name": "com.sap.piper.test",
+		"qualifier": "TRK",
+		"measures": [
+			{ "metric": "ncloc_language_distribution", "value": "js=1504;ts=16623;web=1337" },
+			{ "metric": "ncloc", "value": "19464" }
+		]
+	}
+}`
+
+const responseLinesOfCodeInvalidValue = `{
+	"component": {
+	  "key": "com.sap.piper.test",
+	  "name": "com.sap.piper.test",
+	  "qualifier": "TRK",
+	  "measures": [
+		{ "metric": "ncloc_language_distribution", "value": "js=15.04;ts=16623;web=1337" },
+		{ "metric": "ncloc", "value": "19464" }
+	]
+	}
+  }`
+
+const responseLinesOfCodeNoSeparator = `{
+	"component": {
+	  "key": "com.sap.piper.test",
+	  "name": "com.sap.piper.test",
+	  "qualifier": "TRK",
+	  "measures": [
+		{ "metric": "ncloc_language_distribution", "value": "js15.04" },
+		{ "metric": "ncloc", "value": "19464" }
+	]
 	}
   }`

@@ -239,6 +239,11 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err // No wrap, description already added one level below
 	}
 
+	loc, err := componentService.GetLinesOfCode()
+	if err != nil {
+		return err // No wrap, description already added one level below
+	}
+
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 	err = SonarUtils.WriteReport(SonarUtils.ReportData{
 		ServerURL:    taskReport.ServerURL,
@@ -254,7 +259,8 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Minor:    influx.sonarqube_data.fields.minor_issues,
 			Info:     influx.sonarqube_data.fields.info_issues,
 		},
-		Coverage: *cov,
+		Coverage:    *cov,
+		LinesOfCode: *loc,
 	}, sonar.workingDir, ioutil.WriteFile)
 	if err != nil {
 		return err
