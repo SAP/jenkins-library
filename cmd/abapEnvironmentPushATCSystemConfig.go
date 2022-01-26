@@ -9,6 +9,7 @@ import (
 	"net/http/cookiejar"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -194,12 +195,14 @@ func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, 
 		if err != nil {
 			return err
 		}
+		log.Entry().Info("ATC System Configuration successfully pushed from file " + config.AtcSystemConfigFilePath + " and patched in system")
 	}
 	if !configDoesExist {
 		err = doPushATCSystemConfig(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
 			return err
 		}
+		log.Entry().Info("ATC System Configuration successfully pushed from file " + config.AtcSystemConfigFilePath + " and created in system")
 	}
 
 	return nil
@@ -230,29 +233,28 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 
 func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
-	return doPatchATCSystemConfigMulti(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
-
-	/* 	batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails)
-	   	if err != nil {
-	   		return err
-	   	}
-	   	return doBatchATCSystemConfig(config, batchATCSystemConfigFile, connectionDetails, client) */
+	batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(config, confUUID, atcSystemConfiguartionJsonFile)
+	if err != nil {
+		return err
+	}
+	return doBatchATCSystemConfig(config, batchATCSystemConfigFile, connectionDetails, client)
 
 }
 
-func doPatchATCSystemConfigMulti(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte) (string, error) {
 
-	abapEndpoint := connectionDetails.URL
+	var batchRequestString string
+
 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
 	var configBaseJson parsedConfigJsonBase
 	err := json.Unmarshal(atcSystemConfiguartionJsonFile, &configBaseJson)
 	if err != nil {
-		return err
+		return batchRequestString, err
 	}
 	var parsedConfigPriorities parsedConfigPriorities
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigPriorities)
 	if err != nil {
-		return err
+		return batchRequestString, err
 	}
 
 	//Patch configuration
@@ -261,136 +263,78 @@ func doPatchATCSystemConfigMulti(config *abapEnvironmentPushATCSystemConfigOptio
 	configBaseJson.ConfUUID = confUUID
 	configBaseJsonBody, err := json.Marshal(&configBaseJson)
 	if err != nil {
-		return err
-	}
-	//root ID is always 1!
-	connectionDetails.URL = abapEndpoint + "/configuration(root_id='1',conf_id=" + confUUID + ")"
-	resp, err := abaputils.GetHTTPResponse("PATCH", connectionDetails, configBaseJsonBody, client)
-	err = parseOdataResponse(resp, err, connectionDetails, config)
-	if err != nil {
-		return err
+		return batchRequestString, err
 	}
 
+	// build the Batch request string
+	contentID := 1
+	//Starting with outer boundary - followed by mandatory Contenttype and boundary for changeset
+	batchRequestString = `
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
+
+`
+	//now adding opening Changeset as at least config base is to be patched
+
+	batchRequestString += `--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: ` + strconv.Itoa(contentID) + `
+
+`
+
+	//no add patch command - Root is always 1
+	batchRequestString += `PATCH configuration(root_id='1',conf_id=` + confUUID + `) HTTP/1.1
+Content-Type: application/json
+
+`
+
+	//now add json string with base config
+	batchRequestString += string(configBaseJsonBody) + `
+
+`
 	if len(parsedConfigPriorities.Priorities) > 0 {
-		//Patch message priorities
-		// by now, PATCH needs to be done for each given priority
+		// in case Priorities need patches too
 		var priority priorityJson
-		var withError bool
 		for i, priorityLine := range parsedConfigPriorities.Priorities {
-			connectionDetails.URL = abapEndpoint + "/priority(root_id='1',conf_id=" + confUUID + ",test='" + priorityLine.Test + "',message_id='" + priorityLine.MessageId + "')"
+
+			//for each line, add content id
+			contentID += 1
 			priority.Priority = priorityLine.Priority
 			priorityJsonBody, err := json.Marshal(&priority)
 			if err != nil {
-				log.Entry().Errorf("problem with marshall of single priority in line "+string(rune(i)), err)
-				withError = true
+				log.Entry().Errorf("problem with marshall of single priority in line "+strconv.Itoa(i), err)
 				continue
 			}
-			resp, err = abaputils.GetHTTPResponse("PATCH", connectionDetails, priorityJsonBody, client)
-			err = parseOdataResponse(resp, err, connectionDetails, config)
-			if err != nil {
-				log.Entry().Errorf("problem with response of patch of single priority in line "+string(rune(i)), err)
-				withError = true
-				continue
-			}
-		}
-		if !withError {
-			log.Entry().Info("ATC System configuration file successfully updated " + config.AtcSystemConfigFilePath + " with patched ATC System configuration Message Priority information.")
-		} else {
-			return fmt.Errorf("problems Pushing ATC System configuration Message Priorities. %w", errors.New("check log."))
-		}
+			batchRequestString += `--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: ` + strconv.Itoa(contentID) + `
 
+`
+			//now PATCH command for priority
+			batchRequestString += `PATCH priority(root_id='1',conf_id=` + confUUID + `,test='` + priorityLine.Test + `',message_id='` + priorityLine.MessageId + `') HTTP/1.1
+Content-Type: application/json
+
+`
+
+			//now add json string with priority
+			batchRequestString += string(priorityJsonBody) + `
+
+`
+		}
 	}
 
-	return nil
-}
+	//at the end, add closing inner and outer boundary tags
 
-func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP) ([]byte, error) {
+	batchRequestString += `--changeset--
 
-	batchRequestString :=
-		`"--request-separator
-	Content-Type: multipart/mixed;boundary=changeset
-	
-	--changeset
-	Content-Type: application/http
-	Content-Transfer-Encoding: binary
-	Content-ID: 1
-	
-	PATCH configuration(root_id='1',conf_id=0246367a-ceba-1edc-9f9b-e82e0dcb3fe6) HTTP/1.1
-	Content-Type: application/json
-	
-	{"block_findings": "1", "inform_findings": "1"}
-	
-	--changeset
-	Content-Type: application/http
-	Content-Transfer-Encoding: binary
-	Content-ID: 2
-	
-	PATCH priority(root_id='1',conf_id=0246367a-ceba-1edc-9f9b-e82e0dcb3fe6,test='CL_CI_TEST_AMDP_HDB_MIGRATION',message_id='FAIL_ABAP') HTTP/1.1
-	Content-Type: application/json
-	
-	{"priority": 1}
-	
-	--changeset--
-	
-	--request-separator--"`
+--request-separator--`
 
-	return []byte(batchRequestString), nil
+	log.Entry().Info("Batch Request String: " + batchRequestString)
 
-	/* 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
-		abapEndpoint := connectionDetails.URL
-	 var configBaseJson parsedConfigJsonBase
-		err := json.Unmarshal(atcSystemConfiguartionJsonFile, &configBaseJson)
-		if err != nil {
-			return nil, err
-		}
-		var parsedConfigPriorities parsedConfigPriorities
-		err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigPriorities)
-		if err != nil {
-			return nil, err
-		}
+	return batchRequestString, nil
 
-		//build reuqest for Patch configuration
-		//Base configuration
-		configBaseJson.RootId = "1"
-		configBaseJson.ConfUUID = confUUID
-		configBaseJsonBody, err := json.Marshal(&configBaseJson)
-		if err != nil {
-			return nil, err
-		}
-
-		var atcSystemConfiguartionJsonBatchRequests requests
-		var atcSystemConfiguartionJsonBatchRequest request
-
-		atcSystemConfiguartionJsonBatchRequest.Headers.ContentType = "application/json"
-		atcSystemConfiguartionJsonBatchRequest.URL = abapEndpoint + "/configuration(root_id='1',conf_id=" + confUUID + ")"
-		atcSystemConfiguartionJsonBatchRequest.RootId = "1"
-		atcSystemConfiguartionJsonBatchRequest.ConfUUID = confUUID
-		atcSystemConfiguartionJsonBatchRequest.Method = "patch"
-		atcSystemConfiguartionJsonBatchRequest.Body = string(configBaseJsonBody)
-
-		atcSystemConfiguartionJsonBatchRequests.Requests = append(atcSystemConfiguartionJsonBatchRequests.Requests, atcSystemConfiguartionJsonBatchRequest)
-
-		if len(parsedConfigPriorities.Priorities) > 0 {
-			//message priorities
-			var priority priorityJson
-			for i, priorityLine := range parsedConfigPriorities.Priorities {
-				priority.Priority = priorityLine.Priority
-				priorityJsonBody, err := json.Marshal(&priority)
-				if err != nil {
-					log.Entry().Errorf("problem with marshall of single priority in line "+string(rune(i)), err)
-					continue
-				}
-				atcSystemConfiguartionJsonBatchRequest.Headers.ContentType = "application/json"
-				atcSystemConfiguartionJsonBatchRequest.URL = abapEndpoint + "/priority(root_id='1',conf_id=" + confUUID + ",test='" + priorityLine.Test + "',message_id='" + priorityLine.MessageId + "')"
-				atcSystemConfiguartionJsonBatchRequest.RootId = "1"
-				atcSystemConfiguartionJsonBatchRequest.ConfUUID = confUUID
-				atcSystemConfiguartionJsonBatchRequest.Body = string(priorityJsonBody)
-				atcSystemConfiguartionJsonBatchRequest.Method = "patch"
-				atcSystemConfiguartionJsonBatchRequests.Requests = append(atcSystemConfiguartionJsonBatchRequests.Requests, atcSystemConfiguartionJsonBatchRequest)
-			}
-		}
-
-		return json.Marshal(&atcSystemConfiguartionJsonBatchRequests) */
 }
 
 func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
@@ -401,14 +345,16 @@ func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, at
 	return parseOdataResponse(resp, err, connectionDetails, config)
 }
 
-func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, batchRequestBodyFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, batchRequestBodyFile string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 	abapEndpoint := connectionDetails.URL
 	connectionDetails.URL = abapEndpoint + "/$batch"
 
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{connectionDetails.XCsrfToken}
 	header["Content-Type"] = []string{"multipart/mixed;boundary=request-separator"}
-	resp, err := client.SendRequest("POST", connectionDetails.URL, bytes.NewBuffer(batchRequestBodyFile), header, nil)
+
+	batchRequestBodyFileByte := []byte(batchRequestBodyFile)
+	resp, err := client.SendRequest("POST", connectionDetails.URL, bytes.NewBuffer(batchRequestBodyFileByte), header, nil)
 
 	return parseOdataResponse(resp, err, connectionDetails, config)
 }
@@ -465,25 +411,26 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		return errorIn
 	}
 
-	log.Entry().Info("parsedOdataResp: StatusCode: " + resp.Status)
+	log.Entry().Info("parsedResp: StatusCode: " + resp.Status)
 
 	var err error
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		defer resp.Body.Close()
-		return fmt.Errorf("parsing oData response failed: %w", err)
+		return fmt.Errorf("parsing response failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
-	case 200: //Retrieved entities & OK in Patch
-		return logAndPersistResponseBody(body, config)
+	case 200: //Retrieved entities & OK in Patch & OK in Batch
+		log.Entry().Infof("parsedRespBody: " + string(body))
 
 	case 201: //CREATED
-		return logAndPersistResponseBody(body, config)
+		log.Entry().Infof("parsedRespBody: " + string(body))
 
 	case 400: //BAD REQUEST
+		//no errorIn, Error in Body
 		if err != nil {
 			return fmt.Errorf("parsing oData response failed: %w", err)
 		}
@@ -501,62 +448,7 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 		return fmt.Errorf("unhandled StatusCode: "+resp.Status, errorIn)
 	}
 
-}
-
-func logAndPersistResponseBody(body []byte, config *abapEnvironmentPushATCSystemConfigOptions) error {
-	var err error
-	var parsedConfigurationJson parsedConfigJsonWithExpand
-	err = json.Unmarshal(body, &parsedConfigurationJson)
-
-	if err != nil {
-		return err
-	}
-	//in case it was an configuration, this value may not be initial!
-	if parsedConfigurationJson.ConfName != "" {
-		log.Entry().Info("ATC System Base configuration successfully pushed from file " + config.AtcSystemConfigFilePath + " to system")
-		/* 		//write Patched Config Base Info back to File
-		   		returnedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-		   		if err != nil {
-		   			return err
-		   		}
-		   		err = ioutil.WriteFile(validFilename, returnedATCSystemConfig, 0644)
-		   		if err != nil {
-		   			return err
-		   		}
-		   		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with ATC System Base configuration information from the Backend.") */
-
-		return nil
-	}
-
-	/* 	var parsedPriorityJson parsedConfigPriority
-	   	err = json.Unmarshal(body, &parsedPriorityJson)
-	   	if err != nil {
-	   		return err
-	   	}
-	   	//in case it was an priority of the configuration, this value may not be initial!
-	   	if parsedPriorityJson.MessageId != "" {
-	   		atcSystemConfiguartionJsonFile, err := ioutil.ReadFile(validFilename)
-	   		if err != nil {
-	   			return err
-	   		}
-	   		err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
-	   		if err != nil {
-	   			return err
-	   		}
-	   		parsedConfigurationJson.Priorities = append(parsedConfigurationJson.Priorities, parsedPriorityJson)
-	   		updatedATCSystemConfig, err := json.MarshalIndent(&parsedConfigurationJson, "", "\t")
-	   		if err != nil {
-	   			return err
-	   		}
-	   		err = ioutil.WriteFile(validFilename, updatedATCSystemConfig, 0644)
-	   		if err != nil {
-	   			return err
-	   		}
-	   		log.Entry().Info("ATC System configuration file successfully updated " + validFilename + " with patched ATC System configuration Message Priority information (Test: " + parsedPriorityJson.Test + " / MessageID: " + parsedPriorityJson.MessageId + ")")
-	   	} */
-
 	return nil
-
 }
 
 func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
@@ -617,23 +509,4 @@ type parsedConfigPriority struct {
 
 type priorityJson struct {
 	Priority json.Number `json:"priority"`
-}
-
-type requests struct {
-	Requests []request `json:"requests"`
-}
-
-type request struct {
-	RootId    string `json:"root_id"`
-	ConfUUID  string `json:"conf_id"`
-	Test      string `json:"test"`
-	MessageId string `json:"message_id"`
-	Method    string `json:"method"`
-	Headers   header `json:"headers"`
-	Body      string `json:"body"`
-	URL       string `json:"url"`
-}
-
-type header struct {
-	ContentType string `json:"content-type"`
 }
