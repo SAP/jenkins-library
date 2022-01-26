@@ -1,71 +1,12 @@
 package kubernetes
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunUtils(t *testing.T) {
-	t.Run("Split full image name", func(t *testing.T) {
-		var err error
-		testTable := []struct {
-			testInput             map[string]string
-			expectedContainerInfo map[string]string
-			expectedError         error
-		}{
-			{
-				testInput: map[string]string{
-					"image":     "dtzar/helm-kubectl:3.4.1",
-					"imageName": "",
-					"tag":       "",
-				},
-				expectedContainerInfo: map[string]string{
-					"containerImageName": "dtzar/helm-kubectl",
-					"containerImageTag":  "3.4.1",
-				},
-				expectedError: nil,
-			},
-			{
-				testInput: map[string]string{
-					"image":     "dtzar",
-					"imageName": "",
-					"tag":       "",
-				},
-				expectedContainerInfo: map[string]string{
-					"containerImageName": "dtzar",
-					"containerImageTag":  "",
-				},
-				expectedError: nil,
-			},
-			{
-				testInput: map[string]string{
-					"image":     "",
-					"imageName": "",
-					"tag":       "",
-				},
-				expectedContainerInfo: map[string]string{
-					"containerImageName": "dtzar",
-					"containerImageTag":  "",
-				},
-				expectedError: errors.New("failed to split image name ''"),
-			},
-		}
-
-		for _, testCase := range testTable {
-			testCase.testInput["imageName"], testCase.testInput["tag"], err = splitFullImageName(testCase.testInput["image"])
-			if testCase.expectedError == nil {
-				assert.NoError(t, err)
-				assert.Equal(t, testCase.expectedContainerInfo["containerImageName"], testCase.testInput["imageName"])
-				assert.Equal(t, testCase.expectedContainerInfo["containerImageTag"], testCase.testInput["tag"])
-			} else {
-				assert.Error(t, err)
-				assert.Equal(t, testCase.expectedError, err)
-			}
-		}
-	})
-
 	t.Run("Get container info", func(t *testing.T) {
 		testTable := []struct {
 			config                HelmExecuteOptions
@@ -96,3 +37,23 @@ func TestRunUtils(t *testing.T) {
 		}
 	})
 }
+
+// func TestSplitImageName(t *testing.T) {
+// 	tt := []struct {
+// 		in       string
+// 		outImage string
+// 		outTag   string
+// 		outError error
+// 	}{
+// 		{in: "", outImage: "", outTag: "", outError: fmt.Errorf("Failed to split image name ''")},
+// 		{in: "path/to/image", outImage: "path/to/image", outTag: "", outError: nil},
+// 		{in: "path/to/image:tag", outImage: "path/to/image", outTag: "tag", outError: nil},
+// 		{in: "https://my.registry.com/path/to/image:tag", outImage: "", outTag: "", outError: fmt.Errorf("Failed to split image name 'https://my.registry.com/path/to/image:tag'")},
+// 	}
+// 	for _, test := range tt {
+// 		i, tag, err := SplitFullImageName(test.in)
+// 		assert.Equal(t, test.outImage, i, "Image value unexpected")
+// 		assert.Equal(t, test.outTag, tag, "Tag value unexpected")
+// 		assert.Equal(t, test.outError, err, "Error value not as expected")
+// 	}
+// }

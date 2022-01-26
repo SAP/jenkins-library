@@ -6,38 +6,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/docker"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-func splitRegistryURL(registryURL string) (protocol, registry string, err error) {
-	parts := strings.Split(registryURL, "://")
-	if len(parts) != 2 || len(parts[1]) == 0 {
-		return "", "", fmt.Errorf("failed to split registry url '%v'", registryURL)
-	}
-	return parts[0], parts[1], nil
-}
-
-func splitFullImageName(image string) (imageName, tag string, err error) {
-	parts := strings.Split(image, ":")
-	switch len(parts) {
-	case 0:
-		return "", "", fmt.Errorf("failed to split image name '%v'", image)
-	case 1:
-		if len(parts[0]) > 0 {
-			return parts[0], "", nil
-		}
-		return "", "", fmt.Errorf("failed to split image name '%v'", image)
-	case 2:
-		return parts[0], parts[1], nil
-	}
-	return "", "", fmt.Errorf("failed to split image name '%v'", image)
-}
-
 func getContainerInfo(config HelmExecuteOptions) (map[string]string, error) {
 	var err error
-	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
+	containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
@@ -50,10 +27,13 @@ func getContainerInfo(config HelmExecuteOptions) (map[string]string, error) {
 	}
 
 	if len(config.Image) > 0 {
-		containerInfo["containerImageName"], containerInfo["containerImageTag"], err = splitFullImageName(config.Image)
+		ref, err := docker.ContainerImageNameTagFromImage(config.Image)
 		if err != nil {
 			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
 		}
+		parts := strings.Split(ref, ":")
+		containerInfo["containerImageName"] = parts[0]
+		containerInfo["containerImageTag"] = parts[1]
 	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
 		containerInfo["containerImageName"] = config.ContainerImageName
 		containerInfo["containerImageTag"] = config.ContainerImageTag
@@ -95,7 +75,7 @@ func getSecretsData(config HelmExecuteOptions, utils HelmDeployUtils, containerI
 		// make sure that secret is hidden in log output
 		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
-		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
+		log.Entry().Debugf("Secret created: %v", dockerRegistrySecret.String())
 
 		// pass secret in helm default template way and in Piper backward compatible way
 		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
@@ -109,14 +89,12 @@ func defineKubeSecretParams(config HelmExecuteOptions, containerRegistry string,
 		"create",
 		"secret",
 	}
-	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		kubeSecretParams = append(
-			kubeSecretParams,
-			"--insecure-skip-tls-verify=true",
-			"--dry-run=true",
-			"--output=json",
-		)
-	}
+	kubeSecretParams = append(
+		kubeSecretParams,
+		"--insecure-skip-tls-verify=true",
+		"--dry-run=true",
+		"--output=json",
+	)
 
 	if len(config.DockerConfigJSON) > 0 {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided

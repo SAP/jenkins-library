@@ -13,15 +13,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 	utils := kubernetes.NewDeployUtilsBundle()
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if config.DeployTool == "helm3" {
-		err := runHelmExecute(config, utils, log.Writer())
-		if err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed")
-		}
-	} else if config.DeployTool == "helm" {
-		log.Entry().Errorf("Failed to execute deployments since '%v' is not support deployment via helmExecute step, due to helm2 is deprecated", config.DeployTool)
-	} else {
-		log.Entry().Errorf("Failed to execute deployments since '%v' tool is not a helm3.", config.DeployTool)
+	if err := runHelmExecute(config, utils, log.Writer()); err != nil {
+		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
@@ -36,7 +29,6 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 		Namespace:             config.Namespace,
 		KubeContext:           config.KubeContext,
 		KubeConfig:            config.KubeConfig,
-		DeployTool:            config.DeployTool,
 		DeployCommand:         config.DeployCommand,
 		HelmDeployWaitSeconds: config.HelmDeployWaitSeconds,
 		DryRun:                config.DryRun,
@@ -46,6 +38,7 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 		HelmValues:            config.HelmValues,
 		FilterTest:            config.FilterTest,
 		DumpLogs:              config.DumpLogs,
+		ChartRepo:             config.ChartRepo,
 	}
 	switch config.DeployCommand {
 	case "upgrade":

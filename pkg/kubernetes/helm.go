@@ -30,7 +30,6 @@ type HelmExecuteOptions struct {
 	ContainerRegistryUser     string   `json:"containerRegistryUser,omitempty"`
 	ContainerRegistrySecret   string   `json:"containerRegistrySecret,omitempty"`
 	DeploymentName            string   `json:"deploymentName,omitempty"`
-	DeployTool                string   `json:"deployTool,omitempty" validate:"possible-values=helm helm3"`
 	ForceUpdates              bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                []string `json:"helmValues,omitempty"`
@@ -47,6 +46,7 @@ type HelmExecuteOptions struct {
 	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
 	FilterTest                string   `json:"filterTest,omitempty"`
+	ChartRepo                 string   `json:"chartRepo,omitempty"`
 }
 
 // deployUtilsBundle struct  for utils
@@ -109,7 +109,7 @@ func runHelmAdd(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writ
 		"stable",
 	}
 
-	helmParams = append(helmParams, "https://charts.helm.sh/stable")
+	helmParams = append(helmParams, config.ChartRepo)
 
 	utils.Stdout(stdout)
 	log.Entry().Info("Calling helm add ...")

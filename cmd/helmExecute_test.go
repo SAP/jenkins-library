@@ -42,7 +42,6 @@ func TestRunHelmExecute(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			testTable[i].config.DeployTool = "helm3"
 			err := runHelmExecute(testCase.config, utils, log.Writer())
 			if testCase.expectedError {
 				assert.Error(t, err)
@@ -51,7 +50,6 @@ func TestRunHelmExecute(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 			}
-
 		})
 	}
 }

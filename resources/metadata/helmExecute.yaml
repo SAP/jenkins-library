@@ -53,7 +53,7 @@ spec:
           - name: helmChartPath
         type: string
         mandatory: true
-        description: Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
+        description: Defines the chart path for deployments using helm. It is a mandatory parameter for helm.
         scope:
           - PARAMETERS
           - STAGES
@@ -128,7 +128,6 @@ spec:
         longDescription: |-
           Name of the container registry secret used for pulling containers from the registry.
 
-          **For `deployTool: helm3`:**<br />
           If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
 
           If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
@@ -142,23 +141,12 @@ spec:
         aliases:
           - name: helmDeploymentName
         type: string
-        description: Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
+        description: Defines the name of the deployment. It is a mandatory parameter when for helm.
         mandatory: true
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: deployTool
-        type: string
-        description: Defines the tool which should be used for deployment.
-        mandatory: true
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: helm3
-        possibleValues:
-          - helm3
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
@@ -310,14 +298,18 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: chartRepo
+        type: string
+        description: set the chart repository
+        default: "https://charts.helm.sh/stable"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
       options:
         - name: -u
           value: "0"
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: deployTool
-              value: helm3
