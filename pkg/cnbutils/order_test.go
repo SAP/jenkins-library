@@ -1,22 +1,22 @@
-package cnbutils
+package cnbutils_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOrderSave(t *testing.T) {
 	t.Run("successfully Encode struct to toml format (multiple buildpacks)", func(t *testing.T) {
-		mockUtils := MockUtils{
+		mockUtils := &cnbutils.MockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{},
 			FilesMock:      &mock.FilesMock{},
-			DockerMock:     &DockerMock{},
 		}
 
-		testBuildpacks := []BuildPackMetadata{
+		testBuildpacks := []cnbutils.BuildPackMetadata{
 			{
 				ID:      "paketo-buildpacks/sap-machine",
 				Version: "1.1.1",
@@ -26,13 +26,13 @@ func TestOrderSave(t *testing.T) {
 				Version: "2.2.2",
 			},
 		}
-		testOrder := Order{
+		testOrder := cnbutils.Order{
 			Utils: mockUtils,
 		}
 
-		var testEntry OrderEntry
+		var testEntry cnbutils.OrderEntry
 		testEntry.Group = append(testEntry.Group, testBuildpacks...)
-		testOrder.Order = []OrderEntry{testEntry}
+		testOrder.Order = []cnbutils.OrderEntry{testEntry}
 
 		err := testOrder.Save("/tmp/order.toml")
 
@@ -44,15 +44,14 @@ func TestOrderSave(t *testing.T) {
 	})
 
 	t.Run("raises an error if unable to write the file", func(t *testing.T) {
-		mockUtils := MockUtils{
+		mockUtils := &cnbutils.MockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{},
 			FilesMock:      &mock.FilesMock{},
-			DockerMock:     &DockerMock{},
 		}
 		mockUtils.FileWriteErrors = map[string]error{
 			"/tmp/order.toml": fmt.Errorf("unable to write to file"),
 		}
-		testOrder := Order{
+		testOrder := cnbutils.Order{
 			Utils: mockUtils,
 		}
 

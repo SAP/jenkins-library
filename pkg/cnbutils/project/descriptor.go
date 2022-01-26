@@ -36,8 +36,13 @@ type build struct {
 	Env        []envVar    `toml:"env"`
 }
 
+type project struct {
+	ID string `toml:"id"`
+}
+
 type projectDescriptor struct {
 	Build    build                  `toml:"build"`
+	Project  project                `toml:"project"`
 	Metadata map[string]interface{} `toml:"metadata"`
 }
 
@@ -46,26 +51,27 @@ type Descriptor struct {
 	Include    *ignore.GitIgnore
 	EnvVars    map[string]interface{}
 	Buildpacks []string
+	ProjectID  string
 }
 
-func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClient piperhttp.Sender) (Descriptor, error) {
-	descriptor := Descriptor{}
+func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClient piperhttp.Sender) (*Descriptor, error) {
+	descriptor := &Descriptor{}
 
 	descriptorContent, err := utils.FileRead(descriptorPath)
 	if err != nil {
-		return Descriptor{}, err
+		return nil, err
 	}
 
 	rawDescriptor := projectDescriptor{}
 	err = toml.Unmarshal(descriptorContent, &rawDescriptor)
 	if err != nil {
-		return Descriptor{}, err
+		return nil, err
 	}
 
 	if rawDescriptor.Build.Buildpacks != nil && len(rawDescriptor.Build.Buildpacks) > 0 {
 		buildpacksImg, err := rawDescriptor.Build.searchBuildpacks(httpClient)
 		if err != nil {
-			return Descriptor{}, err
+			return nil, err
 		}
 
 		descriptor.Buildpacks = buildpacksImg
@@ -76,7 +82,7 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 	}
 
 	if len(rawDescriptor.Build.Exclude) > 0 && len(rawDescriptor.Build.Include) > 0 {
-		return Descriptor{}, errors.New("project descriptor options 'exclude' and 'include' are mutually exclusive")
+		return nil, errors.New("project descriptor options 'exclude' and 'include' are mutually exclusive")
 	}
 
 	if len(rawDescriptor.Build.Exclude) > 0 {
@@ -85,6 +91,10 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 
 	if len(rawDescriptor.Build.Include) > 0 {
 		descriptor.Include = ignore.CompileIgnoreLines(rawDescriptor.Build.Include...)
+	}
+
+	if len(rawDescriptor.Project.ID) > 0 {
+		descriptor.ProjectID = rawDescriptor.Project.ID
 	}
 
 	return descriptor, nil
