@@ -17,6 +17,7 @@ const EndpointMeasuresComponent = "measures/component"
 type ComponentService struct {
 	Organization string
 	Project      string
+	Branch       string
 	apiClient    *Requester
 }
 
@@ -36,12 +37,14 @@ type SonarLinesOfCode struct {
 }
 
 type SonarLanguageDistribution struct {
-	LanguageKey string `json:"languageKey,omitempty"`
+	LanguageKey string `json:"languageKey,omitempty"` // Description:"key of the language as retrieved from sonarqube. All languages (key + name) are available as API https://<sonarqube-instance>/api/languages/list ",ExampleValue:"java,js,web,go"
 	LinesOfCode int    `json:"linesOfCode,omitempty"`
 }
 
-// GetCoverage ...
-func (service *ComponentService) Component(options *sonargo.MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
+func (service *ComponentService) Component(options *MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
+	if len(service.Branch) > 0 {
+		options.Branch = service.Branch
+	}
 	request, err := service.apiClient.create("GET", EndpointMeasuresComponent, options)
 	if err != nil {
 		return nil, nil, err
@@ -66,7 +69,7 @@ func (service *ComponentService) Component(options *sonargo.MeasuresComponentOpt
 }
 
 func (service *ComponentService) GetLinesOfCode() (*SonarLinesOfCode, error) {
-	options := sonargo.MeasuresComponentOption{
+	options := MeasuresComponentOption{
 		Component:  service.Project,
 		MetricKeys: "ncloc_language_distribution,ncloc",
 	}
@@ -102,7 +105,7 @@ func (service *ComponentService) GetLinesOfCode() (*SonarLinesOfCode, error) {
 }
 
 func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
-	options := sonargo.MeasuresComponentOption{
+	options := MeasuresComponentOption{
 		Component:  service.Project,
 		MetricKeys: "coverage,branch_coverage,line_coverage,uncovered_lines,lines_to_cover,conditions_to_cover,uncovered_conditions",
 	}
@@ -148,10 +151,11 @@ func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 }
 
 // NewMeasuresComponentService returns a new instance of a service for the measures/component endpoint.
-func NewMeasuresComponentService(host, token, project, organization string, client Sender) *ComponentService {
+func NewMeasuresComponentService(host, token, project, organization, branch string, client Sender) *ComponentService {
 	return &ComponentService{
 		Organization: organization,
 		Project:      project,
+		Branch:       branch,
 		apiClient:    NewAPIClient(host, token, client),
 	}
 }

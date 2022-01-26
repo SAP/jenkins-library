@@ -233,7 +233,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 
-	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, apiClient)
+	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, apiClient)
 	cov, err := componentService.GetCoverage()
 	if err != nil {
 		return err // No wrap, description already added one level below
