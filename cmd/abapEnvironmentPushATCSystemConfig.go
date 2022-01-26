@@ -257,38 +257,20 @@ func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfig
 		return batchRequestString, err
 	}
 
-	// build the Batch request string
+	//build the Batch request string
 	contentID := 1
-	//Starting with outer boundary - followed by mandatory Contenttype and boundary for changeset
-	batchRequestString = `
---request-separator
-Content-Type: multipart/mixed;boundary=changeset
 
-`
+	batchRequestString = addBeginOfBatch(batchRequestString)
 	//now adding opening Changeset as at least config base is to be patched
-	batchRequestString += `--changeset
-Content-Type: application/http
-Content-Transfer-Encoding: binary
-Content-ID: ` + strconv.Itoa(contentID) + `
+	batchRequestString = addChangesetBegin(batchRequestString, contentID)
 
-`
-
-	//no add patch command - Root is always 1
-	batchRequestString += `PATCH configuration(root_id='1',conf_id=` + confUUID + `) HTTP/1.1
-Content-Type: application/json
-
-`
-
-	//now build and add json string with base config
-	//marshall into base config (no expanded priorities)
 	configBaseJson.RootId = "1"
 	configBaseJsonBody, err := json.Marshal(&configBaseJson)
 	if err != nil {
 		return batchRequestString, err
 	}
-	batchRequestString += string(configBaseJsonBody) + `
+	batchRequestString = addPatchConfigBaseChangeset(batchRequestString, confUUID, configBaseJsonBody)
 
-`
 	if len(parsedConfigPriorities.Priorities) > 0 {
 		// in case Priorities need patches too
 		var priority priorityJson
@@ -302,35 +284,80 @@ Content-Type: application/json
 				log.Entry().Errorf("problem with marshall of single priority in line "+strconv.Itoa(i), err)
 				continue
 			}
-			batchRequestString += `--changeset
-Content-Type: application/http
-Content-Transfer-Encoding: binary
-Content-ID: ` + strconv.Itoa(contentID) + `
+			batchRequestString = addChangesetBegin(batchRequestString, contentID)
 
-`
 			//now PATCH command for priority
-			batchRequestString += `PATCH priority(root_id='1',conf_id=` + confUUID + `,test='` + priorityLine.Test + `',message_id='` + priorityLine.MessageId + `') HTTP/1.1
-Content-Type: application/json
+			batchRequestString = addPatchSinglePriorityChangeset(batchRequestString, confUUID, priorityLine.Test, priorityLine.MessageId, priorityJsonBody)
 
-`
-
-			//now add json string with priority json
-			batchRequestString += string(priorityJsonBody) + `
-
-`
 		}
 	}
 
 	//at the end, add closing inner and outer boundary tags
-
-	batchRequestString += `--changeset--
-
---request-separator--`
+	batchRequestString = addEndOfBatch(batchRequestString)
 
 	log.Entry().Info("Batch Request String: " + batchRequestString)
 
 	return batchRequestString, nil
 
+}
+
+func addPatchConfigBaseChangeset(inputString string, confUUID string, configBaseJsonBody []byte) string {
+
+	newString := inputString +
+		`PATCH configuration(root_id='1',conf_id=` + confUUID + `) HTTP/1.1
+Content-Type: application/json
+
+`
+	newString += string(configBaseJsonBody) + `
+
+`
+	return newString
+}
+
+func addPatchSinglePriorityChangeset(inputString string, confUUID string, test string, messageId string, priorityJsonBody []byte) string {
+
+	newString := inputString +
+		`PATCH priority(root_id='1',conf_id=` + confUUID + `,test='` + test + `',message_id='` + messageId + `') HTTP/1.1
+Content-Type: application/json
+
+`
+	newString += string(priorityJsonBody) + `
+
+`
+	return newString
+}
+
+func addChangesetBegin(inputString string, contentID int) string {
+
+	newString := inputString +
+		`--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: ` + strconv.Itoa(contentID) + `
+
+`
+	return newString
+}
+
+func addBeginOfBatch(inputString string) string {
+	//Starting always with outer boundary - followed by mandatory Contenttype and boundary for changeset
+	newString := inputString +
+		`
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
+
+`
+	return newString
+}
+
+func addEndOfBatch(inputString string) string {
+	//Starting always with outer boundary - followed by mandatory Contenttype and boundary for changeset
+	newString := inputString +
+		`--changeset--
+
+--request-separator--`
+
+	return newString
 }
 
 func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
