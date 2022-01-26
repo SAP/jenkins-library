@@ -257,15 +257,6 @@ func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfig
 		return batchRequestString, err
 	}
 
-	//Patch configuration
-	//marshall into base config (no expanded priorities)
-	configBaseJson.RootId = "1"
-	configBaseJson.ConfUUID = confUUID
-	configBaseJsonBody, err := json.Marshal(&configBaseJson)
-	if err != nil {
-		return batchRequestString, err
-	}
-
 	// build the Batch request string
 	contentID := 1
 	//Starting with outer boundary - followed by mandatory Contenttype and boundary for changeset
@@ -275,7 +266,6 @@ Content-Type: multipart/mixed;boundary=changeset
 
 `
 	//now adding opening Changeset as at least config base is to be patched
-
 	batchRequestString += `--changeset
 Content-Type: application/http
 Content-Transfer-Encoding: binary
@@ -289,7 +279,13 @@ Content-Type: application/json
 
 `
 
-	//now add json string with base config
+	//now build and add json string with base config
+	//marshall into base config (no expanded priorities)
+	configBaseJson.RootId = "1"
+	configBaseJsonBody, err := json.Marshal(&configBaseJson)
+	if err != nil {
+		return batchRequestString, err
+	}
 	batchRequestString += string(configBaseJsonBody) + `
 
 `
@@ -318,7 +314,7 @@ Content-Type: application/json
 
 `
 
-			//now add json string with priority
+			//now add json string with priority json
 			batchRequestString += string(priorityJsonBody) + `
 
 `
