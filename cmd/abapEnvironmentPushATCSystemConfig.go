@@ -303,25 +303,17 @@ func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfig
 
 func addPatchConfigBaseChangeset(inputString string, confUUID string, configBaseJsonBody []byte) string {
 
-	newString := inputString + `
-PATCH configuration(root_id='1',conf_id=` + confUUID + `) HTTP/1.1
-Content-Type: application/json
+	entityIdString := `(root_id='1',conf_id=` + confUUID + `)`
+	newString := addCommandEntityChangeset("PATCH", "configuration", entityIdString, inputString, configBaseJsonBody)
 
-`
-	newString += string(configBaseJsonBody) + `
-`
 	return newString
 }
 
 func addPatchSinglePriorityChangeset(inputString string, confUUID string, test string, messageId string, priorityJsonBody []byte) string {
 
-	newString := inputString + `
-PATCH priority(root_id='1',conf_id=` + confUUID + `,test='` + test + `',message_id='` + messageId + `') HTTP/1.1
-Content-Type: application/json
+	entityIdString := `(root_id='1',conf_id=` + confUUID + `,test='` + test + `',message_id='` + messageId + `')`
+	newString := addCommandEntityChangeset("PATCH", "priority", entityIdString, inputString, priorityJsonBody)
 
-`
-	newString += string(priorityJsonBody) + `
-`
 	return newString
 }
 
@@ -352,6 +344,18 @@ func addEndOfBatch(inputString string) string {
 
 --request-separator--`
 
+	return newString
+}
+
+func addCommandEntityChangeset(command string, entity string, entityIdString string, inputString string, jsonBody []byte) string {
+
+	newString := inputString + `
+` + command + ` ` + entity + entityIdString + ` HTTP/1.1
+Content-Type: application/json
+
+`
+	newString += string(jsonBody) + `
+`
 	return newString
 }
 
