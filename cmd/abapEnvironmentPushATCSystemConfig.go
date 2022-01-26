@@ -233,7 +233,7 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 
 func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
 
-	batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(config, confUUID, atcSystemConfiguartionJsonFile)
+	batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(confUUID, atcSystemConfiguartionJsonFile)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func doPatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, c
 
 }
 
-func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, atcSystemConfiguartionJsonFile []byte) (string, error) {
+func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJsonFile []byte) (string, error) {
 
 	var batchRequestString string
 
@@ -264,7 +264,6 @@ func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfig
 	//now adding opening Changeset as at least config base is to be patched
 	batchRequestString = addChangesetBegin(batchRequestString, contentID)
 
-	configBaseJson.RootId = "1"
 	configBaseJsonBody, err := json.Marshal(&configBaseJson)
 	if err != nil {
 		return batchRequestString, err
@@ -493,20 +492,13 @@ type parsedOdataResp struct {
 }
 
 type parsedConfigJsonWithExpand struct {
-	RootId         string                 `json:"root_id"`
-	ConfName       string                 `json:"conf_name"`
-	ConfUUID       string                 `json:"conf_id"`
-	Checkvariant   string                 `json:"checkvariant"`
-	LastChangedAt  time.Time              `json:"last_changed_at"`
-	BlockFindings  string                 `json:"block_findings"`
-	InformFindings string                 `json:"inform_findings"`
-	IsDefault      bool                   `json:"is_default"`
-	IsProxyVariant bool                   `json:"is_proxy_variant"`
-	Priorities     []parsedConfigPriority `json:"_priorities"`
+	ConfName      string                 `json:"conf_name"`
+	ConfUUID      string                 `json:"conf_id"`
+	LastChangedAt time.Time              `json:"last_changed_at"`
+	Priorities    []parsedConfigPriority `json:"_priorities"`
 }
 
 type parsedConfigJsonBase struct {
-	RootId         string `json:"root_id"`
 	ConfName       string `json:"conf_name"`
 	ConfUUID       string `json:"conf_id"`
 	Checkvariant   string `json:"checkvariant"`
@@ -521,8 +513,6 @@ type parsedConfigPriorities struct {
 }
 
 type parsedConfigPriority struct {
-	RootId          string      `json:"root_id"`
-	ConfUUID        string      `json:"conf_id"`
 	Test            string      `json:"test"`
 	MessageId       string      `json:"message_id"`
 	DefaultPriority json.Number `json:"default_priority"`
