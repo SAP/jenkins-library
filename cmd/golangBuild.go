@@ -5,14 +5,20 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/goget"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 const (
@@ -25,10 +31,13 @@ const (
 
 type golangBuildUtils interface {
 	command.ExecRunner
+	goget.Client
 
 	FileExists(filename string) (bool, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
+
+	//GetRepositoryURL(module string) (string, error)
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -39,6 +48,7 @@ type golangBuildUtils interface {
 type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	goget.Client
 
 	// Embed more structs as necessary to implement methods or interfaces you add to golangBuildUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
@@ -50,6 +60,9 @@ func newGolangBuildUtils() golangBuildUtils {
 	utils := golangBuildUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client: &goget.ClientImpl{
+			HTTPClient: &piperhttp.Client{},
+		},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -71,6 +84,10 @@ func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData)
 }
 
 func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomData, utils golangBuildUtils) error {
+	err := prepareGolangEnvironment(config, utils)
+	if err != nil {
+		return err
+	}
 
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
@@ -121,6 +138,39 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	for _, architecture := range config.TargetArchitectures {
 		err := runGolangBuildPerArchitecture(config, utils, ldflags, architecture)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils) error {
+	if config.PrivateModules == "" {
+		return nil
+	}
+
+	if config.PrivateModulesGitToken == "" {
+		return fmt.Errorf("please specify a token for fetching private git modules")
+	}
+
+	os.Setenv("GOPRIVATE", config.PrivateModules)
+
+	repoURLs, err := lookupGolangPrivateModulesRepositories(config.PrivateModules, utils)
+
+	if err != nil {
+		return err
+	}
+
+	for _, repoURL := range repoURLs {
+		if match, _ := regexp.MatchString("https?://", repoURL); !match {
+			continue
+		}
+
+		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
+
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.\"%s\".insteadOf", authenticatedRepoURL), fmt.Sprintf("\"%s\"", repoURL))
 		if err != nil {
 			return err
 		}
@@ -265,4 +315,46 @@ func splitTargetArchitecture(architecture string) (string, string) {
 
 	architectureParts := strings.Split(architecture, ",")
 	return architectureParts[0], architectureParts[1]
+}
+
+// lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
+func lookupGolangPrivateModulesRepositories(globPattern string, utils golangBuildUtils) ([]string, error) {
+	if globPattern == "" {
+		return []string{}, nil
+	}
+
+	if modFileExists, err := utils.FileExists("go.mod"); err != nil {
+		return nil, err
+	} else if !modFileExists {
+		return []string{}, nil // nothing to do
+	}
+
+	modFileContent, err := utils.FileRead("go.mod")
+	if err != nil {
+		return nil, err
+	}
+
+	goModFile, err := modfile.Parse("go.mod", modFileContent, nil)
+	if err != nil {
+		return nil, err
+	} else if goModFile.Require == nil {
+		return []string{}, nil // no modules referenced, nothing to do
+	}
+
+	privateModules := []string{}
+
+	for _, goModule := range goModFile.Require {
+		if !module.MatchPrefixPatterns(globPattern, goModule.Mod.Path) {
+			continue
+		}
+
+		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
+
+		if err != nil {
+			return nil, err
+		}
+
+		privateModules = append(privateModules, repo)
+	}
+	return privateModules, nil
 }

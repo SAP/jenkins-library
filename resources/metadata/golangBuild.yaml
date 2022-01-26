@@ -10,6 +10,10 @@ metadata:
     If the build is successful the resulting artifact can be uploaded to e.g. a binary repository automatically.
 spec:
   inputs:
+    secrets:
+      - name: gitHttpsCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
+        type: jenkins
     params:
       - name: buildFlags
         type: "[]string"
@@ -145,6 +149,27 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: gitHttpsCredentialsId
+            type: secret
   containers:
     - name: golang
       image: golang:1
