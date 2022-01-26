@@ -303,57 +303,52 @@ func buildATCSystemConfigBatchRequest(config *abapEnvironmentPushATCSystemConfig
 
 func addPatchConfigBaseChangeset(inputString string, confUUID string, configBaseJsonBody []byte) string {
 
-	newString := inputString +
-		`PATCH configuration(root_id='1',conf_id=` + confUUID + `) HTTP/1.1
+	newString := inputString + `
+PATCH configuration(root_id='1',conf_id=` + confUUID + `) HTTP/1.1
 Content-Type: application/json
 
 `
 	newString += string(configBaseJsonBody) + `
-
 `
 	return newString
 }
 
 func addPatchSinglePriorityChangeset(inputString string, confUUID string, test string, messageId string, priorityJsonBody []byte) string {
 
-	newString := inputString +
-		`PATCH priority(root_id='1',conf_id=` + confUUID + `,test='` + test + `',message_id='` + messageId + `') HTTP/1.1
+	newString := inputString + `
+PATCH priority(root_id='1',conf_id=` + confUUID + `,test='` + test + `',message_id='` + messageId + `') HTTP/1.1
 Content-Type: application/json
 
 `
 	newString += string(priorityJsonBody) + `
-
 `
 	return newString
 }
 
 func addChangesetBegin(inputString string, contentID int) string {
 
-	newString := inputString +
-		`--changeset
+	newString := inputString + `
+--changeset
 Content-Type: application/http
 Content-Transfer-Encoding: binary
 Content-ID: ` + strconv.Itoa(contentID) + `
-
 `
 	return newString
 }
 
 func addBeginOfBatch(inputString string) string {
 	//Starting always with outer boundary - followed by mandatory Contenttype and boundary for changeset
-	newString := inputString +
-		`
+	newString := inputString + `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
-
 `
 	return newString
 }
 
 func addEndOfBatch(inputString string) string {
 	//Starting always with outer boundary - followed by mandatory Contenttype and boundary for changeset
-	newString := inputString +
-		`--changeset--
+	newString := inputString + `
+--changeset--
 
 --request-separator--`
 
