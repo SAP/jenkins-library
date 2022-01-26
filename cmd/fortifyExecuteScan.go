@@ -942,13 +942,15 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
-	if err == nil {
+	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
 			log.Entry().WithError(err).Warn("Failed to get PR metadata via GitHub client")
 		} else {
 			return prID, author
 		}
+	} else {
+		log.Entry().WithError(err).Warn("Failed to instantiate GitHub client to get PR metadata")
 	}
 
 	log.Entry().Infof("Trying to determine PR ID in commit message: %v", config.CommitMessage)
@@ -965,12 +967,14 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 	email := ""
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
-	if err == nil && len(prList) > 0 {
+	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
-		if nil != prList[0].User {
+		if prList[0].User != nil && prList[0].User.Email != nil {
 			email = *(prList[0].User.Email)
 		}
 		return number, email, nil
+	} else {
+		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
 	return number, email, err
 }
