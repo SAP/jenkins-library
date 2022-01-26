@@ -21,38 +21,38 @@ type abapEnvironmentBuildUtils interface {
 	abapbuild.Publish
 	abapbuild.HTTPSendLoader
 	getMaxRuntime() time.Duration
-	getPollingIntervall() time.Duration
+	getPollingInterval() time.Duration
 }
 
 type abapEnvironmentBuildUtilsBundle struct {
 	*command.Command
 	*piperhttp.Client
 	*abaputils.AbapUtils
-	maxRuntime       time.Duration
-	pollingIntervall time.Duration
+	maxRuntime      time.Duration
+	pollingInterval time.Duration
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) getMaxRuntime() time.Duration {
 	return aEBUB.maxRuntime
 }
 
-func (aEBUB *abapEnvironmentBuildUtilsBundle) getPollingIntervall() time.Duration {
-	return aEBUB.pollingIntervall
+func (aEBUB *abapEnvironmentBuildUtilsBundle) getPollingInterval() time.Duration {
+	return aEBUB.pollingInterval
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
 	abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
 }
 
-func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingIntervall time.Duration) abapEnvironmentBuildUtils {
+func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingInterval time.Duration) abapEnvironmentBuildUtils {
 	utils := abapEnvironmentBuildUtilsBundle{
 		Command: &command.Command{},
 		Client:  &piperhttp.Client{},
 		AbapUtils: &abaputils.AbapUtils{
 			Exec: &command.Command{},
 		},
-		maxRuntime:       maxRuntime * time.Minute,
-		pollingIntervall: pollingIntervall * time.Second,
+		maxRuntime:      maxRuntime * time.Minute,
+		pollingInterval: pollingInterval * time.Second,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -81,7 +81,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 
 	finalValues, err := runBuilds(conn, config, utils, valuesList)
 	if err != nil {
-		return errors.Wrap(err, "Error during the execution of the build framework")
+		return err
 	}
 	cpe.abap.buildValues, err = convertValuesForCPE(finalValues)
 	if err != nil {
@@ -142,7 +142,7 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	}
 
 	conn.MaxRuntime = (*utils).getMaxRuntime()
-	conn.PollingInterval = (*utils).getPollingIntervall()
+	conn.PollingInterval = (*utils).getPollingInterval()
 	return nil
 }
 
@@ -169,10 +169,14 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 	if err := build.PrintLogs(); err != nil {
 		return finalValues, errors.Wrap(err, "Error printing the logs")
 	}
-	if err := build.EvaluteIfBuildSuccessful(); err != nil {
-		return finalValues, err
-	}
+
+	errBuildRun := build.EvaluteIfBuildSuccessful()
+
 	if err := build.Download(); err != nil {
+		if errBuildRun != nil {
+			errWraped := errors.Errorf("Download failed after execution of build failed: %v. Build error: %v", err, errBuildRun)
+			return finalValues, errWraped
+		}
 		return finalValues, err
 	}
 	if err := build.Publish(utils); err != nil {
@@ -183,7 +187,7 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 	if err != nil {
 		return finalValues, err
 	}
-	return finalValues, nil
+	return finalValues, errBuildRun
 }
 
 type myBuild struct {

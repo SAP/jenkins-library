@@ -32,6 +32,7 @@ func (mB abapEnvironmentBuildMockUtils) GetAbapCommunicationArrangementInfo(opti
 	cd.URL = "/sap/opu/odata/BUILD/CORE_SRV"
 	return cd, nil
 }
+
 func (mB abapEnvironmentBuildMockUtils) GetPollIntervall() time.Duration {
 	return 1 * time.Microsecond
 }
@@ -39,7 +40,7 @@ func (mB abapEnvironmentBuildMockUtils) GetPollIntervall() time.Duration {
 func (mB abapEnvironmentBuildMockUtils) getMaxRuntime() time.Duration {
 	return 1 * time.Second
 }
-func (mB abapEnvironmentBuildMockUtils) getPollingIntervall() time.Duration {
+func (mB abapEnvironmentBuildMockUtils) getPollingInterval() time.Duration {
 	return 1 * time.Microsecond
 }
 
