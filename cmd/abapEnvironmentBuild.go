@@ -392,6 +392,9 @@ type useField struct {
 
 func evaluateAddonDescriptor(config *abapEnvironmentBuildOptions) ([][]abapbuild.Value, error) {
 	var listOfValuesList [][]abapbuild.Value
+	if len(config.AddonDescriptor) == 0 && len(config.UseFieldsOfAddonDescriptor) > 0 {
+		return listOfValuesList, errors.New("Config contains UseFieldsOfAddonDescriptor but no addonDescriptor is provided in the commonPipelineEnvironment")
+	}
 	if len(config.AddonDescriptor) > 0 {
 		addonDescriptor := new(abaputils.AddonDescriptor)
 		if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
