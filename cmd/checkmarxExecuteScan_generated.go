@@ -185,8 +185,7 @@ func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOpt
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/CxSASTReport_*.pdf", ParamRef: "", StepResultType: "checkmarx"},
-		{FilePattern: "**/*CxSAST*.html", ParamRef: "", StepResultType: "checkmarx"},
+		{FilePattern: "**/piper_checkmarx_report.html", ParamRef: "", StepResultType: "checkmarx"},
 		{FilePattern: "**/CxSASTResults_*.xml", ParamRef: "", StepResultType: "checkmarx"},
 		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarx"},
 		{FilePattern: "**/toolrun_checkmarx_*.json", ParamRef: "", StepResultType: "checkmarx"},
@@ -628,8 +627,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/CxSASTReport_*.pdf", "type": "checkmarx"},
-							{"filePattern": "**/*CxSAST*.html", "type": "checkmarx"},
+							{"filePattern": "**/piper_checkmarx_report.html", "type": "checkmarx"},
 							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarx"},
 							{"filePattern": "**/ScanReport.*", "type": "checkmarx"},
 							{"filePattern": "**/toolrun_checkmarx_*.json", "type": "checkmarx"},

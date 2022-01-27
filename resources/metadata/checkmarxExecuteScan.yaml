@@ -331,9 +331,7 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/CxSASTReport_*.pdf"
-            type: checkmarx
-          - filePattern: "**/*CxSAST*.html"
+          - filePattern: "**/piper_checkmarx_report.html"
             type: checkmarx
           - filePattern: "**/CxSASTResults_*.xml"
             type: checkmarx
