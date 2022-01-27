@@ -41,6 +41,7 @@ type helmExecuteOptions struct {
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
 	FilterTest                string   `json:"filterTest,omitempty"`
 	ChartRepo                 string   `json:"chartRepo,omitempty"`
+	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -173,6 +174,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().BoolVar(&stepConfig.DumpLogs, "dumpLogs", false, "dump the logs from test pods (this runs after all tests are complete, but before any cleanup)")
 	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)")
 	cmd.Flags().StringVar(&stepConfig.ChartRepo, "chartRepo", `https://charts.helm.sh/stable`, "set the chart repository")
+	cmd.Flags().StringVar(&stepConfig.HelmRegistryUser, "helmRegistryUser", os.Getenv("PIPER_helmRegistryUser"), "set the user for login to helm registry")
 
 	cmd.MarkFlagRequired("chartPath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -389,7 +391,7 @@ func helmExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmDeploymentNamespace"}, {Name: "k8sDeploymentNamespace"}},
+						Aliases:     []config.Alias{{Name: "helmDeploymentNamespace"}},
 						Default:     `default`,
 					},
 					{
@@ -483,6 +485,15 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `https://charts.helm.sh/stable`,
+					},
+					{
+						Name:        "helmRegistryUser",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_helmRegistryUser"),
 					},
 				},
 			},

@@ -39,6 +39,7 @@ func runHelmExecute(config helmExecuteOptions, utils kubernetes.HelmDeployUtils,
 		FilterTest:            config.FilterTest,
 		DumpLogs:              config.DumpLogs,
 		ChartRepo:             config.ChartRepo,
+		HelmRegistryUser:      config.HelmRegistryUser,
 	}
 	switch config.DeployCommand {
 	case "upgrade":

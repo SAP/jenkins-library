@@ -209,7 +209,6 @@ spec:
       - name: namespace
         aliases:
           - name: helmDeploymentNamespace
-          - name: k8sDeploymentNamespace
         type: string
         description: Defines the target Kubernetes namespace for the deployment.
         scope:
@@ -302,6 +301,14 @@ spec:
         type: string
         description: set the chart repository
         default: "https://charts.helm.sh/stable"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: helmRegistryUser
+        type: string
+        description: set the user for login to helm registry
         scope:
           - GENERAL
           - PARAMETERS

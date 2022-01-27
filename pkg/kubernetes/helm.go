@@ -47,6 +47,7 @@ type HelmExecuteOptions struct {
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
 	FilterTest                string   `json:"filterTest,omitempty"`
 	ChartRepo                 string   `json:"chartRepo,omitempty"`
+	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
 }
 
 // deployUtilsBundle struct  for utils
@@ -329,6 +330,72 @@ func RunHelmTest(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
 	if err := utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm test call failed")
+	}
+
+	return nil
+}
+
+// RunHelmRegistryLogin is used to login private registry
+func RunHelmRegistryLogin(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	helmParams := []string{
+		"registry login",
+	}
+	helmParams = append(helmParams, "-u", config.HelmRegistryUser)
+	helmParams = append(helmParams, "localhost:5000")
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm login ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm push login failed")
+	}
+
+	return nil
+}
+
+// RunHelmRegistryLogout is logout to login private registry
+func RunHelmRegistryLogout(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	helmParams := []string{
+		"registry logout",
+	}
+	helmParams = append(helmParams, "localhost:5000")
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm logout ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm push logout failed")
+	}
+
+	return nil
+}
+
+//RunHelmPush is used to upload a chart to a registry
+func RunHelmPush(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+	err := runHelmInit(config, utils, stdout)
+	if err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
+	if err := RunHelmRegistryLogin(config, utils, stdout); err != nil {
+		return fmt.Errorf("failed to execute registry login: %v", err)
+	}
+
+	helmParams := []string{
+		"push",
+	}
+	helmParams = append(helmParams, fmt.Sprintf("%v", config.DeploymentName+config.PackageVersion+".tgz"))
+	helmParams = append(helmParams, "oci://localhost:5000/helm-charts")
+
+	utils.Stdout(stdout)
+	log.Entry().Info("Calling helm push ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm push call failed")
+	}
+
+	if err := RunHelmRegistryLogout(config, utils, stdout); err != nil {
+		return fmt.Errorf("failed to execute registry logout: %v", err)
 	}
 
 	return nil
