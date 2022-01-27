@@ -136,7 +136,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
 	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the build result or output directory as per `go build` documentation.")
-	cmd.Flags().StringSliceVar(&stepConfig.Packages, "packages", []string{}, "List of packages to be build as per `go build` documentation.")
+	cmd.Flags().StringSliceVar(&stepConfig.Packages, "packages", []string{`./...`}, "List of packages to be build as per `go build` documentation.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().BoolVar(&stepConfig.ReportCoverage, "reportCoverage", true, "Defines if a coverage report should be created.")
 	cmd.Flags().BoolVar(&stepConfig.RunTests, "runTests", true, "Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).")
@@ -145,6 +145,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{}, "Options to pass to test as per `go test` documentation (comprises e.g. flags, packages).")
 	cmd.Flags().StringVar(&stepConfig.TestResultFormat, "testResultFormat", `junit`, "Defines the output format of the test results.")
 
+	cmd.MarkFlagRequired("packages")
 	cmd.MarkFlagRequired("targetArchitectures")
 }
 
@@ -236,9 +237,9 @@ func golangBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     []string{`./...`},
 					},
 					{
 						Name:        "publish",

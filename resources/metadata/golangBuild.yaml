@@ -84,6 +84,8 @@ spec:
       - name: packages
         type: "[]string"
         description: List of packages to be build as per `go build` documentation.
+        mandatory: true
+        default: ./...
         scope:
           - PARAMETERS
           - STAGES
