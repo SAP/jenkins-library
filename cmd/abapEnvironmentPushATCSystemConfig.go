@@ -353,9 +353,13 @@ func addCommandEntityChangeset(command string, entity string, entityIdString str
 Content-Type: application/json
 
 `
-	newString += string(jsonBody) + `
+	if len(jsonBody) > 0 {
+		newString += string(jsonBody) + `
 `
+	}
+
 	return newString
+
 }
 
 func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {

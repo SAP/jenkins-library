@@ -51,7 +51,8 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 
 func TestBuildATCSystemConfigBatchRequest(t *testing.T) {
 	t.Parallel()
-	t.Run("success case: BuildATCSystemConfigBatch", func(t *testing.T) {
+
+	t.Run("success case: BuildATCSystemConfigBatch - Config Base & 1 Priority", func(t *testing.T) {
 
 		batchATCSystemConfigFileExpected := `
 --request-separator
@@ -108,6 +109,162 @@ Content-Type: application/json
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
 
 	})
+
+	t.Run("success case: BuildATCSystemConfigBatch - Config Base & 2 Priorities", func(t *testing.T) {
+
+		batchATCSystemConfigFileExpected := `
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
+
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 1
+
+PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
+Content-Type: application/json
+
+{"conf_name":"","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 2
+
+PATCH priority(root_id='1',conf_id=4711,test='CL_CI_TEST_AMDP_HDB_MIGRATION',message_id='FAIL_ABAP') HTTP/1.1
+Content-Type: application/json
+
+{"priority":1}
+
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 3
+
+PATCH priority(root_id='1',conf_id=4711,test='CL_CI_TEST_AMDP_HDB_MIGRATION',message_id='FAIL_AMDP') HTTP/1.1
+Content-Type: application/json
+
+{"priority":2}
+
+--changeset--
+
+--request-separator--`
+
+		//no Configuration name supplied
+		atcSystemConfigFileString := `{
+			"conf_name": "",
+			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+			"block_findings": "0",
+			"inform_findings": "1",
+			"is_default": false,
+			"is_proxy_variant": false,
+			"_priorities": [
+				{
+					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
+					"message_id": "FAIL_ABAP",
+					"default_priority": 3,
+					"priority": 1
+				},
+				{
+					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
+					"message_id": "FAIL_AMDP",
+					"priority": 2
+				}
+			]
+		}
+		`
+
+		confUUID := "4711"
+		batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(confUUID, []byte(atcSystemConfigFileString))
+		if err != nil {
+			t.Fatal("Failed to Build ATC System Config Batch  Request")
+		}
+		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
+
+	})
+
+	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (no existing _priorities)", func(t *testing.T) {
+
+		batchATCSystemConfigFileExpected := `
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
+
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 1
+
+PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
+Content-Type: application/json
+
+{"conf_name":"","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+
+--changeset--
+
+--request-separator--`
+
+		//no Configuration name supplied
+		atcSystemConfigFileString := `{
+			"conf_name": "",
+			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+			"block_findings": "0",
+			"inform_findings": "1",
+			"is_default": false,
+			"is_proxy_variant": false
+		}
+		`
+
+		confUUID := "4711"
+		batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(confUUID, []byte(atcSystemConfigFileString))
+		if err != nil {
+			t.Fatal("Failed to Build ATC System Config Batch")
+		}
+		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
+
+	})
+
+	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (empty expand _priorities)", func(t *testing.T) {
+
+		batchATCSystemConfigFileExpected := `
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
+
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 1
+
+PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
+Content-Type: application/json
+
+{"conf_name":"","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+
+--changeset--
+
+--request-separator--`
+
+		//no Configuration name supplied
+		atcSystemConfigFileString := `{
+			"conf_name": "",
+			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+			"block_findings": "0",
+			"inform_findings": "1",
+			"is_default": false,
+			"is_proxy_variant": false,
+			"_priorities": [
+			]
+		}
+		`
+
+		confUUID := "4711"
+		batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(confUUID, []byte(atcSystemConfigFileString))
+		if err != nil {
+			t.Fatal("Failed to Build ATC System Config Batch")
+		}
+		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
+
+	})
+
 	t.Run("failure case: BuildATCSystemConfigBatch", func(t *testing.T) {
 
 		batchATCSystemConfigFileExpected := ``
