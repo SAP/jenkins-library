@@ -170,7 +170,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils
 
 		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
 
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.\"%s\".insteadOf", authenticatedRepoURL), fmt.Sprintf("\"%s\"", repoURL))
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), fmt.Sprintf("%s", repoURL))
 		if err != nil {
 			return err
 		}

@@ -475,8 +475,8 @@ go 1.17`
 			expect: expectations{
 				envVars: []string{"GOPRIVATE=*.example.com"},
 				commandsExecuted: [][]string{
-					[]string{"git", "config", "--global", "url.\"https://secret@private1.example.com/private/repo.git\".insteadOf", "\"https://private1.example.com/private/repo.git\""},
-					[]string{"git", "config", "--global", "url.\"https://secret@private2.example.com/another/repo.git\".insteadOf", "\"https://private2.example.com/another/repo.git\""},
+					[]string{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
+					[]string{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
 				},
 			},
 		},
