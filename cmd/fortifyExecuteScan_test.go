@@ -28,7 +28,7 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
-const author string = "john.doe@dummy.com"
+const author string = "johnDoe178"
 
 type fortifyTestUtilsBundle struct {
 	*execRunnerMock
@@ -281,7 +281,7 @@ type pullRequestServiceMock struct{}
 
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
 	authorString := author
-	user := github.User{Email: &authorString}
+	user := github.User{Login: &authorString}
 	if owner == "A" {
 		result := 17
 		return []*github.PullRequest{{Number: &result, User: &user}}, &github.Response{}, nil
