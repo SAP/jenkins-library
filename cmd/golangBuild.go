@@ -164,7 +164,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils
 	}
 
 	for _, repoURL := range repoURLs {
-		if match, _ := regexp.MatchString("https?://", repoURL); !match {
+		if match, _ := regexp.MatchString("(?i)^https?://", repoURL); !match {
 			continue
 		}
 

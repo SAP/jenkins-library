@@ -461,7 +461,15 @@ go 1.17`
 		expect         expectations
 	}{
 		{
-			name:           "success",
+			name:		"success - does nothing if privateModules is not set",
+			modFileContent: modTestFile,
+			globPattern:    "",
+			gitToken:	"secret",
+			expect: expectations{
+			},
+		},
+		{
+			name:           "success - goprivate is set and authentication properly configured",
 			modFileContent: modTestFile,
 			globPattern:    "*.example.com",
 			gitToken:       "secret",
