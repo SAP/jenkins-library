@@ -160,6 +160,7 @@ func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions
 		{FilePattern: "**/fortify-scan.*", ParamRef: "", StepResultType: "fortify"},
 		{FilePattern: "**/toolrun_fortify_*.json", ParamRef: "", StepResultType: "fortify"},
 		{FilePattern: "**/piper_fortify_report.json", ParamRef: "", StepResultType: "fortify"},
+		{FilePattern: "**/piper_fortify_report.html", ParamRef: "", StepResultType: "fortify"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -939,6 +940,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 							{"filePattern": "**/fortify-scan.*", "type": "fortify"},
 							{"filePattern": "**/toolrun_fortify_*.json", "type": "fortify"},
 							{"filePattern": "**/piper_fortify_report.json", "type": "fortify"},
+							{"filePattern": "**/piper_fortify_report.html", "type": "fortify"},
 						},
 					},
 				},

@@ -649,3 +649,5 @@ spec:
             type: fortify
           - filePattern: "**/piper_fortify_report.json"
             type: fortify
+          - filePattern: "**/piper_fortify_report.html"
+            type: fortify
