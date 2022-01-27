@@ -331,6 +331,14 @@ spec:
             type: blackduck-ip
           - filePattern: "**/toolrun_detectExecute_*.json"
             type: blackduck-ip
+          - filePattern: "**/piper_detect_vulnerability_report.html"
+            type: blackduck-ip
+          - filePattern: "**/detectExecuteScan_oss_*.json"
+            type: blackduck-ip
+          - filePattern: "**/piper_detect_policy_violation_report.html"
+            type: blackduck-ip
+          - filePattern: "**/detectExecuteScan_policy_*.json"
+            type: blackduck-ip
   containers:
     - name: openjdk
       image: openjdk:11
