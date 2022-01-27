@@ -23,6 +23,7 @@ const (
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	ErrorCategoryMapping map[string][]string
+	URLReportFileName    string
 	dir                  string
 	stdin                io.Reader
 	stdout               io.Writer
@@ -260,7 +261,9 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		br := bufio.NewWriter(&buf)
 		_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
 		br.Flush()
-		handleURLs(buf.String())
+		if c.URLReportFileName != "" {
+			handleURLs(buf.String(), c.URLReportFileName)
+		}
 		execution.wg.Done()
 	}()
 
@@ -269,17 +272,19 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		bw := bufio.NewWriter(&buf)
 		_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
 		bw.Flush()
-		handleURLs(buf.String())
+		if c.URLReportFileName != "" {
+			handleURLs(buf.String(), c.URLReportFileName)
+		}
 		execution.wg.Done()
 	}()
 
 	return &execution, nil
 }
 
-func handleURLs(s string) {
+func handleURLs(s, file string) {
 	reg := regexp.MustCompile(RelaxedURLRegEx)
 	matches := reg.FindAllStringSubmatch(s, -1)
-	f, err := os.Create("url_report.txt")
+	f, err := os.Create(file)
 	if err != nil {
 		log.Entry().WithError(err).Info("failed to create url report file")
 	}
