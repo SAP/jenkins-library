@@ -103,9 +103,9 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-go"}, utils.ExecMockRunner.Calls[0].Params)
-		assert.Equal(t, "cyclonedx-go", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"-o", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -127,7 +127,7 @@ func TestRunGolangBuild(t *testing.T) {
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-go": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils)
@@ -192,7 +192,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-go -o bom.xml": fmt.Errorf("BOM creation failure")}
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -test -output bom.xml": fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils)

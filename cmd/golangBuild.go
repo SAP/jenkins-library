@@ -21,7 +21,7 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-go"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
 )
 
@@ -282,7 +282,7 @@ func splitTargetArchitecture(architecture string) (string, string) {
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-go", "-o", outputFilename); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
