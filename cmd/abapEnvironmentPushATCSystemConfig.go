@@ -117,7 +117,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 		configUUID = ""
 		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
-	if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && !parsedConfigurationJson.LastChangedAt.IsZero() && !config.PatchIfExistingAndOutdated {
+	if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && !parsedConfigurationJson.LastChangedAt.IsZero() && !config.PatchIfExisting {
 		//config exists, is not recent but must NOT be patched
 		log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
 		return nil
@@ -127,7 +127,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 		log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
 		return nil
 	}
-	if configDoesExist && config.PatchIfExistingAndOutdated && (configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero()) {
+	if configDoesExist && config.PatchIfExisting && (configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero()) {
 		//configuration exists and is older than current config (or does not provide information about lastChanged) and should be patched
 		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
