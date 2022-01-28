@@ -116,8 +116,8 @@ type InstanceInfo struct {
 
 type AnalysisInfo struct { //Note that this is directly the "Unified" object
 	Context                Context
-	ReplacementDefinitions []Def   `xml:"ReplacementDefinitions>Def"`
-	Trace                  []Trace `xml:"Trace"`
+	ReplacementDefinitions ReplacementDefinitions `xml:"ReplacementDefinitions"`
+	Trace                  []Trace                `xml:"Trace"`
 }
 
 type Context struct {
@@ -143,10 +143,26 @@ type FunctionDeclarationSourceLocation struct {
 	FDSLColEnd   string   `xml:"colEnd,attr"`
 }
 
+type ReplacementDefinitions struct {
+	XMLName     xml.Name      `xml:"ReplacementDefinitions"`
+	Def         []Def         `xml:"Def"`
+	LocationDef []LocationDef `xml:"LocationDef"`
+}
+
 type Def struct {
 	XMLName  xml.Name `xml:"Def"`
 	DefKey   string   `xml:"key,attr"`
 	DefValue string   `xml:"value,attr"`
+}
+
+type LocationDef struct {
+	XMLName  xml.Name `xml:"LocationDef"`
+	Path     string   `xml:"path,attr"`
+	Line     int      `xml:"line,attr"`
+	LineEnd  int      `xml:"lineEnd,attr"`
+	ColStart int      `xml:"colStart,attr"`
+	ColEnd   int      `xml:"colEnd,attr"`
+	Key      string   `xml:"key,attr"`
 }
 
 type Trace struct {
@@ -580,7 +596,12 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		for j := 0; j < len(fvdl.Description); j++ {
 			if fvdl.Description[j].ClassID == result.RuleID {
 				result.RuleIndex = j //Seems very abstract
-				result.Message = Message{fvdl.Description[j].Abstract.Text}
+				rawMessage := fvdl.Description[j].Abstract.Text
+				// Replacement defintions in message
+				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
+					rawMessage = strings.ReplaceAll(rawMessage, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+				}
+				result.Message = Message{rawMessage}
 				break
 			}
 		}
@@ -646,8 +667,23 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		//Descriptions
 		for j := 0; j < len(fvdl.Description); j++ {
 			if fvdl.Description[j].ClassID == sarifRule.Id {
-				sarifRule.ShortDescription.Text = fvdl.Description[j].Abstract.Text
-				sarifRule.FullDescription.Text = fvdl.Description[j].Explanation.Text
+				rawAbstract := fvdl.Description[j].Abstract.Text
+				rawExplanation := fvdl.Description[j].Explanation.Text
+				// Replacement defintions in abstract/explanation
+				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
+					rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+					rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+				}
+				// Replacement locationdef in explanation
+				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
+					rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
+				}
+				// If Description has a CustomDescription, add it for good measure
+				if fvdl.Description[j].CustomDescription.RuleID != "" {
+					rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
+				}
+				sarifRule.ShortDescription.Text = rawAbstract
+				sarifRule.FullDescription.Text = rawExplanation
 				break
 			}
 		}
