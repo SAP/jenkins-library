@@ -400,7 +400,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
 
-		expectedErrorMessage := "pushing ATC System Configuration failed. Reason: Configured File does not contain ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")"
+		expectedErrorMessage := "pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")"
 
 		err = runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, client)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
