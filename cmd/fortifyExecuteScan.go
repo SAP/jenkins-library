@@ -221,10 +221,6 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if config.UploadResults {
 		log.Entry().Debug("Uploading results")
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
-		if config.ConvertToSarif {
-			log.Entry().Debug("Calling conversion to SARIF function.")
-			fortify.ConvertFprToSarif(resultFilePath)
-		}
 		err = sys.UploadResultFile(config.FprUploadEndpoint, resultFilePath, projectVersion.ID)
 		message = fmt.Sprintf("Failed to upload result file %v to Fortify SSC at %v", resultFilePath, config.ServerURL)
 	} else {
@@ -240,6 +236,13 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
+	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	if config.ConvertToSarif {
+		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
+		log.Entry().Debug("Calling conversion to SARIF function.")
+		fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		reports = append(reports, piperutils.Path{Target: "target/audit.sarif"}) //is it right/required?
+	}
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed
 	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
@@ -247,7 +250,6 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if err != nil {
 		return reports, err
 	}
-
 	err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err

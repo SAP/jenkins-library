@@ -398,7 +398,7 @@ spec:
         default: true
       - name: convertToSarif
         type: bool
-        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard, and upload its results. Requires uploadResults"
+        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard. Uploaded through Cumulus later on."
         scope:
           - PARAMETERS
           - STAGES
