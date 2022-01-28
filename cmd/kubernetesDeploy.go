@@ -63,7 +63,7 @@ func newKubernetesDeployUtilsBundle() kubernetesDeployUtils {
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
 	utils := newKubernetesDeployUtilsBundle()
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	// error situations stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runKubernetesDeploy(config, telemetryData, utils, log.Writer())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
