@@ -281,9 +281,6 @@ func runMtaBuild(config mtaBuildOptions,
 				mtarArtifactName := mtarName
 
 				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
-				/* mta artifact are pushed to maven like repo so the artifact name must follow maven conventions */
-				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".", "-")
-				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, "/", "-")
 
 				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
