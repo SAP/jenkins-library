@@ -22,23 +22,23 @@ type ComponentService struct {
 }
 
 type SonarCoverage struct {
-	Coverage          float32 `json:"coverage,omitempty"`
-	LineCoverage      float32 `json:"lineCoverage,omitempty"`
-	LinesToCover      int     `json:"linesToCover,omitempty"`
-	UncoveredLines    int     `json:"uncoveredLines,omitempty"`
-	BranchCoverage    float32 `json:"branchCoverage,omitempty"`
-	BranchesToCover   int     `json:"branchesToCover,omitempty"`
-	UncoveredBranches int     `json:"uncoveredBranches,omitempty"`
+	Coverage          float32 `json:"coverage"`
+	LineCoverage      float32 `json:"lineCoverage"`
+	LinesToCover      int     `json:"linesToCover"`
+	UncoveredLines    int     `json:"uncoveredLines"`
+	BranchCoverage    float32 `json:"branchCoverage"`
+	BranchesToCover   int     `json:"branchesToCover"`
+	UncoveredBranches int     `json:"uncoveredBranches"`
 }
 
 type SonarLinesOfCode struct {
-	Total                int                         `json:"total,omitempty"`
+	Total                int                         `json:"total"`
 	LanguageDistribution []SonarLanguageDistribution `json:"languageDistribution,omitempty"`
 }
 
 type SonarLanguageDistribution struct {
 	LanguageKey string `json:"languageKey,omitempty"` // Description:"key of the language as retrieved from sonarqube. All languages (key + name) are available as API https://<sonarqube-instance>/api/languages/list ",ExampleValue:"java,js,web,go"
-	LinesOfCode int    `json:"linesOfCode,omitempty"`
+	LinesOfCode int    `json:"linesOfCode"`
 }
 
 func (service *ComponentService) Component(options *MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
