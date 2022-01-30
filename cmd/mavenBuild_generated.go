@@ -127,9 +127,7 @@ It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.
 
 ### build with depedencies from a private repository: \n\n
-if your build has depdencies from a private repository you can include a project settings xml into the source code 
-respository as below (replace the <url> tag with a valid private repo url) : 
-
+if your build has depdencies from a private repository you can include a project settings xml into the source code respository as below (replace the ` + "`" + `<url>` + "`" + ` tag with a valid private repo url).
 ` + "`" + `` + "`" + `` + "`" + `
 <?xml version="1.0" encoding="UTF-8"?>
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
@@ -149,7 +147,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http:/
   </repositories>
 </settings>
 ` + "`" + `` + "`" + `` + "`" + `
-` + "`" + `PIPER_CREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD` + "`" + ` are environment variables that must be present in the environment where the Piper step runs or alternatively 
+` + "`" + `PIPER_CREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD` + "`" + ` are environment variables that must be present in the environment where the Piper step runs or alternatively
 can be created using [vault general purpose credentials](https://www.project-piper.io/infrastructure/vault/#using-vault-for-general-purpose-and-test-credentials)
 
 Ensure the following configuration in the Piper config yaml to ensure the above settings xml is included during mavenBuild:
