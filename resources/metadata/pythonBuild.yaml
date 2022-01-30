@@ -1,0 +1,25 @@
+metadata:
+  name: pythonBuild
+  description: Step build a python project
+  longDescription: Step build python project with using test Vault credentials
+spec:
+  inputs:
+    params:
+      - name: buildFlags
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        description: Defines list of build flags to be used.
+      - name: sources
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        description: Links to python project
+  containers:
+    - name: python
+      image: python:3-alpine
+      workingDir: /home/node
