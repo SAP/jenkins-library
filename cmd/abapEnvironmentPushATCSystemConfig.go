@@ -122,7 +122,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 		log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
 		return nil
 	}
-	if configDoesExist && (configLastChangedBE.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBE == parsedConfigurationJson.LastChangedAt) {
+	if configDoesExist && !parsedConfigurationJson.LastChangedAt.IsZero() && (configLastChangedBE.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBE == parsedConfigurationJson.LastChangedAt) {
 		//configuration exists and is most recent
 		log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
 		return nil
