@@ -27,4 +27,4 @@ spec:
         default: build
   containers:
     - name: gradle
-      image: gradle:6.9.2-jdk-alpine
+      image: gradle:6-jdk11-alpine
