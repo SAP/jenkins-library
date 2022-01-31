@@ -13,6 +13,7 @@ spec:
         description: Path to the folder with gradle.build file which should be executed.
         scope:
           - PARAMETERS
+          - STAGES
           - STEPS
         mandatory: false
       - name: task
@@ -26,4 +27,4 @@ spec:
         default: build
   containers:
     - name: gradle
-      image: gradle:4.7.0-jdk8-alpine
+      image: gradle:6-jdk11-alpine
