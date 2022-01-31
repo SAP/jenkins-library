@@ -518,10 +518,9 @@ type parsedConfigPriorities struct {
 }
 
 type parsedConfigPriority struct {
-	Test            string      `json:"test"`
-	MessageId       string      `json:"message_id"`
-	DefaultPriority json.Number `json:"default_priority"`
-	Priority        json.Number `json:"priority"`
+	Test      string      `json:"test"`
+	MessageId string      `json:"message_id"`
+	Priority  json.Number `json:"priority"`
 }
 
 type priorityJson struct {
