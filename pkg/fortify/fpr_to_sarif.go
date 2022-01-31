@@ -670,20 +670,25 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				rawAbstract := fvdl.Description[j].Abstract.Text
 				rawExplanation := fvdl.Description[j].Explanation.Text
 				// Replacement defintions in abstract/explanation
-				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
-					rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
-					rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+				for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability); k++ { // Iterate on vulns to find the correct one (where ReplacementDefinitions are)
+					if fvdl.Vulnerabilities.Vulnerability[k].ClassInfo.ClassID == fvdl.Description[j].ClassID {
+						for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def); l++ {
+							rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+							rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+						}
+						// Replacement locationdef in explanation
+						for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
+							rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
+						}
+						// If Description has a CustomDescription, add it for good measure
+						if fvdl.Description[j].CustomDescription.RuleID != "" {
+							rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
+						}
+						sarifRule.ShortDescription.Text = rawAbstract
+						sarifRule.FullDescription.Text = rawExplanation
+						break
+					}
 				}
-				// Replacement locationdef in explanation
-				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
-					rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
-				}
-				// If Description has a CustomDescription, add it for good measure
-				if fvdl.Description[j].CustomDescription.RuleID != "" {
-					rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
-				}
-				sarifRule.ShortDescription.Text = rawAbstract
-				sarifRule.FullDescription.Text = rawExplanation
 				break
 			}
 		}
@@ -729,7 +734,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile("target/audit.sarif", sarifJSON, 0700)
+	err = ioutil.WriteFile("fortify/result.sarif", sarifJSON, 0700)
 	return err
 }
 
