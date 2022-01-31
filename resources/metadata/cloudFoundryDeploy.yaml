@@ -11,6 +11,7 @@ spec:
         type: jenkins
         aliases:
           - name: cloudFoundry/credentialsId
+            deprecated: true
       - name: dockerCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.
         type: jenkins
@@ -28,6 +29,7 @@ spec:
         aliases:
           - name: cfApiEndpoint
           - name: cloudFoundry/apiEndpoint
+            deprecated: true
       - name: appName
         type: string
         description: "Defines the name of the application to be deployed to the Cloud Foundry space"
@@ -40,6 +42,7 @@ spec:
         aliases:
           - name: cfAppName
           - name: cloudFoundry/appName
+            deprecated: true
       - name: artifactVersion
         type: string
         description: "The artifact version, used for influx reporting"
@@ -207,6 +210,7 @@ spec:
         aliases:
           - name: cfManifest
           - name: cloudFoundry/manifest
+            deprecated: true
       - name: manifestVariables
         type: "[]string"
         description: Defines a list of variables in the form `key=value` which are used for variable substitution within the file given by manifest.
@@ -240,6 +244,7 @@ spec:
         aliases:
           - name: cfManifestVariables
           - name: cloudFoundry/manifestVariables
+            deprecated: true
       - name: manifestVariablesFiles
         type: "[]string"
         description:
@@ -257,6 +262,7 @@ spec:
         aliases:
           - name: cfManifestVariablesFiles
           - name: cloudFoundry/manifestVariablesFiles
+            deprecated: true
       - name: mtaDeployParameters
         type: string
         description: "Additional parameters passed to mta deployment command"
@@ -278,6 +284,7 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/mtaExtensionDescriptor
+            deprecated: true
       - name: mtaExtensionCredentials
         type: "map[string]interface{}"
         description: "Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`. This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`"
@@ -289,6 +296,7 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/mtaExtensionCredentials
+            deprecated: true
       - name: mtaPath
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"
@@ -312,6 +320,7 @@ spec:
         aliases:
           - name: cfOrg
           - name: cloudFoundry/org
+            deprecated: true
         mandatory: true
         secret: false
       - name: password
@@ -366,6 +375,7 @@ spec:
         aliases:
           - name: cfSpace
           - name: cloudFoundry/space
+            deprecated: true
         mandatory: true
       - name: username
         type: string
