@@ -264,6 +264,15 @@ func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTem
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
+	exploitable := "Exploitable"
+	hascomments := true
+	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments}}, nil
+}
+func (f *fortifyMock) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
+	comment := "Dummy"
+	return []*models.IssueAuditComment{{Comment: &comment}}, nil
+}
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
