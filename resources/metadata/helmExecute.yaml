@@ -7,29 +7,25 @@ metadata:
     * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
     * [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
     * [Helm Charts] (https://artifacthub.io/)
-
-    Following helm command will be executed by default:
-
     ```
-    helm install <deploymentName> <chartPath> --namespace <namespace> --create-namespace --wait --timeout <helmDeployWaitSeconds>
+    Available Commands:
+      install     install a chart
+      lint        examine a chart for possible issues
+      package     package a chart directory into a chart archive
+      repo        add, list, remove, update, and index chart repositories
+      test        run tests for a release
+      uninstall   uninstall a release
+      upgrade     upgrade a release
+      verify      verify that a chart at the given path has been signed and is valid
+      push        upload a chart to a registry
+
+      also piper Execute step supports direct execution helm command via one flag.
     ```
 
     Note: piper supports only helm3 version, since helm2 is deprecated.
 spec:
   inputs:
     secrets:
-      # - name: kubeConfigFileCredentialsId
-      #   description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
-      #   aliases:
-      #     - name: kubeCredentialsId
-      #       deprecated: true
-      #   type: jenkins
-      - name: kubeTokenCredentialsId
-        description: Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).
-        aliases:
-          - name: k8sTokenCredentialsId
-            deprecated: true
-        type: jenkins
       - name: dockerCredentialsId
         type: jenkins
       - name: dockerConfigJsonCredentialsId
@@ -53,7 +49,7 @@ spec:
           - name: helmChartPath
         type: string
         mandatory: true
-        description: Defines the chart path for deployments using helm. It is a mandatory parameter for helm.
+        description: Defines the chart path for helm.
         scope:
           - PARAMETERS
           - STAGES
@@ -230,22 +226,13 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
-      - name: deployCommand
+      - name: helmCommand
         type: string
-        description: "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `install`."
-        mandatory: true
+        description: "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: install
-        possibleValues:
-          - upgrade
-          - lint
-          - install
-          - test
-          - uninstall
-          - package
       - name: dryRun
         type: bool
         description: simulate execute command, like simulate an install

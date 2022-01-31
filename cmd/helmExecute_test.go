@@ -4,52 +4,59 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
-type helmMockUtilsBundle struct {
-	*mock.FilesMock
-	*mock.ExecMockRunner
-}
+// type helmMockUtilsBundle struct {
+// 	*mock.FilesMock
+// 	*mock.ExecMockRunner
+// }
 
-func newHelmMockUtilsBundle() helmMockUtilsBundle {
-	utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
-	return utils
-}
+// func newHelmMockUtilsBundle() helmMockUtilsBundle {
+// 	utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
+// 	return utils
+// }
 
 func TestRunHelmExecute(t *testing.T) {
 	t.Parallel()
-	utils := newHelmMockUtilsBundle()
 
 	testTable := []struct {
 		config         helmExecuteOptions
 		expectedConfig []string
-		expectedError  bool
+		expectedError  error
 		expectedErrStr string
 	}{
 		{
 			config: helmExecuteOptions{
-				ChartPath:      ".",
-				DeploymentName: "testPackage",
-				DeployCommand:  "test",
+				ChartPath:            ".",
+				DeploymentName:       "testPackage",
+				HelmCommand:          "test",
+				AdditionalParameters: []string{},
 			},
 			expectedConfig: []string{"test", "."},
-			expectedError:  false,
+			expectedError:  nil,
 		},
+		// {
+		// 	config: helmExecuteOptions{
+		// 		ChartPath:            ".",
+		// 		DeploymentName:       "testPackage",
+		// 		HelmCommand:          "test",
+		// 		AdditionalParameters: []string{},
+		// 	},
+		// 	expectedConfig: []string{"test", "."},
+		// 	expectedError:  errors.New("some error"),
+		// },
 	}
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			err := runHelmExecute(testCase.config, utils, log.Writer())
-			if testCase.expectedError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), testCase.expectedErrStr)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
-			}
+			helmExecute := &mocks.HelmExecutor{}
+			helmExecute.On("RunHelmTest").Return(testCase.expectedError)
+
+			err := runHelmExecute(testCase.config.HelmCommand, testCase.config.AdditionalParameters, helmExecute)
+			assert.Equal(t, testCase.expectedError, err)
 		})
+
 	}
 }

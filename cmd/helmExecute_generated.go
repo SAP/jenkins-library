@@ -33,7 +33,7 @@ type helmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	DeployCommand             string   `json:"deployCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall package"`
+	HelmCommand               string   `json:"helmCommand,omitempty"`
 	DryRun                    bool     `json:"dryRun,omitempty"`
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
@@ -63,11 +63,19 @@ func HelmExecuteCommand() *cobra.Command {
 * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
 * [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
 * [Helm Charts] (https://artifacthub.io/)
-
-Following helm command will be executed by default:
-
 ` + "`" + `` + "`" + `` + "`" + `
-helm install <deploymentName> <chartPath> --namespace <namespace> --create-namespace --wait --timeout <helmDeployWaitSeconds>
+Available Commands:
+  install     install a chart
+  lint        examine a chart for possible issues
+  package     package a chart directory into a chart archive
+  repo        add, list, remove, update, and index chart repositories
+  test        run tests for a release
+  uninstall   uninstall a release
+  upgrade     upgrade a release
+  verify      verify that a chart at the given path has been signed and is valid
+  push        upload a chart to a registry
+
+  also piper Execute step supports direct execution helm command via one flag.
 ` + "`" + `` + "`" + `` + "`" + `
 
 Note: piper supports only helm3 version, since helm2 is deprecated.`,
@@ -150,7 +158,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 
 func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for Helm like  \"helm install [NAME] [CHART] [flags]\".")
-	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. It is a mandatory parameter for helm.")
+	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for helm.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`")
@@ -166,7 +174,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
-	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `install`, "Helm: defines the command 'install', `test`, `upgrade` and etc. The default is `install`.")
+	cmd.Flags().StringVar(&stepConfig.HelmCommand, "helmCommand", os.Getenv("PIPER_helmCommand"), "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc.")
 	cmd.Flags().BoolVar(&stepConfig.DryRun, "dryRun", false, "simulate execute command, like simulate an install")
 	cmd.Flags().StringVar(&stepConfig.PackageVersion, "packageVersion", os.Getenv("PIPER_packageVersion"), "set the version on the chart to this semver version")
 	cmd.Flags().StringVar(&stepConfig.AppVersion, "appVersion", os.Getenv("PIPER_appVersion"), "set the appVersion on the chart to this version")
@@ -180,7 +188,6 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deploymentName")
 	cmd.MarkFlagRequired("image")
-	cmd.MarkFlagRequired("deployCommand")
 }
 
 // retrieve step metadata
@@ -194,7 +201,6 @@ func helmExecuteMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "kubeTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).", Type: "jenkins", Aliases: []config.Alias{{Name: "k8sTokenCredentialsId", Deprecated: true}}},
 					{Name: "dockerCredentialsId", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
 				},
@@ -415,13 +421,13 @@ func helmExecuteMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 					{
-						Name:        "deployCommand",
+						Name:        "helmCommand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `install`,
+						Default:     os.Getenv("PIPER_helmCommand"),
 					},
 					{
 						Name:        "dryRun",

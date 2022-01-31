@@ -19,6 +19,29 @@ type HelmDeployUtils interface {
 	piperutils.FileUtils
 }
 
+// HelmExecutor is used for mock
+type HelmExecutor interface {
+	RunHelmAdd() error
+	RunHelmUpgrade() error
+	RunHelmLint() error
+	RunHelmInstall() error
+	RunHelmUninstall() error
+	RunHelmPackage() error
+	RunHelmTest() error
+	RunHelmRegistryLogin() error
+	RunHelmRegistryLogout() error
+	RunHelmPush() error
+	RunHelmDirect() error
+}
+
+// HelmExecute struct
+type HelmExecute struct {
+	utils   HelmDeployUtils
+	config  HelmExecuteOptions
+	verbose bool
+	stdout  io.Writer
+}
+
 // HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
 	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
@@ -39,7 +62,6 @@ type HelmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	DeployCommand             string   `json:"deployCommand,omitempty"`
 	DryRun                    bool     `json:"dryRun,omitempty"`
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
@@ -54,6 +76,16 @@ type HelmExecuteOptions struct {
 type deployUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+}
+
+// NewExecutor
+func NewHelmExecutor(config HelmExecuteOptions, utils HelmDeployUtils, verbose bool, stdout io.Writer) HelmExecutor {
+	return &HelmExecute{
+		config:  config,
+		utils:   utils,
+		verbose: verbose,
+		stdout:  stdout,
+	}
 }
 
 // NewDeployUtilsBundle initialize using deployUtilsBundle struct
@@ -85,37 +117,38 @@ func NewDeployUtilsBundle() HelmDeployUtils {
 }
 
 // runHelmInit is used to set up env for executing helm command
-func runHelmInit(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+func (h *HelmExecute) runHelmInit() error {
 	helmLogFields := map[string]interface{}{}
-	helmLogFields["Chart Path"] = config.ChartPath
-	helmLogFields["Namespace"] = config.Namespace
-	helmLogFields["Deployment Name"] = config.DeploymentName
-	helmLogFields["Context"] = config.KubeContext
-	helmLogFields["Kubeconfig"] = config.KubeConfig
+	helmLogFields["Chart Path"] = h.config.ChartPath
+	helmLogFields["Namespace"] = h.config.Namespace
+	helmLogFields["Deployment Name"] = h.config.DeploymentName
+	helmLogFields["Context"] = h.config.KubeContext
+	helmLogFields["Kubeconfig"] = h.config.KubeConfig
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
-	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
+	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", h.config.KubeConfig)}
 
 	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
-	utils.SetEnv(helmEnv)
-	utils.Stdout(stdout)
+	h.utils.SetEnv(helmEnv)
+	h.utils.Stdout(h.stdout)
 
 	return nil
 }
 
-// runHelmAdd is used to add a chart repository
-func runHelmAdd(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+// RunHelmAdd is used to add a chart repository
+func (h *HelmExecute) RunHelmAdd() error {
 	helmParams := []string{
+		"repo",
 		"add",
 		"stable",
 	}
 
-	helmParams = append(helmParams, config.ChartRepo)
+	helmParams = append(helmParams, h.config.ChartRepo)
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm add ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm add call failed")
 	}
 
@@ -123,58 +156,58 @@ func runHelmAdd(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writ
 }
 
 // RunHelmUpgrade is used to upgrade a release
-func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
+func (h *HelmExecute) RunHelmUpgrade() error {
+	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	containerInfo, err := getContainerInfo(config)
+	containerInfo, err := getContainerInfo(h.config)
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments")
 	}
-	secretsData, err := getSecretsData(config, utils, containerInfo)
+	secretsData, err := getSecretsData(h.config, h.utils, containerInfo)
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments")
 	}
 
 	helmParams := []string{
 		"upgrade",
-		config.DeploymentName,
-		config.ChartPath,
+		h.config.DeploymentName,
+		h.config.ChartPath,
 	}
 
-	for _, v := range config.HelmValues {
+	for _, v := range h.config.HelmValues {
 		helmParams = append(helmParams, "--values", v)
 	}
 
 	helmParams = append(
 		helmParams,
 		"--install",
-		"--namespace", config.Namespace,
+		"--namespace", h.config.Namespace,
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v", containerInfo["containerRegistry"], containerInfo["containerImageName"],
 			containerInfo["containerImageTag"], secretsData),
 	)
 
-	if config.ForceUpdates {
+	if h.config.ForceUpdates {
 		helmParams = append(helmParams, "--force")
 	}
 
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 
-	if !config.KeepFailedDeployments {
+	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
 
-	if len(config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, config.AdditionalParameters...)
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.AdditionalParameters...)
 	}
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm upgrade ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
 
@@ -182,21 +215,21 @@ func RunHelmUpgrade(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 }
 
 // RunHelmLint is used to examine a chart for possible issues
-func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
+func (h *HelmExecute) RunHelmLint() error {
+	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"lint",
-		config.ChartPath,
+		h.config.ChartPath,
 	}
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm lint ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm lint call failed")
 	}
 
@@ -204,40 +237,43 @@ func RunHelmLint(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 }
 
 // RunHelmInstall is used to install a chart
-func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	if err := runHelmInit(config, utils, stdout); err != nil {
+func (h *HelmExecute) RunHelmInstall() error {
+	if err := h.runHelmInit(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	if err := runHelmAdd(config, utils, stdout); err != nil {
+	if err := h.RunHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"install",
-		config.DeploymentName,
-		config.ChartPath,
+		h.config.DeploymentName,
+		h.config.ChartPath,
 	}
-	helmParams = append(helmParams, "--namespace", config.Namespace)
+	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
-	if !config.KeepFailedDeployments {
+	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
-	if config.DryRun {
+	if h.config.DryRun {
 		helmParams = append(helmParams, "--dry-run")
 	}
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
-	for _, v := range config.HelmValues {
+	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
+	for _, v := range h.config.HelmValues {
 		helmParams = append(helmParams, "--values", v)
 	}
-	if len(config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, config.AdditionalParameters...)
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.AdditionalParameters...)
+	}
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
 	}
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm install ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm install call failed")
 	}
 
@@ -245,31 +281,31 @@ func RunHelmInstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 }
 
 // RunHelmUninstall is used to uninstall a chart
-func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
+func (h *HelmExecute) RunHelmUninstall() error {
+	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"uninstall",
-		config.DeploymentName,
+		h.config.DeploymentName,
 	}
-	if len(config.Namespace) <= 0 {
+	if len(h.config.Namespace) <= 0 {
 		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
 	}
-	helmParams = append(helmParams, "--namespace", config.Namespace)
-	if config.HelmDeployWaitSeconds > 0 {
-		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	helmParams = append(helmParams, "--namespace", h.config.Namespace)
+	if h.config.HelmDeployWaitSeconds > 0 {
+		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	}
-	if config.DryRun {
+	if h.config.DryRun {
 		helmParams = append(helmParams, "--dry-run")
 	}
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm uninstall ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm uninstall call failed")
 	}
 
@@ -277,30 +313,30 @@ func RunHelmUninstall(config HelmExecuteOptions, utils HelmDeployUtils, stdout i
 }
 
 // RunHelmPackage is used to package a chart directory into a chart archive
-func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
+func (h *HelmExecute) RunHelmPackage() error {
+	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"package",
-		config.ChartPath,
+		h.config.ChartPath,
 	}
-	if len(config.PackageVersion) > 0 {
-		helmParams = append(helmParams, "--version", config.PackageVersion)
+	if len(h.config.PackageVersion) > 0 {
+		helmParams = append(helmParams, "--version", h.config.PackageVersion)
 	}
-	if config.DependencyUpdate {
+	if h.config.DependencyUpdate {
 		helmParams = append(helmParams, "--dependency-update")
 	}
-	if len(config.AppVersion) > 0 {
-		helmParams = append(helmParams, "--app-version", config.AppVersion)
+	if len(h.config.AppVersion) > 0 {
+		helmParams = append(helmParams, "--app-version", h.config.AppVersion)
 	}
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm package ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm package call failed")
 	}
 
@@ -308,27 +344,27 @@ func RunHelmPackage(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.
 }
 
 // RunHelmTest is used to run tests for a release
-func RunHelmTest(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
+func (h *HelmExecute) RunHelmTest() error {
+	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"test",
-		config.ChartPath,
+		h.config.ChartPath,
 	}
-	if len(config.FilterTest) > 0 {
-		helmParams = append(helmParams, "--filter", config.FilterTest)
+	if len(h.config.FilterTest) > 0 {
+		helmParams = append(helmParams, "--filter", h.config.FilterTest)
 	}
-	if config.DumpLogs {
+	if h.config.DumpLogs {
 		helmParams = append(helmParams, "--logs")
 	}
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm test ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm test call failed")
 	}
 
@@ -336,17 +372,17 @@ func RunHelmTest(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Wri
 }
 
 // RunHelmRegistryLogin is used to login private registry
-func RunHelmRegistryLogin(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+func (h *HelmExecute) RunHelmRegistryLogin() error {
 	helmParams := []string{
 		"registry login",
 	}
-	helmParams = append(helmParams, "-u", config.HelmRegistryUser)
+	helmParams = append(helmParams, "-u", h.config.HelmRegistryUser)
 	helmParams = append(helmParams, "localhost:5000")
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm login ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm push login failed")
 	}
 
@@ -354,16 +390,16 @@ func RunHelmRegistryLogin(config HelmExecuteOptions, utils HelmDeployUtils, stdo
 }
 
 // RunHelmRegistryLogout is logout to login private registry
-func RunHelmRegistryLogout(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
+func (h *HelmExecute) RunHelmRegistryLogout() error {
 	helmParams := []string{
 		"registry logout",
 	}
 	helmParams = append(helmParams, "localhost:5000")
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm logout ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm push logout failed")
 	}
 
@@ -371,31 +407,60 @@ func RunHelmRegistryLogout(config HelmExecuteOptions, utils HelmDeployUtils, std
 }
 
 //RunHelmPush is used to upload a chart to a registry
-func RunHelmPush(config HelmExecuteOptions, utils HelmDeployUtils, stdout io.Writer) error {
-	err := runHelmInit(config, utils, stdout)
+func (h *HelmExecute) RunHelmPush() error {
+	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	if err := RunHelmRegistryLogin(config, utils, stdout); err != nil {
+	if err := h.RunHelmRegistryLogin(); err != nil {
 		return fmt.Errorf("failed to execute registry login: %v", err)
 	}
 
 	helmParams := []string{
 		"push",
 	}
-	helmParams = append(helmParams, fmt.Sprintf("%v", config.DeploymentName+config.PackageVersion+".tgz"))
+	helmParams = append(helmParams, fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz"))
 	helmParams = append(helmParams, "oci://localhost:5000/helm-charts")
 
-	utils.Stdout(stdout)
+	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm push ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm push call failed")
 	}
 
-	if err := RunHelmRegistryLogout(config, utils, stdout); err != nil {
+	if err := h.RunHelmRegistryLogout(); err != nil {
 		return fmt.Errorf("failed to execute registry logout: %v", err)
+	}
+
+	return nil
+}
+
+//RunHelmDirect is used to run helm command directly via flag
+func (h *HelmExecute) RunHelmDirect() error {
+	err := h.runHelmInit()
+	if err != nil {
+		return fmt.Errorf("failed to execute helm command: %v", err)
+	}
+
+	if err := h.RunHelmAdd(); err != nil {
+		return fmt.Errorf("failed to execute helm command: %v", err)
+	}
+
+	helmParams := []string{}
+
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.AdditionalParameters...)
+	} else {
+		return fmt.Errorf("helm command is not presented via flag or config yaml")
+	}
+
+	h.utils.Stdout(h.stdout)
+	log.Entry().Info("Calling helm command ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatal("Helm command call failed")
 	}
 
 	return nil

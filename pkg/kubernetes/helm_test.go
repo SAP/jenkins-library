@@ -48,7 +48,13 @@ func TestRunHelm(t *testing.T) {
 		}
 
 		for i, testCase := range testTable {
-			err := RunHelmPackage(testCase.config, utils, log.Writer())
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmPackage()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
@@ -70,7 +76,7 @@ func TestRunHelm(t *testing.T) {
 					HelmDeployWaitSeconds: 525,
 					ChartRepo:             "https://charts.helm.sh/stable",
 				},
-				expectedConfigAdd:     []string{"add", "stable", "https://charts.helm.sh/stable"},
+				expectedConfigAdd:     []string{"repo", "add", "stable", "https://charts.helm.sh/stable"},
 				expectedConfigInstall: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"},
 			},
 			{
@@ -84,14 +90,20 @@ func TestRunHelm(t *testing.T) {
 					AdditionalParameters:  []string{"--set-file my_script=dothings.sh"},
 					ChartRepo:             "https://charts.helm.sh/stable",
 				},
-				expectedConfigAdd:     []string{"add", "stable", "https://charts.helm.sh/stable"},
+				expectedConfigAdd:     []string{"repo", "add", "stable", "https://charts.helm.sh/stable"},
 				expectedConfigInstall: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--dry-run", "--wait", "--timeout", "525s", "--set-file my_script=dothings.sh"},
 			},
 		}
 
 		for _, testCase := range testTable {
 			utils := newHelmMockUtilsBundle()
-			err := RunHelmInstall(testCase.config, utils, log.Writer())
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmInstall()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfigAdd}, utils.Calls[0])
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfigInstall}, utils.Calls[1])
@@ -127,7 +139,13 @@ func TestRunHelm(t *testing.T) {
 		}
 
 		for i, testCase := range testTable {
-			err := RunHelmUninstall(testCase.config, utils, log.Writer())
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmUninstall()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
@@ -160,7 +178,13 @@ func TestRunHelm(t *testing.T) {
 		}
 
 		for i, testCase := range testTable {
-			err := RunHelmTest(testCase.config, utils, log.Writer())
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmTest()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
@@ -184,7 +208,13 @@ func TestRunHelm(t *testing.T) {
 		}
 
 		for _, testCase := range testTable {
-			err := RunHelmUninstall(testCase.config, utils, log.Writer())
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmUninstall()
 			if testCase.expectedError != nil {
 				assert.Error(t, err)
 				assert.Equal(t, testCase.expectedError, err)
@@ -200,18 +230,6 @@ func TestRunHelm(t *testing.T) {
 			config        HelmExecuteOptions
 			expectedError error
 		}{
-			// {
-			// 	config: HelmExecuteOptions{
-			// 		DeploymentName: "testPackage",
-			// 	},
-			// 	expectedError: errors.New("chart path has not been set, please configure chartPath parameter"),
-			// },
-			// {
-			// 	config: HelmExecuteOptions{
-			// 		ChartPath: ".",
-			// 	},
-			// 	expectedError: errors.New("deployment name has not been set, please configure deploymentName parameter"),
-			// },
 			{
 				config: HelmExecuteOptions{
 					ChartPath:      ".",
@@ -225,7 +243,13 @@ func TestRunHelm(t *testing.T) {
 		}
 
 		for _, testCase := range testTable {
-			err := runHelmInit(testCase.config, utils, log.Writer())
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.runHelmInit()
 			if testCase.expectedError != nil {
 				assert.Error(t, err)
 				assert.Equal(t, testCase.expectedError, err)
