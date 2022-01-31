@@ -503,13 +503,14 @@ type parsedConfigJsonWithExpand struct {
 }
 
 type parsedConfigJsonBase struct {
-	ConfName       string `json:"conf_name"`
-	ConfUUID       string `json:"conf_id"`
-	Checkvariant   string `json:"checkvariant"`
-	BlockFindings  string `json:"block_findings"`
-	InformFindings string `json:"inform_findings"`
-	IsDefault      bool   `json:"is_default"`
-	IsProxyVariant bool   `json:"is_proxy_variant"`
+	ConfName            string `json:"conf_name"`
+	ConfUUID            string `json:"conf_id"`
+	Checkvariant        string `json:"checkvariant"`
+	PseudoCommentPolicy string `json:"pseudo_comment_policy"`
+	BlockFindings       string `json:"block_findings"`
+	InformFindings      string `json:"inform_findings"`
+	IsDefault           bool   `json:"is_default"`
+	IsProxyVariant      bool   `json:"is_proxy_variant"`
 }
 
 type parsedConfigPriorities struct {
