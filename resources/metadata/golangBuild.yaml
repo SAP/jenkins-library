@@ -11,8 +11,8 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: gitHttpsCredentialsId
-        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
         type: jenkins
     params:
       - name: buildFlags
@@ -156,8 +156,8 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        aliases:
-          - name: goprivate
+        alias:
+          - goprivate
       - name: privateModulesGitToken
         description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
         scope:
@@ -168,8 +168,11 @@ spec:
         type: string
         secret: true
         resourceRef:
-          - name: gitHttpsCredentialsId
+          - name: golangPrivateModulesGitTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
   containers:
     - name: golang
       image: golang:1

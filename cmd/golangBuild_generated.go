@@ -164,7 +164,7 @@ func golangBuildMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "gitHttpsCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.", Type: "jenkins"},
+					{Name: "golangPrivateModulesGitTokenCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -317,15 +317,21 @@ func golangBuildMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "goprivate"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_privateModules"),
 					},
 					{
 						Name: "privateModulesGitToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "gitHttpsCredentialsId",
+								Name: "golangPrivateModulesGitTokenCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:    "golangPrivateModulesGitTokenVaultSecret",
+								Type:    "vaultSecret",
+								Default: "golang",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

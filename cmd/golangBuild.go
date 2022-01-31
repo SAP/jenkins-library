@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/goget"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -33,11 +34,8 @@ type golangBuildUtils interface {
 	command.ExecRunner
 	goget.Client
 
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-
-	//GetRepositoryURL(module string) (string, error)
+	piperutils.FileUtils
+	piperhttp.Sender
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -48,6 +46,7 @@ type golangBuildUtils interface {
 type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	piperhttp.Sender
 	goget.Client
 
 	// Embed more structs as necessary to implement methods or interfaces you add to golangBuildUtils.
@@ -56,12 +55,23 @@ type golangBuildUtilsBundle struct {
 	// golangBuildUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newGolangBuildUtils() golangBuildUtils {
+func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
+	httpClientOptions := piperhttp.ClientOptions{}
+
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		httpClientOptions.TransportSkipVerification = false
+		httpClientOptions.TrustedCerts = config.CustomTLSCertificateLinks
+	}
+
+	httpClient := piperhttp.Client{}
+	httpClient.SetOptions(httpClientOptions)
+
 	utils := golangBuildUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Sender:  &httpClient,
 		Client: &goget.ClientImpl{
-			HTTPClient: &piperhttp.Client{},
+			HTTPClient: &httpClient,
 		},
 	}
 	// Reroute command output to logging framework
@@ -73,7 +83,7 @@ func newGolangBuildUtils() golangBuildUtils {
 func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newGolangBuildUtils()
+	utils := newGolangBuildUtils(config)
 
 	// Error situations will be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
@@ -147,6 +157,9 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils) error {
+	// configure truststore
+	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
+
 	if config.PrivateModules == "" {
 		return nil
 	}
@@ -155,6 +168,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils
 		return fmt.Errorf("please specify a token for fetching private git modules")
 	}
 
+	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
 	repoURLs, err := lookupGolangPrivateModulesRepositories(config.PrivateModules, utils)
@@ -163,6 +177,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils
 		return err
 	}
 
+	// configure credentials git shall use for pulling repos
 	for _, repoURL := range repoURLs {
 		if match, _ := regexp.MatchString("(?i)^https?://", repoURL); !match {
 			continue

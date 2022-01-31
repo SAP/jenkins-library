@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +22,14 @@ type golangBuildMockUtils struct {
 
 func (utils golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
 	return fmt.Sprintf("https://%s.git", module), nil
+}
+
+func (utils golangBuildMockUtils) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (utils golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
+	// not implemented
 }
 
 func newGolangBuildTestsUtils() golangBuildMockUtils {
