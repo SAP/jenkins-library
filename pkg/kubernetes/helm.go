@@ -77,7 +77,7 @@ type deployUtilsBundle struct {
 	*piperutils.Files
 }
 
-// NewExecutor creates HelmExecute instance
+// NewHelmExecutor creates HelmExecute instance
 func NewHelmExecutor(config HelmExecuteOptions, utils HelmDeployUtils, verbose bool, stdout io.Writer) HelmExecutor {
 	return &HelmExecute{
 		config:  config,
