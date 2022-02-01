@@ -352,6 +352,7 @@ If you are concerned about leaking system data via NFC on an Android device, you
 	project := models.Project{}
 	projectVersion := models.ProjectVersion{ID: 11037}
 	sarif, err := Parse(sys, &project, &projectVersion, []byte(testFvdl))
+
 	assert.NoError(t, err, "error")
 	assert.Equal(t, len(sarif.Runs[0].Results), 2)
 	assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
