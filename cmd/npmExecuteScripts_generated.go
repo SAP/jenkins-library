@@ -92,7 +92,7 @@ registry=https://registry.npmjs.org
 ` + "`" + `` + "`" + `` + "`" + `
 ` + "`" + `PIPER_CREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository
 and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
-[vault general purpose credentials](../*/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
+[vault general purpose credentials](./*/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
