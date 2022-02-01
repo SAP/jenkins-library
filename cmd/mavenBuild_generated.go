@@ -150,7 +150,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http:/
 ` + "`" + `` + "`" + `` + "`" + `
 ` + "`" + `PIPER_CREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository and are exposed as environment variables that must be present
 in the environment where the Piper step runs or alternatively can be created using :
-[vault general purpose credentials](../*/vault.md#using-vault-for-general-purpose-and-test-credentials)
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
 
 Ensure the following configuration in the Piper config yaml to ensure the above settings xml is included during mavenBuild:
 
