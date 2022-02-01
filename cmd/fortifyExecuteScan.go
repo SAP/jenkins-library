@@ -246,8 +246,15 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Debug("Calling conversion to SARIF function.")
-		fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
-		reports = append(reports, piperutils.Path{Target: "target/audit.sarif"}) //is it right/required?
+		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		if err != nil {
+			return reports, fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := fortify.WriteSarif(sarif)
+		if err != nil {
+			return reports, fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
 	}
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed

@@ -2,7 +2,6 @@ package fortify
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -556,24 +555,23 @@ type SarifRuleProperties struct {
 	Probability string `json:"Probability,omitempty"`
 }
 
-func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) error {
+func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	_, err := FileUtils.Unzip(resultFilePath, "result/")
+	var sarif SARIF
 	if err != nil {
-		return err
+		return sarif, err
 	}
 	//File is result/audit.fvdl
 	data, err := ioutil.ReadFile("result/audit.fvdl")
 	if err != nil {
-		return err
+		return sarif, err
 	}
 
-	sarifJSON, err := Parse(sys, project, projectVersion, data)
-	err = ioutil.WriteFile("fortify/result.sarif", sarifJSON, 0700)
-	return err
+	return Parse(sys, project, projectVersion, data)
 }
 
-func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) ([]byte, error) {
+func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) (SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -730,12 +728,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
 
-	//Edit the json
-	sarifJSON, err := json.MarshalIndent(sarif, "", "  ") //Marshal as json to write file
-	if err != nil {
-		return nil, err
-	}
-	return sarifJSON, nil
+	return sarif, nil
 }
 
 func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {
