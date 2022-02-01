@@ -131,7 +131,10 @@ func MtaBuildCommand() *cobra.Command {
 	var createMtaBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Performs an mta build",
-		Long:  `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
+		Long: `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+### build with depedencies from a private repository
+For maven related settings refer [maven build dependencies](./mavenBuild.md#build with depedencies from a private repository)
+For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build with depedencies from a private repository)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
