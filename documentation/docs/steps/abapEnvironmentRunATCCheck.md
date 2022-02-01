@@ -82,6 +82,8 @@ To trigger the ATC run an ATC config file `atcconfig.yml` will be needed. Check 
 
 ### ATC config file example
 
+Providing a specifc ATC configuration is optional. If you are using a `repositories.yml` file for the `Clone` stage of the ABAP environment pipeline, a default ATC configuration will be derived if no explicit ATC configuration is available.
+
 The following section contains an example of an `atcconfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 

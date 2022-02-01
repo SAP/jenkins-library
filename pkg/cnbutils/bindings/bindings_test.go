@@ -13,8 +13,8 @@ import (
 )
 
 func TestProcessBindings(t *testing.T) {
-	var mockUtils = func() cnbutils.MockUtils {
-		var utils = cnbutils.MockUtils{
+	var mockUtils = func() *cnbutils.MockUtils {
+		var utils = &cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},
 		}
 		utils.AddFile("/tmp/somefile.yaml", []byte("some file content"))

@@ -7,6 +7,7 @@ require (
 	github.com/GoogleContainerTools/container-diff v0.17.0
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/antchfx/htmlquery v1.2.4
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6
 	github.com/buildpacks/lifecycle v0.13.0

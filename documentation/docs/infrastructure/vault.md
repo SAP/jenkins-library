@@ -115,7 +115,7 @@ The `vaultCredentialPath` parameter is the endpoint of your credential path in V
 2. `<vaultBasePath>/<vaultPipelineName>/<vaultCredentialPath>`
 3. `<vaultBasePath>/GROUP-SECRETS/<vaultCredentialPath>`
 
-The `vaultCredentialKeys`parameter is a list of credential IDs. The secret value of the credential will be exposed as an environment variable prefixed by "PIPER_VAULTCREDENTIAL_" and transformed to a valid variable name. For a credential ID named `myAppId` the forwarded environment variable to the step will be `PIPER_VAULTCREDENTIAL_MYAPPID` containing the secret. Hyphens will be replaced by underscores and other non-alphanumeric characters will be removed.
+The `vaultCredentialKeys`parameter is a list of credential IDs. The secret value of the credential will be exposed as an environment variable prefixed by "PIPER_VAULTCREDENTIAL_" and transformed to a valid variable name. For a credential ID named `myAppId` the forwarded environment variable to the step will be `PIPER_VAULTCREDENTIAL_MYAPPID` containing the secret. The Base64 encoded secret value will be exposed as environment variable to the step as  `PIPER_VAULTCREDENTIAL_MYAPPID_BASE64`. Hyphens will be replaced by underscores and other non-alphanumeric characters will be removed.
 
 !!! hint "Using a custom prefix for test credentials"
     By default the prefix for test credentials is `PIPER_VAULTCREDENTIAL_`.
