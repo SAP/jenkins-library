@@ -568,11 +568,12 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 		return err
 	}
 
-	err = Parse(sys, project, projectVersion, data)
+	sarifJSON, err := Parse(sys, project, projectVersion, data)
+	err = ioutil.WriteFile("fortify/result.sarif", sarifJSON, 0700)
 	return err
 }
 
-func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) error {
+func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) ([]byte, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -732,10 +733,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//Edit the json
 	sarifJSON, err := json.MarshalIndent(sarif, "", "  ") //Marshal as json to write file
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = ioutil.WriteFile("fortify/result.sarif", sarifJSON, 0700)
-	return err
+	return sarifJSON, nil
 }
 
 func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {

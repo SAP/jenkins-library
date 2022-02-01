@@ -276,6 +276,6 @@ If you are concerned about leaking system data via NFC on an Android device, you
 </EngineData>
 </FVDL>	`
 
-	err := Parse(nil, nil, nil, []byte(testFvdl))
+	_, err := Parse(nil, nil, nil, []byte(testFvdl))
 	assert.NoError(t, err, "error")
 }
