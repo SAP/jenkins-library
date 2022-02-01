@@ -268,6 +268,8 @@ In case of an error during execution of the pipeline steps:
       * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
           * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
           <br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.
+          * __`Product installation failed because AddOn XYZ has not been registered in PPMS for productive development`__
+          <br>The add-on product is not yet registered for add-on installation, please follow steps in [Register Add-on Product for a Global Account](https://www.project-piper.io/scenarios/abapEnvironmentAddons/)#register-add-on-product-for-a-global-account
 * Stage: [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)
       * Step: [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)
           * __*Add-on assembly system is deleted unexpectedly*__
