@@ -797,8 +797,11 @@ func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []s
 			continue
 		}
 		// REVISIT: maybe check if the extension descriptor exists
-		result = append(result, "-e", part)
 		extFiles = append(extFiles, part)
+	}
+	if len(extFiles) > 0 {
+		result = append(result, "-e")
+		result = append(result, strings.Join(extFiles, ","))
 	}
 	return result, extFiles
 }

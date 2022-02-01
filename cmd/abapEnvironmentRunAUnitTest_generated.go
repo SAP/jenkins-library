@@ -17,6 +17,7 @@ import (
 
 type abapEnvironmentRunAUnitTestOptions struct {
 	AUnitConfig          string `json:"aUnitConfig,omitempty"`
+	Repositories         string `json:"repositories,omitempty"`
 	CfAPIEndpoint        string `json:"cfApiEndpoint,omitempty"`
 	CfOrg                string `json:"cfOrg,omitempty"`
 	CfServiceInstance    string `json:"cfServiceInstance,omitempty"`
@@ -128,6 +129,7 @@ Regardless of the option you chose, please make sure to provide the object set c
 
 func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunAUnitTestOptions) {
 	cmd.Flags().StringVar(&stepConfig.AUnitConfig, "aUnitConfig", os.Getenv("PIPER_aUnitConfig"), "Path to a YAML configuration file for the object set to be checked during the AUnit test run")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete Cloud Foundry Service")
@@ -139,7 +141,6 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 
-	cmd.MarkFlagRequired("aUnitConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
@@ -163,9 +164,18 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_aUnitConfig"),
+					},
+					{
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repositories"),
 					},
 					{
 						Name:        "cfApiEndpoint",

@@ -548,5 +548,5 @@ steps:
       whitesource: 'whitesourceExecuteScan'
     labelPrefix: pr_
   cnbBuild:
-    stashExcludes:
-      stashBack: '**/*'
+    stashIncludes:
+      stashBack: '**/target/*.exec, **/*.jtl, **/target/**/*.xml'

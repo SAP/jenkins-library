@@ -20,11 +20,11 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 
 ## 1. Prerequisites
 
-* Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
-* Create a git repository on a host reachable by the Jenkins server (e.g. GitHub.com). The pipeline will be configured in this repository. Create a GitHub User with read access.
+* Configure your Jenkins server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
+* Create a git repository on a host reachable by the Jenkins server (e.g. GitHub.com). The pipeline will be configured in this repository. Create a GitHub user with read access.
 * The entitlements for the ABAP environment system are available in the SAP BTP global account and assigned to the subaccount.
-* A Cloud Foundry Organization & Space with the allocated entitlements are available.
-* A Cloud Foundry User & Password with the required authorization ("Space Developer") in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store.
+* A Cloud Foundry organization & space with the allocated entitlements are available.
+* A Cloud Foundry user & password with the required authorization ("Space Developer") in the organization and space are available. User and password were saved in the Jenkins Credentials Store.
 
 ## 2. Jenkinsfile
 
@@ -46,7 +46,7 @@ An Overview of the releases of the project "Piper" library can be found [here](h
 
 ## 3. Configuration for Cloning the repositories
 
-If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this stage.
+If you have specified the `Clone Repositories` stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a `Pull`, `Clone` and `Checkout` of the branches of the repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this stage.
 
 ```yml
 repositories:
@@ -56,11 +56,16 @@ repositories:
   branch: 'master'
 ```
 
-You can later use the `repositories.yml` file for the `repositories` parameter in the `Clone Repositories` stage used in chapter [7. Technical Pipeline Configuration](#7-technical-pipeline-configuration).
+You can later use the `repositories.yml` file for the `repositories` parameter in the `Clone Repositories` stage used in chapter [5. Technical Pipeline Configuration](#5-technical-pipeline-configuration).
 
-## 4. Configuration for ATC
+## 4. Optional: Configuration for the ABAP Test Cockpit (ATC) and ABAP Unit Tests (AUnit)
 
-Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which packages or software components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
+As a default, a configuration for ATC and AUnit is generated out of the `repositories.yml` file. This default configuration checks the listed repositories using the default ATC check variant and with no AUnit restrictions regarding `duration` and `risk level`.
+If you want to configure these tools yourself, you can create a tool specific configuration.
+
+### ATC
+
+Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which packages or software components shall be checked. Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details. You have to pass the filename `atcConfig.yml` to the `atcConfig` parameter in the [5. Technical Pipeline Configuration](#5-technical-pipeline-configuration). Here is an example of the configuration:
 
 ```yml
 atcobjects:
@@ -68,7 +73,17 @@ atcobjects:
     - name: "/DMO/REPO"
 ```
 
-Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details.
+### AUnit
+
+Create a file `aunitConfig.yml` to store the configuration for the AUnit run. In this file, you can specify which packages or software components shall be checked. Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/) for more details. You have to pass the filename `aunitConfig.yml` to the `aunitConfig` parameter in the [5. Technical Pipeline Configuration](#5-technical-pipeline-configuration). Here is an example of the configuration:
+
+```yml
+title: My AUnit run
+objectSet:
+  softwarecomponents:
+  - name: Z_TEST_SC
+  - name: Z_TEST_SC2
+```
 
 ## 5. Technical Pipeline Configuration
 
@@ -95,7 +110,9 @@ stages:
     strategy: 'Clone'
     repositories: 'repositories.yml'
   ATC:
-    atcConfig: 'atcConfig.yml'
+    active: true
+  AUnit:
+    active: true
   Post:
     cfDeleteServiceKeys: true
 ```
@@ -118,7 +135,11 @@ If the `Clone Repositories` stage is configured, you can specify the `strategy` 
 
 Note that you can use the `repositories.yml` file with the `repositories` parameter consistently for all strategies.
 
-The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP BTP cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry organization and space.
+The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP BTP cockpit. The SAP BTP / Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the SAP BTP / Cloud Foundry organization and space.
+
+### ATC & AUnit
+
+The ATC and AUnit stage will be executed, if the `config.yml` file contains an entry for the respective stage. If you are using the default configuration a placeholder entry `active: true` has to be added in order to activate the stages. If you are using a dedicated configuration file - `atcConfig.yml` and `aunitConfig.yml` - this is not necessary.
 
 ## 7. Create a Jenkins Pipeline
 

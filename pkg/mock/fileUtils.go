@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package mock
@@ -38,6 +39,8 @@ func (fInfo fileInfoMock) Sys() interface{}   { return nil }
 type fileProperties struct {
 	content *[]byte
 	mode    os.FileMode
+	isLink  bool
+	target  string
 }
 
 // isDir returns true when the properties describe a directory entry.
@@ -151,6 +154,18 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 // and it was written via CopyFile().
 func (f *FilesMock) HasCopiedFile(src string, dest string) bool {
 	return f.copiedFiles[f.toAbsPath(src)] == f.toAbsPath(dest)
+}
+
+// HasCreatedSymlink returns true if the virtual file system has a symlink with a specific target.
+func (f *FilesMock) HasCreatedSymlink(oldname, newname string) bool {
+	if f.files == nil {
+		return false
+	}
+	props, exists := f.files[f.toAbsPath(newname)]
+	if !exists {
+		return false
+	}
+	return props.isLink && props.target == oldname
 }
 
 // FileExists returns true if file content has been associated with the given path, false otherwise.
@@ -455,12 +470,48 @@ func (f *FilesMock) Abs(path string) (string, error) {
 	return f.toAbsPath(path), nil
 }
 
+func (f *FilesMock) Symlink(oldname, newname string) error {
+	if f.FileWriteError != nil {
+		return f.FileWriteError
+	}
+
+	if f.FileWriteErrors[newname] != nil {
+		return f.FileWriteErrors[newname]
+	}
+
+	parentExists, err := f.DirExists(filepath.Dir(newname))
+	if err != nil {
+		return err
+	}
+	if !parentExists {
+		return fmt.Errorf("failed to create symlink: parent directory %s doesn't exist", filepath.Dir(newname))
+	}
+
+	f.init()
+
+	f.files[newname] = &fileProperties{
+		isLink: true,
+		target: oldname,
+	}
+
+	return nil
+}
+
 // FileMock can be used in places where a io.Closer, io.StringWriter or io.Writer is expected.
 // It is the concrete type returned from FilesMock.Open()
 type FileMock struct {
 	absPath string
 	files   *FilesMock
 	content []byte
+}
+
+// Reads the content of the mock
+func (f *FileMock) Read(b []byte) (n int, err error) {
+	for i, p := range f.content {
+		b[i] = p
+	}
+
+	return len(f.content), nil
 }
 
 // Close mocks freeing the associated OS resources.
@@ -500,7 +551,7 @@ func (f *FileMock) Write(p []byte) (n int, err error) {
 // Instead, it returns a pointer to a FileMock instance, which implements a number of the same methods as os.File.
 // The flag parameter is checked for os.O_CREATE and os.O_APPEND and behaves accordingly.
 func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, error) {
-	if f.files == nil && flag&os.O_CREATE == 0 {
+	if (f.files == nil || !f.HasFile(path)) && flag&os.O_CREATE == 0 {
 		return nil, fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	f.init()

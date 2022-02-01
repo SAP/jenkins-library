@@ -66,7 +66,12 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testSkipCheckoutToggleTrue() {
-        jsr.step.abapEnvironmentPipelineStageInit(script: nullScript,  skipCheckout: true)
+        jsr.step.abapEnvironmentPipelineStageInit(
+            script: nullScript,
+            skipCheckout: true,
+            juStabUtils: utils,
+            stashContent: ['mystash']
+        )
         assertThat(stepsCalled, not(hasItems('checkout')))
         assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment'))
     }
@@ -81,6 +86,40 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     void testSkipCheckoutToggleString() {
         thrown.expectMessage('[abapEnvironmentPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
         jsr.step.abapEnvironmentPipelineStageInit(script: nullScript,  skipCheckout: 'string')
+    }
+
+    @Test
+    void "Try to skip checkout with parameter skipCheckout not boolean throws error"() {
+        thrown.expectMessage('[abapEnvironmentPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
+
+        jsr.step.abapEnvironmentPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            skipCheckout: "false"
+        )
+    }
+
+    @Test
+    void "Try to skip checkout without stashContent parameter throws error"() {
+        thrown.expectMessage('[abapEnvironmentPipelineStageInit] needs stashes if you skip checkout')
+
+        jsr.step.abapEnvironmentPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            skipCheckout: true
+        )
+    }
+
+    @Test
+    void "Try to skip checkout with empty stashContent parameter throws error"() {
+        thrown.expectMessage('[abapEnvironmentPipelineStageInit] needs stashes if you skip checkout')
+
+        jsr.step.abapEnvironmentPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            skipCheckout: true,
+            stashContent: []
+        )
     }
 
     private defaultsYaml() {
