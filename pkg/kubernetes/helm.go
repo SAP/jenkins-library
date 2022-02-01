@@ -4,20 +4,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
-
-// HelmDeployUtils interface
-type HelmDeployUtils interface {
-	SetEnv(env []string)
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(e string, p ...string) error
-
-	piperutils.FileUtils
-}
 
 // HelmExecutor is used for mock
 type HelmExecutor interface {
@@ -35,7 +23,7 @@ type HelmExecutor interface {
 
 // HelmExecute struct
 type HelmExecute struct {
-	utils   HelmDeployUtils
+	utils   DeployUtils
 	config  HelmExecuteOptions
 	verbose bool
 	stdout  io.Writer
@@ -71,48 +59,14 @@ type HelmExecuteOptions struct {
 	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
 }
 
-// deployUtilsBundle struct  for utils
-type deployUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-}
-
 // NewHelmExecutor creates HelmExecute instance
-func NewHelmExecutor(config HelmExecuteOptions, utils HelmDeployUtils, verbose bool, stdout io.Writer) HelmExecutor {
+func NewHelmExecutor(config HelmExecuteOptions, utils DeployUtils, verbose bool, stdout io.Writer) HelmExecutor {
 	return &HelmExecute{
 		config:  config,
 		utils:   utils,
 		verbose: verbose,
 		stdout:  stdout,
 	}
-}
-
-// NewDeployUtilsBundle initialize using deployUtilsBundle struct
-func NewDeployUtilsBundle() HelmDeployUtils {
-	utils := deployUtilsBundle{
-		Command: &command.Command{
-			ErrorCategoryMapping: map[string][]string{
-				log.ErrorConfiguration.String(): {
-					"Error: Get * no such host",
-					"Error: path * not found",
-					"Error: rendered manifests contain a resource that already exists.",
-					"Error: unknown flag",
-					"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
-					"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
-					"Error: UPGRADE FAILED: an error occurred * not found",
-					"Error: UPGRADE FAILED: query: failed to query with labels:",
-					"Invalid value: \"\": field is immutable",
-				},
-				log.ErrorCustom.String(): {
-					"Error: release * failed, * timed out waiting for the condition",
-				},
-			},
-		},
-		Files: &piperutils.Files{},
-	}
-	// reroute stderr output to logging framework, stdout will be used for command interactions
-	utils.Stderr(log.Writer())
-	return &utils
 }
 
 // runHelmInit is used to set up env for executing helm command

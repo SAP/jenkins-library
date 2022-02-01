@@ -4,13 +4,59 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
-	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+// HelmDeployUtils interface
+type DeployUtils interface {
+	SetEnv(env []string)
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(e string, p ...string) error
+
+	piperutils.FileUtils
+}
+
+// deployUtilsBundle struct  for utils
+type deployUtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+}
+
+// NewDeployUtilsBundle initialize using deployUtilsBundle struct
+func NewDeployUtilsBundle() DeployUtils {
+	utils := deployUtilsBundle{
+		Command: &command.Command{
+			ErrorCategoryMapping: map[string][]string{
+				log.ErrorConfiguration.String(): {
+					"Error: Get * no such host",
+					"Error: path * not found",
+					"Error: rendered manifests contain a resource that already exists.",
+					"Error: unknown flag",
+					"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
+					"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
+					"Error: UPGRADE FAILED: an error occurred * not found",
+					"Error: UPGRADE FAILED: query: failed to query with labels:",
+					"Invalid value: \"\": field is immutable",
+				},
+				log.ErrorCustom.String(): {
+					"Error: release * failed, * timed out waiting for the condition",
+				},
+			},
+		},
+		Files: &piperutils.Files{},
+	}
+	// reroute stderr output to logging framework, stdout will be used for command interactions
+	utils.Stderr(log.Writer())
+	return &utils
+}
 
 func getContainerInfo(config HelmExecuteOptions) (map[string]string, error) {
 	var err error
@@ -44,7 +90,7 @@ func getContainerInfo(config HelmExecuteOptions) (map[string]string, error) {
 	return containerInfo, nil
 }
 
-func getSecretsData(config HelmExecuteOptions, utils HelmDeployUtils, containerInfo map[string]string) (string, error) {
+func getSecretsData(config HelmExecuteOptions, utils DeployUtils, containerInfo map[string]string) (string, error) {
 
 	var secretsData string
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
@@ -84,7 +130,7 @@ func getSecretsData(config HelmExecuteOptions, utils HelmDeployUtils, containerI
 	return secretsData, nil
 }
 
-func defineKubeSecretParams(config HelmExecuteOptions, containerRegistry string, utils HelmDeployUtils) []string {
+func defineKubeSecretParams(config HelmExecuteOptions, containerRegistry string, utils DeployUtils) []string {
 	kubeSecretParams := []string{
 		"create",
 		"secret",
@@ -100,7 +146,7 @@ func defineKubeSecretParams(config HelmExecuteOptions, containerRegistry string,
 		// first enhance config.json with additional pipeline-related credentials if they have been provided
 		if len(containerRegistry) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
 			var err error
-			_, err = piperDocker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+			_, err = docker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 			if err != nil {
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 			}
