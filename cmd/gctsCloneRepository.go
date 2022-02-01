@@ -33,9 +33,10 @@ func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetr
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:  cookieJar,
+		Username:   config.Username,
+		Password:   config.Password,
+		MaxRetries: -1,
 	}
 	httpClient.SetOptions(clientOptions)
 

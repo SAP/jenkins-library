@@ -39,9 +39,10 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		return cookieErr
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:  cookieJar,
+		Username:   config.Username,
+		Password:   config.Password,
+		MaxRetries: -1,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -113,7 +114,8 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 		return "", cookieErr
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
+		CookieJar:  cookieJar,
+		MaxRetries: -1,
 	}
 
 	if config.GithubPersonalAccessToken != "" {
