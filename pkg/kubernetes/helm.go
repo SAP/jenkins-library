@@ -144,6 +144,9 @@ func (h *HelmExecute) RunHelmAdd() error {
 	}
 
 	helmParams = append(helmParams, h.config.ChartRepo)
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
+	}
 
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm add ...")
@@ -175,6 +178,10 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		"upgrade",
 		h.config.DeploymentName,
 		h.config.ChartPath,
+	}
+
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
 	}
 
 	for _, v := range h.config.HelmValues {
