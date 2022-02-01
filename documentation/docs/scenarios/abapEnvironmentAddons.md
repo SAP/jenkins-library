@@ -2,8 +2,7 @@
 
 !!! caution "Current limitations"
     - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
-    - Table entries are currently delivered during add-on build with generic keys – thus it is strongly recommended to transport TABUs only with the software component the table definition belongs to and not in foreign software components to prevent loss of data.
-The possibility to deliver individual table keys as part of add-on build might be supported at a later point in time.
+    - __Table entries are currently delivered during add-on build with generic keys__ – thus it is strongly recommended to transport TABUs only with the software component the table definition belongs to and not in foreign software components to prevent loss of data. The possibility to deliver individual table keys as part of add-on build might be supported at a later point in time.
 
 !!! caution "Required project "Piper" library version"
     SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
