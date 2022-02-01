@@ -14,7 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// HelmDeployUtils interface
+// DeployUtils interface
 type DeployUtils interface {
 	SetEnv(env []string)
 	Stdout(out io.Writer)
