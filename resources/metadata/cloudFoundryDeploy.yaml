@@ -280,7 +280,7 @@ spec:
           - name: cloudFoundry/mtaExtensionDescriptor
       - name: mtaExtensionCredentials
         type: "map[string]interface{}"
-        description: "Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`. This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`. The placeholders in the extension descriptor file(s) looks like: `<%= value-to-be-replaced %>`. When used outside Jenkins the secret which corresponds to `id-of-a-credential-in-jenkins` needs to be provided as environment variable in screaming snake case, e.g.: `export ID_OF_A_CREDENTIAL_IN_JENKINS=<secret>`. `id-of-a-credential-in-jenkins` needs to be provided in a way so that it can be translated into a valid environment variable name (e.g. no leading number)."
+        description: "Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`. This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`. The placeholders in the extension descriptor file(s) looks like: `<%= value-to-be-replaced %>`. When used outside Jenkins the secret which corresponds to `id-of-a-credential-in-jenkins` needs to be provided as environment variable in screaming snake case, e.g.: `export ID_OF_A_CREDENTIAL_IN_JENKINS=<secret>`. `id-of-a-credential-in-jenkins` needs to be provided in a way so that it can be translated into a valid environment variable name (e.g. no leading number). `value-to-be-replaced` must match this regex: `^[-_A-Za-z0-9]+$`."
         scope:
           - PARAMETERS
           - STAGES

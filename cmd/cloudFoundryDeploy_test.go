@@ -1354,6 +1354,15 @@ func TestMtaExtensionCredentials(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("invalid chars in credential key name", func(t *testing.T) {
+		err := handleMtaExtensionCredentials("mtaext1.mtaext",
+			map[string]interface{}{
+				"test.*Cred1": "myCredEnvVar1",
+			},
+		)
+		assert.EqualError(t, err, "credential key name 'test.*Cred1' contains unsupported character. Must contain only [A-Z][a-z][0-9][-_]")
+	})
+
 	t.Run("replace straight forward", func(t *testing.T) {
 		mtaFileName := "mtaext3.mtaext"
 		err := handleMtaExtensionCredentials(

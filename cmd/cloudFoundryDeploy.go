@@ -726,6 +726,12 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		if !ok {
 			return fmt.Errorf("cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
 		}
+
+		const allowedVariableNamePattern = "^[-_A-Za-z0-9]+$"
+		alphaNumOnly := regexp.MustCompile(allowedVariableNamePattern)
+		if !alphaNumOnly.MatchString(name) {
+			return fmt.Errorf("credential key name '%s' contains unsupported character. Must contain only %s", name, allowedVariableNamePattern)
+		}
 		pattern := regexp.MustCompile("<%=\\s*" + name + "\\s*%>")
 		if pattern.MatchString(content) {
 			cred := env[toEnvVarKey(credKey)]
