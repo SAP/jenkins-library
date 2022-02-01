@@ -726,14 +726,14 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		if !ok {
 			return fmt.Errorf("cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
 		}
-		pattern := "<%= " + name + " %>"
-		if strings.Contains(content, pattern) {
+		pattern := regexp.MustCompile("<%=\\s*" + name + "\\s*%>")
+		if pattern.MatchString(content) {
 			cred := env[toEnvVarKey(credKey)]
 			if len(cred) == 0 {
 				missingCredentials = append(missingCredentials, credKey)
 				continue
 			}
-			content = strings.Replace(content, pattern, cred, -1)
+			content = pattern.ReplaceAllString(content, cred)
 			updated = true
 			log.Entry().Debugf("Mta extension credentials handling: Placeholder '%s' has been replaced by credential denoted by '%s'/'%s' in file '%s'", name, credKey, toEnvVarKey(credKey), extFile)
 		} else {
@@ -765,7 +765,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}
 
-	re := regexp.MustCompile(`<%= .* %>`)
+	re := regexp.MustCompile(`<%=\\s*.*\\s*%>`)
 	placeholders := re.FindAll([]byte(content), -1)
 	if len(placeholders) > 0 {
 		log.Entry().Warningf("mta extension credential handling: Unresolved placeholders found after inserting credentials: %s", placeholders)

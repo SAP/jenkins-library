@@ -1299,7 +1299,10 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	extends: test
 	parameters
 		test-credentials1: "<%= testCred1 %>"
-		test-credentials2: "<%= testCred2 %>"`)
+		test-credentials2: "<%=testCred2%>"
+		test-credentials3: "<%= testCred2%>"
+		test-credentials4: "<%=testCred2 %>"
+		test-credentials5: "<%=  testCred2    %>"`)
 
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
@@ -1368,6 +1371,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 			content := string(b)
 			assert.Contains(t, content, "test-credentials1: \"******\"")
 			assert.Contains(t, content, "test-credentials2: \"++++++\"")
+			assert.Contains(t, content, "test-credentials3: \"++++++\"")
+			assert.Contains(t, content, "test-credentials4: \"++++++\"")
+			assert.Contains(t, content, "test-credentials5: \"++++++\"")
 		}
 	})
 }
