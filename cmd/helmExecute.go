@@ -36,17 +36,12 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config.HelmCommand, config.AdditionalParameters, helmExecutor); err != nil {
+	if err := runHelmExecute(config.HelmCommand, helmExecutor); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(helmCommand string, additionalParameters []string, helmExecutor kubernetes.HelmExecutor) error {
-
-	if helmCommand == "" && len(additionalParameters) == 0 {
-		return fmt.Errorf("helm command is not presented")
-	}
-
+func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) error {
 	switch helmCommand {
 	case "upgrade":
 		if err := helmExecutor.RunHelmUpgrade(); err != nil {
@@ -75,11 +70,6 @@ func runHelmExecute(helmCommand string, additionalParameters []string, helmExecu
 	case "push":
 		if err := helmExecutor.RunHelmPush(); err != nil {
 			return fmt.Errorf("failed to execute helm package: %v", err)
-		}
-	default:
-		fmt.Printf("Helm command will be executed directly")
-		if err := helmExecutor.RunHelmDirect(); err != nil {
-			return fmt.Errorf("failed to execute helm command directly: %v", err)
 		}
 	}
 

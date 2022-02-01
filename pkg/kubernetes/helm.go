@@ -31,7 +31,6 @@ type HelmExecutor interface {
 	RunHelmRegistryLogin() error
 	RunHelmRegistryLogout() error
 	RunHelmPush() error
-	RunHelmDirect() error
 }
 
 // HelmExecute struct
@@ -78,7 +77,7 @@ type deployUtilsBundle struct {
 	*piperutils.Files
 }
 
-// NewExecutor
+// NewExecutor creates HelmExecute instance
 func NewHelmExecutor(config HelmExecuteOptions, utils HelmDeployUtils, verbose bool, stdout io.Writer) HelmExecutor {
 	return &HelmExecute{
 		config:  config,
@@ -233,6 +232,10 @@ func (h *HelmExecute) RunHelmLint() error {
 		h.config.ChartPath,
 	}
 
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
+	}
+
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm lint ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
@@ -308,6 +311,9 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	if h.config.DryRun {
 		helmParams = append(helmParams, "--dry-run")
 	}
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
+	}
 
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm uninstall ...")
@@ -339,6 +345,9 @@ func (h *HelmExecute) RunHelmPackage() error {
 	if len(h.config.AppVersion) > 0 {
 		helmParams = append(helmParams, "--app-version", h.config.AppVersion)
 	}
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
+	}
 
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm package ...")
@@ -366,6 +375,9 @@ func (h *HelmExecute) RunHelmTest() error {
 	}
 	if h.config.DumpLogs {
 		helmParams = append(helmParams, "--logs")
+	}
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
 	}
 
 	h.utils.Stdout(h.stdout)
@@ -439,35 +451,6 @@ func (h *HelmExecute) RunHelmPush() error {
 
 	if err := h.RunHelmRegistryLogout(); err != nil {
 		return fmt.Errorf("failed to execute registry logout: %v", err)
-	}
-
-	return nil
-}
-
-//RunHelmDirect is used to run helm command directly via flag
-func (h *HelmExecute) RunHelmDirect() error {
-	err := h.runHelmInit()
-	if err != nil {
-		return fmt.Errorf("failed to execute helm command: %v", err)
-	}
-
-	if err := h.RunHelmAdd(); err != nil {
-		return fmt.Errorf("failed to execute helm command: %v", err)
-	}
-
-	helmParams := []string{}
-
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
-	} else {
-		return fmt.Errorf("helm command is not presented via flag or config yaml")
-	}
-
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm command ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
-		log.Entry().WithError(err).Fatal("Helm command call failed")
 	}
 
 	return nil

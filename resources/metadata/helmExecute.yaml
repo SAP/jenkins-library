@@ -233,6 +233,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        mandatory: true
+        possibleValues:
+          - upgrade
+          - install
+          - lint
+          - test
+          - uninstall
+          - package
+          - push
       - name: dryRun
         type: bool
         description: simulate execute command, like simulate an install

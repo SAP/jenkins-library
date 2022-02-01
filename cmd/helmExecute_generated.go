@@ -33,7 +33,7 @@ type helmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	HelmCommand               string   `json:"helmCommand,omitempty"`
+	HelmCommand               string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade install lint test uninstall package push"`
 	DryRun                    bool     `json:"dryRun,omitempty"`
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
@@ -188,6 +188,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deploymentName")
 	cmd.MarkFlagRequired("image")
+	cmd.MarkFlagRequired("helmCommand")
 }
 
 // retrieve step metadata
@@ -425,7 +426,7 @@ func helmExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_helmCommand"),
 					},

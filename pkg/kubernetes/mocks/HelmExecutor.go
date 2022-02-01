@@ -23,20 +23,6 @@ func (_m *HelmExecutor) RunHelmAdd() error {
 	return r0
 }
 
-// RunHelmDirect provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmDirect() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // RunHelmInstall provides a mock function with given fields:
 func (_m *HelmExecutor) RunHelmInstall() error {
 	ret := _m.Called()
