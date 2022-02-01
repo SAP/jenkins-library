@@ -12,6 +12,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const imageRegistry = "some-registry"
@@ -38,7 +39,7 @@ func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner) {
 func TestRunCnbBuild(t *testing.T) {
 	t.Parallel()
 
-	t.Run("preferes direct configuration", func(t *testing.T) {
+	t.Run("prefers direct configuration", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
@@ -68,7 +69,7 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 	})
 
-	t.Run("preferes project descriptor", func(t *testing.T) {
+	t.Run("prefers project descriptor", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
@@ -87,15 +88,22 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		telemetryData := telemetry.CustomData{}
+		err := runCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner)
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, "io-buildpacks-my-app", config.ContainerImageTag))
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "io-buildpacks-my-app:0.0.1", commonPipelineEnvironment.container.imageNameTag)
+
+		customDataAsString := telemetryData.Custom1
+		customData := cnbBuildTelemetryData{}
+		err = json.Unmarshal([]byte(customDataAsString), &customData)
+		require.NoError(t, err)
+		assert.Equal(t, "root", string(customData.Path))
 	})
 
 	t.Run("success case (registry with https)", func(t *testing.T) {
@@ -429,7 +437,7 @@ uri = "some-buildpack"`))
 		assert.NoError(t, err)
 		assert.Equal(t, 1, customData.Version)
 		assert.Equal(t, "3.1.5", customData.ImageTag)
-		assert.Equal(t, "target", customData.Path)
+		assert.Equal(t, "folder", string(customData.Path))
 		assert.Contains(t, customData.AdditionalTags, "latest")
 		assert.Contains(t, customData.BindingKeys, "SECRET")
 
