@@ -69,7 +69,7 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 		}
 	case "push":
 		if err := helmExecutor.RunHelmPush(); err != nil {
-			return fmt.Errorf("failed to execute helm package: %v", err)
+			return fmt.Errorf("failed to execute helm push: %v", err)
 		}
 	}
 
