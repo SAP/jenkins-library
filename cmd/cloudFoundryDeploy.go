@@ -736,6 +736,8 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 			content = strings.Replace(content, pattern, cred, -1)
 			updated = true
 			log.Entry().Debugf("Mta extension credentials handling: Placeholder '%s' has been replaced by credential denoted by '%s'/'%s' in file '%s'", name, credKey, toEnvVarKey(credKey), extFile)
+		} else {
+			log.Entry().Debugf("Mta extension credentials handling: Variable '%s' is not used in file '%s'", name, extFile)
 		}
 	}
 	if len(missingCredentials) > 0 {
