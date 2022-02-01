@@ -724,7 +724,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 	for name, credentialKey := range credentials {
 		credKey, ok := credentialKey.(string)
 		if !ok {
-			return fmt.Errorf("Cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
+			return fmt.Errorf("cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
 		}
 		pattern := "<%= " + name + " %>"
 		if strings.Contains(content, pattern) {
@@ -746,7 +746,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		// ensure stable order of the entries. Needed e.g. for the tests.
 		sort.Strings(missingCredentials)
 		sort.Strings(missinCredsEnvVarKeyCompatible)
-		return fmt.Errorf("Cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
+		return fmt.Errorf("cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
 	}
 	if !updated {
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
