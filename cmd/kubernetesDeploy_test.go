@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -57,7 +58,9 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		telemetryData := &telemetry.CustomData{}
+
+		runKubernetesDeploy(opts, telemetryData, mockUtils, &stdout)
 
 		assert.Equal(t, "helm", mockUtils.Calls[0].Exec, "Wrong init command")
 		assert.Equal(t, []string{"init", "--client-only"}, mockUtils.Calls[0].Params, "Wrong init parameters")
@@ -87,6 +90,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--testParam",
 			"testValue",
 		}, mockUtils.Calls[2].Params, "Wrong upgrade parameters")
+
+		assert.Equal(t, &telemetry.CustomData{
+			Custom1Label: "deployTool",
+			Custom1:      "helm",
+		}, telemetryData)
 	})
 
 	t.Run("test helm - with containerImageName and containerImageTag instead of image", func(t *testing.T) {
@@ -118,7 +126,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "helm", mockUtils.Calls[0].Exec, "Wrong init command")
 		assert.Equal(t, []string{"init", "--client-only"}, mockUtils.Calls[0].Params, "Wrong init parameters")
@@ -170,7 +178,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.NoError(t, err)
 
 		assert.Equal(t, "helm", mockUtils.Calls[0].Exec, "Wrong init command")
@@ -240,7 +248,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "helm", mockUtils.Calls[0].Exec, "Wrong init command")
 		assert.Equal(t, []string{"init", "--client-only"}, mockUtils.Calls[0].Params, "Wrong init parameters")
@@ -297,7 +305,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
@@ -329,7 +337,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		telemetryData := &telemetry.CustomData{}
+		runKubernetesDeploy(opts, telemetryData, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
@@ -368,6 +377,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--testParam",
 			"testValue",
 		}, mockUtils.Calls[1].Params, "Wrong upgrade parameters")
+
+		assert.Equal(t, &telemetry.CustomData{
+			Custom1Label: "deployTool",
+			Custom1:      "helm3",
+		}, telemetryData)
 	})
 
 	t.Run("test helm v3 - runs helm tests", func(t *testing.T) {
@@ -399,7 +413,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
@@ -478,7 +492,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
@@ -558,7 +572,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
@@ -630,7 +644,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
@@ -669,7 +683,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
@@ -702,7 +716,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
@@ -761,7 +775,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, 1, len(mockUtils.Calls), "Wrong number of upgrade commands")
 		assert.Equal(t, "helm", mockUtils.Calls[0].Exec, "Wrong upgrade command")
@@ -804,7 +818,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.EqualError(t, err, "chart path has not been set, please configure chartPath parameter")
 	})
 
@@ -826,7 +840,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.EqualError(t, err, "deployment name has not been set, please configure deploymentName parameter")
 	})
 
@@ -848,7 +862,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
@@ -903,7 +917,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			`kubectl create secret generic regSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster`: dockerConfigJSON,
 		}
 		var stdout bytes.Buffer
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
 
@@ -946,7 +960,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		mockUtils.ShouldFailOnCommand = map[string]error{}
 
 		var stdout bytes.Buffer
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
@@ -978,7 +992,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		mockUtils.AddFile("test.yaml", []byte("image: <image-name>"))
 
 		var stdout bytes.Buffer
-		runKubernetesDeploy(opts, mockUtils, &stdout)
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
 
@@ -1004,7 +1018,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		var stdout bytes.Buffer
 
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
@@ -1033,7 +1047,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		mockUtils.AddFile("test.yaml", []byte(kubeYaml))
 
 		var stdout bytes.Buffer
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.NoError(t, err, "Command should not fail")
 
 		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
@@ -1080,7 +1094,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		mockUtils.AddFile("test.yaml", []byte(kubeYaml))
 
 		var stdout bytes.Buffer
-		err := runKubernetesDeploy(opts, mockUtils, &stdout)
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 		assert.NoError(t, err, "Command should not fail")
 
 		assert.Equal(t, mockUtils.Env, []string{"KUBECONFIG=This is my kubeconfig"})
