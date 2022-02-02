@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -557,13 +559,21 @@ type SarifRuleProperties struct {
 
 func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
-	_, err := FileUtils.Unzip(resultFilePath, "result/")
 	var sarif SARIF
+
+	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	defer os.RemoveAll(tmpFolder)
+	if err != nil {
+		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
+		return sarif, err
+	}
+
+	_, err = FileUtils.Unzip(resultFilePath, tmpFolder)
 	if err != nil {
 		return sarif, err
 	}
-	//File is result/audit.fvdl
-	data, err := ioutil.ReadFile("result/audit.fvdl")
+
+	data, err := ioutil.ReadFile(filepath.Join(tmpFolder, "audit.fvdl"))
 	if err != nil {
 		return sarif, err
 	}
