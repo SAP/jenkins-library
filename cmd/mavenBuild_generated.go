@@ -127,7 +127,7 @@ It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.
 
 ### build with depedencies from a private repository
-if your build has depdencies from a private repository you can include a project settings xml into the source code respository as below (replace the ` + "`" + `<url>` + "`" + `
+if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the ` + "`" + `<url>` + "`" + `
 tag with a valid private repo url).
 ` + "`" + `` + "`" + `` + "`" + `xml
 <?xml version="1.0" encoding="UTF-8"?>
