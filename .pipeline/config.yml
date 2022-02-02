@@ -1,8 +1,4 @@
 steps:
-  golangBuild:
-    runTests: false
-    runIntegrationTests: false
-    createBOM: true
   githubPublishRelease:
     addClosedIssues: true
     addDeltaToLastRelease: true
