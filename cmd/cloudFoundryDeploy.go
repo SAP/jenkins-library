@@ -684,7 +684,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		if err != nil {
 			return fmt.Errorf("Cannot prepare mta extension files: %w", err)
 		}
-		_, err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
+		_, _, err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
 		if err != nil {
 			return fmt.Errorf("Cannot handle credentials inside mta extension files: %w", err)
 		}
@@ -704,33 +704,32 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	return err
 }
 
-func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) (bool, error) {
+func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) (updated, containsUnresolved bool, err error) {
 
 	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
 
 	b, err := fileUtils.FileRead(extFile)
 	if err != nil {
-		return false, errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
+		return false, false, errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
 	}
 	content := string(b)
 
 	env, err := toMap(_environ(), "=")
 	if err != nil {
-		return false, errors.Wrap(err, "Cannot handle mta extension credentials.")
+		return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
 	}
 
-	updated := false
 	missingCredentials := []string{}
 	for name, credentialKey := range credentials {
 		credKey, ok := credentialKey.(string)
 		if !ok {
-			return false, fmt.Errorf("cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
+			return false, false, fmt.Errorf("cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
 		}
 
 		const allowedVariableNamePattern = "^[-_A-Za-z0-9]+$"
 		alphaNumOnly := regexp.MustCompile(allowedVariableNamePattern)
 		if !alphaNumOnly.MatchString(name) {
-			return false, fmt.Errorf("credential key name '%s' contains unsupported character. Must contain only %s", name, allowedVariableNamePattern)
+			return false, false, fmt.Errorf("credential key name '%s' contains unsupported character. Must contain only %s", name, allowedVariableNamePattern)
 		}
 		pattern := regexp.MustCompile("<%=\\s*" + name + "\\s*%>")
 		if pattern.MatchString(content) {
@@ -754,7 +753,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		// ensure stable order of the entries. Needed e.g. for the tests.
 		sort.Strings(missingCredentials)
 		sort.Strings(missinCredsEnvVarKeyCompatible)
-		return false, fmt.Errorf("cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
+		return false, false, fmt.Errorf("cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
 	}
 	if !updated {
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
@@ -762,24 +761,24 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		fInfo, err := fileUtils.Stat(extFile)
 		fMode := fInfo.Mode()
 		if err != nil {
-			return false, errors.Wrap(err, "Cannot handle mta extension credentials.")
+			return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
 		}
 		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
 		if err != nil {
-			return false, errors.Wrap(err, "Cannot handle mta extension credentials.")
+			return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
 		}
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}
 
 	re := regexp.MustCompile(`<%=.*%>`)
 	placeholders := re.FindAll([]byte(content), -1)
-	containsUnresolved := (len(placeholders) > 0)
+	containsUnresolved = (len(placeholders) > 0)
 
 	if containsUnresolved {
 		log.Entry().Warningf("mta extension credential handling: Unresolved placeholders found after inserting credentials: %s", placeholders)
 	}
 
-	return containsUnresolved, nil
+	return updated, containsUnresolved, nil
 }
 
 func toEnvVarKey(key string) string {

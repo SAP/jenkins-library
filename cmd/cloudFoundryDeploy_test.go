@@ -1326,13 +1326,13 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	}()
 
 	t.Run("extension file does not exist", func(t *testing.T) {
-		_, err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
+		_, _, err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
 		assert.EqualError(t, err, "Cannot handle credentials for mta extension file 'mtaextDoesNotExist.mtaext': could not read 'mtaextDoesNotExist.mtaext'")
 	})
 
 	t.Run("credential cannot be retrieved", func(t *testing.T) {
 
-		_, err := handleMtaExtensionCredentials(
+		_, _, err := handleMtaExtensionCredentials(
 			"mtaext1.mtaext",
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1NotDefined",
@@ -1344,7 +1344,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {
 
-		_, err := handleMtaExtensionCredentials(
+		_, _, err := handleMtaExtensionCredentials(
 			"mtaext2.mtaext",
 			map[string]interface{}{
 				"testCred1":       "myCredEnvVar1",
@@ -1356,7 +1356,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	})
 
 	t.Run("invalid chars in credential key name", func(t *testing.T) {
-		_, err := handleMtaExtensionCredentials("mtaext1.mtaext",
+		_, _, err := handleMtaExtensionCredentials("mtaext1.mtaext",
 			map[string]interface{}{
 				"test.*Cred1": "myCredEnvVar1",
 			},
@@ -1366,14 +1366,14 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("unresolved placeholders does not cause an error", func(t *testing.T) {
 		// we emit a log message, but it does not fail
-		containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
+		_, containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
 		assert.True(t, containsUnresolved)
 		assert.NoError(t, err)
 	})
 
 	t.Run("replace straight forward", func(t *testing.T) {
 		mtaFileName := "mtaext3.mtaext"
-		_, err := handleMtaExtensionCredentials(
+		updated, containsUnresolved, err := handleMtaExtensionCredentials(
 			mtaFileName,
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1",
@@ -1391,6 +1391,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 			assert.Contains(t, content, "test-credentials3: \"++++++\"")
 			assert.Contains(t, content, "test-credentials4: \"++++++\"")
 			assert.Contains(t, content, "test-credentials5: \"++++++\"")
+
+			assert.True(t, updated)
+			assert.False(t, containsUnresolved)
 		}
 	})
 }
