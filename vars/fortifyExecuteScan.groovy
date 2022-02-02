@@ -13,6 +13,6 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
 
-    List credentials = [[type: 'token', id: 'fortifyCredentialsId', env: ['PIPER_authToken']]]
+    List credentials = [[type: 'token', id: 'fortifyCredentialsId', env: ['PIPER_authToken']], [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']]]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

@@ -31,6 +31,7 @@ type npmExecuteScriptsOptions struct {
 	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
 	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
 	BuildSettingsInfo          string   `json:"buildSettingsInfo,omitempty"`
+	PackBeforePublish          bool     `json:"packBeforePublish,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
@@ -76,7 +77,22 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Execute npm run scripts on all npm packages in a project",
-		Long:  `Execute npm run scripts in all package json files, if they implement the scripts.`,
+		Long: `Execute npm run scripts in all package json files, if they implement the scripts.
+
+### build with depedencies from a private repository
+if your build has scoped/unscoped depdencies from a private repository you can include a .npmrc into the source code
+respository as below (replace the registry value(s) with a valid private repo url) :
+
+` + "`" + `` + "`" + `` + "`" + `
+@privateScope:registry=https://private.repository.com/
+//private.repository.com/:username=${PIPER_CREDENTIAL_USER}
+//private.repository.com/:_password=${PIPER_CREDENTIAL_PASSWORD_BASE64}
+//private.repository.com/:always-auth=true
+registry=https://registry.npmjs.org
+` + "`" + `` + "`" + `` + "`" + `
+` + "`" + `PIPER_CREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository
+and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -167,6 +183,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for pack")
 
 }
 
@@ -320,6 +337,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "packBeforePublish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
