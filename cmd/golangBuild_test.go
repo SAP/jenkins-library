@@ -18,6 +18,12 @@ import (
 type golangBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+
+	returnFileUploadStatus int   // expected to be set upfront
+	returnFileUploadError  error // expected to be set upfront
+
+	clientOptions []piperhttp.ClientOptions // set by mock
+	fileUploads   map[string]string         // set by mock
 }
 
 func (utils golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
@@ -29,13 +35,33 @@ func (utils golangBuildMockUtils) SendRequest(method string, url string, r io.Re
 }
 
 func (utils golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
-	// not implemented
+	utils.clientOptions = append(utils.clientOptions, options)
+}
+
+func (utils golangBuildMockUtils) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (utils golangBuildMockUtils) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	utils.fileUploads[file] = url
+
+	response := http.Response{
+		StatusCode: utils.returnFileUploadStatus,
+	}
+
+	return &response, utils.returnFileUploadError
+}
+
+func (utils golangBuildMockUtils) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func newGolangBuildTestsUtils() golangBuildMockUtils {
 	utils := golangBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
+		//clientOptions:  []piperhttp.ClientOptions{},
+		fileUploads: map[string]string{},
 	}
 	return utils
 }
@@ -104,6 +130,28 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - publishes binaries", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 200
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+
+		assert.Equal(t, 1, len(utils.fileUploads))
+		assert.Equal(t, "https://my.target.repository.local/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
 	})
 
 	t.Run("success - create BOM", func(t *testing.T) {
@@ -199,6 +247,36 @@ func TestRunGolangBuild(t *testing.T) {
 
 		err := runGolangBuild(&config, &telemetryData, utils)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: build failure")
+	})
+
+	t.Run("failure - publish - no target repository defined", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures: []string{"linux,amd64"},
+			Output:              "testBin",
+			Publish:             true,
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "there's no target repository for binary publishing configured")
+	})
+
+	t.Run("failure - publish - received unexpected status code", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 500
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "couldn't upload artifact, received status code 500")
 	})
 
 	t.Run("failure - create BOM", func(t *testing.T) {
@@ -439,7 +517,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		ldflags := ""
 		architecture := "linux,amd64"
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Greater(t, len(utils.Env), 3)
 		assert.Contains(t, utils.Env, "CGO_ENABLED=0")
@@ -447,6 +525,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, utils.Env, "GOARCH=amd64")
 		assert.Equal(t, utils.Calls[0].Exec, "go")
 		assert.Equal(t, utils.Calls[0].Params[0], "build")
+		assert.Empty(t, binaryName)
 	})
 
 	t.Run("success - custom params", func(t *testing.T) {
@@ -456,13 +535,14 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		ldflags := "-X test=test"
 		architecture := "linux,amd64"
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-linux.amd64")
 		assert.Contains(t, utils.Calls[0].Params, "./test/..")
 		assert.Contains(t, utils.Calls[0].Params, "-ldflags")
 		assert.Contains(t, utils.Calls[0].Params, "-X test=test")
+		assert.Equal(t, "testBin-linux.amd64", binaryName)
 	})
 
 	t.Run("success - windows", func(t *testing.T) {
@@ -472,10 +552,11 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		ldflags := ""
 		architecture := "windows,amd64"
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-windows.amd64.exe")
+		assert.Equal(t, "testBin-windows.amd64.exe", binaryName)
 	})
 
 	t.Run("execution error", func(t *testing.T) {
@@ -486,7 +567,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		ldflags := ""
 		architecture := "linux,amd64"
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		_, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
 

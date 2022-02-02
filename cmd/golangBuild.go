@@ -37,7 +37,7 @@ type golangBuildUtils interface {
 	goget.Client
 
 	piperutils.FileUtils
-	piperhttp.Sender
+	piperhttp.Uploader
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -48,7 +48,7 @@ type golangBuildUtils interface {
 type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-	piperhttp.Sender
+	piperhttp.Uploader
 	goget.Client
 
 	// Embed more structs as necessary to implement methods or interfaces you add to golangBuildUtils.
@@ -69,9 +69,9 @@ func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
 	httpClient.SetOptions(httpClientOptions)
 
 	utils := golangBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Sender:  &httpClient,
+		Command:  &command.Command{},
+		Files:    &piperutils.Files{},
+		Uploader: &httpClient,
 		Client: &goget.ClientImpl{
 			HTTPClient: &httpClient,
 		},
@@ -160,10 +160,45 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		log.Entry().Infof("ldflags from template: '%v'", ldflags)
 	}
 
+	binaries := []string{}
+
 	for _, architecture := range config.TargetArchitectures {
-		err := runGolangBuildPerArchitecture(config, utils, ldflags, architecture)
+		binary, err := runGolangBuildPerArchitecture(config, utils, ldflags, architecture)
+
 		if err != nil {
 			return err
+		}
+
+		if len(binary) > 0 {
+			binaries = append(binaries, binary)
+		}
+	}
+
+	if config.Publish {
+		if len(config.TargetRepositoryURL) == 0 {
+			return fmt.Errorf("there's no target repository for binary publishing configured")
+		}
+
+		repoClientOptions := piperhttp.ClientOptions{
+			Username:     config.TargetRepositoryUser,
+			Password:     config.TargetRepositoryPassword,
+			TrustedCerts: config.CustomTLSCertificateLinks,
+		}
+
+		utils.SetOptions(repoClientOptions)
+
+		for _, binary := range binaries {
+			log.Entry().Infof("publishing artifact '%s'", binary)
+
+			response, err := utils.UploadFile(fmt.Sprintf("%s/%s", config.TargetRepositoryURL, binary), binary, "", nil, nil, "binary")
+
+			if err != nil {
+				return fmt.Errorf("couldn't upload artifact: %w", err)
+			}
+
+			if response.StatusCode != 200 {
+				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+			}
 		}
 	}
 
@@ -307,7 +342,9 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	return generatedLdflags.String(), nil
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags, architecture string) error {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags, architecture string) (string, error) {
+	var binaryName string
+
 	envVars := os.Environ()
 	goos, goarch := splitTargetArchitecture(architecture)
 	envVars = append(envVars, fmt.Sprintf("GOOS=%v", goos), fmt.Sprintf("GOARCH=%v", goarch))
@@ -323,7 +360,8 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 		if goos == "windows" {
 			fileExtension = ".exe"
 		}
-		buildOptions = append(buildOptions, "-o", fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension))
+		binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension)
+		buildOptions = append(buildOptions, "-o", binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
 	buildOptions = append(buildOptions, config.Packages...)
@@ -334,9 +372,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)
 		log.SetErrorCategory(log.ErrorBuild)
-		return fmt.Errorf("failed to run build for %v.%v: %w", goos, goarch, err)
+		return "", fmt.Errorf("failed to run build for %v.%v: %w", goos, goarch, err)
 	}
-	return nil
+	return binaryName, nil
 }
 
 func splitTargetArchitecture(architecture string) (string, string) {
