@@ -1342,7 +1342,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 		assert.EqualError(t, err, "cannot handle mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'/'[MY_CRED_ENV_VAR1_NOT_DEFINED MY_CRED_ENV_VAR2_NOT_DEFINED]'. Are these credentials maintained?")
 	})
 
-	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {
+	t.Run("irrelevant credentials do not cause failures", func(t *testing.T) {
 
 		_, _, err := handleMtaExtensionCredentials(
 			"mtaext2.mtaext",
