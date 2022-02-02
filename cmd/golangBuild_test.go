@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +18,18 @@ import (
 type golangBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func (utils golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
+	return fmt.Sprintf("https://%s.git", module), nil
+}
+
+func (utils golangBuildMockUtils) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (utils golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
+	// not implemented
 }
 
 func newGolangBuildTestsUtils() golangBuildMockUtils {
@@ -475,4 +490,158 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
 
+}
+
+func TestPrepareGolangEnvironment(t *testing.T) {
+	modTestFile := `
+module private.example.com/m
+
+require (
+        example.com/public/module v1.0.0
+        private1.example.com/private/repo v0.1.0
+        private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
+
+	type expectations struct {
+		envVars          []string
+		commandsExecuted [][]string
+	}
+	tests := []struct {
+		name           string
+		modFileContent string
+		globPattern    string
+		gitToken       string
+		expect         expectations
+	}{
+		{
+			name:           "success - does nothing if privateModules is not set",
+			modFileContent: modTestFile,
+			globPattern:    "",
+			gitToken:       "secret",
+			expect:         expectations{},
+		},
+		{
+			name:           "success - goprivate is set and authentication properly configured",
+			modFileContent: modTestFile,
+			globPattern:    "*.example.com",
+			gitToken:       "secret",
+			expect: expectations{
+				envVars: []string{"GOPRIVATE=*.example.com"},
+				commandsExecuted: [][]string{
+					[]string{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
+					[]string{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+			utils.FilesMock.AddFile("go.mod", []byte(tt.modFileContent))
+
+			config := golangBuildOptions{}
+			config.PrivateModules = tt.globPattern
+			config.PrivateModulesGitToken = tt.gitToken
+
+			err := prepareGolangEnvironment(&config, &utils)
+
+			if assert.NoError(t, err) {
+				assert.Subset(t, os.Environ(), tt.expect.envVars)
+				assert.Equal(t, len(tt.expect.commandsExecuted), len(utils.Calls))
+
+				for i, expectedCommand := range tt.expect.commandsExecuted {
+					assert.Equal(t, expectedCommand[0], utils.Calls[i].Exec)
+					assert.Equal(t, expectedCommand[1:], utils.Calls[i].Params)
+				}
+			}
+		})
+	}
+}
+
+func TestLookupGolangPrivateModulesRepositories(t *testing.T) {
+	t.Parallel()
+
+	modTestFile := `
+module private.example.com/m
+
+require (
+	example.com/public/module v1.0.0
+	private1.example.com/private/repo v0.1.0
+	private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
+
+	type expectations struct {
+		repos        []string
+		errorMessage string
+	}
+	tests := []struct {
+		name           string
+		modFileContent string
+		globPattern    string
+		expect         expectations
+	}{
+		{
+			name:           "Does nothing if glob pattern is empty",
+			modFileContent: modTestFile,
+			expect: expectations{
+				repos: []string{},
+			},
+		},
+		{
+			name:           "Does nothing if there is no go.mod file",
+			globPattern:    "private.example.com",
+			modFileContent: "",
+			expect: expectations{
+				repos: []string{},
+			},
+		},
+		{
+			name:           "Detects all private repos using a glob pattern",
+			modFileContent: modTestFile,
+			globPattern:    "*.example.com",
+			expect: expectations{
+				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
+			},
+		},
+		{
+			name:           "Detects all private repos",
+			modFileContent: modTestFile,
+			globPattern:    "private1.example.com,private2.example.com",
+			expect: expectations{
+				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
+			},
+		},
+		{
+			name:           "Detects a dedicated repo",
+			modFileContent: modTestFile,
+			globPattern:    "private2.example.com",
+			expect: expectations{
+				repos: []string{"https://private2.example.com/another/repo.git"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+
+			if tt.modFileContent != "" {
+				utils.FilesMock.AddFile("go.mod", []byte(tt.modFileContent))
+			}
+
+			repos, err := lookupGolangPrivateModulesRepositories(tt.globPattern, utils)
+
+			if tt.expect.errorMessage == "" {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expect.repos, repos)
+			} else {
+				assert.EqualError(t, err, tt.expect.errorMessage)
+			}
+		})
+	}
 }
