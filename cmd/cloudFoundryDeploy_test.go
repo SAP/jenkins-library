@@ -1366,8 +1366,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("unresolved placeholders does not cause an error", func(t *testing.T) {
 		// we emit a log message, but it does not fail
-		_, containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
+		updated, containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
 		assert.True(t, containsUnresolved)
+		assert.False(t, updated)
 		assert.NoError(t, err)
 	})
 
