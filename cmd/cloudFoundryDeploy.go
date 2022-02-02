@@ -771,7 +771,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}
 
-	re := regexp.MustCompile(`<%=\\s*.*\\s*%>`)
+	re := regexp.MustCompile(`<%=.*%>`)
 	placeholders := re.FindAll([]byte(content), -1)
 	if len(placeholders) > 0 {
 		log.Entry().Warningf("mta extension credential handling: Unresolved placeholders found after inserting credentials: %s", placeholders)
