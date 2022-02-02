@@ -348,9 +348,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 		}
 
 		if len(config.ArtifactVersion) == 0 {
-			binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension)
+			binaryName = fmt.Sprintf("%v.%v-%v%v", config.Output, goos, goarch, fileExtension)
 		} else {
-			binaryName = fmt.Sprintf("%v-%v-%v.%v%v", config.Output, goos, config.ArtifactVersion, goarch, fileExtension)
+			binaryName = fmt.Sprintf("%v-%v.%v-%v%v", config.Output, config.ArtifactVersion, goos, goarch, fileExtension)
 		}
 
 		buildOptions = append(buildOptions, "-o", binaryName)
