@@ -1360,7 +1360,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				"test.*Cred1": "myCredEnvVar1",
 			},
 		)
-		assert.EqualError(t, err, "credential key name 'test.*Cred1' contains unsupported character. Must contain only [A-Z][a-z][0-9][-_]")
+		assert.EqualError(t, err, "credential key name 'test.*Cred1' contains unsupported character. Must contain only ^[-_A-Za-z0-9]+$")
 	})
 
 	t.Run("replace straight forward", func(t *testing.T) {
