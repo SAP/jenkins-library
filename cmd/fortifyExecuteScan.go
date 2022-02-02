@@ -250,11 +250,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
-<<<<<<< HEAD
 		log.Entry().Info("Calling conversion to SARIF function.")
-=======
-		log.Entry().Debug("Calling conversion to SARIF function.")
->>>>>>> 61f85386 (Fix fortify folder creation for generating sarif)
 		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
 		if err != nil {
 			return reports, fmt.Errorf("failed to generate SARIF")

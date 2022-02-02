@@ -496,7 +496,6 @@ type Attribute struct {
 func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
-
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
 	defer os.RemoveAll(tmpFolder)
 	if err != nil {
