@@ -205,6 +205,17 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: artifactVersion
+        type: string
+        description: Version of the artifact to be built.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - name: golang
       image: golang:1

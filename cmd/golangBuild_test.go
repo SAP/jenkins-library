@@ -515,6 +515,20 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Equal(t, "testBin-windows.amd64.exe", binaryName)
 	})
 
+	t.Run("success - with artifactversion set", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "testBin", ArtifactVersion: "1.0.0"}
+		utils := newGolangBuildTestsUtils()
+		ldflags := ""
+		architecture := "windows,amd64"
+
+		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		assert.NoError(t, err)
+		assert.Contains(t, utils.Calls[0].Params, "-o")
+		assert.Contains(t, utils.Calls[0].Params, "testBin-windows-1.0.0.amd64.exe")
+		assert.Equal(t, "testBin-windows-1.0.0.amd64.exe", binaryName)
+	})
+
 	t.Run("execution error", func(t *testing.T) {
 		t.Parallel()
 		config := golangBuildOptions{}
