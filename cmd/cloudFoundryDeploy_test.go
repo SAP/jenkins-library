@@ -1294,16 +1294,6 @@ func TestAppNameChecks(t *testing.T) {
 
 func TestMtaExtensionCredentials(t *testing.T) {
 
-	content := []byte(`'_schema-version: '3.1'
-	ID: test.ext
-	extends: test
-	parameters
-		test-credentials1: "<%= testCred1 %>"
-		test-credentials2: "<%=testCred2%>"
-		test-credentials3: "<%= testCred2%>"
-		test-credentials4: "<%=testCred2 %>"
-		test-credentials5: "<%=  testCred2    %>"`)
-
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
 	filesMock.Chdir("/home/me")
@@ -1328,7 +1318,13 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("credential cannot be retrieved", func(t *testing.T) {
 
-		filesMock.AddFile("mtaext.mtaext", content)
+		filesMock.AddFile("mtaext.mtaext", []byte(
+			`'_schema-version: '3.1'
+				ID: test.ext
+				extends: test
+				parameters
+					test-credentials1: "<%= testCred1 %>"
+					test-credentials2: "<%=testCred2%>`))
 		_, _, err := handleMtaExtensionCredentials(
 			"mtaext.mtaext",
 			map[string]interface{}{
@@ -1341,7 +1337,13 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("irrelevant credentials do not cause failures", func(t *testing.T) {
 
-		filesMock.AddFile("mtaext.mtaext", content)
+		filesMock.AddFile("mtaext.mtaext", []byte(
+			`'_schema-version: '3.1'
+				ID: test.ext
+				extends: test
+				parameters
+					test-credentials1: "<%= testCred1 %>"
+					test-credentials2: "<%=testCred2%>`))
 		_, _, err := handleMtaExtensionCredentials(
 			"mtaext.mtaext",
 			map[string]interface{}{
@@ -1354,7 +1356,13 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	})
 
 	t.Run("invalid chars in credential key name", func(t *testing.T) {
-		filesMock.AddFile("mtaext.mtaext", content)
+		filesMock.AddFile("mtaext.mtaext", []byte(
+			`'_schema-version: '3.1'
+				ID: test.ext
+				extends: test
+				parameters
+					test-credentials1: "<%= testCred1 %>"
+					test-credentials2: "<%=testCred2%>`))
 		_, _, err := handleMtaExtensionCredentials("mtaext.mtaext",
 			map[string]interface{}{
 				"test.*Cred1": "myCredEnvVar1",
@@ -1374,7 +1382,16 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("replace straight forward", func(t *testing.T) {
 		mtaFileName := "mtaext.mtaext"
-		filesMock.AddFile(mtaFileName, content)
+		filesMock.AddFile(mtaFileName, []byte(
+			`'_schema-version: '3.1'
+			ID: test.ext
+			extends: test
+			parameters
+				test-credentials1: "<%= testCred1 %>"
+				test-credentials2: "<%=testCred2%>"
+				test-credentials3: "<%= testCred2%>"
+				test-credentials4: "<%=testCred2 %>"
+				test-credentials5: "<%=  testCred2    %>"`))
 		updated, containsUnresolved, err := handleMtaExtensionCredentials(
 			mtaFileName,
 			map[string]interface{}{
