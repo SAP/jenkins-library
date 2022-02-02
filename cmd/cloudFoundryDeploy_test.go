@@ -1307,10 +1307,6 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
 	filesMock.Chdir("/home/me")
-	filesMock.AddFile("mtaext1.mtaext", content)
-	filesMock.AddFile("mtaext2.mtaext", content)
-	filesMock.AddFile("mtaext3.mtaext", content)
-	filesMock.AddFile(("mtaext-unresolved.mtaext"), []byte("<%= unresolved %>"))
 	fileUtils = &filesMock
 
 	_environ = func() []string {
@@ -1332,8 +1328,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("credential cannot be retrieved", func(t *testing.T) {
 
+		filesMock.AddFile("mtaext.mtaext", content)
 		_, _, err := handleMtaExtensionCredentials(
-			"mtaext1.mtaext",
+			"mtaext.mtaext",
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1NotDefined",
 				"testCred2": "myCredEnvVar2NotDefined",
@@ -1344,8 +1341,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("irrelevant credentials do not cause failures", func(t *testing.T) {
 
+		filesMock.AddFile("mtaext.mtaext", content)
 		_, _, err := handleMtaExtensionCredentials(
-			"mtaext2.mtaext",
+			"mtaext.mtaext",
 			map[string]interface{}{
 				"testCred1":       "myCredEnvVar1",
 				"testCred2":       "myCredEnvVar2",
@@ -1356,7 +1354,8 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	})
 
 	t.Run("invalid chars in credential key name", func(t *testing.T) {
-		_, _, err := handleMtaExtensionCredentials("mtaext1.mtaext",
+		filesMock.AddFile("mtaext.mtaext", content)
+		_, _, err := handleMtaExtensionCredentials("mtaext.mtaext",
 			map[string]interface{}{
 				"test.*Cred1": "myCredEnvVar1",
 			},
@@ -1366,6 +1365,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("unresolved placeholders does not cause an error", func(t *testing.T) {
 		// we emit a log message, but it does not fail
+		filesMock.AddFile("mtaext-unresolved.mtaext", []byte("<%= unresolved %>"))
 		updated, containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
 		assert.True(t, containsUnresolved)
 		assert.False(t, updated)
@@ -1373,7 +1373,8 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	})
 
 	t.Run("replace straight forward", func(t *testing.T) {
-		mtaFileName := "mtaext3.mtaext"
+		mtaFileName := "mtaext.mtaext"
+		filesMock.AddFile(mtaFileName, content)
 		updated, containsUnresolved, err := handleMtaExtensionCredentials(
 			mtaFileName,
 			map[string]interface{}{
