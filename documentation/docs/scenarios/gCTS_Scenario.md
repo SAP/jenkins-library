@@ -1,7 +1,6 @@
-# Set up a pipeline-based ABAP development and testing process using Git-Enabled Change and Transport System.
+# Set up a Pipeline-Based ABAP Development and Testing Process Using Git-Enabled Change and Transport System.
 
-!!! caution "Current limitations"
-    For current information about gCTS, see SAP Note [Central Note for Git-enabled Change and Transport System (gCTS)](https://launchpad.support.sap.com/#/notes/2821718)
+For current information about gCTS, see SAP Note [Central Note for Git-enabled Change and Transport System (gCTS)](https://launchpad.support.sap.com/#/notes/2821718)
 
 ## Introduction
 
@@ -9,9 +8,9 @@
 This scenario explains how to use a pipeline to deploy a commit to a test system, and execute ABAP unit tests and ATC (ABAP Test Cockpit) checks in the test system. In detail, this scenario covers the following steps:    
 For each new commit that arrives in the remote repository, the pipeline executes the following Piper steps in the test system:
 1. [gctsDeploy](https://www.project-piper.io/steps/gctsDeploy/): Deploys the commit on the test system.
-2. [gctsExecuteABAPUnitTests](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/): Executes ABAP unit tests and ATC (ABAP Test Cockpit) checks for the ABAP development objects of the commit.
+2. [gctsExecuteABAPUnitTests](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/): Executes ABAP unit tests and ATC checks for the ABAP development objects of the commit.
 - If the result of the testing is success, the pipeline finishes.  
-- If the result of the testing is error, a rollback to the previous commit is executed. You can check the results of the testing using the Warnings Next Generation Plugin in Jenkins.
+- If the result of the testing is error, a rollback to the previous commit is executed. You can check the results of the testing using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) in Jenkins.
 
 ## Prerequisites
 
@@ -23,12 +22,15 @@ You can use this Git repository also for the pipeline configuration.
 The repository used for the pipeline configuration needs to be accessed by the Jenkins instance. If the repository is password protected, the user and password (or access token) should be stored in the Jenkins Credentials Store (Manage Jenkins  &rightarrow; Manage Credentials).
 - You have at least two ABAP systems with a version SAP S/4HANA 2020 or higher. You need one development system that you use to push objects to the Git repository, and a test system on which you run the pipeline.
 - You have enabled [ATC](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/latest/en-US/4ec5711c6e391014adc9fffe4e204223.html) checks in transaction ATC in the test system.
-- You have access to a Jenkins instance including the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/).
-- For the gCTS scenario, we recommend that you use the [Custom Jenkins setup](https://www.project-piper.io/infrastructure/customjenkins/). Even though it is possible to run the gCTS scenario with [Piper´s CX server](https://www.project-piper.io/infrastructure/overview/).
+- You have access to a Jenkins instance including the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/).   
+For the gCTS scenario, we recommend that you use the [Custom Jenkins setup](https://www.project-piper.io/infrastructure/customjenkins/) even though it is possible to run the gCTS scenario with [Piper´s CX server](https://www.project-piper.io/infrastructure/overview/).
+- You have set up a suitable Jenkins instance as described under [Getting Started with Project "Piper"](https://www.project-piper.io/guidedtour/) under *Create Your First Pipeline*.
+- The user that is used for the execution of the pipeline must have the credentials entered in gCTS as described in the gCTS documentation under [Set User-Specific Authentication](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/3431ebd6fbf241778cd60587e7b5dc3e.html). Otherwise, the pipeline runs into an error that can only be resolved by deleting the repository from the ABAP system, and restarting again.
 
 
 ##Process
-[Process: Deploy and execute tests](../images/checkSuccessful.png "Process: Deploy and execute tests")
+![Process: Deploy Git repository on local system and execute tests - Tests are successful](../images/checkSuccessful.png "Process: Deploy and execute tests: Success")
+![Process: Deploy Git repository on local system and execute tests - Tests are not successful](../images/checkNotSuccessful.png "Process: Deploy and execute tests: Success")
 
 ##example
 
@@ -38,10 +40,63 @@ If you use the pipeline of the following code snippet, you only have to configur
 Following the convention for pipeline definitions, use a Jenkinsfile, which resides in the root directory of your development sources.
 
 ```groovy
-@Library('piper-lib-os') _
+@Library(['piper-lib-os']) _
+pipeline {
+  agent any
+  options {
+    disableConcurrentBuilds()
+  }
 
-piperPipeline script:this
-```
+  environment {
+    DEMOCREDS = 'ABAPUserPasswordCredentialsId'
+    HOST = 'https://<host of the ABAP system>:<port>'
+    CLIENT = '000'
+    REPO = '<repository name>'
+    REPO_URL = "<URL of the remote Git Repository>"
+  }
+
+  stages {
+    stage('gCTS Deploy') {
+      when {
+        anyOf {
+          branch 'master'
+        }
+      }
+      steps {
+        gctsDeploy(
+          script: this,
+          host: HOST,
+          client: CLIENT,
+          abapCredentialsId: DEMOCREDS,
+          repository: REPO,
+          remoteRepositoryURL: REPO_URL,
+          role: 'SOURCE',
+          vSID: 'ABC')
+
+      }
+    }
+
+    stage('gctsExecuteABAPUnitTests') {
+      when {
+        anyOf {
+          branch 'main'
+        }
+      }
+      steps {
+        gctsExecuteABAPUnitTests(
+          script: this,
+          host: HOST,
+          client: CLIENT,
+          abapCredentialsId: DEMOCREDS,
+          repository: REPO,
+          scope: 'localChangedObjects',
+          commit: "${GIT_COMMIT}",
+          workspace: "${WORKSPACE}")
+
+      }
+    }
+  }
+}```
 
 ### Configuration (`.pipeline/config.yml`)
 
