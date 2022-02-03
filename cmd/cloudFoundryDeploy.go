@@ -770,7 +770,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}
 
-	re := regexp.MustCompile(`<%=.*%>`)
+	re := regexp.MustCompile(`<%=.+%>`)
 	placeholders := re.FindAll([]byte(content), -1)
 	containsUnresolved = (len(placeholders) > 0)
 
