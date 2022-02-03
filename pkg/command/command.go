@@ -65,6 +65,10 @@ func (c *Command) AppendEnv(env []string) {
 	c.env = append(c.env, env...)
 }
 
+func (c *Command) GetOsEnv() []string {
+	return os.Environ()
+}
+
 // Stdin ..
 func (c *Command) Stdin(stdin io.Reader) {
 	c.stdin = stdin

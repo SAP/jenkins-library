@@ -40,6 +40,7 @@ type detectUtils interface {
 	Glob(pattern string) (matches []string, err error)
 
 	GetExitCode() int
+	GetOsEnv() []string
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	SetDir(dir string)
@@ -257,9 +258,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		log.Entry().Infof("Using Detect Rescan script")
 		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
 	}
-	if piperutils.ContainsStringPart(config.CustomEnvironmentVariables, "DETECT_LATEST_RELEASE_VERSION") {
+	env := utils.GetOsEnv()
+	env = append(env, config.CustomEnvironmentVariables...)
+	if piperutils.ContainsStringPart(env, "DETECT_LATEST_RELEASE_VERSION") {
 		releaseVersion := ""
-		for _, i := range config.CustomEnvironmentVariables {
+		for _, i := range env {
 			if strings.Contains(i, "DETECT_LATEST_RELEASE_VERSION") {
 				releaseVersion = strings.Split(i, "=")[1]
 			}
@@ -267,10 +270,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		log.Entry().Infof("Using detect script Version %v ", releaseVersion)
 		detect6, _ := regexp.MatchString("6\\.\\d\\.\\d", releaseVersion)
 		if detect6 {
-			log.Entry().Infof("Using Detect 6.x")
+			log.Entry().Infof("Downloading Detect 6.x")
 			return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
 		}
 	}
+	log.Entry().Infof("Downloading Detect7")
 	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
 

@@ -165,6 +165,10 @@ func (c *detectTestUtilsBundle) SetOptions(piperhttp.ClientOptions) {
 
 }
 
+func (c *detectTestUtilsBundle) GetOsEnv() []string {
+	return []string{}
+}
+
 func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
 
 	if c.expectedError != nil {
