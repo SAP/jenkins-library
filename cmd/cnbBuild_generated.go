@@ -18,23 +18,26 @@ import (
 )
 
 type cnbBuildOptions struct {
-	ContainerImageName        string                 `json:"containerImageName,omitempty"`
-	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
-	Buildpacks                []string               `json:"buildpacks,omitempty"`
-	BuildEnvVars              map[string]interface{} `json:"buildEnvVars,omitempty"`
-	Path                      string                 `json:"path,omitempty"`
-	ProjectDescriptor         string                 `json:"projectDescriptor,omitempty"`
-	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
-	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
-	AdditionalTags            []string               `json:"additionalTags,omitempty"`
-	Bindings                  map[string]interface{} `json:"bindings,omitempty"`
+	ContainerImageName        string                   `json:"containerImageName,omitempty"`
+	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
+	Buildpacks                []string                 `json:"buildpacks,omitempty"`
+	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
+	Path                      string                   `json:"path,omitempty"`
+	ProjectDescriptor         string                   `json:"projectDescriptor,omitempty"`
+	DockerConfigJSON          string                   `json:"dockerConfigJSON,omitempty"`
+	CustomTLSCertificateLinks []string                 `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalTags            []string                 `json:"additionalTags,omitempty"`
+	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
+	AdditionalImages          []map[string]interface{} `json:"additionalImages,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
 	container struct {
-		registryURL  string
-		imageNameTag string
+		registryURL   string
+		imageNameTag  string
+		imageNames    []string
+		imageNameTags []string
 	}
 }
 
@@ -46,6 +49,8 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "container", name: "imageNames", value: p.container.imageNames},
+		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 	}
 
 	errCount := 0
@@ -311,6 +316,14 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
+					{
+						Name:        "additionalImages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{},
+						Type:        "[]map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -324,6 +337,8 @@ func cnbBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
+							{"name": "container/imageNames", "type": "[]string"},
+							{"name": "container/imageNameTags", "type": "[]string"},
 						},
 					},
 				},

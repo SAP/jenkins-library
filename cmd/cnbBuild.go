@@ -21,6 +21,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/imdario/mergo"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
 )
@@ -76,6 +78,31 @@ type cnbBuildTelemetryDataProjectDescriptor struct {
 	ExcludeUsed bool `json:"excludeUsed"`
 }
 
+func processConfigs(main cnbBuildOptions, additional []map[string]interface{}) ([]cnbBuildOptions, error) {
+	var result []cnbBuildOptions
+
+	if additional == nil || len(additional) == 0 {
+		result = append(result, main)
+		return result, nil
+	}
+
+	for _, conf := range additional {
+		var structuredConf cnbBuildOptions
+		err := mapstructure.Decode(conf, &structuredConf)
+		if err != nil {
+			return nil, err
+		}
+		err = mergo.Merge(&structuredConf, main)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, structuredConf)
+	}
+
+	return result, nil
+}
+
 func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
@@ -106,11 +133,17 @@ func newCnbBuildUtils() cnbutils.BuildUtils {
 func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) {
 	utils := newCnbBuildUtils()
 
+	mergedConfigs, err := processConfigs(config, config.AdditionalImages)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("failed to process config")
+	}
 	client := &piperhttp.Client{}
 
-	err := runCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+	for _, c := range mergedConfigs {
+		err = runCnbBuild(&c, telemetryData, utils, commonPipelineEnvironment, client)
+		if err != nil {
+			log.Entry().WithError(err).Fatal("step execution failed")
+		}
 	}
 }
 
@@ -164,6 +197,22 @@ func isZip(path string) bool {
 	default:
 		return false
 	}
+}
+
+func cleanDir(dir string, utils cnbutils.BuildUtils) error {
+	dirContent, err := utils.Glob(filepath.Join(dir, "*"))
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range dirContent {
+		err = utils.RemoveAll(obj)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func copyFile(source, target string, utils cnbutils.BuildUtils) error {
@@ -275,18 +324,18 @@ func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
 	return utils.Symlink(targetPath, linkPath)
 }
 
-func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
-	if c.BuildEnvVars == nil {
-		c.BuildEnvVars = vars
+func (config *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
+	if config.BuildEnvVars == nil {
+		config.BuildEnvVars = vars
 
 		return
 	}
 
 	for k, v := range vars {
-		_, exists := c.BuildEnvVars[k]
+		_, exists := config.BuildEnvVars[k]
 
 		if !exists {
-			c.BuildEnvVars[k] = v
+			config.BuildEnvVars[k] = v
 		}
 	}
 }
@@ -317,7 +366,7 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (pathEnum,
 }
 
 func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryData, config *cnbBuildOptions) {
-	bindingKeys := []string{}
+	var bindingKeys []string
 	for k := range config.Bindings {
 		bindingKeys = append(bindingKeys, k)
 	}
@@ -423,6 +472,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
 	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
+	commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag))
+	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, targetImage.ContainerImageName)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
@@ -452,6 +503,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	pathType, source, err := config.resolvePath(utils)
 
+	err = cleanDir(target, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "failed to clean up target folder %s", target)
+	}
+
 	if pathType != pathEnumArchive {
 		err = copyProject(source, target, include, exclude, utils)
 		if err != nil {
@@ -467,13 +524,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
-		pwd, err := utils.Getwd()
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrap(err, "failed to get current working directory")
-		}
-
-		err = linkTargetFolder(utils, pwd, target)
+		err = linkTargetFolder(utils, source, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return err

@@ -188,6 +188,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: additionalImages
+        type: "[]map[string]interface{}"
+        description: Array of maps for building additional images.
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -195,5 +198,9 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
   containers:
     - image: "paketobuildpacks/builder:full"
