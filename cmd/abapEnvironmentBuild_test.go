@@ -33,6 +33,9 @@ func (mB abapEnvironmentBuildMockUtils) GetAbapCommunicationArrangementInfo(opti
 	return cd, nil
 }
 
+func (mB abapEnvironmentBuildMockUtils) publish() {
+}
+
 func (mB abapEnvironmentBuildMockUtils) GetPollIntervall() time.Duration {
 	return 1 * time.Microsecond
 }
