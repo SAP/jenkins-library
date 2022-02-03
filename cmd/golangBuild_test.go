@@ -148,10 +148,10 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"build", "-o", "testBin.linux-amd64"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
 
 		assert.Equal(t, 1, len(utils.fileUploads))
-		assert.Equal(t, "https://my.target.repository.local/testBin.linux-amd64", utils.fileUploads["testBin.linux-amd64"])
+		assert.Equal(t, "https://my.target.repository.local/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
 	})
 
 	t.Run("failure - install pre-requisites", func(t *testing.T) {
@@ -494,11 +494,11 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
-		assert.Contains(t, utils.Calls[0].Params, "testBin.linux-amd64")
+		assert.Contains(t, utils.Calls[0].Params, "testBin-linux.amd64")
 		assert.Contains(t, utils.Calls[0].Params, "./test/..")
 		assert.Contains(t, utils.Calls[0].Params, "-ldflags")
 		assert.Contains(t, utils.Calls[0].Params, "-X test=test")
-		assert.Equal(t, "testBin.linux-amd64", binaryName)
+		assert.Equal(t, "testBin-linux.amd64", binaryName)
 	})
 
 	t.Run("success - windows", func(t *testing.T) {
@@ -511,22 +511,8 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
-		assert.Contains(t, utils.Calls[0].Params, "testBin.windows-amd64.exe")
-		assert.Equal(t, "testBin.windows-amd64.exe", binaryName)
-	})
-
-	t.Run("success - with artifactversion set", func(t *testing.T) {
-		t.Parallel()
-		config := golangBuildOptions{Output: "testBin", ArtifactVersion: "1.0.0"}
-		utils := newGolangBuildTestsUtils()
-		ldflags := ""
-		architecture := "windows,amd64"
-
-		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
-		assert.NoError(t, err)
-		assert.Contains(t, utils.Calls[0].Params, "-o")
-		assert.Contains(t, utils.Calls[0].Params, "testBin-1.0.0.windows-amd64.exe")
-		assert.Equal(t, "testBin-1.0.0.windows-amd64.exe", binaryName)
+		assert.Contains(t, utils.Calls[0].Params, "testBin-windows.amd64.exe")
+		assert.Equal(t, "testBin-windows.amd64.exe", binaryName)
 	})
 
 	t.Run("execution error", func(t *testing.T) {

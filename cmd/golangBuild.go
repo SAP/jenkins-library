@@ -346,13 +346,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 		if goos == "windows" {
 			fileExtension = ".exe"
 		}
-
-		if len(config.ArtifactVersion) == 0 {
-			binaryName = fmt.Sprintf("%v.%v-%v%v", config.Output, goos, goarch, fileExtension)
-		} else {
-			binaryName = fmt.Sprintf("%v-%v.%v-%v%v", config.Output, config.ArtifactVersion, goos, goarch, fileExtension)
-		}
-
+		binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension)
 		buildOptions = append(buildOptions, "-o", binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
