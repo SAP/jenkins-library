@@ -31,16 +31,8 @@ func newPythonBuildUtils() pythonBuildUtils {
 }
 
 func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData) {
-	// Utils can be used wherever the command.ExecRunner interface is expected.
-	// It can also be used for example as a mavenExecRunner.
 	utils := newPythonBuildUtils()
 
-	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runPythonBuild(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -49,7 +41,7 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData)
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils) error {
 	if len(config.Sources) == 0 {
-		return fmt.Errorf("link to python project dir is not defined in input parameters")
+		log.Entry().Errorln("link to python project dir is not defined in input parameters")
 	}
 
 	for _, source := range config.Sources {

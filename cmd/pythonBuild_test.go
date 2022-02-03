@@ -28,10 +28,6 @@ func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	return utils
 }
 
-func (f *pythonBuildFileMock) FileExists(path string) (bool, error) {
-	return strings.EqualFold(path, "path/to/dir/python-project"), nil
-}
-
 func (f *pythonBuildFileMock) DirExists(path string) (bool, error) {
 	return strings.EqualFold(path, "path/to/dir/python-project"), nil
 }
