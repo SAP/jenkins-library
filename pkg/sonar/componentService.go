@@ -18,6 +18,7 @@ type ComponentService struct {
 	Organization string
 	Project      string
 	Branch       string
+	PullRequest  string
 	apiClient    *Requester
 }
 
@@ -44,6 +45,9 @@ type SonarLanguageDistribution struct {
 func (service *ComponentService) Component(options *MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
 	if len(service.Branch) > 0 {
 		options.Branch = service.Branch
+	}
+	if len(service.PullRequest) > 0 {
+		options.PullRequest = service.PullRequest
 	}
 	request, err := service.apiClient.create("GET", EndpointMeasuresComponent, options)
 	if err != nil {
@@ -151,11 +155,12 @@ func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 }
 
 // NewMeasuresComponentService returns a new instance of a service for the measures/component endpoint.
-func NewMeasuresComponentService(host, token, project, organization, branch string, client Sender) *ComponentService {
+func NewMeasuresComponentService(host, token, project, organization, branch, pullRequest string, client Sender) *ComponentService {
 	return &ComponentService{
 		Organization: organization,
 		Project:      project,
 		Branch:       branch,
+		PullRequest:  pullRequest,
 		apiClient:    NewAPIClient(host, token, client),
 	}
 }

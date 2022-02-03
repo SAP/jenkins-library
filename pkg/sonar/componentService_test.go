@@ -22,7 +22,7 @@ func TestComponentService(t *testing.T) {
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseCoverage))
 		// create service instance
-		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
 		cov, err := serviceUnderTest.GetCoverage()
 		// assert
@@ -45,7 +45,7 @@ func TestComponentService(t *testing.T) {
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseCoverageInvalidValue))
 		// create service instance
-		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
 		cov, err := serviceUnderTest.GetCoverage()
 		// assert
@@ -62,7 +62,7 @@ func TestComponentService(t *testing.T) {
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseLinesOfCode))
 		// create service instance
-		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
 		loc, err := serviceUnderTest.GetLinesOfCode()
 		// assert
@@ -93,7 +93,7 @@ func TestComponentService(t *testing.T) {
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseLinesOfCodeInvalidValue))
 		// create service instance
-		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
 		loc, err := serviceUnderTest.GetLinesOfCode()
 		// assert
@@ -110,7 +110,7 @@ func TestComponentService(t *testing.T) {
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, responseLinesOfCodeNoSeparator))
 		// create service instance
-		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		serviceUnderTest := NewMeasuresComponentService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
 		loc, err := serviceUnderTest.GetLinesOfCode()
 		// assert

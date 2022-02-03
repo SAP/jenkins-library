@@ -37,7 +37,8 @@ type IssuesSearchOption struct {
 
 // MeasuresComponentOption is a copy from magicsong/sonargo plus the "internal" field branch.
 type MeasuresComponentOption struct {
-	Branch string `url:"branch,omitempty"` // Description:"Branch key"
+	Branch      string `url:"branch,omitempty"`      // Description:"Branch key"
+	PullRequest string `url:"pullRequest,omitempty"` // Description:"Pull request id"
 	// copied from https://github.com/magicsong/sonargo/blob/master/sonar/measures_service.go#L53
 	AdditionalFields string `url:"additionalFields,omitempty"` // Description:"Comma-separated list of additional fields that can be returned in the response.",ExampleValue:"periods,metrics"
 	Component        string `url:"component,omitempty"`        // Description:"Component key",ExampleValue:"my_project"

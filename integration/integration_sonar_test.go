@@ -67,7 +67,7 @@ func TestSonarMeasuresComponentSearch(t *testing.T) {
 		componentKey = "SAP_jenkins-library"
 	}
 
-	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, "", &piperhttp.Client{})
+	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, "", "", &piperhttp.Client{})
 	// test
 	_, err := componentService.GetCoverage()
 	// assert
@@ -92,7 +92,7 @@ func TestSonarGetLinesOfCode(t *testing.T) {
 		componentKey = "SAP_jenkins-library"
 	}
 
-	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, "", &piperhttp.Client{})
+	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, "", "", &piperhttp.Client{})
 	// test
 	_, err := componentService.GetLinesOfCode()
 	// assert
