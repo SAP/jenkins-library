@@ -124,7 +124,40 @@ func MavenBuildCommand() *cobra.Command {
 		Short: "This step will install the maven project into the local maven repository.",
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
-supports ci friendly versioning by flattening the pom before installing.`,
+supports ci friendly versioning by flattening the pom before installing.
+
+### build with depedencies from a private repository
+if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the ` + "`" + `<url>` + "`" + `
+tag with a valid private repo url).
+` + "`" + `` + "`" + `` + "`" + `xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+        <id>private.repo.id</id>
+        <username>${env.PIPER_CREDENTIAL_USERNAME}</username>
+        <password>${env.PIPER_CREDENTIAL_PASSWORD}</password>
+    </server>
+  </servers>
+  <repositories>
+    <repository>
+      <id>private.repo.id</id>
+      <url>https://private.repo.com/</url>
+    </repository>
+  </repositories>
+</settings>
+` + "`" + `` + "`" + `` + "`" + `
+` + "`" + `PIPER_CREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository and are exposed as environment variables that must be present
+in the environment where the Piper step runs or alternatively can be created using :
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
+
+Ensure the following configuration in the Piper config yaml to ensure the above settings xml is included during mavenBuild:
+
+` + "`" + `` + "`" + `` + "`" + `yaml
+mavenBuild:
+  projectSettingsFile: <path to the above settings.xml>
+` + "`" + `` + "`" + `` + "`" + ``,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
