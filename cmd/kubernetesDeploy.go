@@ -63,14 +63,17 @@ func newKubernetesDeployUtilsBundle() kubernetesDeployUtils {
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
 	utils := newKubernetesDeployUtilsBundle()
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runKubernetesDeploy(config, utils, log.Writer())
+	// error situations stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runKubernetesDeploy(config, telemetryData, utils, log.Writer())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, stdout io.Writer) error {
+func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetesDeployUtils, stdout io.Writer) error {
+	telemetryData.Custom1Label = "deployTool"
+	telemetryData.Custom1 = config.DeployTool
+
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		return runHelmDeploy(config, utils, stdout)
 	} else if config.DeployTool == "kubectl" {
@@ -225,6 +228,26 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetesDeployUtils, 
 	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
+
+	testParams := []string{
+		"test",
+		config.DeploymentName,
+		"--namespace", config.Namespace,
+	}
+
+	if config.ShowTestLogs {
+		testParams = append(
+			testParams,
+			"--logs",
+		)
+	}
+
+	if config.RunHelmTests {
+		if err := utils.RunExecutable("helm", testParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Helm test call failed")
+		}
+	}
+
 	return nil
 }
 

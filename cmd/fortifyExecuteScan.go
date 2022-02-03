@@ -159,11 +159,13 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
 	} else {
 		prID, prAuthor := determinePullRequestMerge(config)
-		if len(prID) > 0 {
+		if prID != "0" {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
 			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
 				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
 				config.Assignees = append(config.Assignees, prAuthor)
+			} else {
+				log.Entry().Debugf("Unable to determine PR Author, using assignees: %v", config.Assignees)
 			}
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
@@ -942,13 +944,15 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
-	if err == nil {
+	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
 			log.Entry().WithError(err).Warn("Failed to get PR metadata via GitHub client")
 		} else {
 			return prID, author
 		}
+	} else {
+		log.Entry().WithError(err).Warn("Failed to instantiate GitHub client to get PR metadata")
 	}
 
 	log.Entry().Infof("Trying to determine PR ID in commit message: %v", config.CommitMessage)
@@ -957,16 +961,24 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string
 	if matches != nil && len(matches) > 1 {
 		return string(matches[config.PullRequestMessageRegexGroup]), author
 	}
-	return "", ""
+	return "0", ""
 }
 
 func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
+	number := "0"
+	author := ""
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
-	if err == nil && len(prList) > 0 {
-		return fmt.Sprintf("%v", prList[0].GetNumber()), *prList[0].User.Email, nil
+	if err == nil && prList != nil && len(prList) > 0 {
+		number = fmt.Sprintf("%v", prList[0].GetNumber())
+		if prList[0].GetUser() != nil {
+			author = prList[0].GetUser().GetLogin()
+		}
+		return number, author, nil
+	} else {
+		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
-	return "", "", err
+	return number, author, err
 }
 
 func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {
