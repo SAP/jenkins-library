@@ -21,7 +21,7 @@ func newHelmMockUtilsBundle() helmMockUtilsBundle {
 
 func TestRunHelm(t *testing.T) {
 
-	t.Run("Helm package command", func(t *testing.T) {
+	t.Run("Helm add command", func(t *testing.T) {
 		utils := newHelmMockUtilsBundle()
 
 		testTable := []struct {
@@ -30,20 +30,9 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:      ".",
-					DeploymentName: "testPackage",
+					ChartRepo: "https://charts.helm.sh/stable",
 				},
-				expectedConfig: []string{"package", "."},
-			},
-			{
-				config: HelmExecuteOptions{
-					ChartPath:        ".",
-					DeploymentName:   "testPackage",
-					PackageVersion:   "1.2.3",
-					DependencyUpdate: true,
-					AppVersion:       "9.8.7",
-				},
-				expectedConfig: []string{"package", ".", "--version", "1.2.3", "--dependency-update", "--app-version", "9.8.7"},
+				expectedConfig: []string{"repo", "add", "stable", "https://charts.helm.sh/stable"},
 			},
 		}
 
@@ -54,7 +43,68 @@ func TestRunHelm(t *testing.T) {
 				verbose: false,
 				stdout:  log.Writer(),
 			}
-			err := helmExecute.RunHelmPackage()
+			err := helmExecute.RunHelmAdd()
+			assert.NoError(t, err)
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
+		}
+	})
+
+	t.Run("Helm upgrade command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedConfig []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					DeploymentName:        "test_deployment",
+					ChartPath:             ".",
+					Namespace:             "test_namespace",
+					ForceUpdates:          true,
+					HelmDeployWaitSeconds: 3456,
+					AdditionalParameters:  []string{"additional parameter"},
+				},
+				expectedConfig: []string{"upgrade", "test_deployment", ".", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"},
+			},
+		}
+
+		for i, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmUpgrade()
+			assert.NoError(t, err)
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
+		}
+	})
+
+	t.Run("Helm lint command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedConfig []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					ChartPath: ".",
+				},
+				expectedConfig: []string{"lint", "."},
+			},
+		}
+
+		for i, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmLint()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
@@ -146,6 +196,45 @@ func TestRunHelm(t *testing.T) {
 				stdout:  log.Writer(),
 			}
 			err := helmExecute.RunHelmUninstall()
+			assert.NoError(t, err)
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
+		}
+	})
+
+	t.Run("Helm package command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedConfig []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					ChartPath:      ".",
+					DeploymentName: "testPackage",
+				},
+				expectedConfig: []string{"package", "."},
+			},
+			{
+				config: HelmExecuteOptions{
+					ChartPath:        ".",
+					DeploymentName:   "testPackage",
+					PackageVersion:   "1.2.3",
+					DependencyUpdate: true,
+					AppVersion:       "9.8.7",
+				},
+				expectedConfig: []string{"package", ".", "--version", "1.2.3", "--dependency-update", "--app-version", "9.8.7"},
+			},
+		}
+
+		for i, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmPackage()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
@@ -257,6 +346,63 @@ func TestRunHelm(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+		}
+	})
+
+	t.Run("Helm registry login command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedConfig []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					HelmRegistryUser: "helmRegistryUser",
+				},
+				expectedConfig: []string{"registry login", "-u", "helmRegistryUser", "localhost:5000"},
+			},
+		}
+
+		for i, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmRegistryLogin()
+			assert.NoError(t, err)
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
+		}
+	})
+
+	t.Run("Helm registry login command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedConfig []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					DeploymentName: "nginx",
+					PackageVersion: "2.3.4",
+				},
+				expectedConfig: []string{"push", "nginx2.3.4.tgz", "oci://localhost:5000/helm-charts"},
+			},
+		}
+
+		for _, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmPush()
+			assert.NoError(t, err)
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[1])
 		}
 	})
 
