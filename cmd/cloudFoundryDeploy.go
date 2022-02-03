@@ -4,14 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/yaml"
-	"github.com/elliotchance/orderedmap"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,6 +12,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/yaml"
+	"github.com/elliotchance/orderedmap"
+	"github.com/pkg/errors"
 )
 
 type cfFileUtil interface {
