@@ -1325,7 +1325,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				extends: test
 				parameters
 					test-credentials1: "<%= testCred1 %>"
-					test-credentials2: "<%=testCred2%>`))
+					test-credentials2: "<%=testCred2%>"`))
 		_, _, err := handleMtaExtensionCredentials(
 			"mtaext.mtaext",
 			map[string]interface{}{
