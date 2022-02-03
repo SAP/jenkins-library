@@ -22,6 +22,7 @@ type abapEnvironmentBuildUtils interface {
 	abapbuild.HTTPSendLoader
 	getMaxRuntime() time.Duration
 	getPollingInterval() time.Duration
+	publish()
 }
 
 type abapEnvironmentBuildUtilsBundle struct {
@@ -30,6 +31,24 @@ type abapEnvironmentBuildUtilsBundle struct {
 	*abaputils.AbapUtils
 	maxRuntime      time.Duration
 	pollingInterval time.Duration
+	storePublish    publish
+}
+
+type publish struct {
+	stepName  string
+	workspace string
+	reports   []piperutils.Path
+	links     []piperutils.Path
+}
+
+func (p *publish) publish() {
+	if p.stepName != "" {
+		abapbuild.PersistReportsAndLinks(p.stepName, p.workspace, p.reports, p.links)
+	}
+}
+
+func (aEBUB *abapEnvironmentBuildUtilsBundle) publish() {
+	aEBUB.storePublish.publish()
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) getMaxRuntime() time.Duration {
@@ -41,7 +60,16 @@ func (aEBUB *abapEnvironmentBuildUtilsBundle) getPollingInterval() time.Duration
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
+	//abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
+	if aEBUB.storePublish.stepName == "" {
+		aEBUB.storePublish.stepName = stepName
+		aEBUB.storePublish.workspace = workspace
+		aEBUB.storePublish.reports = reports
+		aEBUB.storePublish.links = links
+	} else {
+		aEBUB.storePublish.reports = append(aEBUB.storePublish.reports, reports...)
+		aEBUB.storePublish.links = append(aEBUB.storePublish.reports, links...)
+	}
 }
 
 func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingInterval time.Duration) abapEnvironmentBuildUtils {
@@ -53,6 +81,7 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingInterval time
 		},
 		maxRuntime:      maxRuntime * time.Minute,
 		pollingInterval: pollingInterval * time.Second,
+		storePublish:    publish{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -80,9 +109,12 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	}
 
 	finalValues, err := runBuilds(conn, config, utils, valuesList)
+	//files should be published, even if an error occured
+	(*utils).publish()
 	if err != nil {
 		return err
 	}
+
 	cpe.abap.buildValues, err = convertValuesForCPE(finalValues)
 	if err != nil {
 		return errors.Wrap(err, "Error during the conversion of the values for the commonPipelineenvironment")
