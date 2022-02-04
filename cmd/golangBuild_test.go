@@ -149,7 +149,7 @@ func TestRunGolangBuild(t *testing.T) {
 			ArtifactVersion:          "1.0.0",
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.returnFileUploadStatus = 200
+		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
 		telemetryData := telemetry.CustomData{}
 

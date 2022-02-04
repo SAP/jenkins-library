@@ -233,7 +233,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 				return fmt.Errorf("couldn't upload artifact: %w", err)
 			}
 
-			if response.StatusCode != 200 {
+			if !(response.StatusCode == 200 || response.StatusCode == 201) {
 				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 			}
 		}
