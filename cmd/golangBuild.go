@@ -17,7 +17,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
@@ -38,6 +41,8 @@ type golangBuildUtils interface {
 	piperutils.FileUtils
 	piperhttp.Uploader
 
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
 	// i.e. include everything you need to be able to mock in tests.
@@ -48,12 +53,17 @@ type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	piperhttp.Uploader
+
 	goget.Client
 
 	// Embed more structs as necessary to implement methods or interfaces you add to golangBuildUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
 	// If there is no struct which implements the method you need, attach the method to
 	// golangBuildUtilsBundle and forward to the implementation of the dependency.
+}
+
+func (utils golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
@@ -170,8 +180,24 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("there's no target repository for binary publishing configured")
 		}
 
-		if len(config.ArtifactVersion) == 0 {
-			return fmt.Errorf("artifactVersion is not set")
+		artifactVersion := config.ArtifactVersion
+
+		if len(artifactVersion) == 0 {
+			artifactOpts := versioning.Options{
+				VersioningScheme: "library",
+			}
+
+			artifact, err := versioning.GetArtifact("golang", "", &artifactOpts, utils)
+
+			if err != nil {
+				return err
+			}
+
+			artifactVersion, err = artifact.GetVersion()
+
+			if err != nil {
+				return err
+			}
 		}
 
 		if goModFile == nil {
@@ -201,7 +227,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 			log.Entry().Infof("publishing artifact: %s", targetURL)
 
-			response, err := utils.UploadRequest(targetURL, binary, "", nil, nil, "binary")
+			response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 
 			if err != nil {
 				return fmt.Errorf("couldn't upload artifact: %w", err)

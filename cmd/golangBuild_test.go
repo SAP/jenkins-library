@@ -28,6 +28,10 @@ type golangBuildMockUtils struct {
 	fileUploads   map[string]string         // set by mock
 }
 
+func (utils golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
+}
+
 func (utils golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
 	return fmt.Sprintf("https://%s.git", module), nil
 }
@@ -310,7 +314,7 @@ func TestRunGolangBuild(t *testing.T) {
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils)
-		assert.EqualError(t, err, "artifactVersion is not set")
+		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
 	})
 
 	t.Run("failure - publish - received unexpected status code", func(t *testing.T) {
