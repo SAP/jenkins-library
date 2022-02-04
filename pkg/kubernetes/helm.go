@@ -118,14 +118,13 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	// containerInfo, err := getContainerInfo(h.config)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to execute deployments")
-	// }
-	// secretsData, err := getSecretsData(h.config, h.utils, containerInfo)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to execute deployments")
-	// }
+	var containerInfo map[string]string
+	if h.config.Image != "" && h.config.ContainerRegistryURL != "" {
+		containerInfo, err = getContainerInfo(h.config)
+		if err != nil {
+			return fmt.Errorf("failed to execute deployments")
+		}
+	}
 
 	helmParams := []string{
 		"upgrade",
@@ -145,10 +144,12 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		helmParams,
 		"--install",
 		"--namespace", h.config.Namespace,
-		// "--set",
-		// fmt.Sprintf("image.repository=%v/%v,image.tag=%v", containerInfo["containerRegistry"], containerInfo["containerImageName"],
-		// 	containerInfo["containerImageTag"], secretsData),
 	)
+
+	if h.config.Image != "" && h.config.ContainerRegistryURL != "" {
+		helmParams = append(helmParams, "--set", fmt.Sprintf("image.repository=%v/%v,image.tag=%v",
+			containerInfo["containerRegistry"], containerInfo["containerImageName"], containerInfo["containerImageTag"]))
+	}
 
 	if h.config.ForceUpdates {
 		helmParams = append(helmParams, "--force")

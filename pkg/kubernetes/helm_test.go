@@ -64,8 +64,10 @@ func TestRunHelm(t *testing.T) {
 					ForceUpdates:          true,
 					HelmDeployWaitSeconds: 3456,
 					AdditionalParameters:  []string{"additional parameter"},
+					ContainerRegistryURL:  "https://hub.docker.com/",
+					Image:                 "dtzar/helm-kubectl:3.4.1",
 				},
-				expectedConfig: []string{"upgrade", "test_deployment", ".", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"},
+				expectedConfig: []string{"upgrade", "test_deployment", ".", "--install", "--namespace", "test_namespace", "--set", "image.repository=hub.docker.com/dtzar/helm-kubectl,image.tag=3.4.1", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"},
 			},
 		}
 
