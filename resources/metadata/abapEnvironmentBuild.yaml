@@ -225,6 +225,14 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+      - name: stopOnFirstError
+        type: bool
+        default: true
+        description: If false, it does not stop if an error occured for one repository in the addonDescriptor, but continues with the next repository. However the step is marked as failed in the end if an error occured.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: addonDescriptor
         type: string
         description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions

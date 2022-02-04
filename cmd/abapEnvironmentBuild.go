@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
@@ -136,22 +137,31 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 		}
 	} else {
 		//Run several times for each repository in the addonDescriptor
+		var errstrings []string
 		vE := valuesEvaluator{}
 		vE.m = make(map[string]string)
 		for _, values := range valuesList {
 			cummulatedValues, err := generateValuesWithAddonDescriptor(config, values)
 			if err != nil {
-				return finalValues, errors.Wrap(err, "Error during execution of build framework")
+				return finalValues, errors.Wrap(err, "Error generating input values")
 			}
 			finalValuesForOneBuild, err := runBuild(conn, config, utils, cummulatedValues)
 			if err != nil {
-				return finalValues, errors.Wrap(err, "Error during execution of build framework")
+				err = errors.Wrapf(err, "Build with input values %s failed", values)
+				if config.StopOnFirstError {
+					return finalValues, err
+				}
+				errstrings = append(errstrings, err.Error())
 			}
 			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
 			//This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
 			vE.appendValuesIfNotPresent(finalValuesForOneBuild, false)
 		}
 		finalValues = vE.generateValueSlice()
+		if len(errstrings) > 0 {
+			finalError := errors.Errorf("%d out %d build runs failed: \n %s", len(errstrings), len(valuesList), (strings.Join(errstrings, "\n")))
+			return finalValues, finalError
+		}
 	}
 	return finalValues, nil
 }
