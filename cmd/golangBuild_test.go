@@ -159,6 +159,31 @@ func TestRunGolangBuild(t *testing.T) {
 		}
 	})
 
+	t.Run("success - publishes binaries (when TargetRepositoryURL ends with slash)", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local/",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			ArtifactVersion:          "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 200
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+			assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+
+			assert.Equal(t, 1, len(utils.fileUploads))
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
+		}
+	})
+
 	t.Run("failure - install pre-requisites", func(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests: true,

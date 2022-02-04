@@ -188,8 +188,15 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		utils.SetOptions(repoClientOptions)
 
 		for _, binary := range binaries {
-			targetPath := fmt.Sprintf("/go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
-			targetURL := fmt.Sprintf("%s%s", config.TargetRepositoryURL, targetPath)
+			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
+
+			separator := "/"
+
+			if strings.HasSuffix(config.TargetRepositoryURL, "/") {
+				separator = ""
+			}
+
+			targetURL := fmt.Sprintf("%s%s%s", config.TargetRepositoryURL, separator, targetPath)
 
 			log.Entry().Infof("publishing artifact: %s", targetURL)
 
