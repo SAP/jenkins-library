@@ -99,6 +99,38 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: targetRepositoryPassword
+        description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: targetRepositoryUser
+        description: "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: targetRepositoryURL
+        description: "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
       - name: reportCoverage
         type: bool
         description: Defines if a coverage report should be created.

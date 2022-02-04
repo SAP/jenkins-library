@@ -233,8 +233,13 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 
-	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, apiClient)
+	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	cov, err := componentService.GetCoverage()
+	if err != nil {
+		return err // No wrap, description already added one level below
+	}
+
+	loc, err := componentService.GetLinesOfCode()
 	if err != nil {
 		return err // No wrap, description already added one level below
 	}
@@ -254,7 +259,8 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Minor:    influx.sonarqube_data.fields.minor_issues,
 			Info:     influx.sonarqube_data.fields.info_issues,
 		},
-		Coverage: *cov,
+		Coverage:    *cov,
+		LinesOfCode: *loc,
 	}, sonar.workingDir, ioutil.WriteFile)
 	if err != nil {
 		return err
