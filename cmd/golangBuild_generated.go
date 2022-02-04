@@ -300,7 +300,7 @@ func golangBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryURL",
+								Param: "custom/repositoryUrl",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

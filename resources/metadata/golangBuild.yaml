@@ -130,7 +130,7 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/repositoryURL
+            param: custom/repositoryUrl
       - name: reportCoverage
         type: bool
         description: Defines if a coverage report should be created.
