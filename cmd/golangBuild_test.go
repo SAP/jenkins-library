@@ -142,7 +142,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetRepositoryPassword: "password",
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.returnFileUploadStatus = 200
+		utils.returnFileUploadStatus = 201
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils)
