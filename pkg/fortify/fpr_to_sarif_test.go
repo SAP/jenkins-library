@@ -1,8 +1,11 @@
 package fortify
 
 import (
+	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,6 +36,34 @@ func TestParse(t *testing.T) {
   <ScanTime value="77"/>
 </Build>
 <Vulnerabilities>
+<Vulnerability>
+  <ClassInfo>
+    <ClassID>B5C0FEFD-DUMMY</ClassID>
+    <Type>SAST Configuration</Type>
+    <Subtype>Custom Rules</Subtype>
+    <AnalyzerName>configuration</AnalyzerName>
+    <DefaultSeverity>5.0</DefaultSeverity>
+  </ClassInfo>
+  <InstanceInfo>
+    <InstanceID>DUMMY</InstanceID>
+    <InstanceSeverity>5.0</InstanceSeverity>
+    <Confidence>5.0</Confidence>
+  </InstanceInfo>
+  <AnalysisInfo>
+    <Unified>
+      <Context/>
+      <Trace>
+        <Primary>
+          <Entry>
+            <Node isDefault="true">
+              <SourceLocation path="result/rules/Custom_Rules_for_Annotation_Management.xml" line="2" colStart="0" colEnd="0" snippet="DUMMYDUMMY#result/rules/Custom_Rules_for_Annotation_Management.xml:2:2"/>
+            </Node>
+          </Entry>
+        </Primary>
+      </Trace>
+    </Unified>
+  </AnalysisInfo>
+</Vulnerability>
 <Vulnerability>
   <ClassInfo>
     <ClassID>B5C0FEFD-DUMMY</ClassID>
@@ -276,6 +307,52 @@ If you are concerned about leaking system data via NFC on an Android device, you
 </EngineData>
 </FVDL>	`
 
-	_, err := Parse(nil, nil, nil, []byte(testFvdl))
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if strings.Split(req.URL.Path, "/")[1] == "projectVersions" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{
+          "data": [
+            {
+              "projectVersionId": 11037,
+              "issueInstanceId": "DUMMYDUMMYDUMMY",
+              "issueName": "Dummy issue",
+              "primaryTag": "Exploitable",
+              "audited": true,
+              "issueStatus": "Reviewed",
+              "hasComments": true,
+              "_href": "https://fortify-stage.tools.sap/ssc/api/v1/projectVersions/11037"
+            }
+          ],
+          "count": 1,
+          "responseCode": 200}`))
+			return
+		}
+		if strings.Split(req.URL.Path, "/")[1] == "issues" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{
+          "data": [
+            {
+              "issueId": 47009919,
+              "comment": "Dummy comment."
+            }
+          ],
+          "count": 1,
+          "responseCode": 200}`))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+	project := models.Project{}
+	projectVersion := models.ProjectVersion{ID: 11037}
+	sarif, err := Parse(sys, &project, &projectVersion, []byte(testFvdl))
 	assert.NoError(t, err, "error")
+	assert.Equal(t, len(sarif.Runs[0].Results), 2)
+	assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+	assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditState, "Exploitable")
+	assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
 }
