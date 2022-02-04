@@ -39,10 +39,6 @@ func (utils golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
 }
 
 func (utils golangBuildMockUtils) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (utils golangBuildMockUtils) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	utils.fileUploads[file] = url
 
 	response := http.Response{
@@ -50,6 +46,10 @@ func (utils golangBuildMockUtils) UploadFile(url, file, fieldName string, header
 	}
 
 	return &response, utils.returnFileUploadError
+}
+
+func (utils golangBuildMockUtils) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return utils.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
 }
 
 func (utils golangBuildMockUtils) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
