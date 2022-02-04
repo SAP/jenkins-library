@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"regexp"
@@ -200,7 +201,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 			log.Entry().Infof("publishing artifact: %s", targetURL)
 
-			response, err := utils.UploadFile(targetURL, binary, "", nil, nil, "binary")
+			response, err := utils.UploadRequest(targetURL, binary, "", nil, nil, "binary")
 
 			if err != nil {
 				return fmt.Errorf("couldn't upload artifact: %w", err)
