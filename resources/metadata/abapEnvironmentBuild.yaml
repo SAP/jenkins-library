@@ -227,7 +227,7 @@ spec:
         mandatory: false
       - name: stopOnFirstError
         type: bool
-        default: true
+        default: false
         description: If false, it does not stop if an error occured for one repository in the addonDescriptor, but continues with the next repository. However the step is marked as failed in the end if an error occured.
         scope:
           - PARAMETERS

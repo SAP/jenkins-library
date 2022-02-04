@@ -159,7 +159,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 		}
 		finalValues = vE.generateValueSlice()
 		if len(errstrings) > 0 {
-			finalError := errors.Errorf("%d out %d build runs failed: \n %s", len(errstrings), len(valuesList), (strings.Join(errstrings, "\n")))
+			finalError := errors.Errorf("%d out %d build runs failed:\n%s", len(errstrings), len(valuesList), (strings.Join(errstrings, "\n")))
 			return finalValues, finalError
 		}
 	}
