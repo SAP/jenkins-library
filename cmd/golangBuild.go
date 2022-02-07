@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"regexp"
@@ -16,7 +17,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
@@ -37,6 +41,8 @@ type golangBuildUtils interface {
 	piperutils.FileUtils
 	piperhttp.Uploader
 
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
 	// i.e. include everything you need to be able to mock in tests.
@@ -47,12 +53,17 @@ type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	piperhttp.Uploader
+
 	goget.Client
 
 	// Embed more structs as necessary to implement methods or interfaces you add to golangBuildUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
 	// If there is no struct which implements the method you need, attach the method to
 	// golangBuildUtilsBundle and forward to the implementation of the dependency.
+}
+
+func (utils golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
@@ -94,8 +105,12 @@ func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData)
 }
 
 func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomData, utils golangBuildUtils) error {
-	err := prepareGolangEnvironment(config, utils)
+	goModFile, err := readGoModFile(utils) // returns nil if go.mod doesnt exist
 	if err != nil {
+		return err
+	}
+
+	if err = prepareGolangEnvironment(config, goModFile, utils); err != nil {
 		return err
 	}
 
@@ -165,6 +180,32 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("there's no target repository for binary publishing configured")
 		}
 
+		artifactVersion := config.ArtifactVersion
+
+		if len(artifactVersion) == 0 {
+			artifactOpts := versioning.Options{
+				VersioningScheme: "library",
+			}
+
+			artifact, err := versioning.GetArtifact("golang", "", &artifactOpts, utils)
+
+			if err != nil {
+				return err
+			}
+
+			artifactVersion, err = artifact.GetVersion()
+
+			if err != nil {
+				return err
+			}
+		}
+
+		if goModFile == nil {
+			return fmt.Errorf("go.mod file not found")
+		} else if goModFile.Module == nil {
+			return fmt.Errorf("go.mod doesn't declare a module path")
+		}
+
 		repoClientOptions := piperhttp.ClientOptions{
 			Username:     config.TargetRepositoryUser,
 			Password:     config.TargetRepositoryPassword,
@@ -174,15 +215,25 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		utils.SetOptions(repoClientOptions)
 
 		for _, binary := range binaries {
-			log.Entry().Infof("publishing artifact '%s'", binary)
+			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
 
-			response, err := utils.UploadFile(fmt.Sprintf("%s/%s", config.TargetRepositoryURL, binary), binary, "", nil, nil, "binary")
+			separator := "/"
+
+			if strings.HasSuffix(config.TargetRepositoryURL, "/") {
+				separator = ""
+			}
+
+			targetURL := fmt.Sprintf("%s%s%s", config.TargetRepositoryURL, separator, targetPath)
+
+			log.Entry().Infof("publishing artifact: %s", targetURL)
+
+			response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 
 			if err != nil {
 				return fmt.Errorf("couldn't upload artifact: %w", err)
 			}
 
-			if response.StatusCode != 200 {
+			if !(response.StatusCode == 200 || response.StatusCode == 201) {
 				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 			}
 		}
@@ -191,7 +242,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
-func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils) error {
+func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils) error {
 	// configure truststore
 	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
 
@@ -206,7 +257,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, utils golangBuildUtils
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
-	repoURLs, err := lookupGolangPrivateModulesRepositories(config.PrivateModules, utils)
+	repoURLs, err := lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, utils)
 
 	if err != nil {
 		return err
@@ -371,25 +422,13 @@ func splitTargetArchitecture(architecture string) (string, string) {
 }
 
 // lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
-func lookupGolangPrivateModulesRepositories(globPattern string, utils golangBuildUtils) ([]string, error) {
+func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, utils golangBuildUtils) ([]string, error) {
 	if globPattern == "" {
 		return []string{}, nil
 	}
 
-	if modFileExists, err := utils.FileExists("go.mod"); err != nil {
-		return nil, err
-	} else if !modFileExists {
-		return []string{}, nil // nothing to do
-	}
-
-	modFileContent, err := utils.FileRead("go.mod")
-	if err != nil {
-		return nil, err
-	}
-
-	goModFile, err := modfile.Parse("go.mod", modFileContent, nil)
-	if err != nil {
-		return nil, err
+	if goModFile == nil {
+		return nil, fmt.Errorf("couldn't find go.mod file")
 	} else if goModFile.Require == nil {
 		return []string{}, nil // no modules referenced, nothing to do
 	}
@@ -410,4 +449,21 @@ func lookupGolangPrivateModulesRepositories(globPattern string, utils golangBuil
 		privateModules = append(privateModules, repo)
 	}
 	return privateModules, nil
+}
+
+func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
+	modFilePath := "go.mod"
+
+	if modFileExists, err := utils.FileExists(modFilePath); err != nil {
+		return nil, err
+	} else if !modFileExists {
+		return nil, nil
+	}
+
+	modFileContent, err := utils.FileRead(modFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return modfile.Parse(modFilePath, modFileContent, nil)
 }
