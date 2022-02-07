@@ -78,15 +78,15 @@ type cnbBuildTelemetryDataProjectDescriptor struct {
 	ExcludeUsed bool `json:"excludeUsed"`
 }
 
-func processConfigs(main cnbBuildOptions, additional []map[string]interface{}) ([]cnbBuildOptions, error) {
+func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{}) ([]cnbBuildOptions, error) {
 	var result []cnbBuildOptions
 
-	if additional == nil || len(additional) == 0 {
+	if multipleImages == nil || len(multipleImages) == 0 {
 		result = append(result, main)
 		return result, nil
 	}
 
-	for _, conf := range additional {
+	for _, conf := range multipleImages {
 		var structuredConf cnbBuildOptions
 		err := mapstructure.Decode(conf, &structuredConf)
 		if err != nil {
@@ -133,7 +133,7 @@ func newCnbBuildUtils() cnbutils.BuildUtils {
 func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) {
 	utils := newCnbBuildUtils()
 
-	mergedConfigs, err := processConfigs(config, config.AdditionalImages)
+	mergedConfigs, err := processConfigs(config, config.MultipleImages)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("failed to process config")
 	}

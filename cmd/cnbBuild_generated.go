@@ -29,7 +29,7 @@ type cnbBuildOptions struct {
 	CustomTLSCertificateLinks []string                 `json:"customTlsCertificateLinks,omitempty"`
 	AdditionalTags            []string                 `json:"additionalTags,omitempty"`
 	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
-	AdditionalImages          []map[string]interface{} `json:"additionalImages,omitempty"`
+	MultipleImages            []map[string]interface{} `json:"multipleImages,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -317,7 +317,7 @@ func cnbBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "additionalImages",
+						Name:        "multipleImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{},
 						Type:        "[]map[string]interface{}",

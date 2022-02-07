@@ -188,9 +188,29 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: additionalImages
+      - name: multipleImages
         type: "[]map[string]interface{}"
-        description: Array of maps for building additional images.
+        description: |
+          This parameter is only needed if `cnbBuild` should create multiple images.
+          Otherwise it can be ignored!!!
+
+          In case of multiple images, this array contains one entry for each image. That
+          entry can override any parameter from the main section, e.g.
+
+          ```yaml
+          containerImageTag: latest
+          containerRegistryUrl: docker.io/example
+          dockerConfigJsonCredentialsId: CREDENTIALS
+          multipleImages:
+          - containerImageName: java-app
+            buildpacks:
+            - "java"
+            path: "source/java"
+          - containerImageName: nodejs-app
+            buildpacks:
+            - "nodejs"
+            path: "source/nodejs"
+          ```
   outputs:
     resources:
       - name: commonPipelineEnvironment
