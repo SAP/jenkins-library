@@ -13,7 +13,7 @@ func TestJenkins(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("JENKINS_URL", "FOO BAR BAZ")
 		os.Setenv("BUILD_URL", "jaas.com/foo/bar/main/42")
-		os.Setenv("GIT_BRANCH", "main")
+		os.Setenv("BRANCH_NAME", "main")
 		os.Setenv("GIT_COMMIT", "abcdef42713")
 		os.Setenv("GIT_URL", "github.com/foo/bar")
 

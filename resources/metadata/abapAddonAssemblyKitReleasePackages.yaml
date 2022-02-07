@@ -48,6 +48,24 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/addonDescriptor
+      - name: maxRuntimeInMinutes
+        type: int
+        description: Maximum runtime for status polling in minutes
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: 5
+      - name: pollingIntervalInSeconds
+        type: int
+        description: Wait time in seconds between polling calls
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: 30
   outputs:
     resources:
       - name: commonPipelineEnvironment

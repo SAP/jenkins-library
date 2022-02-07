@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +24,7 @@ type FileUtils interface {
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRemove(path string) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
@@ -31,6 +33,7 @@ type FileUtils interface {
 	RemoveAll(string) error
 	FileRename(string, string) error
 	Getwd() (string, error)
+	Symlink(oldname string, newname string) error
 }
 
 // Files ...
@@ -382,4 +385,26 @@ func (f Files) Stat(path string) (os.FileInfo, error) {
 // Abs is a wrapper for filepath.Abs()
 func (f Files) Abs(path string) (string, error) {
 	return filepath.Abs(path)
+}
+
+// Symlink is a wrapper for os.Symlink
+func (f Files) Symlink(oldname, newname string) error {
+	return os.Symlink(oldname, newname)
+}
+
+// Computes a SHA256 for a given file
+func (f Files) SHA256(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
 }

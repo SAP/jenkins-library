@@ -25,7 +25,7 @@ spec:
         type: string
         resourceRef:
           - type: vaultSecretFile
-            name: terraformExecuteFileVaultSecret
+            name: terraformFileVaultSecretName
             default: terraform
       - name: globalOptions
         type: "[]string"

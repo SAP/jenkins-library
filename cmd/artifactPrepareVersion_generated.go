@@ -77,7 +77,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
@@ -204,8 +204,8 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -480,14 +480,14 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "artifactVersion"},
-							{"Name": "originalArtifactVersion"},
-							{"Name": "artifactId"},
-							{"Name": "groupId"},
-							{"Name": "packaging"},
-							{"Name": "git/commitId"},
-							{"Name": "git/headCommitId"},
-							{"Name": "git/commitMessage"},
+							{"name": "artifactVersion"},
+							{"name": "originalArtifactVersion"},
+							{"name": "artifactId"},
+							{"name": "groupId"},
+							{"name": "packaging"},
+							{"name": "git/commitId"},
+							{"name": "git/headCommitId"},
+							{"name": "git/commitMessage"},
 						},
 					},
 				},

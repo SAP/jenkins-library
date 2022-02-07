@@ -163,7 +163,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
 			log.SetErrorCategory(log.ErrorCompliance)
-			if err == nil {
+			if err == nil && !piperutils.ContainsStringPart(config.FailOn, "NONE") {
 				err = errors.New("License Policy Violations found")
 			}
 		} else {

@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package main
@@ -5,8 +6,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -15,6 +14,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // The functions in this file provide a convenient way to integration test the piper binary in docker containers.
@@ -35,6 +37,7 @@ type IntegrationTestDockerExecRunnerBundle struct {
 	Mounts      map[string]string
 	Environment map[string]string
 	Setup       []string
+	Network     string
 }
 
 // IntegrationTestDockerExecRunner keeps the state of an instance of a docker runner
@@ -47,6 +50,7 @@ type IntegrationTestDockerExecRunner struct {
 	Mounts        map[string]string
 	Environment   map[string]string
 	Setup         []string
+	Network       string
 	ContainerName string
 }
 
@@ -61,6 +65,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		Mounts:        bundle.Mounts,
 		Environment:   bundle.Environment,
 		Setup:         bundle.Setup,
+		Network:       bundle.Network,
 		ContainerName: containerName,
 	}
 
@@ -89,14 +94,24 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 		params = append(params, "-v", fmt.Sprintf("%s:/project", tempDir))
 	}
+
 	if len(testRunner.Environment) > 0 {
 		for envVarName, envVarValue := range testRunner.Environment {
 			params = append(params, "--env", fmt.Sprintf("%s=%s", envVarName, envVarValue))
 		}
 	}
+
+	if testRunner.Mounts != nil {
+		for src, dst := range testRunner.Mounts {
+			params = append(params, "-v", fmt.Sprintf("%s:%s", src, dst))
+		}
+	}
+
+	if testRunner.Network != "" {
+		params = append(params, "--network", testRunner.Network)
+	}
 	params = append(params, testRunner.Image, "sleep", "2000")
 
-	//todo mounts
 	err := testRunner.Runner.RunExecutable("docker", params...)
 	if err != nil {
 		t.Fatalf("Starting test container has failed %s", err)
@@ -180,5 +195,12 @@ func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want strin
 	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", want)
 	if err != nil {
 		t.Fatalf("Assertion has failed. Expected file %s to exist in container. %s", want, err)
+	}
+}
+
+func (d *IntegrationTestDockerExecRunner) terminate(t *testing.T) {
+	err := d.Runner.RunExecutable("docker", "rm", "-f", d.ContainerName)
+	if err != nil {
+		t.Fatalf("Failed to terminate container '%s'", d.ContainerName)
 	}
 }

@@ -33,7 +33,6 @@ type Telemetry struct {
 	CustomReportingDsn   string
 	CustomReportingToken string
 	customClient         *piperhttp.Client
-	PipelineTelemetry    *PipelineTelemetry
 	BaseURL              string
 	Endpoint             string
 	SiteID               string

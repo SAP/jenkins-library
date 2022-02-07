@@ -3,12 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,9 +30,11 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		mc.AddData(aakaas.AAKaaSTVPublishProdPost)
 		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
 		mc.AddData(aakaas.AAKaaSGetTVPublishProdSuccess)
+		bundle := aakaas.NewAakBundleMockNewMC(&mc)
+		utils := bundle.GetUtils()
 
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &utils)
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
@@ -47,20 +47,24 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		mc.AddData(aakaas.AAKaaSTVPublishTestPost)
 		mc.AddData(aakaas.AAKaaSGetTVPublishRunning)
 		mc.AddData(aakaas.AAKaaSGetTVPublishTestSuccess)
+		bundle := aakaas.NewAakBundleMockNewMC(&mc)
+		utils := bundle.GetUtils()
+
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &utils)
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
 
 	t.Run("step fail http", func(t *testing.T) {
 		//arrange
-		client := &abaputils.ClientMock{
-			Body:  "dummy",
-			Error: errors.New("dummy"),
-		}
+		bundle := aakaas.NewAakBundleMock()
+		bundle.SetBody("dummy")
+		bundle.SetError("dummy")
+		utils := bundle.GetUtils()
+
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &utils)
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})
@@ -69,8 +73,11 @@ func TestPublishTargetVectorStep(t *testing.T) {
 		//arrange
 		config := abapAddonAssemblyKitPublishTargetVectorOptions{}
 		mc := abapbuild.NewMockClient()
+		bundle := aakaas.NewAakBundleMockNewMC(&mc)
+		utils := bundle.GetUtils()
+
 		//act
-		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &mc, time.Duration(1*time.Second), time.Duration(1*time.Microsecond))
+		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, &utils)
 		//assert
 		assert.Error(t, err, "Must end with error")
 	})

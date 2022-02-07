@@ -7,35 +7,26 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
+	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
 
-	client := piperhttp.Client{}
-
-	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
-	pollIntervalsInSeconds := time.Duration(30 * time.Second)
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
-	if err != nil {
+	if err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
-	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
-	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+		return err
+	}
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
@@ -44,14 +35,13 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 		return err
 	}
 	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
-	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, utils)
 	if err != nil {
 		return err
 	}
 	addonDescriptor.Repositories = sortingBack(packagesWithReposLocked, packagesWithReposNotLocked)
 	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
+	cpe.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 	return nil
 }
 
@@ -96,9 +86,9 @@ func sortByStatus(repos []abaputils.Repository, conn abapbuild.Connector) ([]aak
 	return packagesWithReposLocked, packagesWithReposNotLocked
 }
 
-func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]aakaas.PackageWithRepository, error) {
-	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, utils *aakaas.AakUtils) ([]aakaas.PackageWithRepository, error) {
+	timeout := time.After((*utils).GetMaxRuntime())
+	ticker := time.Tick((*utils).GetPollingInterval())
 
 	for {
 		select {
@@ -111,7 +101,7 @@ func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes t
 					err := pckgWR[i].Package.Release()
 					// if there is an error, release is not yet finished
 					if err != nil {
-						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, (*utils).GetPollingInterval())
 						allFinished = false
 					}
 				}

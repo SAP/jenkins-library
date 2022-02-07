@@ -313,22 +313,23 @@ func TestDeclareFetchURLSuccess(t *testing.T) {
 		cleanupMode    string
 		protecodeGroup string
 		fetchURL       string
+		version        string
 		productID      int
 		replaceBinary  bool
 		want           int
 	}{
-		{"binary", "group1", "/api/fetch/", 1, true, 111},
-		{"binary", "group1", "/api/fetch/", -1, true, 111},
-		{"binary", "group1", "/api/fetch/", 0, true, 111},
+		{"binary", "group1", "/api/fetch/", "", 1, true, 111},
+		{"binary", "group1", "/api/fetch/", "custom-test-version", -1, true, 111},
+		{"binary", "group1", "/api/fetch/", "1.2.3", 0, true, 111},
 
-		{"binary", "group1", "/api/fetch/", 1, false, 111},
-		{"binary", "group1", "/api/fetch/", -1, false, 111},
-		{"binary", "group1", "/api/fetch/", 0, false, 111},
+		{"binary", "group1", "/api/fetch/", "", 1, false, 111},
+		{"binary", "group1", "/api/fetch/", "custom-test-version", -1, false, 111},
+		{"binary", "group1", "/api/fetch/", "1.2.3", 0, false, 111},
 	}
 	for _, c := range cases {
 
 		// pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL)
-		got := pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL, c.productID, c.replaceBinary)
+		got := pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL, c.version, c.productID, c.replaceBinary)
 
 		assert.Equal(t, requestURI, "/api/fetch/")
 		assert.Equal(t, got.Result.ProductID, c.want)
@@ -421,24 +422,25 @@ func TestUploadScanFileSuccess(t *testing.T) {
 		cleanupMode    string
 		protecodeGroup string
 		filePath       string
+		version        string
 		productID      int
 		replaceBinary  bool
 		want           int
 	}{
-		{"binary", "group1", testFile.Name(), 1, true, 1},
-		{"binary", "group1", testFile.Name(), 0, true, 0},
-		{"binary", "group1", testFile.Name(), -1, true, -1},
+		{"binary", "group1", testFile.Name(), "", 1, true, 1},
+		{"binary", "group1", testFile.Name(), "custom-test-version", 0, true, 0},
+		{"binary", "group1", testFile.Name(), "1.2.3", -1, true, -1},
 
-		{"binary", "group1", testFile.Name(), 1, false, 112},
-		{"binary", "group1", testFile.Name(), 0, false, 112},
-		{"binary", "group1", testFile.Name(), -1, false, 112},
+		{"binary", "group1", testFile.Name(), "", 1, false, 112},
+		{"binary", "group1", testFile.Name(), "custom-test-version", 0, false, 112},
+		{"binary", "group1", testFile.Name(), "1.2.3", -1, false, 112},
 
 		// {"binary", "group1", testFile.Name(), "/api/upload/dummy"},
 		// {"Test", "group2", testFile.Name(), "/api/upload/dummy"},
 	}
 	for _, c := range cases {
 
-		got := pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.filePath, "dummy.tar", c.productID, c.replaceBinary)
+		got := pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.filePath, "dummy.tar", c.version, c.productID, c.replaceBinary)
 
 		assert.Equal(t, requestURI, "/api/upload/dummy.tar")
 		assert.Contains(t, passedHeaders, "Group")

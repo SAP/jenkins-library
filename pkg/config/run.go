@@ -127,8 +127,14 @@ func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, fi
 	// not considered releavant for pipeline yaml syntax resolution
 	paramJSON := ""
 
-	return config.GetStepConfig(flagValues, paramJSON, nil, nil, false, filters[stepName], parameters[stepName], secrets[stepName],
-		envParameters, stageName, stepName, stepAliases[stepName])
+	stepMeta := StepData{
+		Spec: StepSpec{
+			Inputs: StepInputs{Parameters: parameters[stepName], Secrets: secrets[stepName]},
+		},
+		Metadata: StepMetadata{Aliases: stepAliases[stepName]},
+	}
+
+	return config.GetStepConfig(flagValues, paramJSON, nil, nil, false, filters[stepName], stepMeta, envParameters, stageName, stepName)
 }
 
 func (r *RunConfig) loadConditions() error {

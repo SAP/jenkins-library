@@ -269,7 +269,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},
+						Aliases:   []config.Alias{{Name: "image", Deprecated: true}, {Name: "containerImage"}},
 						Default:   os.Getenv("PIPER_containerImageNameTag"),
 					},
 					{

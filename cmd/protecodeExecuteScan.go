@@ -23,6 +23,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 const (
@@ -183,10 +184,14 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		log.Entry().Infof("replaceProductID is not provided and automatic search starts from group: %v ... ", config.Group)
 		// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID hasn't provided and automatic search starts... ")
 		productID = client.LoadExistingProduct(config.Group, fileName)
-	}
 
-	log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
-	// log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
+		if productID > 0 {
+			log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
+			// log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
+		} else {
+			log.Entry().Infof("Automatic search completed but not found any similar product scan, now starts new scan creation")
+		}
+	}
 
 	// check if no existing is found
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
@@ -363,9 +368,12 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 
 func uploadFile(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string, replaceBinary bool) int {
 
+	// get calculated version for Version field
+	version := getProcessedVersion(&config)
+
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, productID, replaceBinary)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
@@ -382,7 +390,7 @@ func uploadFile(config protecodeExecuteScanOptions, productID int, client protec
 			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
 		}
 
-		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, productID, replaceBinary)
+		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}
@@ -429,6 +437,7 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 }
 
 func getTarName(config *protecodeExecuteScanOptions) string {
+
 	// remove original version
 	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.Version)
 	// remove sha digest if exists
@@ -436,12 +445,31 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	if index := strings.Index(fileName, sha256); index > -1 {
 		fileName = fileName[:index]
 	}
-	// append trimmed version
-	if version := handleArtifactVersion(config.Version); len(version) > 0 {
+
+	version := getProcessedVersion(config)
+	if len(version) > 0 {
 		fileName = fileName + "_" + version
 	}
+
 	fileName = strings.ReplaceAll(fileName, "/", "_")
+
 	return fileName + ".tar"
+}
+
+// Calculate version based on versioning model and artifact version or return custom scan version provided by user
+func getProcessedVersion(config *protecodeExecuteScanOptions) string {
+	processedVersion := config.CustomScanVersion
+	if len(processedVersion) > 0 {
+		log.Entry().Infof("Using custom version: %v", processedVersion)
+	} else {
+		if len(config.VersioningModel) > 0 {
+			processedVersion = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+		} else {
+			// By default 'major' if <config.VersioningModel> not provided
+			processedVersion = versioning.ApplyVersioningModel("major", config.Version)
+		}
+	}
+	return processedVersion
 }
 
 // create toolrecord file for protecode

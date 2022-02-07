@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
@@ -59,6 +61,11 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
+	//always create the target path directories if any before writing
+	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
+	if err != nil {
+		return "", fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", targetPath, err)
+	}
 	err = utils.FileWrite(targetPath, jsonResult, 0666)
 	if err != nil {
 		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
@@ -158,4 +165,56 @@ func (c *Client) TarImage(writer io.Writer, image pkgutil.Image) error {
 		return err
 	}
 	return nil
+}
+
+// ImageListWithFilePath compiles container image names based on all Dockerfiles found, considering excludes
+// according to following search pattern: **/Dockerfile*
+// Return value contains a map with image names and file path
+// Examples for image names with imageName testImage
+// * Dockerfile: `imageName`
+// * sub1/Dockerfile: `imageName-sub1`
+// * sub2/Dockerfile_proxy: `imageName-sub2-proxy`
+func ImageListWithFilePath(imageName string, excludes []string, utils piperutils.FileUtils) (map[string]string, error) {
+
+	imageList := map[string]string{}
+
+	pattern := "**/Dockerfile*"
+
+	matches, err := utils.Glob(pattern)
+	if err != nil || len(matches) == 0 {
+		return imageList, fmt.Errorf("failed to retrieve Dockerfiles")
+	}
+
+	for _, dockerfilePath := range matches {
+		// make sure that the path we have is relative
+		// ToDo: needs rework
+		//dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
+
+		if piperutils.ContainsString(excludes, dockerfilePath) {
+			log.Entry().Infof("Discard %v since it is in the exclude list %v", dockerfilePath, excludes)
+			continue
+		}
+
+		if dockerfilePath == "Dockerfile" {
+			imageList[imageName] = dockerfilePath
+		} else {
+			var finalName string
+			if base := filepath.Base(dockerfilePath); base == "Dockerfile" {
+				finalName = fmt.Sprintf("%v-%v", imageName, strings.ReplaceAll(filepath.Dir(dockerfilePath), string(filepath.Separator), "-"))
+			} else {
+				parts := strings.FieldsFunc(base, func(separator rune) bool {
+					return separator == []rune("-")[0] || separator == []rune("_")[0]
+				})
+				if len(parts) == 1 {
+					return imageList, fmt.Errorf("wrong format of Dockerfile, must be inside a sub-folder or contain a separator")
+				}
+				parts[0] = imageName
+				finalName = strings.Join(parts, "-")
+			}
+
+			imageList[finalName] = dockerfilePath
+		}
+	}
+
+	return imageList, nil
 }
