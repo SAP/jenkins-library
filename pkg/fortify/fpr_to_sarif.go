@@ -491,7 +491,10 @@ type SarifProperties struct {
 	InstanceSeverity  string `json:"InstanceSeverity"`
 	Confidence        string `json:"Confidence"`
 	Audited           bool   `json:"Audited"`
-	ToolAuditState    string `json:"ToolAuditState"`
+	ToolSeverity      string `json:"ToolSeverity"`
+	ToolSeverityIndex int    `json:"ToolSeverityIndex"`
+	ToolState         string `json:"ToolState"`
+	ToolStateIndex    int    `json:"ToolStateIndex"`
 	ToolAuditMessage  string `json:"ToolAuditMessage"`
 	UnifiedAuditState string `json:"UnifiedAuditState"`
 }
@@ -626,17 +629,18 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			// Custom Rules has no audit value: it's notificaiton in the FVDL only.
 			prop.Audited = true
 			prop.ToolAuditMessage = "Custom Rules: not a vuln"
-			prop.ToolAuditState = "Not an Issue"
+			prop.ToolState = "Not an Issue"
+			prop.ToolStateIndex = 1
 		} else if sys != nil {
 			if err := prop.IntegrateAuditData(fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
-				prop.ToolAuditState = "Unknown"
+				prop.ToolState = "Unknown"
 				prop.ToolAuditMessage = "Error fetching audit state"
 			}
 		} else {
 			prop.Audited = false
-			prop.ToolAuditState = "Unknown"
+			prop.ToolState = "Unknown"
 			prop.ToolAuditMessage = "Cannot fetch audit state"
 		}
 		result.Properties = prop
@@ -753,9 +757,21 @@ func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys 
 	}
 	RuleProp.Audited = data[0].Audited
 	if RuleProp.Audited {
-		RuleProp.ToolAuditState = *data[0].PrimaryTag
+		RuleProp.ToolState = *data[0].PrimaryTag
+		switch RuleProp.ToolState { //This is as easy as it can get, seeing that the index is not in the response.
+		case "Exploitable":
+			RuleProp.ToolStateIndex = 5
+		case "Suspicious":
+			RuleProp.ToolStateIndex = 4
+		case "Bad Practice":
+			RuleProp.ToolStateIndex = 3
+		case "Reliability Issue":
+			RuleProp.ToolStateIndex = 2
+		case "Not an Issue":
+			RuleProp.ToolStateIndex = 1
+		}
 	} else {
-		RuleProp.ToolAuditState = "Unreviewed"
+		RuleProp.ToolState = "Unreviewed"
 	}
 	if *data[0].HasComments { //fetch latest message if comments exist
 		//Fetch the ID
