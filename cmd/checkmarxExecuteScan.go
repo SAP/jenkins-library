@@ -309,6 +309,16 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 
 	reportToInflux(results, influx)
 
+	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	jsonReport := checkmarx.CreateJSONReport(results)
+	paths, err := checkmarx.WriteJSONReport(jsonReport)
+	if err != nil {
+		log.Entry().Warning("failed to write JSON report...", err)
+	} else {
+		// add JSON report to archiving list
+		reports = append(reports, paths...)
+	}
+
 	insecure := false
 	insecureResults := []string{}
 	neutralResults := []string{}

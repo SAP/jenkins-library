@@ -2,8 +2,10 @@ package checkmarx
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +15,27 @@ import (
 
 	"github.com/pkg/errors"
 )
+
+type CheckmarxReportData struct {
+	ToolName           string `json:"toolName"`
+	ProjectName        string `json:"projectName"`
+	ProjectID          int64  `json:"projectID"`
+	ScanID             int64  `json:"scanID"`
+	TeamName           string `json:"teamName"`
+	TeamPath           string `json:"teamPath"`
+	DeepLink           string `json:"deepLink"`
+	Preset             string `json:"preset"`
+	CheckmarxVersion   string `json:"checkmarxVersion"`
+	ScanType           string `json:"scanType"`
+	HighTotal          int    `json:"highTotal"`
+	HighAudited        int    `json:"highAudited"`
+	MediumTotal        int    `json:"mediumTotal"`
+	MediumAudited      int    `json:"mediumAudited"`
+	LowTotal           int    `json:"mediumTotal"`
+	LowAudited         int    `json:"mediumAudited"`
+	InformationTotal   int    `json:"informationTotal"`
+	InformationAudited int    `json:"informationAudited"`
+}
 
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
@@ -101,6 +124,78 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	scanReport.DetailTable = detailTable
 
 	return scanReport
+}
+
+func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
+	checkmarxReportData := CheckmarxReportData{
+		ToolName:         `checkmarx`,
+		ProjectName:      fmt.Sprint(data["ProjectName"]),
+		TeamName:         fmt.Sprint(data["Team"]),
+		TeamPath:         fmt.Sprint(data["TeamFullPathOnReportDate"]),
+		DeepLink:         fmt.Sprint(data["DeepLink"]),
+		Preset:           fmt.Sprint(data["Preset"]),
+		CheckmarxVersion: fmt.Sprint(data["CheckmarxVersion"]),
+		ScanType:         fmt.Sprint(data["ScanType"]),
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["ProjectId"]), 10, 64); err == nil {
+		checkmarxReportData.ProjectID = s
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanID"]), 10, 64); err == nil {
+		checkmarxReportData.ScanID = s
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["High"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
+		checkmarxReportData.HighTotal = int(s)
+	}
+	if s, err := strconv.ParseInt(fmt.Sprint(data["High"].(map[string]int)["Issues"]), 10, 32); err == nil {
+		checkmarxReportData.HighAudited = int(s)
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["Medium"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
+		checkmarxReportData.MediumTotal = int(s)
+	}
+	if s, err := strconv.ParseInt(fmt.Sprint(data["Medium"].(map[string]int)["Issues"]), 10, 32); err == nil {
+		checkmarxReportData.MediumAudited = int(s)
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["Low"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
+		checkmarxReportData.LowTotal = int(s)
+	}
+	if s, err := strconv.ParseInt(fmt.Sprint(data["Low"].(map[string]int)["Issues"]), 10, 32); err == nil {
+		checkmarxReportData.LowAudited = int(s)
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["Information"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
+		checkmarxReportData.InformationTotal = int(s)
+	}
+	if s, err := strconv.ParseInt(fmt.Sprint(data["Information"].(map[string]int)["Issues"]), 10, 32); err == nil {
+		checkmarxReportData.InformationAudited = int(s)
+	}
+
+	return checkmarxReportData
+}
+
+func WriteJSONReport(jsonReport CheckmarxReportData) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	// Standard JSON Report
+	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_checkmarx_report.json")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	file, _ := json.Marshal(jsonReport)
+	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx JSON compliance report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx JSON Compliance Report", Target: jsonComplianceReportPath})
+
+	return reportPaths, nil
 }
 
 func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID string) ([]piperutils.Path, error) {
