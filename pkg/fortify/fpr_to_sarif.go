@@ -756,6 +756,19 @@ func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys 
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
 	RuleProp.Audited = data[0].Audited
+	RuleProp.ToolSeverity = *data[0].Friority
+	switch RuleProp.ToolSeverity {
+	case "Critical":
+		RuleProp.ToolSeverityIndex = 5
+	case "Urgent":
+		RuleProp.ToolSeverityIndex = 4
+	case "High":
+		RuleProp.ToolSeverityIndex = 3
+	case "Medium":
+		RuleProp.ToolSeverityIndex = 2
+	case "Low":
+		RuleProp.ToolSeverityIndex = 1
+	}
 	if RuleProp.Audited {
 		RuleProp.ToolState = *data[0].PrimaryTag
 		switch RuleProp.ToolState { //This is as easy as it can get, seeing that the index is not in the response.
