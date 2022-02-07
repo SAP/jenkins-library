@@ -77,10 +77,14 @@ func (service *ComponentService) GetLinesOfCode() (*SonarLinesOfCode, error) {
 		Component:  service.Project,
 		MetricKeys: "ncloc_language_distribution,ncloc",
 	}
-	component, response, _ := service.Component(&options)
+	component, response, err := service.Component(&options)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
+	}
 
 	// reuse response verification from sonargo
-	err := sonargo.CheckResponse(response)
+	err = sonargo.CheckResponse(response)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get lines of code from Sonar measures/component API")
 	}
@@ -113,10 +117,13 @@ func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 		Component:  service.Project,
 		MetricKeys: "coverage,branch_coverage,line_coverage,uncovered_lines,lines_to_cover,conditions_to_cover,uncovered_conditions",
 	}
-	component, response, _ := service.Component(&options)
+	component, response, err := service.Component(&options)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
+	}
 
 	// reuse response verification from sonargo
-	err := sonargo.CheckResponse(response)
+	err = sonargo.CheckResponse(response)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
 	}
