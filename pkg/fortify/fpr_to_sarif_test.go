@@ -322,6 +322,7 @@ If you are concerned about leaking system data via NFC on an Android device, you
               "audited": true,
               "issueStatus": "Reviewed",
               "hasComments": true,
+              "friority": "High",
               "_href": "https://fortify-stage.tools.sap/ssc/api/v1/projectVersions/11037"
             }
           ],

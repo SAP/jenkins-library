@@ -269,8 +269,9 @@ func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 }
 func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	exploitable := "Exploitable"
+	friority := "High"
 	hascomments := true
-	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments}}, nil
+	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
 }
 func (f *fortifyMock) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
 	comment := "Dummy"
