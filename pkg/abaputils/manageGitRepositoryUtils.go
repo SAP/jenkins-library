@@ -28,8 +28,9 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
 
-			err := PrintLogs(repositoryName, connectionDetails, client)
-			if err != nil {
+			if serviceContainsNewLogEntities(connectionDetails, client) {
+				PrintLogs(repositoryName, connectionDetails, client)
+			} else {
 				// Fallback
 				if pullEntity.Status == "E" {
 					log.SetErrorCategory(log.ErrorUndefined)
@@ -45,36 +46,40 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	return status, nil
 }
 
-func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
-	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
+func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (newLogEntitiesAvailable bool) {
+
+	newLogEntitiesAvailable = false
+	details := connectionDetails
+	details.URL = details.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
+	resp, err := GetHTTPResponse("GET", details, nil, client)
 	if err != nil {
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
-		return body, resp.Status, err
+		return
 	}
 	defer resp.Body.Close()
+
+	var entitySet EntitySetsForManageGitRepository
 
 	// Parse response
 	var abapResp map[string]*json.RawMessage
 	bodyText, _ := ioutil.ReadAll(resp.Body)
 
 	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	json.Unmarshal(*abapResp["d"], &entitySet)
 
-	if reflect.DeepEqual(PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		var err = errors.New("Request to ABAP System not successful")
-		return body, resp.Status, err
+	for _, entitySet := range entitySet.EntitySets {
+		if entitySet == "LogOverviews" || entitySet == "LogProtocols" {
+			return true
+		}
 	}
-	return body, resp.Status, nil
+	return
+
 }
 
-func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (LogDoesNotExist error) {
+func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
 	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
 	if err != nil {
-		return err
+		return
 	}
 
 	// Sort logs
@@ -83,16 +88,21 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	})
 
 	// Print Overview
+	log.Entry().Infof("\n")
+	log.Entry().Infof("----------------------------------------------------------------")
+	log.Entry().Infof("| %-15s | %10s | %-29s |", "Phase", "Status", "Timestamp")
+	log.Entry().Infof("----------------------------------------------------------------")
 	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof(`%s: %s`, logEntry.Name, logEntry.Status)
+		log.Entry().Infof("| %-15s | %10s | %-29s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
 	}
+	log.Entry().Infof("----------------------------------------------------------------")
 
 	// Print Details
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
 		printLog(logEntryForDetails)
 	}
 
-	return nil
+	return
 }
 
 func printLog(logEntry LogResultsV2) {
@@ -102,18 +112,20 @@ func printLog(logEntry LogResultsV2) {
 	})
 
 	if logEntry.Status != `Success` {
-		log.Entry().Info("-------------------------")
-		log.Entry().Info(logEntry.Name)
-		log.Entry().Info("-------------------------")
+		log.Entry().Infof("\n")
+		log.Entry().Infof("-------------------------")
+		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("-------------------------")
 
 		for _, entry := range logEntry.ToLogProtocol.Results {
 			log.Entry().Info(entry.Description)
 		}
 
 	} else {
-		log.Entry().Debug("-------------------------")
-		log.Entry().Debug(logEntry.Name)
-		log.Entry().Debug("-------------------------")
+		log.Entry().Debugf("\n")
+		log.Entry().Debugf("-------------------------")
+		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Debugf("-------------------------")
 
 		for _, entry := range logEntry.ToLogProtocol.Results {
 			log.Entry().Debug(entry.Description)
@@ -174,6 +186,31 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 		log.Entry().Debug("-------------------------")
 	}
 
+}
+
+func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
+		return body, resp.Status, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal(bodyText, &abapResp)
+	json.Unmarshal(*abapResp["d"], &body)
+
+	if reflect.DeepEqual(PullEntity{}, body) {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		var err = errors.New("Request to ABAP System not successful")
+		return body, resp.Status, err
+	}
+	return body, resp.Status, nil
 }
 
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
@@ -327,6 +364,7 @@ type LogResultsV2 struct {
 	Index         int                `json:"log_index"`
 	Name          string             `json:"log_name"`
 	Status        string             `json:"type_of_found_issues"`
+	Timestamp     string             `json:"timestamp"`
 	ToLogProtocol LogProtocolResults `json:"to_Log_Protocol"`
 }
 
@@ -356,4 +394,8 @@ type RepositoriesConfig struct {
 	RepositoryName  string
 	RepositoryNames []string
 	Repositories    string
+}
+
+type EntitySetsForManageGitRepository struct {
+	EntitySets []string `json:"EntitySets"`
 }
