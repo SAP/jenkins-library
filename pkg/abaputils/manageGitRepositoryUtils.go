@@ -90,10 +90,10 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	// Print Overview
 	log.Entry().Infof("\n")
 	log.Entry().Infof("----------------------------------------------------------------")
-	log.Entry().Infof("| %-15s | %10s | %-29s |", "Phase", "Status", "Timestamp")
+	log.Entry().Infof("| %-22s | %10s | %-29s |", "Phase", "Status", "Timestamp")
 	log.Entry().Infof("----------------------------------------------------------------")
 	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof("| %-15s | %10s | %-29s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("| %-22s | %10s | %-29s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
 	}
 	log.Entry().Infof("----------------------------------------------------------------")
 
