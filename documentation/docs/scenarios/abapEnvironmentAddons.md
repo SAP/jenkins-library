@@ -1,7 +1,8 @@
 # Build and Publish Add-on Products on SAP BTP, ABAP Environment
 
 !!! caution "Current limitations"
-    gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
+    - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
+    - __Table entries are currently delivered during add-on build with generic keys__ – thus it is strongly recommended to transport TABUs only with the software component the table definition belongs to and not in foreign software components to prevent loss of data. The possibility to deliver individual table keys as part of add-on build might be supported at a later point in time.
 
 !!! caution "Required project "Piper" library version"
     SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
@@ -18,7 +19,7 @@ A comprehensive guidance on how to develop and operate SaaS applications using a
 
 ## The Add-on Product
 
-The installation and maintenance of ABAP software is done / controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
+The installation and maintenance of ABAP software is controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the delivery view on a software portfolio.
 
 ### Add-on Product Version
 
@@ -34,22 +35,19 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 
 !!! note "Development on SAP BTP, ABAP environment"
     As you may know, the development in the SAP BTP, ABAP environment is done within [software components](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
-    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
+    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP Note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
 
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
-A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
+A software component version is defined by a name and a version string. The name of a software component is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the __release__. Release deliveries contain the whole software component and carry planned, new functionalities or feature enhancements. They are provided with delivery packages of type *Add-on Installation* (AOI).
-  <br>Each AOI package contains all the objects of the software component. That means, every object is included in the object list of the package. In contrast to CSP and CPK packages, the calculation of objects to be included in the delivery is not based on a delta calculation.
-- The second number denotes the __support package level__. Support package deliveries contain a larger collection of corrections and may carry smaller, planned functional enhancements. They are provided with delivery packages of type *Component Support Package* (CSP).
-  <br>CSP packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the support package level are included to the object list of the CSP.
-- The third number denotes the __patch level__. Patch deliveries shall only contain small, unplanned corrections that are necessary to keep the software up-and-running. They are provided with delivery packages of type *Correction Package* (CPK).
-  <br>CPK packages are built with a delta process dependent on the previous state of the software component used for the build. That means, only the changes made since the last change of the patch level are included in the object list of the CPK.
+- The first number denotes the __release__. Release deliveries contain the whole software component and should be used to deliver new functionalities or feature enhancements. They are provided with delivery packages of type *Add-on Installation* (AOI) and are usually created on a regular basis (e.g. quarterly).
+- The second number denotes the __support package level__. Support package deliveries contain either the objects that were changed since the previous release delivery or since the previous support package delivery. They should be used to deliver a collection of patch deliveries or to deliver smaller functional enhancements. They are provided with delivery packages of type *Component Support Package* (CSP) and are usually created on a regular basis (e.g. bi-weekly).
+- The third number denotes the __patch level__. Patch deliveries contain only those objects that were changed since the previous patch delivery. They should be used to deliver bugfixes and are only created when necessary (e.g. emergency patch).
 
 The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
 Software Component Versions are uniquely created and independent from the add-on product versions where they are included.
-This means that once a software component version was built, it will be reused in any following add-on product versions where referenced.
+This means that once a software component version was built, it will be reused in any following add-on product versions.
 
 ### Target Vector
 
@@ -59,9 +57,9 @@ As explained above, the shipment of a software takes place via add-on product ve
 - Product release
 - Product Support Package stack and Patch level
 - A list of contained software component versions with
-  - Software component name
-  - Software component release
-  - Delivery Package, which delivers the versions
+      - Software component name
+      - Software component release
+      - Delivery Package, which delivers the software component version
 
 In ABAP Environment Pipeline stage [*Build*](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/) a target vector for the particular add-on product version is published in test scope. This makes it possible to perform an add-on test installation in stage [*Integration Tests*](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/). At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning in the *Integration Tests* stage.
 
@@ -100,7 +98,7 @@ In order to verify that the delivery packages included in the add-on product ver
 
 ### Prerequisites
 
-There are several parts that are required to run the pipeline for building an ABAP Environment Add-on.
+There are several prerequisites  to run the pipeline for building an ABAP Environment add-on:
 
 #### Jenkins Server
 
@@ -137,7 +135,7 @@ This step can be triggered by you or by SAP partner management (governance proce
 ### Configuration
 
 In the following subsections, the pipeline configuration for this scenario is explained.
-Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md).
+Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md) for general configuration.
 
 #### Add-on descriptor file
 
@@ -178,7 +176,7 @@ The section `repositories` contains one or multiple software component versions:
 - `commitID`: this is the commitID from the git repository
 - `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
-`addonVersion` influences solely the creation of the target vector. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple add-on products).
+`addonVersion` influences solely the creation of the [target vector](#target-vector). Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple add-on products).
 
 As a rule of thumb, the `addonVersion` should be increased analogous to the `version` of the leading software component.
 An exception can be the patch level in the `addonVersion` string: In case of an add-on product with a reuse software component, the patch level of the `addonVersion` might be higher than the patch level of the leading software component `version`.
@@ -189,14 +187,14 @@ This is to make sure that that the software components are imported in the corre
 
 The `version` of a software component influcences two aspects:
 
-- The given version will be used as part of the target vector
-- If there exists NO delivery package with the given version in AAKaaS the build of this package is performed
+- The given version will be used as part of the [target vector](#target-vector)
+- If there exists __no delivery package__ with the given version in AAKaaS the build of this package is performed
 
-As a result, if the `addonVersion` is increased but references a software component (repository) `version` for which a delivery package has already been built, no new delivery package is built but only a new target vector is created. During add-on update such a target vector does not reference any new software component versions and the update of software components is skipped.
+As a result, if the `addonVersion` is increased but references a software component `version` for which a delivery package has already been created, no new delivery package is built but only a new target vector is created. During add-on update such a [target vector](#target-vector) does not reference any new software component versions and the update of software components is skipped.
 
-If the `version` of a software component is increased but not the `addonVersion`, a package is build but no new target vector is created, meaning the new package cannot be deployed.
+If the `version` of a software component is increased but not the `addonVersion`, a package is built but no new target vector is created, meaning the new package cannot be deployed.
 
-If the add-on product consists of multiple software component versions, but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package will be created. If, at the same time, the `addonVersion` is increased a new target Vector will be created.
+If the add-on product consists of multiple software component versions, but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package will be created. If, at the same time, the `addonVersion` is increased a new [target vector](#target-vector) will be created.
 
 `branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
 The `commitID` should only be changed while also adjusting the `version` number of a software component.
@@ -268,6 +266,8 @@ In case of an error during execution of the pipeline steps:
       * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
           * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
           <br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.
+          * __`Product installation failed because AddOn XYZ has not been registered in PPMS for productive development`__
+          <br>The add-on product is not yet registered for add-on installation, please follow steps in [Register Add-on Product for a Global Account](https://www.project-piper.io/scenarios/abapEnvironmentAddons/)#register-add-on-product-for-a-global-account
 * Stage: [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)
       * Step: [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)
           * __*Add-on assembly system is deleted unexpectedly*__
