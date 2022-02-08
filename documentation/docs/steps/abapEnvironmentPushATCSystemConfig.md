@@ -38,7 +38,7 @@ steps:
 ```
 
 The step always performs a check first, if an ATC System Configuration with the same name provided in the file `atcSystemConfig.json` with the attribute conf_name.
-In case an ATC System Configuration with this name already exists, by default, the step would perform an Update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`. 
+In case an ATC System Configuration with this name already exists, by default, the step would perform an Update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
 If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
 
 ```yaml
@@ -111,6 +111,7 @@ abapEnvironmentRunATCCheck(
 ```
 
 In case an update of an existing ATC System Configuration is not desired, this can be done by setting parameter patchIfExisting accordingly:
+
 ```groovy
 abapEnvironmentRunATCCheck(
     abapCredentialsId: 'abapCredentialsId',
@@ -125,43 +126,43 @@ To Create/Update an ATC System Configuration a file `atcSystemConfig.json` will 
 
 ### ATC System configuration file example
 
-Providing a specifc System configuration file `atcSystemConfig.json` is mandatory. 
+Providing a specifc System configuration file `atcSystemConfig.json` is mandatory.
 
 The following section contains an example of an `atcSystemConfig.json` file.
 
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
-
 See below an example for an `atcSystemConfig.json` file for creating/updating an ATC System Configuration with the name myATCSystemConfigurationName including a change of one priority and providing information about last_changed date (not mandatory).
 
 ```json
 {
-    "last_changed_at": "2022-01-27T22:46:02.132169Z",
-	"conf_name": "myATCSystemConfigurationName",
-	"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
-	"block_findings": "0",
-	"inform_findings": "1",
-	"is_default": false,
-	"is_proxy_variant": false,
-	"_priorities": [
-		{
-			"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
-			"message_id": "FAIL_ABAP",
-			"priority": 2
-		}
-	]
+  "last_changed_at": "2022-01-27T22:46:02.132169Z",
+  "conf_name": "myATCSystemConfigurationName",
+  "checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+  "block_findings": "0",
+  "inform_findings": "1",
+  "is_default": false,
+  "is_proxy_variant": false,
+  "_priorities": [
+    {
+      "test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
+      "message_id": "FAIL_ABAP",
+      "priority": 2
+    }
+  ]
 }
 ```
 
 See below an example for an `atcSystemConfig.json` file for creating/updating an ATC System Configuration with the name myATCSystemConfigurationName. 
+
 ```json
 {
-	"conf_name": "myATCSystemConfigurationName",
-	"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
-	"block_findings": "0",
-	"inform_findings": "1",
-	"is_default": false,
-	"is_proxy_variant": false
+  "conf_name": "myATCSystemConfigurationName",
+  "checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+  "block_findings": "0",
+  "inform_findings": "1",
+  "is_default": false,
+  "is_proxy_variant": false
 }
 ```
 
