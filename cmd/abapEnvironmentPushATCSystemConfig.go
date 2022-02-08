@@ -73,7 +73,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 		return err
 	}
 	//check, if ATC configuration with given name already exists in Backend
-	configDoesExist, configName, configUUID, configLastChangedBE, err := checkConfigExistsInBE(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
+	configDoesExist, configName, configUUID, configLastChangedBackend, err := checkConfigExistsInBackend(config, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	if err != nil {
 		return err
 	}
@@ -83,17 +83,17 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 		configUUID = ""
 		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
-	if configDoesExist && configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) && !parsedConfigurationJson.LastChangedAt.IsZero() && !config.PatchIfExisting {
+	if configLastChangedBackend.Before(parsedConfigurationJson.LastChangedAt) && !parsedConfigurationJson.LastChangedAt.IsZero() && !config.PatchIfExisting {
 		//config exists, is not recent but must NOT be patched
-		log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
+		log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBackend.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
 		return nil
 	}
-	if configDoesExist && !parsedConfigurationJson.LastChangedAt.IsZero() && (configLastChangedBE.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBE == parsedConfigurationJson.LastChangedAt) {
+	if !parsedConfigurationJson.LastChangedAt.IsZero() && (configLastChangedBackend.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBackend == parsedConfigurationJson.LastChangedAt) {
 		//configuration exists and is most recent
-		log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBE.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
+		log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBackend.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
 		return nil
 	}
-	if configDoesExist && config.PatchIfExisting && (configLastChangedBE.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero()) {
+	if config.PatchIfExisting && (configLastChangedBackend.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero()) {
 		//configuration exists and is older than current config (or does not provide information about lastChanged) and should be patched
 		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
@@ -356,7 +356,7 @@ func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, b
 	return parseOdataResponse(resp, err, connectionDetails, config)
 }
 
-func checkConfigExistsInBE(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
+func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
 	var configName string
 	var configUUID string
 	var configLastChangedAt time.Time
