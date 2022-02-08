@@ -59,7 +59,6 @@ The following example triggers a Create/Update operation on an ATC System Config
 You can store the credentials in Jenkins and use the cfCredentialsId parameter to authenticate to Cloud Foundry.
 The username and password to authenticate to ABAP system will then be read from the Cloud Foundry service key that is bound to the ABAP instance.
 
-
 This can be done accordingly:
 
 ```groovy
@@ -153,7 +152,7 @@ See below an example for an `atcSystemConfig.json` file for creating/updating an
 }
 ```
 
-See below an example for an `atcSystemConfig.json` file for creating/updating an ATC System Configuration with the name myATCSystemConfigurationName. 
+See below an example for an `atcSystemConfig.json` file for creating/updating an ATC System Configuration with the name myATCSystemConfigurationName.
 
 ```json
 {
