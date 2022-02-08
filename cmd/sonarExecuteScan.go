@@ -233,19 +233,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 
-	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
-	cov, err := componentService.GetCoverage()
-	if err != nil {
-		return err // No wrap, description already added one level below
-	}
-
-	loc, err := componentService.GetLinesOfCode()
-	if err != nil {
-		return err // No wrap, description already added one level below
-	}
-
-	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
-	err = SonarUtils.WriteReport(SonarUtils.ReportData{
+	reportData := SonarUtils.ReportData{
 		ServerURL:    taskReport.ServerURL,
 		ProjectKey:   taskReport.ProjectKey,
 		TaskID:       taskReport.TaskID,
@@ -258,10 +246,27 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Major:    influx.sonarqube_data.fields.major_issues,
 			Minor:    influx.sonarqube_data.fields.minor_issues,
 			Info:     influx.sonarqube_data.fields.info_issues,
-		},
-		Coverage:    *cov,
-		LinesOfCode: *loc,
-	}, sonar.workingDir, ioutil.WriteFile)
+		}}
+
+	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	cov, err := componentService.GetCoverage()
+	if err != nil {
+		log.Entry().Warnf("failed to retrieve sonar coverage data: %v", err)
+	} else {
+		reportData.Coverage = cov
+	}
+
+	loc, err := componentService.GetLinesOfCode()
+	if err != nil {
+		log.Entry().Warnf("failed to retrieve sonar lines of code data: %v", err)
+	} else {
+		reportData.LinesOfCode = loc
+	}
+
+	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
+
+	err = SonarUtils.WriteReport(reportData, sonar.workingDir, ioutil.WriteFile)
+
 	if err != nil {
 		return err
 	}
