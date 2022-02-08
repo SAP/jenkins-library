@@ -29,7 +29,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 	cpe := npmExecuteScriptsCommonPipelineEnvironment{}
 
 	t.Run("Call with packagesList", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"src/package.json"}}
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"package.json", "src/package.json"}}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
