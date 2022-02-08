@@ -18,7 +18,9 @@ import (
 	"github.com/piper-validation/fortify-client-go/fortify/auth_entity_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/file_token_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/filter_set_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/issue_audit_comment_of_issue_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/issue_group_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/issue_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/issue_selector_set_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/issue_statistics_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_controller"
@@ -63,6 +65,8 @@ type System interface {
 	GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error)
 	GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
+	GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error)
+	GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error)
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
 	DownloadReportFile(endpoint string, reportID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
@@ -623,6 +627,29 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 	params := &saved_report_controller.ReadSavedReportParams{ID: id}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.SavedReportController.ReadSavedReport(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetIssueDetails returns the details of an issue with its issueInstanceId and projectVersionId
+func (sys *SystemInstance) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
+	qmStr := "issues"
+	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Q: &issueInstanceId, Qm: &qmStr}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetIssueComments returns the details of an issue comments with its unique parentId
+func (sys *SystemInstance) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
+	params := &issue_audit_comment_of_issue_controller.ListIssueAuditCommentOfIssueParams{ParentID: parentId}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.IssueAuditCommentOfIssueController.ListIssueAuditCommentOfIssue(params, sys)
 	if err != nil {
 		return nil, err
 	}
