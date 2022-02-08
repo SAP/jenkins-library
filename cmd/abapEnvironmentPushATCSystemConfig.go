@@ -16,44 +16,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-type abapEnvironmentPushATCSystemConfigUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The abapEnvironmentPushATCSystemConfigUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-type abapEnvironmentPushATCSystemConfigUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-
-	// Embed more structs as necessary to implement methods or interfaces you add to abapEnvironmentPushATCSystemConfigUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// abapEnvironmentPushATCSystemConfigUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newAbapEnvironmentPushATCSystemConfigUtils() abapEnvironmentPushATCSystemConfigUtils {
-	utils := abapEnvironmentPushATCSystemConfigUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-
-	return &utils
-}
 
 func abapEnvironmentPushATCSystemConfig(config abapEnvironmentPushATCSystemConfigOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
@@ -112,6 +77,7 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 	if err != nil {
 		return err
 	}
+
 	if !configDoesExist {
 		//regular push of configuration
 		configUUID = ""
@@ -139,15 +105,26 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	var parsedConfigurationJson parsedConfigJsonWithExpand
 	var emptyConfigurationJson parsedConfigJsonWithExpand
 	var atcSystemConfiguartionJsonFile []byte
-	var filename string
-	//check ATC system configuration json
-	fileExists, err := newAbapEnvironmentPushATCSystemConfigUtils().FileExists(config.AtcSystemConfigFilePath)
+
+	parsedConfigurationJson, atcSystemConfiguartionJsonFile, err := readATCSystemConfigurationFile(config)
 	if err != nil {
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
-	if !fileExists {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not exist(File: " + config.AtcSystemConfigFilePath + ")")
+
+	//check if parsedConfigurationJson is not initial or Configuration Name not supplied
+	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
+		parsedConfigurationJson.ConfName == "" {
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
 	}
+
+	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
+}
+
+func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOptions) (parsedConfigJsonWithExpand, []byte, error) {
+	var parsedConfigurationJson parsedConfigJsonWithExpand
+	var emptyConfigurationJson parsedConfigJsonWithExpand
+	var atcSystemConfiguartionJsonFile []byte
+	var filename string
 
 	filelocation, err := filepath.Glob(config.AtcSystemConfigFilePath)
 	if err != nil {
@@ -174,13 +151,8 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	if err != nil {
 		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
-	//check if parsedConfigurationJson is not initial
-	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
-		parsedConfigurationJson.ConfName == "" {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
-	}
 
-	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
+	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {

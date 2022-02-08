@@ -491,7 +491,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "test.json"}
 
-		expectedErrorMessage := "pushing ATC System Configuration failed. Reason: Configured File does not exist(File: " + config.AtcSystemConfigFilePath + ")"
+		expectedErrorMessage := "pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")"
 
 		err := runAbapEnvironmentPushATCSystemConfig(&config, nil, &autils, client)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")

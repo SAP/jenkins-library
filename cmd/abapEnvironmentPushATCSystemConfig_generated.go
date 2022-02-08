@@ -28,7 +28,7 @@ type abapEnvironmentPushATCSystemConfigOptions struct {
 	Host                    string `json:"host,omitempty"`
 }
 
-// AbapEnvironmentPushATCSystemConfigCommand Push/Deploy ATC Configuration
+// AbapEnvironmentPushATCSystemConfigCommand Create/Update ATC System Configuration
 func AbapEnvironmentPushATCSystemConfigCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentPushATCSystemConfig"
 
@@ -41,11 +41,11 @@ func AbapEnvironmentPushATCSystemConfigCommand() *cobra.Command {
 
 	var createAbapEnvironmentPushATCSystemConfigCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Push/Deploy ATC Configuration",
-		Long: `This step is for pushing an [ATC](https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud) system configurationon on an SAP Cloud Platform ABAP Environment system.
+		Short: "Create/Update ATC System Configuration",
+		Long: `This step is for creating/updating an [ATC](https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud) system configurationon on an SAP BTP, ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0763] (https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud).
+* The host and credentials the SAP BTP, ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0763] (https://help.sap.com/products/BTP/65de2977205c403bbc107264b8eccf4b/657285a09f7148d894c27bb8e17827cf.html?version=Cloud).
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0763.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -125,7 +125,7 @@ Please provide either of the following options:
 
 func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *abapEnvironmentPushATCSystemConfigOptions) {
 	cmd.Flags().StringVar(&stepConfig.AtcSystemConfigFilePath, "atcSystemConfigFilePath", os.Getenv("PIPER_atcSystemConfigFilePath"), "Path to a JSON file with ATC System Configuration")
-	cmd.Flags().BoolVar(&stepConfig.PatchIfExisting, "patchIfExisting", true, "In case an configuration under the given name already exists in system. Should the step Update/Patch the existing ATC Systm Configuration from the provided ATC System Configuration file?")
+	cmd.Flags().BoolVar(&stepConfig.PatchIfExisting, "patchIfExisting", true, "In case an configuration under the given name already exists in the system. Should the step update/patch the existing ATC Systm Configuration from the provided ATC System Configuration file?")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
@@ -133,7 +133,7 @@ func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0763")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0763")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP SAP BTP, ABAP Environment system")
 
 	cmd.MarkFlagRequired("atcSystemConfigFilePath")
 	cmd.MarkFlagRequired("username")
@@ -146,12 +146,12 @@ func abapEnvironmentPushATCSystemConfigMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentPushATCSystemConfig",
 			Aliases:     []config.Alias{},
-			Description: "Push/Deploy ATC Configuration",
+			Description: "Create/Update ATC System Configuration",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}}},
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the SAP BTP, ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
