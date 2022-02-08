@@ -1,6 +1,7 @@
 package abaputils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -8,12 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var logResultSuccess = fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+var logResultError = fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+
 func TestPollEntity(t *testing.T) {
 
 	t.Run("Test poll entity - success case", func(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
+				logResultSuccess,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 			},
@@ -50,6 +56,8 @@ func TestPollEntity(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
+				logResultError,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
 			},
