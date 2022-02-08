@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -86,6 +87,8 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 	t.Run("happy path, use AddonDescriptor", func(t *testing.T) {
 		t.Parallel()
 		// init
+		expectedValueList := []abapbuild.Value{}
+		recordedValueList := []abapbuild.Value{}
 		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
 		config := abapEnvironmentBuildOptions{}
 		config.AddonDescriptor = addonDescriptor
@@ -98,8 +101,10 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
 		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
+		json.Unmarshal([]byte(finalValues), expectedValueList)
+		json.Unmarshal([]byte(cpe.abap.buildValues), recordedValueList)
 		assert.NoError(t, err)
-		assert.ElementsMatch(t, finalValues, cpe.abap.buildValues)
+		assert.ElementsMatch(t, expectedValueList, recordedValueList)
 	})
 
 	t.Run("error path, try to publish file, which was not downloaded", func(t *testing.T) {
