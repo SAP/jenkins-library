@@ -101,6 +101,7 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
 		printLog(logEntryForDetails)
 	}
+	log.Entry().Infof("-------------------------")
 
 	return
 }
