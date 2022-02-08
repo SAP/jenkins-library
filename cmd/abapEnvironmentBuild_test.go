@@ -99,7 +99,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		// assert
 		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
 		assert.NoError(t, err)
-		assert.Equal(t, finalValues, cpe.abap.buildValues)
+		assert.ElementsMatch(t, finalValues, cpe.abap.buildValues)
 	})
 
 	t.Run("error path, try to publish file, which was not downloaded", func(t *testing.T) {
