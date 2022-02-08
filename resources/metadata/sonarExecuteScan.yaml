@@ -23,7 +23,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "SonarCloud"
+        default: ""
       - name: serverUrl
         aliases:
           - name: host
