@@ -2,12 +2,12 @@ package aakaas
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
+	"net/url"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // PackageStatus : Status of an ABAP delivery package
@@ -79,13 +79,15 @@ func (p *Package) ReserveNext() error {
 	}
 	log.Entry().Infof("Reserve package for %s version %s", p.ComponentName, p.VersionYAML)
 	p.Connector.GetToken("/odata/aas_ocs_package")
-	appendum := "/odata/aas_ocs_package/DeterminePackageForScv?Name='" + p.ComponentName + "'&Version='" + p.VersionYAML + "'"
+	appendum := "/odata/aas_ocs_package/DeterminePackageForScv?Name='" + url.QueryEscape(p.ComponentName) + "'&Version='" + url.QueryEscape(p.VersionYAML) + "'"
 	body, err := p.Connector.Post(appendum, "")
 	if err != nil {
 		return err
 	}
 	var jPck jsonPackageDeterminePackageForScv
-	json.Unmarshal(body, &jPck)
+	if err := json.Unmarshal(body, &jPck); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for reserve package: "+string(body))
+	}
 	p.PackageName = jPck.DeterminePackage.Package.PackageName
 	p.Type = jPck.DeterminePackage.Package.Type
 	p.PredecessorCommitID = jPck.DeterminePackage.Package.PredecessorCommitID
@@ -98,13 +100,15 @@ func (p *Package) ReserveNext() error {
 
 // GetPackageAndNamespace : retrieve attributes of the package from AAKaaS
 func (p *Package) GetPackageAndNamespace() error {
-	appendum := "/odata/aas_ocs_package/OcsPackageSet('" + p.PackageName + "')"
+	appendum := "/odata/aas_ocs_package/OcsPackageSet('" + url.QueryEscape(p.PackageName) + "')"
 	body, err := p.Connector.Get(appendum)
 	if err != nil {
 		return err
 	}
 	var jPck jsonPackage
-	json.Unmarshal(body, &jPck)
+	if err := json.Unmarshal(body, &jPck); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for check of package status: "+string(body))
+	}
 	p.Status = jPck.Package.Status
 	p.Namespace = jPck.Package.Namespace
 	return nil
@@ -122,16 +126,15 @@ func (p *Package) Register() error {
 	}
 	log.Entry().Infof("Register package %s", p.PackageName)
 	p.Connector.GetToken("/odata/aas_ocs_package")
-	appendum := "/odata/aas_ocs_package/RegisterPackage?Name='" + p.PackageName + "'"
+	appendum := "/odata/aas_ocs_package/RegisterPackage?Name='" + url.QueryEscape(p.PackageName) + "'"
 	body, err := p.Connector.Post(appendum, "")
 	if err != nil {
 		return err
 	}
 
 	var jPck jsonPackage
-	err = json.Unmarshal(body, &jPck)
-	if err != nil {
-		return fmt.Errorf("failed to parse package status from response: %w", err)
+	if err := json.Unmarshal(body, &jPck); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for register package: "+string(body))
 	}
 	p.Status = jPck.Package.Status
 	log.Entry().Infof("Package status %s", p.Status)
@@ -144,13 +147,15 @@ func (p *Package) Release() error {
 	var err error
 	log.Entry().Infof("Release package %s", p.PackageName)
 	p.Connector.GetToken("/odata/aas_ocs_package")
-	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
+	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + url.QueryEscape(p.PackageName) + "'"
 	body, err = p.Connector.Post(appendum, "")
 	if err != nil {
 		return err
 	}
 	var jPck jsonPackage
-	json.Unmarshal(body, &jPck)
+	if err := json.Unmarshal(body, &jPck); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for release package: "+string(body))
+	}
 	p.Status = jPck.Package.Status
 	return nil
 }

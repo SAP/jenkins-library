@@ -3,13 +3,12 @@ package project
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/registry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	toml "github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -37,47 +36,53 @@ type build struct {
 	Env        []envVar    `toml:"env"`
 }
 
+type project struct {
+	ID string `toml:"id"`
+}
+
 type projectDescriptor struct {
 	Build    build                  `toml:"build"`
+	Project  project                `toml:"project"`
 	Metadata map[string]interface{} `toml:"metadata"`
 }
 
 type Descriptor struct {
 	Exclude    *ignore.GitIgnore
 	Include    *ignore.GitIgnore
-	EnvVars    []string
+	EnvVars    map[string]interface{}
 	Buildpacks []string
+	ProjectID  string
 }
 
-func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClient piperhttp.Sender) (Descriptor, error) {
-	descriptor := Descriptor{}
+func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClient piperhttp.Sender) (*Descriptor, error) {
+	descriptor := &Descriptor{}
 
 	descriptorContent, err := utils.FileRead(descriptorPath)
 	if err != nil {
-		return Descriptor{}, err
+		return nil, err
 	}
 
 	rawDescriptor := projectDescriptor{}
 	err = toml.Unmarshal(descriptorContent, &rawDescriptor)
 	if err != nil {
-		return Descriptor{}, err
+		return nil, err
 	}
 
 	if rawDescriptor.Build.Buildpacks != nil && len(rawDescriptor.Build.Buildpacks) > 0 {
 		buildpacksImg, err := rawDescriptor.Build.searchBuildpacks(httpClient)
 		if err != nil {
-			return Descriptor{}, err
+			return nil, err
 		}
 
 		descriptor.Buildpacks = buildpacksImg
 	}
 
 	if rawDescriptor.Build.Env != nil && len(rawDescriptor.Build.Env) > 0 {
-		descriptor.EnvVars = rawDescriptor.Build.envToStringSlice()
+		descriptor.EnvVars = rawDescriptor.Build.envToMap()
 	}
 
 	if len(rawDescriptor.Build.Exclude) > 0 && len(rawDescriptor.Build.Include) > 0 {
-		return Descriptor{}, errors.New("project descriptor options 'exclude' and 'include' are mutually exclusive")
+		return nil, errors.New("project descriptor options 'exclude' and 'include' are mutually exclusive")
 	}
 
 	if len(rawDescriptor.Build.Exclude) > 0 {
@@ -88,20 +93,25 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 		descriptor.Include = ignore.CompileIgnoreLines(rawDescriptor.Build.Include...)
 	}
 
+	if len(rawDescriptor.Project.ID) > 0 {
+		descriptor.ProjectID = rawDescriptor.Project.ID
+	}
+
 	return descriptor, nil
 }
 
-func (b *build) envToStringSlice() []string {
-	strSlice := []string{}
+func (b *build) envToMap() map[string]interface{} {
+	envMap := map[string]interface{}{}
 
 	for _, e := range b.Env {
 		if len(e.Name) == 0 || len(e.Value) == 0 {
 			continue
 		}
-		strSlice = append(strSlice, fmt.Sprintf("%s=%s", e.Name, e.Value))
+
+		envMap[e.Name] = e.Value
 	}
 
-	return strSlice
+	return envMap
 }
 
 func (b *build) searchBuildpacks(httpClient piperhttp.Sender) ([]string, error) {

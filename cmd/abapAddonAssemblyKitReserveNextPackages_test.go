@@ -17,8 +17,8 @@ func TestReserveNextPackagesStep(t *testing.T) {
 	config.Username = "dummy"
 	config.Password = "dummy"
 	var cpe abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
-	timeout := time.Duration(5 * time.Second)
-	pollInterval := time.Duration(1 * time.Second)
+	bundle := aakaas.NewAakBundleMock()
+	utils := bundle.GetUtils()
 	t.Run("step success", func(t *testing.T) {
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
@@ -36,12 +36,9 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-
-		client := &abaputils.ClientMock{
-			BodyList: []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"},
-		}
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, client, &cpe, timeout, pollInterval)
-
+		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
+		bundle.SetBodyList(bodyList)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -58,9 +55,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-
-		client := &abaputils.ClientMock{}
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, client, &cpe, timeout, pollInterval)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 	t.Run("step error - timeout", func(t *testing.T) {
@@ -74,12 +69,10 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-
-		client := &abaputils.ClientMock{
-			BodyList: []string{responseReserveNextPackageCreationTriggered, responseReserveNextPackagePostPlanned, "myToken"},
-		}
-		timeout := time.Duration(1 * time.Second)
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, client, &cpe, timeout, pollInterval)
+		bodyList := []string{responseReserveNextPackageCreationTriggered, responseReserveNextPackagePostPlanned, "myToken"}
+		bundle.SetBodyList(bodyList)
+		bundle.SetMaxRuntime(time.Duration(1 * time.Microsecond))
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 }
@@ -251,62 +244,53 @@ func TestReservePackages(t *testing.T) {
 // ********************* Test pollReserveNextPackages *******************
 
 func TestPollReserveNextPackages(t *testing.T) {
-	timeout := time.Duration(5 * time.Second)
-	pollInterval := time.Duration(1 * time.Second)
+	bundle := aakaas.NewAakBundleMock()
+	utils := bundle.GetUtils()
 	t.Run("test pollReserveNextPackages - testing loop", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			BodyList: []string{responseReserveNextPackagePlanned, responseReserveNextPackageCreationTriggered},
-		}
-		pckgWR := testPollPackagesSetup(client)
-		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
+		bodyList := []string{responseReserveNextPackagePlanned, responseReserveNextPackageCreationTriggered}
+		bundle.SetBodyList(bodyList)
+		pckgWR := testPollPackagesSetup(&utils)
+		err := pollReserveNextPackages(pckgWR, &utils)
 		assert.NoError(t, err)
 		assert.Equal(t, aakaas.PackageStatusPlanned, pckgWR[0].Package.Status)
 		assert.Equal(t, "/DRNMSPC/", pckgWR[0].Package.Namespace)
 	})
 	t.Run("test pollReserveNextPackages - status locked", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body: responseReserveNextPackageLocked,
-		}
-		pckgWR := testPollPackagesSetup(client)
-		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
+		bundle.SetBody(responseReserveNextPackageLocked)
+		pckgWR := testPollPackagesSetup(&utils)
+		err := pollReserveNextPackages(pckgWR, &utils)
 		assert.Error(t, err)
 		assert.Equal(t, aakaas.PackageStatusLocked, pckgWR[0].Package.Status)
 	})
 	t.Run("test pollReserveNextPackages - status released", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body: responseReserveNextPackageReleased,
-		}
-		pckgWR := testPollPackagesSetup(client)
-		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
+		bundle.SetBody(responseReserveNextPackageReleased)
+		pckgWR := testPollPackagesSetup(&utils)
+		err := pollReserveNextPackages(pckgWR, &utils)
 		assert.NoError(t, err)
 		assert.Equal(t, aakaas.PackageStatusReleased, pckgWR[0].Package.Status)
 	})
 	t.Run("test pollReserveNextPackages - unknow status", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body: responseReserveNextPackageUnknownState,
-		}
-		pckgWR := testPollPackagesSetup(client)
-		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
+		bundle.SetBody(responseReserveNextPackageUnknownState)
+		pckgWR := testPollPackagesSetup(&utils)
+		err := pollReserveNextPackages(pckgWR, &utils)
 		assert.Error(t, err)
 		assert.Equal(t, aakaas.PackageStatus("X"), pckgWR[0].Package.Status)
 	})
 	t.Run("test pollReserveNextPackages - timeout", func(t *testing.T) {
-		client := abaputils.ClientMock{
-			Body:  "ErrorBody",
-			Error: errors.New("Failure during reserve next"),
-		}
-		pckgWR := testPollPackagesSetup(client)
-		timeout := time.Duration(2 * time.Second)
-		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
+		bundle.SetBody(responseReserveNextPackageUnknownState)
+		bundle.SetError("Failure during reserve next")
+		bundle.SetMaxRuntime(time.Duration(1 * time.Microsecond))
+		pckgWR := testPollPackagesSetup(&utils)
+		err := pollReserveNextPackages(pckgWR, &utils)
 		assert.Error(t, err)
 	})
 }
 
 // ********************* Setup functions *******************
 
-func testPollPackagesSetup(client abaputils.ClientMock) []aakaas.PackageWithRepository {
+func testPollPackagesSetup(utils *aakaas.AakUtils) []aakaas.PackageWithRepository {
 	conn := new(abapbuild.Connector)
-	conn.Client = &client
+	conn.Client = *utils
 	conn.Header = make(map[string][]string)
 	pckgWR := []aakaas.PackageWithRepository{
 		{

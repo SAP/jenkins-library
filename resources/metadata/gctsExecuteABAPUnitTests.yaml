@@ -1,19 +1,25 @@
 metadata:
   name: gctsExecuteABAPUnitTests
-  description: Runs ABAP unit tests for all packages of the specified repository
+  description: Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
   longDescription: |
-    This step will execute every unit test associated with a package belonging to the specified local repository on an ABAP system.
+    This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system.
+    Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both.
+    By default, both checks are executed.
+    The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred.
+    To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in the Example section.
+    <br />
+    You can use this step as of SAP S/4HANA 2020.
 
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the unit tests
+        description: ID taken from the Jenkins credentials store containing user name and password of the user that authenticates to the ABAP system on which you want to execute the checks.
         type: jenkins
     params:
       - name: username
         type: string
-        description: User to authenticate to the ABAP system
+        description: User that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -26,7 +32,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password to authenticate to the ABAP system
+        description: Password of the ABAP  user that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -37,17 +43,17 @@ spec:
           - name: abapCredentialsId
             type: secret
             param: password
-      - name: repository
+      - name: host
         type: string
-        description: Specifies the name (ID) of the local repsitory on the ABAP system
+        description: Protocol and host of the ABAP system, including the port. Please provide in the format <protocol>://<host>:<port>. Supported protocols are http and https.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: true
-      - name: host
+      - name: repository
         type: string
-        description: Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        description: Name (ID) of the local repository on the ABAP system
         scope:
           - PARAMETERS
           - STAGES
@@ -55,9 +61,90 @@ spec:
         mandatory: true
       - name: client
         type: string
-        description: Specifies the client of the ABAP system to be addressed
+        description: Client of the ABAP system in which you want to execute the checks
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: true
+      - name: aUnitTest
+        type: bool
+        default: true
+        description: Indication whether you want to execute the unit test checks.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: atcCheck
+        type: bool
+        default: true
+        description: Indication whether you want to execute the ATC checks.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: atcVariant
+        type: string
+        default: "DEFAULT_REMOTE_REF"
+        description: Variant for ATC checks
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scope
+        type: string
+        default: repository
+        enum:
+          - localChangedObjects
+          - remoteChangedObjects
+          - localChangedPackages
+          - remoteChangedPackages
+          - repository
+          - packages
+        description: |
+           Scope of objects for which you want to execute the checks:
+
+            * localChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects.
+            * remoteChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
+            * localChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages.
+            * remoteChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
+            * repository - all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
+            * packages - all packages that are part of the local repository . The checks are executed for the packages.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: commit
+        type: string
+        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: workspace
+        type: string
+        description: Absolute path to directory which contains the source code that your CI/CD tool checks out. For example in Jenkins, the workspace parameter is /var/jenkins_home/workspace/<jobName>/
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: atcResultsFileName
+        type: string
+        description: Specifies output file name for the results from the ATC checks
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: "ATCResults.xml"
+      - name: aUnitResultsFileName
+        type: string
+        description: Specifies output file name for the results from the AUnit tests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: "AUnitResults.xml"

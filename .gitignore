@@ -40,3 +40,9 @@ debug.test
 *errorDetails.json
 *_links.json
 *_reports.json
+
+# Result files
+ATCResults.xml
+AUnitResults.xml
+ATCResults.html
+AUnitResults.html

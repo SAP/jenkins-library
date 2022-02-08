@@ -20,25 +20,36 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
 	if config.Install {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
-		if err != nil {
-			return err
-		}
+		if len(config.BuildDescriptorList) > 0 {
+			if err := npmExecutor.InstallAllDependencies(config.BuildDescriptorList); err != nil {
+				return err
+			}
+		} else {
+			packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+			if err != nil {
+				return err
+			}
 
-		err = npmExecutor.InstallAllDependencies(packageJSONFiles)
-		if err != nil {
-			return err
+			if err := npmExecutor.InstallAllDependencies(packageJSONFiles); err != nil {
+				return err
+			}
 		}
 	}
 
 	if config.CreateBOM {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
-		if err != nil {
-			return err
-		}
+		if len(config.BuildDescriptorList) > 0 {
+			if err := npmExecutor.CreateBOM(config.BuildDescriptorList); err != nil {
+				return err
+			}
+		} else {
+			packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+			if err != nil {
+				return err
+			}
 
-		if err := npmExecutor.CreateBOM(packageJSONFiles); err != nil {
-			return err
+			if err := npmExecutor.CreateBOM(packageJSONFiles); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -47,18 +58,25 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		return err
 	}
 
-	log.Entry().Infof("creating build settings information...")
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "npmExecuteScripts"
+	dockerImage, err := getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
 	npmConfig := buildsettings.BuildOptions{
 		Publish:            config.Publish,
 		CreateBOM:          config.CreateBOM,
 		DefaultNpmRegistry: config.DefaultNpmRegistry,
 		BuildSettingsInfo:  config.BuildSettingsInfo,
+		DockerImage:        dockerImage,
 	}
-	builSettings, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, "npmExecuteScripts")
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&npmConfig, stepName)
 	if err != nil {
-		log.Entry().Warnf("failed to create build settings info : ''%v", err)
+		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = builSettings
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
 		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
@@ -66,7 +84,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 			return err
 		}
 
-		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword)
+		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish)
 		if err != nil {
 			return err
 		}

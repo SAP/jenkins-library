@@ -215,7 +215,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository"}},
+						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository", Deprecated: true}},
 						Default:     os.Getenv("PIPER_mavenRepository"),
 					},
 					{

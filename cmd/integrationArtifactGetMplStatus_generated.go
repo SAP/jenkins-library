@@ -48,7 +48,7 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 		}
 	}
 	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
+		log.Entry().Error("failed to persist Piper environment")
 	}
 }
 
@@ -112,8 +112,8 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
@@ -197,8 +197,8 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/integrationFlowMplStatus"},
-							{"Name": "custom/integrationFlowMplError"},
+							{"name": "custom/integrationFlowMplStatus"},
+							{"name": "custom/integrationFlowMplError"},
 						},
 					},
 				},

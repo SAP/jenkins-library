@@ -39,7 +39,7 @@ cnbBuild(
     dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',
-    containerImageRegistryUrl: 'gcr.io'
+    containerRegistryUrl: 'gcr.io'
 )
 ```
 
@@ -52,7 +52,7 @@ cnbBuild(
     dockerImage: 'paketobuildpacks/builder:base',
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',
-    containerImageRegistryUrl: 'gcr.io'
+    containerRegistryUrl: 'gcr.io'
 )
 ```
 
@@ -64,7 +64,22 @@ cnbBuild(
     dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',
-    containerImageRegistryUrl: 'gcr.io',
+    containerRegistryUrl: 'gcr.io',
     buildpacks: ['gcr.io/paketo-buildpacks/nodejs', 'paketo-community/build-plan']
+)
+```
+
+### Example 4: Build environment variables
+
+```groovy
+cnbBuild(
+    script: script,
+    dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
+    containerImageName: 'images/example',
+    containerImageTag: 'v0.0.1',
+    containerRegistryUrl: 'gcr.io',
+    buildEnvVars: [
+        "FOO": "BAR"
+    ]
 )
 ```

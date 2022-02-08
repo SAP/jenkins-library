@@ -78,8 +78,8 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() map[string]interface{} {
 // GetJobName returns the pipeline job name
 func (a *AzureDevOpsConfigProvider) GetJobName() string {
 	responseInterface := a.getAPIInformation()
-	if val, ok := responseInterface["project"]; ok {
-		return val.(map[string]interface{})["name"].(string)
+	if val, ok := responseInterface["repository"]; ok {
+		return val.(map[string]interface{})["id"].(string)
 	}
 	return "n/a"
 }
