@@ -32,6 +32,8 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod@latest"
+	sbomFilename                = "bom.xml"
 )
 
 type golangBuildUtils interface {
@@ -121,6 +123,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	if config.CreateBOM {
+		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
+			return fmt.Errorf("failed to install pre-requisite: %w", err)
+		}
+	}
+
 	failedTests := false
 
 	if config.RunTests {
@@ -148,6 +156,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	if failedTests {
 		log.SetErrorCategory(log.ErrorTest)
 		return fmt.Errorf("some tests failed")
+	}
+
+	if config.CreateBOM {
+		if err := runBOMCreation(utils, sbomFilename); err != nil {
+			return err
+		}
 	}
 
 	ldflags := ""
@@ -449,6 +463,13 @@ func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern
 		privateModules = append(privateModules, repo)
 	}
 	return privateModules, nil
+}
+
+func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
+		return fmt.Errorf("BOM creation failed: %w", err)
+	}
+	return nil
 }
 
 func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {

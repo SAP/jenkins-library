@@ -42,7 +42,7 @@ spec:
         default: html
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.
         scope:
           - GENERAL
           - STEPS
