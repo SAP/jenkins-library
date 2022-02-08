@@ -46,8 +46,12 @@ type cnbBuildUtilsBundle struct {
 	*docker.Client
 }
 
+type cnbBuildTelemetry struct {
+	Version int                     `json:"version"`
+	Data    []cnbBuildTelemetryData `json:"data"`
+}
+
 type cnbBuildTelemetryData struct {
-	Version           int                                    `json:"version"`
 	ImageTag          string                                 `json:"imageTag"`
 	AdditionalTags    []string                               `json:"additionalTags"`
 	BindingKeys       []string                               `json:"bindingKeys"`
@@ -138,13 +142,23 @@ func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commo
 		log.Entry().WithError(err).Fatal("failed to process config")
 	}
 	client := &piperhttp.Client{}
-
+	cnbTelemetry := cnbBuildTelemetry{
+		Version: 2,
+	}
 	for _, c := range mergedConfigs {
-		err = runCnbBuild(&c, telemetryData, utils, commonPipelineEnvironment, client)
+		err = runCnbBuild(&c, telemetryData, &cnbTelemetry, utils, commonPipelineEnvironment, client)
 		if err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed")
 		}
 	}
+
+	telemetryData.Custom1Label = "cnbBuildStepData"
+	customData, err := json.Marshal(cnbTelemetry)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorCustom)
+		log.Entry().WithError(err).Fatal("failed to marshal custom telemetry data")
+	}
+	telemetryData.Custom1 = string(customData)
 }
 
 func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
@@ -407,10 +421,10 @@ func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor p
 	data.ProjectDescriptor.ExcludeUsed = descriptor.Exclude != nil
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
-	customTelemetryData := cnbBuildTelemetryData{Version: 1}
+	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, config)
 
 	err = isBuilder(utils)
@@ -461,14 +475,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 	customTelemetryData.Buildpacks.Overall = config.Buildpacks
 	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
-
-	telemetryData.Custom1Label = "cnbBuildStepData"
-	customData, err := json.Marshal(customTelemetryData)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorCustom)
-		return errors.Wrap(err, "failed to marshal custom telemetry data")
-	}
-	telemetryData.Custom1 = string(customData)
+	telemetry.Data = append(telemetry.Data, customTelemetryData)
 
 	commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
 	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)

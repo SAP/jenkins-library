@@ -322,7 +322,7 @@ func cnbBuildMetadata() config.StepData {
 						Scope:       []string{},
 						Type:        "[]map[string]interface{}",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "images"}},
 					},
 				},
 			},

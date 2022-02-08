@@ -189,6 +189,8 @@ spec:
           - STAGES
           - STEPS
       - name: multipleImages
+        aliases:
+          - name: images
         type: "[]map[string]interface{}"
         description: |
           This parameter is only needed if `cnbBuild` should create multiple images.
@@ -207,6 +209,7 @@ spec:
             - "java"
             path: "source/java"
           - containerImageName: nodejs-app
+            containerImageTag: v1.0.0
             buildpacks:
             - "nodejs"
             path: "source/nodejs"
