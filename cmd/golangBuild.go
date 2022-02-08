@@ -465,7 +465,6 @@ func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern
 	return privateModules, nil
 }
 
-
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
 	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
