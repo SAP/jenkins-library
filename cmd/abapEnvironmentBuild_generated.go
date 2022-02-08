@@ -41,6 +41,7 @@ type abapEnvironmentBuildOptions struct {
 	CpeValues                       string   `json:"cpeValues,omitempty"`
 	UseFieldsOfAddonDescriptor      string   `json:"useFieldsOfAddonDescriptor,omitempty"`
 	ConditionOnAddonDescriptor      string   `json:"conditionOnAddonDescriptor,omitempty"`
+	StopOnFirstError                bool     `json:"stopOnFirstError,omitempty"`
 	AddonDescriptor                 string   `json:"addonDescriptor,omitempty"`
 }
 
@@ -188,6 +189,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
 	cmd.Flags().StringVar(&stepConfig.UseFieldsOfAddonDescriptor, "useFieldsOfAddonDescriptor", os.Getenv("PIPER_useFieldsOfAddonDescriptor"), "use fields of the addonDescriptor in the cpe as input values. Please enter in the format '[{\"use\":\"Name\",\"renameTo\":\"SWC\"}]'")
 	cmd.Flags().StringVar(&stepConfig.ConditionOnAddonDescriptor, "conditionOnAddonDescriptor", os.Getenv("PIPER_conditionOnAddonDescriptor"), "normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions. Please enter in the format '[{\"field\":\"Status\",\"operator\":\"==\",\"value\":\"P\"}]'")
+	cmd.Flags().BoolVar(&stepConfig.StopOnFirstError, "stopOnFirstError", false, "If false, it does not stop if an error occured for one repository in the addonDescriptor, but continues with the next repository. However the step is marked as failed in the end if an error occured.")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("username")
@@ -425,6 +427,15 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_conditionOnAddonDescriptor"),
+					},
+					{
+						Name:        "stopOnFirstError",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "addonDescriptor",
