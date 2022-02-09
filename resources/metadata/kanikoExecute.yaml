@@ -158,6 +158,15 @@ spec:
           - STAGES
           - STEPS
         default: Dockerfile
+      - name: targetArchitectures
+        type: "[]string"
+        description: Defines the target architectures for which the build should run using OS and architecture separated by a comma. (EXPERIMENTAL)
+        default: []
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
