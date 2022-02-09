@@ -339,7 +339,7 @@ func golangBuildMetadata() config.StepData {
 					{
 						Name:        "targetArchitectures",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
