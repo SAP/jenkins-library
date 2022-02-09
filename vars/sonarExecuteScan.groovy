@@ -68,7 +68,7 @@ void call(Map parameters = [:]) {
                                 piperExecuteBin.credentialWrapper(config, credentialInfo) {
                                     if (stepConfig.instance) {
                                         withSonarQubeEnv(stepConfig.instance) {
-                                            echo "Instance is deprecated - please use serverUrl to set URL to the Sonar backend."
+                                            echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
                                             sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                         }
                                     } else {

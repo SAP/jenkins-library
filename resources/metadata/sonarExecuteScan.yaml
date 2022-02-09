@@ -23,7 +23,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ""
       - name: serverUrl
         aliases:
           - name: host
