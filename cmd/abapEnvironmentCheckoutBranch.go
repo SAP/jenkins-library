@@ -86,7 +86,6 @@ func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDet
 		if err != nil {
 			break
 		}
-		finishCheckoutLogs(repo.Branch, repo.Name)
 	}
 	return err
 }
