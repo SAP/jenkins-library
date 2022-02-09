@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"time"
@@ -118,6 +119,9 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
+	// log step telemetry data to logfile used for internal use-case
+	t.logStepTelemetryData()
+
 	// skip if telemetry is disabled
 	if t.disabled {
 		return
@@ -128,4 +132,40 @@ func (t *Telemetry) Send() {
 	request.RawQuery = t.data.toPayloadString()
 	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
 	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
+}
+
+func (t *Telemetry) logStepTelemetryData() {
+
+	var fatalError map[string]interface{}
+	if t.data.ErrorCategory != "0" {
+		// retrieve the error information from the logCollector
+		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)
+		if err != nil {
+			log.Entry().WithError(err).Error("could not unmarshal error struct")
+		}
+	}
+
+	stepMonitoringData := StepMonitoringData{
+		PipelineUrlHash: t.data.PipelineURLHash,
+		BuildUrlHash:    t.data.BuildURLHash,
+		StageName:       t.data.StageName,
+		StepName:        t.data.BaseData.StepName,
+		ExitCode:        t.data.CustomData.ErrorCode,
+		Duration:        t.data.CustomData.Duration,
+		ErrorCategory:   t.data.CustomData.ErrorCategory,
+		ErrorDetail:     fatalError,
+		CorrelationID:   t.provider.GetBuildUrl(),
+		CommitHash:      t.provider.GetCommit(),
+		Branch:          t.provider.GetBranch(),
+		GitOwner:        t.provider.GetRepoUrl(), // TODO not correct
+		GitRepository:   t.provider.GetRepoUrl(), // TODO not correct
+	}
+	monitoringJson, err := json.Marshal(stepMonitoringData)
+	if err != nil {
+		log.Entry().Error("could not marshal step monitoring data")
+		log.Entry().Infof("Step monitoring data: {n/a}")
+	} else {
+		// log step monitoring data, changes here need to change the regex in the internal piper lib
+		log.Entry().Infof("Step monitoring data:%v", string(monitoringJson))
+	}
 }

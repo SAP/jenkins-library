@@ -69,6 +69,23 @@ type CustomData struct {
 	Custom5         string `json:"e_30,omitempty"`
 }
 
+// MonitoringData definition for monitoring
+type StepMonitoringData struct {
+	PipelineUrlHash string                 `json:"PipelineUrlHash,omitempty"`
+	BuildUrlHash    string                 `json:"BuildUrlHash,omitempty"`
+	StageName       string                 `json:"StageName,omitempty"`
+	StepName        string                 `json:"StepName,omitempty"`
+	ExitCode        string                 `json:"ExitCode,omitempty"`
+	Duration        string                 `json:"Duration,omitempty"`
+	ErrorCategory   string                 `json:"ErrorCategory,omitempty"`
+	CorrelationID   string                 `json:"CorrelationID,omitempty"`
+	CommitHash      string                 `json:"CommitHash,omitempty"`
+	Branch          string                 `json:"Branch,omitempty"`
+	GitOwner        string                 `json:"GitOwner,omitempty"`
+	GitRepository   string                 `json:"GitRepository,omitempty"`
+	ErrorDetail     map[string]interface{} `json:"ErrorDetails,omitempty"`
+}
+
 // Data object definition containing all telemetry data
 type Data struct {
 	BaseData
