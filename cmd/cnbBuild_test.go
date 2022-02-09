@@ -61,7 +61,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 1)
@@ -124,7 +124,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 1)
@@ -149,7 +149,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 1)
@@ -179,7 +179,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Equal(t, creatorPath, runner.Calls[0].Exec)
@@ -221,13 +221,13 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, client)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		result, err := utils.FilesMock.FileRead(caCertsTmpFile)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "test\ntestCert\ntestCert\n", string(result))
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Contains(t, runner.Env, fmt.Sprintf("SSL_CERT_FILE=%s", caCertsTmpFile))
@@ -251,7 +251,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
 		assertLifecycleCalls(t, runner, 1)
@@ -278,7 +278,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
 		assertLifecycleCalls(t, runner, 1)
@@ -302,7 +302,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
 		assertLifecycleCalls(t, runner, 1)
@@ -431,13 +431,13 @@ uri = "some-buildpack"`))
 		telemetryData := telemetry.CustomData{}
 		cnbTelemetry := cnbBuildTelemetry{Version: 2}
 		err := callCnbBuild(&config, &telemetryData, &cnbTelemetry, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		customDataAsString := telemetryData.Custom1
 		customData := cnbBuildTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), &customData)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 2, customData.Version)
 		require.Equal(t, 1, len(customData.Data))
 		assert.Equal(t, "3.1.5", customData.Data[0].ImageTag)
@@ -492,13 +492,13 @@ uri = "some-buildpack"
 		telemetryData := telemetry.CustomData{}
 		cnbTelemetry := cnbBuildTelemetry{Version: 2}
 		err := callCnbBuild(&config, &telemetryData, &cnbTelemetry, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		customDataAsString := telemetryData.Custom1
 		customData := cnbBuildTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), &customData)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		require.Equal(t, 1, len(customData.Data))
 		assert.Contains(t, customData.Data[0].BuildEnv.KeysFromConfig, "CONFIG_KEY")
 		assert.NotContains(t, customData.Data[0].BuildEnv.KeysFromProjectDescriptor, "CONFIG_KEY")
@@ -515,13 +515,13 @@ uri = "some-buildpack"
 		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "some-buildpack")
 	})
 
-	t.Run("success case (multple images configured)", func(t *testing.T) {
+	t.Run("success case (multiple images configured)", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
 		config := cnbBuildOptions{
 			ContainerImageTag:    "3.1.5",
 			ContainerRegistryURL: imageRegistry,
-			DockerConfigJSON:     "/path/to/config.json",
+			DockerConfigJSON:     "/path/to/my-config.json",
 			AdditionalTags:       []string{"3", "3.1", "3.1", "3.1.5"},
 			MultipleImages:       []map[string]interface{}{{"ContainerImageName": "my-image-0"}, {"ContainerImageName": "my-image-1"}},
 		}
@@ -531,7 +531,7 @@ uri = "some-buildpack"
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
 		require.Equal(t, 2, len(runner.Calls))

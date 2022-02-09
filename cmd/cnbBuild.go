@@ -293,7 +293,15 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
 
 		newPath := filepath.Join(filepath.Dir(source), "config.json")
-		err := utils.FileRename(source, newPath)
+		alreadyExists, err := utils.FileExists(newPath)
+		if err != nil {
+			return "", err
+		}
+		if alreadyExists {
+			return newPath, nil
+		}
+
+		err = utils.FileRename(source, newPath)
 		if err != nil {
 			return "", err
 		}
