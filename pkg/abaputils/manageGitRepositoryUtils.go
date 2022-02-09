@@ -82,6 +82,11 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 		return
 	}
 
+	if len(entity.ToLogOverview.Results) == 0 {
+		// return if no logs are available
+		return
+	}
+
 	// Sort logs
 	sort.SliceStable(entity.ToLogOverview.Results, func(i, j int) bool {
 		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
