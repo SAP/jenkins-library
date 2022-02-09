@@ -39,7 +39,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/motemen/go-nuts v0.0.0-20210915132349-615a782f2c69
 	github.com/pelletier/go-toml v1.9.4
-	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
+	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sirupsen/logrus v1.8.1
