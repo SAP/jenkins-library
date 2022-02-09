@@ -276,7 +276,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 			_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
 			bw.Flush()
 			handleURLs(buf.String(), c.URLReportFileName)
-		} else if {
+		} else {
 			_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
 		}
 		execution.wg.Done()
