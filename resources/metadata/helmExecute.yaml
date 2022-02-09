@@ -137,7 +137,7 @@ spec:
         aliases:
           - name: helmDeploymentName
         type: string
-        description: Defines the name of the deployment. It is a mandatory parameter when for helm.
+        description: Defines the name of the deployment. It is a mandatory parameter when deploying with helm.
         mandatory: true
         scope:
           - PARAMETERS
