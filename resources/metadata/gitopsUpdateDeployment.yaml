@@ -6,9 +6,9 @@ metadata:
 
     It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
 
-    As of today, it supports the update of deployment yaml files via kubectl patch and update a whole helm template.
-    For kubectl the container inside the yaml must be described within the following hierarchy: `{"spec":{"template":{"spec":{"containers":[{...}]}}}}`
-    For helm the whole template is generated into a file and uploaded into the repository.
+    As of today, it supports the update of deployment yaml files via kubectl patch, update a whole helm template and kustomize.
+    For *kubectl* the container inside the yaml must be described within the following hierarchy: `{"spec":{"template":{"spec":{"containers":[{...}]}}}}`
+    For *helm* the whole template is generated into a file and uploaded into the repository.
 
 
 spec:
@@ -77,7 +77,12 @@ spec:
             type: secret
             param: password
       - name: filePath
-        description: Relative path in the git repository to the deployment descriptor file that shall be updated
+        description: |
+          Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:
+
+           * `kubectl` - path to the `deployment.yaml` that should be patched.
+           * `helm` - not used. Please use `chartPath` instead.
+           * `kustomize` - path to the `kustomization.yaml`.
         scope:
           - PARAMETERS
           - STAGES
@@ -158,6 +163,7 @@ spec:
         possibleValues:
           - kubectl
           - helm
+          - kustomize
   containers:
     - image: dtzar/helm-kubectl:3.3.4
       workingDir: /config
@@ -179,3 +185,13 @@ spec:
           params:
             - name: tool
               value: kubectl
+    - image: k8s.gcr.io/kustomize/kustomize:v3.8.7
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: tool
+              value: kustomize
