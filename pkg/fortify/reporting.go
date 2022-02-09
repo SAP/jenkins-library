@@ -130,6 +130,26 @@ func WriteJSONReport(jsonReport FortifyReportData) ([]piperutils.Path, error) {
 	return reportPaths, nil
 }
 
+func WriteSarif(sarif SARIF) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	file, _ := json.MarshalIndent(sarif, "", "  ")
+	if err := utils.FileWrite(sarifReportPath, file, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify SARIF Report", Target: sarifReportPath})
+
+	return reportPaths, nil
+}
+
 func WriteCustomReports(scanReport reporting.ScanReport) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}

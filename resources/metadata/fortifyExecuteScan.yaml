@@ -405,6 +405,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: convertToSarif
+        type: bool
+        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard. Uploaded through Cumulus later on."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: fprUploadEndpoint
         aliases:
           - name: fortifyFprUploadEndpoint

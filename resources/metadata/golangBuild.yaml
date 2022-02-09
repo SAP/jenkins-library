@@ -42,7 +42,7 @@ spec:
         default: html
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.
         scope:
           - GENERAL
           - STEPS
@@ -130,7 +130,7 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/repositoryURL
+            param: custom/repositoryUrl
       - name: reportCoverage
         type: bool
         description: Defines if a coverage report should be created.
@@ -205,6 +205,17 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: artifactVersion
+        type: string
+        description: Version of the artifact to be built.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - name: golang
       image: golang:1
