@@ -85,7 +85,7 @@ type cnbBuildTelemetryDataProjectDescriptor struct {
 func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{}) ([]cnbBuildOptions, error) {
 	var result []cnbBuildOptions
 
-	if multipleImages == nil || len(multipleImages) == 0 {
+	if len(multipleImages) == 0 {
 		result = append(result, main)
 		return result, nil
 	}
@@ -137,28 +137,15 @@ func newCnbBuildUtils() cnbutils.BuildUtils {
 func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) {
 	utils := newCnbBuildUtils()
 
-	mergedConfigs, err := processConfigs(config, config.MultipleImages)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("failed to process config")
-	}
 	client := &piperhttp.Client{}
 	cnbTelemetry := cnbBuildTelemetry{
 		Version: 2,
 	}
-	for _, c := range mergedConfigs {
-		err = runCnbBuild(&c, telemetryData, &cnbTelemetry, utils, commonPipelineEnvironment, client)
-		if err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed")
-		}
-	}
 
-	telemetryData.Custom1Label = "cnbBuildStepData"
-	customData, err := json.Marshal(cnbTelemetry)
+	err := callCnbBuild(&config, telemetryData, &cnbTelemetry, utils, commonPipelineEnvironment, client)
 	if err != nil {
-		log.SetErrorCategory(log.ErrorCustom)
-		log.Entry().WithError(err).Fatal("failed to marshal custom telemetry data")
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
-	telemetryData.Custom1 = string(customData)
 }
 
 func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
@@ -421,6 +408,27 @@ func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor p
 	data.ProjectDescriptor.ExcludeUsed = descriptor.Exclude != nil
 }
 
+func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
+	if err != nil {
+		return errors.Wrap(err, "failed to process config")
+	}
+	for _, c := range mergedConfigs {
+		err = runCnbBuild(&c, telemetryData, telemetry, utils, commonPipelineEnvironment, httpClient)
+		if err != nil {
+			return err
+		}
+	}
+
+	telemetryData.Custom1Label = "cnbBuildStepData"
+	customData, err := json.Marshal(telemetry)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal custom telemetry data")
+	}
+	telemetryData.Custom1 = string(customData)
+	return nil
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
@@ -509,6 +517,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	target := "/workspace"
 
 	pathType, source, err := config.resolvePath(utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "could no resolve path")
+	}
 
 	err = cleanDir(target, utils)
 	if err != nil {
@@ -558,14 +570,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
-	}
-
-	if dockerConfigFile != "" {
-		err = utils.FileRemove(dockerConfigFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrap(err, "failed to remove docker config.json file")
-		}
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
