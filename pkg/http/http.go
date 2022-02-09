@@ -507,7 +507,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				defer response.Body.Close()
 				parent := filepath.Dir(target)
 				if len(parent) > 0 {
-					if err = os.MkdirAll(parent, 0775); err != nil {
+					if err = os.MkdirAll(parent, 0777); err != nil {
 						return err
 					}
 				}

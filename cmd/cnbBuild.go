@@ -30,6 +30,14 @@ const (
 	platformPath = "/tmp/platform"
 )
 
+type pathEnum string
+
+const (
+	pathEnumRoot    = pathEnum("root")
+	pathEnumFolder  = pathEnum("folder")
+	pathEnumArchive = pathEnum("archive")
+)
+
 type cnbBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
@@ -41,7 +49,7 @@ type cnbBuildTelemetryData struct {
 	ImageTag          string                                 `json:"imageTag"`
 	AdditionalTags    []string                               `json:"additionalTags"`
 	BindingKeys       []string                               `json:"bindingKeys"`
-	Path              string                                 `json:"path"`
+	Path              pathEnum                               `json:"path"`
 	BuildEnv          cnbBuildTelemetryDataBuildEnv          `json:"buildEnv"`
 	Buildpacks        cnbBuildTelemetryDataBuildpacks        `json:"buildpacks"`
 	ProjectDescriptor cnbBuildTelemetryDataProjectDescriptor `json:"projectDescriptor"`
@@ -282,7 +290,32 @@ func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
 	}
 }
 
-func addConfigTelemetryData(data *cnbBuildTelemetryData, config *cnbBuildOptions) {
+func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (pathEnum, string, error) {
+	pwd, err := utils.Getwd()
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return "", "", errors.Wrap(err, "failed to get current working directory")
+	}
+
+	if config.Path == "" {
+		return pathEnumRoot, pwd, nil
+	}
+	source := config.Path
+
+	dir, err := utils.DirExists(source)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return "", "", errors.Wrapf(err, "Checking file info '%s' failed", source)
+	}
+
+	if dir {
+		return pathEnumFolder, source, nil
+	} else {
+		return pathEnumArchive, source, nil
+	}
+}
+
+func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryData, config *cnbBuildOptions) {
 	bindingKeys := []string{}
 	for k := range config.Bindings {
 		bindingKeys = append(bindingKeys, k)
@@ -290,7 +323,7 @@ func addConfigTelemetryData(data *cnbBuildTelemetryData, config *cnbBuildOptions
 	data.ImageTag = config.ContainerImageTag
 	data.AdditionalTags = config.AdditionalTags
 	data.BindingKeys = bindingKeys
-	data.Path = config.Path
+	data.Path, _, _ = config.resolvePath(utils) // ignore error here, telemetry problems should fail the build
 
 	configKeys := data.BuildEnv.KeysFromConfig
 	overallKeys := data.BuildEnv.KeysOverall
@@ -325,7 +358,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	var err error
 
 	customTelemetryData := cnbBuildTelemetryData{Version: 1}
-	addConfigTelemetryData(&customTelemetryData, config)
+	addConfigTelemetryData(utils, &customTelemetryData, config)
 
 	err = isBuilder(utils)
 	if err != nil {
@@ -412,26 +445,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	target := "/workspace"
-	pwd, err := utils.Getwd()
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to get current working directory")
-	}
 
-	var source string
-	if config.Path != "" {
-		source = config.Path
-	} else {
-		source = pwd
-	}
+	pathType, source, err := config.resolvePath(utils)
 
-	dir, err := utils.DirExists(source)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "Checking file info '%s' failed", source)
-	}
-
-	if dir {
+	if pathType != pathEnumArchive {
 		err = copyProject(source, target, include, exclude, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
@@ -446,6 +463,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
+		pwd, err := utils.Getwd()
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrap(err, "failed to get current working directory")
+		}
+
 		err = linkTargetFolder(utils, pwd, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
