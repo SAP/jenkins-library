@@ -30,7 +30,7 @@ func TestWriteReport(t *testing.T) {
 			Minor:    3,
 			Info:     4,
 		},
-		Coverage: SonarCoverage{
+		Coverage: &SonarCoverage{
 			Coverage:          13.7,
 			BranchCoverage:    42,
 			LineCoverage:      37.1,
@@ -39,7 +39,7 @@ func TestWriteReport(t *testing.T) {
 			BranchesToCover:   30,
 			UncoveredBranches: 3,
 		},
-		LinesOfCode: SonarLinesOfCode{
+		LinesOfCode: &SonarLinesOfCode{
 			Total:                327,
 			LanguageDistribution: []SonarLanguageDistribution{{LanguageKey: "java", LinesOfCode: 327}},
 		},
