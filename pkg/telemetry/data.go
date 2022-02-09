@@ -71,19 +71,19 @@ type CustomData struct {
 
 // MonitoringData definition for monitoring
 type StepMonitoringData struct {
-	PipelineUrlHash string                 `json:"PipelineUrlHash,omitempty"`
-	BuildUrlHash    string                 `json:"BuildUrlHash,omitempty"`
-	StageName       string                 `json:"StageName,omitempty"`
-	StepName        string                 `json:"StepName,omitempty"`
-	ExitCode        string                 `json:"ExitCode,omitempty"`
-	Duration        string                 `json:"Duration,omitempty"`
-	ErrorCategory   string                 `json:"ErrorCategory,omitempty"`
-	CorrelationID   string                 `json:"CorrelationID,omitempty"`
-	CommitHash      string                 `json:"CommitHash,omitempty"`
-	Branch          string                 `json:"Branch,omitempty"`
-	GitOwner        string                 `json:"GitOwner,omitempty"`
-	GitRepository   string                 `json:"GitRepository,omitempty"`
-	ErrorDetail     map[string]interface{} `json:"ErrorDetails,omitempty"`
+	PipelineUrlHash string                 `json:"PipelineUrlHash"`
+	BuildUrlHash    string                 `json:"BuildUrlHash"`
+	StageName       string                 `json:"StageName"`
+	StepName        string                 `json:"StepName"`
+	ExitCode        string                 `json:"ExitCode"`
+	Duration        string                 `json:"Duration"`
+	ErrorCategory   string                 `json:"ErrorCategory"`
+	CorrelationID   string                 `json:"CorrelationID"`
+	CommitHash      string                 `json:"CommitHash"`
+	Branch          string                 `json:"Branch"`
+	GitOwner        string                 `json:"GitOwner"`
+	GitRepository   string                 `json:"GitRepository"`
+	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
 }
 
 // Data object definition containing all telemetry data
