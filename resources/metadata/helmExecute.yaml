@@ -2,6 +2,8 @@ metadata:
   name: helmExecute
   description: Executes helm3 functionality as the package manager for Kubernetes.
   longDescription: |-
+    Alpha version: please expect incompatible changes
+    
     Executes helm functionality as the package manager for Kubernetes.
 
     * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
