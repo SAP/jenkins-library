@@ -138,7 +138,7 @@ func printLog(logEntry LogResultsV2) {
 // PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
 func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) {
 
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_Log,to_Execution_Log"
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
 	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
 	if err != nil {
 		return
