@@ -101,7 +101,7 @@ In order to trigger the Create/Update operation on an ATC System Configuration y
 This must be configured as following:
 
 ```groovy
-abapEnvironmentRunATCCheck(
+abapEnvironmentPushATCSystemConfig(
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
     atcSystemConfig: 'atcSystemConfig.json',
@@ -112,7 +112,7 @@ abapEnvironmentRunATCCheck(
 In case an update of an existing ATC System Configuration is not desired, this can be done by setting parameter patchIfExisting accordingly:
 
 ```groovy
-abapEnvironmentRunATCCheck(
+abapEnvironmentPushATCSystemConfig(
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
     atcSystemConfig: 'atcSystemConfig.json',
