@@ -146,7 +146,7 @@ spec:
         aliases:
           - name: helmDeploymentName
         type: string
-        description: Defines the name of the deployment.
+        description: Defines the name of the deployment. In case of `kustomize` this is the name or alias of the image in the `kustomization.yaml`
         scope:
           - PARAMETERS
           - STAGES
