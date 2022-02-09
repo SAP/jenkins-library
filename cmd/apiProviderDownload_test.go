@@ -9,9 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type apiProviderDownloadMockUtils struct {
+type apiProviderDownloadTestUtilsBundle struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func apiProviderDownloadMockUtilsBundle() *apiProviderDownloadTestUtilsBundle {
+	utilsBundle := apiProviderDownloadTestUtilsBundle{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return &utilsBundle
 }
 
 //Successful API Provider download cases
@@ -39,9 +47,10 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 		}
 		// test
 		httpClient := httpMockCpis{CPIFunction: "APIProviderDownload", ResponseBody: ``, TestType: "Positive"}
-		errResp := runApiProviderDownload(&config, nil, &httpClient)
+		utilsMock := apiProviderDownloadMockUtilsBundle()
+		ioResp := runApiProviderDownload(&config, nil, &httpClient, utilsMock)
 
-		if assert.NoError(t, errResp) {
+		if assert.NoError(t, ioResp) {
 			t.Run("Check for file existence", func(t *testing.T) {
 				assert.Equal(t, fileExists(file.Name()), true)
 			})
@@ -75,7 +84,8 @@ func TestApiProviderDownloadFailure(t *testing.T) {
 			DownloadPath:    "tmp",
 		}
 		httpClient := httpMockCpis{CPIFunction: "APIProviderDownloadFailure", ResponseBody: ``, TestType: "Negative"}
-		errResp := runApiProviderDownload(&config, nil, &httpClient)
+		utilsMock := apiProviderDownloadMockUtilsBundle()
+		errResp := runApiProviderDownload(&config, nil, &httpClient, utilsMock)
 		assert.EqualError(t, errResp, "HTTP GET request to https://demo/apiportal/api/1.0/Management.svc/APIProviders('provider1') failed with error: Service not Found")
 	})
 }

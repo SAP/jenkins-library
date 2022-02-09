@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -16,7 +17,7 @@ import (
 
 type apiProviderDownloadUtils interface {
 	command.ExecRunner
-
+	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileExists(filename string) (bool, error)
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
@@ -49,6 +50,7 @@ func newApiProviderDownloadUtils() apiProviderDownloadUtils {
 func apiProviderDownload(config apiProviderDownloadOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
+	utils := newApiProviderDownloadUtils()
 	httpClient := &piperhttp.Client{}
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -56,13 +58,13 @@ func apiProviderDownload(config apiProviderDownloadOptions, telemetryData *telem
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runApiProviderDownload(&config, telemetryData, httpClient)
+	err := runApiProviderDownload(&config, telemetryData, httpClient, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
+func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, utils apiProviderDownloadUtils) error {
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
@@ -92,14 +94,13 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 	}
 	if downloadResp.StatusCode == 200 {
 		jsonFilePath := config.DownloadPath
-		bodyBytes, err := ioutil.ReadAll(downloadResp.Body)
+		content, err := ioutil.ReadAll(downloadResp.Body)
 		if err != nil {
 			return err
 		}
-		error := ioutil.WriteFile(jsonFilePath, []byte(bodyBytes), 0775)
-		//error := cpi.StoreFileInOs(jsonFilePath, downloadResp)
-		if error != nil {
-			return error
+		ioresp := utils.FileWrite(jsonFilePath, content, 0775)
+		if ioresp != nil {
+			return ioresp
 		}
 	}
 	return nil
