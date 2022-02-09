@@ -82,7 +82,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, `{"auths":{"custom":"test"}}`, string(c))
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", ".", "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+		cwd, _ := fileUtils.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
@@ -123,7 +124,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, `{"auths":{"custom":"test"}}`, string(c))
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", ".", "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
+		cwd, _ := fileUtils.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
 	})
 
@@ -177,7 +179,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{}}`, string(c))
 
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", ".", "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
+		cwd, _ := fileUtils.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
 	})
 
 	t.Run("success case - backward compatibility", func(t *testing.T) {
@@ -203,7 +206,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", ".", "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+		cwd, _ := fileUtils.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -231,10 +235,11 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		assert.Equal(t, "/kaniko/executor", runner.Calls[2].Exec)
 
+		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", ".", "--destination", "my.registry.com:50000/myImage:myTag"},
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "sub1", "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "sub2", "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
@@ -283,9 +288,10 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", runner.Calls[0].Exec)
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 
+		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "sub1", "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "sub2", "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
