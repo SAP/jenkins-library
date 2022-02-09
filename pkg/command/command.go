@@ -270,12 +270,14 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}()
 
 	go func() {
-		var buf bytes.Buffer
-		bw := bufio.NewWriter(&buf)
-		_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
-		bw.Flush()
 		if c.URLReportFileName != "" {
+			var buf bytes.Buffer
+			bw := bufio.NewWriter(&buf)
+			_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
+			bw.Flush()
 			handleURLs(buf.String(), c.URLReportFileName)
+		} else if {
+			_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
 		}
 		execution.wg.Done()
 	}()
