@@ -358,7 +358,7 @@ func TestTriggerPull(t *testing.T) {
 	t.Run("Test trigger pull: success case", func(t *testing.T) {
 
 		receivedURI := "example.com/Entity"
-		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
+		uriExpected := receivedURI
 		tokenExpected := "myToken"
 
 		client := &abaputils.ClientMock{
