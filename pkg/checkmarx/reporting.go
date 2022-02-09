@@ -31,8 +31,8 @@ type CheckmarxReportData struct {
 	HighAudited        int    `json:"highAudited"`
 	MediumTotal        int    `json:"mediumTotal"`
 	MediumAudited      int    `json:"mediumAudited"`
-	LowTotal           int    `json:"mediumTotal"`
-	LowAudited         int    `json:"mediumAudited"`
+	LowTotal           int    `json:"lowTotal"`
+	LowAudited         int    `json:"lowAudited"`
 	InformationTotal   int    `json:"informationTotal"`
 	InformationAudited int    `json:"informationAudited"`
 }
@@ -142,7 +142,7 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 		checkmarxReportData.ProjectID = s
 	}
 
-	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanID"]), 10, 64); err == nil {
+	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanId"]), 10, 64); err == nil {
 		checkmarxReportData.ScanID = s
 	}
 
