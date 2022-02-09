@@ -335,7 +335,7 @@ func (sys *SystemInstance) GetProjectsByNameAndTeam(projectName, teamID string) 
 	sys.logger.Debugf("Getting projects with name %v of team %v...", projectName, teamID)
 	var projects []Project
 	header := http.Header{}
-	header.Set("Accept-Type", "application/json")
+	header.Set("Accept-Type", piperHttp.TypeApplicationJson)
 	var data []byte
 	var err error
 	if len(teamID) > 0 && len(projectName) > 0 {
@@ -370,7 +370,7 @@ func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCre
 	}
 
 	header := http.Header{}
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", piperHttp.TypeApplicationJson)
 
 	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
@@ -394,7 +394,7 @@ func (sys *SystemInstance) CreateBranch(projectID int, branchName string) int {
 	}
 
 	header := http.Header{}
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", piperHttp.TypeApplicationJson)
 	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/%v/branch", projectID), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		sys.logger.Errorf("Failed to create project: %s", err)
@@ -449,7 +449,7 @@ func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID int, excludeFo
 	}
 
 	header := http.Header{}
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", piperHttp.TypeApplicationJson)
 	_, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v/sourceCode/excludeSettings", projectID), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		return errors.Wrap(err, "request to checkmarx system failed")
@@ -488,7 +488,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 	}
 
 	header := http.Header{}
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", piperHttp.TypeApplicationJson)
 	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		return errors.Wrapf(err, "request to checkmarx system failed")
@@ -512,7 +512,7 @@ func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, f
 
 	header := http.Header{}
 	header.Set("cxOrigin", "GolangScript")
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", piperHttp.TypeApplicationJson)
 	data, err := sendRequest(sys, http.MethodPost, "/sast/scans", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		sys.logger.Errorf("Failed to trigger scan of project %v: %s", projectID, err)
@@ -533,7 +533,7 @@ func (sys *SystemInstance) GetScans(projectID int) ([]ScanStatus, error) {
 
 	header := http.Header{}
 	header.Set("cxOrigin", "GolangScript")
-	header.Set("Accept-Type", "application/json")
+	header.Set("Accept-Type", piperHttp.TypeApplicationJson)
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans?%v", body.Encode()), nil, header)
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
@@ -585,7 +585,7 @@ func (sys *SystemInstance) RequestNewReport(scanID int, reportType string) (Repo
 
 	header := http.Header{}
 	header.Set("cxOrigin", "GolangScript")
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", piperHttp.TypeApplicationJson)
 	data, err := sendRequest(sys, http.MethodPost, "/reports/sastScan", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		return report, errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
@@ -600,7 +600,7 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 	var response ReportStatusResponse
 
 	header := http.Header{}
-	header.Set("Accept", "application/json")
+	header.Set("Accept", piperHttp.TypeApplicationJson)
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v/status", reportID), nil, header)
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
@@ -614,7 +614,7 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
 func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 	header := http.Header{}
-	header.Set("Accept", "application/json")
+	header.Set("Accept", piperHttp.TypeApplicationJson)
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header)
 	if err != nil {
 		return []byte{}, errors.Wrapf(err, "failed to download report with reportID %v", reportID)
