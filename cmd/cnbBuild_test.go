@@ -526,16 +526,25 @@ uri = "some-buildpack"
 			MultipleImages:       []map[string]interface{}{{"ContainerImageName": "my-image-0"}, {"ContainerImageName": "my-image-1"}},
 		}
 
+		expectedImageCount := len(config.MultipleImages)
+
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		telemetryData := telemetry.CustomData{}
+		err := callCnbBuild(&config, &telemetryData, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
+		customDataAsString := telemetryData.Custom1
+		customData := cnbBuildTelemetry{}
+		err = json.Unmarshal([]byte(customDataAsString), &customData)
+		require.Equal(t, expectedImageCount, len(customData.Data))
+
 		runner := utils.ExecMockRunner
-		require.Equal(t, 2, len(runner.Calls))
+		require.Equal(t, expectedImageCount, len(runner.Calls))
 		for i, call := range runner.Calls {
+			assert.Equal(t, 4, len(customData.Data[i].AdditionalTags))
 			assertLifecycleCalls(t, runner, i+1)
 			containerImageName := fmt.Sprintf("my-image-%d", i)
 			assert.Contains(t, call.Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, containerImageName, config.ContainerImageTag))
