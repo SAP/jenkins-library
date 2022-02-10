@@ -16,7 +16,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Creates/Updates ATC System Configuration */
     'abapEnvironmentPushATCSystemConfig',
     /** Parameter for ATC System Configuration File Path */
-    'atcSystemConfigFilePath'
+    'atcSystemConfig'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -38,9 +38,9 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        //if (config.atcSystemConfigFilePath != null) {
+        if (config.atcSystemConfig != null) {
           abapEnvironmentPushATCSystemConfig script: parameters.script
-        //}
+        }
         abapEnvironmentRunATCCheck script: parameters.script
     }
 }
