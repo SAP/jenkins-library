@@ -411,7 +411,8 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
-		utils.FilesMock.AddFile("project.toml", []byte(`[project]
+		utils.FilesMock.AddDir("target")
+		utils.FilesMock.AddFile("target/project.toml", []byte(`[project]
 id = "test"
 name = "test"
 version = "1.0.0"
@@ -423,7 +424,6 @@ exclude = ["*.tar"]
 [[build.buildpacks]]
 uri = "some-buildpack"`))
 		utils.FilesMock.AddFile("a_file", []byte(`{}`))
-		utils.FilesMock.AddDir("target")
 		utils.FilesMock.AddFile("target/somelib.jar", []byte(`FFFFFF`))
 
 		addBuilderFiles(&utils)

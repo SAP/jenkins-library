@@ -96,6 +96,7 @@ func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{
 		if err != nil {
 			return nil, err
 		}
+
 		err = mergo.Merge(&structuredConf, main)
 		if err != nil {
 			return nil, err
@@ -359,7 +360,11 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (pathEnum,
 	if config.Path == "" {
 		return pathEnumRoot, pwd, nil
 	}
-	source := config.Path
+	source, err := utils.Abs(config.Path)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", "", errors.Wrapf(err, "Failed to resolve absolute path for '%s'", config.Path)
+	}
 
 	dir, err := utils.DirExists(source)
 	if err != nil {
@@ -452,18 +457,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	include := ignore.CompileIgnoreLines("**/*")
 	exclude := ignore.CompileIgnoreLines("piper", ".pipeline")
 
-	projDescExists, err := utils.FileExists(config.ProjectDescriptor)
+	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
 
 	var projectID string
-	if projDescExists {
-		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
+	if projDescPath != "" {
+		descriptor, err := project.ParseDescriptor(projDescPath, utils, httpClient)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
+			return errors.Wrapf(err, "failed to parse %s", projDescPath)
 		}
 		addProjectDescriptorTelemetryData(&customTelemetryData, *descriptor)
 

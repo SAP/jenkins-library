@@ -214,6 +214,10 @@ spec:
             - "nodejs"
             path: "source/nodejs"
           ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment

@@ -211,3 +211,25 @@ func TestBindings(t *testing.T) {
 	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/dummy.yml")
 	container.terminate(t)
 }
+
+func TestMultiImage(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "config_multi_image.yml")
+
+	container.assertHasOutput(t, "Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found")
+	container.assertHasOutput(t, "Saving localhost:5000/io-buildpacks-my-app:latest...")
+	container.assertHasOutput(t, "Previous image with name \"localhost:5000/go-app:v1.0.0\" not found")
+	container.assertHasOutput(t, "Saving localhost:5000/go-app:v1.0.0...")
+	container.terminate(t)
+}

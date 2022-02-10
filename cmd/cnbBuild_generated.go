@@ -319,7 +319,7 @@ func cnbBuildMetadata() config.StepData {
 					{
 						Name:        "multipleImages",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "images"}},
