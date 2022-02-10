@@ -190,7 +190,6 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 
 	cmd.MarkFlagRequired("chartPath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
-	cmd.MarkFlagRequired("deploymentName")
 	cmd.MarkFlagRequired("image")
 	cmd.MarkFlagRequired("helmCommand")
 }
@@ -322,7 +321,7 @@ func helmExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
 						Default:     os.Getenv("PIPER_deploymentName"),
 					},
