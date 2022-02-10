@@ -203,7 +203,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 			project = projects[0]
 		} else {
 			for _, current_project := range projects {
-				if project.Name == current_project.Name {
+				if projectName == current_project.Name {
 					project = current_project
 					break
 				}
