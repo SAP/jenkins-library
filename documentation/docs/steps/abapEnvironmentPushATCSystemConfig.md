@@ -94,7 +94,7 @@ steps:
   abapEnvironmentPushATCSystemConfig:
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
-    atcSystemConfig: 'atcSystemConfig.json',
+    atcSystemConfigFilePath: 'atcSystemConfig.json',
     patchIfExisting: 'false',
 ```
 
