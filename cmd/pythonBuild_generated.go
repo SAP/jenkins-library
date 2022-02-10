@@ -146,7 +146,7 @@ func pythonBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3-alpine", WorkingDir: "/home/node"},
+				{Name: "python", Image: "python:3.9", WorkingDir: "/home/node"},
 			},
 		},
 	}
