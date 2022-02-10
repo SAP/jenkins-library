@@ -13,7 +13,7 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
 
-        utils.unstashAll(["source"])
+        utils.unstashAll(["application"])
 
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         String piperGoPath = parameters.piperGoPath ?: './piper'
