@@ -4,6 +4,8 @@ Init:
     - name: "source"
       includes: "**/*"
       excludes: ".pipeline/**"
+    - name: "application"
+      includes: "**/*"
 
 'Pull-Request Voting':
   unstash:
@@ -30,7 +32,7 @@ Acceptance:
 
 Compliance:
   unstash:
-    - deployDescriptor
+    - application
   stashes: []
 
 Performance:
