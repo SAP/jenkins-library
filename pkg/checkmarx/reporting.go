@@ -31,8 +31,8 @@ type CheckmarxReportData struct {
 	HighAudited        int    `json:"highAudited"`
 	MediumTotal        int    `json:"mediumTotal"`
 	MediumAudited      int    `json:"mediumAudited"`
-	LowTotal           int    `json:"mediumTotal"`
-	LowAudited         int    `json:"mediumAudited"`
+	LowTotal           int    `json:"lowTotal"`
+	LowAudited         int    `json:"lowAudited"`
 	InformationTotal   int    `json:"informationTotal"`
 	InformationAudited int    `json:"informationAudited"`
 }
