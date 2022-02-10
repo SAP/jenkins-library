@@ -14,9 +14,6 @@ spec:
         type: jenkins
         description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
           with the Github Server."
-    resources:
-      - name: application
-        type: stash
     params:
       - name: instance
         type: string

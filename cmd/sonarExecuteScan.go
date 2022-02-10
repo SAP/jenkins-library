@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -62,7 +61,6 @@ const (
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
-	fmt.Println("Linda step 0000000000")
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
@@ -112,7 +110,6 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	// Set config based on orchestrator-specific environment variables
 	detectParametersFromCI(&config)
 
-	fmt.Println("LINDA STEP 11111111111")
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}

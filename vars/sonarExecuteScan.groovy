@@ -13,9 +13,7 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
 
-//         utils.unstashAll(["deployDescriptor"])
-        echo "HERE IS UNSTASH 00000000000"
-        sh "ls -la"
+        utils.unstashAll(["source"])
 
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         String piperGoPath = parameters.piperGoPath ?: './piper'
