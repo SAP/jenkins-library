@@ -20,21 +20,30 @@ For each new commit that arrives in the remote repository, the pipeline executes
 The Git repository is usually created as part of the gCTS configuration. It is used to store your ABAP developments.
 You can use this Git repository also for the pipeline configuration.  
 The repository used for the pipeline configuration needs to be accessed by the Jenkins instance. If the repository is password protected, the user and password (or access token) should be stored in the Jenkins Credentials Store (Manage Jenkins  &rightarrow; Manage Credentials).
-- You have at least two ABAP systems with a version SAP S/4HANA 2020 or higher. You need one development system that you use to push objects to the Git repository, and a test system on which you run the pipeline.
+- You have at least two ABAP systems with a version SAP S/4HANA 2020 or higher. You need one development system that you use to push objects to the Git repository, and a test system on which you run the pipeline. You have created and cloned the Git repository on all systems, on the development system with the *Development* role, and in the others with the *Provided* role.
 - You have enabled [ATC](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/latest/en-US/4ec5711c6e391014adc9fffe4e204223.html) checks in transaction ATC in the test system.
-- You have access to a Jenkins instance including the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/).   
+- You have access to a Jenkins instance including the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/). The plug-in must be installed separately. It is required to view the results of the testing after the pipeline has run.  
 For the gCTS scenario, we recommend that you use the [Custom Jenkins setup](https://www.project-piper.io/infrastructure/customjenkins/) even though it is possible to run the gCTS scenario with [Piper´s CX server](https://www.project-piper.io/infrastructure/overview/).
 - You have set up a suitable Jenkins instance as described under [Getting Started with Project "Piper"](https://www.project-piper.io/guidedtour/) under *Create Your First Pipeline*.
-- The user that is used for the execution of the pipeline must have the credentials entered in gCTS as described in the gCTS documentation under [Set User-Specific Authentication](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/3431ebd6fbf241778cd60587e7b5dc3e.html). Otherwise, the pipeline runs into an error that can only be resolved by deleting the repository from the ABAP system, and restarting again.
+- The user that is used for the execution of the pipeline must have the credentials entered in gCTS as described in the gCTS documentation under [Set User-Specific Authentication](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/3431ebd6fbf241778cd60587e7b5dc3e.html).
 
 
-##Process
-![Process: Deploy Git repository on local system and execute tests - Tests are successful](../images/checkSuccessful.png "Process: Deploy and execute tests: Success")
+## Process
+
+The process is as follows:  
+You create or change ABAP objects in the development system. When you release the transport request, the objects are pushed to the remote repository in a new commit. The pipeline is triggered by the new commit. It can be started manually in Jenkins, or automatically when the new commit arrives in the Git repository (by setting a webhook in GitHub).  
+The following image shows the library steps involved when the tests are run successfully:
+![Process: Deploy Git repository on local system and execute tests - Tests are successful](../images/checkSuccessful.png "Process: Deploy and execute tests: Success")  
+
+The following image shows the library steps involved when the tests result in an error:
 ![Process: Deploy Git repository on local system and execute tests - Tests are not successful](../images/checkNotSuccessful.png "Process: Deploy and execute tests: Success")
 
-##example
+
+
+## Example
 
 ### Jenkinsfile
+
 If you use the pipeline of the following code snippet, you only have to configure it in the .pipeline/config.yml.
 
 Following the convention for pipeline definitions, use a Jenkinsfile, which resides in the root directory of your development sources.
@@ -96,7 +105,8 @@ pipeline {
       }
     }
   }
-}```
+}
+```   
 
 ### Configuration (`.pipeline/config.yml`)
 
