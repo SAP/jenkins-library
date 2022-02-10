@@ -361,6 +361,7 @@ func TestRunHelm(t *testing.T) {
 			{
 				config: HelmExecuteOptions{
 					HelmRegistryUser: "helmRegistryUser",
+					HelmChartServer:  "localhost:5000",
 				},
 				expectedConfig: []string{"registry login", "-u", "helmRegistryUser", "localhost:5000"},
 			},
@@ -388,8 +389,9 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					DeploymentName: "nginx",
-					PackageVersion: "2.3.4",
+					DeploymentName:  "nginx",
+					PackageVersion:  "2.3.4",
+					HelmChartServer: "localhost:5000",
 				},
 				expectedConfig: []string{"push", "nginx2.3.4.tgz", "oci://localhost:5000/helm-charts"},
 			},
