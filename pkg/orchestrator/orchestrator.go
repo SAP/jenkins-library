@@ -2,7 +2,9 @@ package orchestrator
 
 import (
 	"errors"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
+	"time"
 )
 
 type Orchestrator int
@@ -15,19 +17,34 @@ const (
 )
 
 type OrchestratorSpecificConfigProviding interface {
+	InitOrchestratorProvider(settings *OrchestratorSettings)
+	OrchestratorType() string
+	OrchestratorVersion() string
 	GetStageName() string
 	GetBranch() string
 	GetBuildUrl() string
+	GetBuildId() string
+	GetJobUrl() string
+	GetJobName() string
 	GetCommit() string
 	GetPullRequestConfig() PullRequestConfig
 	GetRepoUrl() string
 	IsPullRequest() bool
+	GetLog() ([]byte, error)
+	GetPipelineStartTime() time.Time
+	GetBuildStatus() string
 }
 
 type PullRequestConfig struct {
 	Branch string
 	Base   string
 	Key    string
+}
+
+type OrchestratorSettings struct {
+	JenkinsUser  string
+	JenkinsToken string
+	AzureToken   string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
@@ -38,10 +55,8 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 		return &GitHubActionsConfigProvider{}, nil
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
-	case Unknown:
-		fallthrough
 	default:
-		return nil, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
+		return &UnknownOrchestratorConfigProvider{}, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	}
 }
 
@@ -81,4 +96,13 @@ func truthy(key string) bool {
 	}
 
 	return true
+}
+
+// Wrapper function to read env variable and set default value
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	log.Entry().Warnf("Could not read env variable %v using fallback value %v", key, fallback)
+	return fallback
 }

@@ -10,7 +10,7 @@ include = [
 
 [[build.env]]
 name = "BP_NODE_VERSION"
-value = "15.14.0"
+value = "16"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/ca-certificates"

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -129,7 +130,27 @@ func WriteJSONReport(jsonReport FortifyReportData) ([]piperutils.Path, error) {
 	return reportPaths, nil
 }
 
-func WriteCustomReports(scanReport reporting.ScanReport, projectName string, projectVersion string) ([]piperutils.Path, error) {
+func WriteSarif(sarif SARIF) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	file, _ := json.MarshalIndent(sarif, "", "  ")
+	if err := utils.FileWrite(sarifReportPath, file, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify SARIF Report", Target: sarifReportPath})
+
+	return reportPaths, nil
+}
+
+func WriteCustomReports(scanReport reporting.ScanReport) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
@@ -146,22 +167,31 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName string, pro
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify Report", Target: htmlReportPath})
 
-	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
-	// ignore JSON errors since structure is in our hands
-	jsonReport, _ := scanReport.ToJSON()
-	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
-		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
-		}
-	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("fortifyExecuteScan_sast_%v.json", reportShaFortify([]string{projectName, projectVersion}))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
-	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
 	// and there does not seem to be real benefit in archiving it.
 	return reportPaths, nil
+}
+
+func UploadReportToGithub(scanReport reporting.ScanReport, token, APIURL, owner, repository string, assignees []string) error {
+	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
+	// ignore JSON errors since structure is in our hands
+	markdownReport, _ := scanReport.ToMarkdown()
+	options := piperGithub.CreateIssueOptions{
+		Token:          token,
+		APIURL:         APIURL,
+		Owner:          owner,
+		Repository:     repository,
+		Title:          "Fortify SAST Results",
+		Body:           markdownReport,
+		Assignees:      assignees,
+		UpdateExisting: true,
+	}
+	err := piperGithub.CreateIssue(&options)
+	if err != nil {
+		return errors.Wrap(err, "failed to upload fortify results into GitHub issue")
+	}
+	return nil
 }
 
 func reportShaFortify(parts []string) string {

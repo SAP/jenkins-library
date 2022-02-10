@@ -69,6 +69,6 @@ func runIntegrationArtifactUnDeploy(config *integrationArtifactUnDeployOptions, 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", unDeployResp.StatusCode)
 	}
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, unDeployResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), unDeployResp.StatusCode)
 	return errors.Errorf("integration flow undeployment failed, response Status code: %v", unDeployResp.StatusCode)
 }

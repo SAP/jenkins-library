@@ -17,6 +17,7 @@ import (
 
 type abapEnvironmentRunAUnitTestOptions struct {
 	AUnitConfig          string `json:"aUnitConfig,omitempty"`
+	Repositories         string `json:"repositories,omitempty"`
 	CfAPIEndpoint        string `json:"cfApiEndpoint,omitempty"`
 	CfOrg                string `json:"cfOrg,omitempty"`
 	CfServiceInstance    string `json:"cfServiceInstance,omitempty"`
@@ -26,6 +27,7 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	Password             string `json:"password,omitempty"`
 	Host                 string `json:"host,omitempty"`
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
+	GenerateHTML         bool   `json:"generateHTML,omitempty"`
 }
 
 // AbapEnvironmentRunAUnitTestCommand Runs an AUnit Test
@@ -36,6 +38,8 @@ func AbapEnvironmentRunAUnitTestCommand() *cobra.Command {
 	var stepConfig abapEnvironmentRunAUnitTestOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
+	var splunkClient *splunk.Splunk
+	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapEnvironmentRunAUnitTestCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -73,6 +77,7 @@ Regardless of the option you chose, please make sure to provide the object set c
 			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
@@ -89,29 +94,31 @@ Regardless of the option you chose, please make sure to provide the object set c
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{}
+			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				telemetryData.ErrorCategory = log.GetErrorCategory().String()
-				telemetry.Send(&telemetryData)
+				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
+				stepTelemetryData.PiperCommitHash = GitCommit
+				telemetryClient.SetData(&stepTelemetryData)
+				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunk.Send(&telemetryData, logCollector)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunk.Initialize(GeneralConfig.CorrelationID,
+				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
 					GeneralConfig.HookConfig.SplunkConfig.Token,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			abapEnvironmentRunAUnitTest(stepConfig, &telemetryData)
-			telemetryData.ErrorCode = "0"
+			abapEnvironmentRunAUnitTest(stepConfig, &stepTelemetryData)
+			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -122,6 +129,7 @@ Regardless of the option you chose, please make sure to provide the object set c
 
 func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunAUnitTestOptions) {
 	cmd.Flags().StringVar(&stepConfig.AUnitConfig, "aUnitConfig", os.Getenv("PIPER_aUnitConfig"), "Path to a YAML configuration file for the object set to be checked during the AUnit test run")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete Cloud Foundry Service")
@@ -131,8 +139,8 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
+	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 
-	cmd.MarkFlagRequired("aUnitConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
@@ -156,9 +164,18 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_aUnitConfig"),
+					},
+					{
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repositories"),
 					},
 					{
 						Name:        "cfApiEndpoint",
@@ -252,6 +269,15 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `AUnitResults.xml`,
+					},
+					{
+						Name:        "generateHTML",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

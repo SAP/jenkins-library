@@ -26,6 +26,7 @@ func TestAzure(t *testing.T) {
 		assert.Equal(t, "https://pogo.foobar/_build/results?buildId=42", p.GetBuildUrl())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoUrl())
+		assert.Equal(t, "Azure", p.OrchestratorType())
 	})
 
 	t.Run("PR", func(t *testing.T) {

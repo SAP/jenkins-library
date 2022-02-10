@@ -1,0 +1,18 @@
+metadata:
+  name: shellExecute
+  description: Step executes defined script
+  longDescription: Step executes defined script with using test Vault credentials
+spec:
+  inputs:
+    params:
+      - name: sources
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        description: Scripts names for execution or links to scripts
+  containers:
+    - name: shell
+      image: node:lts-stretch
+      workingDir: /home/node

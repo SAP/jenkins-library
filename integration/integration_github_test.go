@@ -1,4 +1,5 @@
 // +build integration
+
 // can be execute with go test -tags=integration ./integration/...
 
 package main
@@ -11,47 +12,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	pipergithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/SAP/jenkins-library/pkg/sonar"
 )
-
-func TestSonarIssueSearch(t *testing.T) {
-	t.Parallel()
-	// init
-	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
-	require.NotEmpty(t, token, "SonarQube API Token is missing")
-	host := os.Getenv("PIPER_INTEGRATION_SONAR_HOST")
-	if len(host) == 0 {
-		host = "https://sonarcloud.io"
-	}
-	organization := os.Getenv("PIPER_INTEGRATION_SONAR_ORGANIZATION")
-	if len(organization) == 0 {
-		organization = "sap-1"
-	}
-	componentKey := os.Getenv("PIPER_INTEGRATION_SONAR_PROJECT")
-	if len(componentKey) == 0 {
-		componentKey = "SAP_jenkins-library"
-	}
-	options := &sonar.IssuesSearchOption{
-		ComponentKeys: componentKey,
-		Severities:    "INFO",
-		Resolved:      "false",
-		Ps:            "1",
-		Organization:  organization,
-	}
-	issueService := sonar.NewIssuesService(host, token, componentKey, organization, "", "", &piperhttp.Client{})
-	// test
-	result, _, err := issueService.SearchIssues(options)
-	// assert
-	assert.NoError(t, err)
-	assert.NotEmpty(t, result.Components)
-	//FIXME: include once implememnted
-	// assert.NotEmpty(t, result.Organizations)
-}
 
 func TestPiperGithubPublishRelease(t *testing.T) {
 	t.Parallel()
@@ -99,4 +64,32 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+}
+
+func TestGithubFetchCommitStatistics(t *testing.T) {
+	t.Parallel()
+	// prepare
+	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
+	if len(token) == 0 {
+		t.Fatal("No GitHub token maintained")
+	}
+
+	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
+	if len(owner) == 0 {
+		owner = "OliverNocon"
+	}
+	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
+	if len(repository) == 0 {
+		repository = "piper-integration"
+	}
+	// test
+	result, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
+		Owner: owner, Repository: repository, APIURL: "https://api.github.com", Token: token, SHA: "3601ed6"})
+
+	// assert
+	assert.NoError(t, err)
+	assert.Equal(t, 2, result.Additions)
+	assert.Equal(t, 0, result.Deletions)
+	assert.Equal(t, 2, result.Total)
+	assert.Equal(t, 1, result.Files)
 }

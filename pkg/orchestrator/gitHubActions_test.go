@@ -26,6 +26,7 @@ func TestGitHubActions(t *testing.T) {
 		assert.Equal(t, "feat/test-gh-actions", p.GetBranch())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoUrl())
+		assert.Equal(t, "GitHubActions", p.OrchestratorType())
 	})
 
 	t.Run("PR", func(t *testing.T) {

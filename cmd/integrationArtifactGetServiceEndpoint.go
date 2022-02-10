@@ -117,6 +117,6 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", serviceEndpointResp.StatusCode)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", responseBody, serviceEndpointResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", string(responseBody), serviceEndpointResp.StatusCode)
 	return errors.Errorf("Unable to get integration flow service endpoint, Response Status code: %v", serviceEndpointResp.StatusCode)
 }

@@ -179,7 +179,7 @@ func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", updateIflowStatusResp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, updateIflowStatusResp.StatusCode)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), updateIflowStatusResp.StatusCode)
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, updateIflowStatusURL, string(responseBody))
 	}
 	return errors.Errorf("Failed to update Integration Flow artefact, Response Status code: %v", updateIflowStatusResp.StatusCode)

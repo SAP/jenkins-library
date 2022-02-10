@@ -425,7 +425,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if len(c.username) > 0 {
+	if len(c.username) > 0 || len(c.password) > 0 {
 		request.SetBasicAuth(c.username, c.password)
 		c.logger.Debug("Using Basic Authentication ****/****")
 	}
@@ -507,7 +507,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				defer response.Body.Close()
 				parent := filepath.Dir(target)
 				if len(parent) > 0 {
-					if err = os.MkdirAll(parent, 0775); err != nil {
+					if err = os.MkdirAll(parent, 0777); err != nil {
 						return err
 					}
 				}

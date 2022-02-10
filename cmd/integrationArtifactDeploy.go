@@ -107,7 +107,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployResp.StatusCode)
 	}
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, deployResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), deployResp.StatusCode)
 	return errors.Errorf("integration flow deployment failed, response Status code: %v", deployResp.StatusCode)
 }
 
@@ -221,7 +221,7 @@ func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, errorStatusResp.StatusCode)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
 		errorDetails := string(responseBody)
 		return errorDetails, nil
 	}
