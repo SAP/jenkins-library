@@ -34,23 +34,10 @@ steps:
   abapEnvironmentPushATCSystemConfig:
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
-    atcSystemConfig: 'atcSystemConfig.json',
+    atcSystemConfig: 'atcSystemConfig.yml',
 ```
 
-The step always performs a check first, if an ATC System Configuration with the same name provided in the file `atcSystemConfig.json` with the attribute conf_name.
-In case an ATC System Configuration with this name already exists, by default, the step would perform an Update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
-If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
-
-```yaml
-steps:
-  abapEnvironmentPushATCSystemConfig:
-    abapCredentialsId: 'abapCredentialsId',
-    host: 'https://myABAPendpoint.com',
-    atcSystemConfig: 'atcSystemConfig.json',
-    patchIfExisting: 'false',
-```
-
-In this case the step skips further processing after existence check and returns with a Warning.
+To trigger a create/update ATC System Configuration step an ATC System configuration file `atcSystemConfig.yml` will be needed. Check section 'ATC System Configuration file example' for more information.
 
 ### Create/Update an ATC System Configuration via Cloud Foundry Service Key example in Jenkinsfile
 
@@ -69,28 +56,10 @@ abapEnvironmentPushATCSystemConfig(
     cfServiceInstance: 'myServiceInstance',
     cfServiceKeyName: 'myServiceKey',
     abapCredentialsId: 'cfCredentialsId',
-    atcSystemConfig: 'atcSystemConfig.json',
+    atcSystemConfig: 'atcSystemConfig.yml',
     script: this,
 )
 ```
-
-In case an update of an existing ATC System Configuration is NOT desired, this can be done by setting parameter patchIfExisting accordingly:
-
-```groovy
-abapEnvironmentPushATCSystemConfig(
-    cfApiEndpoint : 'https://test.server.com',
-    cfOrg : 'cfOrg',
-    cfSpace: 'cfSpace',
-    cfServiceInstance: 'myServiceInstance',
-    cfServiceKeyName: 'myServiceKey',
-    abapCredentialsId: 'cfCredentialsId',
-    atcSystemConfig: 'atcSystemConfig.json',
-    patchIfExisting: false,
-    script: this,
-)
-```
-
-To Create/Update an ATC System Configuration a file `atcSystemConfig.json` will be needed. Check section 'ATC System configuration file example' for more information.
 
 ### Create/Update an ATC System Configuration via direct ABAP endpoint configuration in Jenkinsfile
 
@@ -104,26 +73,32 @@ This must be configured as following:
 abapEnvironmentPushATCSystemConfig(
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
-    atcSystemConfig: 'atcSystemConfig.json',
+    atcSystemConfig: 'atcSystemConfig.yml',
     script: this,
 )
 ```
 
-In case an update of an existing ATC System Configuration is not desired, this can be done by setting parameter patchIfExisting accordingly:
+To Create/Update an ATC System Configuration a file `atcSystemConfig.yml` will be needed. Check section 'ATC System configuration file example' for more information.
 
-```groovy
-abapEnvironmentPushATCSystemConfig(
+### ATC System configuration file example
+
+The following section contains an example of an `atcSystemConfig.yml` file.
+
+The step always performs a check first, if an ATC System Configuration with the same name provided in the file `atcSystemConfig.json` with the attribute conf_name. 
+This file contains an JSON Representation of an ATC System Configuration. Some json file examples can be found below.
+In case an ATC System Configuration with this name already exists, by default, the step would perform an Update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
+If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
+
+```yaml
+steps:
+  abapEnvironmentPushATCSystemConfig:
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
     atcSystemConfig: 'atcSystemConfig.json',
-    patchIfExisting: false,
-    script: this,
-)
+    patchIfExisting: 'false',
 ```
 
-To Create/Update an ATC System Configuration a file `atcSystemConfig.json` will be needed. Check section 'ATC System configuration file example' for more information.
-
-### ATC System configuration file example
+In this case the step skips further processing after existence check and returns with a Warning.
 
 Providing a specifc System configuration file `atcSystemConfig.json` is mandatory.
 
