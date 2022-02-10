@@ -42,6 +42,7 @@ type helmExecuteOptions struct {
 	FilterTest                string   `json:"filterTest,omitempty"`
 	ChartRepo                 string   `json:"chartRepo,omitempty"`
 	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
+	HelmChartServer           string   `json:"helmChartServer,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -58,7 +59,9 @@ func HelmExecuteCommand() *cobra.Command {
 	var createHelmExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes helm3 functionality as the package manager for Kubernetes.",
-		Long: `Executes helm functionality as the package manager for Kubernetes.
+		Long: `Alpha version: please expect incompatible changes
+
+Executes helm functionality as the package manager for Kubernetes.
 
 * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
 * [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
@@ -165,7 +168,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
-	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when for helm.")
+	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when deploying with helm.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -183,6 +186,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)")
 	cmd.Flags().StringVar(&stepConfig.ChartRepo, "chartRepo", `https://charts.helm.sh/stable`, "set the chart repository")
 	cmd.Flags().StringVar(&stepConfig.HelmRegistryUser, "helmRegistryUser", os.Getenv("PIPER_helmRegistryUser"), "set the user for login to helm registry")
+	cmd.Flags().StringVar(&stepConfig.HelmChartServer, "helmChartServer", `localhost:5000`, "set chart server for pushing chart")
 
 	cmd.MarkFlagRequired("chartPath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -501,6 +505,15 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_helmRegistryUser"),
+					},
+					{
+						Name:        "helmChartServer",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `localhost:5000`,
 					},
 				},
 			},

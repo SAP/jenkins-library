@@ -57,6 +57,7 @@ type HelmExecuteOptions struct {
 	FilterTest                string   `json:"filterTest,omitempty"`
 	ChartRepo                 string   `json:"chartRepo,omitempty"`
 	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
+	HelmChartServer           string   `json:"helmChartServer,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -351,7 +352,7 @@ func (h *HelmExecute) RunHelmRegistryLogin() error {
 		"registry login",
 	}
 	helmParams = append(helmParams, "-u", h.config.HelmRegistryUser)
-	helmParams = append(helmParams, "localhost:5000")
+	helmParams = append(helmParams, h.config.HelmChartServer)
 
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm login ...")
@@ -368,7 +369,7 @@ func (h *HelmExecute) RunHelmRegistryLogout() error {
 	helmParams := []string{
 		"registry logout",
 	}
-	helmParams = append(helmParams, "localhost:5000")
+	helmParams = append(helmParams, h.config.HelmChartServer)
 
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm logout ...")
@@ -395,7 +396,7 @@ func (h *HelmExecute) RunHelmPush() error {
 		"push",
 	}
 	helmParams = append(helmParams, fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz"))
-	helmParams = append(helmParams, "oci://localhost:5000/helm-charts")
+	helmParams = append(helmParams, fmt.Sprintf("%v", "oci://"+h.config.HelmChartServer+"/helm-charts"))
 
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm push ...")

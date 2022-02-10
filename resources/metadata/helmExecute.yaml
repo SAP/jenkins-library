@@ -3,7 +3,7 @@ metadata:
   description: Executes helm3 functionality as the package manager for Kubernetes.
   longDescription: |-
     Alpha version: please expect incompatible changes
-    
+
     Executes helm functionality as the package manager for Kubernetes.
 
     * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
@@ -307,6 +307,15 @@ spec:
       - name: helmRegistryUser
         type: string
         description: set the user for login to helm registry
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: helmChartServer
+        type: string
+        description: set chart server for pushing chart
+        default: "localhost:5000"
         scope:
           - GENERAL
           - PARAMETERS
