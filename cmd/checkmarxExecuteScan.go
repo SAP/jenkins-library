@@ -304,11 +304,6 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
-	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
-
-	reportToInflux(results, influx)
-
 	// create JSON report (regardless vulnerabilityThreshold enabled or not)
 	jsonReport := checkmarx.CreateJSONReport(results)
 	paths, err := checkmarx.WriteJSONReport(jsonReport)
@@ -318,6 +313,11 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		// add JSON report to archiving list
 		reports = append(reports, paths...)
 	}
+
+	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
+
+	reportToInflux(results, influx)
 
 	insecure := false
 	insecureResults := []string{}

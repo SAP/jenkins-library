@@ -142,37 +142,21 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 		checkmarxReportData.ProjectID = s
 	}
 
-	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanID"]), 10, 64); err == nil {
+	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanId"]), 10, 64); err == nil {
 		checkmarxReportData.ScanID = s
 	}
 
-	if s, err := strconv.ParseInt(fmt.Sprint(data["High"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
-		checkmarxReportData.HighTotal = int(s)
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["High"].(map[string]int)["Issues"]), 10, 32); err == nil {
-		checkmarxReportData.HighAudited = int(s)
-	}
+	checkmarxReportData.HighAudited = data["High"].(map[string]int)["Issues"] - data["High"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.HighTotal = data["High"].(map[string]int)["Issues"]
 
-	if s, err := strconv.ParseInt(fmt.Sprint(data["Medium"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
-		checkmarxReportData.MediumTotal = int(s)
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["Medium"].(map[string]int)["Issues"]), 10, 32); err == nil {
-		checkmarxReportData.MediumAudited = int(s)
-	}
+	checkmarxReportData.MediumAudited = data["Medium"].(map[string]int)["Issues"] - data["Medium"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.MediumTotal = data["Medium"].(map[string]int)["Issues"]
 
-	if s, err := strconv.ParseInt(fmt.Sprint(data["Low"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
-		checkmarxReportData.LowTotal = int(s)
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["Low"].(map[string]int)["Issues"]), 10, 32); err == nil {
-		checkmarxReportData.LowAudited = int(s)
-	}
+	checkmarxReportData.LowAudited = data["Low"].(map[string]int)["Issues"] - data["Low"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.LowTotal = data["Low"].(map[string]int)["Issues"]
 
-	if s, err := strconv.ParseInt(fmt.Sprint(data["Information"].(map[string]int)["NotFalsePositive"]), 10, 32); err == nil {
-		checkmarxReportData.InformationTotal = int(s)
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["Information"].(map[string]int)["Issues"]), 10, 32); err == nil {
-		checkmarxReportData.InformationAudited = int(s)
-	}
+	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Issues"] - data["Information"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.InformationTotal = data["Information"].(map[string]int)["Issues"]
 
 	return checkmarxReportData
 }
