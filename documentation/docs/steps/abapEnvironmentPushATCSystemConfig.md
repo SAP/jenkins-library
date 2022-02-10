@@ -90,12 +90,8 @@ In case an ATC System Configuration with this name already exists, by default, t
 If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
 
 ```yaml
-steps:
-  abapEnvironmentPushATCSystemConfig:
-    abapCredentialsId: 'abapCredentialsId',
-    host: 'https://myABAPendpoint.com',
-    atcSystemConfigFilePath: 'atcSystemConfig.json',
-    patchIfExisting: 'false',
+atcSystemConfigFilePath: 'atcSystemConfig.json',
+patchIfExisting: 'false',
 ```
 
 In this case the step skips further processing after existence check and returns with a Warning.
