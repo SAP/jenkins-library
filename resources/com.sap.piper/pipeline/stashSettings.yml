@@ -30,11 +30,6 @@ Acceptance:
     - deployDescriptor
   stashes: []
 
-#Compliance:
-#  unstash:
-#    - application
-#  stashes: []
-
 Performance:
   unstash:
     - source
