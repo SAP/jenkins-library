@@ -38,9 +38,9 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        if (config.atcSystemConfigFilePath != null) {
+        //if (config.atcSystemConfigFilePath != null) {
           abapEnvironmentPushATCSystemConfig script: parameters.script
-        }
+        //}
         abapEnvironmentRunATCCheck script: parameters.script
     }
 }
