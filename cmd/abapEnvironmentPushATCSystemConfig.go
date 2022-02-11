@@ -229,6 +229,8 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 		return batchRequestString, err
 	}
 
+	configBaseJson.ConfUUID = confUUID
+
 	//build the Batch request string
 	contentID := 1
 
