@@ -79,31 +79,35 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	if testRunner.User != "" {
 		params = append(params, fmt.Sprintf("--user=%s", testRunner.User))
 	}
-	if len(bundle.TestDir) > 0 {
-		projectDir := path.Join(wd, path.Join(bundle.TestDir...))
-		// 1. Copy test files to a temp dir in order to avoid non-repeatable test executions because of changed state
-		// 2. Don't remove the temp dir to allow investigation of failed tests. Maybe add an option for cleaning it later?
-		tempDir, err := ioutil.TempDir("", "piper-integration-test")
-		if err != nil {
-			t.Fatal(err)
+	mountVolumes := os.Getenv("DOCKER_MOUNT") != "false"
+	if mountVolumes {
+
+		if len(bundle.TestDir) > 0 {
+			projectDir := path.Join(wd, path.Join(bundle.TestDir...))
+			// 1. Copy test files to a temp dir in order to avoid non-repeatable test executions because of changed state
+			// 2. Don't remove the temp dir to allow investigation of failed tests. Maybe add an option for cleaning it later?
+			tempDir, err := ioutil.TempDir("", "piper-integration-test")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = copyDir(projectDir, tempDir)
+			if err != nil {
+				t.Fatalf("Failed to copy files from %s into %s", projectDir, tempDir)
+			}
+			params = append(params, "-v", fmt.Sprintf("%s:/project", tempDir))
 		}
 
-		err = copyDir(projectDir, tempDir)
-		if err != nil {
-			t.Fatalf("Failed to copy files from %s into %s", projectDir, tempDir)
+		if testRunner.Mounts != nil {
+			for src, dst := range testRunner.Mounts {
+				params = append(params, "-v", fmt.Sprintf("%s:%s", src, dst))
+			}
 		}
-		params = append(params, "-v", fmt.Sprintf("%s:/project", tempDir))
 	}
 
 	if len(testRunner.Environment) > 0 {
 		for envVarName, envVarValue := range testRunner.Environment {
 			params = append(params, "--env", fmt.Sprintf("%s=%s", envVarName, envVarValue))
-		}
-	}
-
-	if testRunner.Mounts != nil {
-		for src, dst := range testRunner.Mounts {
-			params = append(params, "-v", fmt.Sprintf("%s:%s", src, dst))
 		}
 	}
 
@@ -118,6 +122,12 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	}
 
 	if len(bundle.TestDir) > 0 {
+		if !mountVolumes {
+			err = testRunner.Runner.RunExecutable("docker", "cp", path.Join(wd, path.Join(bundle.TestDir...)), fmt.Sprintf("%s:%s", testRunner.ContainerName, "/project"))
+			if err != nil {
+				t.Fatalf("Copying /project has failed %s", err)
+			}
+		}
 		err = testRunner.Runner.RunExecutable("docker", "exec", "-u=root", testRunner.ContainerName, "chown", "-R", testRunner.User, "/project")
 		if err != nil {
 			t.Fatalf("Chown /project has failed %s", err)
