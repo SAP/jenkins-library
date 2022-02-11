@@ -187,18 +187,18 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 		result.RuleID = id
 		result.Level = alerts[i].Level
 		result.RuleIndex = i //Seems very abstract
-		result.Message = format.Message{alerts[i].Vulnerability.Description}
+		result.Message = format.Message{Text: alerts[i].Vulnerability.Description}
 		result.Level = alerts[i].Level
 		result.AnalysisTarget = format.ArtifactLocation{URI: alerts[i].Library.Filename, Index: 0}
-		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alerts[i].Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{format.LogicalLocation{FullyQualifiedName: ""}}}
+		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alerts[i].Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}
 		result.Locations = append(result.Locations, location)
 
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 
 		sarifRule := *new(format.SarifRule)
 		sarifRule.Id = id
-		sarifRule.ShortDescription = format.Message{fmt.Sprintf("%v Package %v", alerts[i].Vulnerability.Name, alerts[i].Library.ArtifactID)}
-		sarifRule.FullDescription = format.Message{alerts[i].Vulnerability.Description}
+		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alerts[i].Vulnerability.Name, alerts[i].Library.ArtifactID)}
+		sarifRule.FullDescription = format.Message{Text: alerts[i].Vulnerability.Description}
 		sarifRule.DefaultConfiguration.Level = alerts[i].Level
 		sarifRule.HelpURI = alerts[i].Vulnerability.URL
 		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alerts[i].Vulnerability.Name, alerts[i].Vulnerability.Severity, alerts[i].Library.ArtifactID, alerts[i].Library.Version, alerts[i].Vulnerability.TopFix.FixResolution, alerts[i].Vulnerability.Name, alerts[i].Vulnerability.URL), Markdown: alerts[i].ToMarkdown()}
