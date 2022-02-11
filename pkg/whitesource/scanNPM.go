@@ -3,10 +3,11 @@ package whitesource
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 const whiteSourceConfig = "whitesource.config.json"
@@ -80,6 +81,8 @@ func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils Utils, devD
 
 // ExecuteNpmScan iterates over all found npm modules and performs a scan in each one.
 func (s *Scan) ExecuteNpmScan(config *ScanOptions, utils Utils) error {
+	s.AgentName = "WhiteSource NPM Plugin"
+	s.AgentVersion = "unknown"
 	modules, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
 		return fmt.Errorf("failed to find package.json files with excludes: %w", err)

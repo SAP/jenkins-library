@@ -35,6 +35,9 @@ spec:
         aliases:
           - name: dockerCredentialsId
             deprecated: true
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
     params:
       - name: agentDownloadUrl
         type: string
@@ -488,6 +491,78 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
+      - name: createResultIssue
+        type: bool
+        description: "Whether the step creates a GitHub issue containing the scan results in the originating repo.
+        Since optimized pipelines are headless the creation is implicitly activated for schedules runs."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/optimizedAndScheduled
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: githubApiUrl
+        description: "Set the GitHub API URL."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: "https://api.github.com"
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: "Set the GitHub organization."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: "Set the GitHub repository."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
+        mandatory: false
     resources:
       - name: buildDescriptor
         type: stash

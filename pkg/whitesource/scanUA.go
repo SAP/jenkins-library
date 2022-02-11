@@ -22,6 +22,7 @@ const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
+	s.AgentName = "WhiteSource Unified Agent"
 	if config.BuildTool != "mta" {
 		return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
 	}
@@ -82,6 +83,15 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	if err != nil {
 		return err
 	}
+
+	// Fetch version of UA
+	versionBytes := &bytes.Buffer{}
+	utils.Stdout(versionBytes)
+	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
+	if err == nil {
+		return err
+	}
+	s.AgentVersion = versionBytes.String()
 
 	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
 
