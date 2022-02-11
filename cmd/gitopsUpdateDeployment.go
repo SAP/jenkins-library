@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -113,6 +114,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	}
 
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
+	temporaryFolder = regexp.MustCompile(`^./`).ReplaceAllString(temporaryFolder, "")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temporary directory")
 	}
@@ -184,7 +186,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	} else {
 		// git expects the file path relative to its root:
 		for i := range allFiles {
-			allFiles[i] = strings.ReplaceAll(allFiles[i], temporaryFolder[2:]+"/", "")
+			allFiles[i] = strings.ReplaceAll(allFiles[i], temporaryFolder+"/", "")
 		}
 	}
 
