@@ -33,6 +33,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
             return body()
         })
         helper.registerAllowedMethod('abapEnvironmentRunATCCheck', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunATCCheck')})
+        helper.registerAllowedMethod('abapEnvironmentPushATCSystemConfig', [Map.class], {m -> stepsCalled.add('abapEnvironmentPushATCSystemConfig')})
     }
 
     @Test
@@ -42,5 +43,15 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript)
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
+    }
+
+    @Test
+    void testAbapEnvironmentRunTestsWithATCSystemConfig() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
+        jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, atcSystemConfig = 'atcSystemConfig.yml' )
+
+        assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentPushATCSystemConfig'))
     }
 }
