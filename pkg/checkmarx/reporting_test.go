@@ -44,7 +44,7 @@ func TestCreateJSONReport(t *testing.T) {
 
 	submap = map[string]int{}
 	submap["Issues"] = 4
-	submap["NotFalsePositive"] = 5
+	submap["NotFalsePositive"] = 0
 	resultMap["Medium"] = submap
 
 	submap = map[string]int{}
@@ -69,13 +69,13 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, "8.6.0", reportingData.CheckmarxVersion)
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 	assert.Equal(t, 10, reportingData.HighTotal)
-	assert.Equal(t, 10, reportingData.HighAudited)
-	assert.Equal(t, 5, reportingData.MediumTotal)
+	assert.Equal(t, 0, reportingData.HighAudited)
+	assert.Equal(t, 4, reportingData.MediumTotal)
 	assert.Equal(t, 4, reportingData.MediumAudited)
 	assert.Equal(t, 2, reportingData.LowTotal)
-	assert.Equal(t, 2, reportingData.LowAudited)
+	assert.Equal(t, 0, reportingData.LowAudited)
 	assert.Equal(t, 5, reportingData.InformationTotal)
-	assert.Equal(t, 5, reportingData.InformationAudited)
+	assert.Equal(t, 0, reportingData.InformationAudited)
 }
 
 func TestJsonReportWithNoLowVulnData(t *testing.T) {
@@ -115,7 +115,7 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 
 	submap = map[string]int{}
 	submap["Issues"] = 4
-	submap["NotFalsePositive"] = 5
+	submap["NotFalsePositive"] = 4
 	resultMap["Medium"] = submap
 
 	submap = map[string]int{}
@@ -125,7 +125,7 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 
 	submap = map[string]int{}
 	submap["Issues"] = 2
-	submap["NotFalsePositive"] = 4
+	submap["NotFalsePositive"] = 1
 	resultMap["Information"] = submap
 
 	reportingData := CreateJSONReport(resultMap)
@@ -140,11 +140,11 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 	assert.Equal(t, "8.6.0", reportingData.CheckmarxVersion)
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 	assert.Equal(t, 10, reportingData.HighTotal)
-	assert.Equal(t, 10, reportingData.HighAudited)
-	assert.Equal(t, 5, reportingData.MediumTotal)
-	assert.Equal(t, 4, reportingData.MediumAudited)
+	assert.Equal(t, 0, reportingData.HighAudited)
+	assert.Equal(t, 4, reportingData.MediumTotal)
+	assert.Equal(t, 0, reportingData.MediumAudited)
 	assert.Equal(t, 0, reportingData.LowTotal)
 	assert.Equal(t, 0, reportingData.LowAudited)
-	assert.Equal(t, 4, reportingData.InformationTotal)
-	assert.Equal(t, 2, reportingData.InformationAudited)
+	assert.Equal(t, 2, reportingData.InformationTotal)
+	assert.Equal(t, 1, reportingData.InformationAudited)
 }
