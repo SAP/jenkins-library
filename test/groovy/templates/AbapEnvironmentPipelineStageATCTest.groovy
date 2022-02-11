@@ -43,6 +43,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript)
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
+        assertThat(stepsCalled, not(hasItems('abapEnvironmentRunATCCheck')))
     }
 
     @Test
