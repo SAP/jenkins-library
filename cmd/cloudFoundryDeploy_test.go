@@ -1302,8 +1302,8 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	_environ = func() []string {
 		return []string{
-			"MY_CRED_ENV_VAR1=******",
-			"MY_CRED_ENV_VAR2=++++++",
+			"MY_CRED_ENV_VAR1=**$0****",
+			"MY_CRED_ENV_VAR2=++$1++++",
 		}
 	}
 
@@ -1406,11 +1406,11 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				assert.Fail(t, "Cannot read mta extension file: %v", e)
 			}
 			content := string(b)
-			assert.Contains(t, content, "test-credentials1: \"******\"")
-			assert.Contains(t, content, "test-credentials2: \"++++++\"")
-			assert.Contains(t, content, "test-credentials3: \"++++++\"")
-			assert.Contains(t, content, "test-credentials4: \"++++++\"")
-			assert.Contains(t, content, "test-credentials5: \"++++++\"")
+			assert.Contains(t, content, "test-credentials1: \"**$0****\"")
+			assert.Contains(t, content, "test-credentials2: \"++$1++++\"")
+			assert.Contains(t, content, "test-credentials3: \"++$1++++\"")
+			assert.Contains(t, content, "test-credentials4: \"++$1++++\"")
+			assert.Contains(t, content, "test-credentials5: \"++$1++++\"")
 
 			assert.True(t, updated)
 			assert.False(t, containsUnresolved)
