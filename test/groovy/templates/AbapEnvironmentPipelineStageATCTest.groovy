@@ -50,7 +50,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
     void testAbapEnvironmentRunTestsWithATCSystemConfig() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, atcSystemConfig: 'atcSystemConfig.yml' )
+        jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, atcSystemConfigFilePath: 'atcSystemConfig.json' )
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
         assertThat(stepsCalled, hasItems('abapEnvironmentPushATCSystemConfig'))
