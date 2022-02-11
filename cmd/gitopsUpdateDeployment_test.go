@@ -303,7 +303,6 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		t.Parallel()
 		fileUtils := &filesMock{failOnWrite: true}
 
-
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to write file: error appeared")
 	})
