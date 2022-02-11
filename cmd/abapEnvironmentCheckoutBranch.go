@@ -86,7 +86,6 @@ func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDet
 		if err != nil {
 			break
 		}
-		finishCheckoutLogs(repo.Branch, repo.Name)
 	}
 	return err
 }
@@ -141,8 +140,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 
-	expandLog := "?$expand=to_Execution_log,to_Transport_log"
-	uriConnectionDetails.URL = body.Metadata.URI + expandLog
+	uriConnectionDetails.URL = body.Metadata.URI
 	return uriConnectionDetails, nil
 }
 
