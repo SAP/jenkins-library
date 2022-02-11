@@ -51,8 +51,10 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		var hostOdataURL = options.Host + oDataURL
 		if match {
 			connectionDetails.URL = hostOdataURL
+			connectionDetails.Host = options.Host
 		} else {
 			connectionDetails.URL = "https://" + hostOdataURL
+			connectionDetails.Host = "https://" + options.Host
 		}
 		connectionDetails.User = options.Username
 		connectionDetails.Password = options.Password
@@ -67,6 +69,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		if error != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}
+		connectionDetails.Host = abapServiceKey.URL
 		connectionDetails.URL = abapServiceKey.URL + oDataURL
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
@@ -266,6 +269,7 @@ type AbapMetadata struct {
 
 // ConnectionDetailsHTTP contains fields for HTTP connections including the XCSRF token
 type ConnectionDetailsHTTP struct {
+	Host       string
 	User       string `json:"user"`
 	Password   string `json:"password"`
 	URL        string `json:"url"`
