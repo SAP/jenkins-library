@@ -7,6 +7,7 @@
 !!! caution "Required project "Piper" library version"
     The recommended project "Piper" library version can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).<br>
     A specific version can be used by referencing the version number in the [Jenkinsfile](../../pipelines/abapEnvironment/configuration/#2-jenkinsfile).
+    
 ## Introduction
 
 This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
@@ -138,6 +139,7 @@ In the following subsections, the pipeline configuration for this scenario is ex
 Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md) for general configuration.
 
 #### ATC
+
 !!! caution ""
     We recommend to configure the add-on build pipeline with a __quality gate to block any priority 1 ATC findings__.
 
@@ -147,6 +149,7 @@ Please refer to the [configuration page](../pipelines/abapEnvironment/configurat
     ATC findings should be resolved during development as early as possible, e.g. [during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html) and by using an additional pipeline configured for the [Continuous Testing on SAP BTP, ABAP Environment scenario](abapEnvironmentTest.md).
 
     Please include all software components configured in [addon.yml](#add-on-descriptor-file) file also in the [atcConfig.yml](https://www.project-piper.io/steps/abapEnvironmentRunATCCheck/#atc-config-file-example) file. In case not all software components are included, some errors might not be found.
+
 #### Add-on descriptor file
 
 The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [add-on product version](#add-on-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
