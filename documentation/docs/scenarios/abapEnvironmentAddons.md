@@ -7,7 +7,7 @@
 !!! caution "Required project "Piper" library version"
     The recommended project "Piper" library version can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).<br>
     A specific version can be used by referencing the version number in the [Jenkinsfile](../../pipelines/abapEnvironment/configuration/#2-jenkinsfile).
-    
+
 ## Introduction
 
 This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
@@ -20,7 +20,7 @@ A comprehensive guidance on how to develop and operate SaaS applications using a
 
 ## The Add-on Product
 
-The installation and maintenance of ABAP software is controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the delivery view on a software portfolio.
+The installation and maintenance of ABAP software is controlled via add-on product versions. An __add-on product version__ is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the delivery view on a software portfolio.
 
 ### Add-on Product Version
 
@@ -38,7 +38,7 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
     As you may know, the development in the SAP BTP, ABAP environment is done within [software components](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
     The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP Note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
 
-A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
+A __software component version__ is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the __release__. Release deliveries contain the whole software component and should be used to deliver new functionalities or feature enhancements. They are provided with delivery packages of type *Add-on Installation* (AOI) and are usually created on a regular basis (e.g. quarterly).
