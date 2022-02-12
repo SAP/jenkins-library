@@ -75,7 +75,7 @@ type StepMonitoringData struct {
 	BuildUrlHash    string                 `json:"BuildUrlHash"`
 	StageName       string                 `json:"StageName"`
 	StepName        string                 `json:"StepName"`
-	ExitCode        string                 `json:"ExitCode"`
+	ErrorCode       string                 `json:"ErrorCode"`
 	Duration        string                 `json:"Duration"`
 	ErrorCategory   string                 `json:"ErrorCategory"`
 	CorrelationID   string                 `json:"CorrelationID"`

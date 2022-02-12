@@ -137,7 +137,7 @@ func (t *Telemetry) Send() {
 func (t *Telemetry) logStepTelemetryData() {
 
 	var fatalError map[string]interface{}
-	if t.data.ErrorCategory != "0" {
+	if t.data.ErrorCode != "0" {
 		// retrieve the error information from the logCollector
 		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)
 		if err != nil {
@@ -150,7 +150,7 @@ func (t *Telemetry) logStepTelemetryData() {
 		BuildUrlHash:    t.data.BuildURLHash,
 		StageName:       t.data.StageName,
 		StepName:        t.data.BaseData.StepName,
-		ExitCode:        t.data.CustomData.ErrorCode,
+		ErrorCode:       t.data.CustomData.ErrorCode,
 		Duration:        t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
