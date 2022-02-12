@@ -34,6 +34,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	details["category"] = GetErrorCategory().String()
 	details["result"] = "failure"
 	details["correlationId"] = f.CorrelationID
+	details["time"] = entry.Time
 
 	fileName := "errorDetails.json"
 	if details["stepName"] != nil {
