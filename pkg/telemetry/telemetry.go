@@ -166,6 +166,6 @@ func (t *Telemetry) logStepTelemetryData() {
 		log.Entry().Infof("Step telemetry data: {n/a}")
 	} else {
 		// log step monitoring data, changes here need to change the regex in the internal piper lib
-		log.Entry().Infof("Step monitoring data:%v", string(monitoringJson))
+		log.Entry().Infof("Step telemetry data:%v", string(monitoringJson))
 	}
 }
