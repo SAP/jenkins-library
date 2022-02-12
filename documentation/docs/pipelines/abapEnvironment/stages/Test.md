@@ -6,9 +6,11 @@ The below sections contain more information on the usage and configuration of th
 
 ## ATC
 
-In this stage, ATC checks can be executed using [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/). The step can receive software components or packages. The results are returned in the checkstyle format and displayed using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin). To display the results using the Warnings Next Generation Plugin, a [pipeline extension for the ATC stage](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin) is created. Using the recordIssues function provided by the Jenkins plugins, a [quality gate can be configured](https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#quality-gate-configuration). 
+In this stage, ATC checks can be executed using [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/). The step can receive software components or packages.
 
-ATC check results can also be sent via e-mail: [Extend the ATC stage to send ATC results via E-Mail](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#2-extend-the-atc-stage-to-send-atc-results-via-e-mail)
+The results are returned in the checkstyle format and can be displayed using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin). To display the results it is necessary to [extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+
+Alternatively it is possible to [extend the ATC stage to send ATC results via E-Mail](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#2-extend-the-atc-stage-to-send-atc-results-via-e-mail).
 
 ### Steps
 

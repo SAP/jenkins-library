@@ -5,8 +5,8 @@
     - __Table entries are currently delivered during add-on build with generic keys__ – thus it is strongly recommended to transport TABUs only with the software component the table definition belongs to and not in foreign software components to prevent loss of data. The possibility to deliver individual table keys as part of add-on build might be supported at a later point in time.
 
 !!! caution "Required project "Piper" library version"
-    SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
-
+    The recommended project "Piper" library version can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).<br>
+    A specific version can be used by referencing the version number in the [Jenkinsfile](../../pipelines/abapEnvironment/configuration/#2-jenkinsfile).
 ## Introduction
 
 This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
@@ -137,6 +137,16 @@ This step can be triggered by you or by SAP partner management (governance proce
 In the following subsections, the pipeline configuration for this scenario is explained.
 Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md) for general configuration.
 
+#### ATC
+!!! caution ""
+    We recommend to configure the add-on build pipeline with a __quality gate to block any priority 1 ATC findings__.
+
+    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_HIGH', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+
+    Created delivery packages for an add-on product version are final, so to fix any errors in these packages, another add-on product version would have to be built.
+    ATC findings should be resolved during development as early as possible, e.g. [during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html) and by using an additional pipeline configured for the [Continuous Testing on SAP BTP, ABAP Environment scenario](abapEnvironmentTest.md).
+
+    Please include all software components configured in [addon.yml](#add-on-descriptor-file) file also in the [atcConfig.yml](https://www.project-piper.io/steps/abapEnvironmentRunATCCheck/#atc-config-file-example) file. In case not all software components are included, some errors might not be found.
 #### Add-on descriptor file
 
 The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [add-on product version](#add-on-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
@@ -252,7 +262,7 @@ In case of an error during execution of the pipeline steps:
 * Stage: [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)
       * Step: [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)
           * __*Long-running step execution*__
-          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings.
+          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings. Resolve ATC findings early on during development, e.g. by [working with ATC during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html).
 * Stage: [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)
       * Step: [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/)
           * __e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`__
