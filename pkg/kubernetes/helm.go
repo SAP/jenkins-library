@@ -58,6 +58,7 @@ type HelmExecuteOptions struct {
 	ChartRepo                 string   `json:"chartRepo,omitempty"`
 	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
 	HelmChartServer           string   `json:"helmChartServer,omitempty"`
+	HelmCommand               string   `json:"helmCommand,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -398,15 +399,32 @@ func (h *HelmExecute) RunHelmPush() error {
 	helmParams = append(helmParams, fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz"))
 	helmParams = append(helmParams, fmt.Sprintf("%v", "oci://"+h.config.HelmChartServer+"/helm-charts"))
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm push ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
-		log.Entry().WithError(err).Fatal("Helm push call failed")
+	// h.utils.Stdout(h.stdout)
+	// log.Entry().Info("Calling helm push ...")
+	// log.Entry().Debugf("Helm parameters: %v", helmParams)
+	// if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	// 	log.Entry().WithError(err).Fatal("Helm push call failed")
+	// }
+
+	if err := h.runHelmCommand(helmParams); err != nil {
+		return fmt.Errorf("failded command: %v", err)
 	}
 
 	if err := h.RunHelmRegistryLogout(); err != nil {
 		return fmt.Errorf("failed to execute registry logout: %v", err)
+	}
+
+	return nil
+}
+
+func (h *HelmExecute) runHelmCommand(helmParams []string) error {
+
+	h.utils.Stdout(h.stdout)
+	log.Entry().Info("Calling helm push ...")
+	log.Entry().Debugf("Helm parameters: %v", helmParams)
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+		log.Entry().WithError(err).Fatalf("Helm %v call failed", h.config.HelmCommand)
+		return err
 	}
 
 	return nil

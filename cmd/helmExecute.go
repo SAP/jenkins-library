@@ -32,6 +32,7 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		ChartRepo:             config.ChartRepo,
 		HelmRegistryUser:      config.HelmRegistryUser,
 		HelmChartServer:       config.HelmChartServer,
+		HelmCommand:           config.HelmCommand,
 	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())

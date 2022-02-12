@@ -78,7 +78,6 @@ Available Commands:
   verify      verify that a chart at the given path has been signed and is valid
   push        upload a chart to a registry
 
-  also piper Execute step supports direct execution helm command via one flag.
 ` + "`" + `` + "`" + `` + "`" + `
 
 Note: piper supports only helm3 version, since helm2 is deprecated.`,
