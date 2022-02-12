@@ -163,7 +163,7 @@ func (t *Telemetry) logStepTelemetryData() {
 	monitoringJson, err := json.Marshal(stepMonitoringData)
 	if err != nil {
 		log.Entry().Error("could not marshal step monitoring data")
-		log.Entry().Infof("Step monitoring data: {n/a}")
+		log.Entry().Infof("Step telemetry data: {n/a}")
 	} else {
 		// log step monitoring data, changes here need to change the regex in the internal piper lib
 		log.Entry().Infof("Step monitoring data:%v", string(monitoringJson))
