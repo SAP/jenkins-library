@@ -71,8 +71,8 @@ type CustomData struct {
 
 // StepTelemetryData definition for telemetry reporting and monitoring
 type StepTelemetryData struct {
-	PipelineUrlHash string                 `json:"PipelineURLHash"`
-	BuildUrlHash    string                 `json:"BuildURLHash"`
+	PipelineURLHash string                 `json:"PipelineURLHash"`
+	BuildURLHash    string                 `json:"BuildURLHash"`
 	StageName       string                 `json:"StageName"`
 	StepName        string                 `json:"StepName"`
 	ErrorCode       string                 `json:"ErrorCode"`

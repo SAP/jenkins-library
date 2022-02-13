@@ -146,8 +146,8 @@ func (t *Telemetry) logStepTelemetryData() {
 	}
 
 	stepTelemetryData := StepTelemetryData{
-		PipelineUrlHash: t.data.PipelineURLHash,
-		BuildUrlHash:    t.data.BuildURLHash,
+		PipelineURLHash: t.data.PipelineURLHash,
+		BuildURLHash:    t.data.BuildURLHash,
 		StageName:       t.data.StageName,
 		StepName:        t.data.BaseData.StepName,
 		ErrorCode:       t.data.CustomData.ErrorCode,
@@ -160,12 +160,12 @@ func (t *Telemetry) logStepTelemetryData() {
 		GitOwner:        t.provider.GetRepoUrl(), // TODO not correct
 		GitRepository:   t.provider.GetRepoUrl(), // TODO not correct
 	}
-	monitoringJSON, err := json.Marshal(stepTelemetryData)
+	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
 	if err != nil {
 		log.Entry().Error("could not marshal step telemetry data")
 		log.Entry().Infof("Step telemetry data: {n/a}")
 	} else {
 		// log step monitoring data, changes here need to change the regex in the internal piper lib
-		log.Entry().Infof("Step telemetry data:%v", string(monitoringJSON))
+		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
 	}
 }
