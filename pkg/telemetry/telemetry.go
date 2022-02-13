@@ -119,7 +119,7 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
-	// log step telemetry data to logfile used for internal use-case
+	// always log step telemetry data to logfile used for internal use-case
 	t.logStepTelemetryData()
 
 	// skip if telemetry is disabled
@@ -141,11 +141,11 @@ func (t *Telemetry) logStepTelemetryData() {
 		// retrieve the error information from the logCollector
 		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)
 		if err != nil {
-			log.Entry().WithError(err).Error("could not unmarshal error struct")
+			log.Entry().WithError(err).Error("could not unmarshal fatal error struct")
 		}
 	}
 
-	stepMonitoringData := StepMonitoringData{
+	stepTelemetryData := StepTelemetryData{
 		PipelineUrlHash: t.data.PipelineURLHash,
 		BuildUrlHash:    t.data.BuildURLHash,
 		StageName:       t.data.StageName,
@@ -160,12 +160,12 @@ func (t *Telemetry) logStepTelemetryData() {
 		GitOwner:        t.provider.GetRepoUrl(), // TODO not correct
 		GitRepository:   t.provider.GetRepoUrl(), // TODO not correct
 	}
-	monitoringJson, err := json.Marshal(stepMonitoringData)
+	monitoringJSON, err := json.Marshal(stepTelemetryData)
 	if err != nil {
-		log.Entry().Error("could not marshal step monitoring data")
+		log.Entry().Error("could not marshal step telemetry data")
 		log.Entry().Infof("Step telemetry data: {n/a}")
 	} else {
 		// log step monitoring data, changes here need to change the regex in the internal piper lib
-		log.Entry().Infof("Step telemetry data:%v", string(monitoringJson))
+		log.Entry().Infof("Step telemetry data:%v", string(monitoringJSON))
 	}
 }

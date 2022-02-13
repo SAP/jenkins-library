@@ -69,10 +69,10 @@ type CustomData struct {
 	Custom5         string `json:"e_30,omitempty"`
 }
 
-// MonitoringData definition for monitoring
-type StepMonitoringData struct {
-	PipelineUrlHash string                 `json:"PipelineUrlHash"`
-	BuildUrlHash    string                 `json:"BuildUrlHash"`
+// StepTelemetryData definition for telemetry reporting and monitoring
+type StepTelemetryData struct {
+	PipelineUrlHash string                 `json:"PipelineURLHash"`
+	BuildUrlHash    string                 `json:"BuildURLHash"`
 	StageName       string                 `json:"StageName"`
 	StepName        string                 `json:"StepName"`
 	ErrorCode       string                 `json:"ErrorCode"`

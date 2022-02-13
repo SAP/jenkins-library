@@ -65,6 +65,7 @@ func GetErrorCategory() ErrorCategory {
 	return errorCategory
 }
 
+// SetFatalErrorDetail sets the fatal error to be stored
 func SetFatalErrorDetail(error []byte) {
 	fatalError = error
 }
