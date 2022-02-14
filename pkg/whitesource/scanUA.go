@@ -85,25 +85,40 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	}
 
 	// Fetch version of UA
-	prOut, stdOut := io.Pipe()
-	trOut := io.TeeReader(prOut, os.Stderr)
-	utils.Stdout(stdOut)
+	prOut, pwOut := io.Pipe()
+	prErr, pwErr := io.Pipe()
+	utils.Stdout(pwOut)
+	utils.Stderr(pwErr)
 
-	prErr, stdErr := io.Pipe()
-	trErr := io.TeeReader(prErr, os.Stderr)
-	utils.Stdout(stdErr)
+	var e, o string
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	var wg1 sync.WaitGroup
+	wg1.Add(2)
 
 	go func() {
-		defer wg.Done()
-		scanLog(trOut, s, false)
+		buf := new(bytes.Buffer)
+		r := io.TeeReader(prOut, os.Stderr)
+		io.Copy(buf, r)
+		o = buf.String()
+		wg1.Done()
+	}()
+
+	go func() {
+		buf := new(bytes.Buffer)
+		r := io.TeeReader(prErr, os.Stderr)
+		io.Copy(buf, r)
+		e = buf.String()
+		wg1.Done()
 	}()
 
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
 	if err != nil {
 		return errors.Wrap(err, "Failed to determine UA version") 
+	}
+	if len(e) > 0 {
+		s.AgentVersion = e
+	} else {
+		s.AgentVersion = o
 	}
 	
 	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
@@ -126,17 +141,25 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	// we may refactor this in case there is a safer way to identify the projects e.g. via REST API
 
 	//ToDO: we only need stdOut or stdErr, let's see where UA writes to ...
-	var wg2 sync.WaitGroup
-	wg2.Add(2)
+	prOut, stdOut := io.Pipe()
+	trOut := io.TeeReader(prOut, os.Stderr)
+	utils.Stdout(stdOut)
+
+	prErr, stdErr := io.Pipe()
+	trErr := io.TeeReader(prErr, os.Stderr)
+	utils.Stdout(stdErr)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	go func() {
-		defer wg2.Done()
-		scanLog(trOut, s, true)
+		defer wg.Done()
+		scanLog(trOut, s)
 	}()
 
 	go func() {
-		defer wg2.Done()
-		scanLog(trErr, s, true)
+		defer wg.Done()
+		scanLog(trErr, s)
 	}()
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", scanPath, "-c", configPath, "-wss.url", config.AgentURL)
 
@@ -286,16 +309,12 @@ func getProjectNameFromPackageJSON(packageJSONPath string, utils Utils) (string,
 	return projectName, nil
 }
 
-func scanLog(in io.Reader, scan *Scan, forProjects bool) {
+func scanLog(in io.Reader, scan *Scan) {
 	scanner := bufio.NewScanner(in)
 	scanner.Split(scanShortLines)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if forProjects {
-			parseForProjects(line, scan)
-		} else if len(line) > 0 {
-			scan.AgentVersion = line
-		}
+		parseForProjects(line, scan)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Entry().WithError(err).Info("failed to scan log file")
