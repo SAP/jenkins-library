@@ -133,7 +133,6 @@ func ReportSha(productName string, scan *Scan) string {
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
-
 func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport reporting.ScanReport, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
@@ -167,6 +166,7 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 
 func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 	//Now, we handle the sarif
+	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
@@ -184,6 +184,7 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 	for i := 0; i < len(alerts); i++ {
 		result := *new(format.Results)
 		id := fmt.Sprintf("%v/%v/%v", alerts[i].Type, alerts[i].Vulnerability.Name, alerts[i].Library.ArtifactID)
+		log.Entry().Debugf("Transforming alert %v into SARIF format", id)
 		result.RuleID = id
 		result.Level = alerts[i].Level
 		result.RuleIndex = i //Seems very abstract
@@ -193,8 +194,6 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alerts[i].Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}
 		result.Locations = append(result.Locations, location)
 
-		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
-
 		sarifRule := *new(format.SarifRule)
 		sarifRule.Id = id
 		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alerts[i].Vulnerability.Name, alerts[i].Library.ArtifactID)}
@@ -202,7 +201,7 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 		sarifRule.DefaultConfiguration.Level = alerts[i].Level
 		sarifRule.HelpURI = alerts[i].Vulnerability.URL
 		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alerts[i].Vulnerability.Name, alerts[i].Vulnerability.Severity, alerts[i].Library.ArtifactID, alerts[i].Library.Version, alerts[i].Vulnerability.TopFix.FixResolution, alerts[i].Vulnerability.Name, alerts[i].Vulnerability.URL), Markdown: alerts[i].ToMarkdown()}
-		
+
 		// Avoid empty descriptions to respect standard
 		if sarifRule.ShortDescription.Text == "" {
 			sarifRule.ShortDescription.Text = "None."
@@ -218,7 +217,8 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 		ruleProp.Precision = "very-high"
 		sarifRule.Properties = ruleProp
 
-		//Finalize: append the rule
+		//Finalize: append the result and the rule
+		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 	}
 	//Finalize: tool
@@ -228,7 +228,7 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 }
 
 func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
-	
+
 	reportPaths := []piperutils.Path{}
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
@@ -270,5 +270,3 @@ func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner,
 
 	return nil
 }
-
-

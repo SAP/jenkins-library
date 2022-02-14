@@ -38,27 +38,27 @@ type Message struct {
 }
 
 type Location struct {
-	PhysicalLocation ArtifactLocation   `json:"physicalLocation,omitempty"`
-	Region           Region             `json:"region,omitempty"`
+	PhysicalLocation ArtifactLocation  `json:"physicalLocation,omitempty"`
+	Region           Region            `json:"region,omitempty"`
 	LogicalLocations []LogicalLocation `json:"logicalLocations,omitempty"`
 }
 
 type ArtifactLocation struct {
-	URI string `json:"uri"`
-	Index int  `json:"index,omitempty"`
+	URI   string `json:"uri"`
+	Index int    `json:"index,omitempty"`
 }
 
 type Region struct {
-	StartLine int `json:"startLine,omitempty"`
+	StartLine   int `json:"startLine,omitempty"`
 	StartColumn int `json:"startColumn,omitempty"`
-	EndLine int `json:"EndLine,omitempty"`
-	EndColumn int `json:"EndColumn,omitempty"`
-	ByteOffset int `json:"ByteOffset,omitempty"`
-	ByteLength int `json:"ByteLength,omitempty"`
+	EndLine     int `json:"EndLine,omitempty"`
+	EndColumn   int `json:"EndColumn,omitempty"`
+	ByteOffset  int `json:"ByteOffset,omitempty"`
+	ByteLength  int `json:"ByteLength,omitempty"`
 }
 
 type LogicalLocation struct {
-	FullyQualifiedName string  `json:"fullyQualifiedName"`
+	FullyQualifiedName string `json:"fullyQualifiedName"`
 }
 
 type SarifProperties struct {
