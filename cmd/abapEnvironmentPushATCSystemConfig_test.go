@@ -66,7 +66,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
 
 --changeset
 Content-Type: application/http
@@ -125,7 +125,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
 
 --changeset
 Content-Type: application/http
@@ -199,7 +199,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
 
 --changeset--
 
@@ -240,7 +240,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
 
 --changeset--
 

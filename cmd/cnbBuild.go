@@ -53,6 +53,7 @@ type cnbBuildTelemetryData struct {
 	BuildEnv          cnbBuildTelemetryDataBuildEnv          `json:"buildEnv"`
 	Buildpacks        cnbBuildTelemetryDataBuildpacks        `json:"buildpacks"`
 	ProjectDescriptor cnbBuildTelemetryDataProjectDescriptor `json:"projectDescriptor"`
+	BuildTool         string                                 `json:"buildTool"`
 }
 
 type cnbBuildTelemetryDataBuildEnv struct {
@@ -323,7 +324,7 @@ func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryDa
 	data.ImageTag = config.ContainerImageTag
 	data.AdditionalTags = config.AdditionalTags
 	data.BindingKeys = bindingKeys
-	data.Path, _, _ = config.resolvePath(utils) // ignore error here, telemetry problems should fail the build
+	data.Path, _, _ = config.resolvePath(utils) // ignore error here, telemetry problems should not fail the build
 
 	configKeys := data.BuildEnv.KeysFromConfig
 	overallKeys := data.BuildEnv.KeysOverall
@@ -333,6 +334,9 @@ func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryDa
 	}
 	data.BuildEnv.KeysFromConfig = configKeys
 	data.BuildEnv.KeysOverall = overallKeys
+
+	buildTool, _ := getBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
+	data.BuildTool = buildTool
 
 	data.Buildpacks.FromConfig = privacy.FilterBuildpacks(config.Buildpacks)
 }
