@@ -2,16 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/yaml"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 type manifestMock struct {
@@ -1294,25 +1295,15 @@ func TestAppNameChecks(t *testing.T) {
 
 func TestMtaExtensionCredentials(t *testing.T) {
 
-	content := []byte(`'_schema-version: '3.1'
-	ID: test.ext
-	extends: test
-	parameters
-		test-credentials1: "<%= testCred1 %>"
-		test-credentials2: "<%= testCred2 %>"`)
-
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
 	filesMock.Chdir("/home/me")
-	filesMock.AddFile("mtaext1.mtaext", content)
-	filesMock.AddFile("mtaext2.mtaext", content)
-	filesMock.AddFile("mtaext3.mtaext", content)
 	fileUtils = &filesMock
 
 	_environ = func() []string {
 		return []string{
-			"MY_CRED_ENV_VAR1=******",
-			"MY_CRED_ENV_VAR2=++++++",
+			"MY_CRED_ENV_VAR1=**$0****",
+			"MY_CRED_ENV_VAR2=++$1++++",
 		}
 	}
 
@@ -1322,26 +1313,40 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	}()
 
 	t.Run("extension file does not exist", func(t *testing.T) {
-		err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
+		_, _, err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
 		assert.EqualError(t, err, "Cannot handle credentials for mta extension file 'mtaextDoesNotExist.mtaext': could not read 'mtaextDoesNotExist.mtaext'")
 	})
 
 	t.Run("credential cannot be retrieved", func(t *testing.T) {
 
-		err := handleMtaExtensionCredentials(
-			"mtaext1.mtaext",
+		filesMock.AddFile("mtaext.mtaext", []byte(
+			`'_schema-version: '3.1'
+				ID: test.ext
+				extends: test
+				parameters
+					test-credentials1: "<%= testCred1 %>"
+					test-credentials2: "<%=testCred2%>"`))
+		_, _, err := handleMtaExtensionCredentials(
+			"mtaext.mtaext",
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1NotDefined",
 				"testCred2": "myCredEnvVar2NotDefined",
 			},
 		)
-		assert.EqualError(t, err, "Cannot handle mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'/'[MY_CRED_ENV_VAR1_NOT_DEFINED MY_CRED_ENV_VAR2_NOT_DEFINED]'. Are these credentials maintained?")
+		assert.EqualError(t, err, "cannot handle mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'/'[MY_CRED_ENV_VAR1_NOT_DEFINED MY_CRED_ENV_VAR2_NOT_DEFINED]'. Are these credentials maintained?")
 	})
 
-	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {
+	t.Run("irrelevant credentials do not cause failures", func(t *testing.T) {
 
-		err := handleMtaExtensionCredentials(
-			"mtaext2.mtaext",
+		filesMock.AddFile("mtaext.mtaext", []byte(
+			`'_schema-version: '3.1'
+				ID: test.ext
+				extends: test
+				parameters
+					test-credentials1: "<%= testCred1 %>"
+					test-credentials2: "<%=testCred2%>`))
+		_, _, err := handleMtaExtensionCredentials(
+			"mtaext.mtaext",
 			map[string]interface{}{
 				"testCred1":       "myCredEnvVar1",
 				"testCred2":       "myCredEnvVar2",
@@ -1351,9 +1356,44 @@ func TestMtaExtensionCredentials(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("invalid chars in credential key name", func(t *testing.T) {
+		filesMock.AddFile("mtaext.mtaext", []byte(
+			`'_schema-version: '3.1'
+				ID: test.ext
+				extends: test
+				parameters
+					test-credentials1: "<%= testCred1 %>"
+					test-credentials2: "<%=testCred2%>`))
+		_, _, err := handleMtaExtensionCredentials("mtaext.mtaext",
+			map[string]interface{}{
+				"test.*Cred1": "myCredEnvVar1",
+			},
+		)
+		assert.EqualError(t, err, "credential key name 'test.*Cred1' contains unsupported character. Must contain only ^[-_A-Za-z0-9]+$")
+	})
+
+	t.Run("unresolved placeholders does not cause an error", func(t *testing.T) {
+		// we emit a log message, but it does not fail
+		filesMock.AddFile("mtaext-unresolved.mtaext", []byte("<%= unresolved %>"))
+		updated, containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
+		assert.True(t, containsUnresolved)
+		assert.False(t, updated)
+		assert.NoError(t, err)
+	})
+
 	t.Run("replace straight forward", func(t *testing.T) {
-		mtaFileName := "mtaext3.mtaext"
-		err := handleMtaExtensionCredentials(
+		mtaFileName := "mtaext.mtaext"
+		filesMock.AddFile(mtaFileName, []byte(
+			`'_schema-version: '3.1'
+			ID: test.ext
+			extends: test
+			parameters
+				test-credentials1: "<%= testCred1 %>"
+				test-credentials2: "<%=testCred2%>"
+				test-credentials3: "<%= testCred2%>"
+				test-credentials4: "<%=testCred2 %>"
+				test-credentials5: "<%=  testCred2    %>"`))
+		updated, containsUnresolved, err := handleMtaExtensionCredentials(
 			mtaFileName,
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1",
@@ -1366,8 +1406,14 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				assert.Fail(t, "Cannot read mta extension file: %v", e)
 			}
 			content := string(b)
-			assert.Contains(t, content, "test-credentials1: \"******\"")
-			assert.Contains(t, content, "test-credentials2: \"++++++\"")
+			assert.Contains(t, content, "test-credentials1: \"**$0****\"")
+			assert.Contains(t, content, "test-credentials2: \"++$1++++\"")
+			assert.Contains(t, content, "test-credentials3: \"++$1++++\"")
+			assert.Contains(t, content, "test-credentials4: \"++$1++++\"")
+			assert.Contains(t, content, "test-credentials5: \"++$1++++\"")
+
+			assert.True(t, updated)
+			assert.False(t, containsUnresolved)
 		}
 	})
 }

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -42,6 +41,12 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 }
 
 func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+	binfmtSupported, _ := docker.IsBinfmtMiscSupportedByHost(fileUtils)
+
+	if !binfmtSupported && len(config.TargetArchitectures) > 0 {
+		log.Entry().Warning("Be aware that the host doesn't support binfmt_misc and thus multi archtecture docker builds might not be possible")
+	}
+
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
@@ -129,7 +134,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
 					buildOpts := append(config.BuildOptions, dest...)
-					err = runKaniko(file, buildOpts, execRunner)
+					err = runKaniko(file, buildOpts, execRunner, fileUtils)
 					if err != nil {
 						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 					}
@@ -171,14 +176,18 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	// no support for building multiple containers
-	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner)
+	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner, fileUtils)
 }
 
-func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner) error {
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", filepath.Dir(dockerFilepath)}
+func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils) error {
+	cwd, err := fileUtils.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
-	err := execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
+	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")

@@ -20,6 +20,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
+	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
@@ -32,7 +33,7 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
 )
 
@@ -177,8 +178,14 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	binaries := []string{}
 
-	for _, architecture := range config.TargetArchitectures {
-		binary, err := runGolangBuildPerArchitecture(config, utils, ldflags, architecture)
+	platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
+
+	if err != nil {
+		return err
+	}
+
+	for _, platform := range platforms {
+		binary, err := runGolangBuildPerArchitecture(config, utils, ldflags, platform)
 
 		if err != nil {
 			return err
@@ -393,12 +400,11 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	return generatedLdflags.String(), nil
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags, architecture string) (string, error) {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) (string, error) {
 	var binaryName string
 
 	envVars := os.Environ()
-	goos, goarch := splitTargetArchitecture(architecture)
-	envVars = append(envVars, fmt.Sprintf("GOOS=%v", goos), fmt.Sprintf("GOARCH=%v", goarch))
+	envVars = append(envVars, fmt.Sprintf("GOOS=%v", architecture.OS), fmt.Sprintf("GOARCH=%v", architecture.Arch))
 
 	if !config.CgoEnabled {
 		envVars = append(envVars, "CGO_ENABLED=0")
@@ -408,10 +414,10 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	buildOptions := []string{"build"}
 	if len(config.Output) > 0 {
 		fileExtension := ""
-		if goos == "windows" {
+		if architecture.OS == "windows" {
 			fileExtension = ".exe"
 		}
-		binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension)
+		binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, architecture.OS, architecture.Arch, fileExtension)
 		buildOptions = append(buildOptions, "-o", binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
@@ -423,16 +429,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)
 		log.SetErrorCategory(log.ErrorBuild)
-		return "", fmt.Errorf("failed to run build for %v.%v: %w", goos, goarch, err)
+		return "", fmt.Errorf("failed to run build for %v.%v: %w", architecture.OS, architecture.Arch, err)
 	}
 	return binaryName, nil
-}
-
-func splitTargetArchitecture(architecture string) (string, string) {
-	// architecture expected to be in format os,arch due to possibleValues check of step
-
-	architectureParts := strings.Split(architecture, ",")
-	return architectureParts[0], architectureParts[1]
 }
 
 // lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
