@@ -248,24 +248,24 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 }
 
 func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner, repository string, assignees []string) error {
-	log.Entry().Debug("Creating/updating GitHub issues with scan results")
-	alertArray := *alerts
-	for i := 0; i < len(alertArray); i++ {
-		alert := alertArray[i]
+	for i := 0; i < len(*alerts); i++ {
+		alert := (*alerts)[i]
+		title := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
+		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v", title)
 		markdownReport := alert.ToMarkdown()
 		options := piperGithub.CreateIssueOptions{
 			Token:          token,
 			APIURL:         APIURL,
 			Owner:          owner,
 			Repository:     repository,
-			Title:          fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID),
+			Title:          title,
 			Body:           []byte(markdownReport),
 			Assignees:      assignees,
 			UpdateExisting: true,
 		}
 		err := piperGithub.CreateIssue(&options)
 		if err != nil {
-			return errors.Wrapf(err, "failed to upload WhiteSource result for %v into GitHub issue", alert.Vulnerability.Name)
+			return errors.Wrapf(err, "Failed to upload WhiteSource result for %v into GitHub issue", alert.Vulnerability.Name)
 		}
 	}
 
