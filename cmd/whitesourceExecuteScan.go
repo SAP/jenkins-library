@@ -583,13 +583,13 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 			ws.CreateGithubResultIssues(scan, &allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees)
 		}
 
-		scanReport := ws.CreateCustomVulnerabilityReport(config.ProductName, scan, allAlerts, cvssSeverityLimit)
+		scanReport := ws.CreateCustomVulnerabilityReport(config.ProductName, scan, &allAlerts, cvssSeverityLimit)
 		reportPaths, err = ws.WriteCustomVulnerabilityReports(config.ProductName, scan, scanReport, piperutils.Files{})
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
 
-		sarif := ws.CreateSarifResultFile(scan, allAlerts)
+		sarif := ws.CreateSarifResultFile(scan, &allAlerts)
 		reportPaths, err = ws.WriteSarifFile(sarif, piperutils.Files{})
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))

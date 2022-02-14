@@ -17,12 +17,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts []Alert, cvssSeverityLimit float64) reporting.ScanReport {
-	severe, _ := CountSecurityVulnerabilities(&alerts, cvssSeverityLimit)
+func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]Alert, cvssSeverityLimit float64) reporting.ScanReport {
+	severe, _ := CountSecurityVulnerabilities(alerts, cvssSeverityLimit)
 
 	// sort according to vulnerability severity
 	sort.Slice(alerts, func(i, j int) bool {
-		return vulnerabilityScore(alerts[i]) > vulnerabilityScore(alerts[j])
+		return vulnerabilityScore((*alerts)[i]) > vulnerabilityScore((*alerts)[j])
 	})
 
 	projectNames := scan.ScannedProjectNames()
@@ -34,7 +34,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts []Al
 			{Description: "Filtered project names", Details: strings.Join(projectNames, ", ")},
 		},
 		Overview: []reporting.OverviewRow{
-			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(alerts))},
+			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len((*alerts)))},
 			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
 		},
 		SuccessfulScan: severe == 0,
@@ -60,7 +60,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts []Al
 		CounterHeader: "Entry #",
 	}
 
-	for _, alert := range alerts {
+	for _, alert := range (*alerts) {
 		var score float64
 		var scoreStyle reporting.ColumnStyle = reporting.Yellow
 		if isSevereVulnerability(alert, cvssSeverityLimit) {
@@ -164,7 +164,7 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 	return reportPaths, nil
 }
 
-func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
+func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
@@ -181,26 +181,27 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 	tool.Driver.InformationUri = "https://whitesource.atlassian.net/wiki/spaces/WD/pages/804814917/Unified+Agent+Overview"
 
 	// Handle results/vulnerabilities
-	for i := 0; i < len(alerts); i++ {
+	for i := 0; i < len(*alerts); i++ {
+		alert := (*alerts)[i]
 		result := *new(format.Results)
-		id := fmt.Sprintf("%v/%v/%v", alerts[i].Type, alerts[i].Vulnerability.Name, alerts[i].Library.ArtifactID)
+		id := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
 		log.Entry().Debugf("Transforming alert %v into SARIF format", id)
 		result.RuleID = id
-		result.Level = alerts[i].Level
+		result.Level = alert.Level
 		result.RuleIndex = i //Seems very abstract
-		result.Message = format.Message{Text: alerts[i].Vulnerability.Description}
-		result.Level = alerts[i].Level
-		result.AnalysisTarget = format.ArtifactLocation{URI: alerts[i].Library.Filename, Index: 0}
-		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alerts[i].Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}
+		result.Message = format.Message{Text: alert.Vulnerability.Description}
+		result.Level = alert.Level
+		result.AnalysisTarget = format.ArtifactLocation{URI: alert.Library.Filename, Index: 0}
+		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)
 		sarifRule.Id = id
-		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alerts[i].Vulnerability.Name, alerts[i].Library.ArtifactID)}
-		sarifRule.FullDescription = format.Message{Text: alerts[i].Vulnerability.Description}
-		sarifRule.DefaultConfiguration.Level = alerts[i].Level
-		sarifRule.HelpURI = alerts[i].Vulnerability.URL
-		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alerts[i].Vulnerability.Name, alerts[i].Vulnerability.Severity, alerts[i].Library.ArtifactID, alerts[i].Library.Version, alerts[i].Vulnerability.TopFix.FixResolution, alerts[i].Vulnerability.Name, alerts[i].Vulnerability.URL), Markdown: alerts[i].ToMarkdown()}
+		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)}
+		sarifRule.FullDescription = format.Message{Text: alert.Vulnerability.Description}
+		sarifRule.DefaultConfiguration.Level = alert.Level
+		sarifRule.HelpURI = alert.Vulnerability.URL
+		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alert.Vulnerability.Name, alert.Vulnerability.Severity, alert.Library.ArtifactID, alert.Library.Version, alert.Vulnerability.TopFix.FixResolution, alert.Vulnerability.Name, alert.Vulnerability.URL), Markdown: alert.ToMarkdown()}
 
 		// Avoid empty descriptions to respect standard
 		if sarifRule.ShortDescription.Text == "" {
@@ -211,9 +212,9 @@ func CreateSarifResultFile(scan *Scan, alerts []Alert) *format.SARIF {
 		}
 
 		var ruleProp *format.SarifRuleProperties
-		ruleProp.Tags = append(ruleProp.Tags, alerts[i].Type)
-		ruleProp.Tags = append(ruleProp.Tags, alerts[i].Description)
-		ruleProp.Tags = append(ruleProp.Tags, alerts[i].Library.ArtifactID)
+		ruleProp.Tags = append(ruleProp.Tags, alert.Type)
+		ruleProp.Tags = append(ruleProp.Tags, alert.Description)
+		ruleProp.Tags = append(ruleProp.Tags, alert.Library.ArtifactID)
 		ruleProp.Precision = "very-high"
 		sarifRule.Properties = ruleProp
 
