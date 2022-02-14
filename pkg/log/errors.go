@@ -16,6 +16,7 @@ const (
 )
 
 var errorCategory ErrorCategory = ErrorUndefined
+var fatalError []byte
 
 func (e ErrorCategory) String() string {
 	return [...]string{
@@ -62,4 +63,14 @@ func SetErrorCategory(category ErrorCategory) {
 // GetErrorCategory retrieves the error category which is currently known to the execution of a step
 func GetErrorCategory() ErrorCategory {
 	return errorCategory
+}
+
+// SetFatalErrorDetail sets the fatal error to be stored
+func SetFatalErrorDetail(error []byte) {
+	fatalError = error
+}
+
+// GetFatalErrorDetail retrieves the error which is currently known to the execution of a step
+func GetFatalErrorDetail() []byte {
+	return fatalError
 }
