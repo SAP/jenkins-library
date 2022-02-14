@@ -100,10 +100,10 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		defer wg.Done()
 		scanLog(trOut, s, false)
 	}()
-	
+
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
-	if err == nil {
-		return err
+	if err != nil {
+		return errors.Wrap(err, "Failed to determine UA version") 
 	}
 	
 	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
@@ -126,15 +126,16 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	// we may refactor this in case there is a safer way to identify the projects e.g. via REST API
 
 	//ToDO: we only need stdOut or stdErr, let's see where UA writes to ...
-	wg.Add(2)
+	var wg2 sync.WaitGroup
+	wg2.Add(2)
 
 	go func() {
-		defer wg.Done()
+		defer wg2.Done()
 		scanLog(trOut, s, true)
 	}()
 
 	go func() {
-		defer wg.Done()
+		defer wg2.Done()
 		scanLog(trErr, s, true)
 	}()
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", scanPath, "-c", configPath, "-wss.url", config.AgentURL)
@@ -292,7 +293,7 @@ func scanLog(in io.Reader, scan *Scan, forProjects bool) {
 		line := scanner.Text()
 		if forProjects {
 			parseForProjects(line, scan)
-		} else {
+		} else if len(line) > 0 {
 			scan.AgentVersion = line
 		}
 	}
