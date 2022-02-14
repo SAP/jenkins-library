@@ -91,24 +91,23 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	utils.Stderr(pwErr)
 
 	var e, o string
-
 	var wg1 sync.WaitGroup
 	wg1.Add(2)
 
 	go func() {
+		defer wg1.Done()
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prOut, os.Stderr)
 		io.Copy(buf, r)
 		o = buf.String()
-		wg1.Done()
 	}()
 
 	go func() {
+		defer wg1.Done()
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prErr, os.Stderr)
 		io.Copy(buf, r)
 		e = buf.String()
-		wg1.Done()
 	}()
 
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
