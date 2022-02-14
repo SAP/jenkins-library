@@ -76,7 +76,6 @@ func ConfigCommand() *cobra.Command {
 }
 
 func getDockerImageValue(stepName string) (string, error) {
-
 	configOptions.contextConfig = true
 	configOptions.stepName = stepName
 	stepConfig, err := getConfig()
@@ -93,38 +92,60 @@ func getDockerImageValue(stepName string) (string, error) {
 	return dockerImageValue, nil
 }
 
+func getBuildToolFromStageConfig(stepName string) (string, error) {
+	configOptions.contextConfig = true
+	configOptions.stepName = stepName
+	stageConfig, err := getStageConfig()
+	if err != nil {
+		return "", err
+	}
+
+	buildTool, ok := stageConfig.Config["buildTool"].(string)
+	if !ok {
+		log.Entry().Infof("Config value of %v to compare with is not a string", stageConfig.Config["buildTool"])
+	}
+
+	return buildTool, nil
+}
+
+func getStageConfig() (config.StepConfig, error) {
+	myConfig := config.Config{}
+	stepConfig := config.StepConfig{}
+	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
+
+	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+		}
+		customConfig = nil
+	}
+
+	defaultConfig := []io.ReadCloser{}
+	for _, f := range GeneralConfig.DefaultConfig {
+		fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
+		// only create error for non-default values
+		if err != nil && f != ".pipeline/defaults.yaml" {
+			return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+		}
+		if err == nil {
+			defaultConfig = append(defaultConfig, fc)
+		}
+	}
+
+	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.stageConfigAcceptedParameters, GeneralConfig.StageName)
+}
+
 func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+	var err error
 
 	if configOptions.stageConfig {
-		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-
-		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
-			}
-			customConfig = nil
-		}
-
-		defaultConfig := []io.ReadCloser{}
-		for _, f := range GeneralConfig.DefaultConfig {
-			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
-			// only create error for non-default values
-			if err != nil && f != ".pipeline/defaults.yaml" {
-				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
-			}
-			if err == nil {
-				defaultConfig = append(defaultConfig, fc)
-			}
-		}
-
-		stepConfig, err = myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.stageConfigAcceptedParameters, GeneralConfig.StageName)
+		stepConfig, err = getStageConfig()
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
-
 	} else {
 		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
 		if GeneralConfig.MetaDataResolver == nil {
