@@ -558,7 +558,7 @@ spec:
         default: '.*Merge pull request #(\\d+) from.*'
       - name: buildTool
         type: string
-        description: "Scan type used for the step which can be `'maven'`, `'pip'`"
+        description: "Scan type used for the step which can be `'maven'`, `'pip'` or `'gradle'`"
         scope:
           - GENERAL
           - PARAMETERS

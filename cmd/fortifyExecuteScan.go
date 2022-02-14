@@ -831,6 +831,8 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
 
+	} else if config.BuildTool == "gradle" {
+		// todo :kortelyov
 	} else {
 		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
