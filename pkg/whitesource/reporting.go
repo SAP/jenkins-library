@@ -21,7 +21,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]A
 	severe, _ := CountSecurityVulnerabilities(alerts, cvssSeverityLimit)
 
 	// sort according to vulnerability severity
-	sort.Slice(alerts, func(i, j int) bool {
+	sort.Slice(*alerts, func(i, j int) bool {
 		return vulnerabilityScore((*alerts)[i]) > vulnerabilityScore((*alerts)[j])
 	})
 
