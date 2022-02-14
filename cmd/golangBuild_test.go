@@ -11,7 +11,9 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/mod/modfile"
@@ -603,7 +605,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{}
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
@@ -621,7 +623,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{BuildFlags: []string{"--flag1", "val1", "--flag2", "val2"}, Output: "testBin", Packages: []string{"./test/.."}}
 		utils := newGolangBuildTestsUtils()
 		ldflags := "-X test=test"
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
@@ -638,7 +640,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{Output: "testBin"}
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
-		architecture := "windows,amd64"
+		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
@@ -653,7 +655,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("execution error")}
 		ldflags := ""
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		_, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
