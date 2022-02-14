@@ -211,12 +211,12 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 			sarifRule.FullDescription.Text = "None."
 		}
 
-		var ruleProp *format.SarifRuleProperties
+		ruleProp := *new(format.SarifRuleProperties)
 		ruleProp.Tags = append(ruleProp.Tags, alert.Type)
 		ruleProp.Tags = append(ruleProp.Tags, alert.Description)
 		ruleProp.Tags = append(ruleProp.Tags, alert.Library.ArtifactID)
 		ruleProp.Precision = "very-high"
-		sarifRule.Properties = ruleProp
+		sarifRule.Properties = &ruleProp
 
 		//Finalize: append the result and the rule
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
