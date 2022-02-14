@@ -85,14 +85,27 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	}
 
 	// Fetch version of UA
-	versionBytes := &bytes.Buffer{}
-	utils.Stdout(versionBytes)
+	prOut, stdOut := io.Pipe()
+	trOut := io.TeeReader(prOut, os.Stderr)
+	utils.Stdout(stdOut)
+
+	prErr, stdErr := io.Pipe()
+	trErr := io.TeeReader(prErr, os.Stderr)
+	utils.Stdout(stdErr)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		scanLog(trOut, s, false)
+	}()
+	
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
 	if err == nil {
 		return err
 	}
-	s.AgentVersion = versionBytes.String()
-
+	
 	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
 
 	// ToDo: check if this is required
@@ -113,27 +126,17 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	// we may refactor this in case there is a safer way to identify the projects e.g. via REST API
 
 	//ToDO: we only need stdOut or stdErr, let's see where UA writes to ...
-	prOut, stdOut := io.Pipe()
-	trOut := io.TeeReader(prOut, os.Stderr)
-	utils.Stdout(stdOut)
-
-	prErr, stdErr := io.Pipe()
-	trErr := io.TeeReader(prErr, os.Stderr)
-	utils.Stdout(stdErr)
-
-	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func() {
 		defer wg.Done()
-		scanLog(trOut, s)
+		scanLog(trOut, s, true)
 	}()
 
 	go func() {
 		defer wg.Done()
-		scanLog(trErr, s)
+		scanLog(trErr, s, true)
 	}()
-
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", scanPath, "-c", configPath, "-wss.url", config.AgentURL)
 
 	if err := removeJre(javaPath, utils); err != nil {
@@ -282,12 +285,16 @@ func getProjectNameFromPackageJSON(packageJSONPath string, utils Utils) (string,
 	return projectName, nil
 }
 
-func scanLog(in io.Reader, scan *Scan) {
+func scanLog(in io.Reader, scan *Scan, forProjects bool) {
 	scanner := bufio.NewScanner(in)
 	scanner.Split(scanShortLines)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parseForProjects(line, scan)
+		if forProjects {
+			parseForProjects(line, scan)
+		} else {
+			scan.AgentVersion = line
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Entry().WithError(err).Info("failed to scan log file")
