@@ -96,6 +96,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		t.Parallel()
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(validConfiguration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -117,6 +118,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -138,6 +140,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -158,6 +161,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -178,6 +182,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -323,6 +328,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		t.Parallel()
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(validConfiguration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -346,6 +352,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -369,6 +376,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -391,6 +399,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
+		runnerMock.expectedYaml = expectedYaml
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
 		assert.NoError(t, err)
@@ -525,11 +534,74 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 }
 
+func TestRunGitopsUpdateDeploymentWithKustomize(t *testing.T) {
+	var validConfiguration = &gitopsUpdateDeploymentOptions{
+		BranchName:            "main",
+		CommitMessage:         "This is the commit message",
+		ServerURL:             "https://github.com",
+		Username:              "admin3",
+		Password:              "validAccessToken",
+		FilePath:              "kustomization.yaml",
+		ContainerRegistryURL:  "https://myregistry.com",
+		ContainerImageNameTag: "registry/containers/myFancyContainer:1337",
+		Tool:                  "kustomize",
+		DeploymentName:        "myFancyDeployment",
+	}
+
+	t.Parallel()
+	t.Run("successful run", func(t *testing.T) {
+		t.Parallel()
+		gitUtilsMock := &gitUtilsMock{}
+		runnerMock := &gitOpsExecRunnerMock{}
+		fsMock := &filesMock{}
+		runnerMock.expectedYaml = expectedKustomize
+
+		err := runGitopsUpdateDeployment(validConfiguration, runnerMock, gitUtilsMock, fsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, validConfiguration.BranchName, gitUtilsMock.changedBranch)
+		assert.Equal(t, expectedKustomize, gitUtilsMock.savedFile)
+		assert.Equal(t, "This is the commit message", gitUtilsMock.commitMessage)
+		assert.Equal(t, "kustomize", runnerMock.executable)
+		assert.Equal(t, "edit", runnerMock.params[0])
+		assert.Equal(t, "set", runnerMock.params[1])
+		assert.Equal(t, "image", runnerMock.params[2])
+		assert.Equal(t, "myFancyDeployment=registry/containers/myFancyContainer:1337", runnerMock.params[3])
+	})
+
+	t.Run("error on kustomize execution", func(t *testing.T) {
+		t.Parallel()
+		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, &filesMock{})
+		assert.EqualError(t, err, "failed to apply kustomize command: failed to execute kustomize command: error happened")
+	})
+
+	t.Run("missing FilePath", func(t *testing.T) {
+		t.Parallel()
+		var configuration = *validConfiguration
+		configuration.FilePath = ""
+
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
+		assert.EqualError(t, err, "missing required fields for kustomize: the following parameters are necessary for kustomize: [filePath]")
+	})
+
+	t.Run("missing DeploymentName", func(t *testing.T) {
+		t.Parallel()
+		var configuration = *validConfiguration
+		configuration.DeploymentName = ""
+
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
+		assert.EqualError(t, err, "missing required fields for kustomize: the following parameters are necessary for kustomize: [deploymentName]")
+	})
+}
+
 type gitOpsExecRunnerMock struct {
 	out                 io.Writer
 	params              []string
 	executable          string
 	failOnRunExecutable bool
+	dir                 string
+	expectedYaml        string
 }
 
 func (e *gitOpsExecRunnerMock) Stdout(out io.Writer) {
@@ -540,13 +612,17 @@ func (gitOpsExecRunnerMock) Stderr(io.Writer) {
 	panic("implement me")
 }
 
+func (e *gitOpsExecRunnerMock) SetDir(d string) {
+	e.dir = d
+}
+
 func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string) error {
 	if e.failOnRunExecutable {
 		return errors.New("error happened")
 	}
 	e.executable = executable
 	e.params = params
-	_, err := e.out.Write([]byte(expectedYaml))
+	_, err := e.out.Write([]byte(e.expectedYaml))
 	return err
 }
 
@@ -602,19 +678,19 @@ func (v *gitUtilsMock) ChangeBranch(branchName string) error {
 	return nil
 }
 
-func (v *gitUtilsMock) CommitSingleFile(_ string, commitMessage string, _ string) (plumbing.Hash, error) {
+func (v *gitUtilsMock) CommitSingleFile(newFile string, commitMessage string, _ string) (plumbing.Hash, error) {
 	if v.failOnCommit {
 		return [20]byte{}, errors.New("error on commit")
 	}
 
 	v.commitMessage = commitMessage
 
-	matches, _ := piperutils.Files{}.Glob(v.temporaryDirectory + "/dir1/dir2/depl.yaml")
-	if len(matches) < 1 {
-		return [20]byte{}, errors.New("could not find file")
+	filepath := filepath.Join(v.temporaryDirectory, newFile)
+	fileContent, err := piperutils.Files{}.FileRead(filepath)
+	if err != nil {
+		return [20]byte{}, errors.New("could not find file " + filepath)
 	}
-	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
-	v.savedFile = string(fileRead)
+	v.savedFile = string(fileContent)
 	return [20]byte{123}, nil
 }
 
@@ -630,17 +706,73 @@ func (v *gitUtilsMock) PlainClone(_, _, _, directory string) error {
 		return errors.New("error on clone")
 	}
 	v.temporaryDirectory = directory
-	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
 	err := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
 	if err != nil {
 		return err
 	}
-	err = piperutils.Files{}.FileWrite(filePath, []byte(existingYaml), 0755)
+	err = piperutils.Files{}.FileWrite(filepath.Join(directory, "dir1/dir2/depl.yaml"), []byte(existingYaml), 0755)
+	if err != nil {
+		return err
+	}
+	err = piperutils.Files{}.FileWrite(filepath.Join(directory, "kustomization.yaml"), []byte(existingKustomize), 0755)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-var existingYaml = "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: myFancyApp\n  labels:\n    tier: application\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      run: myContainer\n  template:\n    metadata:\n      labels:\n        run: myContainer\n    spec:\n      containers:\n      - image: myregistry.com/myFancyContainer:1336\n        name: myContainer"
-var expectedYaml = "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: myFancyApp\n  labels:\n    tier: application\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      run: myContainer\n  template:\n    metadata:\n      labels:\n        run: myContainer\n    spec:\n      containers:\n      - image: myregistry.com/myFancyContainer:1337\n        name: myContainer"
+var existingYaml = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myFancyApp
+  labels:
+    tier: application
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      run: myContainer
+  template:
+    metadata:
+      labels:
+        run: myContainer
+    spec:
+      containers:
+      - image: myregistry.com/myFancyContainer:1336
+        name: myContainer`
+
+var expectedYaml = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myFancyApp
+  labels:
+    tier: application
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      run: myContainer
+  template:
+    metadata:
+      labels:
+        run: myContainer
+    spec:
+      containers:
+      - image: myregistry.com/myFancyContainer:1337
+        name: myContainer`
+
+var existingKustomize = `apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+- name: myFancyDeployment
+  newTag: "0"
+`
+var expectedKustomize = `apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+- name: myFancyDeployment
+  newName: registry/containers/myFancyContainer
+  newTag: "1337"
+`
