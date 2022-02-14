@@ -34,6 +34,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	details["category"] = GetErrorCategory().String()
 	details["result"] = "failure"
 	details["correlationId"] = f.CorrelationID
+	details["time"] = entry.Time
 
 	fileName := "errorDetails.json"
 	if details["stepName"] != nil {
@@ -44,10 +45,12 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	errDetails, _ := json.Marshal(&details)
 	// Logging information needed for error reporting -  do not modify.
 	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
+	// Sets the fatal error details in the logging framework to be consumed in the stepTelemetryData
+	SetFatalErrorDetail(errDetails)
 	_, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		// do not overwrite file in case it already exists
-		// this helps to report the first error which occured - instead of the last one
+		// this helps to report the first error which occurred - instead of the last one
 		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
 
