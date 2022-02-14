@@ -251,7 +251,6 @@ func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner,
 	for i := 0; i < len(*alerts); i++ {
 		alert := (*alerts)[i]
 		title := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
-		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v", title)
 		markdownReport := alert.ToMarkdown()
 		options := piperGithub.CreateIssueOptions{
 			Token:          token,
@@ -263,6 +262,8 @@ func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner,
 			Assignees:      assignees,
 			UpdateExisting: true,
 		}
+
+		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v in org %v and repo %v", title, owner, repository)
 		err := piperGithub.CreateIssue(&options)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to upload WhiteSource result for %v into GitHub issue", alert.Vulnerability.Name)
