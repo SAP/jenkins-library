@@ -578,6 +578,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
 		}
+		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
 
 		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			ws.CreateGithubResultIssues(scan, &allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees)
