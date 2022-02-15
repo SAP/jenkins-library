@@ -68,11 +68,14 @@ type ClientOptions struct {
 	TrustedCerts              []string
 }
 
-// TransportWrapper is a wrapper for central logging capabilities
+// TransportWrapper is a wrapper for central roundtrip capabilities
 type TransportWrapper struct {
 	Transport                http.RoundTripper
 	doLogRequestBodyOnDebug  bool
 	doLogResponseBodyOnDebug bool
+	username                  string
+	password                  string
+	token                     string
 }
 
 // UploadRequestData encapsulates the parameters for calling uploader.Upload()
@@ -265,6 +268,9 @@ func (c *Client) initialize() *http.Client {
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+		token: c.token,
+		username: c.username,
+		password: c.password,
 	}
 
 	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
@@ -328,7 +334,18 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	req = req.WithContext(ctx)
 
 	t.logRequest(req)
+
+	if len(t.username) > 0 || len(t.password) > 0 {
+		req.SetBasicAuth(t.username, t.password)
+		log.Entry().Debug("Using Basic Authentication ****/****")
+	}
+
+	if len(t.token) > 0 {
+		req.Header.Add("Authorization", t.token)
+		log.Entry().Debug("Using Token Authentication ****")
+	}
 	resp, err := t.Transport.RoundTrip(req)
+	
 	t.logResponse(resp)
 
 	return resp, err
@@ -423,15 +440,6 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		for _, cookie := range cookies {
 			request.AddCookie(cookie)
 		}
-	}
-
-	if len(c.username) > 0 || len(c.password) > 0 {
-		request.SetBasicAuth(c.username, c.password)
-		c.logger.Debug("Using Basic Authentication ****/****")
-	}
-
-	if len(c.token) > 0 {
-		request.Header.Add("Authorization", c.token)
 	}
 
 	return request, nil
@@ -549,6 +557,9 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					},
 					doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+					token: c.token,
+					username: c.username,
+					password: c.password,
 				}
 
 				log.Entry().Infof("%v appended to root CA successfully", certificate)
@@ -583,6 +594,9 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				},
 				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				token: c.token,
+				username: c.username,
+				password: c.password,
 			}
 			log.Entry().Infof("%v appended to root CA successfully", certificate)
 		}
