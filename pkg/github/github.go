@@ -42,7 +42,7 @@ type CreateIssueOptions struct {
 func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
 	httpClient := piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{
-		Token: fmt.Sprintf("Token " + token),
+		Token: fmt.Sprintf("Bearer %v" + token),
 		TransportSkipVerification: true,
 		TrustedCerts: trustedCerts,
 		DoLogRequestBodyOnDebug: true,
