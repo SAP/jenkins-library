@@ -68,12 +68,20 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 		if err := helmExecutor.RunHelmPackage(); err != nil {
 			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
-	case "push":
+	case "publish":
 		if err := helmExecutor.RunHelmPush(); err != nil {
 			return fmt.Errorf("failed to execute helm push: %v", err)
 		}
 	default:
-		// todo implement logic like golangBuild(all command add to slice)
+		if err := helmExecutor.RunHelmLint(); err != nil {
+			return fmt.Errorf("failed to execute helm lint: %v", err)
+		}
+		if err := helmExecutor.RunHelmPackage(); err != nil {
+			return fmt.Errorf("failed to execute helm package: %v", err)
+		}
+		if err := helmExecutor.RunHelmPush(); err != nil {
+			return fmt.Errorf("failed to execute helm push: %v", err)
+		}
 	}
 
 	return nil

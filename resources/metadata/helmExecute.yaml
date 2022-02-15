@@ -233,7 +233,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
         possibleValues:
           - upgrade
           - install
@@ -241,7 +240,7 @@ spec:
           - test
           - uninstall
           - package
-          - push
+          - publish
       - name: packageVersion
         type: string
         description: set the version on the chart to this semver version
