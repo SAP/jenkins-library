@@ -341,7 +341,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 func createReportName(workspace, reportFileNameTemplate string) string {
 	regExpFileName := regexp.MustCompile(`[^\w\d]`)
 	timeStamp, _ := time.Now().Local().MarshalText()
-	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
+	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllLiteralString(string(timeStamp), "_")))
 }
 
 func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {

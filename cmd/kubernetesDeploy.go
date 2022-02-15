@@ -289,7 +289,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 
 	// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
-	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, fullImage)))
+	appTemplate = []byte(re.ReplaceAllLiteralString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, fullImage)))
 
 	err = utils.FileWrite(config.AppTemplate, appTemplate, 0700)
 	if err != nil {

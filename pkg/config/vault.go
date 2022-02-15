@@ -353,7 +353,7 @@ func convertEnvVar(s string) string {
 	if err != nil {
 		log.Entry().Debugf("could not compile regex of convertEnvVar: %v", err)
 	}
-	replacedString := reg.ReplaceAllString(r, "")
+	replacedString := reg.ReplaceAllLiteralString(r, "")
 	return replacedString
 }
 
