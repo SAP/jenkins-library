@@ -54,6 +54,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	//support either image or containerImageName and containerImageTag
 	containerImageName := ""
 	containerImageTag := ""
+	helmValues := helmValues{}
 
 	if len(config.Image) > 0 {
 		containerImageName, containerImageTag, err = splitFullImageName(config.Image)
@@ -89,11 +90,13 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		}
 	}
 
-	var secretsData string
+	helmValues.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+	helmValues.add("image.tag", containerImageTag)
+
 	if len(config.ContainerRegistryUser) == 0 && len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
-			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+			helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
@@ -124,7 +127,9 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
 
 		// pass secret in helm default template way and in Piper backward compatible way
-		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
+		helmValues.add("secret.name", config.ContainerRegistrySecret)
+		helmValues.add("secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
+		helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 	}
 
 	// Deprecated functionality
@@ -133,9 +138,8 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	// Due to the way helm is implemented it is currently not possible to overwrite a part of a list:
 	// see: https://github.com/helm/helm/issues/5711#issuecomment-636177594
 	// Recommended way is to use a custom values file which contains the appropriate data
-	ingressHosts := ""
 	for i, h := range config.IngressHosts {
-		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
+		helmValues.add(fmt.Sprintf("ingress.hosts[%v]", i), h)
 	}
 
 	upgradeParams := []string{
@@ -152,8 +156,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		upgradeParams,
 		"--install",
 		"--namespace", config.Namespace,
-		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
+		"--set", helmValues.marshal(),
 	)
 
 	if config.ForceUpdates {
@@ -309,6 +312,33 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil
+}
+
+type helmValues []struct {
+	key, value string
+}
+
+func (values *helmValues) add(key, value string) {
+	*values = append(*values, struct {
+		key   string
+		value string
+	}{
+		key:   key,
+		value: value,
+	})
+}
+
+func (values helmValues) marshal() string {
+	builder := strings.Builder{}
+	for idx, item := range values {
+		if idx > 0 {
+			builder.WriteString(",")
+		}
+		builder.WriteString(item.key)
+		builder.WriteString("=")
+		builder.WriteString(item.value)
+	}
+	return builder.String()
 }
 
 func getTempDirForKubeCtlJson() string {
