@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v32/github"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 type githubCreateIssueService interface {
@@ -48,7 +49,9 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 		DoLogResponseBodyOnDebug: true,
 	})
 	stdClient := httpClient.StandardClient()
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, stdClient)
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(ctx, ts)
 
 	if !strings.HasSuffix(apiURL, "/") {
 		apiURL += "/"
@@ -66,7 +69,7 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 		return ctx, nil, err
 	}
 
-	client := github.NewClient(stdClient)
+	client := github.NewClient(tc)
 
 	client.BaseURL = baseURL
 	client.UploadURL = uploadTargetURL

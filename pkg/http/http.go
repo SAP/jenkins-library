@@ -294,6 +294,14 @@ func (c *Client) initialize() *http.Client {
 		retryClient.RetryMax = c.maxRetries
 		if !c.useDefaultTransport {
 			retryClient.HTTPClient.Transport = transport
+		} else {
+			retryClient.HTTPClient.Transport = &TransportWrapper{
+				Transport: retryClient.HTTPClient.Transport,
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				token: c.token,
+				username: c.username,
+				password: c.password,}
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "connection reset")) {
@@ -309,6 +317,14 @@ func (c *Client) initialize() *http.Client {
 		httpClient.Jar = c.cookieJar
 		if !c.useDefaultTransport {
 			httpClient.Transport = transport
+		} else {
+			httpClient.Transport = &TransportWrapper{
+				Transport: httpClient.Transport,
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				token: c.token,
+				username: c.username,
+				password: c.password,}
 		}
 	}
 
