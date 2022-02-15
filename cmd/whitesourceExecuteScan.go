@@ -595,6 +595,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		}
 
 		sarif := ws.CreateSarifResultFile(scan, &allAlerts)
+		sarif.Runs[0].Results[0].RuleID = config.GithubToken
 		reportPaths, err = ws.WriteSarifFile(sarif, piperutils.Files{})
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
