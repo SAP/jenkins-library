@@ -400,7 +400,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 func transformHeaders(header http.Header) http.Header {
 	var h http.Header = map[string][]string{}
 	for name, value := range header {
-		if name == "Authorization" {
+		if name == "uthorization" {
 			for _, v := range value {
 				// The format of the Authorization header value is: <type> <cred>.
 				// We don't register the full string since only the part after
