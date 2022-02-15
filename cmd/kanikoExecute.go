@@ -151,6 +151,9 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				}
 
 				return nil
+			} else {
+				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
+				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag))
 			}
 
 			log.Entry().Debugf("Single image build for image name '%v'", config.ContainerImageName)
@@ -165,14 +168,41 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
 			}
 			// errors are already caught with previous call to docker.ContainerRegistryFromImage
+			containerImageName, _ := docker.ContainerImageNameFromImage(config.ContainerImage)
 			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
 			dest = []string{"--destination", config.ContainerImage}
 			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
+			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	} else {
 		log.Entry().Infof("Running Kaniko build with destination defined via buildOptions: %v", config.BuildOptions)
+
+		destination := ""
+
+		for i, o := range config.BuildOptions {
+			if o == "--destination" && i+1 < len(config.BuildOptions) {
+				destination = config.BuildOptions[i+1]
+				break
+			}
+		}
+
+		containerRegistry, err := docker.ContainerRegistryFromImage(destination)
+
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "invalid registry part in image %v", destination)
+		}
+
+		containerImageName, _ := docker.ContainerImageNameFromImage(destination)
+		containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(destination)
+
+		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
+		commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
+		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 	}
 
 	// no support for building multiple containers
