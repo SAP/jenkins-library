@@ -96,11 +96,11 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 	var existingIssue *github.Issue = nil
 
 	if ghCreateIssueOptions.UpdateExisting {
-		queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
-		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
+		queryString := fmt.Sprintf("is:open+is:issue+repo:%v/%v+in:title+%v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
+		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, &github.SearchOptions{})
 		if err != nil {
 			if resp != nil {
-				log.Entry().Errorf("GitHub response code %v", resp.Status)
+				log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
 			}
 			return errors.Wrap(err, "error occurred when looking for existing issue")
 		} else {
@@ -116,9 +116,9 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 			_, resp, err := ghCreateCommentService.CreateComment(ctx, ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, *existingIssue.Number, comment)
 			if err != nil {
 				if resp != nil {
-					log.Entry().Errorf("GitHub response code %v", resp.Status)
+					log.Entry().Errorf("GitHub create comment returned response code %v", resp.Status)
 				}
-				return errors.Wrap(err, "error occurred when looking for existing issue")
+				return errors.Wrap(err, "error occurred when adding comment to existing issue")
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 		newIssue, resp, err := ghCreateIssueService.Create(ctx, ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, &issue)
 		if err != nil {
 			if resp != nil {
-				log.Entry().Errorf("GitHub response code %v", resp.Status)
+				log.Entry().Errorf("GitHub create issue returned response code %v", resp.Status)
 			}
 			return errors.Wrap(err, "error occurred when creating issue")
 		}
