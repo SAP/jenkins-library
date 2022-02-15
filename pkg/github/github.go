@@ -96,8 +96,8 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 	var existingIssue *github.Issue = nil
 
 	if ghCreateIssueOptions.UpdateExisting {
-		queryString := fmt.Sprintf("is:open+is:issue+repo:%v/%v+in:title+%v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
-		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, &github.SearchOptions{})
+		queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
+		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, url.QueryEscape(queryString), &github.SearchOptions{})
 		if err != nil {
 			if resp != nil {
 				log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
