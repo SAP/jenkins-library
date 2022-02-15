@@ -46,6 +46,7 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 		TrustedCerts: trustedCerts,
 		DoLogRequestBodyOnDebug: true,
 		DoLogResponseBodyOnDebug: true,
+		TransportSkipVerification: true,
 	})
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient.StandardClient())
 	ts := oauth2.StaticTokenSource(
