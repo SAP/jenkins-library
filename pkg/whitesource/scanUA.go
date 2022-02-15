@@ -91,7 +91,7 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	if err != nil {
 		return errors.Wrap(err, "Failed to determine UA version") 
 	}
-	s.AgentVersion = versionBuffer.String()
+	s.AgentVersion = strings.TrimSpace(versionBuffer.String())
 	log.Entry().Debugf("Read UA version %v from Stdout", s.AgentVersion)
 	utils.Stdout(log.Writer())
 	
