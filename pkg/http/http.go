@@ -351,11 +351,11 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	req = req.WithContext(ctx)
 
 	// Handle authenticaion if not configured already
-	if (len(t.username) > 0 || len(t.password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
+	if (len(t.username) > 0 || len(t.password) > 0) {
 		req.SetBasicAuth(t.username, t.password)
 		log.Entry().Debug("Using Basic Authentication ****/****")
 	}
-	if len(t.token) > 0 && len(req.Header.Get(authHeaderKey)) == 0{
+	if len(t.token) > 0 {
 		req.Header.Add(authHeaderKey, t.token)
 		log.Entry().Debug("Using Token Authentication ****")
 	}
