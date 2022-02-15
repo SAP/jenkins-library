@@ -26,6 +26,7 @@ import (
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 )
 
 // Client defines an http client object
@@ -106,6 +107,10 @@ type Uploader interface {
 	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error)
 	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error)
 	Upload(data UploadRequestData) (*http.Response, error)
+}
+
+func (c *Client) Token() (*oauth2.Token, error) {
+	return &oauth2.Token{AccessToken: c.token, TokenType: "token"}, nil
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
