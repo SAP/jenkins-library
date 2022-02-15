@@ -342,6 +342,7 @@ type contextKey struct {
 }
 
 var contextKeyRequestStart = &contextKey{"RequestStart"}
+var authHeaderKey = "Authorization"
 
 // RoundTrip is the core part of this module and implements http.RoundTripper.
 // Executes HTTP request with request/response logging.
@@ -350,12 +351,12 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	req = req.WithContext(ctx)
 
 	// Handle authenticaion if not configured already
-	if (len(t.username) > 0 || len(t.password) > 0) && len(req.Header.Get("Authorization")) == 0 {
+	if (len(t.username) > 0 || len(t.password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.SetBasicAuth(t.username, t.password)
 		log.Entry().Debug("Using Basic Authentication ****/****")
 	}
-	if len(t.token) > 0 && len(req.Header.Get("Authorization")) == 0{
-		req.Header.Add("Authorization", t.token)
+	if len(t.token) > 0 && len(req.Header.Get(authHeaderKey)) == 0{
+		req.Header.Add(authHeaderKey, t.token)
 		log.Entry().Debug("Using Token Authentication ****")
 	}
 

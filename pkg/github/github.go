@@ -50,7 +50,7 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 	})
 	stdClient := httpClient.StandardClient()
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, stdClient)
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
 	tc := oauth2.NewClient(ctx, ts)
 
 	if !strings.HasSuffix(apiURL, "/") {
