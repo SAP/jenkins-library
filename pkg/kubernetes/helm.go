@@ -49,7 +49,6 @@ type HelmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	DryRun                    bool     `json:"dryRun,omitempty"`
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
 	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
@@ -103,10 +102,7 @@ func (h *HelmExecute) RunHelmAdd() error {
 		helmParams = append(helmParams, "--debug")
 	}
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm add ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm add call failed")
 	}
 
@@ -167,10 +163,7 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		helmParams = append(helmParams, h.config.AdditionalParameters...)
 	}
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm upgrade ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
 
@@ -223,9 +216,6 @@ func (h *HelmExecute) RunHelmInstall() error {
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
-	if h.config.DryRun {
-		helmParams = append(helmParams, "--dry-run")
-	}
 	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	for _, v := range h.config.HelmValues {
 		helmParams = append(helmParams, "--values", v)
@@ -237,10 +227,15 @@ func (h *HelmExecute) RunHelmInstall() error {
 		helmParams = append(helmParams, "--debug")
 	}
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm install ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if h.verbose {
+		helmParamsDryRun := helmParams
+		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
+			log.Entry().WithError(err).Fatal("Helm install --dry-run call failed")
+		}
+	}
+
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm install call failed")
 	}
 
@@ -265,17 +260,19 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	if h.config.HelmDeployWaitSeconds > 0 {
 		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	}
-	if h.config.DryRun {
-		helmParams = append(helmParams, "--dry-run")
-	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm uninstall ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if h.verbose {
+		helmParamsDryRun := helmParams
+		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
+			log.Entry().WithError(err).Fatal("Helm uninstall --dry-run call failed")
+		}
+	}
+
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm uninstall call failed")
 	}
 
@@ -306,10 +303,7 @@ func (h *HelmExecute) RunHelmPackage() error {
 		helmParams = append(helmParams, "--debug")
 	}
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm package ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm package call failed")
 	}
 
@@ -337,10 +331,7 @@ func (h *HelmExecute) RunHelmTest() error {
 		helmParams = append(helmParams, "--debug")
 	}
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm test ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm test call failed")
 	}
 
@@ -355,10 +346,7 @@ func (h *HelmExecute) RunHelmRegistryLogin() error {
 	helmParams = append(helmParams, "-u", h.config.HelmRegistryUser)
 	helmParams = append(helmParams, h.config.HelmChartServer)
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm login ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm push login failed")
 	}
 
@@ -372,10 +360,7 @@ func (h *HelmExecute) RunHelmRegistryLogout() error {
 	}
 	helmParams = append(helmParams, h.config.HelmChartServer)
 
-	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm logout ...")
-	log.Entry().Debugf("Helm parameters: %v", helmParams)
-	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm push logout failed")
 	}
 
@@ -399,15 +384,8 @@ func (h *HelmExecute) RunHelmPush() error {
 	helmParams = append(helmParams, fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz"))
 	helmParams = append(helmParams, fmt.Sprintf("%v", "oci://"+h.config.HelmChartServer+"/helm-charts"))
 
-	// h.utils.Stdout(h.stdout)
-	// log.Entry().Info("Calling helm push ...")
-	// log.Entry().Debugf("Helm parameters: %v", helmParams)
-	// if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
-	// 	log.Entry().WithError(err).Fatal("Helm push call failed")
-	// }
-
 	if err := h.runHelmCommand(helmParams); err != nil {
-		return fmt.Errorf("failded command: %v", err)
+		return fmt.Errorf("failded push command: %v", err)
 	}
 
 	if err := h.RunHelmRegistryLogout(); err != nil {
@@ -420,7 +398,7 @@ func (h *HelmExecute) RunHelmPush() error {
 func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 
 	h.utils.Stdout(h.stdout)
-	log.Entry().Info("Calling helm push ...")
+	log.Entry().Infof("Calling helm %v ...", h.config.HelmCommand)
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
 	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatalf("Helm %v call failed", h.config.HelmCommand)

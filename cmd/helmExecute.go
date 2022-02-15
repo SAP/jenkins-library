@@ -22,7 +22,6 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		KubeContext:           config.KubeContext,
 		KubeConfig:            config.KubeConfig,
 		HelmDeployWaitSeconds: config.HelmDeployWaitSeconds,
-		DryRun:                config.DryRun,
 		PackageVersion:        config.PackageVersion,
 		AppVersion:            config.AppVersion,
 		DependencyUpdate:      config.DependencyUpdate,
@@ -73,6 +72,8 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 		if err := helmExecutor.RunHelmPush(); err != nil {
 			return fmt.Errorf("failed to execute helm push: %v", err)
 		}
+	default:
+		// todo implement logic like golangBuild(all command add to slice)
 	}
 
 	return nil

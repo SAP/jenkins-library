@@ -34,7 +34,6 @@ type helmExecuteOptions struct {
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
 	HelmCommand               string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade install lint test uninstall package push"`
-	DryRun                    bool     `json:"dryRun,omitempty"`
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
 	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
@@ -177,7 +176,6 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.HelmCommand, "helmCommand", os.Getenv("PIPER_helmCommand"), "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc.")
-	cmd.Flags().BoolVar(&stepConfig.DryRun, "dryRun", false, "simulate execute command, like simulate an install")
 	cmd.Flags().StringVar(&stepConfig.PackageVersion, "packageVersion", os.Getenv("PIPER_packageVersion"), "set the version on the chart to this semver version")
 	cmd.Flags().StringVar(&stepConfig.AppVersion, "appVersion", os.Getenv("PIPER_appVersion"), "set the appVersion on the chart to this version")
 	cmd.Flags().BoolVar(&stepConfig.DependencyUpdate, "dependencyUpdate", false, "set the appVersion on the chart to this version")
@@ -431,15 +429,6 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_helmCommand"),
-					},
-					{
-						Name:        "dryRun",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
 					},
 					{
 						Name:        "packageVersion",
