@@ -48,9 +48,10 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 		DoLogRequestBodyOnDebug: true,
 		DoLogResponseBodyOnDebug: true,
 	})
-	stdClient := httpClient.StandardClient()
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, stdClient)
-	tc := oauth2.NewClient(ctx, &httpClient)
+
+	ctx := context.Background()
+	tc := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+	tc.Transport = httpClient.StandardClient().Transport
 
 	if !strings.HasSuffix(apiURL, "/") {
 		apiURL += "/"
