@@ -124,7 +124,7 @@ func TestNonZipPath(t *testing.T) {
 
 	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
 
-	container.assertHasOutput(t, "Copying  'mta.yaml' into '/workspace' failed: application path must be a directory or zip")
+	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 	container.terminate(t)
 }
 
