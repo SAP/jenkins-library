@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v32/github"
 	"github.com/pkg/errors"
@@ -38,7 +39,8 @@ type CreateIssueOptions struct {
 
 //NewClient creates a new GitHub client using an OAuth token for authentication
 func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client, error) {
-	ctx := context.Background()
+	httpClient := piperhttp.Client{}
+	ctx := context.WithValue(oauth2.NoContext, oauth2.HTTPClient, httpClient.StandardClient())
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
