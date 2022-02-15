@@ -76,3 +76,4 @@ class SonarExecuteScanTest extends BasePiperTest {
         assertJobStatusSuccess()
     }
 }
+

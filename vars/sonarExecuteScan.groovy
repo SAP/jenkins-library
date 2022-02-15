@@ -76,12 +76,11 @@ void call(Map parameters = [:]) {
                                             echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
                                             sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                             jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-
+                                            archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                         }
                                     } else {
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
-                                    archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                 }
                                 readPipelineEnv(script: script, piperGoPath: piperGoPath)
                             }
