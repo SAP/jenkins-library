@@ -60,6 +60,7 @@ type cnbBuildTelemetryData struct {
 	Buildpacks        cnbBuildTelemetryDataBuildpacks        `json:"buildpacks"`
 	ProjectDescriptor cnbBuildTelemetryDataProjectDescriptor `json:"projectDescriptor"`
 	BuildTool         string                                 `json:"buildTool"`
+	Builder           string                                 `json:"builder"`
 }
 
 type cnbBuildTelemetryDataBuildEnv struct {
@@ -139,11 +140,8 @@ func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commo
 	utils := newCnbBuildUtils()
 
 	client := &piperhttp.Client{}
-	cnbTelemetry := cnbBuildTelemetry{
-		Version: 2,
-	}
 
-	err := callCnbBuild(&config, telemetryData, &cnbTelemetry, utils, commonPipelineEnvironment, client)
+	err := callCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -402,6 +400,14 @@ func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryDa
 	data.BuildTool = buildTool
 
 	data.Buildpacks.FromConfig = privacy.FilterBuildpacks(config.Buildpacks)
+
+	dockerImage, err := getDockerImageValue("cnbBuild")
+	if err != nil {
+		log.Entry().Warnf("Retrieving docker image failed: '%v'", err)
+		data.Builder = ""
+	} else {
+		data.Builder = privacy.FilterBuilder(dockerImage)
+	}
 }
 
 func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor project.Descriptor) {
@@ -421,7 +427,10 @@ func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor p
 	data.ProjectDescriptor.ExcludeUsed = descriptor.Exclude != nil
 }
 
-func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+	telemetry := &cnbBuildTelemetry{
+		Version: 3,
+	}
 	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
 	if err != nil {
 		return errors.Wrap(err, "failed to process config")

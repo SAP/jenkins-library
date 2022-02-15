@@ -222,7 +222,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		if err != nil {
 			log.Entry().Warnf("failed to parse parameters from environment: %v", err)
 		} else {
-			//apply aliases
+			// apply aliases
 			for _, p := range parameters {
 				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
 			}
@@ -293,7 +293,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 }
 
 // SetVaultCredentials sets the appRoleID and the appRoleSecretID or the vaultTokento load additional
-//configuration from vault
+// configuration from vault
 // Either appRoleID and appRoleSecretID or vaultToken must be specified.
 func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultToken string) {
 	c.vaultCredentials = VaultCredentials{
@@ -359,8 +359,9 @@ func GetYAML(data interface{}) (string, error) {
 // OpenPiperFile provides functionality to retrieve configuration via file or http
 func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
 	if len(name) == 0 {
-		return nil, fmt.Errorf("no filename provided")
+		return nil, errors.Wrap(os.ErrNotExist, "no filename provided")
 	}
+
 	if !strings.HasPrefix(name, "http://") && !strings.HasPrefix(name, "https://") {
 		return os.Open(name)
 	}
