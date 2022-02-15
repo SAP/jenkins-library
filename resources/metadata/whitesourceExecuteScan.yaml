@@ -563,6 +563,14 @@ spec:
         type: "[]string"
         default: []
         mandatory: false
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
     resources:
       - name: buildDescriptor
         type: stash

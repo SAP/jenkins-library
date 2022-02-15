@@ -35,12 +35,14 @@ type CreateIssueOptions struct {
 	Title          string   `json:"title,omitempty"`
 	UpdateExisting bool     `json:"updateExisting,omitempty"`
 	Token          string   `json:"token,omitempty"`
+	TrustedCerts   []string `json:"trustedCerts,omitempty"`
 }
 
 //NewClient creates a new GitHub client using an OAuth token for authentication
-func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client, error) {
+func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
 	httpClient := piperhttp.Client{}
-	ctx := context.WithValue(oauth2.NoContext, oauth2.HTTPClient, httpClient.StandardClient())
+	httpClient.SetOptions(piperhttp.ClientOptions{TrustedCerts: trustedCerts})
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient.StandardClient())
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
@@ -70,7 +72,7 @@ func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client
 }
 
 func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) error {
-	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "")
+	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "", ghCreateIssueOptions.TrustedCerts)
 	if err != nil {
 		return errors.Wrap(err, "failed to get GitHub client")
 	}

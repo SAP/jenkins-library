@@ -68,6 +68,7 @@ type whitesourceExecuteScanOptions struct {
 	Owner                                string   `json:"owner,omitempty"`
 	Repository                           string   `json:"repository,omitempty"`
 	Assignees                            []string `json:"assignees,omitempty"`
+	CustomTLSCertificateLinks            []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 type whitesourceExecuteScanCommonPipelineEnvironment struct {
@@ -303,6 +304,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 
 	cmd.MarkFlagRequired("buildTool")
 	cmd.MarkFlagRequired("orgToken")
@@ -868,6 +870,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{``},
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

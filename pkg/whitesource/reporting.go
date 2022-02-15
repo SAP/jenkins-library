@@ -247,7 +247,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	return reportPaths, nil
 }
 
-func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner, repository string, assignees []string) error {
+func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
 	for i := 0; i < len(*alerts); i++ {
 		alert := (*alerts)[i]
 		title := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
