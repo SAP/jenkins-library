@@ -250,7 +250,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner, repository string, assignees []string) error {
 	for i := 0; i < len(*alerts); i++ {
 		alert := (*alerts)[i]
-		title := fmt.Sprintf("%v_%v_%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
+		title := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
 		markdownReport := alert.ToMarkdown()
 		options := piperGithub.CreateIssueOptions{
 			Token:          token,
