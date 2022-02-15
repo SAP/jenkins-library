@@ -42,7 +42,6 @@ type CreateIssueOptions struct {
 func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
 	httpClient := piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{
-		Token: fmt.Sprintf("Bearer %v", token),
 		TransportSkipVerification: true,
 		TrustedCerts: trustedCerts,
 		DoLogRequestBodyOnDebug: true,
@@ -50,6 +49,8 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 	})
 	stdClient := httpClient.StandardClient()
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, stdClient)
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
+	tc := oauth2.NewClient(ctx, ts)
 
 	if !strings.HasSuffix(apiURL, "/") {
 		apiURL += "/"
@@ -67,7 +68,7 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 		return ctx, nil, err
 	}
 
-	client := github.NewClient(stdClient)
+	client := github.NewClient(tc)
 
 	client.BaseURL = baseURL
 	client.UploadURL = uploadTargetURL

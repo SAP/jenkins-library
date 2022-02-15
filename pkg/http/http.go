@@ -350,12 +350,12 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
 	req = req.WithContext(ctx)
 
-	// Handle authenticaion if not configured already
-	if (len(t.username) > 0 || len(t.password) > 0) {
+	// Handle authenticaion if not done already
+	if (len(t.username) > 0 || len(t.password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.SetBasicAuth(t.username, t.password)
 		log.Entry().Debug("Using Basic Authentication ****/****")
 	}
-	if len(t.token) > 0 {
+	if len(t.token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.Header.Add(authHeaderKey, t.token)
 		log.Entry().Debug("Using Token Authentication ****")
 	}
@@ -400,7 +400,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 func transformHeaders(header http.Header) http.Header {
 	var h http.Header = map[string][]string{}
 	for name, value := range header {
-		if name == "uthorization" {
+		if name == "Authorization" {
 			for _, v := range value {
 				// The format of the Authorization header value is: <type> <cred>.
 				// We don't register the full string since only the part after
