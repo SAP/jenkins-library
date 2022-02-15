@@ -45,7 +45,6 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 		TrustedCerts: trustedCerts,
 		DoLogRequestBodyOnDebug: true,
 		DoLogResponseBodyOnDebug: true,
-		TransportSkipVerification: true,
 	})
 	stdClient := httpClient.StandardClient()
 	baseTransport := stdClient.Transport

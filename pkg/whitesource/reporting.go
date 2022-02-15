@@ -261,6 +261,7 @@ func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner,
 			Body:           []byte(markdownReport),
 			Assignees:      assignees,
 			UpdateExisting: true,
+			TrustedCerts:   trustedCerts,
 		}
 
 		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v in org %v and repo %v", title, owner, repository)
