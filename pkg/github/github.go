@@ -41,7 +41,7 @@ type CreateIssueOptions struct {
 //NewClient creates a new GitHub client using an OAuth token for authentication
 func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
 	httpClient := piperhttp.Client{}
-	httpClient.SetOptions(piperhttp.ClientOptions{TrustedCerts: trustedCerts})
+	httpClient.SetOptions(piperhttp.ClientOptions{TrustedCerts: trustedCerts, DoLogRequestBodyOnDebug: true, DoLogResponseBodyOnDebug: true, TransportSkipVerification: true})
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient.StandardClient())
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
