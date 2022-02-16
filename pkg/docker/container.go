@@ -39,3 +39,16 @@ func ContainerImageNameTagFromImage(fullImage string) (string, error) {
 	registryOnly := fmt.Sprintf("%v/", ref.Context().RegistryStr())
 	return strings.ReplaceAll(fullImage, registryOnly, ""), nil
 }
+
+// ContainerImageNameFromImage provides the name part of a full image name
+func ContainerImageNameFromImage(fullImage string) (string, error) {
+	nameTag, err := ContainerImageNameTagFromImage(fullImage)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(nameTag, "@") {
+		return strings.Split(nameTag, "@")[0], nil
+	}
+	return strings.Split(nameTag, ":")[0], nil
+}

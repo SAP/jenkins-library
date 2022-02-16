@@ -127,6 +127,9 @@ func TestRunKanikoExecute(t *testing.T) {
 		cwd, _ := fileUtils.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
+		assert.Equal(t, "myImage:1.2.3-a-x", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:1.2.3-a-x"}, commonPipelineEnvironment.container.imageNameTags)
 	})
 
 	t.Run("no error case - when cert update skipped", func(t *testing.T) {
@@ -208,6 +211,10 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.NoError(t, err)
 		cwd, _ := fileUtils.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+
+		assert.Equal(t, "myImage:tag", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:tag"}, commonPipelineEnvironment.container.imageNameTags)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {

@@ -157,6 +157,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
+			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
+			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
 		} else if len(config.ContainerImage) > 0 {
 			log.Entry().Debugf("Single image build for image '%v'", config.ContainerImage)
 			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
@@ -166,9 +168,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			}
 			// errors are already caught with previous call to docker.ContainerRegistryFromImage
 			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
+			// errors are already caught with previous call to docker.ContainerRegistryFromImage
+			containerImageName, _ := docker.ContainerImageNameFromImage(config.ContainerImage)
 			dest = []string{"--destination", config.ContainerImage}
 			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
+			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	} else {
