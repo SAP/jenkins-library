@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -88,19 +87,35 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 
 //createJSONPayload -return http payload as byte array
 func createJSONPayload(config *apiKeyValueMapUploadOptions) (*bytes.Buffer, error) {
-	jsonObj := gabs.New()
-	jsonObj.Set(config.Key, "name")
-	jsonObj.Set(config.KeyValueMapName, "map_name")
-	jsonObj.Set(config.Value, "value")
-	jsonRootObj := gabs.New()
-	jsonRootObj.Set(config.KeyValueMapName, "name")
-	jsonRootObj.Set(true, "encrypted")
-	jsonRootObj.Set("ENV", "scope")
-	jsonRootObj.ArrayAppend(jsonObj, "keyMapEntryValues")
-	jsonBody, jsonErr := json.Marshal(jsonRootObj)
+
+	type KeyMapEntryValues struct {
+		Name     string `json:"name"`     // name
+		Map_Name string `json:"map_name"` // map name
+		Value    string `json:"value"`    // value
+	}
+	type PayloadData struct {
+		Name              string              `json:"name"`
+		Encrypted         bool                `json:"encrypted"`
+		Scope             string              `json:"scope"`
+		KeyMapEntryValues []KeyMapEntryValues `json:"keyMapEntryValues"`
+	}
+
+	keyMapEntryValues := KeyMapEntryValues{
+		Name:     config.Key,
+		Map_Name: config.KeyValueMapName,
+		Value:    config.Value,
+	}
+	payloadData := PayloadData{
+		Name:              config.KeyValueMapName,
+		Encrypted:         true,
+		Scope:             "ENV",
+		KeyMapEntryValues: []KeyMapEntryValues{keyMapEntryValues},
+	}
+
+	jsonBody, jsonErr := json.Marshal(payloadData)
 	if jsonErr != nil {
 		return nil, errors.Wrapf(jsonErr, "json payload is invalid for key value map %q", config.KeyValueMapName)
 	}
-	payload := bytes.NewBuffer([]byte(string(jsonBody)))
+	payload := bytes.NewBuffer(jsonBody)
 	return payload, nil
 }
