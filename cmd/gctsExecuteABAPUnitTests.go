@@ -166,12 +166,14 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 	}
 
-	repository, err := getRepo(config, client)
+	//	repository, err := getRepo(config, client)
+	history, err := getHistory(config, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
 
-	currentLocalCommit := repository.Result.CurrentCommit
+	//	currentLocalCommit := repository.Result.CurrentCommit
+	currentLocalCommit := history.Result[1].FromCommit
 	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
 
 	// object delta between the commit that triggered the pipeline and the current commit in the local repository
@@ -736,7 +738,7 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	}
 
 	var xmlBody = []byte(`<?xml version="1.0" encoding="UTF-8"?>
-	<atc:run xmlns:atc="http://www.sap.com/adt/atc" 
+	<atc:run xmlns:atc="http://www.sap.com/adt/atc"
 	maximumVerdicts="100">
 			<objectSets xmlns:adtcore="http://www.sap.com/adt/core">
 			<objectSet kind="inclusive">
@@ -1539,6 +1541,33 @@ func getObjectInfo(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sen
 
 }
 
+func getHistory(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (historyResponse, error) {
+
+	var historyResp historyResponse
+	url := config.Host +
+		"/sap/bc/cts_abapvcs/repository/" + config.Repository + "/getHistory?sap-client=" + config.Client
+
+	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
+
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+	if httpErr != nil {
+		return historyResponse{}, errors.Wrap(httpErr, "resolve package failed")
+	} else if resp == nil {
+		return historyResponse{}, errors.New("resolve package failed: did not retrieve a HTTP response")
+	}
+
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &historyResp)
+	if parsingErr != nil {
+		return historyResponse{}, errors.Errorf("%v", parsingErr)
+	}
+
+	return historyResp, nil
+}
+
 type worklist struct {
 	XMLName             xml.Name `xml:"worklist"`
 	Text                string   `xml:",chardata"`
@@ -1815,6 +1844,20 @@ type layoutResponse struct {
 	Log       []gctsLogs `json:"log"`
 	Exception string     `json:"exception"`
 	ErrorLogs []gctsLogs `json:"errorLog"`
+}
+
+type history struct {
+	Rid          string `json:"rid"`
+	CheckoutTime int    `json:"checkoutTime"`
+	FromCommit   string `json:"fromCommit"`
+	Tocommit     string `json:"toCommit"`
+	Caller       string `json:"caller"`
+	Type         string `json:"type"`
+}
+
+type historyResponse struct {
+	Result    []history `xml:"result"`
+	Exception string    `json:"exception"`
 }
 
 type checkstyleError struct {
