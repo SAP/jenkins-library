@@ -51,22 +51,41 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
-	//support either image or containerImageName and containerImageTag
-	containerImageName := ""
-	containerImageTag := ""
+
 	helmValues := helmValues{}
 
-	if len(config.Image) > 0 {
-		containerImageName, containerImageTag, err = splitFullImageName(config.Image)
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+	if len(config.ImageNames) > 0 {
+		if len(config.ImageNames) != len(config.ImageNameTags) {
+			return fmt.Errorf("number of imageNames and imageNameTags must be equal")
 		}
-	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		containerImageName = config.ContainerImageName
-		containerImageTag = config.ContainerImageTag
+		for i, key := range config.ImageNames {
+			name, tag, err := splitFullImageName(config.ImageNameTags[i])
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[i])
+			}
+
+			helmValues.add(joinKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			helmValues.add(joinKey("image", key, "tag"), tag)
+		}
 	} else {
-		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+		//support either image or containerImageName and containerImageTag
+		containerImageName := ""
+		containerImageTag := ""
+		if len(config.Image) > 0 {
+			containerImageName, containerImageTag, err = splitFullImageName(config.Image)
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+			}
+		} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+			containerImageName = config.ContainerImageName
+			containerImageTag = config.ContainerImageTag
+		} else {
+			return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+		}
+		helmValues.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		helmValues.add("image.tag", containerImageTag)
 	}
+
 	helmLogFields := map[string]interface{}{}
 	helmLogFields["Chart Path"] = config.ChartPath
 	helmLogFields["Namespace"] = config.Namespace
@@ -89,9 +108,6 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 			log.Entry().WithError(err).Fatal("Helm init call failed")
 		}
 	}
-
-	helmValues.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
-	helmValues.add("image.tag", containerImageTag)
 
 	if len(config.ContainerRegistryUser) == 0 && len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
@@ -316,6 +332,15 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 
 type helmValues []struct {
 	key, value string
+}
+
+func joinKey(parts ...string) string {
+	escapedParts := make([]string, 0, len(parts))
+	replacer := strings.NewReplacer(".", "\\.", "=", "\\=")
+	for _, part := range parts {
+		escapedParts = append(escapedParts, replacer.Replace(part))
+	}
+	return strings.Join(escapedParts, ".")
 }
 
 func (values *helmValues) add(key, value string) {
