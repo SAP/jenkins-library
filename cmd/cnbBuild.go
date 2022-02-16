@@ -403,7 +403,7 @@ func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryDa
 
 	dockerImage, err := getDockerImageValue("cnbBuild")
 	if err != nil {
-		log.Entry().Warnf("Retrieving docker image failed: '%v'", err)
+		log.Entry().Warnf("Error while preparing telemetry: retrieving docker image failed: '%v'", err)
 		data.Builder = ""
 	} else {
 		data.Builder = privacy.FilterBuilder(dockerImage)
