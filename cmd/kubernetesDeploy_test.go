@@ -80,7 +80,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -147,7 +147,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
 
-		assert.Contains(t, mockUtils.Calls[2].Params, "image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2", "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[2].Params, "image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2", "Wrong upgrade parameters")
 	})
 
 	t.Run("test helm - docker config.json path passed as parameter", func(t *testing.T) {
@@ -207,7 +207,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -276,7 +276,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -367,7 +367,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -442,7 +442,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -521,7 +521,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -601,7 +601,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -662,7 +662,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
 
-		assert.Contains(t, mockUtils.Calls[1].Params, "image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret", "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[1].Params, "image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret", "Wrong upgrade parameters")
 
 	})
 
@@ -828,7 +828,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -871,7 +871,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,imagePullSecrets[0].name=testSecret",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -955,7 +955,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,imagePullSecrets[0].name=testSecret",
 			"--wait",
 			"--timeout",
 			"400s",

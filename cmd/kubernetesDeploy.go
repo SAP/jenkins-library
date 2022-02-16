@@ -84,6 +84,9 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		}
 		helmValues.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
 		helmValues.add("image.tag", containerImageTag)
+
+		helmValues.add(joinKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		helmValues.add(joinKey("image", containerImageName, "tag"), containerImageTag)
 	}
 
 	helmLogFields := map[string]interface{}{}
