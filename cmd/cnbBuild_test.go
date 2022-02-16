@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	piperconf "github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -38,7 +39,7 @@ func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner, callNo int)
 }
 
 func TestRunCnbBuild(t *testing.T) {
-	t.Parallel()
+	configOptions.openFile = piperconf.OpenPiperFile
 
 	t.Run("prefers direct configuration", func(t *testing.T) {
 		t.Parallel()
@@ -59,7 +60,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -90,7 +91,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		telemetryData := telemetry.CustomData{}
-		err := callCnbBuild(&config, &telemetryData, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -122,7 +123,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -147,7 +148,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -177,7 +178,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -220,7 +221,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, client)
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, client)
 		require.NoError(t, err)
 
 		result, err := utils.FilesMock.FileRead(caCertsTmpFile)
@@ -250,7 +251,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
@@ -277,7 +278,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile("/workspace/pom.xml", []byte("test"))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
@@ -301,7 +302,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		require.NoError(t, err)
 
 		runner := utils.ExecMockRunner
@@ -324,7 +325,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":"dXNlcjpwYXNz"}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "failed to generate CNB_REGISTRY_AUTH: json: cannot unmarshal string into Go struct field ConfigFile.auths of type types.AuthConfig")
 	})
 
@@ -341,7 +342,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "failed to generate CNB_REGISTRY_AUTH: could not read 'not-there/config.json'")
 	})
 
@@ -358,7 +359,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "failed to rename DockerConfigJSON file 'not-there': renaming file 'not-there' is not supported, since it does not exist, or is not a leaf-entry")
 	})
 
@@ -369,7 +370,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "the provided dockerImage is not a valid builder: binary '/cnb/lifecycle/creator' not found")
 	})
 
@@ -389,7 +390,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "failed to copy certificates: cannot copy '/etc/ssl/certs/ca-certificates.crt': file does not exist")
 	})
 
@@ -429,8 +430,7 @@ uri = "some-buildpack"`))
 		addBuilderFiles(&utils)
 
 		telemetryData := telemetry.CustomData{}
-		cnbTelemetry := cnbBuildTelemetry{Version: 2}
-		err := callCnbBuild(&config, &telemetryData, &cnbTelemetry, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
 		customDataAsString := telemetryData.Custom1
@@ -438,12 +438,13 @@ uri = "some-buildpack"`))
 		err = json.Unmarshal([]byte(customDataAsString), &customData)
 
 		require.NoError(t, err)
-		assert.Equal(t, 2, customData.Version)
+		assert.Equal(t, 3, customData.Version)
 		require.Equal(t, 1, len(customData.Data))
 		assert.Equal(t, "3.1.5", customData.Data[0].ImageTag)
 		assert.Equal(t, "folder", string(customData.Data[0].Path))
 		assert.Contains(t, customData.Data[0].AdditionalTags, "latest")
 		assert.Contains(t, customData.Data[0].BindingKeys, "SECRET")
+		assert.Equal(t, "paketobuildpacks/builder:full", customData.Data[0].Builder)
 
 		assert.Contains(t, customData.Data[0].Buildpacks.FromConfig, "paketobuildpacks/java")
 		assert.NotContains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "paketobuildpacks/java")
@@ -490,8 +491,7 @@ uri = "some-buildpack"
 		addBuilderFiles(&utils)
 
 		telemetryData := telemetry.CustomData{}
-		cnbTelemetry := cnbBuildTelemetry{Version: 2}
-		err := callCnbBuild(&config, &telemetryData, &cnbTelemetry, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
 		customDataAsString := telemetryData.Custom1
@@ -533,7 +533,7 @@ uri = "some-buildpack"
 		addBuilderFiles(&utils)
 
 		telemetryData := telemetry.CustomData{}
-		err := callCnbBuild(&config, &telemetryData, &cnbBuildTelemetry{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
 		customDataAsString := telemetryData.Custom1
