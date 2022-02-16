@@ -66,6 +66,11 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 			helmValues.add(joinKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
 			helmValues.add(joinKey("image", key, "tag"), tag)
+
+			if len(config.ImageNames) == 1 {
+				helmValues.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, name))
+				helmValues.add("image.tag", tag)
+			}
 		}
 	} else {
 		//support either image or containerImageName and containerImageTag
