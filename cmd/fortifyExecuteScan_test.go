@@ -35,6 +35,8 @@ type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
 	getArtifactShouldFail bool
+	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
+	ghCreateIssueError    error
 }
 
 func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
@@ -49,7 +51,11 @@ func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile strin
 }
 
 func (f fortifyTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	return piperGithub.CreateIssue(ghCreateIssueOptions)
+	if f.ghCreateIssueError != nil {
+		return f.ghCreateIssueError
+	}
+	f.ghCreateIssueOptions = ghCreateIssueOptions
+	return nil
 }
 
 func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
