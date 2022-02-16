@@ -173,7 +173,7 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	}
 
 	//	currentLocalCommit := repository.Result.CurrentCommit
-	currentLocalCommit := history.Result[1].FromCommit
+	currentLocalCommit := history.Result[0].FromCommit
 	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
 
 	// object delta between the commit that triggered the pipeline and the current commit in the local repository
