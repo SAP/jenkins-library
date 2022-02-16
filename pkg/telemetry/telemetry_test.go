@@ -1,11 +1,16 @@
 package telemetry
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/jarcoal/httpmock"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -251,5 +256,90 @@ func TestSetData(t *testing.T) {
 				t.Errorf("CreateDataObject() t.data= %v, want %v", telemetryClient.data, tt.want)
 			}
 		})
+	}
+}
+
+func TestTelemetry_logStepTelemetryData(t *testing.T) {
+
+	os.Setenv("JENKINS_URL", "FOO BAR BAZ")
+	os.Setenv("BUILD_URL", "jaas.com/foo/bar/main/42")
+	os.Setenv("BRANCH_NAME", "main")
+	os.Setenv("GIT_COMMIT", "abcdef42713")
+	os.Setenv("GIT_URL", "github.com/foo/bar")
+
+	provider, _ := orchestrator.NewOrchestratorSpecificConfigProvider()
+
+	type fields struct {
+		data     Data
+		provider orchestrator.OrchestratorSpecificConfigProviding
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		fatalError logrus.Fields
+		logOutput  string // TODO
+	}{
+		{
+			name: "logging with error, no fatalError set",
+			fields: fields{
+				data: Data{
+					BaseData:     BaseData{},
+					BaseMetaData: BaseMetaData{},
+					CustomData:   CustomData{ErrorCode: "1"},
+				},
+				provider: provider,
+			},
+		},
+		{
+			name: "logging with error, fatal error set",
+			fields: fields{
+				data: Data{
+					BaseData:     BaseData{},
+					BaseMetaData: BaseMetaData{},
+					CustomData:   CustomData{ErrorCode: "1"},
+				},
+				provider: provider,
+			},
+			fatalError: logrus.Fields{
+				"message":       "Some error happened",
+				"error":         "Oh snap!",
+				"category":      "undefined",
+				"result":        "failure",
+				"correlationId": "test",
+				"time":          "0000-00-00 00:00:00.000",
+			},
+		},
+		{
+			name: "logging without error",
+			fields: fields{
+				data: Data{
+					CustomData: CustomData{ErrorCode: "0"},
+				},
+				provider: &orchestrator.JenkinsConfigProvider{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t1 *testing.T) {
+			defer resetEnv(os.Environ())
+			os.Clearenv()
+			telemetry := &Telemetry{
+				data:     tt.fields.data,
+				provider: tt.fields.provider,
+			}
+			if tt.fatalError != nil {
+				errDetails, _ := json.Marshal(&tt.fatalError)
+				log.SetFatalErrorDetail(errDetails)
+			}
+			telemetry.logStepTelemetryData()
+			// Todo: check logging output
+		})
+	}
+}
+
+func resetEnv(e []string) {
+	for _, val := range e {
+		tmp := strings.Split(val, "=")
+		os.Setenv(tmp[0], tmp[1])
 	}
 }
