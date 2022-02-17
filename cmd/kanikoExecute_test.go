@@ -141,6 +141,9 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
 		assert.Equal(t, []string{"myImage:1.2.3-a-x"}, commonPipelineEnvironment.container.imageNameTags)
+
+		assert.Equal(t, "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", commonPipelineEnvironment.container.imageDigest)
+		assert.Equal(t, []string{"sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"}, commonPipelineEnvironment.container.imageDigests)
 	})
 
 	t.Run("success case - image params with custom destination", func(t *testing.T) {
@@ -161,6 +164,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
@@ -176,12 +180,15 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"}, runner.Calls[1].Params)
 
 		assert.Equal(t, "myImage:3.2.1-a-x", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, "https://my.other.registry.com:50000", commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
 		assert.Equal(t, []string{"myImage:3.2.1-a-x"}, commonPipelineEnvironment.container.imageNameTags)
+
+		assert.Equal(t, "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", commonPipelineEnvironment.container.imageDigest)
+		assert.Equal(t, []string{"sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"}, commonPipelineEnvironment.container.imageDigests)
 	})
 
 	t.Run("no error case - when cert update skipped", func(t *testing.T) {
