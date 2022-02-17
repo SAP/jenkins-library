@@ -1,6 +1,10 @@
+import groovy.transform.Field
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.GenerateStageDocumentation
 import groovy.transform.Field
+import com.sap.piper.Utils
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.ConfigurationLoader
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -8,18 +12,35 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     /** Starts an ATC check run on the ABAP Environment instance */
-    'abapEnvironmentRunATCCheck'
+    'abapEnvironmentRunATCCheck',
+    /** Creates/Updates ATC System Configuration */
+    'abapEnvironmentPushATCSystemConfig',
+    /** Parameter for ATC System Configuration json */
+    'atcSystemConfigFilePath'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
- * This stage runs the ATC Checks
+ * This stage runs the ATC Checks & create/update ATC System Configuration before in case File Location provided
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
+    // load default & individual configuration
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults([:], stageName)
+        .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .use()
+
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+        if (config.atcSystemConfigFilePath) {
+          abapEnvironmentPushATCSystemConfig script: parameters.script
+        }
         abapEnvironmentRunATCCheck script: parameters.script
     }
 }
