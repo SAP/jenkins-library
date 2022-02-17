@@ -1,0 +1,328 @@
+metadata:
+  name: helmExecute
+  description: Executes helm3 functionality as the package manager for Kubernetes.
+  longDescription: |-
+    Alpha version: please expect incompatible changes
+
+    Executes helm functionality as the package manager for Kubernetes.
+
+    * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
+    * [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
+    * [Helm Charts] (https://artifacthub.io/)
+    ```
+    Available Commands:
+      install     install a chart
+      lint        examine a chart for possible issues
+      package     package a chart directory into a chart archive
+      repo        add, list, remove, update, and index chart repositories
+      test        run tests for a release
+      uninstall   uninstall a release
+      upgrade     upgrade a release
+      verify      verify that a chart at the given path has been signed and is valid
+      push        upload a chart to a registry
+
+      also piper Execute step supports direct execution helm command via one flag.
+    ```
+
+    Note: piper supports only helm3 version, since helm2 is deprecated.
+spec:
+  inputs:
+    secrets:
+      - name: dockerCredentialsId
+        type: jenkins
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
+        type: jenkins
+    resources:
+      - name: deployDescriptor
+        type: stash
+    params:
+      - name: additionalParameters
+        aliases:
+          - name: helmDeploymentParameters
+        type: "[]string"
+        description: Defines additional parameters for Helm like  "helm install [NAME] [CHART] [flags]".
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: chartPath
+        aliases:
+          - name: helmChartPath
+        type: string
+        mandatory: true
+        description: Defines the chart path for helm.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerRegistryPassword
+        description: Password for container registry access - typically provided by the CI/CD environment.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: password
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image to deploy is located.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: containerRegistryUser
+        description: Username for container registry access - typically provided by the CI/CD environment.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: username
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: containerRegistrySecret
+        description: Name of the container registry secret used for pulling containers from the registry.
+        longDescription: |-
+          Name of the container registry secret used for pulling containers from the registry.
+
+          If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
+
+          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: regsecret
+      - name: deploymentName
+        aliases:
+          - name: helmDeploymentName
+        type: string
+        description: Defines the name of the deployment. It is a mandatory parameter when deploying with helm.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: helmDeployWaitSeconds
+        type: int
+        description: Number of seconds before helm deploy returns.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 300
+      - name: helmValues
+        type: "[]string"
+        description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: image
+        aliases:
+          - name: deployImage
+        type: string
+        description: Full name of the image to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: keepFailedDeployments
+        type: bool
+        description: Defines whether a failed deployment will be purged
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: kubeConfig
+        type: string
+        description: Defines the path to the "kubeconfig" file.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: kubeConfigFileCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: kubeConfigFileVaultSecretName
+            default: kube-config
+      - name: kubeContext
+        type: string
+        description: Defines the context to use from the "kubeconfig" file.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: namespace
+        aliases:
+          - name: helmDeploymentNamespace
+        type: string
+        description: Defines the target Kubernetes namespace for the deployment.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: default
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
+      - name: helmCommand
+        type: string
+        description: "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        possibleValues:
+          - upgrade
+          - install
+          - lint
+          - test
+          - uninstall
+          - package
+          - push
+      - name: dryRun
+        type: bool
+        description: simulate execute command, like simulate an install
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: packageVersion
+        type: string
+        description: set the version on the chart to this semver version
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: appVersion
+        type: string
+        description: set the appVersion on the chart to this version
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dependencyUpdate
+        type: bool
+        description: set the appVersion on the chart to this version
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dumpLogs
+        type: bool
+        description: dump the logs from test pods (this runs after all tests are complete, but before any cleanup)
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: filterTest
+        type: string
+        description: specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: chartRepo
+        type: string
+        description: set the chart repository
+        default: "https://charts.helm.sh/stable"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: helmRegistryUser
+        type: string
+        description: set the user for login to helm registry
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: helmChartServer
+        type: string
+        description: set chart server for pushing chart
+        default: "localhost:5000"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - image: dtzar/helm-kubectl:3.4.1
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
