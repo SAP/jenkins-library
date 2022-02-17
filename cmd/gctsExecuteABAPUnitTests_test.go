@@ -272,7 +272,7 @@ func TestGetLocalObjectsFailure(t *testing.T) {
 
 		_, err := getLocalObjects(&config, &httpClient)
 
-		assert.EqualError(t, err, "get local changed objects failed: could not get repository: a http error occurred")
+		assert.EqualError(t, err, "get local changed objects failed: get history failed: a http error occurred")
 	})
 }
 
@@ -504,7 +504,7 @@ func TestGetLocalPackagesFailure(t *testing.T) {
 
 		_, err := getLocalPackages(&config, &httpClient)
 
-		assert.EqualError(t, err, "get local changed packages failed: could not get repository: a http error occurred")
+		assert.EqualError(t, err, "get local changed objects failed: get history failed: a http error occurred")
 	})
 }
 
@@ -1480,19 +1480,19 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 		c.ResponseBody = `
 		{
 			"result": {
-	
+
 					"rid": "testRepo",
-					"name": "testRepo",        
-					"role": "PROVIDED",            
-					"type": "GIT",            
-					"vsid": "vSID",            
+					"name": "testRepo",
+					"role": "PROVIDED",
+					"type": "GIT",
+					"vsid": "vSID",
 					"privateFlag": "false",
 					"url": "http://github.com/testRepo",
 					"createdBy": "testUser",
 					"createdDate": "02/02/2022",
-					"objects": 3, 
+					"objects": 3,
 					"currentCommit": "xyz987654321"
-				}	
+				}
 		}
 		`
 	case "http://testHost.com:50000/sap/bc/cts_abapvcs/repository/testRepo2?sap-client=000":
@@ -1500,20 +1500,20 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 		c.ResponseBody = `
 			{
 				"result": {
-		
+
 						"rid": "testRepo2",
-						"name": "testRepo2",        
-						"role": "PROVIDED",            
-						"type": "GIT",            
-						"vsid": "vSID",            
+						"name": "testRepo2",
+						"role": "PROVIDED",
+						"type": "GIT",
+						"vsid": "vSID",
 						"privateFlag": "false",
 						"url": "http://github.com/testRepo2",
 						"createdBy": "testUser",
 						"createdDate": "02/02/2022",
-						"objects": 3, 
+						"objects": 3,
 						"currentCommit": "xyz987654321"
-					}	
-					
+					}
+
 			}
 			`
 
@@ -1523,16 +1523,16 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 			{
 				"commits": [
 					{
-							
+
 						"id": "0123456789abcdefghijkl"
-						
+
 					},
 					{
-							
+
 						"id": "7845abaujztrw785"
 					},
 					{
-	
+
 						"id": "45poiztr785423"
 					}
 				]
@@ -1545,21 +1545,73 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 			{
 				"commits": [
 					{
-							
+
 						"id": "0123456789abcdefghijkl"
-						
+
 					},
 					{
-							
+
 						"id": "7845abaujztrw785"
 					},
 					{
-	
+
 						"id": "45poiztr785423"
 					}
 				]
 			}
 			`
+
+	case "http://testHost.com:50000/sap/bc/cts_abapvcs/repository/testRepo/getHistory?sap-client=000":
+
+		c.ResponseBody = `
+			{
+				"result": [
+					{
+
+							"rid": "testRepo",
+							"checkoutTime": 20220216233655,
+							"fromCommit": "xyz987654321",
+							"toCommit": "0123456789abcdefghijkl",
+							"caller": "USER",
+							"type": "PULL"
+					},
+					{
+						    "rid": "testRepo",
+						    "checkoutTime": 20220216233788,
+						    "fromCommit": "ghi98765432",
+						    "toCommit": "xyz987654321",
+						    "caller": "USER",
+						    "type": "PULL"
+					}
+				]
+			}
+			`
+
+	case "http://testHost.com:50000/sap/bc/cts_abapvcs/repository/testRepo2/getHistory?sap-client=000":
+
+		c.ResponseBody = `
+				{
+					"result": [
+						{
+
+								"rid": "testRepo",
+								"checkoutTime": 20220216233655,
+								"fromCommit": "xyz987654321",
+								"toCommit": "0123456789abcdefghijkl",
+								"caller": "USER",
+								"type": "PULL"
+						},
+						{
+								"rid": "testRepo",
+								"checkoutTime": 20220216233788,
+								"fromCommit": "ghi98765432",
+								"toCommit": "xyz987654321",
+								"caller": "USER",
+								"type": "PULL"
+						}
+					]
+				}
+				`
 
 	case "http://testHost.com:50000/sap/bc/cts_abapvcs/repository/testRepo/compareCommits?fromCommit=xyz987654321&toCommit=0123456789abcdefghijkl&sap-client=000":
 
@@ -1567,19 +1619,19 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 			{
 				"objects": [
 					{
-							
+
 							"name": "ZCL_GCTS",
 							"type": "CLAS",
 							"action": "Class (ABAP Objects)"
 					},
 					{
-							
+
 							"name": "ZP_GCTS",
 							"type": "DEVC",
 							"action": "Package(ABAP Objects)"
 					},
 					{
-						
+
 							"name": "ZIF_GCTS_API",
 							"type": "INTF",
 							"action": "Interface (ABAP Objects)"
@@ -1594,19 +1646,19 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 			{
 				"objects": [
 					{
-							
+
 							"name": "ZCL_GCTS",
 							"type": "CLAS",
 							"action": "Class (ABAP Objects)"
 					},
 					{
-							
+
 							"name": "ZP_GCTS",
 							"type": "DEVC",
 							"action": "Package(ABAP Objects)"
 					},
 					{
-						
+
 							"name": "ZIF_GCTS_API",
 							"type": "INTF",
 							"action": "Interface (ABAP Objects)"
@@ -1617,14 +1669,14 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 	case "http://testHost.com:50000/sap/bc/cts_abapvcs/objects/CLAS/ZCL_GCTS?sap-client=000":
 
 		c.ResponseBody = `
-			
+
 			 {
-		
+
 					"pgmid": "R3TR",
-					"object": "CLAS",   
-					"objName": "ZCL_GCTS",  
-					"srcsystem": "src", 
-					"author": "HUGO",    
+					"object": "CLAS",
+					"objName": "ZCL_GCTS",
+					"srcsystem": "src",
+					"author": "HUGO",
 					"devclass": "SGCTS"
 				}
 			`
@@ -1632,29 +1684,29 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 	case "http://testHost.com:50000/sap/bc/cts_abapvcs/objects/INTF/ZIF_GCTS_API?sap-client=000":
 
 		c.ResponseBody = `
-			
+
 			 {
-		
+
 					"pgmid": "R3TR",
-					"object": "INTF",   
-					"objName": "ZIF_GCTS_API",  
-					"srcsystem": "src", 
-					"author": "HUGO",    
+					"object": "INTF",
+					"objName": "ZIF_GCTS_API",
+					"srcsystem": "src",
+					"author": "HUGO",
 					"devclass": "SGCTS_2"
-				}	
+				}
 			`
 
 	case "http://testHost.com:50000/sap/bc/cts_abapvcs/objects/DEVC/ZP_GCTS?sap-client=000":
 
 		c.ResponseBody = `
-			
+
 			{
-	   
+
 				   "pgmid": "R3TR",
-				   "object": "DEVC",   
-				   "objName": "ZP_GCTS",  
-				   "srcsystem": "src", 
-				   "author": "HUGO",    
+				   "object": "DEVC",
+				   "objName": "ZP_GCTS",
+				   "srcsystem": "src",
+				   "author": "HUGO",
 				   "devclass": "SGCTS"
 			   }
 		   `
@@ -1687,7 +1739,7 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 							"description": "Class (ABAP Objects)"
 					},
 					{
-							
+
 							"pgmid": "R3TR",
 							"object": "ZP_GCTS",
 							"type": "DEVC",

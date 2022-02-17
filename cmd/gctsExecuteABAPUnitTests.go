@@ -59,10 +59,12 @@ func runGctsExecuteABAPUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpCl
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 
+	maxRetries := -1
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:  cookieJar,
+		Username:   config.Username,
+		Password:   config.Password,
+		MaxRetries: maxRetries,
 	}
 
 	httpClient.SetOptions(clientOptions)
