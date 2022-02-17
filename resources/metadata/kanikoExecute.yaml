@@ -174,9 +174,12 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: container/imageDigest
           - name: container/imageNames
             type: "[]string"
           - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
             type: "[]string"
           - name: custom/buildSettingsInfo
   containers:
