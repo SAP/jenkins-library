@@ -636,5 +636,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
 
+	if config.PreserveFiles != "" {
+		err := cnbutils.CopyGlob(target, source, config.PreserveFiles, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
+		}
+	}
+
 	return nil
 }
