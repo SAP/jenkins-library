@@ -282,3 +282,7 @@ spec:
             type: protecode
           - paramRef: reportFileName
             type: protecode
+          - filePattern: "**/protecodeExecuteScan.json"
+            type: protecode
+          - filePattern: "**/protecodescan_vulns.json"
+            type: protecode

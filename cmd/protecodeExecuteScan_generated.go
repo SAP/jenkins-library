@@ -108,6 +108,8 @@ func (p *protecodeExecuteScanReports) persist(stepConfig protecodeExecuteScanOpt
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/toolrun_protecode_*.json", ParamRef: "", StepResultType: "protecode"},
 		{FilePattern: "", ParamRef: "reportFileName", StepResultType: "protecode"},
+		{FilePattern: "**/protecodeExecuteScan.json", ParamRef: "", StepResultType: "protecode"},
+		{FilePattern: "**/protecodescan_vulns.json", ParamRef: "", StepResultType: "protecode"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -537,6 +539,8 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/toolrun_protecode_*.json", "type": "protecode"},
 							{"type": "protecode"},
+							{"filePattern": "**/protecodeExecuteScan.json", "type": "protecode"},
+							{"filePattern": "**/protecodescan_vulns.json", "type": "protecode"},
 						},
 					},
 				},
