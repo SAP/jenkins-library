@@ -153,10 +153,10 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "whitesource/**", ParamRef: "", StepResultType: "whitesource-ip"},
+		{FilePattern: "**/whitesource-ip.json", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-ip"},
-		{FilePattern: "whitesource/**", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/piper_whitesource_vulnerability_report.html", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-security"},
 	}
@@ -854,10 +854,10 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "whitesource/**", "type": "whitesource-ip"},
+							{"filePattern": "**/whitesource-ip.json", "type": "whitesource-ip"},
 							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-ip"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-ip"},
-							{"filePattern": "whitesource/**", "type": "whitesource-security"},
+							{"filePattern": "**/piper_whitesource_vulnerability_report.html", "type": "whitesource-security"},
 							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-security"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-security"},
 						},

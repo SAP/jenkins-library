@@ -522,13 +522,13 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "whitesource/**"
+          - filePattern: "**/whitesource-ip.json"
             type: whitesource-ip
           - filePattern: "whitesource-riskReport.pdf"
             type: whitesource-ip
           - filePattern: "**/toolrun_whitesource_*.json"
             type: whitesource-ip
-          - filePattern: "whitesource/**"
+          - filePattern: "**/piper_whitesource_vulnerability_report.html"
             type: whitesource-security
           - filePattern: "whitesource-riskReport.pdf"
             type: whitesource-security
