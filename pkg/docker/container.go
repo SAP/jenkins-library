@@ -3,6 +3,7 @@ package docker
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 
 	containerName "github.com/google/go-containerregistry/pkg/name"
@@ -38,4 +39,18 @@ func ContainerImageNameTagFromImage(fullImage string) (string, error) {
 	}
 	registryOnly := fmt.Sprintf("%v/", ref.Context().RegistryStr())
 	return strings.ReplaceAll(fullImage, registryOnly, ""), nil
+}
+
+// ContainerImageNameFromImage returns the image name of a given docker reference
+func ContainerImageNameFromImage(fullImage string) (string, error) {
+	imageNameTag, err := ContainerImageNameTagFromImage(fullImage)
+
+	if err != nil {
+		return "", err
+	}
+
+	r := regexp.MustCompile(`([^:@]+)`)
+	m := r.FindStringSubmatch(imageNameTag)
+
+	return m[0], nil
 }
