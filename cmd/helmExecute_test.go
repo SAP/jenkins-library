@@ -269,3 +269,61 @@ func TestRunHelmPush(t *testing.T) {
 
 	}
 }
+
+func TestRunHelmDefaultCommand(t *testing.T) {
+	t.Parallel()
+
+	testTable := []struct {
+		config             helmExecuteOptions
+		methodLintError    error
+		methodPackageError error
+		methodPublishError error
+		expectedErrStr     string
+	}{
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodLintError:    nil,
+			methodPackageError: nil,
+			methodPublishError: nil,
+		},
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodLintError: errors.New("some error"),
+			expectedErrStr:  "failed to execute helm lint: some error",
+		},
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodPackageError: errors.New("some error"),
+			expectedErrStr:     "failed to execute helm package: some error",
+		},
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodPublishError: errors.New("some error"),
+			expectedErrStr:     "failed to execute helm publish: some error",
+		},
+	}
+
+	for i, testCase := range testTable {
+		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
+			helmExecute := &mocks.HelmExecutor{}
+			helmExecute.On("RunHelmLint").Return(testCase.methodLintError)
+			helmExecute.On("RunHelmPackage").Return(testCase.methodPackageError)
+			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
+
+			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			if err != nil {
+				assert.Equal(t, testCase.expectedErrStr, err.Error())
+			}
+
+		})
+	}
+
+}

@@ -231,7 +231,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 		helmParamsDryRun := helmParams
 		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Fatal("Helm install --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm install --dry-run call failed")
 		}
 	}
 
@@ -268,7 +268,7 @@ func (h *HelmExecute) RunHelmUninstall() error {
 		helmParamsDryRun := helmParams
 		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Fatal("Helm uninstall --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm uninstall --dry-run call failed")
 		}
 	}
 
@@ -367,7 +367,7 @@ func (h *HelmExecute) RunHelmRegistryLogout() error {
 	return nil
 }
 
-//RunHelmPush is used to upload a chart to a registry
+//RunHelmPublish is used to upload a chart to a registry
 func (h *HelmExecute) RunHelmPublish() error {
 	err := h.runHelmInit()
 	if err != nil {
