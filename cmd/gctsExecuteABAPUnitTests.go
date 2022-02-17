@@ -166,18 +166,21 @@ func getLocalObjects(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 	}
 
-	//	repository, err := getRepo(config, client)
 	history, err := getHistory(config, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
 
-	//	currentLocalCommit := repository.Result.CurrentCommit
-	currentLocalCommit := history.Result[0].FromCommit
-	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
+	if len(history.Result) == 0 {
 
-	// object delta between the commit that triggered the pipeline and the current commit in the local repository
-	resp, err := getObjectDifference(config, currentLocalCommit, config.Commit, client)
+		return []repoObject{}, errors.Wrap(err, "no activities (from commit - to commit) were found")
+	}
+
+	fromCommit := history.Result[0].FromCommit
+	log.Entry().Info("from Commit: ", fromCommit)
+
+	// object delta between commit that triggered the pipeline and last fromCommit retrieved from History list in gCTS
+	resp, err := getObjectDifference(config, fromCommit, config.Commit, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
@@ -255,16 +258,21 @@ func getLocalPackages(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.
 
 	}
 
-	repository, err := getRepo(config, client)
+	history, err := getHistory(config, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
+		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
 
-	currentLocalCommit := repository.Result.CurrentCommit
-	log.Entry().Info("current commit in the local repository: ", currentLocalCommit)
+	if len(history.Result) == 0 {
 
-	//object delta between the commit that triggered the pipeline and the current commit in the local repository
-	resp, err := getObjectDifference(config, currentLocalCommit, config.Commit, client)
+		return []repoObject{}, errors.Wrap(err, "no activities (from commit - to commit) were found")
+	}
+
+	fromCommit := history.Result[0].FromCommit
+	log.Entry().Info("from Commit: ", fromCommit)
+
+	// object delta between commit that triggered the pipeline and last fromCommit retrieved from History list in gCTS
+	resp, err := getObjectDifference(config, fromCommit, config.Commit, client)
 
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
@@ -1555,9 +1563,9 @@ func getHistory(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender
 		}
 	}()
 	if httpErr != nil {
-		return historyResponse{}, errors.Wrap(httpErr, "resolve package failed")
+		return historyResponse{}, errors.Wrap(httpErr, "get history failed")
 	} else if resp == nil {
-		return historyResponse{}, errors.New("resolve package failed: did not retrieve a HTTP response")
+		return historyResponse{}, errors.New("get history failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &historyResp)
