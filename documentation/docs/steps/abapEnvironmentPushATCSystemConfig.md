@@ -78,7 +78,7 @@ abapEnvironmentPushATCSystemConfig(
 )
 ```
 
-To Create/Update an ATC System Configuration a file `atcSystemConfig.json` will be needed. Check section 'ATC System configuration file example' for more information.
+To create/update an ATC System Configuration a file `atcSystemConfig.json` will be needed. Check section 'ATC System configuration file example' for more information.
 
 ### ATC System configuration file example
 
