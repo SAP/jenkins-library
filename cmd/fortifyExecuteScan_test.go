@@ -28,7 +28,7 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
-const author string = "john.doe@dummy.com"
+const author string = "johnDoe178"
 
 type fortifyTestUtilsBundle struct {
 	*execRunnerMock
@@ -267,6 +267,16 @@ func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTem
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
+	exploitable := "Exploitable"
+	friority := "High"
+	hascomments := true
+	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
+}
+func (f *fortifyMock) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
+	comment := "Dummy"
+	return []*models.IssueAuditComment{{Comment: &comment}}, nil
+}
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
@@ -281,7 +291,7 @@ type pullRequestServiceMock struct{}
 
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
 	authorString := author
-	user := github.User{Email: &authorString}
+	user := github.User{Login: &authorString}
 	if owner == "A" {
 		result := 17
 		return []*github.PullRequest{{Number: &result, User: &user}}, &github.Response{}, nil

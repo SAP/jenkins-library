@@ -53,6 +53,7 @@ type fortifyExecuteScanOptions struct {
 	PythonAdditionalPath            []string `json:"pythonAdditionalPath,omitempty"`
 	ArtifactURL                     string   `json:"artifactUrl,omitempty"`
 	ConsiderSuspicious              bool     `json:"considerSuspicious,omitempty"`
+	ConvertToSarif                  bool     `json:"convertToSarif,omitempty"`
 	FprUploadEndpoint               string   `json:"fprUploadEndpoint,omitempty"`
 	ProjectName                     string   `json:"projectName,omitempty"`
 	Reporting                       bool     `json:"reporting,omitempty"`
@@ -248,7 +249,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalScanParameters, "additionalScanParameters", []string{}, "List of additional scan parameters to be used for Fortify sourceanalyzer command execution.")
-	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the Fortify project used as source.")
@@ -282,6 +283,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringSliceVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", []string{`./lib`, `.`}, "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes")
 	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/URL pointing to an additional artifact repository for resolution of additional artifacts during the build")
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
+	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", false, "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard. Uploaded through Cumulus later on.")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
@@ -702,6 +704,15 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
+					},
+					{
+						Name:        "convertToSarif",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "fprUploadEndpoint",

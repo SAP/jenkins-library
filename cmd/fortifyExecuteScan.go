@@ -164,6 +164,8 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
 				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
 				config.Assignees = append(config.Assignees, prAuthor)
+			} else {
+				log.Entry().Debugf("Unable to determine PR Author, using assignees: %v", config.Assignees)
 			}
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
@@ -240,6 +242,20 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
+	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	if config.ConvertToSarif {
+		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		if err != nil {
+			return reports, fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := fortify.WriteSarif(sarif)
+		if err != nil {
+			return reports, fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed
 	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
@@ -247,7 +263,6 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if err != nil {
 		return reports, err
 	}
-
 	err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
@@ -964,19 +979,19 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string
 
 func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
 	number := "0"
-	email := ""
+	author := ""
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
-		if prList[0].User != nil && prList[0].User.Email != nil {
-			email = *(prList[0].User.Email)
+		if prList[0].GetUser() != nil {
+			author = prList[0].GetUser().GetLogin()
 		}
-		return number, email, nil
+		return number, author, nil
 	} else {
 		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
-	return number, email, err
+	return number, author, err
 }
 
 func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {
