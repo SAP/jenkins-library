@@ -33,7 +33,7 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
 )
 

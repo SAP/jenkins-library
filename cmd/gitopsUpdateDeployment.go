@@ -20,6 +20,7 @@ import (
 
 const toolKubectl = "kubectl"
 const toolHelm = "helm"
+const toolKustomize = "kustomize"
 
 type iGitopsUpdateDeploymentGitUtils interface {
 	CommitSingleFile(filePath, commitMessage, author string) (plumbing.Hash, error)
@@ -38,6 +39,7 @@ type gitopsUpdateDeploymentExecRunner interface {
 	RunExecutable(executable string, params ...string) error
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
+	SetDir(dir string)
 }
 
 type gitopsUpdateDeploymentGitUtils struct {
@@ -121,6 +123,11 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		if err != nil {
 			return errors.Wrap(err, "failed to apply helm command")
 		}
+	} else if config.Tool == toolKustomize {
+		outputBytes, err = runKustomizeCommand(command, config, filePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to apply kustomize command")
+		}
 	} else {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("tool " + config.Tool + " is not supported")
@@ -154,6 +161,12 @@ func checkRequiredFieldsForDeployTool(config *gitopsUpdateDeploymentOptions) err
 			return errors.Wrap(err, "missing required fields for kubectl")
 		}
 		logNotRequiredButFilledFieldForKubectl(config)
+	} else if config.Tool == toolKustomize {
+		err := checkRequiredFieldsForKustomize(config)
+		if err != nil {
+			return errors.Wrap(err, "missing required fields for kustomize")
+		}
+		logNotRequiredButFilledFieldForKustomize(config)
 	}
 
 	return nil
@@ -170,6 +183,21 @@ func checkRequiredFieldsForHelm(config *gitopsUpdateDeploymentOptions) error {
 	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Errorf("the following parameters are necessary for helm: %v", missingParameters)
+	}
+	return nil
+}
+
+func checkRequiredFieldsForKustomize(config *gitopsUpdateDeploymentOptions) error {
+	var missingParameters []string
+	if config.FilePath == "" {
+		missingParameters = append(missingParameters, "filePath")
+	}
+	if config.DeploymentName == "" {
+		missingParameters = append(missingParameters, "deploymentName")
+	}
+	if len(missingParameters) > 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Errorf("the following parameters are necessary for kustomize: %v", missingParameters)
 	}
 	return nil
 }
@@ -201,6 +229,14 @@ func logNotRequiredButFilledFieldForKubectl(config *gitopsUpdateDeploymentOption
 	}
 	if len(config.DeploymentName) > 0 {
 		log.Entry().Info("deploymentName is not used for kubectl and can be removed")
+	}
+}
+func logNotRequiredButFilledFieldForKustomize(config *gitopsUpdateDeploymentOptions) {
+	if config.ChartPath != "" {
+		log.Entry().Info("chartPath is not used for kubectl and can be removed")
+	}
+	if len(config.HelmValues) > 0 {
+		log.Entry().Info("helmValues is not used for kubectl and can be removed")
 	}
 }
 
@@ -290,6 +326,27 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 		return nil, errors.Wrap(err, "failed to execute helm command")
 	}
 	return helmOutput.Bytes(), nil
+}
+
+func runKustomizeCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdateDeploymentOptions, filePath string) ([]byte, error) {
+	var kustomizeOutput = bytes.Buffer{}
+	runner.Stdout(&kustomizeOutput)
+
+	kustomizeParams := []string{
+		"edit",
+		"set",
+		"image",
+		config.DeploymentName + "=" + config.ContainerImageNameTag,
+	}
+
+	runner.SetDir(filepath.Dir(filePath))
+
+	err := runner.RunExecutable(toolKustomize, kustomizeParams...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute kustomize command")
+	}
+
+	return kustomizeOutput.Bytes(), nil
 }
 
 // buildRegistryPlusImageAndTagSeparately combines the registry together with the image name. Handles the tag separately.

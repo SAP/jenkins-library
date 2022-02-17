@@ -68,6 +68,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
@@ -83,10 +84,18 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
+
+		assert.Equal(t, "myImage:tag", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:tag"}, commonPipelineEnvironment.container.imageNameTags)
+
+		assert.Equal(t, "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", commonPipelineEnvironment.container.imageDigest)
+		assert.Equal(t, []string{"sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"}, commonPipelineEnvironment.container.imageDigests)
 	})
 
 	t.Run("success case - image params", func(t *testing.T) {
@@ -110,6 +119,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
@@ -125,8 +135,60 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
+		assert.Equal(t, "myImage:1.2.3-a-x", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:1.2.3-a-x"}, commonPipelineEnvironment.container.imageNameTags)
+
+		assert.Equal(t, "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", commonPipelineEnvironment.container.imageDigest)
+		assert.Equal(t, []string{"sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"}, commonPipelineEnvironment.container.imageDigests)
+	})
+
+	t.Run("success case - image params with custom destination", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"},
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
+
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
+
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+		fileUtils := &mock.FilesMock{}
+		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
+		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, "rm", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"-f", "/kaniko/.docker/config.json"}, runner.Calls[0].Params)
+
+		assert.Equal(t, config.CustomTLSCertificateLinks, certClient.urlsCalled)
+		c, err := fileUtils.FileRead("/kaniko/.docker/config.json")
+		assert.NoError(t, err)
+		assert.Equal(t, `{"auths":{"custom":"test"}}`, string(c))
+
+		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
+		cwd, _ := fileUtils.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"}, runner.Calls[1].Params)
+
+		assert.Equal(t, "myImage:3.2.1-a-x", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, "https://my.other.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:3.2.1-a-x"}, commonPipelineEnvironment.container.imageNameTags)
+
+		assert.Equal(t, "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", commonPipelineEnvironment.container.imageDigest)
+		assert.Equal(t, []string{"sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"}, commonPipelineEnvironment.container.imageDigests)
 	})
 
 	t.Run("no error case - when cert update skipped", func(t *testing.T) {
@@ -148,6 +210,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(``))
 		fileUtils.FileReadErrors = map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")}
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
@@ -170,6 +233,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
@@ -180,7 +244,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, `{"auths":{}}`, string(c))
 
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
 	})
 
 	t.Run("success case - backward compatibility", func(t *testing.T) {
@@ -202,12 +266,13 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -225,6 +290,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
@@ -237,9 +303,9 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", "Dockerfile", "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--destination", "my.registry.com:50000/myImage:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
@@ -261,6 +327,9 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage:myTag")
 		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub1:myTag")
 		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
+
+		assert.Equal(t, commonPipelineEnvironment.container.imageDigest, "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0")
+		assert.Equal(t, commonPipelineEnvironment.container.imageDigests, []string{"sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0", "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"})
 	})
 
 	t.Run("success case - multi image build excluding root image", func(t *testing.T) {
@@ -279,6 +348,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
+		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
@@ -290,8 +360,8 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt", "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
