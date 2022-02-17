@@ -9,9 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
-	"os"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -262,13 +260,7 @@ func TestSetData(t *testing.T) {
 
 func TestTelemetry_logStepTelemetryData(t *testing.T) {
 
-	os.Setenv("JENKINS_URL", "FOO BAR BAZ")
-	os.Setenv("BUILD_URL", "jaas.com/foo/bar/main/42")
-	os.Setenv("BRANCH_NAME", "main")
-	os.Setenv("GIT_COMMIT", "abcdef42713")
-	os.Setenv("GIT_URL", "github.com/foo/bar")
-
-	provider, _ := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider := &orchestrator.UnknownOrchestratorConfigProvider{}
 
 	type fields struct {
 		data     Data
@@ -316,7 +308,7 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 				data: Data{
 					CustomData: CustomData{ErrorCode: "0"},
 				},
-				provider: &orchestrator.JenkinsConfigProvider{},
+				provider: provider,
 			},
 		},
 	}
@@ -324,8 +316,6 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, hook := test.NewNullLogger()
 			log.RegisterHook(hook)
-			defer resetEnv(os.Environ())
-			os.Clearenv()
 			telemetry := &Telemetry{
 				data:     tt.fields.data,
 				provider: tt.fields.provider,
@@ -343,12 +333,5 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 			assert.Equal(t, expected, hook.LastEntry().Message)
 			hook.Reset()
 		})
-	}
-}
-
-func resetEnv(e []string) {
-	for _, val := range e {
-		tmp := strings.Split(val, "=")
-		os.Setenv(tmp[0], tmp[1])
 	}
 }
