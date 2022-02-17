@@ -168,6 +168,11 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 				return errors.Wrap(err, "failed to apply kustomize command")
 			}
 			outputBytes = nil
+		} else if config.Tool == toolKustomize {
+			outputBytes, err = runKustomizeCommand(command, config, filePath)
+			if err != nil {
+				return errors.Wrap(err, "failed to apply kustomize command")
+			}
 		} else {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.New("tool " + config.Tool + " is not supported")
