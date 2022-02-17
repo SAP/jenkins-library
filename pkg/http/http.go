@@ -274,7 +274,7 @@ func (c *Client) initialize() *http.Client {
 		password: c.password,
 	}
 
-	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
+	if len(c.trustedCerts) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
 		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
@@ -502,16 +502,36 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	}
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
 
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		log.Entry().Debugf("Caught error on store lookup %v", err)
+	}
+
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	*transport = TransportWrapper{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: c.transportTimeout,
+			}).DialContext,
+			ResponseHeaderTimeout: c.transportTimeout,
+			ExpectContinueTimeout: c.transportTimeout,
+			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+				RootCAs:            rootCAs,
+			},
+		},
+		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+		token: c.token,
+		username: c.username,
+		password: c.password,
+	}
+
 	for _, certificate := range c.trustedCerts {
-		rootCAs, err := x509.SystemCertPool()
-		if err != nil {
-			log.Entry().Debugf("Caught error on store lookup %v", err)
-		}
-
-		if rootCAs == nil {
-			rootCAs = x509.NewCertPool()
-		}
-
 		filename := path.Base(certificate)
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
@@ -558,55 +578,9 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
 				}
 
-				for len(certs) > 0 {
-					var block *pem.Block
-					block, certs = pem.Decode(certs)
-					if block == nil {
-						break
-					}
-					if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
-						log.Entry().Debug("Skipping non certificate block")
-						continue
-					}
-			
-					certBytes := block.Bytes
-					cert, err := x509.ParseCertificate(certBytes)
-					if err != nil {
-						log.Entry().Debugf("Failed to parse certificate %v", err)
-						continue
-					}
-					rootCAs.AddCert(cert)
-				}
-				
-				// Append our cert to the system pool
-				/*
-				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-					log.Entry().Infof("cert not appended to root ca %v", certificate)
-					return fmt.Errorf("cert not appended to root ca %v", certificate)
-				}*/
-
-				*transport = TransportWrapper{
-					Transport: &http.Transport{
-						DialContext: (&net.Dialer{
-							Timeout: c.transportTimeout,
-						}).DialContext,
-						ResponseHeaderTimeout: c.transportTimeout,
-						ExpectContinueTimeout: c.transportTimeout,
-						TLSHandshakeTimeout:   c.transportTimeout,
-						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: false,
-							RootCAs:            rootCAs,
-						},
-					},
-					doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-					token: c.token,
-					username: c.username,
-					password: c.password,
-				}
+				appendToRootCAs(rootCAs, certs)
 
 				log.Entry().Infof("%v appended to root CA successfully", certificate)
-
 			} else {
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
 			}
@@ -618,34 +592,34 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			}
 
 			// Append our cert to the system pool
-			if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-				log.Entry().Infof("cert not appended to root ca %v", certificate)
-			}
-
-			*transport = TransportWrapper{
-				Transport: &http.Transport{
-					DialContext: (&net.Dialer{
-						Timeout: c.transportTimeout,
-					}).DialContext,
-					ResponseHeaderTimeout: c.transportTimeout,
-					ExpectContinueTimeout: c.transportTimeout,
-					TLSHandshakeTimeout:   c.transportTimeout,
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: false,
-						RootCAs:            rootCAs,
-					},
-				},
-				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-				token: c.token,
-				username: c.username,
-				password: c.password,
-			}
+			appendToRootCAs(rootCAs, certs)
 			log.Entry().Infof("%v appended to root CA successfully", certificate)
 		}
 
 	}
 	return nil
+}
+
+func appendToRootCAs(rootCAs *x509.CertPool, certs []byte) {
+	for len(certs) > 0 {
+		var block *pem.Block
+		block, certs = pem.Decode(certs)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			log.Entry().Debug("Skipping non certificate block")
+			continue
+		}
+
+		certBytes := block.Bytes
+		cert, err := x509.ParseCertificate(certBytes)
+		if err != nil {
+			log.Entry().Debugf("Failed to parse certificate %v", err)
+			continue
+		}
+		rootCAs.AddCert(cert)
+	}
 }
 
 func getWorkingDirForTrustStore() (string, error) {
