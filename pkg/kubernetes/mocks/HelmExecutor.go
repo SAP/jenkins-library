@@ -65,8 +65,8 @@ func (_m *HelmExecutor) RunHelmPackage() error {
 	return r0
 }
 
-// RunHelmPush provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmPush() error {
+// RunHelmPublish provides a mock function with given fields:
+func (_m *HelmExecutor) RunHelmPublish() error {
 	ret := _m.Called()
 
 	var r0 error

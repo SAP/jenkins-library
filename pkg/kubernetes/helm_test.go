@@ -383,7 +383,7 @@ func TestRunHelm(t *testing.T) {
 		}
 	})
 
-	t.Run("Helm registry login command", func(t *testing.T) {
+	t.Run("Helm push command", func(t *testing.T) {
 		utils := newHelmMockUtilsBundle()
 
 		testTable := []struct {
@@ -407,9 +407,37 @@ func TestRunHelm(t *testing.T) {
 				verbose: false,
 				stdout:  log.Writer(),
 			}
-			err := helmExecute.RunHelmPush()
+			err := helmExecute.RunHelmPublish()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[1])
+		}
+	})
+
+	t.Run("Helm registry logout command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedConfig []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					HelmChartServer: "localhost:5002",
+				},
+				expectedConfig: []string{"registry logout", "localhost:5002"},
+			},
+		}
+
+		for i, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmRegistryLogout()
+			assert.NoError(t, err)
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
 	})
 

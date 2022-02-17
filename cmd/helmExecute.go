@@ -69,8 +69,8 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
 	case "publish":
-		if err := helmExecutor.RunHelmPush(); err != nil {
-			return fmt.Errorf("failed to execute helm push: %v", err)
+		if err := helmExecutor.RunHelmPublish(); err != nil {
+			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 	default:
 		if err := helmExecutor.RunHelmLint(); err != nil {
@@ -79,8 +79,8 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 		if err := helmExecutor.RunHelmPackage(); err != nil {
 			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
-		if err := helmExecutor.RunHelmPush(); err != nil {
-			return fmt.Errorf("failed to execute helm push: %v", err)
+		if err := helmExecutor.RunHelmPublish(); err != nil {
+			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 	}
 

@@ -18,7 +18,7 @@ type HelmExecutor interface {
 	RunHelmTest() error
 	RunHelmRegistryLogin() error
 	RunHelmRegistryLogout() error
-	RunHelmPush() error
+	RunHelmPublish() error
 }
 
 // HelmExecute struct
@@ -347,7 +347,7 @@ func (h *HelmExecute) RunHelmRegistryLogin() error {
 	helmParams = append(helmParams, h.config.HelmChartServer)
 
 	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm push login failed")
+		log.Entry().WithError(err).Fatal("Helm login failed")
 	}
 
 	return nil
@@ -361,14 +361,14 @@ func (h *HelmExecute) RunHelmRegistryLogout() error {
 	helmParams = append(helmParams, h.config.HelmChartServer)
 
 	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm push logout failed")
+		log.Entry().WithError(err).Fatal("Helm logout failed")
 	}
 
 	return nil
 }
 
 //RunHelmPush is used to upload a chart to a registry
-func (h *HelmExecute) RunHelmPush() error {
+func (h *HelmExecute) RunHelmPublish() error {
 	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)

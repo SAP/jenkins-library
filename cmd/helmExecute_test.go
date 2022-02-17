@@ -243,23 +243,23 @@ func TestRunHelmPush(t *testing.T) {
 	}{
 		{
 			config: helmExecuteOptions{
-				HelmCommand: "push",
+				HelmCommand: "publish",
 			},
 			methodError: nil,
 		},
 		{
 			config: helmExecuteOptions{
-				HelmCommand: "push",
+				HelmCommand: "publish",
 			},
 			methodError:    errors.New("some error"),
-			expectedErrStr: "failed to execute helm push: some error",
+			expectedErrStr: "failed to execute helm publish: some error",
 		},
 	}
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmPush").Return(testCase.methodError)
+			helmExecute.On("RunHelmPublish").Return(testCase.methodError)
 
 			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
 			if err != nil {
