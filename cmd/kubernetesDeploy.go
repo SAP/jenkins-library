@@ -56,6 +56,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 	if len(config.ImageNames) > 0 {
 		if len(config.ImageNames) != len(config.ImageNameTags) {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("number of imageNames and imageNameTags must be equal")
 		}
 		for i, key := range config.ImageNames {
