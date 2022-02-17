@@ -87,6 +87,11 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
+
+		assert.Equal(t, "myImage:tag", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:tag"}, commonPipelineEnvironment.container.imageNameTags)
 	})
 
 	t.Run("success case - image params", func(t *testing.T) {
@@ -127,6 +132,51 @@ func TestRunKanikoExecute(t *testing.T) {
 		cwd, _ := fileUtils.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
+		assert.Equal(t, "myImage:1.2.3-a-x", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:1.2.3-a-x"}, commonPipelineEnvironment.container.imageNameTags)
+	})
+
+	t.Run("success case - image params with custom destination", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"},
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
+
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
+
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+		fileUtils := &mock.FilesMock{}
+		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
+		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, "rm", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"-f", "/kaniko/.docker/config.json"}, runner.Calls[0].Params)
+
+		assert.Equal(t, config.CustomTLSCertificateLinks, certClient.urlsCalled)
+		c, err := fileUtils.FileRead("/kaniko/.docker/config.json")
+		assert.NoError(t, err)
+		assert.Equal(t, `{"auths":{"custom":"test"}}`, string(c))
+
+		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
+		cwd, _ := fileUtils.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"}, runner.Calls[1].Params)
+
+		assert.Equal(t, "myImage:3.2.1-a-x", commonPipelineEnvironment.container.imageNameTag)
+		assert.Equal(t, "https://my.other.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, []string{"myImage"}, commonPipelineEnvironment.container.imageNames)
+		assert.Equal(t, []string{"myImage:3.2.1-a-x"}, commonPipelineEnvironment.container.imageNameTags)
 	})
 
 	t.Run("no error case - when cert update skipped", func(t *testing.T) {
