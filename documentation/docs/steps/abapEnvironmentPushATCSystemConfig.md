@@ -63,7 +63,7 @@ abapEnvironmentPushATCSystemConfig(
 
 ### Create/Update an ATC System Configuration via direct ABAP endpoint configuration in Jenkinsfile
 
-This example triggers a Create/Update operation on an ATC System Configuration run directly on the ABAP endpoint.
+This example triggers a create/update operation on an ATC System Configuration run directly on the ABAP endpoint.
 
 In order to trigger the Create/Update operation on an ATC System Configuration you have to pass the username and password for authentication to the ABAP endpoint via parameters as well as the ABAP endpoint/host. You can store the credentials in Jenkins and use the abapCredentialsId parameter to authenticate to the ABAP endpoint/host.
 
