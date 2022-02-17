@@ -7,8 +7,8 @@ metadata:
     Execute npm run scripts in all package json files, if they implement the scripts.
 
     ### build with depedencies from a private repository
-    if your build has scoped/unscoped depdencies from a private repository you can include a .npmrc into the source code
-    respository as below (replace the registry value(s) with a valid private repo url) :
+    if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
+    repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
 
     ```
     @privateScope:registry=https://private.repository.com/

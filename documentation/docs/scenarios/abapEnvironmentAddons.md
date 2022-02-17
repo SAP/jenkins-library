@@ -5,7 +5,8 @@
     - __Table entries are currently delivered during add-on build with generic keys__ – thus it is strongly recommended to transport TABUs only with the software component the table definition belongs to and not in foreign software components to prevent loss of data. The possibility to deliver individual table keys as part of add-on build might be supported at a later point in time.
 
 !!! caution "Required project "Piper" library version"
-    SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
+    The recommended project "Piper" library version can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).<br>
+    A specific version can be used by referencing the version number in the [Jenkinsfile](../../pipelines/abapEnvironment/configuration/#2-jenkinsfile).
 
 ## Introduction
 
@@ -19,7 +20,7 @@ A comprehensive guidance on how to develop and operate SaaS applications using a
 
 ## The Add-on Product
 
-The installation and maintenance of ABAP software is controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the delivery view on a software portfolio.
+The installation and maintenance of ABAP software is controlled via add-on product versions. An __add-on product version__ is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the delivery view on a software portfolio.
 
 ### Add-on Product Version
 
@@ -37,7 +38,7 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
     As you may know, the development in the SAP BTP, ABAP environment is done within [software components](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
     The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP Note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
 
-A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
+A __software component version__ is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the __release__. Release deliveries contain the whole software component and should be used to deliver new functionalities or feature enhancements. They are provided with delivery packages of type *Add-on Installation* (AOI) and are usually created on a regular basis (e.g. quarterly).
@@ -136,6 +137,18 @@ This step can be triggered by you or by SAP partner management (governance proce
 
 In the following subsections, the pipeline configuration for this scenario is explained.
 Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md) for general configuration.
+
+#### ATC
+
+!!! caution ""
+    We recommend to configure the add-on build pipeline with a __quality gate to block any priority 1 ATC findings__.
+
+    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+
+    Created delivery packages for an add-on product version are final, so to fix any errors in these packages, another add-on product version would have to be built.
+    ATC findings should be resolved during development as early as possible, e.g. [during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html) and by using an additional pipeline configured for the [Continuous Testing on SAP BTP, ABAP Environment scenario](abapEnvironmentTest.md).
+
+    Please include all software components configured in [addon.yml](#add-on-descriptor-file) file also in the [atcConfig.yml](https://www.project-piper.io/steps/abapEnvironmentRunATCCheck/#atc-config-file-example) file. In case not all software components are included, some errors might not be found.
 
 #### Add-on descriptor file
 
@@ -252,7 +265,7 @@ In case of an error during execution of the pipeline steps:
 * Stage: [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)
       * Step: [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)
           * __*Long-running step execution*__
-          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings.
+          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings. Resolve ATC findings early on during development, e.g. by [working with ATC during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html).
 * Stage: [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)
       * Step: [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/)
           * __e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`__

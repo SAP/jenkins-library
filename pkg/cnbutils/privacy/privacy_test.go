@@ -110,3 +110,30 @@ func TestCnbPrivacy_FilterEnv(t *testing.T) {
 		assert.Empty(t, filteredEnv)
 	})
 }
+
+func TestCnbPrivacy_FilterBuilder(t *testing.T) {
+	t.Parallel()
+
+	t.Run("allows paketo", func(t *testing.T) {
+		builder := []string{
+			"paketobuildpacks/builder:tiny",
+			"paketobuildpacks/builder:base",
+			"paketobuildpacks/builder:full",
+		}
+
+		for _, b := range builder {
+			filteredBuilder := privacy.FilterBuilder(b)
+			assert.Equal(t, b, filteredBuilder)
+		}
+
+	})
+
+	t.Run("filters unknown builders", func(t *testing.T) {
+		builder := "notpaketobuildpacks/builder:base"
+
+		filteredBuilder := privacy.FilterBuilder(builder)
+
+		assert.Equal(t, "<redacted>", filteredBuilder)
+	})
+
+}

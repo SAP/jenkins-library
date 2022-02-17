@@ -29,6 +29,11 @@ var allowedBuildpackSources = []struct {
 	},
 }
 
+func FilterBuilder(builder string) string {
+	result := FilterBuildpacks([]string{builder})
+	return result[0]
+}
+
 // FilterBuildpacks filters a list of buildpacks to redact Personally Identifiable Information (PII) like the hostname of a personal registry
 func FilterBuildpacks(buildpacks []string) []string {
 	result := make([]string, 0, len(buildpacks))
