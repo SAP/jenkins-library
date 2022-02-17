@@ -277,7 +277,7 @@ func (c *Client) initialize() *http.Client {
 		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
+			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
 		}
 	} else {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
@@ -502,7 +502,10 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
 
 	for _, certificate := range c.trustedCerts {
-		rootCAs, _ := x509.SystemCertPool()
+		rootCAs, err := x509.SystemCertPool()
+		if err != nil {
+			log.Entry().Debugf("Caught error on store lookup %v", err)
+		}
 
 		if rootCAs == nil {
 			rootCAs = x509.NewCertPool()
