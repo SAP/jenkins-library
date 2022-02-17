@@ -11,7 +11,9 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/mod/modfile"
@@ -188,12 +190,43 @@ func TestRunGolangBuild(t *testing.T) {
 		}
 	})
 
-	t.Run("failure - install pre-requisites", func(t *testing.T) {
+	t.Run("success - create BOM", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM:           true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests: true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.ShouldFailOnCommand = map[string]error{"go install gotest.tools/gotestsum": fmt.Errorf("install failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
+	})
+
+	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils)
@@ -334,6 +367,19 @@ func TestRunGolangBuild(t *testing.T) {
 
 		err := runGolangBuild(&config, &telemetryData, utils)
 		assert.EqualError(t, err, "couldn't upload artifact, received status code 500")
+	})
+
+	t.Run("failure - create BOM", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM:           true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -test -output bom.xml": fmt.Errorf("BOM creation failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
 	})
 }
 
@@ -559,7 +605,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{}
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
@@ -577,7 +623,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{BuildFlags: []string{"--flag1", "val1", "--flag2", "val2"}, Output: "testBin", Packages: []string{"./test/.."}}
 		utils := newGolangBuildTestsUtils()
 		ldflags := "-X test=test"
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
@@ -594,7 +640,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{Output: "testBin"}
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
-		architecture := "windows,amd64"
+		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 
 		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.NoError(t, err)
@@ -609,7 +655,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("execution error")}
 		ldflags := ""
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		_, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
