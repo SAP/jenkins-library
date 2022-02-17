@@ -242,6 +242,20 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
+	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	if config.ConvertToSarif {
+		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		if err != nil {
+			return reports, fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := fortify.WriteSarif(sarif)
+		if err != nil {
+			return reports, fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed
 	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
@@ -249,7 +263,6 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if err != nil {
 		return reports, err
 	}
-
 	err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err

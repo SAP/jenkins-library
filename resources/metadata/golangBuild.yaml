@@ -10,6 +10,10 @@ metadata:
     If the build is successful the resulting artifact can be uploaded to e.g. a binary repository automatically.
 spec:
   inputs:
+    secrets:
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
     params:
       - name: buildFlags
         type: "[]string"
@@ -38,7 +42,7 @@ spec:
         default: html
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.
         scope:
           - GENERAL
           - STEPS
@@ -95,6 +99,38 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: targetRepositoryPassword
+        description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: targetRepositoryUser
+        description: "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: targetRepositoryURL
+        description: "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
       - name: reportCoverage
         type: bool
         description: Defines if a coverage report should be created.
@@ -123,6 +159,7 @@ spec:
         description: Defines the target architectures for which the build should run using OS and architecture separated by a comma.
         default: linux,amd64
         scope:
+          - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS
@@ -145,6 +182,41 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        alias:
+          - goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: golangPrivateModulesGitTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
+      - name: artifactVersion
+        type: string
+        description: Version of the artifact to be built.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - name: golang
       image: golang:1
