@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
 	"os"
 	"reflect"
@@ -63,7 +64,7 @@ func TestTelemetry_Initialize(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t1 *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			telemetryClient := &Telemetry{}
 			telemetryClient.Initialize(tt.args.telemetryDisabled, tt.args.stepName)
 			// assert
@@ -320,19 +321,27 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t1 *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
+			_, hook := test.NewNullLogger()
+			log.RegisterHook(hook)
 			defer resetEnv(os.Environ())
 			os.Clearenv()
 			telemetry := &Telemetry{
 				data:     tt.fields.data,
 				provider: tt.fields.provider,
 			}
+			var expected string
 			if tt.fatalError != nil {
 				errDetails, _ := json.Marshal(&tt.fatalError)
 				log.SetFatalErrorDetail(errDetails)
+				expected = "Step telemetry data:{\"PipelineURLHash\":\"\",\"BuildURLHash\":\"\",\"StageName\":\"\",\"StepName\":\"\",\"ErrorCode\":\"" + tt.fields.data.ErrorCode + "\",\"Duration\":\"\",\"ErrorCategory\":\"\",\"CorrelationID\":\"n/a\",\"CommitHash\":\"n/a\",\"Branch\":\"n/a\",\"GitOwner\":\"n/a\",\"GitRepository\":\"n/a\",\"ErrorDetail\":" + string(errDetails) + "}"
+
+			} else {
+				expected = "Step telemetry data:{\"PipelineURLHash\":\"\",\"BuildURLHash\":\"\",\"StageName\":\"\",\"StepName\":\"\",\"ErrorCode\":\"" + tt.fields.data.ErrorCode + "\",\"Duration\":\"\",\"ErrorCategory\":\"\",\"CorrelationID\":\"n/a\",\"CommitHash\":\"n/a\",\"Branch\":\"n/a\",\"GitOwner\":\"n/a\",\"GitRepository\":\"n/a\",\"ErrorDetail\":null}"
 			}
 			telemetry.logStepTelemetryData()
-			// Todo: check logging output
+			assert.Equal(t, expected, hook.LastEntry().Message)
+			hook.Reset()
 		})
 	}
 }
