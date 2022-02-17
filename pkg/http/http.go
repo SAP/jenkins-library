@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -557,11 +558,32 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
 				}
 
+				for len(certs) > 0 {
+					var block *pem.Block
+					block, certs = pem.Decode(certs)
+					if block == nil {
+						break
+					}
+					if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+						log.Entry().Debug("Skipping non certificate block")
+						continue
+					}
+			
+					certBytes := block.Bytes
+					cert, err := x509.ParseCertificate(certBytes)
+					if err != nil {
+						log.Entry().Debugf("Failed to parse certificate %v", err)
+						continue
+					}
+					rootCAs.AddCert(cert)
+				}
+				
 				// Append our cert to the system pool
+				/*
 				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
 					log.Entry().Infof("cert not appended to root ca %v", certificate)
 					return fmt.Errorf("cert not appended to root ca %v", certificate)
-				}
+				}*/
 
 				*transport = TransportWrapper{
 					Transport: &http.Transport{
