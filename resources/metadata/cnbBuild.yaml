@@ -223,7 +223,7 @@ spec:
       - name: preserveFiles
         type: "[]string"
         description: |
-          Comma separated list of globs, for keeping build results in the Jenkins workspace.
+          List of globs, for keeping build results in the Jenkins workspace.
 
           *Note*: globs will be calculated relative to the [path](#path) property.
         scope:
