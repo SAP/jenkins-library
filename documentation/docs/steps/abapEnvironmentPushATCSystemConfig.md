@@ -63,9 +63,10 @@ abapEnvironmentPushATCSystemConfig(
 
 ### Create/Update an ATC System Configuration via direct ABAP endpoint configuration in Jenkinsfile
 
-This example triggers a Create/Update operation on an ATC System Configuration run directly on the ABAP endpoint.
 
-In order to trigger the Create/Update operation on an ATC System Configuration you have to pass the username and password for authentication to the ABAP endpoint via parameters as well as the ABAP endpoint/host. You can store the credentials in Jenkins and use the abapCredentialsId parameter to authenticate to the ABAP endpoint/host.
+This example triggers a create/update operation on an ATC System Configuration run directly on the ABAP endpoint.
+
+In order to trigger the create/update operation on an ATC System Configuration you have to pass the username and password for authentication to the ABAP endpoint via parameters as well as the ABAP endpoint/host. You can store the credentials in Jenkins and use the abapCredentialsId parameter to authenticate to the ABAP endpoint/host.
 
 This must be configured as following:
 
@@ -78,13 +79,15 @@ abapEnvironmentPushATCSystemConfig(
 )
 ```
 
-To Create/Update an ATC System Configuration a file `atcSystemConfig.json` will be needed. Check section 'ATC System configuration file example' for more information.
+
+To create/update an ATC System Configuration a file `atcSystemConfig.json` will be needed. Check section 'ATC System configuration file example' for more information.
 
 ### ATC System configuration file example
 
 The step always performs a check first, if an ATC System Configuration with the same name provided in the file `atcSystemConfig.json` with the attribute conf_name.
 This file contains an JSON Representation of an ATC System Configuration. Some json file examples can be found below.
-In case an ATC System Configuration with this name already exists, by default, the step would perform an Update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
+
+In case an ATC System Configuration with this name already exists, by default, the step would perform an update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
 If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
 
 ```yaml
