@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -240,6 +241,8 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnWriteFile      bool
 	errorOnPathMatch      bool
 	workspace             string
+	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
+	ghCreateIssueError    error
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
@@ -283,6 +286,14 @@ func (c checkmarxExecuteScanUtilsMock) Open(name string) (*os.File, error) {
 		return nil, fmt.Errorf("error on Open")
 	}
 	return os.Open(name)
+}
+
+func (c checkmarxExecuteScanUtilsMock) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	if c.ghCreateIssueError != nil {
+		return c.ghCreateIssueError
+	}
+	c.ghCreateIssueOptions = ghCreateIssueOptions
+	return nil
 }
 
 func TestFilterFileGlob(t *testing.T) {
