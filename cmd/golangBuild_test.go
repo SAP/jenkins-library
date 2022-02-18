@@ -85,7 +85,7 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - tests & ldflags", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - tests with coverage", func(t *testing.T) {
@@ -137,7 +137,7 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
@@ -158,7 +158,7 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+			assert.Equal(t, []string{"build", "-trimpath", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
 
 			assert.Equal(t, 1, len(utils.fileUploads))
 			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
@@ -183,7 +183,7 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+			assert.Equal(t, []string{"build", "-trimpath", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
 
 			assert.Equal(t, 1, len(utils.fileUploads))
 			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
@@ -206,7 +206,7 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
