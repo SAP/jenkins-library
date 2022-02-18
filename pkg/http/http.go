@@ -501,7 +501,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
-
+	// Get the SystemCertPool, continue with an empty pool on error
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
 		log.Entry().Debugf("Caught error on store lookup %v", err)
@@ -572,7 +572,6 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 				}
 
-				// Get the SystemCertPool, continue with an empty pool on error
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
@@ -597,6 +596,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		}
 
 	}
+	log.Entry().Debugf("root CA subjects: %v", rootCAs.Subjects())
 	return nil
 }
 

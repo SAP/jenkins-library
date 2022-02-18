@@ -541,11 +541,10 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 	response, err := s.httpClient.SendRequest(http.MethodPost, s.serverURL, bytes.NewBuffer(body), headers, nil)
-
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to send request to WhiteSource")
 	}
-
+	defer response.Body.Close()
 	responseBody, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
