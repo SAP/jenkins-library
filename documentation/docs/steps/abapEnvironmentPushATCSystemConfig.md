@@ -84,6 +84,7 @@ To create/update an ATC System Configuration a file `atcSystemConfig.json` will 
 
 The step always performs a check first, if an ATC System Configuration with the same name provided in the file `atcSystemConfig.json` with the attribute conf_name.
 This file contains an JSON Representation of an ATC System Configuration. Some json file examples can be found below.
+
 In case an ATC System Configuration with this name already exists, by default, the step would perform an update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
 If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
 
