@@ -247,6 +247,26 @@ func TestPreserveFiles(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild")
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "config_preserve_files.yml")
+	container.assertHasFile(t, "/project/project/node_modules/base/README.md")
+	container.assertHasFile(t, "/project/project/package-lock.json")
+	container.terminate(t)
+}
+
+func TestPreserveFilesIgnored(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
+	container.assertHasOutput(t, "skipping preserving files because the source")
 	container.terminate(t)
 }
