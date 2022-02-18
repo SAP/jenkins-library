@@ -4,14 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/yaml"
-	"github.com/elliotchance/orderedmap"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,6 +12,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/yaml"
+	"github.com/elliotchance/orderedmap"
+	"github.com/pkg/errors"
 )
 
 type cfFileUtil interface {
@@ -684,7 +685,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		if err != nil {
 			return fmt.Errorf("Cannot prepare mta extension files: %w", err)
 		}
-		err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
+		_, _, err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
 		if err != nil {
 			return fmt.Errorf("Cannot handle credentials inside mta extension files: %w", err)
 		}
@@ -704,38 +705,45 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	return err
 }
 
-func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) error {
+func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) (updated, containsUnresolved bool, err error) {
 
 	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
 
 	b, err := fileUtils.FileRead(extFile)
 	if err != nil {
-		return errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
+		return false, false, errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
 	}
 	content := string(b)
 
 	env, err := toMap(_environ(), "=")
 	if err != nil {
-		errors.Wrap(err, "Cannot handle mta extension credentials.")
+		return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
 	}
 
-	updated := false
 	missingCredentials := []string{}
 	for name, credentialKey := range credentials {
 		credKey, ok := credentialKey.(string)
 		if !ok {
-			return fmt.Errorf("Cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
+			return false, false, fmt.Errorf("cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
 		}
-		pattern := "<%= " + name + " %>"
-		if strings.Contains(content, pattern) {
+
+		const allowedVariableNamePattern = "^[-_A-Za-z0-9]+$"
+		alphaNumOnly := regexp.MustCompile(allowedVariableNamePattern)
+		if !alphaNumOnly.MatchString(name) {
+			return false, false, fmt.Errorf("credential key name '%s' contains unsupported character. Must contain only %s", name, allowedVariableNamePattern)
+		}
+		pattern := regexp.MustCompile("<%=\\s*" + name + "\\s*%>")
+		if pattern.MatchString(content) {
 			cred := env[toEnvVarKey(credKey)]
 			if len(cred) == 0 {
 				missingCredentials = append(missingCredentials, credKey)
 				continue
 			}
-			content = strings.Replace(content, pattern, cred, -1)
+			content = pattern.ReplaceAllLiteralString(content, cred)
 			updated = true
 			log.Entry().Debugf("Mta extension credentials handling: Placeholder '%s' has been replaced by credential denoted by '%s'/'%s' in file '%s'", name, credKey, toEnvVarKey(credKey), extFile)
+		} else {
+			log.Entry().Debugf("Mta extension credentials handling: Variable '%s' is not used in file '%s'", name, extFile)
 		}
 	}
 	if len(missingCredentials) > 0 {
@@ -746,7 +754,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		// ensure stable order of the entries. Needed e.g. for the tests.
 		sort.Strings(missingCredentials)
 		sort.Strings(missinCredsEnvVarKeyCompatible)
-		return fmt.Errorf("Cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
+		return false, false, fmt.Errorf("cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
 	}
 	if !updated {
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
@@ -754,22 +762,24 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		fInfo, err := fileUtils.Stat(extFile)
 		fMode := fInfo.Mode()
 		if err != nil {
-			errors.Wrap(err, "Cannot handle mta extension credentials.")
+			return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
 		}
 		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
 		if err != nil {
-			return errors.Wrap(err, "Cannot handle mta extension credentials.")
+			return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
 		}
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}
 
-	re := regexp.MustCompile(`<%= .* %>`)
+	re := regexp.MustCompile(`<%=.+%>`)
 	placeholders := re.FindAll([]byte(content), -1)
-	if len(placeholders) > 0 {
+	containsUnresolved = (len(placeholders) > 0)
+
+	if containsUnresolved {
 		log.Entry().Warningf("mta extension credential handling: Unresolved placeholders found after inserting credentials: %s", placeholders)
 	}
 
-	return nil
+	return updated, containsUnresolved, nil
 }
 
 func toEnvVarKey(key string) string {
@@ -797,8 +807,11 @@ func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []s
 			continue
 		}
 		// REVISIT: maybe check if the extension descriptor exists
-		result = append(result, "-e", part)
 		extFiles = append(extFiles, part)
+	}
+	if len(extFiles) > 0 {
+		result = append(result, "-e")
+		result = append(result, strings.Join(extFiles, ","))
 	}
 	return result, extFiles
 }

@@ -49,5 +49,5 @@ stages:
 ```yaml
 repositories:
   - name: '/DMO/SWC'
-    branch: 'master'
+    branch: 'main'
 ```

@@ -89,7 +89,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		}
 	}
 
-	log.Entry().Infof("build settings infomration successfully created with '%v", string(jsonResult))
+	log.Entry().Infof("build settings information successfully created with '%v", string(jsonResult))
 
 	return string(jsonResult), nil
 

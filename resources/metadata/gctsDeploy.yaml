@@ -108,6 +108,8 @@ spec:
         default: GIT
         possibleValues:
           - GIT
+          - GITHUB
+          - GITLAB
       - name: branch
         type: string
         description: Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.
