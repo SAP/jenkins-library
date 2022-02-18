@@ -22,7 +22,9 @@ This stage will trigger the execution of the `ATC` and `AUnit` stages in paralle
 
 ### ATC
 
-This stage runs ATC checks on the SAP BTP, ABAP environment system. The results are returned in the "CheckStyle" format. With the help of a stage extension, a plugin can be used to visualize the check results.
+In this stage, ATC checks can be executed using [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/). The step can receive software components or packages.
+
+The results are returned in the checkstyle format and can be displayed using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin). To display the results it is necessary to [extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
 
 ### AUnit
 

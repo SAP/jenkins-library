@@ -43,7 +43,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 	subOptions := convertATCSysOptions(config)
 
-	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key.
 	connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
@@ -228,6 +228,8 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 	if err != nil {
 		return batchRequestString, err
 	}
+
+	configBaseJson.ConfUUID = confUUID
 
 	//build the Batch request string
 	contentID := 1
