@@ -77,7 +77,6 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 	if err != nil {
 		return err
 	}
-
 	if !configDoesExist {
 		//regular push of configuration
 		configUUID = ""
