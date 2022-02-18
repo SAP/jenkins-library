@@ -1,5 +1,5 @@
 metadata:
-  name: gCTSTest
+  name: gctsExecuteABAPUnitTests
   description: Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
   longDescription: |
     This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system.
