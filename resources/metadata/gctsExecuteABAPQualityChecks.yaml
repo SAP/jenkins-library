@@ -104,9 +104,9 @@ spec:
         description: |
            Scope of objects for which you want to execute the checks:
 
-            * localChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the local repository. The checks are executed for the individual objects.
+            * localChangedObjects - object delta derived from last activity in the local repository. The checks are executed for the individual objects.
             * remoteChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
-            * localChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the local repository.  All objects are resolved into packages. The checks are executed for the packages.
+            * localChangedPackages - object delta derived from last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.
             * remoteChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
             * repository - all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
             * packages - all packages that are part of the local repository . The checks are executed for the packages.
@@ -116,7 +116,7 @@ spec:
           - STEPS
       - name: commit
         type: string
-        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes localChangedObjects, remoteChangedObjects, localChangedPackages and remoteChangedPackages secifying a commit it's mandatory.
+        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes remoteChangedObjects and remoteChangedPackages secifying a commit it's mandatory.
         scope:
           - PARAMETERS
           - STAGES

@@ -180,9 +180,11 @@ func getLocalObjects(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 	fromCommit := history.Result[0].FromCommit
 	log.Entry().Info("from Commit: ", fromCommit)
+	toCommit := history.Result[0].ToCommit
+	log.Entry().Info("to Commit: ", toCommit)
 
-	// object delta between commit that triggered the pipeline and last fromCommit retrieved from History list in gCTS
-	resp, err := getObjectDifference(config, fromCommit, config.Commit, client)
+	// object delta between FromCommit and ToCommit retrieved from Activities Tab in gCTS
+	resp, err := getObjectDifference(config, fromCommit, toCommit, client)
 	if err != nil {
 		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
 	}
@@ -272,8 +274,10 @@ func getLocalPackages(config *gctsExecuteABAPQualityChecksOptions, client piperh
 
 	fromCommit := history.Result[0].FromCommit
 	log.Entry().Info("from Commit: ", fromCommit)
+	toCommit := history.Result[0].ToCommit
+	log.Entry().Info("to Commit: ", toCommit)
 
-	// object delta between commit that triggered the pipeline and last fromCommit retrieved from History list in gCTS
+	// object delta between FromCommit and ToCommit retrieved from Activities Tab in gCTS
 	resp, err := getObjectDifference(config, fromCommit, config.Commit, client)
 
 	if err != nil {
@@ -1860,7 +1864,7 @@ type history struct {
 	Rid          string `json:"rid"`
 	CheckoutTime int    `json:"checkoutTime"`
 	FromCommit   string `json:"fromCommit"`
-	Tocommit     string `json:"toCommit"`
+	ToCommit     string `json:"toCommit"`
 	Caller       string `json:"caller"`
 	Type         string `json:"type"`
 }
