@@ -16,8 +16,6 @@ type HelmExecutor interface {
 	RunHelmUninstall() error
 	RunHelmPackage() error
 	RunHelmTest() error
-	RunHelmRegistryLogin() error
-	RunHelmRegistryLogout() error
 	RunHelmPublish() error
 }
 
@@ -31,33 +29,29 @@ type HelmExecute struct {
 
 // HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
-	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
-	ChartPath                 string   `json:"chartPath,omitempty"`
-	ContainerRegistryPassword string   `json:"containerRegistryPassword,omitempty"`
-	ContainerImageName        string   `json:"containerImageName,omitempty"`
-	ContainerImageTag         string   `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
-	ContainerRegistryUser     string   `json:"containerRegistryUser,omitempty"`
-	ContainerRegistrySecret   string   `json:"containerRegistrySecret,omitempty"`
-	DeploymentName            string   `json:"deploymentName,omitempty"`
-	ForceUpdates              bool     `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                []string `json:"helmValues,omitempty"`
-	Image                     string   `json:"image,omitempty"`
-	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                string   `json:"kubeConfig,omitempty"`
-	KubeContext               string   `json:"kubeContext,omitempty"`
-	Namespace                 string   `json:"namespace,omitempty"`
-	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	PackageVersion            string   `json:"packageVersion,omitempty"`
-	AppVersion                string   `json:"appVersion,omitempty"`
-	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
-	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
-	FilterTest                string   `json:"filterTest,omitempty"`
-	ChartRepo                 string   `json:"chartRepo,omitempty"`
-	HelmRegistryUser          string   `json:"helmRegistryUser,omitempty"`
-	HelmChartServer           string   `json:"helmChartServer,omitempty"`
-	HelmCommand               string   `json:"helmCommand,omitempty"`
+	AdditionalParameters          []string `json:"additionalParameters,omitempty"`
+	ChartPath                     string   `json:"chartPath,omitempty"`
+	DeploymentName                string   `json:"deploymentName,omitempty"`
+	ForceUpdates                  bool     `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds         int      `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                    []string `json:"helmValues,omitempty"`
+	Image                         string   `json:"image,omitempty"`
+	KeepFailedDeployments         bool     `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                    string   `json:"kubeConfig,omitempty"`
+	KubeContext                   string   `json:"kubeContext,omitempty"`
+	Namespace                     string   `json:"namespace,omitempty"`
+	DockerConfigJSON              string   `json:"dockerConfigJSON,omitempty"`
+	PackageVersion                string   `json:"packageVersion,omitempty"`
+	AppVersion                    string   `json:"appVersion,omitempty"`
+	DependencyUpdate              bool     `json:"dependencyUpdate,omitempty"`
+	DumpLogs                      bool     `json:"dumpLogs,omitempty"`
+	FilterTest                    string   `json:"filterTest,omitempty"`
+	TargetChartRepositoryURL      string   `json:"targetChartRepositoryURL,omitempty"`
+	TargetChartRepositoryName     string   `json:"targetChartRepositoryName,omitempty"`
+	TargetChartRepositoryUser     string   `json:"targetChartRepositoryUser,omitempty"`
+	TargetChartRepositoryPassword string   `json:"targetChartRepositoryPassword,omitempty"`
+	HelmCommand                   string   `json:"helmCommand,omitempty"`
+	CustomTLSCertificateLinks     []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -94,10 +88,9 @@ func (h *HelmExecute) RunHelmAdd() error {
 	helmParams := []string{
 		"repo",
 		"add",
-		"stable",
 	}
-
-	helmParams = append(helmParams, h.config.ChartRepo)
+	helmParams = append(helmParams, h.config.TargetChartRepositoryName)
+	helmParams = append(helmParams, h.config.TargetChartRepositoryURL)
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -114,14 +107,6 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
-	}
-
-	var containerInfo map[string]string
-	if h.config.Image != "" && h.config.ContainerRegistryURL != "" {
-		containerInfo, err = getContainerInfo(h.config)
-		if err != nil {
-			return fmt.Errorf("failed to execute deployments")
-		}
 	}
 
 	helmParams := []string{
@@ -143,11 +128,6 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		"--install",
 		"--namespace", h.config.Namespace,
 	)
-
-	if h.config.Image != "" && h.config.ContainerRegistryURL != "" {
-		helmParams = append(helmParams, "--set", fmt.Sprintf("image.repository=%v/%v,image.tag=%v",
-			containerInfo["containerRegistry"], containerInfo["containerImageName"], containerInfo["containerImageTag"]))
-	}
 
 	if h.config.ForceUpdates {
 		helmParams = append(helmParams, "--force")
@@ -338,35 +318,6 @@ func (h *HelmExecute) RunHelmTest() error {
 	return nil
 }
 
-// RunHelmRegistryLogin is used to login private registry
-func (h *HelmExecute) RunHelmRegistryLogin() error {
-	helmParams := []string{
-		"registry login",
-	}
-	helmParams = append(helmParams, "-u", h.config.HelmRegistryUser)
-	helmParams = append(helmParams, h.config.HelmChartServer)
-
-	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm login failed")
-	}
-
-	return nil
-}
-
-// RunHelmRegistryLogout is logout to login private registry
-func (h *HelmExecute) RunHelmRegistryLogout() error {
-	helmParams := []string{
-		"registry logout",
-	}
-	helmParams = append(helmParams, h.config.HelmChartServer)
-
-	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm logout failed")
-	}
-
-	return nil
-}
-
 //RunHelmPublish is used to upload a chart to a registry
 func (h *HelmExecute) RunHelmPublish() error {
 	err := h.runHelmInit()
@@ -374,23 +325,39 @@ func (h *HelmExecute) RunHelmPublish() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	if err := h.RunHelmRegistryLogin(); err != nil {
-		return fmt.Errorf("failed to execute registry login: %v", err)
+	if len(h.config.TargetChartRepositoryURL) == 0 {
+		return fmt.Errorf("there's no target repository for helm chart publishing configured")
 	}
 
-	helmParams := []string{
-		"push",
-	}
-	helmParams = append(helmParams, fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz"))
-	helmParams = append(helmParams, fmt.Sprintf("%v", "oci://"+h.config.HelmChartServer+"/helm-charts"))
+	// repoClientOptions := piperhttp.ClientOptions{
+	// 	Username:     h.config.TargetChartRepositoryUser,
+	// 	Password:     h.config.TargetChartRepositoryPassword,
+	// 	TrustedCerts: h.config.CustomTLSCertificateLinks,
+	// }
 
-	if err := h.runHelmCommand(helmParams); err != nil {
-		return fmt.Errorf("failded push command: %v", err)
-	}
+	// h.utils.SetOptions(repoClientOptions)
 
-	if err := h.RunHelmRegistryLogout(); err != nil {
-		return fmt.Errorf("failed to execute registry logout: %v", err)
-	}
+	// targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
+
+	// separator := "/"
+
+	// if strings.HasSuffix(config.TargetRepositoryURL, "/") {
+	// 	separator = ""
+	// }
+
+	// targetURL := fmt.Sprintf("%s%s%s", config.TargetRepositoryURL, separator, targetPath)
+
+	// log.Entry().Infof("publishing artifact: %s", targetURL)
+
+	// response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
+
+	// if err != nil {
+	// 	return fmt.Errorf("couldn't upload artifact: %w", err)
+	// }
+
+	// if !(response.StatusCode == 200 || response.StatusCode == 201) {
+	// 	return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+	// }
 
 	return nil
 }

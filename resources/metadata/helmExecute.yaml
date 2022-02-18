@@ -55,8 +55,28 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: containerRegistryPassword
-        description: Password for container registry access - typically provided by the CI/CD environment.
+      - name: targetChartRepositoryURL
+        description: "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        default: "https://charts.helm.sh/stable"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: targetChartRepositoryName
+        type: string
+        description: set the chart repository
+        default: "stable"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetChartRepositoryUser
+        description: "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
           - PARAMETERS
@@ -64,76 +84,19 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: dockerCredentialsId
-            type: secret
-            param: password
-          - name: commonPipelineEnvironment
-            param: custom/repositoryPassword
-      - name: containerImageName
-        aliases:
-          - name: dockerImageName
-        type: string
-        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: containerImageTag
-        aliases:
-          - name: artifactVersion
-        type: string
-        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
-      - name: containerRegistryUrl
-        aliases:
-          - name: dockerRegistryUrl
-        type: string
-        description: http(s) url of the Container registry where the image to deploy is located.
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/registryUrl
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
-      - name: containerRegistryUser
-        description: Username for container registry access - typically provided by the CI/CD environment.
-        type: string
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - name: dockerCredentialsId
-            type: secret
-            param: username
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-      - name: containerRegistrySecret
-        description: Name of the container registry secret used for pulling containers from the registry.
-        longDescription: |-
-          Name of the container registry secret used for pulling containers from the registry.
-
-          If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
-
-          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
+      - name: targetChartRepositoryPassword
+        description: "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: regsecret
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
       - name: deploymentName
         aliases:
           - name: helmDeploymentName
@@ -283,27 +246,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: chartRepo
-        type: string
-        description: set the chart repository
-        default: "https://charts.helm.sh/stable"
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: helmRegistryUser
-        type: string
-        description: set the user for login to helm registry
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: helmChartServer
-        type: string
-        description: set chart server for pushing chart
-        default: "localhost:5000"
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
         scope:
           - GENERAL
           - PARAMETERS
