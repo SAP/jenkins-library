@@ -512,7 +512,7 @@ spec:
       - name: createResultIssue
         type: bool
         description: "Whether the step creates a GitHub issue containing the scan results in the originating repo.
-        Since optimized pipelines are headless the creation is implicitly activated for schedules runs."
+        Since optimized pipelines are headless the creation is implicitly activated for scheduled runs."
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/optimizedAndScheduled
