@@ -103,6 +103,6 @@ func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
-	log.Entry().Warnf("Could not read env variable %v using fallback value %v", key, fallback)
+	log.Entry().Debugf("Could not read env variable %v using fallback value %v", key, fallback)
 	return fallback
 }
