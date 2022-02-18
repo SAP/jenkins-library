@@ -134,7 +134,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
 					buildOpts := append(config.BuildOptions, dest...)
-					err = runKaniko(file, buildOpts, execRunner, fileUtils, commonPipelineEnvironment)
+					err = runKaniko(file, buildOpts, execRunner, fileUtils)
 					if err != nil {
 						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 					}
@@ -206,23 +206,15 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	// no support for building multiple containers
-	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner, fileUtils, commonPipelineEnvironment)
+	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner, fileUtils)
 }
 
-func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils) error {
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-
-	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
-	if err != nil {
-		return fmt.Errorf("failed to create tmp dir for kanikoExecute: %w", err)
-	}
-
-	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
-
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd, "--digest-file", digestFilePath}
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
@@ -230,23 +222,5 @@ func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")
 	}
-
-	if b, err := fileUtils.FileExists(digestFilePath); err == nil && b {
-		digest, err := fileUtils.FileRead(digestFilePath)
-
-		if err != nil {
-			return errors.Wrap(err, "error while reading image digest")
-		}
-
-		digestStr := string(digest)
-
-		log.Entry().Debugf("image digest: %s", digestStr)
-
-		commonPipelineEnvironment.container.imageDigest = string(digestStr)
-		commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digestStr)
-	} else {
-		log.Entry().Warn("couldn't resolve image digest")
-	}
-
 	return nil
 }
