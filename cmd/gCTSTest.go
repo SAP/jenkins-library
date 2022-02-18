@@ -5,7 +5,5 @@ import (
 )
 
 func gCTSTest(config gCTSTestOptions, telemetryData *telemetry.CustomData) {
-	var qualityChecksConfig gctsExecuteABAPQualityChecksOptions = gctsExecuteABAPQualityChecksOptions(config)
 
-	gctsExecuteABAPQualityChecks(qualityChecksConfig, telemetryData)
 }
