@@ -20,37 +20,24 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	var status string = "R"
 
 	for {
-		var resp, err = GetHTTPResponse("GET", connectionDetails, nil, client)
+		pullEntity, responseStatus, err := GetPullStatus(repositoryName, connectionDetails, client)
 		if err != nil {
-			log.SetErrorCategory(log.ErrorInfrastructure)
-			err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
-			return "", err
+			return status, err
 		}
-		defer resp.Body.Close()
+		status = pullEntity.Status
+		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
+		if pullEntity.Status != "R" {
 
-		// Parse response
-		var abapResp map[string]*json.RawMessage
-		var body PullEntity
-		bodyText, _ := ioutil.ReadAll(resp.Body)
-
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["d"], &body)
-
-		if reflect.DeepEqual(PullEntity{}, body) {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
-			log.SetErrorCategory(log.ErrorInfrastructure)
-			var err = errors.New("Request to ABAP System not successful")
-			return "", err
-		}
-
-		status = body.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
-		if body.Status != "R" {
-			if body.Status == "E" {
-				log.SetErrorCategory(log.ErrorUndefined)
-				PrintLogs(body, true)
+			if serviceContainsNewLogEntities(connectionDetails, client) {
+				PrintLogs(repositoryName, connectionDetails, client)
 			} else {
-				PrintLogs(body, false)
+				// Fallback
+				if pullEntity.Status == "E" {
+					log.SetErrorCategory(log.ErrorUndefined)
+					PrintLegacyLogs(repositoryName, connectionDetails, client, true)
+				} else {
+					PrintLegacyLogs(repositoryName, connectionDetails, client, false)
+				}
 			}
 			break
 		}
@@ -59,9 +46,108 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	return status, nil
 }
 
-// PrintLogs sorts and formats the received transport and execution log of an import
-func PrintLogs(entity PullEntity, errorOnSystem bool) {
+func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (newLogEntitiesAvailable bool) {
 
+	newLogEntitiesAvailable = false
+	details := connectionDetails
+	details.URL = details.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
+	resp, err := GetHTTPResponse("GET", details, nil, client)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	var entitySet EntitySetsForManageGitRepository
+
+	// Parse response
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal(bodyText, &abapResp)
+	json.Unmarshal(*abapResp["d"], &entitySet)
+
+	for _, entitySet := range entitySet.EntitySets {
+		if entitySet == "LogOverviews" || entitySet == "LogProtocols" {
+			return true
+		}
+	}
+	return
+
+}
+
+func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
+	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	if err != nil {
+		return
+	}
+
+	if len(entity.ToLogOverview.Results) == 0 {
+		// return if no logs are available
+		return
+	}
+
+	// Sort logs
+	sort.SliceStable(entity.ToLogOverview.Results, func(i, j int) bool {
+		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
+	})
+
+	// Print Overview
+	log.Entry().Infof("\n")
+	log.Entry().Infof("-----------------------------------------------------------------------")
+	log.Entry().Infof("| %-22s | %10s | %-29s |", "Phase", "Status", "Timestamp")
+	log.Entry().Infof("-----------------------------------------------------------------------")
+	for _, logEntry := range entity.ToLogOverview.Results {
+		log.Entry().Infof("| %-22s | %10s | %-29s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+	}
+	log.Entry().Infof("-----------------------------------------------------------------------")
+
+	// Print Details
+	for _, logEntryForDetails := range entity.ToLogOverview.Results {
+		printLog(logEntryForDetails)
+	}
+	log.Entry().Infof("-------------------------")
+
+	return
+}
+
+func printLog(logEntry LogResultsV2) {
+
+	sort.SliceStable(logEntry.ToLogProtocol.Results, func(i, j int) bool {
+		return logEntry.ToLogProtocol.Results[i].ProtocolLine < logEntry.ToLogProtocol.Results[j].ProtocolLine
+	})
+
+	if logEntry.Status != `Success` {
+		log.Entry().Infof("\n")
+		log.Entry().Infof("-------------------------")
+		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("-------------------------")
+
+		for _, entry := range logEntry.ToLogProtocol.Results {
+			log.Entry().Info(entry.Description)
+		}
+
+	} else {
+		log.Entry().Debugf("\n")
+		log.Entry().Debugf("-------------------------")
+		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Debugf("-------------------------")
+
+		for _, entry := range logEntry.ToLogProtocol.Results {
+			log.Entry().Debug(entry.Description)
+		}
+	}
+
+}
+
+// PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
+func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) {
+
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
+	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	if err != nil {
+		return
+	}
 	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
 		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
@@ -108,6 +194,31 @@ func PrintLogs(entity PullEntity, errorOnSystem bool) {
 
 }
 
+func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
+		return body, resp.Status, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal(bodyText, &abapResp)
+	json.Unmarshal(*abapResp["d"], &body)
+
+	if reflect.DeepEqual(PullEntity{}, body) {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		var err = errors.New("Request to ABAP System not successful")
+		return body, resp.Status, err
+	}
+	return body, resp.Status, nil
+}
+
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
 func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
@@ -143,13 +254,52 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	return repositories, nil
 }
 
-//GetCommitStrings for getting the commit_id property for the http request and a string for logging output
-func GetCommitStrings(commitID string) (commitQuery string, commitString string) {
-	if commitID != "" {
-		commitQuery = `, "commit_id":"` + commitID + `"`
-		commitString = ", commit '" + commitID + "'"
+func (repo *Repository) GetRequestBodyForCommitOrTag() (requestBodyString string) {
+	if repo.CommitID != "" {
+		requestBodyString = `, "commit_id":"` + repo.CommitID + `"`
+	} else if repo.Tag != "" {
+		requestBodyString = `, "tag_name":"` + repo.Tag + `"`
 	}
-	return commitQuery, commitString
+	return requestBodyString
+}
+
+func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
+	if repo.CommitID != "" {
+		logString = ", commit '" + repo.CommitID + "'"
+	} else if repo.Tag != "" {
+		logString = ", tag '" + repo.Tag + "'"
+	}
+	return logString
+}
+
+func (repo *Repository) GetCloneRequestBody() (body string) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	body = `{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
+	return body
+}
+
+func (repo *Repository) GetCloneLogString() (logString string) {
+	commitOrTag := repo.GetLogStringForCommitOrTag()
+	logString = "repository / software component '" + repo.Name + "', branch '" + repo.Branch + "'" + commitOrTag
+	return logString
+}
+
+func (repo *Repository) GetPullRequestBody() (body string) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	body = `{"sc_name":"` + repo.Name + `"` + requestBodyString + `}`
+	return body
+}
+
+func (repo *Repository) GetPullLogString() (logString string) {
+	commitOrTag := repo.GetLogStringForCommitOrTag()
+	logString = "repository / software component '" + repo.Name + "'" + commitOrTag
+	return logString
 }
 
 /****************************************
@@ -172,6 +322,7 @@ type PullEntity struct {
 	ChangeTime        string       `json:"change_time"`
 	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
 	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
+	ToLogOverview     AbapLogsV2   `json:"to_Log_Overview"`
 }
 
 // BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
@@ -210,6 +361,31 @@ type AbapLogs struct {
 	Results []LogResults `json:"results"`
 }
 
+type AbapLogsV2 struct {
+	Results []LogResultsV2 `json:"results"`
+}
+
+type LogResultsV2 struct {
+	Metadata      AbapMetadata       `json:"__metadata"`
+	Index         int                `json:"log_index"`
+	Name          string             `json:"log_name"`
+	Status        string             `json:"type_of_found_issues"`
+	Timestamp     string             `json:"timestamp"`
+	ToLogProtocol LogProtocolResults `json:"to_Log_Protocol"`
+}
+
+type LogProtocolResults struct {
+	Results []LogProtocol `json:"results"`
+}
+
+type LogProtocol struct {
+	Metadata      AbapMetadata `json:"__metadata"`
+	OverviewIndex int          `json:"log_index"`
+	ProtocolLine  int          `json:"index_no"`
+	Type          string       `json:"type"`
+	Description   string       `json:"descr"`
+}
+
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
 type LogResults struct {
 	Index       string `json:"index_no"`
@@ -224,4 +400,8 @@ type RepositoriesConfig struct {
 	RepositoryName  string
 	RepositoryNames []string
 	Repositories    string
+}
+
+type EntitySetsForManageGitRepository struct {
+	EntitySets []string `json:"EntitySets"`
 }

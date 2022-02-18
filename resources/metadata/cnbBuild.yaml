@@ -38,8 +38,13 @@ spec:
         aliases:
           - name: dockerImageName
         type: string
-        mandatory: true
-        description: Name of the container which will be built
+        description: |
+          Name of the container which will be built
+          `cnbBuild` step will try to identify a containerImageName using the following precedence:
+            1. `containerImageName` parameter.
+            2. `project.id` field of a `project.toml` file.
+            3. `git/repository` parameter of the `commonPipelineEnvironment`.
+          If none of the above was found - an error will be raised.
         scope:
           - GENERAL
           - PARAMETERS
@@ -108,11 +113,12 @@ spec:
       - name: projectDescriptor
         type: string
         description: |
-          Path to the project.toml file.
+          Relative path to the project.toml file.
           See [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.
           Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.
           Environment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.
 
+          Note: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.
           Note: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
         default: project.toml
         scope:
@@ -162,14 +168,52 @@ spec:
               file: path/to/settings.xml
           ```
 
-          or inline
-
+          inline:
           ```yaml
           bindings:
             maven-settings:
               type: maven
               key: settings.xml
               content: "inline settings.xml"
+          ```
+
+          from url:
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              fromUrl: https://url-to/setting.xml
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: multipleImages
+        aliases:
+          - name: images
+        type: "[]map[string]interface{}"
+        description: |
+          This parameter is only needed if `cnbBuild` should create multiple images.
+          Otherwise it can be ignored!!!
+
+          In case of multiple images, this array contains one entry for each image. That
+          entry can override any parameter from the main section, e.g.
+
+          ```yaml
+          containerImageTag: latest
+          containerRegistryUrl: docker.io/example
+          dockerConfigJsonCredentialsId: CREDENTIALS
+          multipleImages:
+          - containerImageName: java-app
+            buildpacks:
+            - "java"
+            path: "source/java"
+          - containerImageName: nodejs-app
+            containerImageTag: v1.0.0
+            buildpacks:
+            - "nodejs"
+            path: "source/nodejs"
           ```
         scope:
           - PARAMETERS
@@ -182,5 +226,9 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
   containers:
     - image: "paketobuildpacks/builder:full"

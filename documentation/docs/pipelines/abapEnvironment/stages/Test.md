@@ -6,12 +6,18 @@ The below sections contain more information on the usage and configuration of th
 
 ## ATC
 
-In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive software components or packages. The results are returned in the checkstyle format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](../configuration.md)).
+In this stage, ATC checks can be executed using [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/). The step can receive software components or packages.
+In case an ATC System Configuration should be used, it can be created/updated using [abapEnvironmentPushATCSystemConfig](https://sap.github.io/jenkins-library/steps/abapEnvironmentPushATCSystemConfig/).
+
+The results are returned in the checkstyle format and can be displayed using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin). To display the results it is necessary to [extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+
+Alternatively it is possible to [extend the ATC stage to send ATC results via E-Mail](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#2-extend-the-atc-stage-to-send-atc-results-via-e-mail).
 
 ### Steps
 
 The following steps are executed in this stage:
 
+- [abapEnvironmentPushATCSystemConfig](../../../steps/abapEnvironmentPushATCSystemConfig.md)
 - [abapEnvironmentRunATCCheck](../../../steps/abapEnvironmentRunATCCheck.md)
 
 ### Stage Parameters
@@ -20,11 +26,13 @@ There are no specifc stage parameters.
 
 ### Stage Activation
 
-This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage..
+This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
 
 ### Configuration Example
 
 #### config.yml
+
+In case of NOT providing an ATC System Configuration.
 
 ```yaml
 general:
@@ -39,12 +47,41 @@ stages:
     atcConfig: 'atcConfig.yml'
 ```
 
+In case of providing an ATC System Configuration.
+
+```yaml
+general:
+  cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
+  cfOrg: 'myOrg'
+  cfSpace: 'mySpace'
+  cfCredentialsId: 'cfAuthentification'
+  cfServiceInstance: 'abap_system'
+  cfServiceKeyName: 'JENKINS_SAP_COM_0510'
+stages:
+  ATC:
+    atcConfig: 'atcConfig.yml'
+    atcSystemConfigFilePath: 'atcSystemConfig.json'
+```
+
 #### atcConfig.yml
 
 ```yaml
 atcobjects:
   softwarecomponent:
     - name: "/DMO/SWC"
+```
+
+#### atcSystemConfig.json
+
+```json
+{
+  "conf_name": "myATCSystemConfigurationName",
+  "checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+  "block_findings": "0",
+  "inform_findings": "1",
+  "is_default": false,
+  "is_proxy_variant": false
+}
 ```
 
 #### ATC.groovy
@@ -106,7 +143,7 @@ stages:
 
 #### aunitConfig.yml
 
-Please note that it is recommended to specify each development package you want to be checked as it is not possible to specify structure packages within the `aUnitConfig.yml` file. You can specify complete development packages using the `includesubpackages: false` parameter like in below example configuration.
+If you want to test complete software components please specify the `aUnitConfig.yml` file like in below example configuration. This configuration will test the software components `Z_TEST_SC` and `Z_TEST_SC2`:
 
 ```yaml
 title: My AUnit run
@@ -125,10 +162,7 @@ options:
     medium: true
     long: true
 objectSet:
-  - type: unionSet
-    set:
-      - type: packageSet
-        package:
-          - name: MY_PACKAGE
-            includeSubpackages: false
+  softwarecomponents:
+  - name: Z_TEST_SC
+  - name: Z_TEST_SC2
 ```
