@@ -41,6 +41,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"containerSaveImage":                        containerSaveImageMetadata(),
 		"detectExecuteScan":                         detectExecuteScanMetadata(),
 		"fortifyExecuteScan":                        fortifyExecuteScanMetadata(),
+		"gCTSTest":                                  gCTSTestMetadata(),
 		"gaugeExecuteTests":                         gaugeExecuteTestsMetadata(),
 		"gctsCloneRepository":                       gctsCloneRepositoryMetadata(),
 		"gctsCreateRepository":                      gctsCreateRepositoryMetadata(),
