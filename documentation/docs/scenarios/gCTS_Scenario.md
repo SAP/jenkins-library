@@ -106,6 +106,37 @@ pipeline {
     }
   }
 }
+stage('ABAP Unit Tests') {
+  steps{
+
+   script{
+
+     try{
+           gctsExecuteABAPUnitTests(
+              script: this,
+              commit: "${GIT_COMMIT}",
+              workspace: "${WORKSPACE}")
+        }
+          catch (Exception ex) {
+            currentBuild.result = 'FAILURE'
+            unstable(message: "${STAGE_NAME} is unstable")
+             }
+
+        }
+      }
+    }
+stage('Results in Checkstyle') {
+  steps{
+
+     recordIssues(
+          enabledForFailure: true, aggregatingResults: true,
+          tools: [checkStyle(pattern: 'ATCResults.xml', reportEncoding: 'UTF8'),checkStyle(pattern: 'AUnitResults.xml', reportEncoding: 'UTF8')]
+       )
+
+      }
+    }
+
+}
 ```   
 
 ### Configuration (`.pipeline/config.yml`)
