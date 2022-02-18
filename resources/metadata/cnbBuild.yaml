@@ -221,7 +221,7 @@ spec:
           - STAGES
           - STEPS
       - name: preserveFiles
-        type: string
+        type: "[]string"
         description: |
           Comma separated list of globs, for keeping build results in the Jenkins workspace.
 

@@ -369,6 +369,7 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 		return matches, nil
 	}
 	for path := range f.files {
+		path = strings.TrimLeft(path, f.Separator)
 		matched, _ := doublestar.PathMatch(pattern, path)
 		if matched {
 			matches = append(matches, path)

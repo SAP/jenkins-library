@@ -233,3 +233,20 @@ func TestMultiImage(t *testing.T) {
 	container.assertHasOutput(t, "Saving localhost:5000/go-app:v1.0.0...")
 	container.terminate(t)
 }
+
+func TestPreserveFiles(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	})
+
+	container.whenRunningPiperCommand("cnbBuild")
+	container.terminate(t)
+}
