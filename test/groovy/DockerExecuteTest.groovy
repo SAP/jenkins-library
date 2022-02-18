@@ -343,19 +343,6 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testDockerNotInstalledResultsInLocalExecution() throws Exception {
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 1)
-        stepRule.step.dockerExecute(script: nullScript,
-            dockerOptions: '-it') {
-            bodyExecuted = true
-        }
-        assertTrue(loggingRule.log.contains('Cannot connect to docker daemon'))
-        assertTrue(loggingRule.log.contains('Running on local environment'))
-        assertTrue(bodyExecuted)
-        assertFalse(docker.isImagePulled())
-    }
-
-    @Test
     void testSidecarDefault() {
         stepRule.step.dockerExecute(
             script: nullScript,
