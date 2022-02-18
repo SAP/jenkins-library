@@ -15,7 +15,7 @@ import (
 
 func TestDiscoverServerSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -59,7 +59,7 @@ func TestDiscoverServerSuccess(t *testing.T) {
 
 func TestDiscoverServerFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost3.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -159,7 +159,7 @@ func TestGetLocalObjectsSuccess(t *testing.T) {
 
 	t.Run("return multiple objects successfully", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo",
@@ -214,7 +214,7 @@ func TestGetLocalObjectsSuccess(t *testing.T) {
 
 	t.Run("no objects returned by http call", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo2",
@@ -251,7 +251,7 @@ func TestGetLocalObjectsSuccess(t *testing.T) {
 
 func TestGetLocalObjectsFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -278,7 +278,7 @@ func TestGetLocalObjectsFailure(t *testing.T) {
 
 func TestGetRemoteObjectsSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -335,7 +335,7 @@ func TestGetRemoteObjectsSuccess(t *testing.T) {
 
 	t.Run("no objects returned by http call", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo2",
@@ -369,7 +369,7 @@ func TestGetRemoteObjectsSuccess(t *testing.T) {
 
 func TestGetRemoteObjectsFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -396,7 +396,7 @@ func TestGetRemoteObjectsFailure(t *testing.T) {
 
 func TestGetLocalPackagesSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -449,7 +449,7 @@ func TestGetLocalPackagesSuccess(t *testing.T) {
 
 	t.Run("no objects returned by http call", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo2",
@@ -484,7 +484,7 @@ func TestGetLocalPackagesSuccess(t *testing.T) {
 
 func TestGetLocalPackagesFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -510,7 +510,7 @@ func TestGetLocalPackagesFailure(t *testing.T) {
 
 func TestGetRemotePackagesSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -562,7 +562,7 @@ func TestGetRemotePackagesSuccess(t *testing.T) {
 
 	t.Run("no objects returned by http call", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo2",
@@ -597,7 +597,7 @@ func TestGetRemotePackagesSuccess(t *testing.T) {
 
 func TestGetRemotePackagesFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -623,7 +623,7 @@ func TestGetRemotePackagesFailure(t *testing.T) {
 
 func TestGetPackagesSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -671,7 +671,7 @@ func TestGetPackagesSuccess(t *testing.T) {
 
 	t.Run("no objects returned by http call", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo2",
@@ -706,7 +706,7 @@ func TestGetPackagesSuccess(t *testing.T) {
 
 func TestGetPackagesFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo2",
@@ -732,7 +732,7 @@ func TestGetPackagesFailure(t *testing.T) {
 
 func TestGetRepositoryObjectsSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -786,7 +786,7 @@ func TestGetRepositoryObjectsSuccess(t *testing.T) {
 
 	t.Run("no objects returned by http call", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:       "http://testHost.com:50000",
 			Client:     "000",
 			Repository: "testRepo2",
@@ -821,7 +821,7 @@ func TestGetRepositoryObjectsSuccess(t *testing.T) {
 
 func TestGetRepositoryObjectsFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -848,7 +848,7 @@ func TestGetRepositoryObjectsFailure(t *testing.T) {
 
 func TestExecuteAUnitTestSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:                 "http://testHost.com:50000",
 		Client:               "000",
 		Repository:           "testRepo",
@@ -929,7 +929,7 @@ func TestExecuteAUnitTestSuccess(t *testing.T) {
 
 func TestExecuteAUnitTestFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:                 "http://testHost.com:50000",
 		Client:               "000",
 		Repository:           "testRepo",
@@ -964,7 +964,7 @@ func TestExecuteAUnitTestFailure(t *testing.T) {
 
 func TestExecuteATCCheckSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:               "http://testHost.com:50000",
 		Client:             "000",
 		Repository:         "testRepo",
@@ -1015,7 +1015,7 @@ func TestExecuteATCCheckSuccess(t *testing.T) {
 
 		httpClient := httpMockGctsT{StatusCode: 200}
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:               "http://testHost.com:50000",
 			Client:             "000",
 			Repository:         "testRepo",
@@ -1065,7 +1065,7 @@ func TestExecuteATCCheckFailure(t *testing.T) {
 	var repoObjects []repoObject
 	repoObjects = append(repoObjects, object)
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:               "http://testHost.com:50000",
 		Client:             "000",
 		Repository:         "testRepo",
@@ -1097,7 +1097,7 @@ func TestExecuteATCCheckFailure(t *testing.T) {
 
 func TestParseAUnitResultSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:                 "http://testHost.com:50000",
 		Client:               "000",
 		Repository:           "testRepo",
@@ -1226,7 +1226,7 @@ func TestParseAUnitResultSuccess(t *testing.T) {
 
 func TestParseAUnitResultFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:                 "http://testHost.com:50000",
 		Client:               "000",
 		Repository:           "testRepo",
@@ -1293,7 +1293,7 @@ func TestParseAUnitResultFailure(t *testing.T) {
 
 func TestParseATCCheckResultSuccess(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:               "http://testHost.com:50000",
 		Client:             "000",
 		Repository:         "testRepo",
@@ -1363,7 +1363,7 @@ func TestParseATCCheckResultSuccess(t *testing.T) {
 
 	t.Run("no ATC Checks were found", func(t *testing.T) {
 
-		config := gctsExecuteABAPUnitTestsOptions{
+		config := gctsExecuteABAPQualityChecksOptions{
 			Host:               "http://testHost.com:50000",
 			Client:             "000",
 			Repository:         "testRepo",
@@ -1401,7 +1401,7 @@ func TestParseATCCheckResultSuccess(t *testing.T) {
 
 func TestParseATCCheckResultFailure(t *testing.T) {
 
-	config := gctsExecuteABAPUnitTestsOptions{
+	config := gctsExecuteABAPQualityChecksOptions{
 		Host:               "http://testHost.com:50000",
 		Client:             "000",
 		Repository:         "testRepo",

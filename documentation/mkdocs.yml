@@ -95,6 +95,7 @@ nav:
         - gctsCloneRepository: steps/gctsCloneRepository.md
         - gctsCreateRepository: steps/gctsCreateRepository.md
         - gctsDeploy: steps/gctsDeploy.md
+        - gctsExecuteABAPQualityChecks: steps/gctsExecuteABAPQualityChecks.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - gctsRollback: steps/gctsRollback.md
         - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
