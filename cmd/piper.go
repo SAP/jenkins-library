@@ -126,7 +126,6 @@ func Execute() {
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsExecuteABAPQualityChecksCommand())
 	rootCmd.AddCommand(GCTSTestCommand())
-	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceCommand())
