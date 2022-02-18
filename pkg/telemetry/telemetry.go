@@ -119,13 +119,13 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
+	// always log step telemetry data to logfile used for internal use-case
+	t.logStepTelemetryData()
+
 	// skip if telemetry is disabled
 	if t.disabled {
 		return
 	}
-
-	// always log step telemetry data to logfile used for internal use-case
-	t.logStepTelemetryData()
 
 	request, _ := url.Parse(t.BaseURL)
 	request.Path = t.Endpoint
