@@ -436,7 +436,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	}
 	utils.SetEnv(envVars)
 
-	buildOptions := []string{"build"}
+	buildOptions := []string{"build", "-trimpath"}
 	if len(config.Output) > 0 {
 		fileExtension := ""
 		if architecture.OS == "windows" {
