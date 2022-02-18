@@ -52,7 +52,6 @@ spec:
           - STEPS
         type: "[]string"
         default: []
-        mandatory: false
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
@@ -264,6 +263,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -276,6 +276,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
