@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"time"
@@ -118,6 +119,9 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
+	// always log step telemetry data to logfile used for internal use-case
+	t.logStepTelemetryData()
+
 	// skip if telemetry is disabled
 	if t.disabled {
 		return
@@ -128,4 +132,40 @@ func (t *Telemetry) Send() {
 	request.RawQuery = t.data.toPayloadString()
 	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
 	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
+}
+
+func (t *Telemetry) logStepTelemetryData() {
+
+	var fatalError map[string]interface{}
+	if t.data.CustomData.ErrorCode != "0" && log.GetFatalErrorDetail() != nil {
+		// retrieve the error information from the logCollector
+		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)
+		if err != nil {
+			log.Entry().WithError(err).Warn("could not unmarshal fatal error struct")
+		}
+	}
+
+	stepTelemetryData := StepTelemetryData{
+		PipelineURLHash: t.data.PipelineURLHash,
+		BuildURLHash:    t.data.BuildURLHash,
+		StageName:       t.data.StageName,
+		StepName:        t.data.BaseData.StepName,
+		ErrorCode:       t.data.CustomData.ErrorCode,
+		Duration:        t.data.CustomData.Duration,
+		ErrorCategory:   t.data.CustomData.ErrorCategory,
+		ErrorDetail:     fatalError,
+		CorrelationID:   t.provider.GetBuildUrl(),
+		CommitHash:      t.provider.GetCommit(),
+		Branch:          t.provider.GetBranch(),
+		GitOwner:        t.provider.GetRepoUrl(), // TODO not correct
+		GitRepository:   t.provider.GetRepoUrl(), // TODO not correct
+	}
+	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
+	if err != nil {
+		log.Entry().Error("could not marshal step telemetry data")
+		log.Entry().Infof("Step telemetry data: {n/a}")
+	} else {
+		// log step telemetry data, changes here need to change the regex in the internal piper lib
+		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
+	}
 }

@@ -22,30 +22,35 @@ import (
 )
 
 type checkmarxExecuteScanOptions struct {
-	AvoidDuplicateProjectScans    bool   `json:"avoidDuplicateProjectScans,omitempty"`
-	FilterPattern                 string `json:"filterPattern,omitempty"`
-	FullScanCycle                 string `json:"fullScanCycle,omitempty"`
-	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
-	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
-	Incremental                   bool   `json:"incremental,omitempty"`
-	MaxRetries                    int    `json:"maxRetries,omitempty"`
-	Password                      string `json:"password,omitempty"`
-	Preset                        string `json:"preset,omitempty"`
-	ProjectName                   string `json:"projectName,omitempty"`
-	PullRequestName               string `json:"pullRequestName,omitempty"`
-	ServerURL                     string `json:"serverUrl,omitempty"`
-	SourceEncoding                string `json:"sourceEncoding,omitempty"`
-	TeamID                        string `json:"teamId,omitempty"`
-	TeamName                      string `json:"teamName,omitempty"`
-	Username                      string `json:"username,omitempty"`
-	VerifyOnly                    bool   `json:"verifyOnly,omitempty"`
-	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty"`
-	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
-	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
-	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
-	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
-	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
-	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
+	Assignees                     []string `json:"assignees,omitempty"`
+	AvoidDuplicateProjectScans    bool     `json:"avoidDuplicateProjectScans,omitempty"`
+	FilterPattern                 string   `json:"filterPattern,omitempty"`
+	FullScanCycle                 string   `json:"fullScanCycle,omitempty"`
+	FullScansScheduled            bool     `json:"fullScansScheduled,omitempty"`
+	GeneratePdfReport             bool     `json:"generatePdfReport,omitempty"`
+	GithubAPIURL                  string   `json:"githubApiUrl,omitempty"`
+	GithubToken                   string   `json:"githubToken,omitempty"`
+	Incremental                   bool     `json:"incremental,omitempty"`
+	MaxRetries                    int      `json:"maxRetries,omitempty"`
+	Owner                         string   `json:"owner,omitempty"`
+	Password                      string   `json:"password,omitempty"`
+	Preset                        string   `json:"preset,omitempty"`
+	ProjectName                   string   `json:"projectName,omitempty"`
+	PullRequestName               string   `json:"pullRequestName,omitempty"`
+	Repository                    string   `json:"repository,omitempty"`
+	ServerURL                     string   `json:"serverUrl,omitempty"`
+	SourceEncoding                string   `json:"sourceEncoding,omitempty"`
+	TeamID                        string   `json:"teamId,omitempty"`
+	TeamName                      string   `json:"teamName,omitempty"`
+	Username                      string   `json:"username,omitempty"`
+	VerifyOnly                    bool     `json:"verifyOnly,omitempty"`
+	VulnerabilityThresholdEnabled bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
+	VulnerabilityThresholdHigh    int      `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdLow     int      `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdMedium  int      `json:"vulnerabilityThresholdMedium,omitempty"`
+	VulnerabilityThresholdResult  string   `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
+	VulnerabilityThresholdUnit    string   `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool     `json:"isOptimizedAndScheduled,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -256,6 +261,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
 
@@ -318,17 +324,22 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 }
 
 func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecuteScanOptions) {
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
+	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().IntVar(&stepConfig.MaxRetries, "maxRetries", 3, "Maximum number of HTTP request retries upon intermittend connetion interrupts")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the Checkmarx project to scan into")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the Checkmarx server to be used")
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&stepConfig.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
@@ -366,6 +377,15 @@ func checkmarxExecuteScanMetadata() config.StepData {
 					{Name: "checkmarx", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "assignees",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{``},
+					},
 					{
 						Name:        "avoidDuplicateProjectScans",
 						ResourceRef: []config.ResourceReference{},
@@ -412,6 +432,35 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Default:     true,
 					},
 					{
+						Name:        "githubApiUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://api.github.com`,
+					},
+					{
+						Name: "githubToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "access_token"}},
+						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
 						Name:        "incremental",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -428,6 +477,20 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     3,
+					},
+					{
+						Name: "owner",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/owner",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "password",
@@ -476,6 +539,20 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pullRequestName"),
+					},
+					{
+						Name: "repository",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/repository",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "serverUrl",
