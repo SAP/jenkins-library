@@ -217,6 +217,17 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom.xml"
+            type: sbom
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
   containers:
     - name: golang
       image: golang:1
