@@ -389,3 +389,14 @@ spec:
               - name: preset
               - name: deep_link
               - name: report_creation_time
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/piper_checkmarx_report.html"
+            type: checkmarx
+          - filePattern: "**/CxSASTResults_*.xml"
+            type: checkmarx
+          - filePattern: "**/ScanReport.*"
+            type: checkmarx
+          - filePattern: "**/toolrun_checkmarx_*.json"
+            type: checkmarx
