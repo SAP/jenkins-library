@@ -223,6 +223,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: valuesMapping
+        type: "map[string]interface{}"
+        description: |
+          Mapping of values provided by Piper onto custom paths in format `[custom-path]: [piper-value]`
+
+          Example:
+          ```yaml
+          valuesMapping:
+            subchart1.image.tag:        image.tag
+            subchart2.image.tag:        image.debug.tag
+            subchart2.image.repository: image.debug.repository
+            subchart2.image.pullsecret: secret.dockerconfigjson
+            mysidecar:                  image.sidecar.gun
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: image
         aliases:
           - name: deployImage

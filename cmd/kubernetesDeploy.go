@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
@@ -52,7 +54,9 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
 
-	helmValues := helmValues{}
+	helmValues := helmValues{
+		mapping: config.ValuesMapping,
+	}
 
 	if len(config.ImageNames) > 0 {
 		if len(config.ImageNames) != len(config.ImageNameTags) {
@@ -74,7 +78,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 			}
 		}
 	} else {
-		//support either image or containerImageName and containerImageTag
+		// support either image or containerImageName and containerImageTag
 		containerImageName := ""
 		containerImageTag := ""
 		if len(config.Image) > 0 {
@@ -175,6 +179,11 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 	for _, v := range config.HelmValues {
 		upgradeParams = append(upgradeParams, "--values", v)
+	}
+
+	err = helmValues.mapValues()
+	if err != nil {
+		return errors.Wrap(err, "failed to map values using 'valuesMapping' configuration")
 	}
 
 	upgradeParams = append(
@@ -304,7 +313,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
 	}
 
-	//support either image or containerImageName and containerImageTag
+	// support either image or containerImageName and containerImageTag
 	fullImage := ""
 
 	if len(config.Image) > 0 {
@@ -339,8 +348,11 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	return nil
 }
 
-type helmValues []struct {
-	key, value string
+type helmValues struct {
+	mapping map[string]interface{}
+	values  []struct {
+		key, value string
+	}
 }
 
 func joinKey(parts ...string) string {
@@ -352,8 +364,8 @@ func joinKey(parts ...string) string {
 	return strings.Join(escapedParts, ".")
 }
 
-func (values *helmValues) add(key, value string) {
-	*values = append(*values, struct {
+func (hv *helmValues) add(key, value string) {
+	hv.values = append(hv.values, struct {
 		key   string
 		value string
 	}{
@@ -362,9 +374,35 @@ func (values *helmValues) add(key, value string) {
 	})
 }
 
-func (values helmValues) marshal() string {
+func (hv helmValues) get(key string) string {
+	for _, item := range hv.values {
+		if item.key == key {
+			return item.value
+		}
+	}
+
+	return ""
+}
+
+func (hv *helmValues) mapValues() error {
+	for dst, src := range hv.mapping {
+		if reflect.TypeOf(src).Kind() != reflect.String {
+			return fmt.Errorf("invalid path '%#v' is used for valueMapping, only strings are supported", src)
+		}
+
+		if val := hv.get(src.(string)); val != "" {
+			hv.add(dst, val)
+		} else {
+			log.Entry().Warnf("can not map '%s: %s', %s is not set", dst, src, src)
+		}
+	}
+
+	return nil
+}
+
+func (hv helmValues) marshal() string {
 	builder := strings.Builder{}
-	for idx, item := range values {
+	for idx, item := range hv.values {
 		if idx > 0 {
 			builder.WriteString(",")
 		}
