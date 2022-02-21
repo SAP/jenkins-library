@@ -606,6 +606,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 }
 
 func appendToRootCAs(rootCAs *x509.CertPool, certs []byte) {
+	log.Entry().Debugf("Entering routine to append certificates")
 	for len(certs) > 0 {
 		var block *pem.Block
 		block, certs = pem.Decode(certs)
@@ -626,6 +627,7 @@ func appendToRootCAs(rootCAs *x509.CertPool, certs []byte) {
 		log.Entry().Debugf("Adding certificate for subject %v to keystore", cert.Subject)
 		rootCAs.AddCert(cert)
 	}
+	log.Entry().Debugf("Exiting routine to append certificates")
 }
 
 func getWorkingDirForTrustStore() (string, error) {
