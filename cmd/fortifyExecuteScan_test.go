@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
@@ -34,6 +35,8 @@ type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
 	getArtifactShouldFail bool
+	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
+	ghCreateIssueError    error
 }
 
 func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
@@ -45,6 +48,14 @@ func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile strin
 		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
 	}
 	return artifactMock{Coordinates: newCoordinatesMock()}, nil
+}
+
+func (f fortifyTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	if f.ghCreateIssueError != nil {
+		return f.ghCreateIssueError
+	}
+	f.ghCreateIssueOptions = ghCreateIssueOptions
+	return nil
 }
 
 func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
