@@ -319,14 +319,6 @@ func (c *Client) initialize() *http.Client {
 		httpClient.Jar = c.cookieJar
 		if !c.useDefaultTransport {
 			httpClient.Transport = transport
-		} else {
-			httpClient.Transport = &TransportWrapper{
-				Transport:                httpClient.Transport,
-				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-				token:                    c.token,
-				username:                 c.username,
-				password:                 c.password}
 		}
 	}
 
@@ -352,15 +344,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
 	req = req.WithContext(ctx)
 
-	// Handle authenticaion if not done already
-	if (len(t.username) > 0 || len(t.password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
-		req.SetBasicAuth(t.username, t.password)
-		log.Entry().Debug("Using Basic Authentication ****/****")
-	}
-	if len(t.token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
-		req.Header.Add(authHeaderKey, t.token)
-		log.Entry().Debug("Using Token Authentication ****")
-	}
+	handleAuthentication(req, t.username, t.password, t.token)
 
 	t.logRequest(req)
 
@@ -369,6 +353,18 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	t.logResponse(resp)
 
 	return resp, err
+}
+
+func handleAuthentication(req *http.Request, username, password, token string) {
+	// Handle authenticaion if not done already
+	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
+		req.SetBasicAuth(username, password)
+		log.Entry().Debug("Using Basic Authentication ****/****")
+	}
+	if len(token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
+		req.Header.Add(authHeaderKey, token)
+		log.Entry().Debug("Using Token Authentication ****")
+	}
 }
 
 func (t *TransportWrapper) logRequest(req *http.Request) {
@@ -462,6 +458,8 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 			}
 		}
 	}
+
+	handleAuthentication(request, c.username, c.password, c.token)
 
 	for _, cookie := range cookies {
 		request.AddCookie(cookie)
