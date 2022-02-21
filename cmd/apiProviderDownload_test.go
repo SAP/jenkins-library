@@ -43,9 +43,6 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 		ioResp := runApiProviderDownload(&config, nil, &httpClient, utilsMock)
 
 		if assert.NoError(t, ioResp) {
-			//t.Run("Check for file existence", func(t *testing.T) {
-			//assert.Equal(t, fileExists("APIprovider.json"), true)
-			//})
 			t.Run("Assert API Provider url", func(t *testing.T) {
 				assert.Equal(t, "https://demo/apiportal/api/1.0/Management.svc/APIProviders('provider1')", httpClient.URL)
 			})
