@@ -85,9 +85,9 @@ func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*h
 	return nil
 }
 
-// FileOpen mimics os.FileOpen() based on FilesMock Open().
+// FileOpen mimics os.FileOpen() based on FilesMock OpenFile().
 func (m *ScanUtilsMock) FileOpen(name string, flag int, perm os.FileMode) (File, error) {
-	return m.Open(name, flag, perm)
+	return m.OpenFile(name, flag, perm)
 }
 
 // NewScanUtilsMock returns an initialized ScanUtilsMock instance.

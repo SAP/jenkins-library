@@ -43,7 +43,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 
 	subOptions := convertATCSysOptions(config)
 
-	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key.
 	connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
@@ -77,25 +77,32 @@ func pushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, conn
 	if err != nil {
 		return err
 	}
-
 	if !configDoesExist {
 		//regular push of configuration
 		configUUID = ""
 		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
 	}
-	if configLastChangedBackend.Before(parsedConfigurationJson.LastChangedAt) && !parsedConfigurationJson.LastChangedAt.IsZero() && !config.PatchIfExisting {
-		//config exists, is not recent but must NOT be patched
-		log.Entry().Warn("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBackend.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
-		return nil
+	if !parsedConfigurationJson.LastChangedAt.IsZero() {
+		if configLastChangedBackend.Before(parsedConfigurationJson.LastChangedAt) && !config.PatchIfExisting {
+			//config exists, is not recent but must NOT be patched
+			log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is outdated (Backend: " + configLastChangedBackend.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + ") but should not be overwritten (check step configuration parameter).")
+			return nil
+		}
+		if configLastChangedBackend.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBackend == parsedConfigurationJson.LastChangedAt {
+			//configuration exists and is most recent
+			log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBackend.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
+			return nil
+		}
 	}
-	if !parsedConfigurationJson.LastChangedAt.IsZero() && (configLastChangedBackend.After(parsedConfigurationJson.LastChangedAt) || configLastChangedBackend == parsedConfigurationJson.LastChangedAt) {
-		//configuration exists and is most recent
-		log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists and is most recent (Backend: " + configLastChangedBackend.Local().String() + " vs. File: " + parsedConfigurationJson.LastChangedAt.Local().String() + "). Therefore no update needed.")
-		return nil
-	}
-	if config.PatchIfExisting && (configLastChangedBackend.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero()) {
-		//configuration exists and is older than current config (or does not provide information about lastChanged) and should be patched
-		return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
+	if configLastChangedBackend.Before(parsedConfigurationJson.LastChangedAt) || parsedConfigurationJson.LastChangedAt.IsZero() {
+		if config.PatchIfExisting {
+			//configuration exists and is older than current config (or does not provide information about lastChanged) and should be patched
+			return handlePushConfiguration(config, configUUID, configDoesExist, atcSystemConfiguartionJsonFile, connectionDetails, client)
+		} else {
+			//config exists, is not recent but must NOT be patched
+			log.Entry().Info("pushing ATC System Configuration skipped. Reason: ATC System Configuration with name " + configName + " exists but should not be overwritten (check step configuration parameter).")
+			return nil
+		}
 	}
 
 	return nil
@@ -228,6 +235,8 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 	if err != nil {
 		return batchRequestString, err
 	}
+
+	configBaseJson.ConfUUID = confUUID
 
 	//build the Batch request string
 	contentID := 1

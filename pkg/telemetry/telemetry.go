@@ -137,11 +137,11 @@ func (t *Telemetry) Send() {
 func (t *Telemetry) logStepTelemetryData() {
 
 	var fatalError map[string]interface{}
-	if t.data.ErrorCode != "0" {
+	if t.data.CustomData.ErrorCode != "0" && log.GetFatalErrorDetail() != nil {
 		// retrieve the error information from the logCollector
 		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)
 		if err != nil {
-			log.Entry().WithError(err).Error("could not unmarshal fatal error struct")
+			log.Entry().WithError(err).Warn("could not unmarshal fatal error struct")
 		}
 	}
 
@@ -165,7 +165,7 @@ func (t *Telemetry) logStepTelemetryData() {
 		log.Entry().Error("could not marshal step telemetry data")
 		log.Entry().Infof("Step telemetry data: {n/a}")
 	} else {
-		// log step monitoring data, changes here need to change the regex in the internal piper lib
+		// log step telemetry data, changes here need to change the regex in the internal piper lib
 		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
 	}
 }

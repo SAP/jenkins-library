@@ -174,27 +174,6 @@ func WriteCustomReports(scanReport reporting.ScanReport) ([]piperutils.Path, err
 	return reportPaths, nil
 }
 
-func UploadReportToGithub(scanReport reporting.ScanReport, token, APIURL, owner, repository string, assignees []string) error {
-	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
-	// ignore JSON errors since structure is in our hands
-	markdownReport, _ := scanReport.ToMarkdown()
-	options := piperGithub.CreateIssueOptions{
-		Token:          token,
-		APIURL:         APIURL,
-		Owner:          owner,
-		Repository:     repository,
-		Title:          "Fortify SAST Results",
-		Body:           markdownReport,
-		Assignees:      assignees,
-		UpdateExisting: true,
-	}
-	err := piperGithub.CreateIssue(&options)
-	if err != nil {
-		return errors.Wrap(err, "failed to upload fortify results into GitHub issue")
-	}
-	return nil
-}
-
 func reportShaFortify(parts []string) string {
 	reportShaData := []byte(strings.Join(parts, ","))
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
