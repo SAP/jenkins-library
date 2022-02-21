@@ -372,7 +372,7 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug {
+	if t.doLogRequestBodyOnDebug && req.Body != nil {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
@@ -390,7 +390,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		} else {
 			log.Entry().Debugf("<-- response %v %v", resp.StatusCode, resp.Request.URL)
 		}
-		if t.doLogResponseBodyOnDebug {
+		if t.doLogResponseBodyOnDebug && resp.Body != nil {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
 			log.Entry().Debugf("body: %v", transformBody(tee))
