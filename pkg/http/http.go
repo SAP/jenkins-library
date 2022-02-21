@@ -380,7 +380,7 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
-		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
+		req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
@@ -398,7 +398,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
 			log.Entry().Debugf("body: %v", transformBody(tee))
-			resp.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
+			resp.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
