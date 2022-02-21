@@ -275,3 +275,14 @@ spec:
                 type: int
               - name: vulnerabilities
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/toolrun_protecode_*.json"
+            type: protecode
+          - paramRef: reportFileName
+            type: protecode
+          - filePattern: "**/protecodeExecuteScan.json"
+            type: protecode
+          - filePattern: "**/protecodescan_vulns.json"
+            type: protecode
