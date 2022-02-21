@@ -21,7 +21,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
@@ -613,7 +612,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 func getWorkingDirForTrustStore() (string, error) {
 	fileUtils := &piperutils.Files{}
-	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
+	if exists, _ := fileUtils.DirExists(".pipeline/trustStore"); !exists {
 		err := fileUtils.MkdirAll(".pipeline/trustStore", 0777)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create trust store directory")
