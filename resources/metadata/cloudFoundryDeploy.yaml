@@ -379,7 +379,7 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: "User"
+        description: User name used for deployment
         scope:
           - PARAMETERS
           - STAGES
