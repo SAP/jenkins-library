@@ -604,11 +604,6 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		}
 
 	}
-	var subjects []string
-	for subject := range rootCAs.Subjects() {
-		subjects = append(subjects, string(subject))
-	}
-	log.Entry().Debugf("root CA subjects: %v", subjects)
 	return nil
 }
 
