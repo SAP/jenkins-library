@@ -570,10 +570,11 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				}
 				defer fileHandler.Close()
 
-				_, err = io.Copy(fileHandler, response.Body)
+				numWritten, err := io.Copy(fileHandler, response.Body)
 				if err != nil {
 					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 				}
+				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
@@ -586,7 +587,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
 			}
 		} else {
-			log.Entry().Infof("existing certs found, appending to rootCA")
+			log.Entry().Infof("existing certificate file %v found, appending it to rootCA", target)
 			certs, err := ioutil.ReadFile(target)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read cert file %v", certificate)
