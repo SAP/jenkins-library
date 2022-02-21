@@ -30,51 +30,57 @@ type golangBuildMockUtils struct {
 	fileUploads   map[string]string         // set by mock
 }
 
-func (utils golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (g *golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (utils golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
+func (g *golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
 	return fmt.Sprintf("https://%s.git", module), nil
 }
 
-func (utils golangBuildMockUtils) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (g *golangBuildMockUtils) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (utils golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
-	utils.clientOptions = append(utils.clientOptions, options)
+func (g *golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
+	g.clientOptions = append(g.clientOptions, options)
 }
 
-func (utils golangBuildMockUtils) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
-	utils.fileUploads[file] = url
+func (g *golangBuildMockUtils) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	g.fileUploads[file] = url
 
 	response := http.Response{
-		StatusCode: utils.returnFileUploadStatus,
+		StatusCode: g.returnFileUploadStatus,
 	}
 
-	return &response, utils.returnFileUploadError
+	return &response, g.returnFileUploadError
 }
 
-func (utils golangBuildMockUtils) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
-	return utils.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
+func (g *golangBuildMockUtils) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return g.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
 }
 
-func (utils golangBuildMockUtils) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
+func (g *golangBuildMockUtils) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func newGolangBuildTestsUtils() golangBuildMockUtils {
+func (g *golangBuildMockUtils) getDockerImageValue(stepName string) (string, error) {
+	return "golang:latest", nil
+}
+
+func newGolangBuildTestsUtils() *golangBuildMockUtils {
 	utils := golangBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 		//clientOptions:  []piperhttp.ClientOptions{},
 		fileUploads: map[string]string{},
 	}
-	return utils
+	return &utils
 }
 
 func TestRunGolangBuild(t *testing.T) {
+	cpe := golangBuildCommonPipelineEnvironment{}
+
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
@@ -82,10 +88,10 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - tests & ldflags", func(t *testing.T) {
@@ -97,14 +103,14 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - tests with coverage", func(t *testing.T) {
@@ -116,7 +122,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"tool", "cover", "-html", coverageFile, "-o", "coverage.html"}, utils.ExecMockRunner.Calls[2].Params)
@@ -130,14 +136,14 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
@@ -155,10 +161,10 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+			assert.Equal(t, []string{"build", "-trimpath", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
 
 			assert.Equal(t, 1, len(utils.fileUploads))
 			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
@@ -180,10 +186,10 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+			assert.Equal(t, []string{"build", "-trimpath", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
 
 			assert.Equal(t, 1, len(utils.fileUploads))
 			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
@@ -198,15 +204,15 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
@@ -217,7 +223,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"go install gotest.tools/gotestsum": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
 	})
 
@@ -226,10 +232,10 @@ func TestRunGolangBuild(t *testing.T) {
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
 	})
 
@@ -241,7 +247,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"gotestsum --junitfile": fmt.Errorf("test failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "running tests failed - junit result missing: test failure")
 	})
 
@@ -255,7 +261,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.AddFile(coverageFile, []byte("some content"))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "some tests failed")
 	})
 
@@ -268,7 +274,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
 	})
 
@@ -281,7 +287,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: build failure")
 	})
 
@@ -294,7 +300,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "there's no target repository for binary publishing configured")
 	})
 
@@ -311,7 +317,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "go.mod file not found")
 	})
 
@@ -329,7 +335,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.FilesMock.AddFile("go.mod", []byte(""))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "go.mod doesn't declare a module path")
 	})
 
@@ -346,7 +352,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
 	})
 
@@ -365,7 +371,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "couldn't upload artifact, received status code 500")
 	})
 
@@ -378,7 +384,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -test -output bom.xml": fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
 	})
 }
@@ -718,7 +724,7 @@ go 1.17`
 			config.PrivateModules = tt.globPattern
 			config.PrivateModulesGitToken = tt.gitToken
 
-			err := prepareGolangEnvironment(&config, goModFile, &utils)
+			err := prepareGolangEnvironment(&config, goModFile, utils)
 
 			if assert.NoError(t, err) {
 				assert.Subset(t, os.Environ(), tt.expect.envVars)
