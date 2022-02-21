@@ -58,9 +58,9 @@ func apiProviderDownload(config apiProviderDownloadOptions, telemetryData *telem
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runApiProviderDownload(&config, telemetryData, httpClient, utils)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+	error := runApiProviderDownload(&config, telemetryData, httpClient, utils)
+	if error != nil {
+		log.Entry().WithError(error).Fatal("step execution failed")
 	}
 }
 
@@ -68,16 +68,16 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
-	if err != nil {
-		return err
+	serviceKey, error := cpi.ReadCpiServiceKey(config.APIServiceKey)
+	if error != nil {
+		return error
 	}
 	downloadArtifactURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProviders('%s')", serviceKey.OAuth.Host, config.APIProviderName)
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL,
 		Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
-	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
-	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+	token, error := cpi.CommonUtils.GetBearerToken(tokenParameters)
+	if error != nil {
+		return errors.Wrap(error, "failed to fetch Bearer Token")
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
@@ -94,9 +94,9 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 	}
 	if downloadResp.StatusCode == 200 {
 		jsonFilePath := config.DownloadPath
-		content, err := ioutil.ReadAll(downloadResp.Body)
-		if err != nil {
-			return err
+		content, error := ioutil.ReadAll(downloadResp.Body)
+		if error != nil {
+			return error
 		}
 		ioresp := utils.FileWrite(jsonFilePath, content, 0775)
 		if ioresp != nil {
