@@ -9,8 +9,6 @@ import (
 )
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
-	utils := kubernetes.NewDeployUtilsBundle()
-
 	helmConfig := kubernetes.HelmExecuteOptions{
 		ChartPath:                     config.ChartPath,
 		DeploymentName:                config.DeploymentName,
@@ -32,6 +30,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		HelmCommand:                   config.HelmCommand,
 		CustomTLSCertificateLinks:     config.CustomTLSCertificateLinks,
 	}
+
+	utils := kubernetes.NewDeployUtilsBundle(helmConfig)
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 

@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -17,16 +18,28 @@ type DeployUtils interface {
 	RunExecutable(e string, p ...string) error
 
 	piperutils.FileUtils
+	piperhttp.Uploader
 }
 
 // deployUtilsBundle struct  for utils
 type deployUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	piperhttp.Uploader
 }
 
 // NewDeployUtilsBundle initialize using deployUtilsBundle struct
-func NewDeployUtilsBundle() DeployUtils {
+func NewDeployUtilsBundle(config HelmExecuteOptions) DeployUtils {
+	httpClientOptions := piperhttp.ClientOptions{}
+
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		httpClientOptions.TransportSkipVerification = false
+		httpClientOptions.TrustedCerts = config.CustomTLSCertificateLinks
+	}
+
+	httpClient := piperhttp.Client{}
+	httpClient.SetOptions(httpClientOptions)
+
 	utils := deployUtilsBundle{
 		Command: &command.Command{
 			ErrorCategoryMapping: map[string][]string{
@@ -46,7 +59,8 @@ func NewDeployUtilsBundle() DeployUtils {
 				},
 			},
 		},
-		Files: &piperutils.Files{},
+		Files:    &piperutils.Files{},
+		Uploader: &httpClient,
 	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	utils.Stderr(log.Writer())

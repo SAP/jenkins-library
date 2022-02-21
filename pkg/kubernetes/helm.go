@@ -3,7 +3,10 @@ package kubernetes
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"strings"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -329,35 +332,37 @@ func (h *HelmExecute) RunHelmPublish() error {
 		return fmt.Errorf("there's no target repository for helm chart publishing configured")
 	}
 
-	// repoClientOptions := piperhttp.ClientOptions{
-	// 	Username:     h.config.TargetChartRepositoryUser,
-	// 	Password:     h.config.TargetChartRepositoryPassword,
-	// 	TrustedCerts: h.config.CustomTLSCertificateLinks,
-	// }
+	repoClientOptions := piperhttp.ClientOptions{
+		Username:     h.config.TargetChartRepositoryUser,
+		Password:     h.config.TargetChartRepositoryPassword,
+		TrustedCerts: h.config.CustomTLSCertificateLinks,
+	}
 
-	// h.utils.SetOptions(repoClientOptions)
+	h.utils.SetOptions(repoClientOptions)
 
-	// targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
+	binary := fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz")
 
-	// separator := "/"
+	targetPath := fmt.Sprintf("helm/%s/%s", h.config.PackageVersion, binary)
 
-	// if strings.HasSuffix(config.TargetRepositoryURL, "/") {
-	// 	separator = ""
-	// }
+	separator := "/"
 
-	// targetURL := fmt.Sprintf("%s%s%s", config.TargetRepositoryURL, separator, targetPath)
+	if strings.HasSuffix(h.config.TargetChartRepositoryURL, "/") {
+		separator = ""
+	}
 
-	// log.Entry().Infof("publishing artifact: %s", targetURL)
+	targetURL := fmt.Sprintf("%s%s%s", h.config.TargetChartRepositoryURL, separator, targetPath)
 
-	// response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
+	log.Entry().Infof("publishing artifact: %s", targetURL)
 
-	// if err != nil {
-	// 	return fmt.Errorf("couldn't upload artifact: %w", err)
-	// }
+	response, err := h.utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 
-	// if !(response.StatusCode == 200 || response.StatusCode == 201) {
-	// 	return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
-	// }
+	if err != nil {
+		return fmt.Errorf("couldn't upload artifact: %w", err)
+	}
+
+	if !(response.StatusCode == 200 || response.StatusCode == 201) {
+		return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+	}
 
 	return nil
 }
