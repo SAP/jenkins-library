@@ -89,12 +89,12 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	utils.Stdout(&versionBuffer)
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
 	if err != nil {
-		return errors.Wrap(err, "Failed to determine UA version") 
+		return errors.Wrap(err, "Failed to determine UA version")
 	}
 	s.AgentVersion = strings.TrimSpace(versionBuffer.String())
 	log.Entry().Debugf("Read UA version %v from Stdout", s.AgentVersion)
 	utils.Stdout(log.Writer())
-	
+
 	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
 
 	// ToDo: check if this is required

@@ -60,7 +60,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]A
 		CounterHeader: "Entry #",
 	}
 
-	for _, alert := range (*alerts) {
+	for _, alert := range *alerts {
 		var score float64
 		var scoreStyle reporting.ColumnStyle = reporting.Yellow
 		if isSevereVulnerability(alert, cvssSeverityLimit) {

@@ -72,9 +72,9 @@ type TransportWrapper struct {
 	Transport                http.RoundTripper
 	doLogRequestBodyOnDebug  bool
 	doLogResponseBodyOnDebug bool
-	username                  string
-	password                  string
-	token                     string
+	username                 string
+	password                 string
+	token                    string
 }
 
 // UploadRequestData encapsulates the parameters for calling uploader.Upload()
@@ -270,9 +270,9 @@ func (c *Client) initialize() *http.Client {
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-		token: c.token,
-		username: c.username,
-		password: c.password,
+		token:                    c.token,
+		username:                 c.username,
+		password:                 c.password,
 	}
 
 	if len(c.trustedCerts) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
@@ -298,12 +298,12 @@ func (c *Client) initialize() *http.Client {
 			retryClient.HTTPClient.Transport = transport
 		} else {
 			retryClient.HTTPClient.Transport = &TransportWrapper{
-				Transport: retryClient.HTTPClient.Transport,
+				Transport:                retryClient.HTTPClient.Transport,
 				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-				token: c.token,
-				username: c.username,
-				password: c.password,}
+				token:                    c.token,
+				username:                 c.username,
+				password:                 c.password}
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "connection reset")) {
@@ -321,12 +321,12 @@ func (c *Client) initialize() *http.Client {
 			httpClient.Transport = transport
 		} else {
 			httpClient.Transport = &TransportWrapper{
-				Transport: httpClient.Transport,
+				Transport:                httpClient.Transport,
 				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-				token: c.token,
-				username: c.username,
-				password: c.password,}
+				token:                    c.token,
+				username:                 c.username,
+				password:                 c.password}
 		}
 	}
 
@@ -365,7 +365,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	t.logRequest(req)
 
 	resp, err := t.Transport.RoundTrip(req)
-	
+
 	t.logResponse(resp)
 
 	return resp, err
@@ -378,9 +378,9 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
 	if t.doLogRequestBodyOnDebug {
 		var buf bytes.Buffer
-			tee := io.TeeReader(req.Body, &buf)
-			log.Entry().Debugf("body: %v", transformBody(tee))
-			req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
+		tee := io.TeeReader(req.Body, &buf)
+		log.Entry().Debugf("body: %v", transformBody(tee))
+		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
@@ -532,9 +532,9 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-		token: c.token,
-		username: c.username,
-		password: c.password,
+		token:                    c.token,
+		username:                 c.username,
+		password:                 c.password,
 	}
 
 	for _, certificate := range c.trustedCerts {
