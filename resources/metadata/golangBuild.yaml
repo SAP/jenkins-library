@@ -22,6 +22,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
       - name: cgoEnabled
         type: bool
         description: "If active: enables the creation of Go packages that call C code."
@@ -217,6 +227,21 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom.xml"
+            type: sbom
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
   containers:
     - name: golang
       image: golang:1
