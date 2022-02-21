@@ -90,7 +90,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 
 		err = copyDir(projectDir, tempDir)
 		if err != nil {
-			t.Fatalf("Failed to copy files from %s into %s", projectDir, tempDir)
+			t.Fatalf("Failed to copy files from %s into %s, error: %s", projectDir, tempDir, err.Error())
 		}
 		params = append(params, "-v", fmt.Sprintf("%s:/project", tempDir))
 	}
@@ -167,13 +167,13 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "/piper-wrapper", "/piper", command}
+	args := []string{"exec", "-t", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "/piper-wrapper", "/piper", command}
 	args = append(args, parameters...)
 	return d.Runner.RunExecutable("docker", args...)
 }
 
 func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "-c", script}
+	args := []string{"exec", "-t", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "-c", script}
 	return d.Runner.RunExecutable("docker", args...)
 }
 
