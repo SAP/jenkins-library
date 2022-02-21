@@ -5,6 +5,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -21,6 +23,7 @@ import (
 
 type golangBuildOptions struct {
 	BuildFlags                   []string `json:"buildFlags,omitempty"`
+	BuildSettingsInfo            string   `json:"buildSettingsInfo,omitempty"`
 	CgoEnabled                   bool     `json:"cgoEnabled,omitempty"`
 	CoverageFormat               string   `json:"coverageFormat,omitempty" validate:"possible-values=cobertura html"`
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
@@ -42,6 +45,34 @@ type golangBuildOptions struct {
 	PrivateModules               string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken       string   `json:"privateModulesGitToken,omitempty"`
 	ArtifactVersion              string   `json:"artifactVersion,omitempty"`
+}
+
+type golangBuildCommonPipelineEnvironment struct {
+	custom struct {
+		buildSettingsInfo string
+	}
+}
+
+func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Piper environment")
+	}
 }
 
 type golangBuildReports struct {
@@ -89,6 +120,7 @@ func GolangBuildCommand() *cobra.Command {
 	metadata := golangBuildMetadata()
 	var stepConfig golangBuildOptions
 	var startTime time.Time
+	var commonPipelineEnvironment golangBuildCommonPipelineEnvironment
 	var reports golangBuildReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
@@ -149,6 +181,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -170,7 +203,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			golangBuild(stepConfig, &stepTelemetryData)
+			golangBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -182,6 +215,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 
 func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags to be used.")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CgoEnabled, "cgoEnabled", false, "If active: enables the creation of Go packages that call C code.")
 	cmd.Flags().StringVar(&stepConfig.CoverageFormat, "coverageFormat", `html`, "Defines the format of the coverage repository.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.")
@@ -229,6 +263,20 @@ func golangBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 					{
 						Name:        "cgoEnabled",
@@ -457,6 +505,13 @@ func golangBuildMetadata() config.StepData {
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"name": "custom/buildSettingsInfo"},
+						},
+					},
 					{
 						Name: "reports",
 						Type: "reports",
