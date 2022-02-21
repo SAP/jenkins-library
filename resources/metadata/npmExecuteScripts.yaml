@@ -155,6 +155,17 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom.xml"
+            type: sbom
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
+          - filePattern: "**/e2e/*.json"
+            type: cucumber
   containers:
     - name: node
       image: node:lts-stretch
