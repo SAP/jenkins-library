@@ -606,25 +606,26 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 }
 
 func appendToRootCAs(rootCAs *x509.CertPool, certs []byte) {
-	log.Entry().Debugf("Entering routine to append certificates")
+	log.Entry().Debug("Entering routine to append certificates")
 	for len(certs) > 0 {
+		log.Entry().Debugf("Entering loop to append certificates from []byte with size %v", len(certs))
 		var block *pem.Block
 		block, certs = pem.Decode(certs)
 		if block == nil {
+			log.Entry().Debug("Block was nil")
 			break
 		}
 		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
 			log.Entry().Debug("Skipping non certificate block")
 			continue
 		}
-
 		certBytes := block.Bytes
 		cert, err := x509.ParseCertificate(certBytes)
 		if err != nil {
 			log.Entry().Debugf("Failed to parse certificate %v", err)
 			continue
 		}
-		log.Entry().Debugf("Adding certificate for subject %v to keystore", cert.Subject)
+		log.Entry().Debug("Adding certificate for subject %v to keystore", cert.Subject)
 		rootCAs.AddCert(cert)
 	}
 	log.Entry().Debugf("Exiting routine to append certificates")
