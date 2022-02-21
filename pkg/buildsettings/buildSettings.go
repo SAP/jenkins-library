@@ -9,10 +9,14 @@ import (
 )
 
 type BuildSettings struct {
-	MavenBuild        []BuildOptions `json:"mavenBuild,omitempty"`
-	NpmExecuteScripts []BuildOptions `json:"npmExecuteScripts,omitempty"`
+	GolangBuild       []BuildOptions `json:"golangBuild,omitempty"`
+	GradleBuild       []BuildOptions `json:"gradleBuild,omitempty"`
+	HelmExecute       []BuildOptions `json:"helmExecute,omitempty"`
 	KanikoExecute     []BuildOptions `json:"kanikoExecute,omitempty"`
+	MavenBuild        []BuildOptions `json:"mavenBuild,omitempty"`
 	MtaBuild          []BuildOptions `json:"mtaBuild,omitempty"`
+	PythonBuild       []BuildOptions `json:"pythonBuild,omitempty"`
+	NpmExecuteScripts []BuildOptions `json:"npmExecuteScripts,omitempty"`
 }
 
 type BuildOptions struct {
@@ -65,24 +69,41 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		settings = append(settings, currentBuildSettingsInfo)
 		var err error
 		switch buildTool {
-		case "mavenBuild":
+		case "golangBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
-				MavenBuild: settings,
+				GolangBuild: settings,
 			})
-		case "npmExecuteScripts":
+		case "gradleBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
-				NpmExecuteScripts: settings,
+				GradleBuild: settings,
+			})
+		case "helmExecute":
+			jsonResult, err = json.Marshal(BuildSettings{
+				HelmExecute: settings,
 			})
 		case "kanikoExecute":
 			jsonResult, err = json.Marshal(BuildSettings{
 				KanikoExecute: settings,
 			})
+		case "mavenBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				MavenBuild: settings,
+			})
 		case "mtaBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				MtaBuild: settings,
 			})
+		case "pythonBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				PythonBuild: settings,
+			})
+		case "npmExecuteScripts":
+			jsonResult, err = json.Marshal(BuildSettings{
+				NpmExecuteScripts: settings,
+			})
 		default:
-			return "", errors.Wrapf(err, "invalid buildTool '%s' for native build - '%s' not supported", buildTool, buildTool)
+			log.Entry().Warningf("buildTool '%s' not supported for creation of build settings", buildTool)
+			return "", nil
 		}
 		if err != nil {
 			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
