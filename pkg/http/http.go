@@ -608,15 +608,18 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	return nil
 }
 
+// default truststore location
+const TrustStoreDirectory = ".pipeline/trustStore"
+
 func getWorkingDirForTrustStore() (string, error) {
 	fileUtils := &piperutils.Files{}
-	if exists, _ := fileUtils.DirExists(".pipeline/trustStore"); !exists {
-		err := fileUtils.MkdirAll(".pipeline/trustStore", 0777)
+	if exists, _ := fileUtils.DirExists(TrustStoreDirectory); !exists {
+		err := fileUtils.MkdirAll(TrustStoreDirectory, 0777)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create trust store directory")
 		}
 	}
-	return ".pipeline/trustStore", nil
+	return TrustStoreDirectory, nil
 }
 
 // ParseHTTPResponseBodyXML parses a XML http response into a given interface
