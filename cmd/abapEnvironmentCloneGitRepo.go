@@ -146,7 +146,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 
 	// The entity "Clones" does not allow for polling. To poll the progress, the related entity "Pull" has to be called
 	// While "Clones" has the key fields UUID, SC_NAME and BRANCH_NAME, "Pull" only has the key field UUID
-	uriConnectionDetails.URL = uriConnectionDetails.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(uuid=guid'" + body.UUID + "')" + "?$expand=to_Execution_log,to_Transport_log"
+	uriConnectionDetails.URL = uriConnectionDetails.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(uuid=guid'" + body.UUID + "')"
 	return uriConnectionDetails, nil
 }
 
