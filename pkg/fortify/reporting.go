@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
