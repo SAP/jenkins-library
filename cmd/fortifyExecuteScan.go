@@ -28,6 +28,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -43,11 +44,9 @@ type pullRequestService interface {
 
 type fortifyUtils interface {
 	maven.Utils
-
 	SetDir(d string)
-
-	GetArtifact(buildTool, buildDescriptorFile string,
-		options *versioning.Options) (versioning.Artifact, error)
+	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
 }
 
 type fortifyUtilsBundle struct {
@@ -56,9 +55,12 @@ type fortifyUtilsBundle struct {
 	*piperhttp.Client
 }
 
-func (bundle *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string,
-	options *versioning.Options) (versioning.Artifact, error) {
-	return versioning.GetArtifact(buildTool, buildDescriptorFile, options, bundle)
+func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
+	return versioning.GetArtifact(buildTool, buildDescriptorFile, options, f)
+}
+
+func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func newFortifyUtilsBundle() fortifyUtils {
@@ -192,7 +194,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	if config.VerifyOnly {
 		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+		err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 		reports = append(reports, paths...)
 		return reports, err
 	}
@@ -242,6 +244,20 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
+	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	if config.ConvertToSarif {
+		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		if err != nil {
+			return reports, fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := fortify.WriteSarif(sarif)
+		if err != nil {
+			return reports, fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed
 	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
@@ -249,8 +265,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if err != nil {
 		return reports, err
 	}
-
-	err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+	err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
 }
@@ -261,7 +276,7 @@ func classifyErrorOnLookup(err error) {
 	}
 }
 
-func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
+func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
@@ -310,7 +325,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 	log.Entry().Debugf("%v, %v, %v, %v, %v, %v", config.CreateResultIssue, numberOfViolations > 0, len(config.GithubToken) > 0, len(config.GithubAPIURL) > 0, len(config.Owner) > 0, len(config.Repository) > 0)
 	if config.CreateResultIssue && numberOfViolations > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debug("Creating/updating GitHub issue with scan results")
-		err = fortify.UploadReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees)
+		err = reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Fortify SAST Results", config.Assignees, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
 		}
