@@ -393,7 +393,10 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 			log.Entry().Debugf("<-- response %v %v", resp.StatusCode, resp.Request.URL)
 		}
 		if t.doLogResponseBodyOnDebug {
-			log.Entry().Debugf("body: %v", transformBody(resp.Body))
+			var buf bytes.Buffer
+			tee := io.TeeReader(resp.Body, &buf)
+			log.Entry().Debugf("body: %v", transformBody(tee))
+			resp.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
@@ -435,7 +438,7 @@ func transformCookies(cookies []*http.Cookie) string {
 	return result
 }
 
-func transformBody(body io.ReadCloser) string {
+func transformBody(body io.Reader) string {
 	if body == nil {
 		return ""
 	}
@@ -458,10 +461,8 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if cookies != nil {
-		for _, cookie := range cookies {
-			request.AddCookie(cookie)
-		}
+	for _, cookie := range cookies {
+		request.AddCookie(cookie)
 	}
 
 	return request, nil
