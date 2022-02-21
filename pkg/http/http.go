@@ -179,10 +179,13 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 			return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
 		}
 		err = bodyWriter.Close()
+		if err != nil {
+			log.Entry().Warn("failed to close writer on request body")
+		}
 
 		request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
 		if err != nil {
-			c.logger.Debugf("New %v request to %v", data.Method, data.URL)
+			c.logger.Debugf("new %v request to %v", data.Method, data.URL)
 			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
 		}
 
@@ -574,11 +577,10 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+					return errors.Wrapf(err, "failed to read cert file %v", certificate)
 				}
-
+				// Append our cert to the system pool
 				appendToRootCAs(rootCAs, certs)
-
 				log.Entry().Infof("%v appended to root CA successfully", certificate)
 			} else {
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
@@ -587,9 +589,8 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			log.Entry().Infof("existing certs found, appending to rootCA")
 			certs, err := ioutil.ReadFile(target)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+				return errors.Wrapf(err, "failed to read cert file %v", certificate)
 			}
-
 			// Append our cert to the system pool
 			appendToRootCAs(rootCAs, certs)
 			log.Entry().Infof("%v appended to root CA successfully", certificate)
@@ -622,6 +623,7 @@ func appendToRootCAs(rootCAs *x509.CertPool, certs []byte) {
 			log.Entry().Debugf("Failed to parse certificate %v", err)
 			continue
 		}
+		log.Entry().Debugf("Adding certificate for subject %v to keystore", cert.Subject)
 		rootCAs.AddCert(cert)
 	}
 }
