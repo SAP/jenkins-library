@@ -393,7 +393,7 @@ func TestRunHelm(t *testing.T) {
 		err := helmExecute.RunHelmPublish()
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.FileUploads))
-			assert.Equal(t, "https://my.target.repository.local/helm/example.com/my/module/1.0.0/testBin-linux.amd64", utils.FileUploads["testBin-linux.amd64"])
+			assert.Equal(t, "https://my.target.repository.local/helm/1.2.3/1.2.3.tgz", utils.FileUploads["1.2.3.tgz"])
 		}
 	})
 
