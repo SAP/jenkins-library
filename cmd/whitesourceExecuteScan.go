@@ -595,10 +595,11 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		}
 
 		sarif := ws.CreateSarifResultFile(scan, &allAlerts)
-		reportPaths, err = ws.WriteSarifFile(sarif, piperutils.Files{})
+		additionalReportPaths, err := ws.WriteSarifFile(sarif, piperutils.Files{})
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
+		reportPaths = append(reportPaths, additionalReportPaths...)
 
 		if len(errorsOccured) > 0 {
 			if vulnerabilitiesCount > 0 {

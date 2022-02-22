@@ -138,6 +138,9 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
 	htmlReportPath := filepath.Join(ReportsDirectory, "piper_whitesource_vulnerability_report.html")
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -151,7 +154,7 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return reportPaths, errors.Wrap(err, "failed to create step reporting directory")
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_oss_%v.json", ReportSha(productName, scan))), jsonReport, 0666); err != nil {
@@ -229,13 +232,15 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 }
 
 func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
-
 	reportPaths := []piperutils.Path{}
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	sarifReport, errorMarshall := json.Marshal(sarif)
 	if errorMarshall != nil {
 		return reportPaths, errors.Wrapf(errorMarshall, "failed to marshall SARIF json file")
+	}
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
 	}
 	sarifReportPath := filepath.Join(ReportsDirectory, "piper_whitesource_vulnerability.sarif")
 	if err := utils.FileWrite(sarifReportPath, sarifReport, 0666); err != nil {
