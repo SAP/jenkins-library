@@ -124,6 +124,7 @@ func Execute() {
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(GctsExecuteABAPQualityChecksCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
