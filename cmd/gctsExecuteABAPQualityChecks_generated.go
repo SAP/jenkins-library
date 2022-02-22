@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type gctsExecuteABAPUnitTestsOptions struct {
+type gctsExecuteABAPQualityChecksOptions struct {
 	Username             string `json:"username,omitempty"`
 	Password             string `json:"password,omitempty"`
 	Host                 string `json:"host,omitempty"`
@@ -31,18 +31,18 @@ type gctsExecuteABAPUnitTestsOptions struct {
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
 }
 
-// GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
-func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
-	const STEP_NAME = "gctsExecuteABAPUnitTests"
+// GctsExecuteABAPQualityChecksCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
+func GctsExecuteABAPQualityChecksCommand() *cobra.Command {
+	const STEP_NAME = "gctsExecuteABAPQualityChecks"
 
-	metadata := gctsExecuteABAPUnitTestsMetadata()
-	var stepConfig gctsExecuteABAPUnitTestsOptions
+	metadata := gctsExecuteABAPQualityChecksMetadata()
+	var stepConfig gctsExecuteABAPQualityChecksOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createGctsExecuteABAPUnitTestsCmd = &cobra.Command{
+	var createGctsExecuteABAPQualityChecksCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.",
 		Long: `This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system.
@@ -117,17 +117,17 @@ You can use this step as of SAP S/4HANA 2020.`,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			gctsExecuteABAPUnitTests(stepConfig, &stepTelemetryData)
+			gctsExecuteABAPQualityChecks(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addGctsExecuteABAPUnitTestsFlags(createGctsExecuteABAPUnitTestsCmd, &stepConfig)
-	return createGctsExecuteABAPUnitTestsCmd
+	addGctsExecuteABAPQualityChecksFlags(createGctsExecuteABAPQualityChecksCmd, &stepConfig)
+	return createGctsExecuteABAPQualityChecksCmd
 }
 
-func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecuteABAPUnitTestsOptions) {
+func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsExecuteABAPQualityChecksOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password of the ABAP  user that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Protocol and host of the ABAP system, including the port. Please provide in the format <protocol>://<host>:<port>. Supported protocols are http and https.")
@@ -151,10 +151,10 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 }
 
 // retrieve step metadata
-func gctsExecuteABAPUnitTestsMetadata() config.StepData {
+func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "gctsExecuteABAPUnitTests",
+			Name:        "gctsExecuteABAPQualityChecks",
 			Aliases:     []config.Alias{},
 			Description: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.",
 		},
