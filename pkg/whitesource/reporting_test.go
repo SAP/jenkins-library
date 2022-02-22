@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -53,6 +54,30 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 		assert.Contains(t, scanReport.DetailTable.Rows[0].Columns[10].Content, "this is the top fix")
 
 	})
+}
+
+func TestCreateSarifResultFile(t *testing.T) {
+	scan := &Scan{ProductVersion: "1"}
+	scan.AppendScannedProject("project1")
+	scan.AgentName = "Some test agent"
+	scan.AgentVersion = "1.2.6"
+	alerts := []Alert{
+		{Library: Library{Filename: "vul1", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
+		{Library: Library{Filename: "vul2", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+		{Library: Library{Filename: "vul3", ArtifactID: "org.some.lib2"}, Vulnerability: Vulnerability{Score: 6}},
+	
+	}
+
+	sarif := CreateSarifResultFile(scan, &alerts)
+
+	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json", sarif.Schema)
+	assert.Equal(t, "2.1.0", sarif.Version)
+	assert.Equal(t, 1, len(sarif.Runs))
+	assert.Equal(t, "Some test agent", sarif.Runs[0].Tool.Driver.Name)
+	assert.Equal(t, "1.2.6", sarif.Runs[0].Tool.Driver.Version)
+	assert.Equal(t, 3, len(sarif.Runs[0].Tool.Driver.Rules))
+	assert.Equal(t, 3, len(sarif.Runs[0].Results))
+	// TODO add more extensive verification once we agree on the format details
 }
 
 func TestWriteCustomVulnerabilityReports(t *testing.T) {
@@ -107,7 +132,39 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		_, err := WriteCustomVulnerabilityReports(productName, scan, scanReport, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to write json report")
 	})
+}
 
+func TestWriteSarifFile(t *testing.T) {
+
+	t.Run("success", func(t *testing.T) {
+		sarif := format.SARIF{}
+		var utilsMock piperutils.FileUtils
+		utilsMock = &mock.FilesMock{}
+
+		reportPaths, err := WriteSarifFile(&sarif, utilsMock)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(reportPaths))
+
+		exists, err := utilsMock.FileExists(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+
+		exists, err = utilsMock.FileExists(filepath.Join(ReportsDirectory, "piper_whitesource_vulnerability.sarif"))
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("failed to write HTML report", func(t *testing.T) {
+		sarif := format.SARIF{}
+		utilsMock := &mock.FilesMock{}
+		utilsMock.FileWriteErrors = map[string]error{
+			filepath.Join(ReportsDirectory, "piper_whitesource_vulnerability.sarif"): fmt.Errorf("write error"),
+		}
+
+		_, err := WriteSarifFile(&sarif, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write SARIF file")
+	})
 }
 
 func TestCountSecurityVulnerabilities(t *testing.T) {
