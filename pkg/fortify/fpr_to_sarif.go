@@ -17,8 +17,7 @@ import (
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-// This struct encapsulates everyting in the FVDL document
-
+// FVDL This struct encapsulates everyting in the FVDL document
 type FVDL struct {
 	XMLName         xml.Name `xml:"FVDL"`
 	Xmlns           string   `xml:"xmlns,attr"`
@@ -37,25 +36,27 @@ type FVDL struct {
 	EngineData      EngineData      `xml:"EngineData"`
 }
 
+// CreatedTS
 type CreatedTS struct {
 	XMLName xml.Name `xml:"CreatedTS"`
 	Date    string   `xml:"date,attr"`
 	Time    string   `xml:"time,attr"`
 }
 
+// UUID
 type UUID struct {
 	XMLName xml.Name `xml:"UUID"`
 	Uuid    string   `xml:",innerxml"`
 }
 
-// These structures are relevant to the Build object
-
+// LOC These structures are relevant to the Build object
 type LOC struct {
 	XMLName  xml.Name `xml:"LOC"`
 	LocType  string   `xml:"type,attr"`
 	LocValue string   `xml:",innerxml"`
 }
 
+// Build
 type Build struct {
 	XMLName        xml.Name `xml:"Build"`
 	Project        string   `xml:"Project"`
@@ -68,7 +69,7 @@ type Build struct {
 	SourceFiles    []File   `xml:"SourceFiles>File"`
 	Scantime       ScanTime `xml:"ScanTime"`
 }
-
+// File
 type File struct {
 	XMLName       xml.Name `xml:"File"`
 	FileSize      int      `xml:"size,attr"`
@@ -79,26 +80,25 @@ type File struct {
 	Name          string   `xml:"Name"`
 	Locs          []LOC    `xml:",any,omitempty"`
 }
-
+// ScanTime
 type ScanTime struct {
 	XMLName xml.Name `xml:"ScanTime"`
 	Value   int      `xml:"value,attr"`
 }
 
-// These structures are relevant to the Vulnerabilities object
-
+// Vulnerabilities These structures are relevant to the Vulnerabilities object
 type Vulnerabilities struct {
 	XMLName       xml.Name        `xml:"Vulnerabilities"`
 	Vulnerability []Vulnerability `xml:"Vulnerability"`
 }
-
+// Vulnerability
 type Vulnerability struct {
 	XMLName      xml.Name     `xml:"Vulnerability"`
 	ClassInfo    ClassInfo    `xml:"ClassInfo"`
 	InstanceInfo InstanceInfo `xml:"InstanceInfo"`
 	AnalysisInfo AnalysisInfo `xml:"AnalysisInfo>Unified"`
 }
-
+// ClassInfo
 type ClassInfo struct {
 	XMLName         xml.Name `xml:"ClassInfo"`
 	ClassID         string   `xml:"ClassID"`
@@ -108,34 +108,34 @@ type ClassInfo struct {
 	AnalyzerName    string   `xml:"AnalyzerName"`
 	DefaultSeverity string   `xml:"DefaultSeverity"`
 }
-
+// InstanceInfo
 type InstanceInfo struct {
 	XMLName          xml.Name `xml:"InstanceInfo"`
 	InstanceID       string   `xml:"InstanceID"`
 	InstanceSeverity string   `xml:"InstanceSeverity"`
 	Confidence       string   `xml:"Confidence"`
 }
-
+// AnalysisInfo
 type AnalysisInfo struct { //Note that this is directly the "Unified" object
 	Context                Context
 	ReplacementDefinitions ReplacementDefinitions `xml:"ReplacementDefinitions"`
 	Trace                  []Trace                `xml:"Trace"`
 }
-
+// Context
 type Context struct {
 	XMLName   xml.Name `xml:"Context"`
 	ContextId string   `xml:"id,attr,omitempty"`
 	Function  Function
 	FDSL      FunctionDeclarationSourceLocation
 }
-
+// Function
 type Function struct {
 	XMLName                xml.Name `xml:"Function"`
 	FunctionName           string   `xml:"name,attr"`
 	FunctionNamespace      string   `xml:"namespace,attr"`
 	FunctionEnclosingClass string   `xml:"enclosingClass,attr"`
 }
-
+// FunctionDeclarationSourceLocation
 type FunctionDeclarationSourceLocation struct {
 	XMLName      xml.Name `xml:"FunctionDeclarationSourceLocation"`
 	FDSLPath     string   `xml:"path,attr"`
@@ -144,19 +144,19 @@ type FunctionDeclarationSourceLocation struct {
 	FDSLColStart string   `xml:"colStart,attr"`
 	FDSLColEnd   string   `xml:"colEnd,attr"`
 }
-
+// ReplacementDefinitions
 type ReplacementDefinitions struct {
 	XMLName     xml.Name      `xml:"ReplacementDefinitions"`
 	Def         []Def         `xml:"Def"`
 	LocationDef []LocationDef `xml:"LocationDef"`
 }
-
+// Def
 type Def struct {
 	XMLName  xml.Name `xml:"Def"`
 	DefKey   string   `xml:"key,attr"`
 	DefValue string   `xml:"value,attr"`
 }
-
+// LocationDef
 type LocationDef struct {
 	XMLName  xml.Name `xml:"LocationDef"`
 	Path     string   `xml:"path,attr"`
@@ -166,28 +166,28 @@ type LocationDef struct {
 	ColEnd   int      `xml:"colEnd,attr"`
 	Key      string   `xml:"key,attr"`
 }
-
+// Trace
 type Trace struct {
 	XMLName xml.Name `xml:"Trace"`
 	Primary Primary  `xml:"Primary"`
 }
-
+// Primary
 type Primary struct {
 	XMLName xml.Name `xml:"Primary"`
 	Entry   []Entry  `xml:"Entry"`
 }
-
+// Entry
 type Entry struct {
 	XMLName xml.Name `xml:"Entry"`
 	NodeRef NodeRef  `xml:"NodeRef,omitempty"`
 	Node    Node     `xml:"Node,omitempty"`
 }
-
+// NodeRef
 type NodeRef struct {
 	XMLName xml.Name `xml:"NodeRef"`
 	RefId   int      `xml:"id,attr"`
 }
-
+// Node
 type Node struct {
 	XMLName        xml.Name       `xml:"Node"`
 	IsDefault      string         `xml:"isDefault,attr,omitempty"`
@@ -197,7 +197,7 @@ type Node struct {
 	Reason         Reason         `xml:"Reason,omitempty"`
 	Knowledge      Knowledge      `xml:"Knowledge,omitempty"`
 }
-
+// SourceLocation
 type SourceLocation struct {
 	XMLName   xml.Name `xml:"SourceLocation"`
 	Path      string   `xml:"path,attr"`
@@ -208,35 +208,35 @@ type SourceLocation struct {
 	ContextId string   `xml:"contextId,attr"`
 	Snippet   string   `xml:"snippet,attr"`
 }
-
+// Action
 type Action struct {
 	XMLName    xml.Name `xml:"Action"`
 	Type       string   `xml:"type,attr"`
 	ActionData string   `xml:",innerxml"`
 }
-
+// Reason
 type Reason struct {
 	XMLName xml.Name `xml:"Reason"`
 	Rule    Rule     `xml:"Rule,omitempty"`
 	Trace   Trace    `xml:"Trace,omitempty"`
 }
-
+// Rule
 type Rule struct {
 	XMLName xml.Name `xml:"Rule"`
 	RuleID  string   `xml:"ruleID,attr"`
 }
-
+// Group
 type Group struct {
 	XMLName xml.Name `xml:"Group"`
 	Name    string   `xml:"name,attr"`
 	Data    string   `xml:",innerxml"`
 }
-
+// Knowledge
 type Knowledge struct {
 	XMLName xml.Name `xml:"Knowledge"`
 	Facts   []Fact   `xml:"Fact"`
 }
-
+// Fact
 type Fact struct {
 	XMLName  xml.Name `xml:"Fact"`
 	Primary  string   `xml:"primary,attr"`
@@ -244,22 +244,19 @@ type Fact struct {
 	FactData string   `xml:",innerxml"`
 }
 
-// These structures are relevant to the ContextPool object
-
+// ContextPool These structures are relevant to the ContextPool object
 type ContextPool struct {
 	XMLName xml.Name  `xml:"ContextPool"`
 	Context []Context `xml:"Context"`
 }
 
-// These structures are relevant to the UnifiedNodePool object
-
+// UnifiedNodePool These structures are relevant to the UnifiedNodePool object
 type UnifiedNodePool struct {
 	XMLName xml.Name `xml:"UnifiedNodePool"`
 	Node    []Node   `xml:"Node"`
 }
 
-// These structures are relevant to the Description object
-
+// Description These structures are relevant to the Description object
 type Description struct {
 	XMLName           xml.Name          `xml:"Description"`
 	ContentType       string            `xml:"contentType,attr"`
@@ -271,33 +268,33 @@ type Description struct {
 	References        []Reference       `xml:"References>Reference"`
 	CustomDescription CustomDescription `xml:"CustomDescription,omitempty"`
 }
-
+// Abstract
 type Abstract struct {
 	XMLName xml.Name `xml:"Abstract"`
 	Text    string   `xml:",innerxml"`
 }
-
+// Explanation
 type Explanation struct {
 	XMLName xml.Name `xml:"Explanation"`
 	Text    string   `xml:",innerxml"`
 }
-
+// Recommendations
 type Recommendations struct {
 	XMLName xml.Name `xml:"Recommendations"`
 	Text    string   `xml:",innerxml"`
 }
-
+// Reference
 type Reference struct {
 	XMLName xml.Name `xml:"Reference"`
 	Title   string   `xml:"Title"`
 	Author  string   `xml:"Author"`
 }
-
+// Tip
 type Tip struct {
 	XMLName xml.Name `xml:"Tip"`
 	Tip     string   `xml:",innerxml"`
 }
-
+// CustomDescription
 type CustomDescription struct {
 	XMLName         xml.Name        `xml:"CustomDescription"`
 	ContentType     string          `xml:"contentType,attr"`
@@ -307,8 +304,7 @@ type CustomDescription struct {
 	References      []Reference     `xml:"References>Reference"`
 }
 
-// These structures are relevant to the Snippets object
-
+// Snippet These structures are relevant to the Snippets object
 type Snippet struct {
 	XMLName   xml.Name `xml:"Snippet"`
 	SnippetId string   `xml:"id,attr"`
@@ -318,15 +314,14 @@ type Snippet struct {
 	Text      string   `xml:"Text"`
 }
 
-// These structures are relevant to the ProgramData object
-
+// ProgramData These structures are relevant to the ProgramData object
 type ProgramData struct {
 	XMLName         xml.Name         `xml:"ProgramData"`
 	Sources         []SourceInstance `xml:"Sources>SourceInstance"`
 	Sinks           []SinkInstance   `xml:"Sinks>SinkInstance"`
 	CalledWithNoDef []Function       `xml:"CalledWithNoDef>Function"`
 }
-
+// SourceInstance
 type SourceInstance struct {
 	XMLName        xml.Name       `xml:"SourceInstance"`
 	RuleID         string         `xml:"ruleID,attr"`
@@ -335,29 +330,29 @@ type SourceInstance struct {
 	SourceLocation SourceLocation `xml:"SourceLocation,omitempty"`
 	TaintFlags     TaintFlags     `xml:"TaintFlags"`
 }
-
+// FunctionCall
 type FunctionCall struct {
 	XMLName        xml.Name       `xml:"FunctionCall"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Function       Function       `xml:"Function"`
 }
-
+// FunctionEntry
 type FunctionEntry struct {
 	XMLName        xml.Name       `xml:"FunctionEntry"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Function       Function       `xml:"Function"`
 }
-
+// TaintFlags
 type TaintFlags struct {
 	XMLName   xml.Name    `xml:"TaintFlags"`
 	TaintFlag []TaintFlag `xml:"TaintFlag"`
 }
-
+// TaintFlag
 type TaintFlag struct {
 	XMLName       xml.Name `xml:"TaintFlag"`
 	TaintFlagName string   `xml:"name,attr"`
 }
-
+// SinkInstance
 type SinkInstance struct {
 	XMLName        xml.Name       `xml:"SinkInstance"`
 	RuleID         string         `xml:"ruleID,attr"`
@@ -365,8 +360,7 @@ type SinkInstance struct {
 	SourceLocation SourceLocation `xml:"SourceLocation,omitempty"`
 }
 
-// These structures are relevant to the EngineData object
-
+// EngineData These structures are relevant to the EngineData object
 type EngineData struct {
 	XMLName       xml.Name     `xml:"EngineData"`
 	EngineVersion string       `xml:"EngineVersion"`
@@ -379,7 +373,7 @@ type EngineData struct {
 	RuleInfo      []RuleInfo   `xml:"RuleInfo>Rule"`
 	LicenseInfo   LicenseInfo  `xml:"LicenseInfo"`
 }
-
+// RulePack
 type RulePack struct {
 	XMLName    xml.Name `xml:"RulePack"`
 	RulePackID string   `xml:"RulePackID"`
@@ -388,68 +382,69 @@ type RulePack struct {
 	Version    string   `xml:"Version"`
 	MAC        string   `xml:"MAC"`
 }
-
+// Properties
 type Properties struct {
 	XMLName        xml.Name   `xml:"Properties"`
 	PropertiesType string     `xml:"type,attr"`
 	Property       []Property `xml:"Property"`
 }
-
+// Property
 type Property struct {
 	XMLName xml.Name `xml:"Property"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
-
+// Error
 type Error struct {
 	XMLName      xml.Name `xml:"Error"`
 	ErrorCode    string   `xml:"code,attr"`
 	ErrorMessage string   `xml:",innerxml"`
 }
-
+// MachineInfo
 type MachineInfo struct {
 	XMLName  xml.Name `xml:"MachineInfo"`
 	Hostname string   `xml:"Hostname"`
 	Username string   `xml:"Username"`
 	Platform string   `xml:"Platform"`
 }
-
+// FilterResult
 type FilterResult struct {
 	XMLName xml.Name `xml:"FilterResult"`
 	//Todo? No data in sample audit file
 }
-
+// RuleInfo
 type RuleInfo struct {
 	XMLName       xml.Name `xml:"Rule"`
 	RuleID        string   `xml:"id,attr"`
 	MetaInfoGroup []Group  `xml:"MetaInfo>Group,omitempty"`
 }
-
+// LicenseInfo
 type LicenseInfo struct {
 	XMLName    xml.Name     `xml:"LicenseInfo"`
 	Metadata   []Metadata   `xml:"Metadata"`
 	Capability []Capability `xml:"Capability"`
 }
-
+// Metadata
 type Metadata struct {
 	XMLName xml.Name `xml:"Metadata"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
-
+// Capability
 type Capability struct {
 	XMLName    xml.Name  `xml:"Capability"`
 	Name       string    `xml:"Name"`
 	Expiration string    `xml:"Expiration"`
 	Attribute  Attribute `xml:"Attribute"`
 }
-
+// Attribute
 type Attribute struct {
 	XMLName xml.Name `xml:"Attribute"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
 
+// ConvertFprToSarif converts the FPR file contents into SARIF format
 func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
@@ -474,6 +469,7 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 	return Parse(sys, project, projectVersion, data)
 }
 
+// Parse parses the FPR file
 func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) (format.SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
