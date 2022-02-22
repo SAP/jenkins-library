@@ -4,64 +4,156 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestGolangBuild(t *testing.T) {
-	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "golang:1",
-		User:    "root",
-		TestDir: []string{"testdata", "TestGolangIntegration", "golang-app"},
-		Mounts:  map[string]string{},
-		Setup:   []string{},
+// In this test the piper command golangBuild performs testing, BOM file creation and building a project with entry point in the cmd/server/server.go
+// The configuration for golangBuild can be found in testdata/TestGolangIntegration/golang-project1/.pipeline/config.yml
+func TestGolangBuild_Project1(t *testing.T) {
+	ctx := context.Background()
+
+	pwd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed.")
+	pwd = filepath.Dir(pwd)
+
+	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
+	tempDir, err := createTmpDir("")
+	defer os.RemoveAll(tempDir) // clean up
+	assert.NoError(t, err, "Error when creating temp dir")
+
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestGolangIntegration", "golang-project1"), tempDir)
+	if err != nil {
+		t.Fatal("Failed to copy test project.")
+	}
+
+	//workaround to use test script util it is possible to set workdir for Exec call
+	testScript := fmt.Sprintf(`#!/bin/sh
+cd /test
+/piperbin/piper golangBuild >test-log.txt 2>&1
+`)
+	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+
+	reqNode := testcontainers.ContainerRequest{
+		Image: "golang:1",
+		Cmd:   []string{"tail", "-f"},
+		BindMounts: map[string]string{
+			pwd:     "/piperbin",
+			tempDir: "/test",
+		},
+	}
+
+	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: reqNode,
+		Started:          true,
 	})
 
-	_ = container.whenRunningPiperCommand("golangBuild")
-	// if err != nil {
-	// 	t.Fatalf("Calling piper command failed %s", err)
-	// }
+	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
 
-	container.assertHasOutput(t, "SUCCESS")
-	// container.assertHasFile(t, "/project/application/target/cloud-sdk-spring-archetype-application.jar")
-	// container.assertHasFile(t, "/tmp/.m2/repository")
+	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	if err != nil {
+		t.Fatal("Could not read test-log.txt.", err)
+	}
+	output := string(content)
+	assert.Contains(t, output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
+	assert.Contains(t, output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest")
+	assert.Contains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml -- -coverprofile=cover.out ./...")
+	assert.Contains(t, output, "info  golangBuild - DONE 8 tests")
+	assert.Contains(t, output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
+	assert.Contains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml -- -tags=integration ./...")
+	assert.Contains(t, output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -test -output bom.xml")
+	assert.Contains(t, output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64")
+	assert.Contains(t, output, "info  golangBuild - SUCCESS")
 
-	// err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
-	// if err != nil {
-	// 	t.Fatalf("Calling piper command failed %s", err)
-	// }
+	//workaround to use test script util it is possible to set workdir for Exec call
+	testScript = fmt.Sprintf(`#!/bin/sh
+cd /test
+ls -l >files-list.txt 2>&1
+`)
+	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-	// container.assertHasOutput(t, "INFO mydemo.HelloWorldControllerTest - Starting HelloWorldControllerTest")
-	// container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
+	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
 
-	// container.assertHasFile(t, "/project/integration-tests/target/coverage-reports/jacoco.exec")
+	content, err = ioutil.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
+	if err != nil {
+		t.Fatal("Could not read files-list.txt.", err)
+	}
+	output = string(content)
+	assert.Contains(t, output, "TEST-go.xml")
+	assert.Contains(t, output, "TEST-integration.xml")
+	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "cover.out")
+	assert.Contains(t, output, "coverage.html")
+	assert.Contains(t, output, "golang-app-linux.amd64")
 }
 
-// func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
-// 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-// 		Image:   "maven:3-openjdk-8-slim",
-// 		User:    "1000",
-// 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-tomee-archetype"},
-// 		Mounts:  map[string]string{},
-// 		Setup:   []string{},
-// 	})
+// In this test the piper command golangBuild performs just building a project with entry point in the root of the project
+// The configuration for golangBuild can be found in testdata/TestGolangIntegration/golang-project2/.pipeline/config.yml
+func TestGolangBuild_Project2(t *testing.T) {
+	ctx := context.Background()
 
-// 	err := container.whenRunningPiperCommand("mavenBuild", "")
-// 	if err != nil {
-// 		t.Fatalf("Calling piper command failed %s", err)
-// 	}
+	pwd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed.")
+	pwd = filepath.Dir(pwd)
 
-// 	container.assertHasOutput(t, "BUILD SUCCESS")
-// 	container.assertHasFile(t, "/project/application/target/cloud-sdk-tomee-archetype-application-classes.jar")
-// 	container.assertHasFile(t, "/project/application/target/cloud-sdk-tomee-archetype-application.war")
-// 	container.assertHasFile(t, "/tmp/.m2/repository")
+	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
+	tempDir, err := createTmpDir("")
+	defer os.RemoveAll(tempDir) // clean up
+	assert.NoError(t, err, "Error when creating temp dir")
 
-// 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
-// 	if err != nil {
-// 		t.Fatalf("Calling piper command failed %s", err)
-// 	}
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestGolangIntegration", "golang-project2"), tempDir)
+	if err != nil {
+		t.Fatal("Failed to copy test project.")
+	}
 
-// 	container.assertHasOutput(t, "(prepare-agent) @ cloud-sdk-tomee-archetype-integration-tests")
-// 	container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
+	//workaround to use test script util it is possible to set workdir for Exec call
+	testScript := fmt.Sprintf(`#!/bin/sh
+cd /test
+/piperbin/piper golangBuild >test-log.txt 2>&1
+`)
+	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-// 	container.assertHasFile(t, "/project/integration-tests/target/coverage-reports/jacoco.exec")
-// }
+	reqNode := testcontainers.ContainerRequest{
+		Image: "golang:1",
+		Cmd:   []string{"tail", "-f"},
+		BindMounts: map[string]string{
+			pwd:     "/piperbin",
+			tempDir: "/test",
+		},
+	}
+
+	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: reqNode,
+		Started:          true,
+	})
+
+	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
+
+	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	if err != nil {
+		t.Fatal("Could not read test-log.txt.", err)
+	}
+	output := string(content)
+	assert.NotContains(t, output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
+	assert.NotContains(t, output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest")
+	assert.NotContains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml -- -coverprofile=cover.out ./...")
+	assert.NotContains(t, output, "info  golangBuild - DONE 8 tests")
+	assert.NotContains(t, output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
+	assert.NotContains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml -- -tags=integration ./...")
+	assert.NotContains(t, output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -test -output bom.xml")
+	assert.Contains(t, output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64 .")
+	assert.Contains(t, output, "info  golangBuild - SUCCESS")
+}
