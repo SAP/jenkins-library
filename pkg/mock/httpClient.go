@@ -1,0 +1,45 @@
+//go:build !release
+// +build !release
+
+package mock
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+)
+
+type HttpClientMock struct {
+	ClientOptions          []piperhttp.ClientOptions // set by mock
+	FileUploads            map[string]string         // set by mock
+	ReturnFileUploadStatus int                       // expected to be set upfront
+	ReturnFileUploadError  error                     // expected to be set upfront
+}
+
+func (utils *HttpClientMock) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (utils *HttpClientMock) SetOptions(options piperhttp.ClientOptions) {
+	utils.ClientOptions = append(utils.ClientOptions, options)
+}
+
+func (utils *HttpClientMock) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (utils *HttpClientMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	utils.FileUploads[file] = url
+
+	response := http.Response{
+		StatusCode: utils.ReturnFileUploadStatus,
+	}
+
+	return &response, utils.ReturnFileUploadError
+}
+
+func (utils HttpClientMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return utils.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
+}

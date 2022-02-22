@@ -29,12 +29,12 @@ type deployUtilsBundle struct {
 }
 
 // NewDeployUtilsBundle initialize using deployUtilsBundle struct
-func NewDeployUtilsBundle(config HelmExecuteOptions) DeployUtils {
+func NewDeployUtilsBundle(customTLSCertificateLinks []string) DeployUtils {
 	httpClientOptions := piperhttp.ClientOptions{}
 
-	if len(config.CustomTLSCertificateLinks) > 0 {
+	if len(customTLSCertificateLinks) > 0 {
 		httpClientOptions.TransportSkipVerification = false
-		httpClientOptions.TrustedCerts = config.CustomTLSCertificateLinks
+		httpClientOptions.TrustedCerts = customTLSCertificateLinks
 	}
 
 	httpClient := piperhttp.Client{}

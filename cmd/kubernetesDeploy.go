@@ -12,31 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
+	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-// deployUtilsBundle struct  for utils
-type deployUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-}
-
-// DeployUtils interface
-type DeployUtils interface {
-	SetEnv(env []string)
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(e string, p ...string) error
-
-	piperutils.FileUtils
-}
-
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	utils := NewDeployUtilsBundle()
+	customTLSCertificateLinks := []string{}
+	utils := kubernetes.NewDeployUtilsBundle(customTLSCertificateLinks)
 
 	// error situations stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runKubernetesDeploy(config, telemetryData, utils, log.Writer())
@@ -45,36 +29,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	}
 }
 
-// NewDeployUtilsBundle initialize using deployUtilsBundle struct
-func NewDeployUtilsBundle() DeployUtils {
-
-	utils := deployUtilsBundle{
-		Command: &command.Command{
-			ErrorCategoryMapping: map[string][]string{
-				log.ErrorConfiguration.String(): {
-					"Error: Get * no such host",
-					"Error: path * not found",
-					"Error: rendered manifests contain a resource that already exists.",
-					"Error: unknown flag",
-					"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
-					"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
-					"Error: UPGRADE FAILED: an error occurred * not found",
-					"Error: UPGRADE FAILED: query: failed to query with labels:",
-					"Invalid value: \"\": field is immutable",
-				},
-				log.ErrorCustom.String(): {
-					"Error: release * failed, * timed out waiting for the condition",
-				},
-			},
-		},
-		Files: &piperutils.Files{},
-	}
-	// reroute stderr output to logging framework, stdout will be used for command interactions
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
-func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils DeployUtils, stdout io.Writer) error {
+func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetes.DeployUtils, stdout io.Writer) error {
 	telemetryData.Custom1Label = "deployTool"
 	telemetryData.Custom1 = config.DeployTool
 
@@ -86,7 +41,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 	return fmt.Errorf("Failed to execute deployments")
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, utils DeployUtils, stdout io.Writer) error {
+func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) error {
 	if len(config.ChartPath) <= 0 {
 		return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
 	}
@@ -255,7 +210,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils DeployUtils, stdout io.
 	return nil
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, utils DeployUtils, stdout io.Writer) error {
+func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) error {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -389,7 +344,7 @@ func splitFullImageName(image string) (imageName, tag string, err error) {
 	return "", "", fmt.Errorf("Failed to split image name '%v'", image)
 }
 
-func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils DeployUtils) (error, []string) {
+func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry string, utils kubernetes.DeployUtils) (error, []string) {
 	targetPath := ""
 	if len(config.DockerConfigJSON) > 0 {
 		// first enhance config.json with additional pipeline-related credentials if they have been provided

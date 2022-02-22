@@ -31,7 +31,7 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		CustomTLSCertificateLinks:     config.CustomTLSCertificateLinks,
 	}
 
-	utils := kubernetes.NewDeployUtilsBundle(helmConfig)
+	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
