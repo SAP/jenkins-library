@@ -426,6 +426,8 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 		buildOptions = append(buildOptions, "-ldflags", ldflags)
 	}
 
+	buildOptions = append(buildOptions, config.EntryPointPath)
+
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)
 		log.SetErrorCategory(log.ErrorBuild)

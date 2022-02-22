@@ -217,6 +217,14 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: entryPointPath
+        type: string
+        description: Path to the main package.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "."
   outputs:
     resources:
       - name: reports
