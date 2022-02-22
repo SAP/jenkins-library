@@ -548,8 +548,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//handles rules
 	for i := 0; i < len(fvdl.EngineData.RuleInfo); i++ { //i iterates on rules
 		sarifRule := *new(format.SarifRule)
-		sarifRule.Id = fvdl.EngineData.RuleInfo[i].RuleID
-		sarifRule.Guid = fvdl.EngineData.RuleInfo[i].RuleID
+		sarifRule.ID = fvdl.EngineData.RuleInfo[i].RuleID
+		sarifRule.GUID = fvdl.EngineData.RuleInfo[i].RuleID
 		for j := 0; j < len(fvdl.Vulnerabilities.Vulnerability); j++ { //j iterates on vulns to find the name
 			if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.ClassID == fvdl.EngineData.RuleInfo[i].RuleID {
 				var nameArray []string
@@ -569,7 +569,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 		//Descriptions
 		for j := 0; j < len(fvdl.Description); j++ {
-			if fvdl.Description[j].ClassID == sarifRule.Id {
+			if fvdl.Description[j].ClassID == sarifRule.ID {
 				rawAbstract := fvdl.Description[j].Abstract.Text
 				rawExplanation := fvdl.Description[j].Explanation.Text
 				// Replacement defintions in abstract/explanation

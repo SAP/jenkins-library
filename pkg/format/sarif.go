@@ -96,8 +96,8 @@ type Driver struct {
 
 // SarifRule related rule use to identify the finding
 type SarifRule struct {
-	Id                   string               `json:"id"`
-	Guid                 string               `json:"guid"`
+	ID                   string               `json:"id"`
+	GUID                 string               `json:"guid"`
 	Name                 string               `json:"name,omitempty"`
 	ShortDescription     Message              `json:"shortDescription"`
 	FullDescription      Message              `json:"fullDescription"`
@@ -118,7 +118,7 @@ type Help struct {
 type SupportedTaxonomies struct {
 	Name  string `json:"name"`
 	Index int    `json:"index"`
-	Guid  string `json:"guid"`
+	GUID  string `json:"guid"`
 }
 
 // DefaultConfiguration
@@ -140,14 +140,14 @@ type Relationships struct {
 
 // Target
 type Target struct {
-	Id            string        `json:"id"`
+	ID            string        `json:"id"`
 	ToolComponent ToolComponent `json:"toolComponent"`
 }
 
 //ToolComponent
 type ToolComponent struct {
 	Name string `json:"name"`
-	Guid string `json:"guid"`
+	GUID string `json:"guid"`
 }
 
 // SarifRuleProperties

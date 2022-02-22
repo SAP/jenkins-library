@@ -199,7 +199,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)
-		sarifRule.Id = id
+		sarifRule.ID = id
 		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)}
 		sarifRule.FullDescription = format.Message{Text: alert.Vulnerability.Description}
 		sarifRule.DefaultConfiguration.Level = alert.Level
