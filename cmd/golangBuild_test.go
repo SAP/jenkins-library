@@ -84,6 +84,7 @@ func TestRunGolangBuild(t *testing.T) {
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
+			EntryPointPath:      "cmd/server.go",
 		}
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
@@ -91,7 +92,7 @@ func TestRunGolangBuild(t *testing.T) {
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"build", "-trimpath", "cmd/server.go"}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - tests & ldflags", func(t *testing.T) {
