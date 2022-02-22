@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CreateCustomVulnerabilityReport creates a vulnerability ScanReport to be used for uploading into various sinks
 func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]Alert, cvssSeverityLimit float64) reporting.ScanReport {
 	severe, _ := CountSecurityVulnerabilities(alerts, cvssSeverityLimit)
 
@@ -101,6 +102,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]A
 	return scanReport
 }
 
+// CountSecurityVulnerabilities counts the security vulnerabilities above severityLimit
 func CountSecurityVulnerabilities(alerts *[]Alert, cvssSeverityLimit float64) (int, int) {
 	severeVulnerabilities := 0
 	for _, alert := range *alerts {
@@ -128,11 +130,13 @@ func vulnerabilityScore(alert Alert) float64 {
 	return alert.Vulnerability.Score
 }
 
+// ReportSha creates a SHA unique to the WS product and scan to be used as part of the report filename
 func ReportSha(productName string, scan *Scan) string {
 	reportShaData := []byte(productName + "," + strings.Join(scan.ScannedProjectNames(), ","))
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
+// WriteCustomVulnerabilityReports creates an HTML and a JSON format file based on the alerts brought up by the scan
 func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport reporting.ScanReport, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
@@ -167,6 +171,7 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 	return reportPaths, nil
 }
 
+// Creates a SARIF result from the Alerts that were brought up by the scan
 func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
@@ -231,6 +236,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	return &sarif
 }
 
+// WriteSarifFile write a JSON sarif format file for upload into Cumulus
 func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
@@ -252,6 +258,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	return reportPaths, nil
 }
 
+// CreateGithubResultIssues creates a number of GitHub issues, one per Alert to create transparency on the findings
 func CreateGithubResultIssues(scan *Scan, alerts *[]Alert, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
 	for i := 0; i < len(*alerts); i++ {
 		alert := (*alerts)[i]

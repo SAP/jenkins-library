@@ -55,6 +55,7 @@ type Alert struct {
 	Status           string        `json:"status,omitempty"`
 }
 
+// ToMarkdown returns the markdown representation of the contents
 func (a *Alert) ToMarkdown() string {
 	return fmt.Sprintf("**Vulnerability %v**\n| Severity | Package | Installed Version | Fix Resolution | Link |\n| --- | --- | --- | --- | --- |\n|%v|%v|%v|%v|[%v](%v)|\n", a.Vulnerability.Name, a.Vulnerability.Severity, a.Library.ArtifactID, a.Library.Version, a.Vulnerability.TopFix.FixResolution, a.Vulnerability.Name, a.Vulnerability.URL)
 }
