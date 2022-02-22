@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,10 +44,11 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 	t.Run("Test API Key Value Map payload", func(t *testing.T) {
 		// init
 		config := getDefaultOptions()
-
+		testPayload := bytes.NewBuffer([]byte(string("{\"encrypted\":true,\"keyMapEntryValues\":[{\"map_name\":\"demoMap\",\"name\":\"demo\",\"value\":\"name\"}],\"name\":\"demoMap\",\"scope\":\"ENV\"}")))
 		// test
 		payload, err := createJSONPayload(&config)
 		// assert
+		assert.Equal(t, testPayload, payload)
 		assert.NoError(t, err)
 		assert.NotNil(t, payload)
 	})
