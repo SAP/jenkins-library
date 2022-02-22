@@ -48,8 +48,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
-	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
-
 	if config.CreateBOM {
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
 		createBOMConfig := []string{
@@ -65,6 +63,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		}
 		defines = append(defines, createBOMConfig...)
 	}
+
+	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
 
 	if config.Verify {
 		goals = append(goals, "verify")
