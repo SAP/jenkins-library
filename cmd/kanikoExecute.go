@@ -222,7 +222,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.
 
 	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
 
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd, "--digest-file", digestFilePath}
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd, "--reproducible", "--digest-file", digestFilePath}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)

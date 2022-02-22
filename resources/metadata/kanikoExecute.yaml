@@ -195,5 +195,3 @@ spec:
       env:
         - name: container
           value: docker
-        - name: TMPDIR
-          value: /
