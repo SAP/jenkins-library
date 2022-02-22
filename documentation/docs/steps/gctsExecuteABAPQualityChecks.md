@@ -19,7 +19,7 @@
 Example configuration for the use in a Jenkinsfile.
 
 ```groovy
-gctsExecuteABAPUnitTests(
+gctsExecuteABAPQualityChecks(
   script: this,
   host: 'https://abap.server.com:port',
   client: '000',
@@ -37,7 +37,7 @@ Example configuration for the use in a yaml config file (such as `.pipeline/conf
 ```yaml
 steps:
   <...>
-  gctsExecuteABAPUnitTests:
+  gctsExecuteABAPQualityChecks:
     host: 'https://abap.server.com:port'
     client: '000'
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
@@ -52,7 +52,7 @@ Example configuration when you define scope: *repository* or *packages*. For the
 ```yaml
 steps:
   <...>
-  gctsExecuteABAPUnitTests:
+  gctsExecuteABAPQualityChecks:
     host: 'https://abap.server.com:port'
     client: '000'
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
@@ -66,7 +66,7 @@ Example configuration when you want to execute only ABAP Unit Test.
 ```yaml
 steps:
   <...>
-  gctsExecuteABAPUnitTests:
+  gctsExecuteABAPQualityChecks:
     host: 'https://abap.server.com:port'
     client: '000'
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
@@ -85,7 +85,7 @@ stage('ABAP Unit Tests') {
    script{
 
      try{
-           gctsExecuteABAPUnitTests(
+           gctsExecuteABAPQualityChecks(
               script: this,
               commit: "${GIT_COMMIT}",
               workspace: "${WORKSPACE}")
