@@ -589,17 +589,18 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		}
 
 		scanReport := ws.CreateCustomVulnerabilityReport(config.ProductName, scan, &allAlerts, cvssSeverityLimit)
-		reportPaths, err = ws.WriteCustomVulnerabilityReports(config.ProductName, scan, scanReport, piperutils.Files{})
+		paths, err := ws.WriteCustomVulnerabilityReports(config.ProductName, scan, scanReport, utils)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
+		reportPaths = append(reportPaths, paths...)
 
 		sarif := ws.CreateSarifResultFile(scan, &allAlerts)
-		additionalReportPaths, err := ws.WriteSarifFile(sarif, piperutils.Files{})
+		paths, err = ws.WriteSarifFile(sarif, utils)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
-		reportPaths = append(reportPaths, additionalReportPaths...)
+		reportPaths = append(reportPaths, paths...)
 
 		if len(errorsOccured) > 0 {
 			if vulnerabilitiesCount > 0 {
