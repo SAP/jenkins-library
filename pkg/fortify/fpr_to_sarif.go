@@ -69,6 +69,7 @@ type Build struct {
 	SourceFiles    []File   `xml:"SourceFiles>File"`
 	Scantime       ScanTime `xml:"ScanTime"`
 }
+
 // File
 type File struct {
 	XMLName       xml.Name `xml:"File"`
@@ -80,6 +81,7 @@ type File struct {
 	Name          string   `xml:"Name"`
 	Locs          []LOC    `xml:",any,omitempty"`
 }
+
 // ScanTime
 type ScanTime struct {
 	XMLName xml.Name `xml:"ScanTime"`
@@ -91,6 +93,7 @@ type Vulnerabilities struct {
 	XMLName       xml.Name        `xml:"Vulnerabilities"`
 	Vulnerability []Vulnerability `xml:"Vulnerability"`
 }
+
 // Vulnerability
 type Vulnerability struct {
 	XMLName      xml.Name     `xml:"Vulnerability"`
@@ -98,6 +101,7 @@ type Vulnerability struct {
 	InstanceInfo InstanceInfo `xml:"InstanceInfo"`
 	AnalysisInfo AnalysisInfo `xml:"AnalysisInfo>Unified"`
 }
+
 // ClassInfo
 type ClassInfo struct {
 	XMLName         xml.Name `xml:"ClassInfo"`
@@ -108,6 +112,7 @@ type ClassInfo struct {
 	AnalyzerName    string   `xml:"AnalyzerName"`
 	DefaultSeverity string   `xml:"DefaultSeverity"`
 }
+
 // InstanceInfo
 type InstanceInfo struct {
 	XMLName          xml.Name `xml:"InstanceInfo"`
@@ -115,12 +120,14 @@ type InstanceInfo struct {
 	InstanceSeverity string   `xml:"InstanceSeverity"`
 	Confidence       string   `xml:"Confidence"`
 }
+
 // AnalysisInfo
 type AnalysisInfo struct { //Note that this is directly the "Unified" object
 	Context                Context
 	ReplacementDefinitions ReplacementDefinitions `xml:"ReplacementDefinitions"`
 	Trace                  []Trace                `xml:"Trace"`
 }
+
 // Context
 type Context struct {
 	XMLName   xml.Name `xml:"Context"`
@@ -128,6 +135,7 @@ type Context struct {
 	Function  Function
 	FDSL      FunctionDeclarationSourceLocation
 }
+
 // Function
 type Function struct {
 	XMLName                xml.Name `xml:"Function"`
@@ -135,6 +143,7 @@ type Function struct {
 	FunctionNamespace      string   `xml:"namespace,attr"`
 	FunctionEnclosingClass string   `xml:"enclosingClass,attr"`
 }
+
 // FunctionDeclarationSourceLocation
 type FunctionDeclarationSourceLocation struct {
 	XMLName      xml.Name `xml:"FunctionDeclarationSourceLocation"`
@@ -144,18 +153,21 @@ type FunctionDeclarationSourceLocation struct {
 	FDSLColStart string   `xml:"colStart,attr"`
 	FDSLColEnd   string   `xml:"colEnd,attr"`
 }
+
 // ReplacementDefinitions
 type ReplacementDefinitions struct {
 	XMLName     xml.Name      `xml:"ReplacementDefinitions"`
 	Def         []Def         `xml:"Def"`
 	LocationDef []LocationDef `xml:"LocationDef"`
 }
+
 // Def
 type Def struct {
 	XMLName  xml.Name `xml:"Def"`
 	DefKey   string   `xml:"key,attr"`
 	DefValue string   `xml:"value,attr"`
 }
+
 // LocationDef
 type LocationDef struct {
 	XMLName  xml.Name `xml:"LocationDef"`
@@ -166,27 +178,32 @@ type LocationDef struct {
 	ColEnd   int      `xml:"colEnd,attr"`
 	Key      string   `xml:"key,attr"`
 }
+
 // Trace
 type Trace struct {
 	XMLName xml.Name `xml:"Trace"`
 	Primary Primary  `xml:"Primary"`
 }
+
 // Primary
 type Primary struct {
 	XMLName xml.Name `xml:"Primary"`
 	Entry   []Entry  `xml:"Entry"`
 }
+
 // Entry
 type Entry struct {
 	XMLName xml.Name `xml:"Entry"`
 	NodeRef NodeRef  `xml:"NodeRef,omitempty"`
 	Node    Node     `xml:"Node,omitempty"`
 }
+
 // NodeRef
 type NodeRef struct {
 	XMLName xml.Name `xml:"NodeRef"`
 	RefId   int      `xml:"id,attr"`
 }
+
 // Node
 type Node struct {
 	XMLName        xml.Name       `xml:"Node"`
@@ -197,6 +214,7 @@ type Node struct {
 	Reason         Reason         `xml:"Reason,omitempty"`
 	Knowledge      Knowledge      `xml:"Knowledge,omitempty"`
 }
+
 // SourceLocation
 type SourceLocation struct {
 	XMLName   xml.Name `xml:"SourceLocation"`
@@ -208,34 +226,40 @@ type SourceLocation struct {
 	ContextId string   `xml:"contextId,attr"`
 	Snippet   string   `xml:"snippet,attr"`
 }
+
 // Action
 type Action struct {
 	XMLName    xml.Name `xml:"Action"`
 	Type       string   `xml:"type,attr"`
 	ActionData string   `xml:",innerxml"`
 }
+
 // Reason
 type Reason struct {
 	XMLName xml.Name `xml:"Reason"`
 	Rule    Rule     `xml:"Rule,omitempty"`
 	Trace   Trace    `xml:"Trace,omitempty"`
 }
+
 // Rule
 type Rule struct {
 	XMLName xml.Name `xml:"Rule"`
 	RuleID  string   `xml:"ruleID,attr"`
 }
+
 // Group
 type Group struct {
 	XMLName xml.Name `xml:"Group"`
 	Name    string   `xml:"name,attr"`
 	Data    string   `xml:",innerxml"`
 }
+
 // Knowledge
 type Knowledge struct {
 	XMLName xml.Name `xml:"Knowledge"`
 	Facts   []Fact   `xml:"Fact"`
 }
+
 // Fact
 type Fact struct {
 	XMLName  xml.Name `xml:"Fact"`
@@ -268,32 +292,38 @@ type Description struct {
 	References        []Reference       `xml:"References>Reference"`
 	CustomDescription CustomDescription `xml:"CustomDescription,omitempty"`
 }
+
 // Abstract
 type Abstract struct {
 	XMLName xml.Name `xml:"Abstract"`
 	Text    string   `xml:",innerxml"`
 }
+
 // Explanation
 type Explanation struct {
 	XMLName xml.Name `xml:"Explanation"`
 	Text    string   `xml:",innerxml"`
 }
+
 // Recommendations
 type Recommendations struct {
 	XMLName xml.Name `xml:"Recommendations"`
 	Text    string   `xml:",innerxml"`
 }
+
 // Reference
 type Reference struct {
 	XMLName xml.Name `xml:"Reference"`
 	Title   string   `xml:"Title"`
 	Author  string   `xml:"Author"`
 }
+
 // Tip
 type Tip struct {
 	XMLName xml.Name `xml:"Tip"`
 	Tip     string   `xml:",innerxml"`
 }
+
 // CustomDescription
 type CustomDescription struct {
 	XMLName         xml.Name        `xml:"CustomDescription"`
@@ -321,6 +351,7 @@ type ProgramData struct {
 	Sinks           []SinkInstance   `xml:"Sinks>SinkInstance"`
 	CalledWithNoDef []Function       `xml:"CalledWithNoDef>Function"`
 }
+
 // SourceInstance
 type SourceInstance struct {
 	XMLName        xml.Name       `xml:"SourceInstance"`
@@ -330,28 +361,33 @@ type SourceInstance struct {
 	SourceLocation SourceLocation `xml:"SourceLocation,omitempty"`
 	TaintFlags     TaintFlags     `xml:"TaintFlags"`
 }
+
 // FunctionCall
 type FunctionCall struct {
 	XMLName        xml.Name       `xml:"FunctionCall"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Function       Function       `xml:"Function"`
 }
+
 // FunctionEntry
 type FunctionEntry struct {
 	XMLName        xml.Name       `xml:"FunctionEntry"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Function       Function       `xml:"Function"`
 }
+
 // TaintFlags
 type TaintFlags struct {
 	XMLName   xml.Name    `xml:"TaintFlags"`
 	TaintFlag []TaintFlag `xml:"TaintFlag"`
 }
+
 // TaintFlag
 type TaintFlag struct {
 	XMLName       xml.Name `xml:"TaintFlag"`
 	TaintFlagName string   `xml:"name,attr"`
 }
+
 // SinkInstance
 type SinkInstance struct {
 	XMLName        xml.Name       `xml:"SinkInstance"`
@@ -373,6 +409,7 @@ type EngineData struct {
 	RuleInfo      []RuleInfo   `xml:"RuleInfo>Rule"`
 	LicenseInfo   LicenseInfo  `xml:"LicenseInfo"`
 }
+
 // RulePack
 type RulePack struct {
 	XMLName    xml.Name `xml:"RulePack"`
@@ -382,24 +419,28 @@ type RulePack struct {
 	Version    string   `xml:"Version"`
 	MAC        string   `xml:"MAC"`
 }
+
 // Properties
 type Properties struct {
 	XMLName        xml.Name   `xml:"Properties"`
 	PropertiesType string     `xml:"type,attr"`
 	Property       []Property `xml:"Property"`
 }
+
 // Property
 type Property struct {
 	XMLName xml.Name `xml:"Property"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
+
 // Error
 type Error struct {
 	XMLName      xml.Name `xml:"Error"`
 	ErrorCode    string   `xml:"code,attr"`
 	ErrorMessage string   `xml:",innerxml"`
 }
+
 // MachineInfo
 type MachineInfo struct {
 	XMLName  xml.Name `xml:"MachineInfo"`
@@ -407,29 +448,34 @@ type MachineInfo struct {
 	Username string   `xml:"Username"`
 	Platform string   `xml:"Platform"`
 }
+
 // FilterResult
 type FilterResult struct {
 	XMLName xml.Name `xml:"FilterResult"`
 	//Todo? No data in sample audit file
 }
+
 // RuleInfo
 type RuleInfo struct {
 	XMLName       xml.Name `xml:"Rule"`
 	RuleID        string   `xml:"id,attr"`
 	MetaInfoGroup []Group  `xml:"MetaInfo>Group,omitempty"`
 }
+
 // LicenseInfo
 type LicenseInfo struct {
 	XMLName    xml.Name     `xml:"LicenseInfo"`
 	Metadata   []Metadata   `xml:"Metadata"`
 	Capability []Capability `xml:"Capability"`
 }
+
 // Metadata
 type Metadata struct {
 	XMLName xml.Name `xml:"Metadata"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
+
 // Capability
 type Capability struct {
 	XMLName    xml.Name  `xml:"Capability"`
@@ -437,6 +483,7 @@ type Capability struct {
 	Expiration string    `xml:"Expiration"`
 	Attribute  Attribute `xml:"Attribute"`
 }
+
 // Attribute
 type Attribute struct {
 	XMLName xml.Name `xml:"Attribute"`
