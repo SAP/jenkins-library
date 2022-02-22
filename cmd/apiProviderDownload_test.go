@@ -36,6 +36,7 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 		config := apiProviderDownloadOptions{
 			APIServiceKey:   apiServiceKey,
 			APIProviderName: "provider1",
+			DownloadPath:    "APIProvider.json",
 		}
 		// test
 		httpClient := httpMockCpis{CPIFunction: "APIProviderDownload", ResponseBody: ``, TestType: "Positive"}
@@ -44,7 +45,7 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			t.Run("Assert file download", func(t *testing.T) {
-				assert.Equal(t, err, nil)
+				assert.True(t, utilsMock.HasWrittenFile("APIProvider.json"))
 			})
 
 			t.Run("Assert API Provider url", func(t *testing.T) {
@@ -74,10 +75,14 @@ func TestApiProviderDownloadFailure(t *testing.T) {
 		config := apiProviderDownloadOptions{
 			APIServiceKey:   apiServiceKey,
 			APIProviderName: "provider1",
+			DownloadPath:    "APIProvider.json",
 		}
 		httpClient := httpMockCpis{CPIFunction: "APIProviderDownloadFailure", ResponseBody: ``, TestType: "Negative"}
 		utilsMock := apiProviderDownloadMockUtilsBundle()
 		err := runApiProviderDownload(&config, nil, &httpClient, utilsMock)
+
+		assert.False(t, utilsMock.HasWrittenFile("APIProvider.json"))
+
 		assert.EqualError(t, err, "HTTP GET request to https://demo/apiportal/api/1.0/Management.svc/APIProviders('provider1') failed with error: Service not Found")
 	})
 }
