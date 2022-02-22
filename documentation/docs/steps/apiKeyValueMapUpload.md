@@ -16,7 +16,7 @@ The ApiKeyValueMapUpload step allows you to:
 * You can create new API key value map in the API portal.
 * Prevent command execution in case the/an API key value map already exists.
 * If API key value map already exists, then delete it and execute the piper step again, which create new API Key value Map.
-* ApiKeyValueMapUpload only supports create operation, but not delete, get, update, which are supported in different piper steps.
+* ApiKeyValueMapUpload only supports create operation.
 
 ## Prerequisites
 
