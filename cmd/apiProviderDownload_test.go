@@ -45,7 +45,7 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			t.Run("Assert file download", func(t *testing.T) {
-				assert.True(t, utilsMock.HasWrittenFile("APIProvider.json"))
+				assert.True(t, utilsMock.HasWrittenFile(config.DownloadPath))
 			})
 
 			t.Run("Assert API Provider url", func(t *testing.T) {
@@ -81,7 +81,7 @@ func TestApiProviderDownloadFailure(t *testing.T) {
 		utilsMock := apiProviderDownloadMockUtilsBundle()
 		err := runApiProviderDownload(&config, nil, &httpClient, utilsMock)
 
-		assert.False(t, utilsMock.HasWrittenFile("APIProvider.json"))
+		assert.False(t, utilsMock.HasWrittenFile(config.DownloadPath))
 
 		assert.EqualError(t, err, "HTTP GET request to https://demo/apiportal/api/1.0/Management.svc/APIProviders('provider1') failed with error: Service not Found")
 	})
