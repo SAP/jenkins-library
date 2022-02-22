@@ -49,7 +49,7 @@ func (f Files) TempDir(dir, pattern string) (name string, err error) {
 		}
 	}
 
-	return os.MkdirTemp(dir, pattern)
+	return io.TempDir(dir, pattern)
 }
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.
