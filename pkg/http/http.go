@@ -21,7 +21,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
@@ -68,11 +67,14 @@ type ClientOptions struct {
 	TrustedCerts              []string
 }
 
-// TransportWrapper is a wrapper for central logging capabilities
+// TransportWrapper is a wrapper for central roundtrip capabilities
 type TransportWrapper struct {
 	Transport                http.RoundTripper
 	doLogRequestBodyOnDebug  bool
 	doLogResponseBodyOnDebug bool
+	username                 string
+	password                 string
+	token                    string
 }
 
 // UploadRequestData encapsulates the parameters for calling uploader.Upload()
@@ -175,10 +177,13 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 			return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
 		}
 		err = bodyWriter.Close()
+		if err != nil {
+			log.Entry().Warn("failed to close writer on request body")
+		}
 
 		request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
 		if err != nil {
-			c.logger.Debugf("New %v request to %v", data.Method, data.URL)
+			c.logger.Debugf("new %v request to %v", data.Method, data.URL)
 			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
 		}
 
@@ -265,13 +270,16 @@ func (c *Client) initialize() *http.Client {
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+		token:                    c.token,
+		username:                 c.username,
+		password:                 c.password,
 	}
 
-	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
+	if len(c.trustedCerts) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
 		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
+			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
 		}
 	} else {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
@@ -288,6 +296,14 @@ func (c *Client) initialize() *http.Client {
 		retryClient.RetryMax = c.maxRetries
 		if !c.useDefaultTransport {
 			retryClient.HTTPClient.Transport = transport
+		} else {
+			retryClient.HTTPClient.Transport = &TransportWrapper{
+				Transport:                retryClient.HTTPClient.Transport,
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				token:                    c.token,
+				username:                 c.username,
+				password:                 c.password}
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "connection reset")) {
@@ -320,6 +336,7 @@ type contextKey struct {
 }
 
 var contextKeyRequestStart = &contextKey{"RequestStart"}
+var authHeaderKey = "Authorization"
 
 // RoundTrip is the core part of this module and implements http.RoundTripper.
 // Executes HTTP request with request/response logging.
@@ -327,11 +344,27 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
 	req = req.WithContext(ctx)
 
+	handleAuthentication(req, t.username, t.password, t.token)
+
 	t.logRequest(req)
+
 	resp, err := t.Transport.RoundTrip(req)
+
 	t.logResponse(resp)
 
 	return resp, err
+}
+
+func handleAuthentication(req *http.Request, username, password, token string) {
+	// Handle authenticaion if not done already
+	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
+		req.SetBasicAuth(username, password)
+		log.Entry().Debug("Using Basic Authentication ****/****")
+	}
+	if len(token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
+		req.Header.Add(authHeaderKey, token)
+		log.Entry().Debug("Using Token Authentication ****")
+	}
 }
 
 func (t *TransportWrapper) logRequest(req *http.Request) {
@@ -339,8 +372,12 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug {
-		log.Entry().Debugf("body: %v", transformBody(req.Body))
+	if t.doLogRequestBodyOnDebug && req.Body != nil {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		log.Entry().Debugf("body: %v", transformBody(tee))
+		req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
 }
@@ -353,8 +390,11 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		} else {
 			log.Entry().Debugf("<-- response %v %v", resp.StatusCode, resp.Request.URL)
 		}
-		if t.doLogResponseBodyOnDebug {
-			log.Entry().Debugf("body: %v", transformBody(resp.Body))
+		if t.doLogResponseBodyOnDebug && resp.Body != nil {
+			var buf bytes.Buffer
+			tee := io.TeeReader(resp.Body, &buf)
+			log.Entry().Debugf("body: %v", transformBody(tee))
+			resp.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
@@ -396,7 +436,7 @@ func transformCookies(cookies []*http.Cookie) string {
 	return result
 }
 
-func transformBody(body io.ReadCloser) string {
+func transformBody(body io.Reader) string {
 	if body == nil {
 		return ""
 	}
@@ -419,19 +459,10 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if cookies != nil {
-		for _, cookie := range cookies {
-			request.AddCookie(cookie)
-		}
-	}
+	handleAuthentication(request, c.username, c.password, c.token)
 
-	if len(c.username) > 0 || len(c.password) > 0 {
-		request.SetBasicAuth(c.username, c.password)
-		c.logger.Debug("Using Basic Authentication ****/****")
-	}
-
-	if len(c.token) > 0 {
-		request.Header.Add("Authorization", c.token)
+	for _, cookie := range cookies {
+		request.AddCookie(cookie)
 	}
 
 	return request, nil
@@ -474,14 +505,37 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
+	// Get the SystemCertPool, continue with an empty pool on error
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		log.Entry().Debugf("Caught error on store lookup %v", err)
+	}
+
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	*transport = TransportWrapper{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: c.transportTimeout,
+			}).DialContext,
+			ResponseHeaderTimeout: c.transportTimeout,
+			ExpectContinueTimeout: c.transportTimeout,
+			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+				RootCAs:            rootCAs,
+			},
+		},
+		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+		token:                    c.token,
+		username:                 c.username,
+		password:                 c.password,
+	}
 
 	for _, certificate := range c.trustedCerts {
-		rootCAs, _ := x509.SystemCertPool()
-
-		if rootCAs == nil {
-			rootCAs = x509.NewCertPool()
-		}
-
 		filename := path.Base(certificate)
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
@@ -517,72 +571,35 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				}
 				defer fileHandler.Close()
 
-				_, err = io.Copy(fileHandler, response.Body)
+				numWritten, err := io.Copy(fileHandler, response.Body)
 				if err != nil {
 					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 				}
+				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
-				// Get the SystemCertPool, continue with an empty pool on error
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+					return errors.Wrapf(err, "failed to read cert file %v", certificate)
 				}
-
 				// Append our cert to the system pool
-				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-					log.Entry().Infof("cert not appended to root ca %v", certificate)
-					return fmt.Errorf("cert not appended to root ca %v", certificate)
+				ok := rootCAs.AppendCertsFromPEM(certs)
+				if !ok {
+					return errors.Errorf("failed to append %v to root CA store", certificate)
 				}
-
-				*transport = TransportWrapper{
-					Transport: &http.Transport{
-						DialContext: (&net.Dialer{
-							Timeout: c.transportTimeout,
-						}).DialContext,
-						ResponseHeaderTimeout: c.transportTimeout,
-						ExpectContinueTimeout: c.transportTimeout,
-						TLSHandshakeTimeout:   c.transportTimeout,
-						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: false,
-							RootCAs:            rootCAs,
-						},
-					},
-					doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-				}
-
 				log.Entry().Infof("%v appended to root CA successfully", certificate)
-
 			} else {
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
 			}
 		} else {
-			log.Entry().Infof("existing certs found, appending to rootCA")
+			log.Entry().Infof("existing certificate file %v found, appending it to rootCA", target)
 			certs, err := ioutil.ReadFile(target)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+				return errors.Wrapf(err, "failed to read cert file %v", certificate)
 			}
-
 			// Append our cert to the system pool
-			if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-				log.Entry().Infof("cert not appended to root ca %v", certificate)
-			}
-
-			*transport = TransportWrapper{
-				Transport: &http.Transport{
-					DialContext: (&net.Dialer{
-						Timeout: c.transportTimeout,
-					}).DialContext,
-					ResponseHeaderTimeout: c.transportTimeout,
-					ExpectContinueTimeout: c.transportTimeout,
-					TLSHandshakeTimeout:   c.transportTimeout,
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: false,
-						RootCAs:            rootCAs,
-					},
-				},
-				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+			ok := rootCAs.AppendCertsFromPEM(certs)
+			if !ok {
+				return errors.Errorf("failed to append %v to root CA store", certificate)
 			}
 			log.Entry().Infof("%v appended to root CA successfully", certificate)
 		}
@@ -591,15 +608,18 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	return nil
 }
 
+// default truststore location
+const TrustStoreDirectory = ".pipeline/trustStore"
+
 func getWorkingDirForTrustStore() (string, error) {
 	fileUtils := &piperutils.Files{}
-	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
-		err := fileUtils.MkdirAll(".pipeline/trustStore", 0777)
+	if exists, _ := fileUtils.DirExists(TrustStoreDirectory); !exists {
+		err := fileUtils.MkdirAll(TrustStoreDirectory, 0777)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create trust store directory")
 		}
 	}
-	return ".pipeline/trustStore", nil
+	return TrustStoreDirectory, nil
 }
 
 // ParseHTTPResponseBodyXML parses a XML http response into a given interface

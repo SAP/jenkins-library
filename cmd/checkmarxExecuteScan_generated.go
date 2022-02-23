@@ -6,42 +6,51 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
 type checkmarxExecuteScanOptions struct {
-	AvoidDuplicateProjectScans    bool   `json:"avoidDuplicateProjectScans,omitempty"`
-	FilterPattern                 string `json:"filterPattern,omitempty"`
-	FullScanCycle                 string `json:"fullScanCycle,omitempty"`
-	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
-	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
-	Incremental                   bool   `json:"incremental,omitempty"`
-	MaxRetries                    int    `json:"maxRetries,omitempty"`
-	Password                      string `json:"password,omitempty"`
-	Preset                        string `json:"preset,omitempty"`
-	ProjectName                   string `json:"projectName,omitempty"`
-	PullRequestName               string `json:"pullRequestName,omitempty"`
-	ServerURL                     string `json:"serverUrl,omitempty"`
-	SourceEncoding                string `json:"sourceEncoding,omitempty"`
-	TeamID                        string `json:"teamId,omitempty"`
-	TeamName                      string `json:"teamName,omitempty"`
-	Username                      string `json:"username,omitempty"`
-	VerifyOnly                    bool   `json:"verifyOnly,omitempty"`
-	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty"`
-	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
-	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
-	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
-	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
-	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
-	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
+	Assignees                     []string `json:"assignees,omitempty"`
+	AvoidDuplicateProjectScans    bool     `json:"avoidDuplicateProjectScans,omitempty"`
+	FilterPattern                 string   `json:"filterPattern,omitempty"`
+	FullScanCycle                 string   `json:"fullScanCycle,omitempty"`
+	FullScansScheduled            bool     `json:"fullScansScheduled,omitempty"`
+	GeneratePdfReport             bool     `json:"generatePdfReport,omitempty"`
+	GithubAPIURL                  string   `json:"githubApiUrl,omitempty"`
+	GithubToken                   string   `json:"githubToken,omitempty"`
+	Incremental                   bool     `json:"incremental,omitempty"`
+	MaxRetries                    int      `json:"maxRetries,omitempty"`
+	Owner                         string   `json:"owner,omitempty"`
+	Password                      string   `json:"password,omitempty"`
+	Preset                        string   `json:"preset,omitempty"`
+	ProjectName                   string   `json:"projectName,omitempty"`
+	PullRequestName               string   `json:"pullRequestName,omitempty"`
+	Repository                    string   `json:"repository,omitempty"`
+	ServerURL                     string   `json:"serverUrl,omitempty"`
+	SourceEncoding                string   `json:"sourceEncoding,omitempty"`
+	TeamID                        string   `json:"teamId,omitempty"`
+	TeamName                      string   `json:"teamName,omitempty"`
+	Username                      string   `json:"username,omitempty"`
+	VerifyOnly                    bool     `json:"verifyOnly,omitempty"`
+	VulnerabilityThresholdEnabled bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
+	VulnerabilityThresholdHigh    int      `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdLow     int      `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdMedium  int      `json:"vulnerabilityThresholdMedium,omitempty"`
+	VulnerabilityThresholdResult  string   `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
+	VulnerabilityThresholdUnit    string   `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool     `json:"isOptimizedAndScheduled,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -171,6 +180,45 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 	}
 }
 
+type checkmarxExecuteScanReports struct {
+}
+
+func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/piper_checkmarx_report.html", ParamRef: "", StepResultType: "checkmarx"},
+		{FilePattern: "**/CxSASTResults_*.xml", ParamRef: "", StepResultType: "checkmarx"},
+		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarx"},
+		{FilePattern: "**/toolrun_checkmarx_*.json", ParamRef: "", StepResultType: "checkmarx"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // CheckmarxExecuteScanCommand Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
 func CheckmarxExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "checkmarxExecuteScan"
@@ -179,6 +227,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 	var stepConfig checkmarxExecuteScanOptions
 	var startTime time.Time
 	var influx checkmarxExecuteScanInflux
+	var reports checkmarxExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -213,6 +262,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
 
@@ -243,6 +293,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -274,17 +325,22 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 }
 
 func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecuteScanOptions) {
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
+	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().IntVar(&stepConfig.MaxRetries, "maxRetries", 3, "Maximum number of HTTP request retries upon intermittend connetion interrupts")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the Checkmarx project to scan into")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the Checkmarx server to be used")
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&stepConfig.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
@@ -322,6 +378,15 @@ func checkmarxExecuteScanMetadata() config.StepData {
 					{Name: "checkmarx", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "assignees",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{``},
+					},
 					{
 						Name:        "avoidDuplicateProjectScans",
 						ResourceRef: []config.ResourceReference{},
@@ -368,6 +433,35 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Default:     true,
 					},
 					{
+						Name:        "githubApiUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://api.github.com`,
+					},
+					{
+						Name: "githubToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "access_token"}},
+						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
 						Name:        "incremental",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -384,6 +478,20 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     3,
+					},
+					{
+						Name: "owner",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/owner",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "password",
@@ -432,6 +540,20 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pullRequestName"),
+					},
+					{
+						Name: "repository",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/repository",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "serverUrl",
@@ -577,6 +699,16 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarx"}}},
 							{"name": "checkmarx_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "team"}, {"name": "team_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "checkmarx_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/piper_checkmarx_report.html", "type": "checkmarx"},
+							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarx"},
+							{"filePattern": "**/ScanReport.*", "type": "checkmarx"},
+							{"filePattern": "**/toolrun_checkmarx_*.json", "type": "checkmarx"},
 						},
 					},
 				},

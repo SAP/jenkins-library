@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
@@ -34,6 +35,8 @@ type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
 	getArtifactShouldFail bool
+	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
+	ghCreateIssueError    error
 }
 
 func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
@@ -45,6 +48,14 @@ func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile strin
 		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
 	}
 	return artifactMock{Coordinates: newCoordinatesMock()}, nil
+}
+
+func (f fortifyTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	if f.ghCreateIssueError != nil {
+		return f.ghCreateIssueError
+	}
+	f.ghCreateIssueOptions = ghCreateIssueOptions
+	return nil
 }
 
 func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
@@ -266,6 +277,16 @@ func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTem
 }
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
+}
+func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
+	exploitable := "Exploitable"
+	friority := "High"
+	hascomments := true
+	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
+}
+func (f *fortifyMock) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
+	comment := "Dummy"
+	return []*models.IssueAuditComment{{Comment: &comment}}, nil
 }
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
