@@ -17,7 +17,7 @@ nav:
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
               - 'Clone Repositories': pipelines/abapEnvironment/stages/cloneRepositories.md
-              - 'Test': pipelines/abapEnvironment/stages/Test.md
+              - 'Test': pipelines/abapEnvironment/stages/test.md
               - 'Build': pipelines/abapEnvironment/stages/build.md
               - 'Integration Tests': pipelines/abapEnvironment/stages/integrationTest.md
               - 'Confirm': pipelines/abapEnvironment/stages/confirm.md
