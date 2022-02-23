@@ -20,8 +20,6 @@ The ApiKeyValueMapUpload step allows you to:
 
 ## Prerequisites
 
-## Prerequisites
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
