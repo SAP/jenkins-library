@@ -18,25 +18,26 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool              string `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle maven mta npm pip sbt yarn"`
-	CommitUserName         string `json:"commitUserName,omitempty"`
-	CustomVersionField     string `json:"customVersionField,omitempty"`
-	CustomVersionSection   string `json:"customVersionSection,omitempty"`
-	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"possible-values=docker maven pep440 semver2"`
-	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
-	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
-	FilePath               string `json:"filePath,omitempty"`
-	GlobalSettingsFile     string `json:"globalSettingsFile,omitempty"`
-	IncludeCommitID        bool   `json:"includeCommitId,omitempty"`
-	M2Path                 string `json:"m2Path,omitempty"`
-	Password               string `json:"password,omitempty"`
-	ProjectSettingsFile    string `json:"projectSettingsFile,omitempty"`
-	ShortCommitID          bool   `json:"shortCommitId,omitempty"`
-	TagPrefix              string `json:"tagPrefix,omitempty"`
-	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
-	Username               string `json:"username,omitempty"`
-	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
-	VersioningType         string `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
+	BuildTool               string `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle maven mta npm pip sbt yarn"`
+	CommitUserName          string `json:"commitUserName,omitempty"`
+	CustomVersionField      string `json:"customVersionField,omitempty"`
+	CustomVersionSection    string `json:"customVersionSection,omitempty"`
+	CustomVersioningScheme  string `json:"customVersioningScheme,omitempty" validate:"possible-values=docker maven pep440 semver2"`
+	DockerVersionSource     string `json:"dockerVersionSource,omitempty"`
+	FetchCoordinates        bool   `json:"fetchCoordinates,omitempty"`
+	FilePath                string `json:"filePath,omitempty"`
+	GlobalSettingsFile      string `json:"globalSettingsFile,omitempty"`
+	IncludeCommitID         bool   `json:"includeCommitId,omitempty"`
+	IsOptimizedAndScheduled bool   `json:"isOptimizedAndScheduled,omitempty"`
+	M2Path                  string `json:"m2Path,omitempty"`
+	Password                string `json:"password,omitempty"`
+	ProjectSettingsFile     string `json:"projectSettingsFile,omitempty"`
+	ShortCommitID           bool   `json:"shortCommitId,omitempty"`
+	TagPrefix               string `json:"tagPrefix,omitempty"`
+	UnixTimestamp           bool   `json:"unixTimestamp,omitempty"`
+	Username                string `json:"username,omitempty"`
+	VersioningTemplate      string `json:"versioningTemplate,omitempty"`
+	VersioningType          string `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -246,6 +247,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
+	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
@@ -363,6 +365,20 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
+					},
+					{
+						Name: "isOptimizedAndScheduled",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/isOptimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
 					},
 					{
 						Name:        "m2Path",

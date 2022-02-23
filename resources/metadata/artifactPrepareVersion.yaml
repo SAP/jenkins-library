@@ -179,6 +179,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: isOptimizedAndScheduled
+        type: bool
+        description: Whether the pipeline runs in optimized mode and the current execution is a scheduled one
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - PARAMETERS
       - name: m2Path
         aliases:
           - name: maven/m2Path
