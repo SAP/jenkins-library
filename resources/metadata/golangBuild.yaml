@@ -227,13 +227,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
-      - name: entryPointPath
-        type: string
-        description: Path to the file with main function. If empty, it is assumed that the main function is in the root of the project.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
