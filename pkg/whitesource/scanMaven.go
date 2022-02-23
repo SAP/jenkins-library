@@ -2,15 +2,18 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/maven"
 	"path/filepath"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 )
 
 // ExecuteMavenScan constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update".
 func (s *Scan) ExecuteMavenScan(config *ScanOptions, utils Utils) error {
+	s.AgentName = "WhiteSource Maven Plugin"
+	s.AgentVersion = "unknown"
 	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.PomPath
 	if pomPath == "" {
