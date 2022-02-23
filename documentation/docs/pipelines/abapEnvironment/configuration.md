@@ -110,9 +110,13 @@ stages:
     strategy: 'Clone'
     repositories: 'repositories.yml'
   ATC:
-    active: true
+    # In order to be executed, the ATC stage needs at least one configuration entry
+    # If the ATC stage should not be executed, delete the whole section
+    execute: stage
   AUnit:
-    active: true
+    # In order to be executed, the ATC stage needs at least one configuration entry
+    # If ATC AUnit should not be executed, delete the whole section
+    execute: stage
   Post:
     cfDeleteServiceKeys: true
 ```
@@ -139,7 +143,7 @@ The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respect
 
 ### ATC & AUnit
 
-The ATC and AUnit stage will be executed, if the `config.yml` file contains an entry for the respective stage. If you are using the default configuration a placeholder entry `active: true` has to be added in order to activate the stages. If you are using a dedicated configuration file - `atcConfig.yml` and `aunitConfig.yml` - this is not necessary.
+The ATC and AUnit stage will be executed, if the `config.yml` file contains an entry for the respective stage. If you are using the default configuration a placeholder entry `execute: stage` has to be added in order to activate the stages. If you are using a dedicated configuration file - `atcConfig.yml` and `aunitConfig.yml` - this is not necessary.
 
 ## 7. Create a Jenkins Pipeline
 
