@@ -215,7 +215,6 @@ If the add-on product consists of multiple software component versions, but only
 
 `branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
 The `commitID` should only be changed while also adjusting the `version` number of a software component.
-While adjusting the patch version or support package version of a software component, the `branch` should only be changed if the previous branch also includes the `commitID` of the previous software component version.
 
 ##### Versioning Rules
 
