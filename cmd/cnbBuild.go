@@ -554,14 +554,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
 
-	if len(config.PreserveFiles) > 0 && pathType != pathEnumArchive {
-		err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
+	if len(config.PreserveFiles) > 0 {
+		if pathType != pathEnumArchive {
+			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorBuild)
+				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
+			}
+		} else {
+			log.Entry().Warnf("skipping preserving files because the source '%s' is an archive", source)
 		}
-	} else if len(config.PreserveFiles) > 0 {
-		log.Entry().Warnf("skipping preserving files because the source '%s' is an archive", source)
 	}
 
 	return nil
