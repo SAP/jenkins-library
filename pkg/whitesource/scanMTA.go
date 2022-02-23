@@ -2,6 +2,7 @@ package whitesource
 
 import (
 	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
