@@ -114,8 +114,8 @@ stages:
     # If the ATC stage should not be executed, delete the whole section
     execute: stage
   AUnit:
-    # In order to be executed, the ATC stage needs at least one configuration entry
-    # If ATC AUnit should not be executed, delete the whole section
+    # In order to be executed, the AUnit stage needs at least one configuration entry
+    # If the AUnit stage should not be executed, delete the whole section
     execute: stage
   Post:
     cfDeleteServiceKeys: true
