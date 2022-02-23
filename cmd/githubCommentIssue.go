@@ -16,7 +16,8 @@ type githubIssueCommentService interface {
 }
 
 func githubCommentIssue(config githubCommentIssueOptions, telemetryData *telemetry.CustomData) {
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "")
+	//TODO provide parameter for trusted certs
+	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "", []string{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}
