@@ -12,12 +12,12 @@ import (
 
 	"github.com/piper-validation/fortify-client-go/models"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-// This struct encapsulates everyting in the FVDL document
-
+// FVDL This struct encapsulates everyting in the FVDL document
 type FVDL struct {
 	XMLName         xml.Name `xml:"FVDL"`
 	Xmlns           string   `xml:"xmlns,attr"`
@@ -36,25 +36,27 @@ type FVDL struct {
 	EngineData      EngineData      `xml:"EngineData"`
 }
 
+// CreatedTS
 type CreatedTS struct {
 	XMLName xml.Name `xml:"CreatedTS"`
 	Date    string   `xml:"date,attr"`
 	Time    string   `xml:"time,attr"`
 }
 
+// UUID
 type UUID struct {
 	XMLName xml.Name `xml:"UUID"`
 	Uuid    string   `xml:",innerxml"`
 }
 
-// These structures are relevant to the Build object
-
+// LOC These structures are relevant to the Build object
 type LOC struct {
 	XMLName  xml.Name `xml:"LOC"`
 	LocType  string   `xml:"type,attr"`
 	LocValue string   `xml:",innerxml"`
 }
 
+// Build
 type Build struct {
 	XMLName        xml.Name `xml:"Build"`
 	Project        string   `xml:"Project"`
@@ -68,6 +70,7 @@ type Build struct {
 	Scantime       ScanTime `xml:"ScanTime"`
 }
 
+// File
 type File struct {
 	XMLName       xml.Name `xml:"File"`
 	FileSize      int      `xml:"size,attr"`
@@ -79,18 +82,19 @@ type File struct {
 	Locs          []LOC    `xml:",any,omitempty"`
 }
 
+// ScanTime
 type ScanTime struct {
 	XMLName xml.Name `xml:"ScanTime"`
 	Value   int      `xml:"value,attr"`
 }
 
-// These structures are relevant to the Vulnerabilities object
-
+// Vulnerabilities These structures are relevant to the Vulnerabilities object
 type Vulnerabilities struct {
 	XMLName       xml.Name        `xml:"Vulnerabilities"`
 	Vulnerability []Vulnerability `xml:"Vulnerability"`
 }
 
+// Vulnerability
 type Vulnerability struct {
 	XMLName      xml.Name     `xml:"Vulnerability"`
 	ClassInfo    ClassInfo    `xml:"ClassInfo"`
@@ -98,6 +102,7 @@ type Vulnerability struct {
 	AnalysisInfo AnalysisInfo `xml:"AnalysisInfo>Unified"`
 }
 
+// ClassInfo
 type ClassInfo struct {
 	XMLName         xml.Name `xml:"ClassInfo"`
 	ClassID         string   `xml:"ClassID"`
@@ -108,6 +113,7 @@ type ClassInfo struct {
 	DefaultSeverity string   `xml:"DefaultSeverity"`
 }
 
+// InstanceInfo
 type InstanceInfo struct {
 	XMLName          xml.Name `xml:"InstanceInfo"`
 	InstanceID       string   `xml:"InstanceID"`
@@ -115,12 +121,14 @@ type InstanceInfo struct {
 	Confidence       string   `xml:"Confidence"`
 }
 
+// AnalysisInfo
 type AnalysisInfo struct { //Note that this is directly the "Unified" object
 	Context                Context
 	ReplacementDefinitions ReplacementDefinitions `xml:"ReplacementDefinitions"`
 	Trace                  []Trace                `xml:"Trace"`
 }
 
+// Context
 type Context struct {
 	XMLName   xml.Name `xml:"Context"`
 	ContextId string   `xml:"id,attr,omitempty"`
@@ -128,6 +136,7 @@ type Context struct {
 	FDSL      FunctionDeclarationSourceLocation
 }
 
+// Function
 type Function struct {
 	XMLName                xml.Name `xml:"Function"`
 	FunctionName           string   `xml:"name,attr"`
@@ -135,6 +144,7 @@ type Function struct {
 	FunctionEnclosingClass string   `xml:"enclosingClass,attr"`
 }
 
+// FunctionDeclarationSourceLocation
 type FunctionDeclarationSourceLocation struct {
 	XMLName      xml.Name `xml:"FunctionDeclarationSourceLocation"`
 	FDSLPath     string   `xml:"path,attr"`
@@ -144,18 +154,21 @@ type FunctionDeclarationSourceLocation struct {
 	FDSLColEnd   string   `xml:"colEnd,attr"`
 }
 
+// ReplacementDefinitions
 type ReplacementDefinitions struct {
 	XMLName     xml.Name      `xml:"ReplacementDefinitions"`
 	Def         []Def         `xml:"Def"`
 	LocationDef []LocationDef `xml:"LocationDef"`
 }
 
+// Def
 type Def struct {
 	XMLName  xml.Name `xml:"Def"`
 	DefKey   string   `xml:"key,attr"`
 	DefValue string   `xml:"value,attr"`
 }
 
+// LocationDef
 type LocationDef struct {
 	XMLName  xml.Name `xml:"LocationDef"`
 	Path     string   `xml:"path,attr"`
@@ -166,27 +179,32 @@ type LocationDef struct {
 	Key      string   `xml:"key,attr"`
 }
 
+// Trace
 type Trace struct {
 	XMLName xml.Name `xml:"Trace"`
 	Primary Primary  `xml:"Primary"`
 }
 
+// Primary
 type Primary struct {
 	XMLName xml.Name `xml:"Primary"`
 	Entry   []Entry  `xml:"Entry"`
 }
 
+// Entry
 type Entry struct {
 	XMLName xml.Name `xml:"Entry"`
 	NodeRef NodeRef  `xml:"NodeRef,omitempty"`
 	Node    Node     `xml:"Node,omitempty"`
 }
 
+// NodeRef
 type NodeRef struct {
 	XMLName xml.Name `xml:"NodeRef"`
 	RefId   int      `xml:"id,attr"`
 }
 
+// Node
 type Node struct {
 	XMLName        xml.Name       `xml:"Node"`
 	IsDefault      string         `xml:"isDefault,attr,omitempty"`
@@ -197,6 +215,7 @@ type Node struct {
 	Knowledge      Knowledge      `xml:"Knowledge,omitempty"`
 }
 
+// SourceLocation
 type SourceLocation struct {
 	XMLName   xml.Name `xml:"SourceLocation"`
 	Path      string   `xml:"path,attr"`
@@ -208,34 +227,40 @@ type SourceLocation struct {
 	Snippet   string   `xml:"snippet,attr"`
 }
 
+// Action
 type Action struct {
 	XMLName    xml.Name `xml:"Action"`
 	Type       string   `xml:"type,attr"`
 	ActionData string   `xml:",innerxml"`
 }
 
+// Reason
 type Reason struct {
 	XMLName xml.Name `xml:"Reason"`
 	Rule    Rule     `xml:"Rule,omitempty"`
 	Trace   Trace    `xml:"Trace,omitempty"`
 }
 
+// Rule
 type Rule struct {
 	XMLName xml.Name `xml:"Rule"`
 	RuleID  string   `xml:"ruleID,attr"`
 }
 
+// Group
 type Group struct {
 	XMLName xml.Name `xml:"Group"`
 	Name    string   `xml:"name,attr"`
 	Data    string   `xml:",innerxml"`
 }
 
+// Knowledge
 type Knowledge struct {
 	XMLName xml.Name `xml:"Knowledge"`
 	Facts   []Fact   `xml:"Fact"`
 }
 
+// Fact
 type Fact struct {
 	XMLName  xml.Name `xml:"Fact"`
 	Primary  string   `xml:"primary,attr"`
@@ -243,22 +268,19 @@ type Fact struct {
 	FactData string   `xml:",innerxml"`
 }
 
-// These structures are relevant to the ContextPool object
-
+// ContextPool These structures are relevant to the ContextPool object
 type ContextPool struct {
 	XMLName xml.Name  `xml:"ContextPool"`
 	Context []Context `xml:"Context"`
 }
 
-// These structures are relevant to the UnifiedNodePool object
-
+// UnifiedNodePool These structures are relevant to the UnifiedNodePool object
 type UnifiedNodePool struct {
 	XMLName xml.Name `xml:"UnifiedNodePool"`
 	Node    []Node   `xml:"Node"`
 }
 
-// These structures are relevant to the Description object
-
+// Description These structures are relevant to the Description object
 type Description struct {
 	XMLName           xml.Name          `xml:"Description"`
 	ContentType       string            `xml:"contentType,attr"`
@@ -271,32 +293,38 @@ type Description struct {
 	CustomDescription CustomDescription `xml:"CustomDescription,omitempty"`
 }
 
+// Abstract
 type Abstract struct {
 	XMLName xml.Name `xml:"Abstract"`
 	Text    string   `xml:",innerxml"`
 }
 
+// Explanation
 type Explanation struct {
 	XMLName xml.Name `xml:"Explanation"`
 	Text    string   `xml:",innerxml"`
 }
 
+// Recommendations
 type Recommendations struct {
 	XMLName xml.Name `xml:"Recommendations"`
 	Text    string   `xml:",innerxml"`
 }
 
+// Reference
 type Reference struct {
 	XMLName xml.Name `xml:"Reference"`
 	Title   string   `xml:"Title"`
 	Author  string   `xml:"Author"`
 }
 
+// Tip
 type Tip struct {
 	XMLName xml.Name `xml:"Tip"`
 	Tip     string   `xml:",innerxml"`
 }
 
+// CustomDescription
 type CustomDescription struct {
 	XMLName         xml.Name        `xml:"CustomDescription"`
 	ContentType     string          `xml:"contentType,attr"`
@@ -306,8 +334,7 @@ type CustomDescription struct {
 	References      []Reference     `xml:"References>Reference"`
 }
 
-// These structures are relevant to the Snippets object
-
+// Snippet These structures are relevant to the Snippets object
 type Snippet struct {
 	XMLName   xml.Name `xml:"Snippet"`
 	SnippetId string   `xml:"id,attr"`
@@ -317,8 +344,7 @@ type Snippet struct {
 	Text      string   `xml:"Text"`
 }
 
-// These structures are relevant to the ProgramData object
-
+// ProgramData These structures are relevant to the ProgramData object
 type ProgramData struct {
 	XMLName         xml.Name         `xml:"ProgramData"`
 	Sources         []SourceInstance `xml:"Sources>SourceInstance"`
@@ -326,6 +352,7 @@ type ProgramData struct {
 	CalledWithNoDef []Function       `xml:"CalledWithNoDef>Function"`
 }
 
+// SourceInstance
 type SourceInstance struct {
 	XMLName        xml.Name       `xml:"SourceInstance"`
 	RuleID         string         `xml:"ruleID,attr"`
@@ -335,28 +362,33 @@ type SourceInstance struct {
 	TaintFlags     TaintFlags     `xml:"TaintFlags"`
 }
 
+// FunctionCall
 type FunctionCall struct {
 	XMLName        xml.Name       `xml:"FunctionCall"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Function       Function       `xml:"Function"`
 }
 
+// FunctionEntry
 type FunctionEntry struct {
 	XMLName        xml.Name       `xml:"FunctionEntry"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Function       Function       `xml:"Function"`
 }
 
+// TaintFlags
 type TaintFlags struct {
 	XMLName   xml.Name    `xml:"TaintFlags"`
 	TaintFlag []TaintFlag `xml:"TaintFlag"`
 }
 
+// TaintFlag
 type TaintFlag struct {
 	XMLName       xml.Name `xml:"TaintFlag"`
 	TaintFlagName string   `xml:"name,attr"`
 }
 
+// SinkInstance
 type SinkInstance struct {
 	XMLName        xml.Name       `xml:"SinkInstance"`
 	RuleID         string         `xml:"ruleID,attr"`
@@ -364,8 +396,7 @@ type SinkInstance struct {
 	SourceLocation SourceLocation `xml:"SourceLocation,omitempty"`
 }
 
-// These structures are relevant to the EngineData object
-
+// EngineData These structures are relevant to the EngineData object
 type EngineData struct {
 	XMLName       xml.Name     `xml:"EngineData"`
 	EngineVersion string       `xml:"EngineVersion"`
@@ -379,6 +410,7 @@ type EngineData struct {
 	LicenseInfo   LicenseInfo  `xml:"LicenseInfo"`
 }
 
+// RulePack
 type RulePack struct {
 	XMLName    xml.Name `xml:"RulePack"`
 	RulePackID string   `xml:"RulePackID"`
@@ -388,24 +420,28 @@ type RulePack struct {
 	MAC        string   `xml:"MAC"`
 }
 
+// Properties
 type Properties struct {
 	XMLName        xml.Name   `xml:"Properties"`
 	PropertiesType string     `xml:"type,attr"`
 	Property       []Property `xml:"Property"`
 }
 
+// Property
 type Property struct {
 	XMLName xml.Name `xml:"Property"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
 
+// Error
 type Error struct {
 	XMLName      xml.Name `xml:"Error"`
 	ErrorCode    string   `xml:"code,attr"`
 	ErrorMessage string   `xml:",innerxml"`
 }
 
+// MachineInfo
 type MachineInfo struct {
 	XMLName  xml.Name `xml:"MachineInfo"`
 	Hostname string   `xml:"Hostname"`
@@ -413,29 +449,34 @@ type MachineInfo struct {
 	Platform string   `xml:"Platform"`
 }
 
+// FilterResult
 type FilterResult struct {
 	XMLName xml.Name `xml:"FilterResult"`
 	//Todo? No data in sample audit file
 }
 
+// RuleInfo
 type RuleInfo struct {
 	XMLName       xml.Name `xml:"Rule"`
 	RuleID        string   `xml:"id,attr"`
 	MetaInfoGroup []Group  `xml:"MetaInfo>Group,omitempty"`
 }
 
+// LicenseInfo
 type LicenseInfo struct {
 	XMLName    xml.Name     `xml:"LicenseInfo"`
 	Metadata   []Metadata   `xml:"Metadata"`
 	Capability []Capability `xml:"Capability"`
 }
 
+// Metadata
 type Metadata struct {
 	XMLName xml.Name `xml:"Metadata"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
 
+// Capability
 type Capability struct {
 	XMLName    xml.Name  `xml:"Capability"`
 	Name       string    `xml:"Name"`
@@ -443,126 +484,17 @@ type Capability struct {
 	Attribute  Attribute `xml:"Attribute"`
 }
 
+// Attribute
 type Attribute struct {
 	XMLName xml.Name `xml:"Attribute"`
 	Name    string   `xml:"name"`
 	Value   string   `xml:"value"`
 }
 
-// JSON receptacle structs
-
-type SARIF struct {
-	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"`
-	Version string `json:"version" default:"2.1.0"`
-	Runs    []Runs `json:"runs"`
-}
-
-type Runs struct {
-	Results []Results `json:"results"`
-	Tool    Tool      `json:"tool"`
-	/*Invocations         []Invocations      `json:"invocations"`
-	OriginalUriBaseIds  OriginalUriBaseIds `json:"originalUriBaseIds"`
-	Artifacts           []Artifact         `json:"artifacts"`
-	AutomationDetails   AutomationDetails  `json:"automationDetails"`
-	ColumnKind          string             `json:"columnKind" default:"utf16CodeUnits"`
-	ThreadFlowLocations []Locations        `json:"threadFlowLocations"`
-	Taxonomies          []Taxonomies       `json:"taxonomies"`*/
-}
-
-// These structs are relevant to the Results object
-
-type Results struct {
-	RuleID    string  `json:"ruleId"`
-	RuleIndex int     `json:"ruleIndex"`
-	Level     string  `json:"level,omitempty"`
-	Message   Message `json:"message"`
-	/*Locations        []Location        `json:"locations"`
-	CodeFlows        []CodeFlow        `json:"codeFlows"`
-	RelatedLocations []RelatedLocation `json:"relatedLocations"`*/
-	Properties SarifProperties `json:"properties"`
-}
-
-type Message struct {
-	Text string `json:"text,omitempty"`
-}
-
-type SarifProperties struct {
-	InstanceID        string `json:"InstanceID"`
-	InstanceSeverity  string `json:"InstanceSeverity"`
-	Confidence        string `json:"Confidence"`
-	Audited           bool   `json:"Audited"`
-	ToolSeverity      string `json:"ToolSeverity"`
-	ToolSeverityIndex int    `json:"ToolSeverityIndex"`
-	ToolState         string `json:"ToolState"`
-	ToolStateIndex    int    `json:"ToolStateIndex"`
-	ToolAuditMessage  string `json:"ToolAuditMessage"`
-	UnifiedAuditState string `json:"UnifiedAuditState"`
-}
-
-// These structs are relevant to the Tool object
-
-type Tool struct {
-	Driver Driver `json:"driver"`
-}
-
-type Driver struct {
-	Name           string      `json:"name"`
-	Version        string      `json:"version"`
-	InformationUri string      `json:"informationUri,omitempty"`
-	Rules          []SarifRule `json:"rules"`
-	//SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies"`
-}
-
-type SarifRule struct {
-	Id                   string               `json:"id"`
-	Guid                 string               `json:"guid"`
-	Name                 string               `json:"name,omitempty"`
-	ShortDescription     Message              `json:"shortDescription"`
-	FullDescription      Message              `json:"fullDescription"`
-	DefaultConfiguration DefaultConfiguration `json:"defaultConfiguration"`
-	Relationships        []Relationships      `json:"relationships,omitempty"`
-	Properties           *SarifRuleProperties `json:"properties,omitempty"`
-}
-
-type SupportedTaxonomies struct {
-	Name  string `json:"name"`
-	Index int    `json:"index"`
-	Guid  string `json:"guid"`
-}
-
-type DefaultConfiguration struct {
-	Properties DefaultProperties `json:"properties"`
-	Level      string            `json:"level,omitempty"` //This exists in the template, but not sure how it is populated. TODO.
-}
-
-type DefaultProperties struct {
-	DefaultSeverity string `json:"DefaultSeverity"`
-}
-
-type Relationships struct {
-	Target Target   `json:"target"`
-	Kinds  []string `json:"kinds"`
-}
-
-type Target struct {
-	Id            string        `json:"id"`
-	ToolComponent ToolComponent `json:"toolComponent"`
-}
-
-type ToolComponent struct {
-	Name string `json:"name"`
-	Guid string `json:"guid"`
-}
-
-type SarifRuleProperties struct {
-	Accuracy    string `json:"Accuracy,omitempty"`
-	Impact      string `json:"Impact,omitempty"`
-	Probability string `json:"Probability,omitempty"`
-}
-
-func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (SARIF, error) {
+// ConvertFprToSarif converts the FPR file contents into SARIF format
+func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
-	var sarif SARIF
+	var sarif format.SARIF
 
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
 	defer os.RemoveAll(tmpFolder)
@@ -584,7 +516,8 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 	return Parse(sys, project, projectVersion, data)
 }
 
-func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) (SARIF, error) {
+// Parse parses the FPR file
+func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) (format.SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -593,15 +526,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	decoder.Decode(&fvdl)
 
 	//Now, we handle the sarif
-	var sarif SARIF
+	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
-	var fortifyRun Runs
+	var fortifyRun format.Runs
 	sarif.Runs = append(sarif.Runs, fortifyRun)
 
 	// Handle results/vulnerabilities
 	for i := 0; i < len(fvdl.Vulnerabilities.Vulnerability); i++ {
-		result := *new(Results)
+		result := *new(format.Results)
 		result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
 		result.Level = "none" //TODO
 		//get message
@@ -613,13 +546,13 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
 					rawMessage = strings.ReplaceAll(rawMessage, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
 				}
-				result.Message = Message{rawMessage}
+				result.Message = format.Message{rawMessage}
 				break
 			}
 		}
 
 		//handle properties
-		prop := *new(SarifProperties)
+		prop := *new(format.SarifProperties)
 		prop.InstanceSeverity = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
@@ -632,7 +565,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := prop.IntegrateAuditData(fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion); err != nil {
+			if err := integrateAuditData(&prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
@@ -649,17 +582,17 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	}
 
 	//handle the tool object
-	tool := *new(Tool)
-	tool.Driver = *new(Driver)
+	tool := *new(format.Tool)
+	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "MicroFocus Fortify SCA"
 	tool.Driver.Version = fvdl.EngineData.EngineVersion
 	tool.Driver.InformationUri = "https://www.microfocus.com/documentation/fortify-static-code-analyzer-and-tools/2020/SCA_Guide_20.2.0.pdf"
 
 	//handles rules
 	for i := 0; i < len(fvdl.EngineData.RuleInfo); i++ { //i iterates on rules
-		sarifRule := *new(SarifRule)
-		sarifRule.Id = fvdl.EngineData.RuleInfo[i].RuleID
-		sarifRule.Guid = fvdl.EngineData.RuleInfo[i].RuleID
+		sarifRule := *new(format.SarifRule)
+		sarifRule.ID = fvdl.EngineData.RuleInfo[i].RuleID
+		sarifRule.GUID = fvdl.EngineData.RuleInfo[i].RuleID
 		for j := 0; j < len(fvdl.Vulnerabilities.Vulnerability); j++ { //j iterates on vulns to find the name
 			if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.ClassID == fvdl.EngineData.RuleInfo[i].RuleID {
 				var nameArray []string
@@ -679,7 +612,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 		//Descriptions
 		for j := 0; j < len(fvdl.Description); j++ {
-			if fvdl.Description[j].ClassID == sarifRule.Id {
+			if fvdl.Description[j].ClassID == sarifRule.ID {
 				rawAbstract := fvdl.Description[j].Abstract.Text
 				rawExplanation := fvdl.Description[j].Explanation.Text
 				// Replacement defintions in abstract/explanation
@@ -721,9 +654,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				propArray = append(propArray, []string{fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name, fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data})
 			}
 		}
-		var ruleProp *SarifRuleProperties
+		var ruleProp *format.SarifRuleProperties
 		if len(propArray) != 0 {
-			ruleProp = new(SarifRuleProperties)
+			ruleProp = new(format.SarifRuleProperties)
 			for j := 0; j < len(propArray); j++ {
 				if propArray[j][0] == "Accuracy" {
 					ruleProp.Accuracy = propArray[j][1]
@@ -745,7 +678,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {
 	data, err := sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
 	log.Entry().Debug("Looking up audit state of " + issueInstanceID)
 	if err != nil {
@@ -755,36 +688,36 @@ func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys 
 		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
-	RuleProp.Audited = data[0].Audited
-	RuleProp.ToolSeverity = *data[0].Friority
-	switch RuleProp.ToolSeverity {
+	ruleProp.Audited = data[0].Audited
+	ruleProp.ToolSeverity = *data[0].Friority
+	switch ruleProp.ToolSeverity {
 	case "Critical":
-		RuleProp.ToolSeverityIndex = 5
+		ruleProp.ToolSeverityIndex = 5
 	case "Urgent":
-		RuleProp.ToolSeverityIndex = 4
+		ruleProp.ToolSeverityIndex = 4
 	case "High":
-		RuleProp.ToolSeverityIndex = 3
+		ruleProp.ToolSeverityIndex = 3
 	case "Medium":
-		RuleProp.ToolSeverityIndex = 2
+		ruleProp.ToolSeverityIndex = 2
 	case "Low":
-		RuleProp.ToolSeverityIndex = 1
+		ruleProp.ToolSeverityIndex = 1
 	}
-	if RuleProp.Audited {
-		RuleProp.ToolState = *data[0].PrimaryTag
-		switch RuleProp.ToolState { //This is as easy as it can get, seeing that the index is not in the response.
+	if ruleProp.Audited {
+		ruleProp.ToolState = *data[0].PrimaryTag
+		switch ruleProp.ToolState { //This is as easy as it can get, seeing that the index is not in the response.
 		case "Exploitable":
-			RuleProp.ToolStateIndex = 5
+			ruleProp.ToolStateIndex = 5
 		case "Suspicious":
-			RuleProp.ToolStateIndex = 4
+			ruleProp.ToolStateIndex = 4
 		case "Bad Practice":
-			RuleProp.ToolStateIndex = 3
+			ruleProp.ToolStateIndex = 3
 		case "Reliability Issue":
-			RuleProp.ToolStateIndex = 2
+			ruleProp.ToolStateIndex = 2
 		case "Not an Issue":
-			RuleProp.ToolStateIndex = 1
+			ruleProp.ToolStateIndex = 1
 		}
 	} else {
-		RuleProp.ToolState = "Unreviewed"
+		ruleProp.ToolState = "Unreviewed"
 	}
 	if *data[0].HasComments { //fetch latest message if comments exist
 		//Fetch the ID
@@ -793,7 +726,7 @@ func (RuleProp *SarifProperties) IntegrateAuditData(issueInstanceID string, sys 
 		if err != nil {
 			return err
 		}
-		RuleProp.ToolAuditMessage = *commentData[0].Comment
+		ruleProp.ToolAuditMessage = *commentData[0].Comment
 	}
 	return nil
 }
