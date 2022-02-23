@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -129,7 +130,7 @@ func WriteJSONReport(jsonReport FortifyReportData) ([]piperutils.Path, error) {
 	return reportPaths, nil
 }
 
-func WriteSarif(sarif SARIF) ([]piperutils.Path, error) {
+func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
