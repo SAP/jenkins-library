@@ -166,6 +166,7 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
