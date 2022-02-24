@@ -1,0 +1,9 @@
+steps:
+  cnbBuild:
+    containerRegistryUrl: localhost:5000
+    containerImageTag: latest
+    multipleImages:
+    - path: project
+    - containerImageName: go-app
+      containerImageTag: v1.0.0
+      path: zip/go.zip

@@ -6,11 +6,12 @@ import (
 
 // FetchCommitOptions to configure the lookup
 type FetchCommitOptions struct {
-	APIURL     string `json:"apiUrl,omitempty"`
-	Owner      string `json:"owner,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Token      string `json:"token,omitempty"`
-	SHA        string `json:"sha,omitempty"`
+	APIURL       string   `json:"apiUrl,omitempty"`
+	Owner        string   `json:"owner,omitempty"`
+	Repository   string   `json:"repository,omitempty"`
+	Token        string   `json:"token,omitempty"`
+	SHA          string   `json:"sha,omitempty"`
+	TrustedCerts []string `json:"trustedCerts,omitempty"`
 }
 
 // FetchCommitResult to handle the lookup result
@@ -25,7 +26,7 @@ type FetchCommitResult struct {
 // FetchCommitStatistics looks up the statistics for a certain commit SHA.
 func FetchCommitStatistics(options *FetchCommitOptions) (FetchCommitResult, error) {
 	// create GitHub client
-	ctx, client, err := NewClient(options.Token, options.APIURL, "")
+	ctx, client, err := NewClient(options.Token, options.APIURL, "", options.TrustedCerts)
 	if err != nil {
 		return FetchCommitResult{}, errors.Wrap(err, "failed to get GitHub client")
 	}

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -42,6 +41,12 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 }
 
 func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+	binfmtSupported, _ := docker.IsBinfmtMiscSupportedByHost(fileUtils)
+
+	if !binfmtSupported && len(config.TargetArchitectures) > 0 {
+		log.Entry().Warning("Be aware that the host doesn't support binfmt_misc and thus multi archtecture docker builds might not be possible")
+	}
+
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
@@ -129,7 +134,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
 					buildOpts := append(config.BuildOptions, dest...)
-					err = runKaniko(file, buildOpts, execRunner)
+					err = runKaniko(file, buildOpts, execRunner, fileUtils, commonPipelineEnvironment)
 					if err != nil {
 						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 					}
@@ -146,6 +151,9 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				}
 
 				return nil
+			} else {
+				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
+				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag))
 			}
 
 			log.Entry().Debugf("Single image build for image name '%v'", config.ContainerImageName)
@@ -160,28 +168,85 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
 			}
 			// errors are already caught with previous call to docker.ContainerRegistryFromImage
+			containerImageName, _ := docker.ContainerImageNameFromImage(config.ContainerImage)
 			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
 			dest = []string{"--destination", config.ContainerImage}
 			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
+			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	} else {
 		log.Entry().Infof("Running Kaniko build with destination defined via buildOptions: %v", config.BuildOptions)
+
+		destination := ""
+
+		for i, o := range config.BuildOptions {
+			if o == "--destination" && i+1 < len(config.BuildOptions) {
+				destination = config.BuildOptions[i+1]
+				break
+			}
+		}
+
+		containerRegistry, err := docker.ContainerRegistryFromImage(destination)
+
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "invalid registry part in image %v", destination)
+		}
+
+		containerImageName, _ := docker.ContainerImageNameFromImage(destination)
+		containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(destination)
+
+		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
+		commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
+		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 	}
 
 	// no support for building multiple containers
-	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner)
+	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner, fileUtils, commonPipelineEnvironment)
 }
 
-func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner) error {
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", filepath.Dir(dockerFilepath)}
+func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+	cwd, err := fileUtils.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
+	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
+	if err != nil {
+		return fmt.Errorf("failed to create tmp dir for kanikoExecute: %w", err)
+	}
+
+	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
+
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd, "--reproducible", "--digest-file", digestFilePath}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
-	err := execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
+	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")
 	}
+
+	if b, err := fileUtils.FileExists(digestFilePath); err == nil && b {
+		digest, err := fileUtils.FileRead(digestFilePath)
+
+		if err != nil {
+			return errors.Wrap(err, "error while reading image digest")
+		}
+
+		digestStr := string(digest)
+
+		log.Entry().Debugf("image digest: %s", digestStr)
+
+		commonPipelineEnvironment.container.imageDigest = string(digestStr)
+		commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digestStr)
+	} else {
+		log.Entry().Warn("couldn't resolve image digest")
+	}
+
 	return nil
 }
