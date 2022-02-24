@@ -279,7 +279,11 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 				data: Data{
 					BaseData:     BaseData{},
 					BaseMetaData: BaseMetaData{},
-					CustomData:   CustomData{ErrorCode: "1", Duration: "200"},
+					CustomData: CustomData{
+						ErrorCode:       "1",
+						Duration:        "200",
+						PiperCommitHash: "n/a",
+					},
 				},
 				provider: provider,
 			},
@@ -333,7 +337,7 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 			if tt.fatalError != nil {
 				errDetails, _ := json.Marshal(&tt.fatalError)
 				log.SetFatalErrorDetail(errDetails)
-				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":` + string(errDetails) + `}`)
+				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":{"category":"undefined","correlationId":"test","error":"Oh snap!","message":"Some error happened","result":"failure","time":"0000-00-00 00:00:00.000"}}`)
 
 			} else {
 				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":null}`)
