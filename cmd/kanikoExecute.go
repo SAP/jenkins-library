@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 	"os"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -217,7 +217,6 @@ func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.
 	if !strings.Contains(pathEnv, "/busybox:/kaniko") {
 		os.Setenv("PATH", fmt.Sprintf("/busybox:/kaniko:%s", pathEnv))
 	}
-
 
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
