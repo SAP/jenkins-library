@@ -241,6 +241,7 @@ func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 	cmd.Flags().StringVar(&stepConfig.Param3, "param3", os.Getenv("PIPER_param3"), "param3 description")
 
 	cmd.MarkFlagRequired("param0")
+	cmd.Flags().MarkDeprecated("param1", "use param3 instead")
 }
 
 // retrieve step metadata
@@ -275,6 +276,7 @@ func testStepMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "oldparam1", Deprecated: true},},
 						Default:   os.Getenv("PIPER_param1"),
+						DeprecationMessage: "use param3 instead",
 					},
 					{
 						Name:      "param2",
