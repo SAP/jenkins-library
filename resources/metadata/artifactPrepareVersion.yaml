@@ -268,10 +268,17 @@ spec:
           - STEPS
       - name: versioningType
         type: string
-        description:
-          "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no
-          tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor,
-          but not generate a new version)"
+        description: Defines the type of versioning
+          
+        longDescription: |
+          Defines the type of versioning:
+          
+          * `cloud`: fully automatic while also commiting a tag into the git repository containing the updated build descriptors
+          * `cloud_noTag`: fully automatic but no tag created
+          * `library`: manual, i.e. the pipeline will pick up the version from the build descriptor, but not generate a new version
+
+          **Please note:** Type `cloud` will automatically fall back to `cloud_noTag` in case a pull request is being built or in case the pipeline runs
+          in optimized and scheduled mode (in this mode no build is being performed and thus no version tag is required to persist the build input)
         scope:
           - PARAMETERS
           - STAGES
