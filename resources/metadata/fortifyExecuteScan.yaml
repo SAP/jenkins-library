@@ -52,7 +52,6 @@ spec:
           - STEPS
         type: "[]string"
         default: []
-        mandatory: false
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
@@ -277,6 +276,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -289,6 +289,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -400,7 +401,7 @@ spec:
           - STAGES
           - STEPS
         default: ["./lib", "."]
-        deprecated: true
+        deprecationMessage: this is deprecated
       - name: artifactUrl
         type: string
         description:
@@ -678,3 +679,18 @@ spec:
                 type: int
               - name: suppressed
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/*.PDF"
+            type: fortify
+          - filePattern: "**/*.fpr"
+            type: fortify
+          - filePattern: "**/fortify-scan.*"
+            type: fortify
+          - filePattern: "**/toolrun_fortify_*.json"
+            type: fortify
+          - filePattern: "**/piper_fortify_report.json"
+            type: fortify
+          - filePattern: "**/piper_fortify_report.html"
+            type: fortify

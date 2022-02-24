@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/goget"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
+	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
@@ -32,7 +34,7 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
 )
 
@@ -44,6 +46,7 @@ type golangBuildUtils interface {
 	piperhttp.Uploader
 
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	getDockerImageValue(stepName string) (string, error)
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -64,8 +67,12 @@ type golangBuildUtilsBundle struct {
 	// golangBuildUtilsBundle and forward to the implementation of the dependency.
 }
 
-func (utils golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
+	return getDockerImageValue(stepName)
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
@@ -93,20 +100,20 @@ func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
 	return &utils
 }
 
-func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData) {
+func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *golangBuildCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newGolangBuildUtils(config)
 
 	// Error situations will be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runGolangBuild(&config, telemetryData, utils)
+	err := runGolangBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("execution of golang build failed")
 	}
 }
 
-func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomData, utils golangBuildUtils) error {
+func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomData, utils golangBuildUtils, commonPipelineEnvironment *golangBuildCommonPipelineEnvironment) error {
 	goModFile, err := readGoModFile(utils) // returns nil if go.mod doesnt exist
 	if err != nil {
 		return err
@@ -177,8 +184,14 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	binaries := []string{}
 
-	for _, architecture := range config.TargetArchitectures {
-		binary, err := runGolangBuildPerArchitecture(config, utils, ldflags, architecture)
+	platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
+
+	if err != nil {
+		return err
+	}
+
+	for _, platform := range platforms {
+		binary, err := runGolangBuildPerArchitecture(config, utils, ldflags, platform)
 
 		if err != nil {
 			return err
@@ -188,6 +201,25 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			binaries = append(binaries, binary)
 		}
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "golangBuild"
+	dockerImage, err := utils.getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	buildConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
+		Publish:           config.Publish,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+		DockerImage:       dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&buildConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
 		if len(config.TargetRepositoryURL) == 0 {
@@ -393,25 +425,24 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	return generatedLdflags.String(), nil
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags, architecture string) (string, error) {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) (string, error) {
 	var binaryName string
 
 	envVars := os.Environ()
-	goos, goarch := splitTargetArchitecture(architecture)
-	envVars = append(envVars, fmt.Sprintf("GOOS=%v", goos), fmt.Sprintf("GOARCH=%v", goarch))
+	envVars = append(envVars, fmt.Sprintf("GOOS=%v", architecture.OS), fmt.Sprintf("GOARCH=%v", architecture.Arch))
 
 	if !config.CgoEnabled {
 		envVars = append(envVars, "CGO_ENABLED=0")
 	}
 	utils.SetEnv(envVars)
 
-	buildOptions := []string{"build"}
+	buildOptions := []string{"build", "-trimpath"}
 	if len(config.Output) > 0 {
 		fileExtension := ""
-		if goos == "windows" {
+		if architecture.OS == "windows" {
 			fileExtension = ".exe"
 		}
-		binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension)
+		binaryName = fmt.Sprintf("%v-%v.%v%v", config.Output, architecture.OS, architecture.Arch, fileExtension)
 		buildOptions = append(buildOptions, "-o", binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
@@ -423,16 +454,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)
 		log.SetErrorCategory(log.ErrorBuild)
-		return "", fmt.Errorf("failed to run build for %v.%v: %w", goos, goarch, err)
+		return "", fmt.Errorf("failed to run build for %v.%v: %w", architecture.OS, architecture.Arch, err)
 	}
 	return binaryName, nil
-}
-
-func splitTargetArchitecture(architecture string) (string, string) {
-	// architecture expected to be in format os,arch due to possibleValues check of step
-
-	architectureParts := strings.Split(architecture, ",")
-	return architectureParts[0], architectureParts[1]
 }
 
 // lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern

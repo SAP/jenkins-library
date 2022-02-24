@@ -15,6 +15,31 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 			expected  string
 		}{
 			{
+				config:    BuildOptions{CreateBOM: true},
+				buildTool: "golangBuild",
+				expected:  "{\"golangBuild\":[{\"createBOM\":true}]}",
+			},
+			{
+				config:    BuildOptions{DockerImage: "golang:latest"},
+				buildTool: "golangBuild",
+				expected:  "{\"golangBuild\":[{\"dockerImage\":\"golang:latest\"}]}",
+			},
+			{
+				config:    BuildOptions{CreateBOM: true},
+				buildTool: "gradleBuild",
+				expected:  "{\"gradleBuild\":[{\"createBOM\":true}]}",
+			},
+			{
+				config:    BuildOptions{Publish: true},
+				buildTool: "helmExecute",
+				expected:  "{\"helmExecute\":[{\"publish\":true}]}",
+			},
+			{
+				config:    BuildOptions{Publish: true},
+				buildTool: "kanikoExecute",
+				expected:  "{\"kanikoExecute\":[{\"publish\":true}]}",
+			},
+			{
 				config:    BuildOptions{Profiles: []string{"profile1", "profile2"}, CreateBOM: true},
 				buildTool: "mavenBuild",
 				expected:  "{\"mavenBuild\":[{\"profiles\":[\"profile1\",\"profile2\"],\"createBOM\":true}]}",
@@ -29,12 +54,22 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				buildTool: "mtaBuild",
 				expected:  "{\"mtaBuild\":[{\"profiles\":[\"release.build\"],\"publish\":true,\"globalSettingsFile\":\"http://nexus.test:8081/nexus/\"}]}",
 			},
+			{
+				config:    BuildOptions{CreateBOM: true},
+				buildTool: "pythonBuild",
+				expected:  "{\"pythonBuild\":[{\"createBOM\":true}]}",
+			},
+			{
+				config:    BuildOptions{CreateBOM: true},
+				buildTool: "npmExecuteScripts",
+				expected:  "{\"npmExecuteScripts\":[{\"createBOM\":true}]}",
+			},
 		}
 
 		for _, testCase := range testTableConfig {
-			builSettings, err := CreateBuildSettingsInfo(&testCase.config, testCase.buildTool)
+			buildSettings, err := CreateBuildSettingsInfo(&testCase.config, testCase.buildTool)
 			assert.Nil(t, err)
-			assert.Equal(t, builSettings, testCase.expected)
+			assert.Equal(t, buildSettings, testCase.expected)
 		}
 	})
 
