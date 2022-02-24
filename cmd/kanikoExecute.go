@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strings"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -210,6 +211,14 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+	// https://github.com/GoogleContainerTools/kaniko/issues/1212#issuecomment-971623379
+	pathEnv := os.Getenv("PATH")
+
+	if !strings.Contains(pathEnv, "/busybox:/kaniko") {
+		os.Setenv("PATH", fmt.Sprintf("/busybox:/kaniko:%s", pathEnv))
+	}
+
+
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
