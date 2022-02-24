@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
@@ -149,6 +150,16 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	newVersion := version
 
 	if versioningType == "cloud" || versioningType == "cloud_noTag" {
+		// make sure that versioning does not create tags (when set to "cloud")
+		// for PR pipelines, optimized pipelines (= no build)
+		provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+		if err != nil {
+			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		}
+		if provider.IsPullRequest() || config.IsOptimizedAndScheduled {
+			versioningType = "cloud_noTag"
+		}
+
 		versioningTempl, err := versioningTemplate(artifact.VersioningScheme())
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
