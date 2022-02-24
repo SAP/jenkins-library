@@ -144,7 +144,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs' to /tmp/nodejs")
+	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -169,7 +169,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs' to /tmp/nodejs")
+	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
