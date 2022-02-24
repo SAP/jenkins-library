@@ -73,7 +73,7 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 		}
 	default:
 		if err := runHelmExecuteDefault(helmCommand, helmExecutor); err != nil {
-			return fmt.Errorf("failed to execute helm command: %v", err)
+			return err
 		}
 	}
 

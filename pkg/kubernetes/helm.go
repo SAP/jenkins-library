@@ -354,7 +354,7 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	log.Entry().Infof("publishing artifact: %s", targetURL)
 
-	response, err := h.utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "archive")
+	response, err := h.utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 	if err != nil {
 		return fmt.Errorf("couldn't upload artifact: %w", err)
 	}
