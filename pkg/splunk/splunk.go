@@ -122,10 +122,10 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	monitoringJson, err := json.Marshal(monitoringData)
 	if err != nil {
 		log.Entry().Error("could not marshal monitoring data")
-		log.Entry().Infof("Step monitoring data: {n/a}")
+		log.Entry().Debugf("Step monitoring data: {n/a}")
 	} else {
 		// log step monitoring data, changes here need to change the regex in the internal piper lib
-		log.Entry().Infof("Step monitoring data:%v", string(monitoringJson))
+		log.Entry().Debugf("Step monitoring data:%v", string(monitoringJson))
 	}
 
 	return monitoringData
