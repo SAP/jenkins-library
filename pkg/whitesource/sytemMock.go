@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package whitesource
@@ -129,7 +130,6 @@ func NewSystemMockWithProjectName(lastUpdateDate, projectName string) *SystemMoc
 		Name:     "mock-library",
 		Filename: "mock-library-file",
 		Version:  "mock-library-version",
-		Project:  projectName,
 	}
 	return &SystemMock{
 		ProductName: "mock-product",

@@ -42,6 +42,13 @@ type Files struct {
 
 // TempDir creates a temporary directory
 func (f Files) TempDir(dir, pattern string) (name string, err error) {
+	if len(dir) == 0 {
+		// lazy init system temp dir in case it doesn't exist
+		if exists, _ := f.DirExists(os.TempDir()); !exists {
+			f.MkdirAll(os.TempDir(), 0666)
+		}
+	}
+
 	return ioutil.TempDir(dir, pattern)
 }
 

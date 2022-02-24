@@ -18,23 +18,27 @@ import (
 )
 
 type cnbBuildOptions struct {
-	ContainerImageName        string                 `json:"containerImageName,omitempty"`
-	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
-	Buildpacks                []string               `json:"buildpacks,omitempty"`
-	BuildEnvVars              map[string]interface{} `json:"buildEnvVars,omitempty"`
-	Path                      string                 `json:"path,omitempty"`
-	ProjectDescriptor         string                 `json:"projectDescriptor,omitempty"`
-	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
-	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
-	AdditionalTags            []string               `json:"additionalTags,omitempty"`
-	Bindings                  map[string]interface{} `json:"bindings,omitempty"`
+	ContainerImageName        string                   `json:"containerImageName,omitempty"`
+	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
+	Buildpacks                []string                 `json:"buildpacks,omitempty"`
+	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
+	Path                      string                   `json:"path,omitempty"`
+	ProjectDescriptor         string                   `json:"projectDescriptor,omitempty"`
+	DockerConfigJSON          string                   `json:"dockerConfigJSON,omitempty"`
+	CustomTLSCertificateLinks []string                 `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalTags            []string                 `json:"additionalTags,omitempty"`
+	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
+	MultipleImages            []map[string]interface{} `json:"multipleImages,omitempty"`
+	PreserveFiles             []string                 `json:"preserveFiles,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
 	container struct {
-		registryURL  string
-		imageNameTag string
+		registryURL   string
+		imageNameTag  string
+		imageNames    []string
+		imageNameTags []string
 	}
 }
 
@@ -46,6 +50,8 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "container", name: "imageNames", value: p.container.imageNames},
+		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 	}
 
 	errCount := 0
@@ -160,10 +166,12 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.")
 
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.\nThis property determines the input to the buildpack.\n")
-	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\nNote: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
+	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Relative path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\n*Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.\n\n*Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
+
+	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
 
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -311,6 +319,23 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
+					{
+						Name:        "multipleImages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "images"}},
+					},
+					{
+						Name:        "preserveFiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -324,6 +349,8 @@ func cnbBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
+							{"name": "container/imageNames", "type": "[]string"},
+							{"name": "container/imageNameTags", "type": "[]string"},
 						},
 					},
 				},
