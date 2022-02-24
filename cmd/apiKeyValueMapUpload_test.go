@@ -4,36 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunApiKeyValueMapUpload(t *testing.T) {
 	t.Parallel()
-
-	t.Run("happy path", func(t *testing.T) {
-
-		apiServiceKey := `{
-			"oauth": {
-				"url": "https://eu10apiportal.cfapps.eu10.hana.ondemand.com",
-				"clientid": "sb-apiaccess1632819550960!b66216|api-portal-xsuaa!b6954",
-				"clientsecret": "oMSwj3XxqedNx4MYDRTmyIUfZgY=",
-				"tokenurl": "https://cpisuite-europe-01.authentication.eu10.hana.ondemand.com/oauth/token"
-			}
-		}`
-
-		config := apiKeyValueMapUploadOptions{
-			APIServiceKey:   apiServiceKey,
-			Key:             "name",
-			Value:           "ramagty",
-			KeyValueMapName: "haMapfgrt",
-		}
-		httpClient := &piperhttp.Client{}
-		// test
-		err := runApiKeyValueMapUpload(&config, nil, httpClient)
-		// assert
-		assert.NoError(t, err)
-	})
 
 	t.Run("Successfull Api Key Value Map Create Test", func(t *testing.T) {
 		// init
