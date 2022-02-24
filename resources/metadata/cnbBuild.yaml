@@ -118,8 +118,9 @@ spec:
           Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.
           Environment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.
 
-          Note: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.
-          Note: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
+          *Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.
+
+          *Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
         default: project.toml
         scope:
           - PARAMETERS
@@ -215,6 +216,16 @@ spec:
             - "nodejs"
             path: "source/nodejs"
           ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: preserveFiles
+        type: "[]string"
+        description: |
+          List of globs, for keeping build results in the Jenkins workspace.
+
+          *Note*: globs will be calculated relative to the [path](#path) property.
         scope:
           - PARAMETERS
           - STAGES
