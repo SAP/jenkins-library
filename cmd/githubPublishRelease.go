@@ -29,7 +29,8 @@ type githubIssueClient interface {
 }
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, config.UploadURL)
+	//TODO provide parameter for trusted certs
+	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, config.UploadURL, []string{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}
