@@ -40,7 +40,18 @@ func (g *Gradle) init() error {
 			versionField:     g.versionField,
 			writeFile:        g.writeFile,
 		}
-		err := g.propertiesFile.init()
+		f, err := os.Open(g.path)
+		if err != nil {
+			return err
+		}
+		fi, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			g.propertiesFile.path += "build.gradle"
+		}
+		err = g.propertiesFile.init()
 		if err != nil {
 			return err
 		}
@@ -56,7 +67,12 @@ func (g *Gradle) initGetArtifact() error {
 	if g.gradlePropsOut == nil {
 		gradlePropsBuffer := &bytes.Buffer{}
 		g.execRunner.Stdout(gradlePropsBuffer)
-		err := g.execRunner.RunExecutable("gradle", "properties", "--no-daemon", "--console=plain", "-q")
+		var p []string
+		p = append(p, "properties", "--no-daemon", "--console=plain", "-q")
+		if g.path != "" {
+			p = append(p, "-p", g.path)
+		}
+		err := g.execRunner.RunExecutable("gradle", p...)
 		if err != nil {
 			return err
 		}

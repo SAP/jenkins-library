@@ -25,6 +25,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -43,6 +44,7 @@ type pullRequestService interface {
 
 type fortifyUtils interface {
 	maven.Utils
+	gradle.Utils
 
 	SetDir(d string)
 
@@ -831,8 +833,6 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
 
-	} else if config.BuildTool == "gradle" {
-		// todo :kortelyov
 	} else {
 		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
