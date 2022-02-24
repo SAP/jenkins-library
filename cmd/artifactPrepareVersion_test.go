@@ -2,19 +2,22 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
@@ -53,6 +56,27 @@ func (a *artifactVersioningMock) GetCoordinates() (versioning.Coordinates, error
 		return versioning.Coordinates{}, a.coordinatesError
 	}
 	return a.coordinates, nil
+}
+
+type artifactPrepareVersionMockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func (a *artifactPrepareVersionMockUtils) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
+	return &orchestrator.UnknownOrchestratorConfigProvider{}, nil
+}
+
+func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return nil
+}
+
+func newArtifactPrepareVersionMockUtils() *artifactPrepareVersionMockUtils {
+	utils := artifactPrepareVersionMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return &utils
 }
 
 type gitRepositoryMock struct {
@@ -187,6 +211,8 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{
 			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
 		}
@@ -198,7 +224,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			remote:       git.NewRemote(nil, &conf),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 
@@ -237,6 +263,8 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{
 			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
 		}
@@ -248,7 +276,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			remote:       git.NewRemote(nil, &conf),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 
@@ -374,9 +402,11 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "notSupported",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, nil, &repo, nil)
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, nil)
 		assert.Contains(t, fmt.Sprint(err), "failed to get versioning template for scheme 'notSupported'")
 	})
 
@@ -390,9 +420,11 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return nil, fmt.Errorf("worktree error") })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return nil, fmt.Errorf("worktree error") })
 		assert.EqualError(t, err, "failed to retrieve git worktree: worktree error")
 	})
 
@@ -406,10 +438,12 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{checkoutError: "checkout error"}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 		assert.EqualError(t, err, "failed to initialize worktree: checkout error")
 	})
 
@@ -424,10 +458,12 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 		assert.EqualError(t, err, "failed to write version: setVersion error")
 	})
 
@@ -441,10 +477,12 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 		assert.Contains(t, fmt.Sprint(err), "failed to push changes for version '1.2.3")
 	})
 
@@ -463,6 +501,8 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			coordinatesError: fmt.Errorf("coordinatesError"),
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{
 			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
 		}
@@ -470,7 +510,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 
 		assert.EqualError(t, err, "failed to get coordinates: coordinatesError")
 	})
@@ -490,6 +530,8 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			coordinatesError: fmt.Errorf("coordinatesError"),
 		}
 
+		utils := newArtifactPrepareVersionMockUtils()
+
 		worktree := gitWorktreeMock{
 			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
 		}
@@ -497,7 +539,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 	})
@@ -579,7 +621,7 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
-		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &http.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
 	})
 
 	t.Run("success - ssh fallback", func(t *testing.T) {
