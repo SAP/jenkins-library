@@ -236,6 +236,26 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: imageNames
+        type: "[]string"
+        description: List of names of the images to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNames
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageNameTags
+        type: "[]string"
+        description: List of full names (registry and tag) of the images to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: ingressHosts
         type: "[]string"
         description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
