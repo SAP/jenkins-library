@@ -172,7 +172,14 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "error while marshalling Splunk message details")
 	}
-	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %v", string(payload))
+
+	prettyPayload, err := json.MarshalIndent(payload, "", "    ")
+	if err != nil {
+		log.Entry().WithError(err).Warn("Failed to generate pretty payload json")
+		prettyPayload = nil
+	}
+	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %s", string(prettyPayload))
+
 	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if resp != nil {
