@@ -38,7 +38,6 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 			APIProviderName: "provider1",
 			DownloadPath:    "APIProvider.json",
 		}
-		// test
 		httpClient := httpMockCpis{CPIFunction: "APIProviderDownload", ResponseBody: ``, TestType: "Positive"}
 		utilsMock := apiProviderDownloadMockUtilsBundle()
 		err := runApiProviderDownload(&config, nil, &httpClient, utilsMock)
