@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
@@ -270,7 +271,7 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 		name       string
 		fields     fields
 		fatalError logrus.Fields
-		logOutput  string // TODO
+		logOutput  string
 	}{
 		{
 			name: "logging with error, no fatalError set",
@@ -278,7 +279,7 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 				data: Data{
 					BaseData:     BaseData{},
 					BaseMetaData: BaseMetaData{},
-					CustomData:   CustomData{ErrorCode: "1"},
+					CustomData:   CustomData{ErrorCode: "1", Duration: "200"},
 				},
 				provider: provider,
 			},
@@ -289,7 +290,11 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 				data: Data{
 					BaseData:     BaseData{},
 					BaseMetaData: BaseMetaData{},
-					CustomData:   CustomData{ErrorCode: "1"},
+					CustomData: CustomData{
+						ErrorCode:       "1",
+						Duration:        "200",
+						PiperCommitHash: "n/a",
+					},
 				},
 				provider: provider,
 			},
@@ -306,7 +311,11 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 			name: "logging without error",
 			fields: fields{
 				data: Data{
-					CustomData: CustomData{ErrorCode: "0"},
+					CustomData: CustomData{
+						ErrorCode:       "0",
+						Duration:        "200",
+						PiperCommitHash: "n/a",
+					},
 				},
 				provider: provider,
 			},
@@ -320,17 +329,17 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 				data:     tt.fields.data,
 				provider: tt.fields.provider,
 			}
-			var expected string
+			var re *regexp.Regexp
 			if tt.fatalError != nil {
 				errDetails, _ := json.Marshal(&tt.fatalError)
 				log.SetFatalErrorDetail(errDetails)
-				expected = "Step telemetry data:{\"PipelineURLHash\":\"\",\"BuildURLHash\":\"\",\"StageName\":\"\",\"StepName\":\"\",\"ErrorCode\":\"" + tt.fields.data.ErrorCode + "\",\"Duration\":\"\",\"ErrorCategory\":\"\",\"CorrelationID\":\"n/a\",\"CommitHash\":\"n/a\",\"Branch\":\"n/a\",\"GitOwner\":\"n/a\",\"GitRepository\":\"n/a\",\"ErrorDetail\":" + string(errDetails) + "}"
+				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":` + string(errDetails) + `}`)
 
 			} else {
-				expected = "Step telemetry data:{\"PipelineURLHash\":\"\",\"BuildURLHash\":\"\",\"StageName\":\"\",\"StepName\":\"\",\"ErrorCode\":\"" + tt.fields.data.ErrorCode + "\",\"Duration\":\"\",\"ErrorCategory\":\"\",\"CorrelationID\":\"n/a\",\"CommitHash\":\"n/a\",\"Branch\":\"n/a\",\"GitOwner\":\"n/a\",\"GitRepository\":\"n/a\",\"ErrorDetail\":null}"
+				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":null}`)
 			}
 			telemetry.logStepTelemetryData()
-			assert.Equal(t, expected, hook.LastEntry().Message)
+			assert.Regexp(t, re, hook.LastEntry().Message)
 			hook.Reset()
 		})
 	}
