@@ -28,7 +28,7 @@ func (utils *HttpClientMock) SetOptions(options piperhttp.ClientOptions) {
 	utils.ClientOptions = append(utils.ClientOptions, options)
 }
 
-// SetOptions mock
+// Upload mock
 func (utils *HttpClientMock) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -44,7 +44,7 @@ func (utils *HttpClientMock) UploadRequest(method, url, file, fieldName string, 
 	return &response, utils.ReturnFileUploadError
 }
 
-// UploadRequest mock
+// UploadFile mock
 func (utils HttpClientMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	return utils.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
 }
