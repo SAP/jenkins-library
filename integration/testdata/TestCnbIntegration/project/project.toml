@@ -14,18 +14,20 @@ value = "16"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/ca-certificates"
+version = "3.0.3"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/node-engine"
+version = "0.12.0"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/npm-install"
-version = "0.4.0"
+version = "0.7.2"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/node-module-bom"
-version = "0.1.2"
+version = "0.2.2"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/npm-start"
-version = "0.4.0"
+version = "0.8.0"

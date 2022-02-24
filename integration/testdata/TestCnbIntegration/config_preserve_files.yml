@@ -1,0 +1,10 @@
+general:
+  verbose: true
+steps:
+  cnbBuild:
+    containerRegistryUrl: localhost:5000
+    containerImageTag: latest
+    path: project
+    preserveFiles:
+    - "node_modules/base"
+    - "package-lock.json"
