@@ -173,7 +173,7 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh", "--login", "/piper-wrapper", "/piper", command}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh", "-l", "/piper-wrapper", "/piper", command}
 	args = append(args, parameters...)
 	err := d.Runner.RunExecutable("docker", args...)
 	if err != nil {
@@ -184,7 +184,7 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 }
 
 func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh", "--login", "-c", script}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh", "-l", "-c", script}
 	return d.Runner.RunExecutable("docker", args...)
 }
 
