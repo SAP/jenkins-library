@@ -137,6 +137,9 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		}
 		sonar.addOption("sonar.projectVersion=" + version)
 	}
+	if GeneralConfig.Verbose {
+		sonar.addOption("sonar.verbose=true")
+	}
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
 	}
