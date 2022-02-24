@@ -31,7 +31,7 @@ type Splunk struct {
 	// boolean which forces to send all logs on error or none at all
 	sendLogs bool
 
-	// How big can be batch of messages
+	// How large a batch of messages can be
 	postMessagesBatchSize int
 }
 
@@ -96,7 +96,7 @@ func readCommonPipelineEnvironment(filePath string) string {
 	// TODO: Dependent on a groovy step, which creates the folder.
 	contentFile, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
 	if err != nil {
-		log.Entry().Warnf("Could not read %v file. %v", filePath, err)
+		log.Entry().Debugf("Could not read %v file. %v", filePath, err)
 		contentFile = []byte("N/A")
 	}
 	return string(contentFile)
