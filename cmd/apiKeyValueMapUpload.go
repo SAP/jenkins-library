@@ -101,6 +101,6 @@ func createJSONPayload(config *apiKeyValueMapUploadOptions) (*bytes.Buffer, erro
 	if jsonErr != nil {
 		return nil, errors.Wrapf(jsonErr, "json payload is invalid for key value map %q", config.KeyValueMapName)
 	}
-	payload := bytes.NewBuffer([]byte(string(jsonBody)))
+	payload := bytes.NewBuffer([]byte(jsonBody))
 	return payload, nil
 }

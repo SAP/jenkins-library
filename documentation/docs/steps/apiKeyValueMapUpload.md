@@ -11,10 +11,8 @@ To consume the ApiKeyValueMapUpload step, proceed as follows:
 * Create a new Jenkins pipeline designated for the ApiKeyValueMapUpload step.
 * Execute the pipeline and validate step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/orking-with-integration-suite-piper-commands/)
 
-The ApiKeyValueMapUpload step allows you to:
-
-* You can create new API key value map in the API portal.
-* Prevent command execution in case the/an API key value map already exists.
+* Using ApiKeyValueMapUpload step, you can create new API key value map in the API portal.
+* The ApiKeyValueMapUpload step allows you to prevent command execution in case the/an API key value map already exists.
 * If API key value map already exists, then delete it and execute the piper step again, which create new API Key value Map.
 * ApiKeyValueMapUpload only supports create operation.
 
