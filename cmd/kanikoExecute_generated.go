@@ -38,8 +38,10 @@ type kanikoExecuteCommonPipelineEnvironment struct {
 	container struct {
 		registryURL   string
 		imageNameTag  string
+		imageDigest   string
 		imageNames    []string
 		imageNameTags []string
+		imageDigests  []string
 	}
 	custom struct {
 		buildSettingsInfo string
@@ -54,8 +56,10 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "container", name: "imageDigest", value: p.container.imageDigest},
 		{category: "container", name: "imageNames", value: p.container.imageNames},
 		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
+		{category: "container", name: "imageDigests", value: p.container.imageDigests},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
@@ -369,7 +373,7 @@ func kanikoExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}, {Name: "TMPDIR", Value: "/"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -379,8 +383,10 @@ func kanikoExecuteMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
+							{"name": "container/imageDigest"},
 							{"name": "container/imageNames", "type": "[]string"},
 							{"name": "container/imageNameTags", "type": "[]string"},
+							{"name": "container/imageDigests", "type": "[]string"},
 							{"name": "custom/buildSettingsInfo"},
 						},
 					},

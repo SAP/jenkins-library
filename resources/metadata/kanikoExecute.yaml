@@ -34,8 +34,8 @@ spec:
           - STEPS
         default:
           - --skip-tls-verify-pull
-          # fixing Kaniko issue with multistage builds and missing busybox
-          # suggestion from https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536 did not solve the problem
+          # fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
+          # as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536
           - --ignore-path=/
       - name: buildSettingsInfo
         type: string
@@ -173,9 +173,12 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: container/imageDigest
           - name: container/imageNames
             type: "[]string"
           - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
             type: "[]string"
           - name: custom/buildSettingsInfo
   containers:
@@ -191,5 +194,3 @@ spec:
       env:
         - name: container
           value: docker
-        - name: TMPDIR
-          value: /

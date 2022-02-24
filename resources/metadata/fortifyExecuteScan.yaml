@@ -388,7 +388,7 @@ spec:
           - STAGES
           - STEPS
         default: ["./lib", "."]
-        deprecated: true
+        deprecationMessage: this is deprecated
       - name: artifactUrl
         type: string
         description:
