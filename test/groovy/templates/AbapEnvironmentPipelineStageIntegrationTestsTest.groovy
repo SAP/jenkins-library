@@ -41,6 +41,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('abapEnvironmentCreateSystem', [Map.class], {m -> stepsCalled.add('abapEnvironmentCreateSystem')})
         helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m -> stepsCalled.add('cloudFoundryDeleteService')})
+        helper.registerAllowedMethod('abapEnvironmentBuild', [Map.class], {m -> stepsCalled.add('abapEnvironmentBuild')})
     }
 
     @Test
@@ -54,6 +55,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('input'))
         assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentBuild'))
     }
 
     @Test
@@ -68,6 +70,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         assertThat(stepsCalled, not(hasItem('input')))
         assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentBuild'))
     }
 
     @Test
