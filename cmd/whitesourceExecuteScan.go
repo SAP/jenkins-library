@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -534,7 +532,7 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 			return policyReport, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", reportSha(config, scan))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0666); err != nil {
 		return policyReport, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
@@ -580,12 +578,29 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
 		}
+		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
 
-		scanReport := createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils)
-		reportPaths, err = writeCustomVulnerabilityReports(config, scan, scanReport, utils)
+		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
+			err = ws.CreateGithubResultIssues(scan, &allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+			if err != nil {
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
+			}
+		}
+
+		scanReport := ws.CreateCustomVulnerabilityReport(config.ProductName, scan, &allAlerts, cvssSeverityLimit)
+		paths, err := ws.WriteCustomVulnerabilityReports(config.ProductName, scan, scanReport, utils)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
+		reportPaths = append(reportPaths, paths...)
+
+		sarif := ws.CreateSarifResultFile(scan, &allAlerts)
+		paths, err = ws.WriteSarifFile(sarif, utils)
+		if err != nil {
+			errorsOccured = append(errorsOccured, fmt.Sprint(err))
+		}
+		reportPaths = append(reportPaths, paths...)
 
 		if len(errorsOccured) > 0 {
 			if vulnerabilitiesCount > 0 {
@@ -605,7 +620,7 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 		return 0, alerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
-	severeVulnerabilities, nonSevereVulnerabilities := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
+	severeVulnerabilities, nonSevereVulnerabilities := ws.CountSecurityVulnerabilities(&alerts, cvssSeverityLimit)
 	influx.whitesource_data.fields.minor_vulnerabilities = nonSevereVulnerabilities
 	influx.whitesource_data.fields.major_vulnerabilities = severeVulnerabilities
 	influx.whitesource_data.fields.vulnerabilities = nonSevereVulnerabilities + severeVulnerabilities
@@ -625,154 +640,6 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
 	}
 	return 0, alerts, nil
-}
-
-func countSecurityVulnerabilities(alerts *[]ws.Alert, cvssSeverityLimit float64) (int, int) {
-	severeVulnerabilities := 0
-	for _, alert := range *alerts {
-		if isSevereVulnerability(alert, cvssSeverityLimit) {
-			severeVulnerabilities++
-		}
-	}
-
-	nonSevereVulnerabilities := len(*alerts) - severeVulnerabilities
-	return severeVulnerabilities, nonSevereVulnerabilities
-}
-
-func isSevereVulnerability(alert ws.Alert, cvssSeverityLimit float64) bool {
-
-	if vulnerabilityScore(alert) >= cvssSeverityLimit && cvssSeverityLimit >= 0 {
-		return true
-	}
-	return false
-}
-
-func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts []ws.Alert, cvssSeverityLimit float64, utils whitesourceUtils) reporting.ScanReport {
-
-	severe, _ := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
-
-	// sort according to vulnerability severity
-	sort.Slice(alerts, func(i, j int) bool {
-		return vulnerabilityScore(alerts[i]) > vulnerabilityScore(alerts[j])
-	})
-
-	projectNames := scan.ScannedProjectNames()
-
-	scanReport := reporting.ScanReport{
-		Title: "WhiteSource Security Vulnerability Report",
-		Subheaders: []reporting.Subheader{
-			{Description: "WhiteSource product name", Details: config.ProductName},
-			{Description: "Filtered project names", Details: strings.Join(projectNames, ", ")},
-		},
-		Overview: []reporting.OverviewRow{
-			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(alerts))},
-			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
-		},
-		SuccessfulScan: severe == 0,
-		ReportTime:     utils.Now(),
-	}
-
-	detailTable := reporting.ScanDetailTable{
-		NoRowsMessage: "No publicly known vulnerabilities detected",
-		Headers: []string{
-			"Date",
-			"CVE",
-			"CVSS Score",
-			"CVSS Version",
-			"Project",
-			"Library file name",
-			"Library group ID",
-			"Library artifact ID",
-			"Library version",
-			"Description",
-			"Top fix",
-		},
-		WithCounter:   true,
-		CounterHeader: "Entry #",
-	}
-
-	for _, alert := range alerts {
-		var score float64
-		var scoreStyle reporting.ColumnStyle = reporting.Yellow
-		if isSevereVulnerability(alert, cvssSeverityLimit) {
-			scoreStyle = reporting.Red
-		}
-		var cveVersion string
-		if alert.Vulnerability.CVSS3Score > 0 {
-			score = alert.Vulnerability.CVSS3Score
-			cveVersion = "v3"
-		} else {
-			score = alert.Vulnerability.Score
-			cveVersion = "v2"
-		}
-
-		var topFix string
-		emptyFix := ws.Fix{}
-		if alert.Vulnerability.TopFix != emptyFix {
-			topFix = fmt.Sprintf(`%v<br>%v<br><a href="%v">%v</a>}"`, alert.Vulnerability.TopFix.Message, alert.Vulnerability.TopFix.FixResolution, alert.Vulnerability.TopFix.URL, alert.Vulnerability.TopFix.URL)
-		}
-
-		row := reporting.ScanRow{}
-		row.AddColumn(alert.Vulnerability.PublishDate, 0)
-		row.AddColumn(fmt.Sprintf(`<a href="%v">%v</a>`, alert.Vulnerability.URL, alert.Vulnerability.Name), 0)
-		row.AddColumn(score, scoreStyle)
-		row.AddColumn(cveVersion, 0)
-		row.AddColumn(alert.Project, 0)
-		row.AddColumn(alert.Library.Filename, 0)
-		row.AddColumn(alert.Library.GroupID, 0)
-		row.AddColumn(alert.Library.ArtifactID, 0)
-		row.AddColumn(alert.Library.Version, 0)
-		row.AddColumn(alert.Vulnerability.Description, 0)
-		row.AddColumn(topFix, 0)
-
-		detailTable.Rows = append(detailTable.Rows, row)
-	}
-	scanReport.DetailTable = detailTable
-
-	return scanReport
-}
-
-func writeCustomVulnerabilityReports(config *ScanOptions, scan *ws.Scan, scanReport reporting.ScanReport, utils whitesourceUtils) ([]piperutils.Path, error) {
-	reportPaths := []piperutils.Path{}
-
-	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
-	htmlReport, _ := scanReport.ToHTML()
-	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html")
-	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
-	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
-
-	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
-	// ignore JSON errors since structure is in our hands
-	jsonReport, _ := scanReport.ToJSON()
-	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
-		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
-		}
-	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_oss_%v.json", reportSha(config, scan))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
-	}
-	// we do not add the json report to the overall list of reports for now,
-	// since it is just an intermediary report used as input for later
-	// and there does not seem to be real benefit in archiving it.
-
-	return reportPaths, nil
-}
-
-func vulnerabilityScore(alert ws.Alert) float64 {
-	if alert.Vulnerability.CVSS3Score > 0 {
-		return alert.Vulnerability.CVSS3Score
-	}
-	return alert.Vulnerability.Score
-}
-
-func reportSha(config *ScanOptions, scan *ws.Scan) string {
-	reportShaData := []byte(config.ProductName + "," + strings.Join(scan.ScannedProjectNames(), ","))
-	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {

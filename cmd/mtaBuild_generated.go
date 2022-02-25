@@ -98,6 +98,7 @@ func (p *mtaBuildReports) persist(stepConfig mtaBuildOptions, gcpJsonKeyFilePath
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -131,7 +132,10 @@ func MtaBuildCommand() *cobra.Command {
 	var createMtaBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Performs an mta build",
-		Long:  `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
+		Long: `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+### build with depedencies from a private repository
+1. For maven related settings refer [maven build dependencies](./mavenBuild.md#build-with-depedencies-from-a-private-repository)
+2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-depedencies-from-a-private-repository)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

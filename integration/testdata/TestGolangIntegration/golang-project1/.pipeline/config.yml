@@ -1,0 +1,13 @@
+general:
+
+steps:
+  golangBuild:
+    runTests: true
+    runIntegrationTests: true
+    createBOM: true
+    publish: false
+    targetArchitectures: 
+      - linux,amd64
+    output: golang-app
+    packages: 
+      - cmd/server/server.go

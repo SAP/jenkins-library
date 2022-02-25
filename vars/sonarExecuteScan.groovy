@@ -63,15 +63,20 @@ void call(Map parameters = [:]) {
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         writePipelineEnv(script: script, piperGoPath: piperGoPath)
-                        withSonarQubeEnv(stepConfig.instance) {
-                            withEnv(environment){
-                                influxWrapper(script){
-                                    piperExecuteBin.credentialWrapper(config, credentialInfo){
+                        withEnv(environment) {
+                            influxWrapper(script) {
+                                piperExecuteBin.credentialWrapper(config, credentialInfo) {
+                                    if (stepConfig.instance) {
+                                        withSonarQubeEnv(stepConfig.instance) {
+                                            echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
+                                            sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                            archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
+                                            jenkinsUtils.handleStepResults(STEP_NAME, false, false)
+                                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
+                                        }
+                                    } else {
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                        archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                     }
-                                    jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                    readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                 }
                             }
                         }

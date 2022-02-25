@@ -295,7 +295,10 @@ spec:
           - STEPS
       - name: customEnvironmentVariables
         description:
-          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan."
+          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
+          Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0)
+          This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using detect6, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value
+          defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus)"
         type: "[]string"
         scope:
           - PARAMETERS
@@ -322,6 +325,23 @@ spec:
                 type: int
               - name: policy_violations
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/*BlackDuck_RiskReport.pdf"
+            type: blackduck-ip
+          - filePattern: "blackduck-ip.json"
+            type: blackduck-ip
+          - filePattern: "**/toolrun_detectExecute_*.json"
+            type: blackduck-ip
+          - filePattern: "**/piper_detect_vulnerability_report.html"
+            type: blackduck-ip
+          - filePattern: "**/detectExecuteScan_oss_*.json"
+            type: blackduck-ip
+          - filePattern: "**/piper_detect_policy_violation_report.html"
+            type: blackduck-ip
+          - filePattern: "**/detectExecuteScan_policy_*.json"
+            type: blackduck-ip
   containers:
     - name: openjdk
       image: openjdk:11

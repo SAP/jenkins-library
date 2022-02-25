@@ -148,6 +148,89 @@ func GetBuildMockClient() MockClient {
 	return mc
 }
 
+// GetBuildMockClientToRun2Times : Constructs a Mock Client with example build Requests/Responses, this can run two times
+func GetBuildMockClientToRun2Times() MockClient {
+	mc := NewMockClient()
+
+	mc.AddData(buildHead)
+	mc.AddData(buildHead)
+
+	mc.AddData(buildPost)
+	mc.AddData(buildPost)
+
+	mc.AddData(buildGet1)
+	mc.AddData(buildGet2)
+	mc.AddData(buildGet1)
+	mc.AddData(buildGet2)
+
+	mc.AddData(buildGetTasks)
+	mc.AddData(buildGetTasks)
+
+	mc.AddData(buildGetTask0Logs)
+	mc.AddData(buildGetTask1Logs)
+	mc.AddData(buildGetTask2Logs)
+	mc.AddData(buildGetTask3Logs)
+	mc.AddData(buildGetTask4Logs)
+	mc.AddData(buildGetTask5Logs)
+	mc.AddData(buildGetTask6Logs)
+	mc.AddData(buildGetTask7Logs)
+	mc.AddData(buildGetTask8Logs)
+	mc.AddData(buildGetTask9Logs)
+	mc.AddData(buildGetTask10Logs)
+	mc.AddData(buildGetTask11Logs)
+	mc.AddData(buildGetTask12Logs)
+
+	mc.AddData(buildGetTask0Logs)
+	mc.AddData(buildGetTask1Logs)
+	mc.AddData(buildGetTask2Logs)
+	mc.AddData(buildGetTask3Logs)
+	mc.AddData(buildGetTask4Logs)
+	mc.AddData(buildGetTask5Logs)
+	mc.AddData(buildGetTask6Logs)
+	mc.AddData(buildGetTask7Logs)
+	mc.AddData(buildGetTask8Logs)
+	mc.AddData(buildGetTask9Logs)
+	mc.AddData(buildGetTask10Logs)
+	mc.AddData(buildGetTask11Logs)
+	mc.AddData(buildGetTask12Logs)
+
+	mc.AddData(buildGetTask0Result)
+	mc.AddData(buildGetTask1Result)
+	mc.AddData(buildGetTask2Result)
+	mc.AddData(buildGetTask3Result)
+	mc.AddData(buildGetTask4Result)
+	mc.AddData(buildGetTask5Result)
+	mc.AddData(buildGetTask6Result)
+	mc.AddData(buildGetTask7Result)
+	mc.AddData(buildGetTask8Result)
+	mc.AddData(buildGetTask9Result)
+	mc.AddData(buildGetTask10Result)
+	mc.AddData(buildGetTask11Result)
+	mc.AddData(buildGetTask12Result)
+
+	mc.AddData(buildGetTask0Result)
+	mc.AddData(buildGetTask1Result)
+	mc.AddData(buildGetTask2Result)
+	mc.AddData(buildGetTask3Result)
+	mc.AddData(buildGetTask4Result)
+	mc.AddData(buildGetTask5Result)
+	mc.AddData(buildGetTask6Result)
+	mc.AddData(buildGetTask7Result)
+	mc.AddData(buildGetTask8Result)
+	mc.AddData(buildGetTask9Result)
+	mc.AddData(buildGetTask10Result)
+	mc.AddData(buildGetTask11Result)
+	mc.AddData(buildGetTask12Result)
+
+	mc.AddData(buildGetTask11ResultMedia)
+	mc.AddData(buildGetTask11ResultMedia)
+
+	mc.AddData(buildGetValues)
+	mc.AddData(buildGetValues)
+
+	return mc
+}
+
 var buildHead = MockData{
 	Method: `HEAD`,
 	Url:    `/sap/opu/odata/BUILD/CORE_SRV`,
