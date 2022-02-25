@@ -225,7 +225,7 @@ spec:
           - STEPS
       - name: valuesMapping
         type: "map[string]interface{}"
-        description: |
+        longDescription: |
           Mapping of values provided by Piper onto custom paths in format `[custom-path]: [piper-value]`
 
           Example:

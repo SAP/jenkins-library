@@ -387,7 +387,7 @@ func (hv helmValues) get(key string) string {
 func (hv *helmValues) mapValues() error {
 	for dst, src := range hv.mapping {
 		if reflect.TypeOf(src).Kind() != reflect.String {
-			return fmt.Errorf("invalid path '%#v' is used for valueMapping, only strings are supported", src)
+			return fmt.Errorf("invalid path '%#v' is used for valuesMapping, only strings are supported", src)
 		}
 
 		if val := hv.get(src.(string)); val != "" {
