@@ -254,6 +254,33 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: lintFlag
+        type: bool
+        description: flag is used to enable helm lint command if value of helmCommand is empty.
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: packageFlag
+        type: bool
+        description: flag is used to enable helm package command if value of helmCommand is empty.
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: publishFlag
+        type: bool
+        description: flag is used to enable helm publish command if value of helmCommand is empty.
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config

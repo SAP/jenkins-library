@@ -38,6 +38,9 @@ type helmExecuteOptions struct {
 	DumpLogs                      bool     `json:"dumpLogs,omitempty"`
 	FilterTest                    string   `json:"filterTest,omitempty"`
 	CustomTLSCertificateLinks     []string `json:"customTlsCertificateLinks,omitempty"`
+	LintFlag                      bool     `json:"lintFlag,omitempty"`
+	PackageFlag                   bool     `json:"packageFlag,omitempty"`
+	PublishFlag                   bool     `json:"publishFlag,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -176,6 +179,9 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().BoolVar(&stepConfig.DumpLogs, "dumpLogs", false, "dump the logs from test pods (this runs after all tests are complete, but before any cleanup)")
 	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
+	cmd.Flags().BoolVar(&stepConfig.LintFlag, "lintFlag", false, "flag is used to enable helm lint command if value of helmCommand is empty.")
+	cmd.Flags().BoolVar(&stepConfig.PackageFlag, "packageFlag", false, "flag is used to enable helm package command if value of helmCommand is empty.")
+	cmd.Flags().BoolVar(&stepConfig.PublishFlag, "publishFlag", false, "flag is used to enable helm publish command if value of helmCommand is empty.")
 
 	cmd.MarkFlagRequired("chartPath")
 	cmd.MarkFlagRequired("image")
@@ -438,6 +444,33 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "lintFlag",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "packageFlag",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "publishFlag",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

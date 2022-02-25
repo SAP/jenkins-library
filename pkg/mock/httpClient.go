@@ -11,6 +11,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
+// HttpClientMock mock struct
 type HttpClientMock struct {
 	ClientOptions          []piperhttp.ClientOptions // set by mock
 	FileUploads            map[string]string         // set by mock
@@ -45,6 +46,6 @@ func (utils *HttpClientMock) UploadRequest(method, url, file, fieldName string, 
 }
 
 // UploadFile mock
-func (utils HttpClientMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+func (utils *HttpClientMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	return utils.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
 }

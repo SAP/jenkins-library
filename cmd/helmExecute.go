@@ -36,13 +36,13 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config.HelmCommand, helmExecutor); err != nil {
+	if err := runHelmExecute(config, helmExecutor); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) error {
-	switch helmCommand {
+func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+	switch config.HelmCommand {
 	case "upgrade":
 		if err := helmExecutor.RunHelmUpgrade(); err != nil {
 			return fmt.Errorf("failed to execute upgrade: %v", err)
@@ -72,7 +72,7 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 	default:
-		if err := runHelmExecuteDefault(helmCommand, helmExecutor); err != nil {
+		if err := runHelmExecuteDefault(config, helmExecutor); err != nil {
 			return err
 		}
 	}
@@ -80,15 +80,23 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 	return nil
 }
 
-func runHelmExecuteDefault(helmCommand string, helmExecutor kubernetes.HelmExecutor) error {
-	if err := helmExecutor.RunHelmLint(); err != nil {
-		return fmt.Errorf("failed to execute helm lint: %v", err)
+func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+	if config.LintFlag {
+		if err := helmExecutor.RunHelmLint(); err != nil {
+			return fmt.Errorf("failed to execute helm lint: %v", err)
+		}
 	}
-	if err := helmExecutor.RunHelmPackage(); err != nil {
-		return fmt.Errorf("failed to execute helm package: %v", err)
+
+	if config.PackageFlag {
+		if err := helmExecutor.RunHelmPackage(); err != nil {
+			return fmt.Errorf("failed to execute helm package: %v", err)
+		}
 	}
-	if err := helmExecutor.RunHelmPublish(); err != nil {
-		return fmt.Errorf("failed to execute helm publish: %v", err)
+
+	if config.PublishFlag {
+		if err := helmExecutor.RunHelmPublish(); err != nil {
+			return fmt.Errorf("failed to execute helm publish: %v", err)
+		}
 	}
 
 	return nil
