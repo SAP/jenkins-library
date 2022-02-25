@@ -353,7 +353,7 @@ func TestGetProjectAlertsByType(t *testing.T) {
 		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
 		assert.NoError(t, err)
 		assert.Contains(t, string(requestBody), `"requestType":"getProjectAlertsByType"`)
-		assert.Equal(t, []Alert{{Vulnerability: Vulnerability{Name: "testVulnerability1"}}}, alerts)
+		assert.Equal(t, []Alert{{Vulnerability: Vulnerability{Name: "testVulnerability1"}, Type: "SECURITY_VULNERABILITY"}}, alerts)
 	})
 
 	t.Run("error case", func(t *testing.T) {

@@ -25,7 +25,7 @@ gctsExecuteABAPUnitTests(
   client: '000',
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
   repository: 'myrepo',
-  scope: 'localChangedObjects',
+  scope: 'remoteChangedObjects',
   commit: "${GIT_COMMIT}",
   workspace: "${WORKSPACE}"
 

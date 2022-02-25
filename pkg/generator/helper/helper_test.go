@@ -76,6 +76,7 @@ spec:
         - value1
         - value2
         - value3
+        deprecationMessage: use param3 instead
       - name: param2
         type: string
         description: param2 description

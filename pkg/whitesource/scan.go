@@ -19,6 +19,8 @@ type Scan struct {
 	ProductVersion  string
 	scannedProjects map[string]Project
 	scanTimes       map[string]time.Time
+	AgentName       string
+	AgentVersion    string
 }
 
 func (s *Scan) init() {
