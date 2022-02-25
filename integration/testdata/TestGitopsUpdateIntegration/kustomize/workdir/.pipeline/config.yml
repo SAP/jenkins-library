@@ -1,0 +1,11 @@
+general:
+  maven:
+    globalSettingsFile: settings.xml
+stages:
+steps:
+  gitopsUpdateDeployment:
+    serverUrl: file:///gitopsRepo
+    tool: 'kustomize'
+    deploymentName: 'test-project'
+    filePath: "kustomization.yaml"
+    branchName: "main"

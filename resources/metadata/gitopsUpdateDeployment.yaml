@@ -187,7 +187,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: k8s.gcr.io/kustomize/kustomize:v3.8.7
+    - image: nekottyo/kustomize-kubeval:kustomizev4
       workingDir: /config
       options:
         - name: -u
