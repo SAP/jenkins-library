@@ -72,12 +72,12 @@ void call(Map parameters = [:]) {
                                             sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                             archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                             jenkinsUtils.handleStepResults(STEP_NAME, false, false)
+                                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                         }
                                     } else {
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
                                 }
-                                readPipelineEnv(script: script, piperGoPath: piperGoPath)
                             }
                         }
                     }
