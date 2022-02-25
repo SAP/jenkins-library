@@ -147,7 +147,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http:/
 in the environment where the Piper step runs or alternatively can be created using :
 [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
 
-include the below ` + "`" + `<repositories>` + "`" + ` tag in your ` + "`" + `pom.xml` + "`" + ` to reference the ` + "`" + `<server>` + "`" + ` and make sure the values in the ` + "`" + `<id>` + "`" + ` tags match 
+include the below ` + "`" + `<repositories>` + "`" + ` tag in your ` + "`" + `pom.xml` + "`" + ` to reference the ` + "`" + `<server>` + "`" + ` and make sure the values in the ` + "`" + `<id>` + "`" + ` tags match
 ` + "`" + `` + "`" + `` + "`" + `xml
 <repositories>
     <repository>
