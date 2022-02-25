@@ -38,7 +38,7 @@ func TestNpmProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -62,7 +62,7 @@ func TestProjectDescriptor(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -92,7 +92,7 @@ func TestZipPath(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -116,7 +116,7 @@ func TestNonZipPath(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -135,16 +135,16 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs' to /tmp/nodejs")
+	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
+	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -166,10 +166,10 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs' to /tmp/nodejs")
+	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
+	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -198,7 +198,7 @@ func TestBindings(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -219,7 +219,7 @@ func TestMultiImage(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -241,7 +241,7 @@ func TestPreserveFiles(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -260,7 +260,7 @@ func TestPreserveFilesIgnored(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:0.1.342-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
