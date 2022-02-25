@@ -190,6 +190,8 @@ spec:
           - STAGES
           - PARAMETERS
       - name: password
+        aliases:
+          - name: access_token
         type: string
         description: Password/token for git authentication.
         scope:
