@@ -171,6 +171,7 @@ func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -353,6 +354,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for schedules runs.")
 
 	cmd.MarkFlagRequired("authToken")
+	cmd.Flags().MarkDeprecated("pythonAdditionalPath", "this is deprecated")
 	cmd.MarkFlagRequired("serverUrl")
 }
 
@@ -725,13 +727,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Default:     `PDF`,
 					},
 					{
-						Name:        "pythonAdditionalPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{`./lib`, `.`},
+						Name:               "pythonAdditionalPath",
+						ResourceRef:        []config.ResourceReference{},
+						Scope:              []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:               "[]string",
+						Mandatory:          false,
+						Aliases:            []config.Alias{},
+						Default:            []string{`./lib`, `.`},
+						DeprecationMessage: "this is deprecated",
 					},
 					{
 						Name:        "artifactUrl",
