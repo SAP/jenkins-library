@@ -138,7 +138,7 @@ general:
   cfServiceKeyName: 'JENKINS_SAP_COM_0510'
 stages:
   AUnit:
-    aunitConfig: 'aunitConfig.yml'
+    aUnitConfig: 'aUnitConfig.yml'
 ```
 
 #### aunitConfig.yml
