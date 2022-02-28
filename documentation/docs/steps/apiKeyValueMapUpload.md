@@ -10,9 +10,9 @@ To consume the ApiKeyValueMapUpload step, proceed as follows:
 * Store your service key created for SAP API Management in the Jenkins server as a secret text.
 * Create a new Jenkins pipeline designated for the ApiKeyValueMapUpload step.
 * Execute the pipeline and validate the step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/orking-with-integration-suite-piper-commands/)
-* Using the ApiKeyValueMapUpload step, you can create new API key value map in the API portal.
+* Using the ApiKeyValueMapUpload step, you can create a new API key value map in the API portal.
 * The ApiKeyValueMapUpload step allows you to prevent command execution in case an API key value map already exists.
-* If API key value map already exists, then delete it and execute the piper step again, which will create new API Key value Map.
+* If API key value map already exists, then delete it and execute the piper step again, which will create a new API Key value Map.
 * ApiKeyValueMapUpload only supports create operation.
 
 ## Prerequisites
