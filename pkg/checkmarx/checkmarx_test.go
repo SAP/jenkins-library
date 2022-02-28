@@ -181,13 +181,13 @@ func TestGetTeams(t *testing.T) {
 		assert.Equal(t, "/Team/4", teams[3].FullName, "Team name 4 incorrect")
 
 		t.Run("test filter teams by name", func(t *testing.T) {
-			team2 := sys.FilterTeamByName(teams, "Team2")
+			team2, _ := sys.FilterTeamByName(teams, "Team2")
 			assert.Equal(t, "Team2", team2.FullName, "Team name incorrect")
 			assert.Equal(t, json.RawMessage([]byte(strconv.Itoa(2))), team2.ID, "Team id incorrect")
 		})
 
 		t.Run("test filter teams by name with backslash/forward slash", func(t *testing.T) {
-			team4 := sys.FilterTeamByName(teams, "\\Team\\4")
+			team4, _ := sys.FilterTeamByName(teams, "\\Team\\4")
 			assert.Equal(t, "/Team/4", team4.FullName, "Team name incorrect")
 			assert.Equal(t, json.RawMessage([]byte(strconv.Itoa(4))), team4.ID, "Team id incorrect")
 		})
@@ -205,8 +205,9 @@ func TestGetTeams(t *testing.T) {
 		})
 
 		t.Run("test fail Filter teams by name", func(t *testing.T) {
-			team := sys.FilterTeamByName(teams, "Team")
+			team, err := sys.FilterTeamByName(teams, "Team")
 			assert.Equal(t, "", team.FullName, "Team name incorrect")
+			assert.Contains(t, fmt.Sprint(err), "Failed to find team")
 		})
 	})
 
