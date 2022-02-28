@@ -3,7 +3,7 @@
 ## ${docGenDescription}
 
 * API Provider defines the connection details for services running on specific hosts
-* This function returns the APIProvider entity and store it in the file system
+* This function returns the APIProvider entity and stores it in the file system
 
 ## Prerequisites
 
