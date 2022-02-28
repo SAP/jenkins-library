@@ -391,7 +391,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
