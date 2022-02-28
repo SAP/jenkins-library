@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -386,11 +385,11 @@ func (hv helmValues) get(key string) string {
 
 func (hv *helmValues) mapValues() error {
 	for dst, src := range hv.mapping {
-		if reflect.TypeOf(src).Kind() != reflect.String {
+		srcString, ok := src.(string)
+		if !ok {
 			return fmt.Errorf("invalid path '%#v' is used for valuesMapping, only strings are supported", src)
 		}
-
-		if val := hv.get(src.(string)); val != "" {
+		if val := hv.get(srcString); val != "" {
 			hv.add(dst, val)
 		} else {
 			log.Entry().Warnf("can not map '%s: %s', %s is not set", dst, src, src)

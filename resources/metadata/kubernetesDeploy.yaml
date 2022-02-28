@@ -231,11 +231,9 @@ spec:
           Example:
           ```yaml
           valuesMapping:
-            subchart1.image.tag:        image.tag
-            subchart2.image.tag:        image.debug.tag
-            subchart2.image.repository: image.debug.repository
-            subchart2.image.pullsecret: secret.dockerconfigjson
-            mysidecar:                  image.sidecar.gun
+            subchart.image.tag:        image.debug.tag
+            subchart.image.repository: image.debug.repository
+            subchart.image.pullsecret: secret.dockerconfigjson
           ```
         scope:
           - PARAMETERS
