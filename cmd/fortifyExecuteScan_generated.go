@@ -208,7 +208,7 @@ func FortifyExecuteScanCommand() *cobra.Command {
 		Long: `This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
 The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
-and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+and Java plus Maven / Gradle or alternatively Python installed into it for being able to perform any scans.
 !!! hint "Scanning MTA projects"
     Build type ` + "`" + `maven` + "`" + ` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. ` + "`" + `java/**/src/main/java/**/*` + "`" + `.
 
@@ -345,7 +345,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version")
 	cmd.Flags().StringVar(&stepConfig.PullRequestMessageRegex, "pullRequestMessageRegex", `.*Merge pull request #(\\d+) from.*`, "Regex used to identify the PR-XXX reference within the merge commit message")
-	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'`")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'` or `'gradle'`")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -570,6 +570,16 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `./setup.py`,
 						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}},
+					},
+					{
+						Name:        "buildDescriptorFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `./build.gradle`,
+						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}},
 					},
 					{
 						Name: "commitId",
