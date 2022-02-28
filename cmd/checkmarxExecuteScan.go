@@ -17,9 +17,11 @@ import (
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
@@ -27,6 +29,7 @@ import (
 )
 
 type checkmarxExecuteScanUtils interface {
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
@@ -61,6 +64,10 @@ func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
 
 func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 	return os.Open(name)
+}
+
+func (checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
@@ -324,6 +331,16 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
+	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	jsonReport := checkmarx.CreateJSONReport(results)
+	paths, err := checkmarx.WriteJSONReport(jsonReport)
+	if err != nil {
+		log.Entry().Warning("failed to write JSON report...", err)
+	} else {
+		// add JSON report to archiving list
+		reports = append(reports, paths...)
+	}
+
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
 
@@ -337,6 +354,15 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	if config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
+
+		if insecure && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+			log.Entry().Debug("Creating/updating GitHub issue with check results")
+			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Checkmarx SAST Results", config.Assignees, utils)
+			if err != nil {
+				return fmt.Errorf("failed to upload scan results into GitHub: %w", err)
+			}
+		}
+
 		paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
 		if err != nil {
 			// do not fail until we have a better idea to handle it
