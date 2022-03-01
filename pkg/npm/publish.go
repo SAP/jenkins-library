@@ -92,7 +92,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		//tmpDirectory := getTempDirForNpmTarBall()
 		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
 		if err != nil {
@@ -155,12 +154,4 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	return nil
-}
-
-func getTempDirForNpmTarBall() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
-	if err != nil {
-		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
-	}
-	return tmpFolder
 }
