@@ -251,8 +251,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	log.Entry().Debugf("Response body: %s", resp.Body)
-	err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed", details)
+	err = HandleHttpResponseErrors(resp, err, "triggering ATC run failed", details)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
 		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
