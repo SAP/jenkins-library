@@ -60,7 +60,6 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -68,7 +67,7 @@ func TestNpmPublish(t *testing.T) {
 			packBeforePublish: true,
 
 			expectedPublishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-			expectedPublishConfig:     "_auth = VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry = https://my.private.npm.registry/\nalways-auth = true\n",
+			expectedPublishConfig:     "registry = https://my.private.npm.registry/\n_auth = VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth = true\n",
 
 			registryURL:      "https://my.private.npm.registry/",
 			registryUser:     "ThisIsTheUser",
