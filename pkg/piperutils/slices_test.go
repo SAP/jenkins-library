@@ -29,7 +29,7 @@ func TestContainsString(t *testing.T) {
 	assert.False(t, ContainsString(stringList, "baz"))
 }
 
-func TestFindSting(t *testing.T) {
+func TestFindString(t *testing.T) {
 	var stringList []string
 	assert.Equal(t, -1, FindString(stringList, "test"))
 	assert.Equal(t, -1, FindString(stringList, ""))
