@@ -17,9 +17,11 @@ import (
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
@@ -27,6 +29,7 @@ import (
 )
 
 type checkmarxExecuteScanUtils interface {
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
@@ -61,6 +64,10 @@ func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
 
 func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 	return os.Open(name)
+}
+
+func (checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
@@ -98,6 +105,9 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 			return err
 		}
 	} else {
+		if len(teamID) == 0 {
+			return errors.Wrap(err, "TeamName or TeamID is required to create a new project")
+		}
 		project, err = createNewProject(config, sys, projectName, teamID)
 		if err != nil {
 			return err
@@ -154,10 +164,15 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
+	var err error
 	if len(teams) > 0 && len(teamName) > 0 {
-		return sys.FilterTeamByName(teams, teamName), nil
+		team, err = sys.FilterTeamByName(teams, teamName)
 	}
-	return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	if err != nil {
+		return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	} else {
+		return team, nil
+	}
 }
 
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
@@ -191,7 +206,19 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		if len(projects) == 0 {
 			return checkmarx.Project{}, projectName, nil
 		}
-		project = projects[0]
+		if len(projects) == 1 {
+			project = projects[0]
+		} else {
+			for _, current_project := range projects {
+				if projectName == current_project.Name {
+					project = current_project
+					break
+				}
+			}
+			if len(project.Name) == 0 {
+				return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the teamName parameter if you want a new project to be created.")
+			}
+		}
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
 	}
 	return project, projectName, nil
@@ -304,6 +331,16 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
+	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	jsonReport := checkmarx.CreateJSONReport(results)
+	paths, err := checkmarx.WriteJSONReport(jsonReport)
+	if err != nil {
+		log.Entry().Warning("failed to write JSON report...", err)
+	} else {
+		// add JSON report to archiving list
+		reports = append(reports, paths...)
+	}
+
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
 
@@ -317,6 +354,15 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	if config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
+
+		if insecure && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+			log.Entry().Debug("Creating/updating GitHub issue with check results")
+			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Checkmarx SAST Results", config.Assignees, utils)
+			if err != nil {
+				return fmt.Errorf("failed to upload scan results into GitHub: %w", err)
+			}
+		}
+
 		paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
 		if err != nil {
 			// do not fail until we have a better idea to handle it

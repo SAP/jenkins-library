@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
@@ -62,6 +66,45 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 	}
 }
 
+type npmExecuteScriptsReports struct {
+}
+
+func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
+		{FilePattern: "**/e2e/*.json", ParamRef: "", StepResultType: "cucumber"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
 func NpmExecuteScriptsCommand() *cobra.Command {
 	const STEP_NAME = "npmExecuteScripts"
@@ -70,6 +113,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	var stepConfig npmExecuteScriptsOptions
 	var startTime time.Time
 	var commonPipelineEnvironment npmExecuteScriptsCommonPipelineEnvironment
+	var reports npmExecuteScriptsReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -85,12 +129,12 @@ repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` va
 
 ` + "`" + `` + "`" + `` + "`" + `
 @privateScope:registry=https://private.repository.com/
-//private.repository.com/:username=${PIPER_CREDENTIAL_USER}
-//private.repository.com/:_password=${PIPER_CREDENTIAL_PASSWORD_BASE64}
+//private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER}
+//private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64}
 //private.repository.com/:always-auth=true
 registry=https://registry.npmjs.org
 ` + "`" + `` + "`" + `` + "`" + `
-` + "`" + `PIPER_CREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository
+` + "`" + `PIPER_VAULTCREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository
 and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
 [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -139,6 +183,7 @@ and are exposed are environment variables that must be present in the environmen
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -183,7 +228,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.")
-	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for pack")
+	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for executing npm pack first, followed by npm publish. This two step maybe required when you are building a scoped packages and have npm dependencies from the same scope")
 
 }
 
@@ -359,6 +404,16 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/TEST-*.xml", "type": "junit"},
+							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
+							{"filePattern": "**/e2e/*.json", "type": "cucumber"},
 						},
 					},
 				},

@@ -45,6 +45,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gctsCloneRepository":                       gctsCloneRepositoryMetadata(),
 		"gctsCreateRepository":                      gctsCreateRepositoryMetadata(),
 		"gctsDeploy":                                gctsDeployMetadata(),
+		"gctsExecuteABAPQualityChecks":              gctsExecuteABAPQualityChecksMetadata(),
 		"gctsExecuteABAPUnitTests":                  gctsExecuteABAPUnitTestsMetadata(),
 		"gctsRollback":                              gctsRollbackMetadata(),
 		"githubCheckBranchProtection":               githubCheckBranchProtectionMetadata(),

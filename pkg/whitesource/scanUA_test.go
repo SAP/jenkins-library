@@ -2,11 +2,12 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExecuteUAScan(t *testing.T) {
@@ -24,7 +25,8 @@ func TestExecuteUAScan(t *testing.T) {
 		err := scan.ExecuteUAScan(&config, utilsMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "maven", config.BuildTool)
-		assert.Contains(t, utilsMock.Calls[1].Params, ".")
+		assert.Contains(t, utilsMock.Calls[1].Params, "-v")
+		assert.Contains(t, utilsMock.Calls[2].Params, ".")
 	})
 
 	t.Run("success - mta", func(t *testing.T) {
@@ -41,7 +43,8 @@ func TestExecuteUAScan(t *testing.T) {
 		err := scan.ExecuteUAScan(&config, utilsMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "mta", config.BuildTool)
-		assert.Contains(t, utilsMock.Calls[1].Params, ".")
+		assert.Contains(t, utilsMock.Calls[1].Params, "-v")
+		assert.Contains(t, utilsMock.Calls[2].Params, ".")
 	})
 
 	t.Run("error - maven", func(t *testing.T) {
@@ -124,16 +127,16 @@ func TestExecuteUAScanInPath(t *testing.T) {
 
 		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.NoError(t, err)
-		assert.Equal(t, "java", utilsMock.Calls[1].Exec)
-		assert.Equal(t, 8, len(utilsMock.Calls[1].Params))
-		assert.Contains(t, utilsMock.Calls[1].Params, "-jar")
-		assert.Contains(t, utilsMock.Calls[1].Params, "-d")
-		assert.Contains(t, utilsMock.Calls[1].Params, ".")
-		assert.Contains(t, utilsMock.Calls[1].Params, "-c")
-		assert.Contains(t, utilsMock.Calls[1].Params, "unified-agent.jar")
+		assert.Equal(t, "java", utilsMock.Calls[2].Exec)
+		assert.Equal(t, 8, len(utilsMock.Calls[2].Params))
+		assert.Contains(t, utilsMock.Calls[2].Params, "-jar")
+		assert.Contains(t, utilsMock.Calls[2].Params, "-d")
+		assert.Contains(t, utilsMock.Calls[2].Params, ".")
+		assert.Contains(t, utilsMock.Calls[2].Params, "-c")
+		assert.Contains(t, utilsMock.Calls[2].Params, "unified-agent.jar")
 		// name of config file not tested since it is dynamic. This is acceptable here since we test also the size
-		assert.Contains(t, utilsMock.Calls[1].Params, "-wss.url")
-		assert.Contains(t, utilsMock.Calls[1].Params, config.AgentURL)
+		assert.Contains(t, utilsMock.Calls[2].Params, "-wss.url")
+		assert.Contains(t, utilsMock.Calls[2].Params, config.AgentURL)
 	})
 
 	t.Run("success - dedicated path", func(t *testing.T) {
@@ -152,8 +155,8 @@ func TestExecuteUAScanInPath(t *testing.T) {
 
 		err := scan.ExecuteUAScanInPath(&config, utilsMock, "./my/test/path")
 		assert.NoError(t, err)
-		assert.Contains(t, utilsMock.Calls[1].Params, "-d")
-		assert.Contains(t, utilsMock.Calls[1].Params, "./my/test/path")
+		assert.Contains(t, utilsMock.Calls[2].Params, "-d")
+		assert.Contains(t, utilsMock.Calls[2].Params, "./my/test/path")
 	})
 
 	t.Run("error - download agent", func(t *testing.T) {
@@ -213,7 +216,7 @@ func TestExecuteUAScanInPath(t *testing.T) {
 		scan := newTestScan(&config)
 
 		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
-		assert.Contains(t, fmt.Sprint(err), "failed to execute WhiteSource scan with exit code")
+		assert.Contains(t, fmt.Sprint(err), "Failed to determine UA version")
 	})
 }
 

@@ -539,7 +539,7 @@ func TestOpen(t *testing.T) {
 		// init
 		files := FilesMock{}
 		// test
-		file, err := files.Open(filePath, 0, 0)
+		file, err := files.OpenFile(filePath, 0, 0)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "does not exist")
@@ -550,7 +550,7 @@ func TestOpen(t *testing.T) {
 		// init
 		files := FilesMock{}
 		// test
-		file, err := files.Open(filePath, os.O_CREATE, 0644)
+		file, err := files.OpenFile(filePath, os.O_CREATE, 0644)
 		// assert
 		if assert.NoError(t, err) && assert.NotNil(t, file) {
 			assert.Equal(t, &files, file.files)
@@ -563,7 +563,7 @@ func TestOpen(t *testing.T) {
 		files := FilesMock{}
 		files.AddFile(filePath, []byte("initial-content"))
 		// test
-		file, _ := files.Open(filePath, os.O_CREATE, 0644)
+		file, _ := files.OpenFile(filePath, os.O_CREATE, 0644)
 		written, err := file.WriteString("hello")
 		if assert.NoError(t, err) {
 			assert.Equal(t, written, len("hello"))
@@ -578,7 +578,7 @@ func TestOpen(t *testing.T) {
 		files := FilesMock{}
 		files.AddFile(filePath, []byte("initial-content"))
 		// test
-		file, err := files.Open(filePath, os.O_CREATE|os.O_TRUNC, 0644)
+		file, err := files.OpenFile(filePath, os.O_CREATE|os.O_TRUNC, 0644)
 		require.NoError(t, err)
 		err = file.Close()
 		assert.NoError(t, err)
@@ -592,7 +592,7 @@ func TestOpen(t *testing.T) {
 		files := FilesMock{}
 		files.AddFile(filePath, []byte("initial-content"))
 		// test
-		file, _ := files.Open(filePath, os.O_APPEND, 0644)
+		file, _ := files.OpenFile(filePath, os.O_APPEND, 0644)
 		written1, err1 := file.WriteString("-hel")
 		written2, err2 := file.WriteString("lo")
 		if assert.NoError(t, err1) && assert.NoError(t, err2) {
@@ -608,7 +608,7 @@ func TestOpen(t *testing.T) {
 		files := FilesMock{}
 		files.AddFile(filePath, []byte("initial-content"))
 		// test
-		file, _ := files.Open(filePath, os.O_APPEND, 0644)
+		file, _ := files.OpenFile(filePath, os.O_APPEND, 0644)
 		_, err := file.WriteString("-hello")
 		assert.NoError(t, err)
 		err = file.Close()

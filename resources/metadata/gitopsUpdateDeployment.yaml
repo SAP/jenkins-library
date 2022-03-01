@@ -7,8 +7,9 @@ metadata:
     It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
 
     As of today, it supports the update of deployment yaml files via kubectl patch, update a whole helm template and kustomize.
+
     For *kubectl* the container inside the yaml must be described within the following hierarchy: `{"spec":{"template":{"spec":{"containers":[{...}]}}}}`
-    For *helm* the whole template is generated into a file and uploaded into the repository.
+    For *helm* the whole template is generated into a single file (`filePath`) and uploaded into the repository.
     For *kustomize* the `images` section will be update with the current image.
 
 
@@ -81,9 +82,9 @@ spec:
         description: |
           Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:
 
-           * `kubectl` - path to the `deployment.yaml` that should be patched.
-           * `helm` - not used. Please use `chartPath` instead.
-           * `kustomize` - path to the `kustomization.yaml`.
+           * `kubectl` - path to the `deployment.yaml` that should be patched. Supports globbing.
+           * `helm` - path where the helm chart will be generated into. Here no globbing is supported.
+           * `kustomize` - path to the `kustomization.yaml`. Supports globbing.
         scope:
           - PARAMETERS
           - STAGES
@@ -130,7 +131,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        description: Defines the chart path for deployments using helm.
+        description: Defines the chart path for deployments using helm. Globbing is supported to merge multiple charts into one resource.yaml that will be commited.
         scope:
           - PARAMETERS
           - STAGES
@@ -186,7 +187,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: k8s.gcr.io/kustomize/kustomize:v3.8.7
+    - image: nekottyo/kustomize-kubeval:kustomizev4
       workingDir: /config
       options:
         - name: -u
