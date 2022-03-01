@@ -348,7 +348,7 @@ func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, at
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
 	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, atcSystemConfiguartionJsonFile, client)
-	return parseOdataResponse(resp, err, connectionDetails, config)
+	return checkOdataResponseForErrors(resp, err, connectionDetails)
 }
 
 func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, batchRequestBodyFile string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
@@ -362,7 +362,7 @@ func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, b
 	batchRequestBodyFileByte := []byte(batchRequestBodyFile)
 	resp, err := client.SendRequest("POST", connectionDetails.URL, bytes.NewBuffer(batchRequestBodyFileByte), header, nil)
 
-	return parseOdataResponse(resp, err, connectionDetails, config)
+	return checkOdataResponseForErrors(resp, err, connectionDetails)
 }
 
 func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
@@ -411,7 +411,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	}
 }
 
-func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions) error {
+func checkOdataResponseForErrors(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP) error {
 
 	if resp == nil {
 		return errorIn
@@ -428,6 +428,8 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 	}
 	defer resp.Body.Close()
 
+	log.Entry().Debugf("Response body: %s", resp.Body)
+
 	switch resp.StatusCode {
 	case 200: //Retrieved entities & OK in Patch & OK in Batch
 		log.Entry().Infof("parsedRespBody: " + string(body))
@@ -437,9 +439,6 @@ func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails ab
 
 	case 400: //BAD REQUEST
 		//no errorIn, Error in Body
-		if err != nil {
-			return fmt.Errorf("parsing oData response failed: %w", err)
-		}
 		if len(body) == 0 {
 			return fmt.Errorf("parsing oData response failed: %w", errors.New("body is empty, can't parse empty body"))
 		}

@@ -244,19 +244,21 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 
 func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
-	log.Entry().WithField("ABAP endpoint: ", details.URL).Info("Triggering ATC run")
+	log.Entry().WithField("ABAP endpoint: ", details.URL).Info("triggering ATC run")
 
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	log.Entry().Debugf("Response body: %s", resp.Body)
+	err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed", details)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return req, fmt.Errorf("Triggering ATC run failed: %w", err)
+		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
 	}
-	defer req.Body.Close()
-	return req, err
+	defer resp.Body.Close()
+	return resp, err
 }
 
 func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -315,11 +317,11 @@ func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetai
 	header := make(map[string][]string)
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
 
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return req, fmt.Errorf("Getting ATC run status failed: %w", err)
+		return resp, fmt.Errorf("Getting ATC run status failed: %w", err)
 	}
-	return req, err
+	return resp, err
 }
 
 func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -330,11 +332,11 @@ func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP
 	header["x-csrf-token"] = []string{details.XCsrfToken}
 	header["Accept"] = []string{"application/vnd.sap.atc.checkstyle.v1+xml"}
 
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return req, fmt.Errorf("Getting ATC run results failed: %w", err)
+		return resp, fmt.Errorf("Getting ATC run results failed: %w", err)
 	}
-	return req, err
+	return resp, err
 }
 
 func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.AbapEnvironmentOptions {
