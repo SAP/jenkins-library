@@ -38,10 +38,13 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 }
 
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils, fileUtils piperutils.FileUtils) error {
-	opt := &gradle.ExecuteOptions{BuildGradlePath: config.Path, Task: config.Task}
+	opt := &gradle.ExecuteOptions{
+		BuildGradlePath: config.Path,
+		Task:            config.Task,
+		CreateBOM:       config.CreateBOM,
+	}
 
-	_, err := gradle.Execute(opt, utils, fileUtils)
-	if err != nil {
+	if err := gradle.Execute(opt, utils, fileUtils); err != nil {
 		log.Entry().WithError(err).Errorln("build.gradle execution was failed: %w", err)
 		return err
 	}
