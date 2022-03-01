@@ -20,6 +20,7 @@ type ExecMockRunner struct {
 	stdin               io.Reader
 	stdout              io.Writer
 	stderr              io.Writer
+	Stub                func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
 }
@@ -67,7 +68,7 @@ func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
 
 	c := strings.Join(append([]string{e}, p...), " ")
 
-	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
+	return m.handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
 }
 
 func (m *ExecMockRunner) GetExitCode() int {
@@ -82,7 +83,7 @@ func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (comma
 
 	c := strings.Join(append([]string{e}, p...), " ")
 
-	err := handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
+	err := m.handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +108,14 @@ func (m *ExecMockRunner) Stderr(err io.Writer) {
 
 func (m *ExecMockRunner) GetStderr() io.Writer {
 	return m.stderr
+}
+
+func (m *ExecMockRunner) handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+	if m.Stub != nil {
+		return m.Stub(call, stdoutReturn, shouldFailOnCommand, stdout)
+	} else {
+		return handleCall(call, stdoutReturn, shouldFailOnCommand, stdout)
+	}
 }
 
 func (m *ShellMockRunner) SetDir(d string) {

@@ -20,7 +20,7 @@ func TestNewNPMRC(t *testing.T) {
 		args args
 		want string
 	}{
-		{name: "current dir", args: args{""}, want: configFilename},
+		{name: "current dir", args: args{""}, want: defaultConfigFilename},
 		{name: "sub dir", args: args{mock.Anything}, want: filepath.Join(mock.Anything, ".piperNpmrc")},
 		{name: "file path in current dir", args: args{".piperNpmrc"}, want: ".piperNpmrc"},
 		{name: "file path in sub dir", args: args{filepath.Join(mock.Anything, ".piperNpmrc")}, want: filepath.Join(mock.Anything, ".piperNpmrc")},
