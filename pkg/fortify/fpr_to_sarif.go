@@ -62,10 +62,11 @@ type LOC struct {
 type Build struct {
 	XMLName        xml.Name `xml:"Build"`
 	Project        string   `xml:"Project"`
+	Version        string   `xml:"Version"`
 	Label          string   `xml:"Label"`
 	BuildID        string   `xml:"BuildID"`
 	NumberFiles    int      `xml:"NumberFiles"`
-	Locs           []LOC    `xml:",any"`
+	Locs           []LOC    `xml:"LOC"`
 	JavaClassPath  string   `xml:"JavaClasspath"`
 	SourceBasePath string   `xml:"SourceBasePath"`
 	SourceFiles    []File   `xml:"SourceFiles>File"`
@@ -512,7 +513,13 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 	if err != nil {
 		return sarif, err
 	}
+	if len(data) == 0 {
+		log.Entry().Error("Error reading audit file at " + filepath.Join(tmpFolder, "audit.fvdl") + ". This might be that the file is missing, corrupted, or too large. Aborting procedure.")
+		err := errors.New("cannot read audit file")
+		return sarif, err
+	}
 
+	log.Entry().Debug("Calling Parse.")
 	return Parse(sys, project, projectVersion, data)
 }
 
@@ -523,13 +530,18 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	decoder := xml.NewDecoder(reader)
 
 	var fvdl FVDL
-	decoder.Decode(&fvdl)
+	err := decoder.Decode(&fvdl)
+	if err != nil {
+		return SARIF{}, err
+	}
 
 	//Now, we handle the sarif
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var fortifyRun format.Runs
+	fortifyRun.ColumnKind = "utf16CodeUnits"
+	cweIdsForTaxonomies := make(map[string]string) //Defining this here and filling it in the course of the program helps filling the Taxonomies object easily. Map because easy to check for keys
 	sarif.Runs = append(sarif.Runs, fortifyRun)
 
 	// Handle results/vulnerabilities
@@ -550,6 +562,121 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				break
 			}
 		}
+
+		// Handle all locations items
+		location := *new(Location)
+		var startingColumn int
+		//get location
+		for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace); k++ { // k iterates on traces
+			//In each trace/primary, there can be one or more entries
+			//Each trace represents a codeflow, each entry represents a location in threadflow
+			codeFlow := *new(CodeFlow)
+			threadFlow := *new(ThreadFlow)
+			//We now iterate on Entries in the trace/primary
+			for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry); l++ { // l iterates on entries
+				threadFlowLocation := *new(Locations) //One is created regardless
+				//the default node dictates the interesting threadflow (location, and so on)
+				//this will populate both threadFlowLocation AND the parent location object (result.Locations[0])
+				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault == "true" {
+					//initalize threadFlowLocation.Location
+					threadFlowLocation.Location = new(Location)
+					//get artifact location
+					for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
+						if fvdl.Build.SourceFiles[j].Name == fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path {
+							threadFlowLocation.Location.PhysicalLocation.ArtifactLocation.Index = j
+							break
+						}
+					}
+					//get region & context region
+					threadFlowLocation.Location.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Line
+					//Snippet is handled last
+					//threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = "foobar"
+					targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Snippet
+					for j := 0; j < len(fvdl.Snippets); j++ {
+						if fvdl.Snippets[j].SnippetId == targetSnippetId {
+							threadFlowLocation.Location.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
+							threadFlowLocation.Location.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
+							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text = fvdl.Snippets[j].Text
+							break
+						}
+					}
+					//parse SourceLocation object for the startColumn value, store it appropriately
+					startingColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
+					//check for existance of action object, and if yes, save message
+					if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.isEmpty() {
+						threadFlowLocation.Location.Message = new(Message)
+						threadFlowLocation.Location.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+						// Handle snippet
+						snippetTarget := ""
+						switch fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type {
+						case "Assign":
+							snippetWords := strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, " ")
+							if snippetWords[0] == "Assignment" {
+								snippetTarget = snippetWords[2]
+							} else {
+								snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+							}
+						case "InCall":
+							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
+						case "OutCall":
+							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
+						case "InOutCall":
+							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
+						case "Return":
+							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+						case "Read":
+							snippetWords := strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, " ")
+							if len(snippetWords) > 1 {
+								snippetTarget = " " + snippetWords[1]
+							} else {
+								snippetTarget = snippetWords[0]
+							}
+						default:
+							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+						}
+						physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+						snippetText := ""
+						for j := 0; j < len(physLocationSnippetLines); j++ {
+							if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+								snippetText = physLocationSnippetLines[j]
+								break
+							}
+						}
+						if snippetText != "" {
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = snippetText
+						} else {
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+						}
+					} else {
+						threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+					}
+					location = *threadFlowLocation.Location
+					//set Kinds
+					threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "unknown") //TODO
+				} else { //is not a main threadflow: just register NodeRef index in threadFlowLocation
+					threadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId
+				}
+				//add the threadflowlocation to the list of locations
+				threadFlow.Locations = append(threadFlow.Locations, threadFlowLocation)
+			}
+			codeFlow.ThreadFlows = append(codeFlow.ThreadFlows, threadFlow)
+			result.CodeFlows = append(result.CodeFlows, codeFlow)
+		}
+
+		//For some reason, the principal object only has 1 location: here we keep the last one
+		//Void message
+		location.Message = nil
+		result.Locations = append(result.Locations, location)
+
+		//handle relatedLocation
+		relatedLocation := *new(RelatedLocation)
+		relatedLocation.ID = 1
+		relatedLocation.PhysicalLocation = *new(RelatedPhysicalLocation)
+		relatedLocation.PhysicalLocation.ArtifactLocation = location.PhysicalLocation.ArtifactLocation
+		relatedLocation.PhysicalLocation.Region = *new(RelatedRegion)
+		relatedLocation.PhysicalLocation.Region.StartLine = location.PhysicalLocation.Region.StartLine
+		relatedLocation.PhysicalLocation.Region.StartColumn = startingColumn
+		result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
 		//handle properties
 		prop := *new(format.SarifProperties)
@@ -647,11 +774,29 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 
 		//properties
+		//Prepare a CWE id object as an in-case
+		cweIds := []string{}
 		//scan for the properties we want:
 		var propArray [][]string
 		for j := 0; j < len(fvdl.EngineData.RuleInfo[i].MetaInfoGroup); j++ {
 			if (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Accuracy") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Impact") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Probability") {
 				propArray = append(propArray, []string{fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name, fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data})
+			} else if fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "altcategoryCWE" {
+				//Get all CWE IDs. First, split on ", "
+				rawCweIds := strings.Split(fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data, ", ")
+				//If not "None", split each string on " " and add its 2nd index
+				if rawCweIds[0] != "None" {
+					for k := 0; k < len(rawCweIds); k++ {
+						cweId := strings.Split(rawCweIds[k], " ")[2]
+						//Fill the cweIdsForTaxonomies map if not already in
+						if _, isIn := cweIdsForTaxonomies[cweId]; !isIn {
+							cweIdsForTaxonomies[cweId] = cweId
+						}
+						cweIds = append(cweIds, cweId)
+					}
+				} else {
+					cweIds = append(cweIds, rawCweIds[0])
+				}
 			}
 		}
 		var ruleProp *format.SarifRuleProperties
@@ -669,21 +814,195 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 		sarifRule.Properties = ruleProp
 
+		//relationships: will most likely require some expansion
+		//One relationship per CWE id
+		for j := 0; j < len(cweIds); j++ {
+			rls := *new(Relationships)
+			rls.Target.Id = cweIds[j]
+			rls.Target.ToolComponent.Name = "CWE"
+			rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+			rls.Kinds = append(rls.Kinds, "relevant")
+			sarifRule.Relationships = append(sarifRule.Relationships, rls)
+		}
+
 		//Finalize: append the rule
 		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 	}
+	//supportedTaxonomies
+	sTax := *new(SupportedTaxonomies) //This object seems fixed, but it will have to be checked
+	sTax.Name = "CWE"
+	sTax.Index = 0
+	sTax.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+	tool.Driver.SupportedTaxonomies = append(tool.Driver.SupportedTaxonomies, sTax)
+
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
+
+	//handle invocations object
+	invocation := *new(Invocations)
+	for i := 0; i < len(fvdl.EngineData.Properties); i++ { //i selects the properties type
+		if fvdl.EngineData.Properties[i].PropertiesType == "Fortify" { // This is the correct type, now iterate on props
+			for j := 0; j < len(fvdl.EngineData.Properties[i].Property); j++ {
+				if fvdl.EngineData.Properties[i].Property[j].Name == "com.fortify.SCAExecutablePath" {
+					splitPath := strings.Split(fvdl.EngineData.Properties[i].Property[j].Value, "/")
+					invocation.CommandLine = splitPath[len(splitPath)-1]
+					break
+				}
+			}
+			break
+		}
+	}
+	invocation.CommandLine = strings.Join(append([]string{invocation.CommandLine}, fvdl.EngineData.CLArguments...), " ")
+	invocation.StartTimeUtc = strings.Join([]string{fvdl.Created.Date, fvdl.Created.Time}, "T") + ".000Z"
+	for i := 0; i < len(fvdl.EngineData.Errors); i++ {
+		ten := *new(ToolExecutionNotifications)
+		ten.Message.Text = fvdl.EngineData.Errors[i].ErrorMessage
+		ten.Descriptor.Id = fvdl.EngineData.Errors[i].ErrorCode
+		invocation.ToolExecutionNotifications = append(invocation.ToolExecutionNotifications, ten)
+	}
+	invocation.ExecutionSuccessful = true //fvdl doesn't seem to plan for this setting
+	invocation.Machine = fvdl.EngineData.MachineInfo.Hostname
+	invocation.Account = fvdl.EngineData.MachineInfo.Username
+	invocation.Properties.Platform = fvdl.EngineData.MachineInfo.Platform
+	sarif.Runs[0].Invocations = append(sarif.Runs[0].Invocations, invocation)
+
+	//handle originalUriBaseIds
+	sarif.Runs[0].OriginalUriBaseIds.SrcRoot.Uri = "file:///" + fvdl.Build.SourceBasePath + "/"
+
+	//handle artifacts
+	for i := 0; i < len(fvdl.Build.SourceFiles); i++ { //i iterates on source files
+		artifact := *new(Artifact)
+		artifact.Location.Uri = fvdl.Build.SourceFiles[i].Name
+		artifact.Location.UriBaseId = "%SRCROOT%"
+		artifact.Length = fvdl.Build.SourceFiles[i].FileSize
+		switch fvdl.Build.SourceFiles[i].FileType {
+		case "java":
+			artifact.MimeType = "text/x-java-source"
+		case "xml":
+			artifact.MimeType = "text/xml"
+		default:
+			artifact.MimeType = "text"
+		}
+		artifact.Encoding = fvdl.Build.SourceFiles[i].Encoding
+		sarif.Runs[0].Artifacts = append(sarif.Runs[0].Artifacts, artifact)
+	}
+
+	//handle automationDetails
+	sarif.Runs[0].AutomationDetails.Id = fvdl.Build.BuildID
+
+	//handle threadFlowLocations
+	threadFlowLocationsObject := []Locations{}
+	//prepare a check object
+	for i := 0; i < len(fvdl.UnifiedNodePool.Node); i++ {
+		unique := true
+		//Uniqueness Check
+		for check := 0; check < i; check++ {
+			if fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet == fvdl.UnifiedNodePool.Node[check].SourceLocation.Snippet &&
+				fvdl.UnifiedNodePool.Node[i].Action.ActionData == fvdl.UnifiedNodePool.Node[check].Action.ActionData {
+				unique = false
+			}
+		}
+		if !unique {
+			continue
+		}
+		locations := *new(Locations)
+		loc := new(Location)
+		//get artifact location
+		for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
+			if fvdl.Build.SourceFiles[j].Name == fvdl.UnifiedNodePool.Node[i].SourceLocation.Path {
+				loc.PhysicalLocation.ArtifactLocation.Index = j
+				break
+			}
+		}
+		//get region & context region
+		loc.PhysicalLocation.Region.StartLine = fvdl.UnifiedNodePool.Node[i].SourceLocation.Line
+		//loc.PhysicalLocation.Region.Snippet.Text = "foobar" //TODO
+		targetSnippetId := fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet
+		for j := 0; j < len(fvdl.Snippets); j++ {
+			if fvdl.Snippets[j].SnippetId == targetSnippetId {
+				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
+				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
+				loc.PhysicalLocation.ContextRegion.Snippet.Text = fvdl.Snippets[j].Text
+				break
+			}
+		}
+		loc.Message = new(Message)
+		loc.Message.Text = fvdl.UnifiedNodePool.Node[i].Action.ActionData
+		// Handle snippet
+		snippetTarget := ""
+		switch fvdl.UnifiedNodePool.Node[i].Action.Type {
+		case "Assign":
+			snippetWords := strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, " ")
+			if snippetWords[0] == "Assignment" {
+				snippetTarget = snippetWords[2]
+			} else {
+				snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
+			}
+		case "InCall":
+			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
+		case "OutCall":
+			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
+		case "InOutCall":
+			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
+		case "Return":
+			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
+		case "Read":
+			snippetWords := strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, " ")
+			if len(snippetWords) > 1 {
+				snippetTarget = " " + snippetWords[1]
+			} else {
+				snippetTarget = snippetWords[0]
+			}
+		default:
+			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
+		}
+		physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+		snippetText := ""
+		for j := 0; j < len(physLocationSnippetLines); j++ {
+			if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+				snippetText = physLocationSnippetLines[j]
+				break
+			}
+		}
+		if snippetText != "" {
+			loc.PhysicalLocation.Region.Snippet.Text = snippetText
+		} else {
+			loc.PhysicalLocation.Region.Snippet.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
+		}
+		locations.Location = loc
+		locations.Kinds = append(locations.Kinds, "unknown")
+		threadFlowLocationsObject = append(threadFlowLocationsObject, locations)
+	}
+
+	sarif.Runs[0].ThreadFlowLocations = threadFlowLocationsObject
+
+	//handle taxonomies
+	//Only one exists apparently: CWE. It is fixed
+	taxonomy := *new(Taxonomies)
+	taxonomy.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+	taxonomy.Name = "CWE"
+	taxonomy.Organization = "MITRE"
+	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	for key, _ := range cweIdsForTaxonomies {
+		taxa := *new(Taxa)
+		taxa.Id = key
+		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
+	}
+	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
 
 	return sarif, nil
 }
 
 func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {
+	if project == nil || projectVersion == nil {
+		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
+		return err
+	}
 	data, err := sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
-	log.Entry().Debug("Looking up audit state of " + issueInstanceID)
 	if err != nil {
 		return err
 	}
+	log.Entry().Debug("Looking up audit state of " + issueInstanceID)
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
 		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
