@@ -299,7 +299,7 @@ func TestRunSonar(t *testing.T) {
 			filepath.Join("target", "classes")))
 		assert.Contains(t, sonar.options, "-Dsonar.java.binaries=user/provided")
 	})
-	t.Run("projectKey, coverageExclusions, m2Path", func(t *testing.T) {
+	t.Run("projectKey, coverageExclusions, m2Path, verbose", func(t *testing.T) {
 		// init
 		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
 		require.NoError(t, err)
@@ -319,6 +319,8 @@ func TestRunSonar(t *testing.T) {
 			CoverageExclusions:  []string{"one", "**/two", "three**"},
 			PullRequestProvider: "GitHub",
 		}
+		GeneralConfig.Verbose = true
+		defer func() { GeneralConfig.Verbose = false }()
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
 			fileUtilsExists = FileUtils.FileExists
@@ -331,6 +333,7 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.libraries=%s",
 			filepath.Join("my/custom/m2", "**")))
 		assert.Contains(t, sonar.options, "-Dsonar.coverage.exclusions=one,**/two,three**")
+		assert.Contains(t, sonar.options, "-Dsonar.verbose=true")
 	})
 }
 

@@ -45,19 +45,20 @@ type StepInputs struct {
 
 // StepParameters defines the parameters for a step
 type StepParameters struct {
-	Name            string                `json:"name"`
-	Description     string                `json:"description"`
-	LongDescription string                `json:"longDescription,omitempty"`
-	ResourceRef     []ResourceReference   `json:"resourceRef,omitempty"`
-	Scope           []string              `json:"scope"`
-	Type            string                `json:"type"`
-	Mandatory       bool                  `json:"mandatory,omitempty"`
-	Default         interface{}           `json:"default,omitempty"`
-	PossibleValues  []interface{}         `json:"possibleValues,omitempty"`
-	Aliases         []Alias               `json:"aliases,omitempty"`
-	Conditions      []Condition           `json:"conditions,omitempty"`
-	Secret          bool                  `json:"secret,omitempty"`
-	MandatoryIf     []ParameterDependence `json:"mandatoryIf,omitempty"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description"`
+	LongDescription    string                `json:"longDescription,omitempty"`
+	ResourceRef        []ResourceReference   `json:"resourceRef,omitempty"`
+	Scope              []string              `json:"scope"`
+	Type               string                `json:"type"`
+	Mandatory          bool                  `json:"mandatory,omitempty"`
+	Default            interface{}           `json:"default,omitempty"`
+	PossibleValues     []interface{}         `json:"possibleValues,omitempty"`
+	Aliases            []Alias               `json:"aliases,omitempty"`
+	Conditions         []Condition           `json:"conditions,omitempty"`
+	Secret             bool                  `json:"secret,omitempty"`
+	MandatoryIf        []ParameterDependence `json:"mandatoryIf,omitempty"`
+	DeprecationMessage string                `json:"deprecationMessage,omitempty"`
 }
 
 type ParameterDependence struct {
