@@ -36,9 +36,11 @@ type cnbBuildOptions struct {
 type cnbBuildCommonPipelineEnvironment struct {
 	container struct {
 		registryURL   string
+		imageDigest   string
 		imageNameTag  string
 		imageNames    []string
 		imageNameTags []string
+		imageDigests  []string
 	}
 }
 
@@ -49,9 +51,11 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		value    interface{}
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
+		{category: "container", name: "imageDigest", value: p.container.imageDigest},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
 		{category: "container", name: "imageNames", value: p.container.imageNames},
 		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
+		{category: "container", name: "imageDigests", value: p.container.imageDigests},
 	}
 
 	errCount := 0
@@ -348,9 +352,11 @@ func cnbBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
+							{"name": "container/imageDigest"},
 							{"name": "container/imageNameTag"},
 							{"name": "container/imageNames", "type": "[]string"},
 							{"name": "container/imageNameTags", "type": "[]string"},
+							{"name": "container/imageDigests", "type": "[]string"},
 						},
 					},
 				},
