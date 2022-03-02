@@ -28,7 +28,7 @@ func TestNpmPublish(t *testing.T) {
 		expectedError             string
 	}{
 		{
-			name: "success - publish normal, unpacked package - target registry in npmrc",
+			name: "success - single project, publish normal, unpacked package - target registry in npmrc",
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
@@ -41,7 +41,40 @@ func TestNpmPublish(t *testing.T) {
 			expectedPublishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
 		},
 		{
-			name: "success - publish normal, packed - target registry in npmrc",
+			name: "success - single project, publish normal, unpacked package - target registry from pipeline",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			expectedPublishConfigPath: `\.piperNpmrc`,
+			expectedPublishConfig:     "registry = https://my.private.npm.registry/\n_auth = VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth = true\n",
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+		},
+		{
+			name: "success - single project, publish normal, unpacked package - target registry from pipeline (precedence over npmrc)",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			expectedPublishConfigPath: `\.piperNpmrc`,
+			expectedPublishConfig:     "_auth = VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry = https://my.other.private.npm.registry/\nalways-auth = true\n",
+
+			registryURL:      "https://my.other.private.npm.registry/",
+			registryUser:     "ThisIsTheOtherUser",
+			registryPassword: "AndHereIsTheOtherPassword",
+		},
+		{
+			name: "success - single project, publish normal, packed - target registry in npmrc",
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
@@ -56,7 +89,7 @@ func TestNpmPublish(t *testing.T) {
 			expectedPublishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
 		},
 		{
-			name: "success - publish normal, packed - target registry from pipeline",
+			name: "success - single project, publish normal, packed - target registry from pipeline",
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
@@ -72,6 +105,25 @@ func TestNpmPublish(t *testing.T) {
 			registryURL:      "https://my.private.npm.registry/",
 			registryUser:     "ThisIsTheUser",
 			registryPassword: "AndHereIsThePassword",
+		},
+		{
+			name: "success - single project, publish normal, packed - target registry from pipeline",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			packBeforePublish: true,
+
+			expectedPublishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+			expectedPublishConfig:     "_auth = VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry = https://my.other.private.npm.registry/\nalways-auth = true\n",
+
+			registryURL:      "https://my.other.private.npm.registry/",
+			registryUser:     "ThisIsTheOtherUser",
+			registryPassword: "AndHereIsTheOtherPassword",
 		},
 		/*{
 			name: "success - publish scoped, packed - target registry in npmrc",
