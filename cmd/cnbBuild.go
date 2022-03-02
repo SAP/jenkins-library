@@ -19,6 +19,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
@@ -553,6 +554,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
+
+	digest, err := cnbutils.DigestFromReport(utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to read image digest")
+	}
+	commonPipelineEnvironment.container.imageDigest = digest
+	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != pathEnumArchive {
