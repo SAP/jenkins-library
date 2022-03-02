@@ -106,7 +106,7 @@ func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	var resp *http.Response
 	abapEndpoint := details.URL
 
-	log.Entry().Debugf("Request Body: %s", bodyString)
+	log.Entry().Infof("Request Body: %s", bodyString)
 	var body = []byte(bodyString)
 	details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
 	resp, err = runATC("POST", details, body, client)
@@ -251,13 +251,23 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	err = HandleHttpResponseErrors(resp, err, "triggering ATC run failed", details)
-	if err != nil {
+	logResponseBody(resp)
+	if err != nil || resp.StatusCode == 400 { //send request does not seem to produce error with StatusCode 400!!!
+		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed", details)
 		log.SetErrorCategory(log.ErrorService)
 		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
 	}
 	defer resp.Body.Close()
 	return resp, err
+}
+
+func logResponseBody(resp *http.Response) error {
+	bodyText, readError := ioutil.ReadAll(resp.Body)
+	if readError != nil {
+		return readError
+	}
+	log.Entry().Infof("Response body: %s", bodyText)
+	return nil
 }
 
 func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {

@@ -348,7 +348,7 @@ func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, at
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
 	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, atcSystemConfiguartionJsonFile, client)
-	return HandleHttpResponseErrors(resp, err, "Post Request for Creating ATC System Configuration failed", connectionDetails)
+	return HandleHttpResponse(resp, err, "Post Request for Creating ATC System Configuration", connectionDetails)
 }
 
 func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, batchRequestBodyFile string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
@@ -361,7 +361,7 @@ func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, b
 
 	batchRequestBodyFileByte := []byte(batchRequestBodyFile)
 	resp, err := client.SendRequest("POST", connectionDetails.URL, bytes.NewBuffer(batchRequestBodyFileByte), header, nil)
-	return HandleHttpResponseErrors(resp, err, "Batch Request for Patching ATC System Configuration failed", connectionDetails)
+	return HandleHttpResponse(resp, err, "Batch Request for Patching ATC System Configuration", connectionDetails)
 }
 
 func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
@@ -410,11 +410,62 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	}
 }
 
-func HandleHttpResponseErrors(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
+func HandleHttpResponse(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
 
-	log.Entry().Debugf("Response body: %s", resp.Body)
+	if resp == nil {
+		// Response is nil in case of a timeout
+		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+	} else {
 
-	return abaputils.HandleHTTPError(resp, err, "oData call failed", connectionDetails)
+		defer resp.Body.Close()
+
+		log.Entry().WithField("StatusCode", resp.Status).Info(message)
+		bodyText, readError := ioutil.ReadAll(resp.Body)
+		if readError != nil {
+			return readError
+		}
+		log.Entry().Infof("Response body: %s", bodyText)
+
+		errorDetails, parsingError := getErrorDetailsFromBody(bodyText)
+		if parsingError != nil {
+			return err
+		}
+		abapError := errors.New(errorDetails)
+		err = errors.Wrap(abapError, err.Error())
+
+	}
+
+	//errors could also be reported inside an e.g. BATCH request wich returned with status code 200!!!
+	switch resp.StatusCode {
+	case 200: //Retrieved entities & OK in Patch & OK in Batch
+
+	default:
+
+	}
+
+	return err
+
+}
+
+func getErrorDetailsFromBody(bodyText []byte) (errorString string, err error) {
+
+	// Include the error message of the ABAP Environment system, if available
+	var abapErrorResponse AbapError
+	var abapResp map[string]*json.RawMessage
+	errUnmarshal := json.Unmarshal(bodyText, &abapResp)
+	if errUnmarshal != nil {
+		return errorString, errUnmarshal
+	}
+	if _, ok := abapResp["error"]; ok {
+		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+		if (AbapError{}) != abapErrorResponse {
+			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+			errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
+			return errorString, nil
+		}
+	}
+
+	return errorString, errors.New("Could not parse the JSON error response")
 
 }
 
@@ -467,4 +518,16 @@ type parsedConfigPriority struct {
 
 type priorityJson struct {
 	Priority json.Number `json:"priority"`
+}
+
+// AbapError contains the error code and the error message for ABAP errors
+type AbapError struct {
+	Code    string           `json:"code"`
+	Message AbapErrorMessage `json:"message"`
+}
+
+// AbapErrorMessage contains the lanuage and value fields for ABAP errors
+type AbapErrorMessage struct {
+	Lang  string `json:"lang"`
+	Value string `json:"value"`
 }
