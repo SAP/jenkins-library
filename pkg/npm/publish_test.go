@@ -27,6 +27,7 @@ func TestNpmPublish(t *testing.T) {
 		expectedPublishConfig     string
 		expectedError             string
 	}{
+		// project in root folder
 		{
 			name: "success - single project, publish normal, unpacked package - target registry in npmrc",
 
@@ -125,6 +126,107 @@ func TestNpmPublish(t *testing.T) {
 			registryUser:     "ThisIsTheOtherUser",
 			registryPassword: "AndHereIsTheOtherPassword",
 		},
+		// project in a subfolder
+		{
+			name: "success - single project, publish normal, unpacked package - target registry in npmrc",
+
+			files: map[string]string{
+				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+			},
+
+			packageDescriptors: []string{"sub/package.json"},
+
+			expectedPublishConfigPath: `sub/\.piperNpmrc`,
+			expectedPublishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+		},
+		{
+			name: "success - single project, publish normal, unpacked package - target registry from pipeline",
+
+			files: map[string]string{
+				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+			},
+
+			packageDescriptors: []string{"sub/package.json"},
+
+			expectedPublishConfigPath: `sub/\.piperNpmrc`,
+			expectedPublishConfig:     "registry = https://my.private.npm.registry/\n_auth = VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth = true\n",
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+		},
+		{
+			name: "success - single project, publish normal, unpacked package - target registry from pipeline (precedence over npmrc)",
+
+			files: map[string]string{
+				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+			},
+
+			packageDescriptors: []string{"sub/package.json"},
+
+			expectedPublishConfigPath: `sub/\.piperNpmrc`,
+			expectedPublishConfig:     "_auth = VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry = https://my.other.private.npm.registry/\nalways-auth = true\n",
+
+			registryURL:      "https://my.other.private.npm.registry/",
+			registryUser:     "ThisIsTheOtherUser",
+			registryPassword: "AndHereIsTheOtherPassword",
+		},
+		{
+			name: "success - single project, publish normal, packed - target registry in npmrc",
+
+			files: map[string]string{
+				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+			},
+
+			packageDescriptors: []string{"sub/package.json"},
+
+			packBeforePublish: true,
+
+			expectedPublishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+			expectedPublishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+		},
+		{
+			name: "success - single project, publish normal, packed - target registry from pipeline",
+
+			files: map[string]string{
+				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+			},
+
+			packageDescriptors: []string{"sub/package.json"},
+
+			packBeforePublish: true,
+
+			expectedPublishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+			expectedPublishConfig:     "registry = https://my.private.npm.registry/\n_auth = VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth = true\n",
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+		},
+		{
+			name: "success - single project, publish normal, packed - target registry from pipeline",
+
+			files: map[string]string{
+				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
+				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/",
+			},
+
+			packageDescriptors: []string{"sub/package.json"},
+
+			packBeforePublish: true,
+
+			expectedPublishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+			expectedPublishConfig:     "_auth = VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry = https://my.other.private.npm.registry/\nalways-auth = true\n",
+
+			registryURL:      "https://my.other.private.npm.registry/",
+			registryUser:     "ThisIsTheOtherUser",
+			registryPassword: "AndHereIsTheOtherPassword",
+		},
+		// TODO multiple projects
+		// TODO scoped packages
 		/*{
 			name: "success - publish scoped, packed - target registry in npmrc",
 
