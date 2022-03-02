@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -412,6 +413,9 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 
 func HandleHttpResponse(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
 
+	var bodyText []byte
+	var readError error
+
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
@@ -420,48 +424,55 @@ func HandleHttpResponse(resp *http.Response, err error, message string, connecti
 		defer resp.Body.Close()
 
 		log.Entry().WithField("StatusCode", resp.Status).Info(message)
-		bodyText, readError := ioutil.ReadAll(resp.Body)
+		bodyText, readError = ioutil.ReadAll(resp.Body)
 		if readError != nil {
 			return readError
 		}
 		log.Entry().Infof("Response body: %s", bodyText)
 
-		errorDetails, parsingError := getErrorDetailsFromBody(bodyText)
-		if parsingError != nil {
-			return err
+		errorDetails, parsingError := getErrorDetailsFromBody(resp, bodyText)
+		if parsingError == nil &&
+			errorDetails != "" {
+			abapError := errors.New(errorDetails)
+			err = errors.Wrap(abapError, err.Error())
 		}
-		abapError := errors.New(errorDetails)
-		err = errors.Wrap(abapError, err.Error())
-
-	}
-
-	//errors could also be reported inside an e.g. BATCH request wich returned with status code 200!!!
-	switch resp.StatusCode {
-	case 200: //Retrieved entities & OK in Patch & OK in Batch
-
-	default:
-
 	}
 
 	return err
 
 }
 
-func getErrorDetailsFromBody(bodyText []byte) (errorString string, err error) {
+func getErrorDetailsFromBody(resp *http.Response, bodyText []byte) (errorString string, err error) {
 
 	// Include the error message of the ABAP Environment system, if available
 	var abapErrorResponse AbapError
 	var abapResp map[string]*json.RawMessage
-	errUnmarshal := json.Unmarshal(bodyText, &abapResp)
-	if errUnmarshal != nil {
-		return errorString, errUnmarshal
+
+	//errors could also be reported inside an e.g. BATCH request wich returned with status code 200!!!
+	contentType := resp.Header.Get("Content-type")
+	if len(bodyText) != 0 &&
+		strings.Contains(contentType, "multipart/mixed") {
+		//scan for inner errors! (by now count as error only RespCode starting with 4 or 5)
+		if strings.Contains(string(bodyText), "HTTP/1.1 4") ||
+			strings.Contains(string(bodyText), "HTTP/1.1 5") {
+			errorString = fmt.Sprintf("Outer Response Code: %v - but at least one Inner response returned StatusCode 4* or 5*. Please check Log for details.", resp.StatusCode)
+		} else {
+			log.Entry().Info("no Inner Response Errors")
+		}
 	}
-	if _, ok := abapResp["error"]; ok {
-		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (AbapError{}) != abapErrorResponse {
-			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
-			errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
-			return errorString, nil
+	if len(bodyText) != 0 &&
+		strings.Contains(contentType, "application/json") {
+		errUnmarshal := json.Unmarshal(bodyText, &abapResp)
+		if errUnmarshal != nil {
+			return errorString, errUnmarshal
+		}
+		if _, ok := abapResp["error"]; ok {
+			json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+			if (AbapError{}) != abapErrorResponse {
+				log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+				errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
+				return errorString, nil
+			}
 		}
 	}
 
