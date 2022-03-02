@@ -12,10 +12,9 @@ import (
 
 func TestXSUAA_GetBearerToken(t *testing.T) {
 	type (
-		args struct {
-			oauthUrlPath string
-			clientID     string
-			clientSecret string
+		fields struct {
+			ClientID     string
+			ClientSecret string
 		}
 		want struct {
 			authToken AuthToken
@@ -27,16 +26,17 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 		}
 	)
 	tests := []struct {
-		name     string
-		args     args
-		want     want
-		response response
+		name         string
+		fields       fields
+		oauthUrlPath string
+		want         want
+		response     response
 	}{
 		{
 			name: "Straight forward",
-			args: args{
-				clientID:     "myClientID",
-				clientSecret: "secret",
+			fields: fields{
+				ClientID:     "myClientID",
+				ClientSecret: "secret",
 			},
 			want: want{
 				authToken: AuthToken{
@@ -50,9 +50,9 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 		},
 		{
 			name: "No expiring duration",
-			args: args{
-				clientID:     "myClientID",
-				clientSecret: "secret",
+			fields: fields{
+				ClientID:     "myClientID",
+				ClientSecret: "secret",
 			},
 			want: want{
 				authToken: AuthToken{
@@ -65,11 +65,11 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 		},
 		{
 			name: "OAuth Url with path",
-			args: args{
-				oauthUrlPath: "/oauth/token?grant_type=client_credentials",
-				clientID:     "myClientID",
-				clientSecret: "secret",
+			fields: fields{
+				ClientID:     "myClientID",
+				ClientSecret: "secret",
 			},
+			oauthUrlPath: "/oauth/token?grant_type=client_credentials",
 			want: want{
 				authToken: AuthToken{
 					TokenType:   "bearer",
@@ -82,9 +82,9 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 		},
 		{
 			name: "No token type",
-			args: args{
-				clientID:     "myClientID",
-				clientSecret: "secret",
+			fields: fields{
+				ClientID:     "myClientID",
+				ClientSecret: "secret",
 			},
 			want: want{
 				authToken: AuthToken{
@@ -98,9 +98,9 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 		},
 		{
 			name: "HTTP error",
-			args: args{
-				clientID:     "myClientID",
-				clientSecret: "secret",
+			fields: fields{
+				ClientID:     "myClientID",
+				ClientSecret: "secret",
 			},
 			want: want{errRegex: `fetching an access token failed: HTTP GET request to .*/oauth/token\?grant_type=client_credentials&response_type=token ` +
 				`failed: expected response code 200, got '401', response body: '{"error": "unauthorized"}'`},
@@ -139,9 +139,13 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 			// Close the server when test finishes
 			defer server.Close()
 
-			oauthUrl := server.URL + tt.args.oauthUrlPath
-			xsuaa := XSUAA{OAuthURL: oauthUrl, ClientID: tt.args.clientID, ClientSecret: tt.args.clientSecret}
-			gotToken, err := xsuaa.GetBearerToken()
+			oauthUrl := server.URL + tt.oauthUrlPath
+			x := &XSUAA{
+				OAuthURL:     oauthUrl,
+				ClientID:     tt.fields.ClientID,
+				ClientSecret: tt.fields.ClientSecret,
+			}
+			gotToken, err := x.GetBearerToken()
 			if tt.want.errRegex != "" {
 				require.Error(t, err, "Error expected")
 				assert.Regexp(t, tt.want.errRegex, err.Error())
