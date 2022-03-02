@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRunApiKeyValueMapUpload(t *testing.T) {
@@ -49,8 +48,9 @@ func TestRunApiKeyValueMapUpload(t *testing.T) {
 		// test
 		payload, err := createJSONPayload(&config)
 		// assert
-		require.NoError(t, err)
 		assert.Equal(t, testPayload, payload)
+		assert.NoError(t, err)
+		assert.NotNil(t, payload)
 	})
 
 	t.Run("Http Response not accepted Test case", func(t *testing.T) {
