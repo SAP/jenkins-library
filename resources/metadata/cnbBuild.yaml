@@ -236,10 +236,13 @@ spec:
         type: piperEnvironment
         params:
           - name: container/registryUrl
+          - name: container/imageDigest
           - name: container/imageNameTag
           - name: container/imageNames
             type: "[]string"
           - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
             type: "[]string"
   containers:
     - image: "paketobuildpacks/builder:full"
