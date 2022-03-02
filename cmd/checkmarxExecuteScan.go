@@ -105,6 +105,9 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 			return err
 		}
 	} else {
+		if len(teamID) == 0 {
+			return errors.Wrap(err, "TeamName or TeamID is required to create a new project")
+		}
 		project, err = createNewProject(config, sys, projectName, teamID)
 		if err != nil {
 			return err
@@ -161,10 +164,15 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
+	var err error
 	if len(teams) > 0 && len(teamName) > 0 {
-		return sys.FilterTeamByName(teams, teamName), nil
+		team, err = sys.FilterTeamByName(teams, teamName)
 	}
-	return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	if err != nil {
+		return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	} else {
+		return team, nil
+	}
 }
 
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
@@ -198,7 +206,19 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		if len(projects) == 0 {
 			return checkmarx.Project{}, projectName, nil
 		}
-		project = projects[0]
+		if len(projects) == 1 {
+			project = projects[0]
+		} else {
+			for _, current_project := range projects {
+				if projectName == current_project.Name {
+					project = current_project
+					break
+				}
+			}
+			if len(project.Name) == 0 {
+				return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the teamName parameter if you want a new project to be created.")
+			}
+		}
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
 	}
 	return project, projectName, nil
@@ -309,6 +329,16 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
 	} else {
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
+	}
+
+	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	jsonReport := checkmarx.CreateJSONReport(results)
+	paths, err := checkmarx.WriteJSONReport(jsonReport)
+	if err != nil {
+		log.Entry().Warning("failed to write JSON report...", err)
+	} else {
+		// add JSON report to archiving list
+		reports = append(reports, paths...)
 	}
 
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
