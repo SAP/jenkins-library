@@ -6,7 +6,7 @@ With this step you can store one or more key value pairs of data stored in a gro
 
 To consume the ApiKeyValueMapUpload step, proceed as follows:
 
-* Copy the SAP API management service key from the SAP BTP sub account cockpit, under instance and subscriptions-->service API Management, API portal, which was created under apiportal-apiaccess plan.
+* Copy the SAP API management service key from the SAP BTP sub account cockpit, under instance and subscriptions &rarr; service API Management, API portal, which was created under apiportal-apiaccess plan.
 * Store your service key created for SAP API Management in the Jenkins server as a secret text.
 * Create a new Jenkins pipeline designated for the ApiKeyValueMapUpload step.
 * Execute the pipeline and validate the step exection results as explained in the blog [Integration Suite Piper commands](https://blogs.sap.com/2022/01/05/orking-with-integration-suite-piper-commands/)
