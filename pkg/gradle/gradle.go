@@ -14,8 +14,10 @@ import (
 
 const (
 	exec                  = "gradle"
+	bomTaskName           = "cyclonedxBom"
 	groovyBuildScriptName = "build.gradle"
 	kotlinBuildScriptName = "build.gradle.kts"
+	initScriptName        = "cyclonedx.gradle"
 )
 
 type Utils interface {
@@ -88,8 +90,8 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 	if err := utils.RunExecutable(exec, "tasks"); err != nil {
 		return fmt.Errorf("failed list gradle tasks: %w", err)
 	}
-	if strings.Contains(stdOutBuf.String(), "cyclonedxBom") {
-		if err := utils.RunExecutable(exec, "cyclonedxBom"); err != nil {
+	if strings.Contains(stdOutBuf.String(), bomTaskName) {
+		if err := utils.RunExecutable(exec, bomTaskName); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	} else {
@@ -97,7 +99,7 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 			return err
 		}
 		defer deleteInitScript(options.BuildGradlePath)
-		if err := utils.RunExecutable(exec, "--init-script", "cyclonedx.gradle", "cyclonedxBom"); err != nil {
+		if err := utils.RunExecutable(exec, "--init-script", filepath.Join(options.BuildGradlePath, initScriptName), bomTaskName); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
@@ -106,7 +108,7 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 }
 
 func createInitScript(buildGradlePath string) error {
-	initScript, err := os.Create(filepath.Join(buildGradlePath, "cyclonedx.gradle"))
+	initScript, err := os.Create(filepath.Join(buildGradlePath, initScriptName))
 	if err != nil {
 		return fmt.Errorf("failed create init script: %w", err)
 	}
@@ -138,7 +140,7 @@ rootProject {
 }
 
 func deleteInitScript(buildGradlePath string) error {
-	if err := os.Remove(filepath.Join(buildGradlePath, "cyclonedx.gradle")); err != nil {
+	if err := os.Remove(filepath.Join(buildGradlePath, initScriptName)); err != nil {
 		return fmt.Errorf("failed remove init script: %w", err)
 	}
 	return nil
