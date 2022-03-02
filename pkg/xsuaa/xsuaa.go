@@ -13,6 +13,8 @@ import (
 const authHeaderKey = "Authorization"
 const oneHourInSeconds = 3600.0
 
+// XSUAA contains the fields to authenticate to a xsuaa service instance on BTP to retrieve a access token
+// It also caches the latest retrieved access token
 type XSUAA struct {
 	OAuthURL        string
 	ClientID        string
@@ -60,15 +62,15 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 	const method = http.MethodGet
 	const urlPathAndQuery = "oauth/token?grant_type=client_credentials&response_type=token"
 
-	oauthBaseUrl, err := url.Parse(x.OAuthURL)
+	oauthBaseURL, err := url.Parse(x.OAuthURL)
 	if err != nil {
 		return
 	}
-	entireUrl := fmt.Sprintf("%s://%s/%s", oauthBaseUrl.Scheme, oauthBaseUrl.Host, urlPathAndQuery)
+	entireURL := fmt.Sprintf("%s://%s/%s", oauthBaseURL.Scheme, oauthBaseURL.Host, urlPathAndQuery)
 
 	httpClient := http.Client{}
 
-	request, err := http.NewRequest(method, entireUrl, nil)
+	request, err := http.NewRequest(method, entireURL, nil)
 	if err != nil {
 		return
 	}
@@ -77,7 +79,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 	response, httpErr := httpClient.Do(request)
 	if httpErr != nil {
 		err = errors.Wrapf(httpErr, "fetching an access token failed: HTTP %s request to %s failed",
-			method, entireUrl)
+			method, entireURL)
 		return
 	}
 
@@ -89,7 +91,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 	if response.StatusCode != http.StatusOK {
 		err = errors.Errorf("fetching an access token failed: HTTP %s request to %s failed: "+
 			"expected response code 200, got '%d', response body: '%s'",
-			method, entireUrl, response.StatusCode, bodyText)
+			method, entireURL, response.StatusCode, bodyText)
 		return
 	}
 
