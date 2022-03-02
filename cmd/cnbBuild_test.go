@@ -23,6 +23,11 @@ func newCnbBuildTestsUtils() cnbutils.MockUtils {
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
+	utils.AddFile("/layers/report.toml", []byte(`[build]
+[image]
+tags = ["localhost:5000/not-found:0.0.1"]
+digest = "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec"
+manifest-size = 2388`))
 	return utils
 }
 
@@ -100,6 +105,9 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, "io-buildpacks-my-app", config.ContainerImageTag))
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "io-buildpacks-my-app:0.0.1", commonPipelineEnvironment.container.imageNameTag)
+
+		assert.Equal(t, "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec", commonPipelineEnvironment.container.imageDigest)
+		assert.Contains(t, commonPipelineEnvironment.container.imageDigests, "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec")
 
 		customDataAsString := telemetryData.Custom1
 		customData := cnbBuildTelemetry{}
@@ -539,6 +547,7 @@ uri = "some-buildpack"
 		customDataAsString := telemetryData.Custom1
 		customData := cnbBuildTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), &customData)
+		assert.NoError(t, err)
 		require.Equal(t, expectedImageCount, len(customData.Data))
 
 		runner := utils.ExecMockRunner
