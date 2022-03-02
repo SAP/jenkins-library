@@ -16,12 +16,18 @@ func ContainsInt(s []int, e int) bool {
 
 //ContainsString checks whether the element is part of the slice
 func ContainsString(s []string, e string) bool {
-	for _, a := range s {
+	return FindString(s, e) >= 0
+}
+
+//FindString returns the position of element e in the given slice or -1 if it's not in
+func FindString(s []string, e string) int {
+	for i, a := range s {
 		if a == e {
-			return true
+			return i
 		}
 	}
-	return false
+
+	return -1
 }
 
 //ContainsStringPart checks whether the element is contained as part of one of the elements of the slice
