@@ -420,12 +420,10 @@ func HandleHttpResponse(resp *http.Response, err error, message string, connecti
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
-
-		defer resp.Body.Close()
-
 		log.Entry().WithField("StatusCode", resp.Status).Info(message)
 		bodyText, readError = ioutil.ReadAll(resp.Body)
 		if readError != nil {
+			defer resp.Body.Close()
 			return readError
 		}
 		log.Entry().Infof("Response body: %s", bodyText)
@@ -433,11 +431,10 @@ func HandleHttpResponse(resp *http.Response, err error, message string, connecti
 		errorDetails, parsingError := getErrorDetailsFromBody(resp, bodyText)
 		if parsingError == nil &&
 			errorDetails != "" {
-			abapError := errors.New(errorDetails)
-			err = errors.Wrap(abapError, err.Error())
+			err = errors.New(errorDetails)
 		}
 	}
-
+	defer resp.Body.Close()
 	return err
 
 }
@@ -458,6 +455,9 @@ func getErrorDetailsFromBody(resp *http.Response, bodyText []byte) (errorString 
 			errorString = fmt.Sprintf("Outer Response Code: %v - but at least one Inner response returned StatusCode 4* or 5*. Please check Log for details.", resp.StatusCode)
 		} else {
 			log.Entry().Info("no Inner Response Errors")
+		}
+		if errorString != "" {
+			return errorString, nil
 		}
 	}
 	if len(bodyText) != 0 &&
