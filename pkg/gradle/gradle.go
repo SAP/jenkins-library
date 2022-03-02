@@ -23,7 +23,6 @@ const (
 type Utils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
-	GetStdout() io.Writer
 	RunExecutable(e string, p ...string) error
 }
 
@@ -84,7 +83,7 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 func createBOM(options *ExecuteOptions, utils Utils) error {
 	// check if gradle task cyclonedxBom exists
 	stdOutBuf := new(bytes.Buffer)
-	stdOut := utils.GetStdout()
+	stdOut := log.Writer()
 	stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	utils.Stdout(stdOut)
 	if err := utils.RunExecutable(exec, "tasks"); err != nil {
