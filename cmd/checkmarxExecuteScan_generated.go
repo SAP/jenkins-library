@@ -5,55 +5,54 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
-	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
 type checkmarxExecuteScanOptions struct {
-	Assignees []string `json:"assignees,omitempty"`
-	AvoidDuplicateProjectScans bool `json:"avoidDuplicateProjectScans,omitempty"`
-	FilterPattern string `json:"filterPattern,omitempty"`
-	FullScanCycle string `json:"fullScanCycle,omitempty"`
-	FullScansScheduled bool `json:"fullScansScheduled,omitempty"`
-	GeneratePdfReport bool `json:"generatePdfReport,omitempty"`
-	GithubAPIURL string `json:"githubApiUrl,omitempty"`
-	GithubToken string `json:"githubToken,omitempty"`
-	Incremental bool `json:"incremental,omitempty"`
-	MaxRetries int `json:"maxRetries,omitempty"`
-	Owner string `json:"owner,omitempty"`
-	Password string `json:"password,omitempty"`
-	Preset string `json:"preset,omitempty"`
-	ProjectName string `json:"projectName,omitempty"`
-	PullRequestName string `json:"pullRequestName,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	ServerURL string `json:"serverUrl,omitempty"`
-	SourceEncoding string `json:"sourceEncoding,omitempty"`
-	TeamID string `json:"teamId,omitempty"`
-	TeamName string `json:"teamName,omitempty"`
-	Username string `json:"username,omitempty"`
-	VerifyOnly bool `json:"verifyOnly,omitempty"`
-	VulnerabilityThresholdEnabled bool `json:"vulnerabilityThresholdEnabled,omitempty"`
-	VulnerabilityThresholdHigh int `json:"vulnerabilityThresholdHigh,omitempty"`
-	VulnerabilityThresholdLow int `json:"vulnerabilityThresholdLow,omitempty"`
-	VulnerabilityThresholdMedium int `json:"vulnerabilityThresholdMedium,omitempty"`
-	VulnerabilityThresholdResult string `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
-	VulnerabilityThresholdUnit string `json:"vulnerabilityThresholdUnit,omitempty"`
-	IsOptimizedAndScheduled bool `json:"isOptimizedAndScheduled,omitempty"`
-	CreateResultIssue bool `json:"createResultIssue,omitempty"`
+	Assignees                     []string `json:"assignees,omitempty"`
+	AvoidDuplicateProjectScans    bool     `json:"avoidDuplicateProjectScans,omitempty"`
+	FilterPattern                 string   `json:"filterPattern,omitempty"`
+	FullScanCycle                 string   `json:"fullScanCycle,omitempty"`
+	FullScansScheduled            bool     `json:"fullScansScheduled,omitempty"`
+	GeneratePdfReport             bool     `json:"generatePdfReport,omitempty"`
+	GithubAPIURL                  string   `json:"githubApiUrl,omitempty"`
+	GithubToken                   string   `json:"githubToken,omitempty"`
+	Incremental                   bool     `json:"incremental,omitempty"`
+	MaxRetries                    int      `json:"maxRetries,omitempty"`
+	Owner                         string   `json:"owner,omitempty"`
+	Password                      string   `json:"password,omitempty"`
+	Preset                        string   `json:"preset,omitempty"`
+	ProjectName                   string   `json:"projectName,omitempty"`
+	PullRequestName               string   `json:"pullRequestName,omitempty"`
+	Repository                    string   `json:"repository,omitempty"`
+	ServerURL                     string   `json:"serverUrl,omitempty"`
+	SourceEncoding                string   `json:"sourceEncoding,omitempty"`
+	TeamID                        string   `json:"teamId,omitempty"`
+	TeamName                      string   `json:"teamName,omitempty"`
+	Username                      string   `json:"username,omitempty"`
+	VerifyOnly                    bool     `json:"verifyOnly,omitempty"`
+	VulnerabilityThresholdEnabled bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
+	VulnerabilityThresholdHigh    int      `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdLow     int      `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdMedium  int      `json:"vulnerabilityThresholdMedium,omitempty"`
+	VulnerabilityThresholdResult  string   `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
+	VulnerabilityThresholdUnit    string   `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool     `json:"isOptimizedAndScheduled,omitempty"`
+	CreateResultIssue             bool     `json:"createResultIssue,omitempty"`
 }
-
 
 type checkmarxExecuteScanInflux struct {
 	step_data struct {
@@ -65,50 +64,50 @@ type checkmarxExecuteScanInflux struct {
 	}
 	checkmarx_data struct {
 		fields struct {
-			high_issues int
-			high_not_false_postive int
-			high_not_exploitable int
-			high_confirmed int
-			high_urgent int
-			high_proposed_not_exploitable int
-			high_to_verify int
-			medium_issues int
-			medium_not_false_postive int
-			medium_not_exploitable int
-			medium_confirmed int
-			medium_urgent int
-			medium_proposed_not_exploitable int
-			medium_to_verify int
-			low_issues int
-			low_not_false_postive int
-			low_not_exploitable int
-			low_confirmed int
-			low_urgent int
-			low_proposed_not_exploitable int
-			low_to_verify int
-			information_issues int
-			information_not_false_postive int
-			information_not_exploitable int
-			information_confirmed int
-			information_urgent int
+			high_issues                          int
+			high_not_false_postive               int
+			high_not_exploitable                 int
+			high_confirmed                       int
+			high_urgent                          int
+			high_proposed_not_exploitable        int
+			high_to_verify                       int
+			medium_issues                        int
+			medium_not_false_postive             int
+			medium_not_exploitable               int
+			medium_confirmed                     int
+			medium_urgent                        int
+			medium_proposed_not_exploitable      int
+			medium_to_verify                     int
+			low_issues                           int
+			low_not_false_postive                int
+			low_not_exploitable                  int
+			low_confirmed                        int
+			low_urgent                           int
+			low_proposed_not_exploitable         int
+			low_to_verify                        int
+			information_issues                   int
+			information_not_false_postive        int
+			information_not_exploitable          int
+			information_confirmed                int
+			information_urgent                   int
 			information_proposed_not_exploitable int
-			information_to_verify int
-			lines_of_code_scanned int
-			files_scanned int
-			initiator_name string
-			owner string
-			scan_id string
-			project_id string
-			projectName string
-			team string
-			team_full_path_on_report_date string
-			scan_start string
-			scan_time string
-			checkmarx_version string
-			scan_type string
-			preset string
-			deep_link string
-			report_creation_time string
+			information_to_verify                int
+			lines_of_code_scanned                int
+			files_scanned                        int
+			initiator_name                       string
+			owner                                string
+			scan_id                              string
+			project_id                           string
+			projectName                          string
+			team                                 string
+			team_full_path_on_report_date        string
+			scan_start                           string
+			scan_time                            string
+			checkmarx_version                    string
+			scan_type                            string
+			preset                               string
+			deep_link                            string
+			report_creation_time                 string
 		}
 		tags struct {
 		}
@@ -116,57 +115,57 @@ type checkmarxExecuteScanInflux struct {
 }
 
 func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
-	measurementContent := []struct{
+	measurementContent := []struct {
 		measurement string
 		valType     string
 		name        string
 		value       interface{}
 	}{
-		{valType: config.InfluxField, measurement: "step_data" , name: "checkmarx", value: i.step_data.fields.checkmarx},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_issues", value: i.checkmarx_data.fields.high_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_not_false_postive", value: i.checkmarx_data.fields.high_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_not_exploitable", value: i.checkmarx_data.fields.high_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_confirmed", value: i.checkmarx_data.fields.high_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_urgent", value: i.checkmarx_data.fields.high_urgent},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_proposed_not_exploitable", value: i.checkmarx_data.fields.high_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "high_to_verify", value: i.checkmarx_data.fields.high_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_issues", value: i.checkmarx_data.fields.medium_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_not_false_postive", value: i.checkmarx_data.fields.medium_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_not_exploitable", value: i.checkmarx_data.fields.medium_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_confirmed", value: i.checkmarx_data.fields.medium_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_urgent", value: i.checkmarx_data.fields.medium_urgent},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_proposed_not_exploitable", value: i.checkmarx_data.fields.medium_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "medium_to_verify", value: i.checkmarx_data.fields.medium_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_issues", value: i.checkmarx_data.fields.low_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_not_false_postive", value: i.checkmarx_data.fields.low_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_not_exploitable", value: i.checkmarx_data.fields.low_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_confirmed", value: i.checkmarx_data.fields.low_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_urgent", value: i.checkmarx_data.fields.low_urgent},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_proposed_not_exploitable", value: i.checkmarx_data.fields.low_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "low_to_verify", value: i.checkmarx_data.fields.low_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_issues", value: i.checkmarx_data.fields.information_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_not_false_postive", value: i.checkmarx_data.fields.information_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_not_exploitable", value: i.checkmarx_data.fields.information_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_confirmed", value: i.checkmarx_data.fields.information_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_urgent", value: i.checkmarx_data.fields.information_urgent},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_proposed_not_exploitable", value: i.checkmarx_data.fields.information_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "information_to_verify", value: i.checkmarx_data.fields.information_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "lines_of_code_scanned", value: i.checkmarx_data.fields.lines_of_code_scanned},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "files_scanned", value: i.checkmarx_data.fields.files_scanned},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "initiator_name", value: i.checkmarx_data.fields.initiator_name},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "owner", value: i.checkmarx_data.fields.owner},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "scan_id", value: i.checkmarx_data.fields.scan_id},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "project_id", value: i.checkmarx_data.fields.project_id},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "projectName", value: i.checkmarx_data.fields.projectName},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "team", value: i.checkmarx_data.fields.team},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "team_full_path_on_report_date", value: i.checkmarx_data.fields.team_full_path_on_report_date},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "scan_start", value: i.checkmarx_data.fields.scan_start},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "scan_time", value: i.checkmarx_data.fields.scan_time},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "checkmarx_version", value: i.checkmarx_data.fields.checkmarx_version},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "scan_type", value: i.checkmarx_data.fields.scan_type},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "preset", value: i.checkmarx_data.fields.preset},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "deep_link", value: i.checkmarx_data.fields.deep_link},
-		{valType: config.InfluxField, measurement: "checkmarx_data" , name: "report_creation_time", value: i.checkmarx_data.fields.report_creation_time},
+		{valType: config.InfluxField, measurement: "step_data", name: "checkmarx", value: i.step_data.fields.checkmarx},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_issues", value: i.checkmarx_data.fields.high_issues},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_false_postive", value: i.checkmarx_data.fields.high_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_exploitable", value: i.checkmarx_data.fields.high_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_confirmed", value: i.checkmarx_data.fields.high_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_urgent", value: i.checkmarx_data.fields.high_urgent},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_proposed_not_exploitable", value: i.checkmarx_data.fields.high_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_to_verify", value: i.checkmarx_data.fields.high_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_issues", value: i.checkmarx_data.fields.medium_issues},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_false_postive", value: i.checkmarx_data.fields.medium_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_exploitable", value: i.checkmarx_data.fields.medium_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_confirmed", value: i.checkmarx_data.fields.medium_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_urgent", value: i.checkmarx_data.fields.medium_urgent},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_proposed_not_exploitable", value: i.checkmarx_data.fields.medium_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_to_verify", value: i.checkmarx_data.fields.medium_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_issues", value: i.checkmarx_data.fields.low_issues},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_false_postive", value: i.checkmarx_data.fields.low_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_exploitable", value: i.checkmarx_data.fields.low_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_confirmed", value: i.checkmarx_data.fields.low_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_urgent", value: i.checkmarx_data.fields.low_urgent},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_proposed_not_exploitable", value: i.checkmarx_data.fields.low_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_to_verify", value: i.checkmarx_data.fields.low_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_issues", value: i.checkmarx_data.fields.information_issues},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_false_postive", value: i.checkmarx_data.fields.information_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_exploitable", value: i.checkmarx_data.fields.information_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_confirmed", value: i.checkmarx_data.fields.information_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_urgent", value: i.checkmarx_data.fields.information_urgent},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_proposed_not_exploitable", value: i.checkmarx_data.fields.information_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_to_verify", value: i.checkmarx_data.fields.information_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "lines_of_code_scanned", value: i.checkmarx_data.fields.lines_of_code_scanned},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "files_scanned", value: i.checkmarx_data.fields.files_scanned},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "initiator_name", value: i.checkmarx_data.fields.initiator_name},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "owner", value: i.checkmarx_data.fields.owner},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_id", value: i.checkmarx_data.fields.scan_id},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "project_id", value: i.checkmarx_data.fields.project_id},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "projectName", value: i.checkmarx_data.fields.projectName},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team", value: i.checkmarx_data.fields.team},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team_full_path_on_report_date", value: i.checkmarx_data.fields.team_full_path_on_report_date},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_start", value: i.checkmarx_data.fields.scan_start},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_time", value: i.checkmarx_data.fields.scan_time},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "checkmarx_version", value: i.checkmarx_data.fields.checkmarx_version},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_type", value: i.checkmarx_data.fields.scan_type},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "preset", value: i.checkmarx_data.fields.preset},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "deep_link", value: i.checkmarx_data.fields.deep_link},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "report_creation_time", value: i.checkmarx_data.fields.report_creation_time},
 	}
 
 	errCount := 0
@@ -203,7 +202,7 @@ func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOpt
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
-        	return
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -220,7 +219,6 @@ func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOpt
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
-
 
 // CheckmarxExecuteScanCommand Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
 func CheckmarxExecuteScanCommand() *cobra.Command {
@@ -296,7 +294,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				reports.persist(stepConfig,GeneralConfig.GCPJsonKeyFilePath,GeneralConfig.GCSBucketId,GeneralConfig.GCSFolderPath,GeneralConfig.GCSSubFolder)
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -312,10 +310,10 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
-				GeneralConfig.HookConfig.SplunkConfig.Dsn,
-				GeneralConfig.HookConfig.SplunkConfig.Token,
-				GeneralConfig.HookConfig.SplunkConfig.Index,
-				GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
 			checkmarxExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
@@ -369,341 +367,339 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 func checkmarxExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "checkmarxExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "checkmarxExecuteScan",
+			Aliases:     []config.Alias{},
 			Description: "Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "checkmarxCredentialsId",Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.",Type: "jenkins",
-					}, 
+					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
-					{Name: "checkmarx",Type: "stash",
-					},
+					{Name: "checkmarx", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:      "assignees",
+						Name:        "assignees",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   []string{``},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{``},
 					},
 					{
-						Name:      "avoidDuplicateProjectScans",
+						Name:        "avoidDuplicateProjectScans",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   true,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
-						Name:      "filterPattern",
+						Name:        "filterPattern",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
 					},
 					{
-						Name:      "fullScanCycle",
+						Name:        "fullScanCycle",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `5`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `5`,
 					},
 					{
-						Name:      "fullScansScheduled",
+						Name:        "fullScansScheduled",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   true,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
-						Name:      "generatePdfReport",
+						Name:        "generatePdfReport",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   true,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
-						Name:      "githubApiUrl",
+						Name:        "githubApiUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `https://api.github.com`,
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://api.github.com`,
 					},
 					{
-						Name:      "githubToken",
+						Name: "githubToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"githubTokenCredentialsId",
+								Name: "githubTokenCredentialsId",
 								Type: "secret",
 							},
-                        
+
 							{
-								Name:"githubVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
 								Default: "github",
 							},
-                        },
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "access_token"},},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
-						Name:      "incremental",
+						Name:        "incremental",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   true,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
-						Name:      "maxRetries",
+						Name:        "maxRetries",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "int",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   3,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     3,
 					},
 					{
-						Name:      "owner",
+						Name: "owner",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"commonPipelineEnvironment",
+								Name:  "commonPipelineEnvironment",
 								Param: "github/owner",
 							},
-                        },
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "githubOrg"},},
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
-						Name:      "password",
+						Name: "password",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"checkmarxCredentialsId",
+								Name:  "checkmarxCredentialsId",
 								Param: "password",
-								Type: "secret",
+								Type:  "secret",
 							},
-                        
+
 							{
-								Name:"checkmarxVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "checkmarxVaultSecretName",
+								Type:    "vaultSecret",
 								Default: "checkmarx",
 							},
-                        },
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name:      "preset",
+						Name:        "preset",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_preset"),
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_preset"),
 					},
 					{
-						Name:      "projectName",
+						Name:        "projectName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "checkmarxProject"},{Name: "checkMarxProjectName", Deprecated: true},},
-						Default:   os.Getenv("PIPER_projectName"),
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName", Deprecated: true}},
+						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
-						Name:      "pullRequestName",
+						Name:        "pullRequestName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_pullRequestName"),
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 					{
-						Name:      "repository",
+						Name: "repository",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"commonPipelineEnvironment",
+								Name:  "commonPipelineEnvironment",
 								Param: "github/repository",
 							},
-                        },
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "githubRepo"},},
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
-						Name:      "serverUrl",
+						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "checkmarxServerUrl"},},
-						Default:   os.Getenv("PIPER_serverUrl"),
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
-						Name:      "sourceEncoding",
+						Name:        "sourceEncoding",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `1`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `1`,
 					},
 					{
-						Name:      "teamId",
+						Name:        "teamId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "checkmarxGroupId"},{Name: "groupId", Deprecated: true},},
-						Default:   os.Getenv("PIPER_teamId"),
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId", Deprecated: true}},
+						Default:     os.Getenv("PIPER_teamId"),
 					},
 					{
-						Name:      "teamName",
+						Name:        "teamName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_teamName"),
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_teamName"),
 					},
 					{
-						Name:      "username",
+						Name: "username",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"checkmarxCredentialsId",
+								Name:  "checkmarxCredentialsId",
 								Param: "username",
-								Type: "secret",
+								Type:  "secret",
 							},
-                        
+
 							{
-								Name:"checkmarxVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "checkmarxVaultSecretName",
+								Type:    "vaultSecret",
 								Default: "checkmarx",
 							},
-                        },
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
 					},
 					{
-						Name:      "verifyOnly",
+						Name:        "verifyOnly",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   false,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
-						Name:      "vulnerabilityThresholdEnabled",
+						Name:        "vulnerabilityThresholdEnabled",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   true,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
-						Name:      "vulnerabilityThresholdHigh",
+						Name:        "vulnerabilityThresholdHigh",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "int",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   100,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
-						Name:      "vulnerabilityThresholdLow",
+						Name:        "vulnerabilityThresholdLow",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "int",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   10,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     10,
 					},
 					{
-						Name:      "vulnerabilityThresholdMedium",
+						Name:        "vulnerabilityThresholdMedium",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "int",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   100,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
-						Name:      "vulnerabilityThresholdResult",
+						Name:        "vulnerabilityThresholdResult",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `FAILURE`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `FAILURE`,
 					},
 					{
-						Name:      "vulnerabilityThresholdUnit",
+						Name:        "vulnerabilityThresholdUnit",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `percentage`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `percentage`,
 					},
 					{
-						Name:      "isOptimizedAndScheduled",
+						Name: "isOptimizedAndScheduled",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"commonPipelineEnvironment",
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/isOptimizedAndScheduled",
 							},
-                        },
-						Scope:     []string{"PARAMETERS",},
+						},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   false,
 					},
 					{
-						Name:      "createResultIssue",
+						Name: "createResultIssue",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"commonPipelineEnvironment",
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/optimizedAndScheduled",
 							},
-                        },
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -717,18 +713,18 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"name": "step_data","fields": []map[string]string{ {"name": "checkmarx"}, },},
-							{"name": "checkmarx_data","fields": []map[string]string{ {"name": "high_issues"},  {"name": "high_not_false_postive"},  {"name": "high_not_exploitable"},  {"name": "high_confirmed"},  {"name": "high_urgent"},  {"name": "high_proposed_not_exploitable"},  {"name": "high_to_verify"},  {"name": "medium_issues"},  {"name": "medium_not_false_postive"},  {"name": "medium_not_exploitable"},  {"name": "medium_confirmed"},  {"name": "medium_urgent"},  {"name": "medium_proposed_not_exploitable"},  {"name": "medium_to_verify"},  {"name": "low_issues"},  {"name": "low_not_false_postive"},  {"name": "low_not_exploitable"},  {"name": "low_confirmed"},  {"name": "low_urgent"},  {"name": "low_proposed_not_exploitable"},  {"name": "low_to_verify"},  {"name": "information_issues"},  {"name": "information_not_false_postive"},  {"name": "information_not_exploitable"},  {"name": "information_confirmed"},  {"name": "information_urgent"},  {"name": "information_proposed_not_exploitable"},  {"name": "information_to_verify"},  {"name": "lines_of_code_scanned"},  {"name": "files_scanned"},  {"name": "initiator_name"},  {"name": "owner"},  {"name": "scan_id"},  {"name": "project_id"},  {"name": "projectName"},  {"name": "team"},  {"name": "team_full_path_on_report_date"},  {"name": "scan_start"},  {"name": "scan_time"},  {"name": "checkmarx_version"},  {"name": "scan_type"},  {"name": "preset"},  {"name": "deep_link"},  {"name": "report_creation_time"}, },},
+							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarx"}}},
+							{"name": "checkmarx_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "team"}, {"name": "team_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "checkmarx_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
 						},
 					},
 					{
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/piper_checkmarx_report.html","type": "checkmarx",},
-							{"filePattern": "**/CxSASTResults_*.xml","type": "checkmarx",},
-							{"filePattern": "**/ScanReport.*","type": "checkmarx",},
-							{"filePattern": "**/toolrun_checkmarx_*.json","type": "checkmarx",},
+							{"filePattern": "**/piper_checkmarx_report.html", "type": "checkmarx"},
+							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarx"},
+							{"filePattern": "**/ScanReport.*", "type": "checkmarx"},
+							{"filePattern": "**/toolrun_checkmarx_*.json", "type": "checkmarx"},
 						},
 					},
 				},
