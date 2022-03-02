@@ -355,7 +355,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
 
-		if insecure && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
 			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Checkmarx SAST Results", config.Assignees, utils)
 			if err != nil {
