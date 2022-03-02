@@ -2,15 +2,12 @@ package npm
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
@@ -37,7 +34,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	execRunner := exec.Utils.GetExecRunner()
 
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
-	if exists, err := FileUtils.FileExists(npmignore.filepath); exists {
+	if exists, err := exec.Utils.FileExists(npmignore.filepath); exists {
 		if err != nil {
 			return errors.Wrapf(err, "failed to check for existing %s file", npmignore.filepath)
 		}
@@ -65,7 +62,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	// update .piperNpmrc
 	if len(registry) > 0 {
 		// check existing .npmrc file
-		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
+		if exists, err := exec.Utils.FileExists(npmrc.filepath); exists {
 			if err != nil {
 				return errors.Wrapf(err, "failed to check for existing %s file", npmrc.filepath)
 			}
@@ -94,36 +91,46 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		tmpDirectory := getTempDirForNpmTarBall()
-		defer os.RemoveAll(tmpDirectory)
+		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
-		err := execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+		if err != nil {
+			return errors.Wrap(err, "creating temp directory failed")
+		}
+
+		defer exec.Utils.RemoveAll(tmpDirectory)
+
+		err = execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
 		if err != nil {
 			return err
 		}
 
-		_, err = FileUtils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
+		_, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
 				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
 		}
 
-		tarballFileName := ""
-		err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
-			if filepath.Ext(path) == ".tgz" {
-				tarballFileName = "." + string(filepath.Separator) + path
-				log.Entry().Debugf("found tarball file at %v", tarballFileName)
-			}
-			return nil
-		})
+		tarballs, err := exec.Utils.Glob(filepath.Join(tmpDirectory, "*.tgz"))
+
 		if err != nil {
 			return err
 		}
 
-		// rename the .npmrc file since it interferes with publish
-		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".npmrc"), filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"))
-		if err != nil {
-			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
+		if len(tarballs) != 1 {
+			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
+		}
+
+		tarballFileName := tarballs[0]
+
+		projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
+		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
+
+		if projectNpmrcExists {
+			// rename the .npmrc file since it interferes with publish
+			err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
+			if err != nil {
+				return fmt.Errorf("error when renaming current .npmrc file : %w", err)
+			}
 		}
 
 		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
@@ -131,10 +138,12 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		// undo the renaming ot the .npmrc to keep the workspace like before
-		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
-		if err != nil {
-			log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
+		if projectNpmrcExists {
+			// undo the renaming ot the .npmrc to keep the workspace like before
+			err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
+			if err != nil {
+				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
+			}
 		}
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
@@ -144,12 +153,4 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	return nil
-}
-
-func getTempDirForNpmTarBall() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
-	if err != nil {
-		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
-	}
-	return tmpFolder
 }

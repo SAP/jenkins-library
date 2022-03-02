@@ -339,11 +339,15 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 }
 
 // TempDir create a temp-styled directory in the in-memory, so that this path is established to exist.
-func (f *FilesMock) TempDir(_, pattern string) (string, error) {
-	tmpDir := "/tmp/test"
+func (f *FilesMock) TempDir(baseDir string, pattern string) (string, error) {
+	if len(baseDir) == 0 {
+		baseDir = "/tmp"
+	}
+
+	tmpDir := baseDir
 
 	if pattern != "" {
-		tmpDir = fmt.Sprintf("/tmp/%stest", pattern)
+		tmpDir = fmt.Sprintf("%s/%stest", baseDir, pattern)
 	}
 
 	err := f.MkdirAll(tmpDir, 0755)

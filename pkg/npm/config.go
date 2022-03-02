@@ -10,17 +10,19 @@ import (
 )
 
 const (
-	configFilename = ".piperNpmrc"
+	defaultConfigFilename = ".piperNpmrc" // default by npm
 )
 
 var (
-	propertiesLoadFile = properties.LoadFile
+	propertiesLoadFile  = properties.LoadFile
+	propertiesWriteFile = ioutil.WriteFile
 )
 
 func NewNPMRC(path string) NPMRC {
-	if !strings.HasSuffix(path, configFilename) {
-		path = filepath.Join(path, configFilename)
+	if !strings.HasSuffix(path, defaultConfigFilename) {
+		path = filepath.Join(path, defaultConfigFilename)
 	}
+
 	return NPMRC{filepath: path, values: properties.NewProperties()}
 }
 
@@ -30,7 +32,7 @@ type NPMRC struct {
 }
 
 func (rc *NPMRC) Write() error {
-	if err := ioutil.WriteFile(rc.filepath, []byte(rc.values.String()), 0644); err != nil {
+	if err := propertiesWriteFile(rc.filepath, []byte(rc.values.String()), 0644); err != nil {
 		return errors.Wrapf(err, "failed to write %s", rc.filepath)
 	}
 	return nil
