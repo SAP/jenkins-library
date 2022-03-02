@@ -252,7 +252,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	logResponseBody(resp)
-	if err != nil || resp.StatusCode == 400 { //send request does not seem to produce error with StatusCode 400!!!
+	if err != nil || (resp != nil && resp.StatusCode == 400) { //send request does not seem to produce error with StatusCode 400!!!
 		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
 		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
