@@ -324,7 +324,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testSoftwareComponent2"},
 				},
 			},
-			ObjectSet{},
+			abaputils.ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
@@ -347,7 +347,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
-			ObjectSet{},
+			abaputils.ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
@@ -368,7 +368,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testSoftwareComponent2"},
 				},
 			},
-			ObjectSet{},
+			abaputils.ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
