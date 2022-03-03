@@ -614,7 +614,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					startingColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
 					//check for existance of action object, and if yes, save message
 					if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.isEmpty() {
-						threadFlowLocation.Location.Message = new(Message)
+						threadFlowLocation.Location.Message = new(format.Message)
 						threadFlowLocation.Location.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						// Handle snippet
 						snippetTarget := ""

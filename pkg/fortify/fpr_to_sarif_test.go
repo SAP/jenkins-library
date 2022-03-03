@@ -447,7 +447,7 @@ func TestIntegrateAuditData(t *testing.T) {
 	t.Run("Missing project version", func(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
-		err := rintegrateAuditData(&ruleProp, "11037", sys, &project, nil)
+		err := integrateAuditData(&ruleProp, "11037", sys, &project, nil)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 

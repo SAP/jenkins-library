@@ -22,15 +22,15 @@ type Runs struct {
 
 // Results these structs are relevant to the Results object
 type Results struct {
-	RuleID         string           `json:"ruleId"`
-	RuleIndex      int              `json:"ruleIndex"`
-	Level          string           `json:"level,omitempty"`
-	Message        Message          `json:"message"`
-	AnalysisTarget ArtifactLocation `json:"analysisTarget,omitempty"`
-	Locations      []Location       `json:"locations"`
-	/*CodeFlows        []CodeFlow        `json:"codeFlows"`
-	RelatedLocations []RelatedLocation `json:"relatedLocations"`*/
-	Properties SarifProperties `json:"properties"`
+	RuleID           string            `json:"ruleId"`
+	RuleIndex        int               `json:"ruleIndex"`
+	Level            string            `json:"level,omitempty"`
+	Message          Message           `json:"message"`
+	AnalysisTarget   ArtifactLocation  `json:"analysisTarget,omitempty"`
+	Locations        []Location        `json:"locations"`
+	CodeFlows        []CodeFlow        `json:"codeFlows"`
+	RelatedLocations []RelatedLocation `json:"relatedLocations"`
+	Properties       SarifProperties   `json:"properties"`
 }
 
 // Message to detail the finding
@@ -40,9 +40,15 @@ type Message struct {
 
 // Location of the finding
 type Location struct {
-	PhysicalLocation ArtifactLocation  `json:"physicalLocation,omitempty"`
-	Region           Region            `json:"region,omitempty"`
-	LogicalLocations []LogicalLocation `json:"logicalLocations,omitempty"`
+	PhysicalLocation PhysicalLocation `json:"physicalLocation"`
+	Message          *Message         `json:"message,omitempty"`
+}
+
+// PhysicalLocation
+type PhysicalLocation struct {
+	ArtifactLocation ArtifactLocation `json:"artifactLocation"`
+	Region           Region           `json:"region"`
+	ContextRegion    ContextRegion    `json:"contextRegion"`
 }
 
 // ArtifactLocation describing the path of the artifact
@@ -53,12 +59,13 @@ type ArtifactLocation struct {
 
 // Region where the finding was detected
 type Region struct {
-	StartLine   int `json:"startLine,omitempty"`
-	StartColumn int `json:"startColumn,omitempty"`
-	EndLine     int `json:"EndLine,omitempty"`
-	EndColumn   int `json:"EndColumn,omitempty"`
-	ByteOffset  int `json:"ByteOffset,omitempty"`
-	ByteLength  int `json:"ByteLength,omitempty"`
+	StartLine   int          `json:"startLine,omitempty"`
+	StartColumn int          `json:"startColumn,omitempty"`
+	EndLine     int          `json:"EndLine,omitempty"`
+	EndColumn   int          `json:"EndColumn,omitempty"`
+	ByteOffset  int          `json:"ByteOffset,omitempty"`
+	ByteLength  int          `json:"ByteLength,omitempty"`
+	Snippet     SnippetSarif `json:"snippet"`
 }
 
 // LogicalLocation of the finding
@@ -87,11 +94,11 @@ type Tool struct {
 
 // Driver meta information for the scan and tool context
 type Driver struct {
-	Name           string      `json:"name"`
-	Version        string      `json:"version"`
-	InformationUri string      `json:"informationUri,omitempty"`
-	Rules          []SarifRule `json:"rules"`
-	//SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies"`
+	Name                string                `json:"name"`
+	Version             string                `json:"version"`
+	InformationUri      string                `json:"informationUri,omitempty"`
+	Rules               []SarifRule           `json:"rules"`
+	SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies"`
 }
 
 // SarifRule related rule use to identify the finding
@@ -112,13 +119,6 @@ type SarifRule struct {
 type Help struct {
 	Text     string `json:"text,omitempty"`
 	Markdown string `json:"markdown,omitempty"`
-}
-
-// PhysicalLocation
-type PhysicalLocation struct {
-	ArtifactLocation ArtifactLocation `json:"artifactLocation"`
-	Region           Region           `json:"region"`
-	ContextRegion    ContextRegion    `json:"contextRegion"`
 }
 
 // SnippetSarif
