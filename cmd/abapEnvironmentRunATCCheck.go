@@ -400,10 +400,10 @@ func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
 
 //ATCConfiguration object for parsing yaml config of software components and packages
 type ATCConfiguration struct {
-	CheckVariant  string     `json:"checkvariant,omitempty"`
-	Configuration string     `json:"configuration,omitempty"`
-	Objects       ATCObjects `json:"atcobjects"`
-	ObjectSet     ObjectSet  `json:"objectset,omitempty"`
+	CheckVariant  string              `json:"checkvariant,omitempty"`
+	Configuration string              `json:"configuration,omitempty"`
+	Objects       ATCObjects          `json:"atcobjects"`
+	ObjectSet     abaputils.ObjectSet `json:"objectset,omitempty"`
 }
 
 //ATCObjects in form of packages and software components to be checked

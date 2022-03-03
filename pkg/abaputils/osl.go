@@ -19,6 +19,7 @@ type ObjectSet struct {
 type MultiPropertySet struct {
 	Type                  string                 `json:"type,omitempty"`
 	PackageNames          []Package              `json:"packages,omitempty"`
+	PackagetreeNames      []Packagetree          `json:"packagetrees,omitempty"`
 	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroups,omitempty"`
 	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
 	Owners                []Owner                `json:"owners,omitempty"`
@@ -33,19 +34,25 @@ type MultiPropertySet struct {
 
 //Set
 type Set struct {
-	Type          string          `json:"type,omitempty"`
-	Set           []Set           `json:"set,omitempty"`
-	PackageSet    []PackageSet    `json:"package,omitempty"`
-	FlatObjectSet []FlatObjectSet `json:"object,omitempty"`
-	ComponentSet  []ComponentSet  `json:"component,omitempty"`
-	TransportSet  []TransportSet  `json:"transport,omitempty"`
-	ObjectTypeSet []ObjectTypeSet `json:"objecttype,omitempty"`
+	Type           string           `json:"type,omitempty"`
+	Set            []Set            `json:"set,omitempty"`
+	PackageSet     []PackageSet     `json:"package,omitempty"`
+	PackageTreeSet []PackageTreeSet `json:"packagetree,omitempty"`
+	FlatObjectSet  []FlatObjectSet  `json:"object,omitempty"`
+	ComponentSet   []ComponentSet   `json:"component,omitempty"`
+	TransportSet   []TransportSet   `json:"transport,omitempty"`
+	ObjectTypeSet  []ObjectTypeSet  `json:"objecttype,omitempty"`
 }
 
 //PackageSet in form of packages to be checked
 type PackageSet struct {
 	Name               string `json:"name,omitempty"`
 	IncludeSubpackages *bool  `json:"includesubpackages,omitempty"`
+}
+
+//PackagetreeSet in form of packages with all subpackages
+type PackageTreeSet struct {
+	Name string `json:"name,omitempty"`
 }
 
 //FlatObjectSet
@@ -71,6 +78,11 @@ type ObjectTypeSet struct {
 
 //Package for MPS
 type Package struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Packagetree for MPS
+type Packagetree struct {
 	Name string `json:"name,omitempty"`
 }
 
@@ -131,9 +143,8 @@ func BuildOSLString(OSLConfig ObjectSet) (objectSetString string) {
 	if s.Type == "" {
 		s.Type = "multiPropertySet"
 	}
-	if s.Type != "multiPropertySet" {
-		log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
-	} else {
+	switch s.Type {
+	case "multiPropertySet":
 		objectSetString += `<osl:objectSet xsi:type="` + s.Type + `" xmlns:osl="http://www.sap.com/api/osl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`
 
 		if !(reflect.DeepEqual(s.PackageNames, Package{})) || !(reflect.DeepEqual(s.SoftwareComponents, SoftwareComponents{})) {
@@ -155,13 +166,20 @@ func BuildOSLString(OSLConfig ObjectSet) (objectSetString string) {
 			log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", t.Type)
 		}
 		objectSetString += `</osl:objectSet>`
+
+	default:
+		log.Entry().Infof("Wrong configuration has been detected: %s has been used. This is currently not supported and this set will not be included in this run. Please check the step documentation for more information", s.Type)
 	}
+
 	return objectSetString
 }
 
 func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
 	for _, packages := range set.PackageNames {
 		objectSetString += `<osl:package name="` + packages.Name + `"/>`
+	}
+	for _, packageTrees := range set.PackagetreeNames {
+		objectSetString += `<osl:packagetree name="` + packageTrees.Name + `"/>`
 	}
 	for _, objectTypeGroup := range set.ObjectTypeGroups {
 		objectSetString += `<osl:objectTypeGroup name="` + objectTypeGroup.Name + `"/>`
