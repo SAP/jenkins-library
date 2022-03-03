@@ -164,7 +164,6 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
-
 	var err error
 	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
 	if err != nil {
