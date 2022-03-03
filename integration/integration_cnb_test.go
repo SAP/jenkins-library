@@ -44,8 +44,8 @@ func TestNpmProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config_env.yml", "--path", "TestMtaIntegration/npm", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
-
+	err := container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config_env.yml", "--path", "TestMtaIntegration/npm", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
