@@ -206,9 +206,11 @@ type ToolComponent struct {
 
 //SarifRuleProperties
 type SarifRuleProperties struct {
-	Accuracy    string `json:"Accuracy,omitempty"`
-	Impact      string `json:"Impact,omitempty"`
-	Probability string `json:"Probability,omitempty"`
+	Accuracy    string   `json:"Accuracy,omitempty"`
+	Impact      string   `json:"Impact,omitempty"`
+	Probability string   `json:"Probability,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	Precision   string   `json:"precision,omitempty"`
 }
 
 // Invocations These structs are relevant to the Invocations object
