@@ -240,6 +240,7 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	return nil
+
 }
 
 func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -292,6 +293,7 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
+
 }
 
 func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -401,6 +403,7 @@ type ATCConfiguration struct {
 	CheckVariant  string     `json:"checkvariant,omitempty"`
 	Configuration string     `json:"configuration,omitempty"`
 	Objects       ATCObjects `json:"atcobjects"`
+	ObjectSet     ObjectSet  `json:"objectset,omitempty"`
 }
 
 //ATCObjects in form of packages and software components to be checked

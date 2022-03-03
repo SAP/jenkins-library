@@ -324,6 +324,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testSoftwareComponent2"},
 				},
 			},
+			ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
@@ -336,9 +337,8 @@ func TestBuildATCCheckBody(t *testing.T) {
 		expectedObjectSet := `<obj:objectSet><obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages></obj:objectSet>`
 
 		var err error
-		var config ATCConfiguration
 
-		config = ATCConfiguration{
+		config := ATCConfiguration{
 			"",
 			"",
 			ATCObjects{
@@ -347,13 +347,13 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
+			ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
 
 		assert.Equal(t, expectedObjectSet, objectSet)
 		assert.Equal(t, nil, err)
-
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
 
@@ -368,6 +368,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testSoftwareComponent2"},
 				},
 			},
+			ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
