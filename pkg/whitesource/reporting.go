@@ -200,7 +200,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.Message = format.Message{Text: alert.Vulnerability.Description}
 		result.Level = alert.Level
 		result.AnalysisTarget = format.ArtifactLocation{URI: alert.Library.Filename, Index: 0}
-		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}
+		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}, Message: nil}
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)

@@ -46,9 +46,10 @@ type Location struct {
 
 // PhysicalLocation
 type PhysicalLocation struct {
-	ArtifactLocation ArtifactLocation `json:"artifactLocation"`
-	Region           Region           `json:"region"`
-	ContextRegion    ContextRegion    `json:"contextRegion"`
+	ArtifactLocation ArtifactLocation  `json:"artifactLocation"`
+	Region           Region            `json:"region"`
+	ContextRegion    ContextRegion     `json:"contextRegion"`
+	LogicalLocations []LogicalLocation `json:"logicalLocations,omitempty"`
 }
 
 // ArtifactLocation describing the path of the artifact
