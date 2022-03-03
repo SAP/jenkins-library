@@ -24,6 +24,10 @@ func (f *gradleExecuteBuildFileMock) DirExists(path string) (bool, error) {
 	return strings.EqualFold(path, "path/to/"), nil
 }
 
+func (f *gradleExecuteBuildFileMock) FileExists(filePath string) (bool, error) {
+	return strings.EqualFold(filePath, "path/to/build.gradle"), nil
+}
+
 func newGradleExecuteBuildTestsUtils() gradleExecuteBuildMockUtils {
 	utils := gradleExecuteBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
@@ -43,7 +47,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		m := &gradleExecuteBuildFileMock{}
 
 		err := runGradleExecuteBuild(options, nil, u, m)
-		assert.EqualError(t, err, "the specified gradle script could not be found")
+		assert.EqualError(t, err, "the specified gradle build script could not be found")
 	})
 
 	t.Run("success case - build.gradle is present", func(t *testing.T) {
