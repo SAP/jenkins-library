@@ -493,6 +493,16 @@ type Attribute struct {
 	Value   string   `xml:"value"`
 }
 
+// Utils
+
+func (n Node) isEmpty() bool {
+	return n.IsDefault == ""
+}
+
+func (a Action) isEmpty() bool {
+	return a.ActionData == ""
+}
+
 // ConvertFprToSarif converts the FPR file contents into SARIF format
 func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
@@ -532,7 +542,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	var fvdl FVDL
 	err := decoder.Decode(&fvdl)
 	if err != nil {
-		return SARIF{}, err
+		return format.SARIF{}, err
 	}
 
 	//Now, we handle the sarif
@@ -564,22 +574,22 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 
 		// Handle all locations items
-		location := *new(Location)
+		location := *new(format.Location)
 		var startingColumn int
 		//get location
 		for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace); k++ { // k iterates on traces
 			//In each trace/primary, there can be one or more entries
 			//Each trace represents a codeflow, each entry represents a location in threadflow
-			codeFlow := *new(CodeFlow)
-			threadFlow := *new(ThreadFlow)
+			codeFlow := *new(format.CodeFlow)
+			threadFlow := *new(format.ThreadFlow)
 			//We now iterate on Entries in the trace/primary
 			for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry); l++ { // l iterates on entries
-				threadFlowLocation := *new(Locations) //One is created regardless
+				threadFlowLocation := *new(format.Locations) //One is created regardless
 				//the default node dictates the interesting threadflow (location, and so on)
 				//this will populate both threadFlowLocation AND the parent location object (result.Locations[0])
 				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault == "true" {
 					//initalize threadFlowLocation.Location
-					threadFlowLocation.Location = new(Location)
+					threadFlowLocation.Location = new(format.Location)
 					//get artifact location
 					for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
 						if fvdl.Build.SourceFiles[j].Name == fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path {
@@ -669,11 +679,11 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		result.Locations = append(result.Locations, location)
 
 		//handle relatedLocation
-		relatedLocation := *new(RelatedLocation)
+		relatedLocation := *new(format.RelatedLocation)
 		relatedLocation.ID = 1
-		relatedLocation.PhysicalLocation = *new(RelatedPhysicalLocation)
+		relatedLocation.PhysicalLocation = *new(format.RelatedPhysicalLocation)
 		relatedLocation.PhysicalLocation.ArtifactLocation = location.PhysicalLocation.ArtifactLocation
-		relatedLocation.PhysicalLocation.Region = *new(RelatedRegion)
+		relatedLocation.PhysicalLocation.Region = *new(format.RelatedRegion)
 		relatedLocation.PhysicalLocation.Region.StartLine = location.PhysicalLocation.Region.StartLine
 		relatedLocation.PhysicalLocation.Region.StartColumn = startingColumn
 		result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
@@ -817,7 +827,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		//relationships: will most likely require some expansion
 		//One relationship per CWE id
 		for j := 0; j < len(cweIds); j++ {
-			rls := *new(Relationships)
+			rls := *new(format.Relationships)
 			rls.Target.Id = cweIds[j]
 			rls.Target.ToolComponent.Name = "CWE"
 			rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
@@ -829,7 +839,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 	}
 	//supportedTaxonomies
-	sTax := *new(SupportedTaxonomies) //This object seems fixed, but it will have to be checked
+	sTax := *new(format.SupportedTaxonomies) //This object seems fixed, but it will have to be checked
 	sTax.Name = "CWE"
 	sTax.Index = 0
 	sTax.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
@@ -839,7 +849,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs[0].Tool = tool
 
 	//handle invocations object
-	invocation := *new(Invocations)
+	invocation := *new(format.Invocations)
 	for i := 0; i < len(fvdl.EngineData.Properties); i++ { //i selects the properties type
 		if fvdl.EngineData.Properties[i].PropertiesType == "Fortify" { // This is the correct type, now iterate on props
 			for j := 0; j < len(fvdl.EngineData.Properties[i].Property); j++ {
@@ -855,7 +865,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	invocation.CommandLine = strings.Join(append([]string{invocation.CommandLine}, fvdl.EngineData.CLArguments...), " ")
 	invocation.StartTimeUtc = strings.Join([]string{fvdl.Created.Date, fvdl.Created.Time}, "T") + ".000Z"
 	for i := 0; i < len(fvdl.EngineData.Errors); i++ {
-		ten := *new(ToolExecutionNotifications)
+		ten := *new(format.ToolExecutionNotifications)
 		ten.Message.Text = fvdl.EngineData.Errors[i].ErrorMessage
 		ten.Descriptor.Id = fvdl.EngineData.Errors[i].ErrorCode
 		invocation.ToolExecutionNotifications = append(invocation.ToolExecutionNotifications, ten)
@@ -871,7 +881,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 	//handle artifacts
 	for i := 0; i < len(fvdl.Build.SourceFiles); i++ { //i iterates on source files
-		artifact := *new(Artifact)
+		artifact := *new(format.Artifact)
 		artifact.Location.Uri = fvdl.Build.SourceFiles[i].Name
 		artifact.Location.UriBaseId = "%SRCROOT%"
 		artifact.Length = fvdl.Build.SourceFiles[i].FileSize
@@ -891,7 +901,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs[0].AutomationDetails.Id = fvdl.Build.BuildID
 
 	//handle threadFlowLocations
-	threadFlowLocationsObject := []Locations{}
+	threadFlowLocationsObject := []format.Locations{}
 	//prepare a check object
 	for i := 0; i < len(fvdl.UnifiedNodePool.Node); i++ {
 		unique := true
@@ -905,8 +915,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		if !unique {
 			continue
 		}
-		locations := *new(Locations)
-		loc := new(Location)
+		locations := *new(format.Locations)
+		loc := new(format.Location)
 		//get artifact location
 		for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
 			if fvdl.Build.SourceFiles[j].Name == fvdl.UnifiedNodePool.Node[i].SourceLocation.Path {
@@ -926,7 +936,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				break
 			}
 		}
-		loc.Message = new(Message)
+		loc.Message = new(format.Message)
 		loc.Message.Text = fvdl.UnifiedNodePool.Node[i].Action.ActionData
 		// Handle snippet
 		snippetTarget := ""
@@ -978,13 +988,13 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
-	taxonomy := *new(Taxonomies)
+	taxonomy := *new(format.Taxonomies)
 	taxonomy.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
 	for key, _ := range cweIdsForTaxonomies {
-		taxa := *new(Taxa)
+		taxa := *new(format.Taxa)
 		taxa.Id = key
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}

@@ -9,15 +9,15 @@ type SARIF struct {
 
 // Runs of a Tool and related Results
 type Runs struct {
-	Results []Results `json:"results"`
-	Tool    Tool      `json:"tool"`
-	/*Invocations         []Invocations      `json:"invocations"`
+	Results             []Results          `json:"results"`
+	Tool                Tool               `json:"tool"`
+	Invocations         []Invocations      `json:"invocations"`
 	OriginalUriBaseIds  OriginalUriBaseIds `json:"originalUriBaseIds"`
 	Artifacts           []Artifact         `json:"artifacts"`
 	AutomationDetails   AutomationDetails  `json:"automationDetails"`
 	ColumnKind          string             `json:"columnKind" default:"utf16CodeUnits"`
 	ThreadFlowLocations []Locations        `json:"threadFlowLocations"`
-	Taxonomies          []Taxonomies       `json:"taxonomies"`*/
+	Taxonomies          []Taxonomies       `json:"taxonomies"`
 }
 
 // Results these structs are relevant to the Results object
@@ -114,11 +114,65 @@ type Help struct {
 	Markdown string `json:"markdown,omitempty"`
 }
 
+// PhysicalLocation
+type PhysicalLocation struct {
+	ArtifactLocation ArtifactLocation `json:"artifactLocation"`
+	Region           Region           `json:"region"`
+	ContextRegion    ContextRegion    `json:"contextRegion"`
+}
+
+// SnippetSarif
+type SnippetSarif struct {
+	Text string `json:"text"`
+}
+
+// ContextRegion
+type ContextRegion struct {
+	StartLine int          `json:"startLine"`
+	EndLine   int          `json:"endLine"`
+	Snippet   SnippetSarif `json:"snippet"`
+}
+
+// CodeFlow
+type CodeFlow struct {
+	ThreadFlows []ThreadFlow `json:"threadFlows"`
+}
+
+// ThreadFlow
+type ThreadFlow struct {
+	Locations []Locations `json:"locations"`
+}
+
+// Locations
+type Locations struct {
+	Location *Location `json:"location,omitempty"`
+	Kinds    []string  `json:"kinds,omitempty"`
+	Index    int       `json:"index,omitempty"`
+}
+
+// RelatedLocation
+type RelatedLocation struct {
+	ID               int                     `json:"id"`
+	PhysicalLocation RelatedPhysicalLocation `json:"physicalLocation"`
+}
+
+// RelatedPhysicalLocation
+type RelatedPhysicalLocation struct {
+	ArtifactLocation ArtifactLocation `json:"artifactLocation"`
+	Region           RelatedRegion    `json:"region"`
+}
+
+// RelatedRegion
+type RelatedRegion struct {
+	StartLine   int `json:"startLine"`
+	StartColumn int `json:"startColumn,omitempty"`
+}
+
 // SupportedTaxonomies
 type SupportedTaxonomies struct {
 	Name  string `json:"name"`
 	Index int    `json:"index"`
-	GUID  string `json:"guid"`
+	Guid  string `json:"guid"`
 }
 
 // DefaultConfiguration
@@ -127,7 +181,7 @@ type DefaultConfiguration struct {
 	Level      string            `json:"level,omitempty"` //This exists in the template, but not sure how it is populated. TODO.
 }
 
-//DefaultProperties
+// DefaultProperties
 type DefaultProperties struct {
 	DefaultSeverity string `json:"DefaultSeverity"`
 }
@@ -140,21 +194,91 @@ type Relationships struct {
 
 // Target
 type Target struct {
-	ID            string        `json:"id"`
+	Id            string        `json:"id"`
 	ToolComponent ToolComponent `json:"toolComponent"`
 }
 
-//ToolComponent
+// ToolComponent
 type ToolComponent struct {
 	Name string `json:"name"`
-	GUID string `json:"guid"`
+	Guid string `json:"guid"`
 }
 
-// SarifRuleProperties
+//SarifRuleProperties
 type SarifRuleProperties struct {
-	Accuracy    string   `json:"Accuracy,omitempty"`
-	Impact      string   `json:"Impact,omitempty"`
-	Probability string   `json:"Probability,omitempty"`
-	Tags        []string `json:"tags,omitempty"`
-	Precision   string   `json:"precision,omitempty"`
+	Accuracy    string `json:"Accuracy,omitempty"`
+	Impact      string `json:"Impact,omitempty"`
+	Probability string `json:"Probability,omitempty"`
+}
+
+// Invocations These structs are relevant to the Invocations object
+type Invocations struct {
+	CommandLine                string                       `json:"commandLine"`
+	StartTimeUtc               string                       `json:"startTimeUtc"`
+	ToolExecutionNotifications []ToolExecutionNotifications `json:"toolExecutionNotifications"`
+	ExecutionSuccessful        bool                         `json:"executionSuccessful"`
+	Machine                    string                       `json:"machine"`
+	Account                    string                       `json:"account"`
+	Properties                 InvocationProperties         `json:"properties"`
+}
+
+// ToolExecutionNotifications
+type ToolExecutionNotifications struct {
+	Message    Message    `json:"message"`
+	Descriptor Descriptor `json:"descriptor"`
+}
+
+// Descriptor
+type Descriptor struct {
+	Id string `json:"id"`
+}
+
+// InvocationProperties
+type InvocationProperties struct {
+	Platform string `json:"Platform"`
+}
+
+// OriginalUriBaseIds These structs are relevant to the originalUriBaseIds object
+type OriginalUriBaseIds struct {
+	SrcRoot SrcRoot `json:"%SRCROOT%"`
+}
+
+// SrcRoot
+type SrcRoot struct {
+	Uri string `json:"uri"`
+}
+
+// Artifact These structs are relevant to the artifacts object
+type Artifact struct {
+	Location SarifLocation `json:"location"`
+	Length   int           `json:"length"`
+	MimeType string        `json:"mimeType"`
+	Encoding string        `json:"encoding"`
+}
+
+// SarifLocation
+type SarifLocation struct {
+	Uri       string `json:"uri"`
+	UriBaseId string `json:"uriBaseId"`
+}
+
+// AutomationDetails These structs are relevant to the automationDetails object
+type AutomationDetails struct {
+	Id string `json:"id"`
+}
+
+// These structs are relevant to the threadFlowLocations object
+
+// Taxonomies These structs are relevant to the taxonomies object
+type Taxonomies struct {
+	Guid             string  `json:"guid"`
+	Name             string  `json:"name"`
+	Organization     string  `json:"organization"`
+	ShortDescription Message `json:"shortDescription"`
+	Taxa             []Taxa  `json:"taxa"`
+}
+
+// Taxa
+type Taxa struct {
+	Id string `json:"id"`
 }

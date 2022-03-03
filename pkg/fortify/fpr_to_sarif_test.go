@@ -5,11 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/piper-validation/fortify-client-go/models"
-<<<<<<< HEAD
-
-=======
->>>>>>> 34353cdd (feat(fpr_to_sarif): better unit test)
 	"github.com/stretchr/testify/assert"
 )
 
@@ -427,10 +424,10 @@ func TestIntegrateAuditData(t *testing.T) {
 	defer server.Close()
 
 	t.Run("Successful lookup", func(t *testing.T) {
-		ruleProp := *new(SarifProperties)
+		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := ruleProp.IntegrateAuditData("11037", sys, &project, &projectVersion)
+		err := integrateAuditData(&ruleProp, "11037", sys, &project, &projectVersion)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, ruleProp.Audited, true)
 		assert.Equal(t, ruleProp.ToolState, "Exploitable")
@@ -441,24 +438,24 @@ func TestIntegrateAuditData(t *testing.T) {
 	})
 
 	t.Run("Missing project", func(t *testing.T) {
-		ruleProp := *new(SarifProperties)
+		ruleProp := *new(format.SarifProperties)
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := ruleProp.IntegrateAuditData("11037", sys, nil, &projectVersion)
+		err := integrateAuditData(&ruleProp, "11037", sys, nil, &projectVersion)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 
 	t.Run("Missing project version", func(t *testing.T) {
-		ruleProp := *new(SarifProperties)
+		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
-		err := ruleProp.IntegrateAuditData("11037", sys, &project, nil)
+		err := rintegrateAuditData(&ruleProp, "11037", sys, &project, nil)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 
 	t.Run("Missing sys", func(t *testing.T) {
-		ruleProp := *new(SarifProperties)
+		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := ruleProp.IntegrateAuditData("11037", nil, &project, &projectVersion)
+		err := integrateAuditData(&ruleProp, "11037", nil, &project, &projectVersion)
 		assert.Error(t, err, "no system instance, lookup impossible for 11037")
 	})
 }
