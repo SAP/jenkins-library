@@ -167,7 +167,6 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 }
 
 func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
-	
 	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
