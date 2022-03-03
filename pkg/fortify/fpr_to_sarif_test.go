@@ -370,6 +370,17 @@ If you are concerned about leaking system data via NFC on an Android device, you
 		_, err := Parse(sys, &project, &projectVersion, []byte{})
 		assert.Error(t, err, "EOF")
 	})
+
+	t.Run("No system instance", func(t *testing.T) {
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		sarif, err := Parse(nil, &project, &projectVersion, []byte(testFvdl))
+		assert.NoError(t, err, "error")
+		assert.Equal(t, len(sarif.Runs[0].Results), 2)
+		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Unknown")
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state")
+	})
 }
 
 func TestIntegrateAuditData(t *testing.T) {
@@ -441,5 +452,13 @@ func TestIntegrateAuditData(t *testing.T) {
 		project := models.Project{}
 		err := ruleProp.IntegrateAuditData("11037", sys, &project, nil)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
+	})
+
+	t.Run("Missing sys", func(t *testing.T) {
+		ruleProp := *new(SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := ruleProp.IntegrateAuditData("11037", nil, &project, &projectVersion)
+		assert.Error(t, err, "no system instance, lookup impossible for 11037")
 	})
 }

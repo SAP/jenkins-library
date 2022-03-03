@@ -994,6 +994,10 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 }
 
 func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {
+	if sys == nil {
+		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
+		return err
+	}
 	if project == nil || projectVersion == nil {
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
