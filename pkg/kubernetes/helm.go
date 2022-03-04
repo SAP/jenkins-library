@@ -340,7 +340,8 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz")
+	// binary := fmt.Sprintf("%v", h.config.DeploymentName+h.config.PackageVersion+".tgz")
+	binary := fmt.Sprintf("%v", "nginx-test-7.8.9.tgz")
 
 	targetPath := fmt.Sprintf("helm/%s/%s", h.config.PackageVersion, binary)
 
