@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -131,9 +132,21 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 		runParameters += ` configuration="` + atcConfig.Configuration + `"`
 	}
 
-	objectSet, err := getATCObjectSet(atcConfig)
+	var objectSetString string
+	//check if OSL Objectset is present
+	if !reflect.DeepEqual(abaputils.ObjectSet{}, atcConfig.ObjectSet) {
+		objectSetString = abaputils.BuildOSLString(atcConfig.ObjectSet)
+	}
+	//if initial - check if ATC Object set is present
+	if objectSetString == "" && (len(atcConfig.Objects.Package) != 0 || len(atcConfig.Objects.SoftwareComponent) != 0) {
+		objectSetString, err = getATCObjectSet(atcConfig)
+	}
 
-	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSet + `</atc:runparameters>`
+	if objectSetString == "" {
+		return objectSetString, fmt.Errorf("Error while parsing ATC test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+	}
+
+	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSetString + `</atc:runparameters>`
 	return bodyString, err
 }
 
@@ -167,11 +180,6 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 }
 
 func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
-	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
-	}
-
 	objectSet += `<obj:objectSet>`
 
 	//Build SC XML body

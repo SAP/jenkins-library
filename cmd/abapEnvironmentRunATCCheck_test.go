@@ -297,15 +297,15 @@ func TestParseATCResult(t *testing.T) {
 }
 
 func TestBuildATCCheckBody(t *testing.T) {
-	t.Run("Test build body with no software component and package", func(t *testing.T) {
-		expectedObjectSet := ""
+	t.Run("Test build body with no ATC Object set - no software component and package", func(t *testing.T) {
+		expectedObjectSet := "<obj:objectSet></obj:objectSet>"
 
 		var config ATCConfiguration
 
 		objectSet, err := getATCObjectSet(config)
 
 		assert.Equal(t, expectedObjectSet, objectSet)
-		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
 
@@ -408,7 +408,7 @@ func TestGenerateHTMLDocument(t *testing.T) {
 
 func TestResolveConfiguration(t *testing.T) {
 
-	t.Run("resolve atcConfig-yml", func(t *testing.T) {
+	t.Run("resolve atcConfig-yml with ATC Set", func(t *testing.T) {
 
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents><obj:packages><obj:package value=\"Z_TEST\" includeSubpackages=\"false\"/></obj:packages></obj:objectSet></atc:runparameters>"
 		config := abapEnvironmentRunATCCheckOptions{
