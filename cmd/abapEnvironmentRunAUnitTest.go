@@ -21,38 +21,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type abapEnvironmentRunAUnitTestUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The abapEnvironmentRunAUnitTestUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-type abapEnvironmentRunAUnitTestUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-
-	// Embed more structs as necessary to implement methods or interfaces you add to abapEnvironmentRunAUnitTestUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// abapEnvironmentRunAUnitTestUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newAbapEnvironmentRunAUnitTestUtils() abapEnvironmentRunAUnitTestUtils {
-	utils := abapEnvironmentRunAUnitTestUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func abapEnvironmentRunAUnitTest(config abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData) {
 
 	// for command execution use Command
