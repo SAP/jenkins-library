@@ -471,6 +471,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		return errors.Wrapf(err, "failed to clean up target folder %s", target)
 	}
 
+	err = cleanDir("/layers", utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "failed to clean up layers folder %s", target)
+	}
+
 	if pathType != pathEnumArchive {
 		err = cnbutils.CopyProject(source, target, include, exclude, utils)
 		if err != nil {
@@ -534,6 +540,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
 
 	creatorArgs := []string{
+		"-log-level", "debug",
 		"-no-color",
 		"-buildpacks", buildpacksPath,
 		"-order", orderPath,
