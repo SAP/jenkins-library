@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const (
@@ -24,6 +23,8 @@ type Utils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
+
+	FileExists(filename string) (bool, error)
 }
 
 // ExecuteOptions are used by Execute() to construct the Gradle command line.
@@ -33,12 +34,12 @@ type ExecuteOptions struct {
 	CreateBOM       bool   `json:"createBOM,omitempty"`
 }
 
-func Execute(options *ExecuteOptions, utils Utils, fileUtils piperutils.FileUtils) error {
-	groovyBuildScriptExists, err := fileUtils.FileExists(filepath.Join(options.BuildGradlePath, groovyBuildScriptName))
+func Execute(options *ExecuteOptions, utils Utils) error {
+	groovyBuildScriptExists, err := utils.FileExists(filepath.Join(options.BuildGradlePath, groovyBuildScriptName))
 	if err != nil {
 		return fmt.Errorf("failed to check if file exists: %w", err)
 	}
-	kotlinBuildScriptExists, err := fileUtils.FileExists(filepath.Join(options.BuildGradlePath, kotlinBuildScriptName))
+	kotlinBuildScriptExists, err := utils.FileExists(filepath.Join(options.BuildGradlePath, kotlinBuildScriptName))
 	if err != nil {
 		return fmt.Errorf("failed to check if file exists: %w", err)
 	}

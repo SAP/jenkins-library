@@ -30,21 +30,20 @@ func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 
 func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemetry.CustomData) {
 	utils := newGradleExecuteBuildUtils()
-	fileUtils := &piperutils.Files{}
-	err := runGradleExecuteBuild(&config, telemetryData, utils, fileUtils)
+	err := runGradleExecuteBuild(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed: %w", err)
 	}
 }
 
-func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils, fileUtils piperutils.FileUtils) error {
+func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
 	opt := &gradle.ExecuteOptions{
 		BuildGradlePath: config.Path,
 		Task:            config.Task,
 		CreateBOM:       config.CreateBOM,
 	}
 
-	if err := gradle.Execute(opt, utils, fileUtils); err != nil {
+	if err := gradle.Execute(opt, utils); err != nil {
 		log.Entry().WithError(err).Errorln("build.gradle execution was failed: %w", err)
 		return err
 	}
