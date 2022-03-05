@@ -1,8 +1,10 @@
 package npm
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"regexp"
 
 	"github.com/pkg/errors"
 
@@ -10,9 +12,28 @@ import (
 	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+type npmMinimalPackageDescriptor struct {
+	Name    string `json:version`
+	Version string `json:version`
+}
+
+func (pd *npmMinimalPackageDescriptor) Scope() string {
+	r := regexp.MustCompile(`^(?:(?P<scope>@[^\/]+)\/)?(?P<package>.+)$`)
+
+	matches := r.FindStringSubmatch(pd.Name)
+
+	if len(matches) == 0 {
+		return ""
+	}
+
+	return matches[1]
+}
+
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
 func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error {
 	for _, packageJSON := range packageJSONFiles {
+		log.Entry().Infof("triggering publish for %s", packageJSON)
+
 		fileExists, err := exec.Utils.FileExists(packageJSON)
 		if err != nil {
 			return fmt.Errorf("cannot check if '%s' exists: %w", packageJSON, err)
@@ -32,6 +53,12 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 // publish executes npm publish for package.json
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
 	execRunner := exec.Utils.GetExecRunner()
+
+	scope, err := exec.readPackageScope(packageJSON)
+
+	if err != nil {
+		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
+	}
 
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
 	if exists, err := exec.Utils.FileExists(npmignore.filepath); exists {
@@ -76,6 +103,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// set registry
 		log.Entry().Debugf("adding registry %s", registry)
 		npmrc.Set("registry", registry)
+
+		if len(scope) > 0 {
+			npmrc.Set(fmt.Sprintf("%s:registry", scope), registry)
+		}
+
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
 			log.Entry().Debug("adding registry credentials")
@@ -120,7 +152,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
 		}
 
-		tarballFileName := tarballs[0]
+		tarballFilePath, err := exec.Utils.Abs(tarballs[0])
+
+		if err != nil {
+			return err
+		}
 
 		projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
 		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
@@ -133,9 +169,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed publishing artifact")
 		}
 
 		if projectNpmrcExists {
@@ -148,9 +184,23 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed publishing artifact")
 		}
 	}
 
 	return nil
+}
+
+func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
+	b, err := exec.Utils.FileRead(packageJSON)
+
+	if err != nil {
+		return "", err
+	}
+
+	var pd npmMinimalPackageDescriptor
+
+	json.Unmarshal(b, &pd)
+
+	return pd.Scope(), nil
 }
