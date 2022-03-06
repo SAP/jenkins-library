@@ -25,7 +25,7 @@ type Splunk struct {
 	levels        []logrus.Level
 	tags          map[string]string
 	splunkClient  piperhttp.Client
-	correlationId string
+	correlationID string
 	hostName      string
 	splunkDsn     string
 	splunkIndex   string
@@ -37,7 +37,7 @@ type Splunk struct {
 	postMessagesBatchSize int
 }
 
-func (s *Splunk) Initialize(correlationId, dsn, token, index string, sendLogs bool) error {
+func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 	log.Entry().Debugf("Initializing Splunk with DSN %v", dsn)
 
 	if !strings.HasPrefix(token, "Splunk ") {
@@ -63,7 +63,7 @@ func (s *Splunk) Initialize(correlationId, dsn, token, index string, sendLogs bo
 	s.splunkClient = client
 	s.splunkDsn = dsn
 	s.splunkIndex = index
-	s.correlationId = correlationId
+	s.correlationID = correlationID
 	s.postMessagesBatchSize = 6000
 	s.sendLogs = sendLogs
 
@@ -121,7 +121,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		Duration:        telemetryData.CustomData.Duration,
 		ErrorCode:       telemetryData.CustomData.ErrorCode,
 		ErrorCategory:   telemetryData.CustomData.ErrorCategory,
-		CorrelationId:   s.correlationId,
+		CorrelationID:   s.correlationID,
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
 		GitOwner:        readCommonPipelineEnvironment("github/owner"),
@@ -170,7 +170,7 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 		telemetryData = map[string]interface{}{"Empty": "No telemetry available."}
 	}
 	details := DetailsTelemetry{
-		Host:       s.correlationId,
+		Host:       s.correlationID,
 		SourceType: "piper:pipeline:telemetry",
 		Index:      s.splunkIndex,
 		Event:      telemetryData,
@@ -225,7 +225,7 @@ func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []st
 		logMessage := LogFileEvent{
 			Event:      message,
 			Host:       s.hostName,
-			Source:     s.correlationId,
+			Source:     s.correlationID,
 			SourceType: "piper:pipeline:logfile",
 			Index:      s.splunkIndex,
 		}
@@ -275,7 +275,7 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 		Telemetry: telemetryData,
 	}
 	details := Details{
-		Host:       s.correlationId,
+		Host:       s.correlationID,
 		SourceType: "_json",
 		Index:      s.splunkIndex,
 		Event:      event,
