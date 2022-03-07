@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/privacy"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project/metadata"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -18,7 +19,10 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/imdario/mergo"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
 )
@@ -28,10 +32,81 @@ const (
 	platformPath = "/tmp/platform"
 )
 
+type pathEnum string
+
+const (
+	pathEnumRoot    = pathEnum("root")
+	pathEnumFolder  = pathEnum("folder")
+	pathEnumArchive = pathEnum("archive")
+)
+
 type cnbBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*docker.Client
+}
+
+type cnbBuildTelemetry struct {
+	Version int                     `json:"version"`
+	Data    []cnbBuildTelemetryData `json:"data"`
+}
+
+type cnbBuildTelemetryData struct {
+	ImageTag          string                                 `json:"imageTag"`
+	AdditionalTags    []string                               `json:"additionalTags"`
+	BindingKeys       []string                               `json:"bindingKeys"`
+	Path              pathEnum                               `json:"path"`
+	BuildEnv          cnbBuildTelemetryDataBuildEnv          `json:"buildEnv"`
+	Buildpacks        cnbBuildTelemetryDataBuildpacks        `json:"buildpacks"`
+	ProjectDescriptor cnbBuildTelemetryDataProjectDescriptor `json:"projectDescriptor"`
+	BuildTool         string                                 `json:"buildTool"`
+	Builder           string                                 `json:"builder"`
+}
+
+type cnbBuildTelemetryDataBuildEnv struct {
+	KeysFromConfig            []string               `json:"keysFromConfig"`
+	KeysFromProjectDescriptor []string               `json:"keysFromProjectDescriptor"`
+	KeysOverall               []string               `json:"keysOverall"`
+	JVMVersion                string                 `json:"jvmVersion"`
+	KeyValues                 map[string]interface{} `json:"keyValues"`
+}
+
+type cnbBuildTelemetryDataBuildpacks struct {
+	FromConfig            []string `json:"FromConfig"`
+	FromProjectDescriptor []string `json:"FromProjectDescriptor"`
+	Overall               []string `json:"overall"`
+}
+
+type cnbBuildTelemetryDataProjectDescriptor struct {
+	Used        bool `json:"used"`
+	IncludeUsed bool `json:"includeUsed"`
+	ExcludeUsed bool `json:"excludeUsed"`
+}
+
+func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{}) ([]cnbBuildOptions, error) {
+	var result []cnbBuildOptions
+
+	if len(multipleImages) == 0 {
+		result = append(result, main)
+		return result, nil
+	}
+
+	for _, conf := range multipleImages {
+		var structuredConf cnbBuildOptions
+		err := mapstructure.Decode(conf, &structuredConf)
+		if err != nil {
+			return nil, err
+		}
+
+		err = mergo.Merge(&structuredConf, main)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, structuredConf)
+	}
+
+	return result, nil
 }
 
 func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
@@ -66,35 +141,10 @@ func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commo
 
 	client := &piperhttp.Client{}
 
-	err := runCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
+	err := callCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
-}
-
-func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
-	if exclude != nil {
-		filtered := exclude.MatchesPath(find)
-
-		if filtered {
-			log.Entry().Debugf("%s matches exclude pattern, ignoring", find)
-			return true
-		}
-	}
-
-	if include != nil {
-		filtered := !include.MatchesPath(find)
-
-		if filtered {
-			log.Entry().Debugf("%s doesn't match include pattern, ignoring", find)
-			return true
-		} else {
-			log.Entry().Debugf("%s matches include pattern", find)
-			return false
-		}
-	}
-
-	return false
 }
 
 func isBuilder(utils cnbutils.BuildUtils) error {
@@ -124,59 +174,19 @@ func isZip(path string) bool {
 	}
 }
 
-func copyFile(source, target string, utils cnbutils.BuildUtils) error {
-	targetDir := filepath.Dir(target)
-
-	exists, err := utils.DirExists(targetDir)
+func cleanDir(dir string, utils cnbutils.BuildUtils) error {
+	dirContent, err := utils.Glob(filepath.Join(dir, "*"))
 	if err != nil {
 		return err
 	}
 
-	if !exists {
-		log.Entry().Debugf("Creating directory %s", targetDir)
-		err = utils.MkdirAll(targetDir, os.ModePerm)
+	for _, obj := range dirContent {
+		err = utils.RemoveAll(obj)
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = utils.Copy(source, target)
-	return err
-}
-
-func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
-	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
-	for _, sourceFile := range sourceFiles {
-		relPath, err := filepath.Rel(source, sourceFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
-		}
-		if !isIgnored(relPath, include, exclude) {
-			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := utils.DirExists(sourceFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorBuild)
-				return errors.Wrapf(err, "Checking file info '%s' failed", target)
-			}
-
-			if dir {
-				err = utils.MkdirAll(target, os.ModePerm)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Creating directory '%s' failed", target)
-				}
-			} else {
-				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				err = copyFile(sourceFile, target, utils)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
-				}
-			}
-
-		}
-	}
 	return nil
 }
 
@@ -201,7 +211,15 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
 
 		newPath := filepath.Join(filepath.Dir(source), "config.json")
-		err := utils.FileRename(source, newPath)
+		alreadyExists, err := utils.FileExists(newPath)
+		if err != nil {
+			return "", err
+		}
+		if alreadyExists {
+			return newPath, nil
+		}
+
+		err = utils.FileRename(source, newPath)
 		if err != nil {
 			return "", err
 		}
@@ -233,24 +251,130 @@ func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
 	return utils.Symlink(targetPath, linkPath)
 }
 
-func (c *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
-	if c.BuildEnvVars == nil {
-		c.BuildEnvVars = vars
+func (config *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
+	if config.BuildEnvVars == nil {
+		config.BuildEnvVars = vars
 
 		return
 	}
 
 	for k, v := range vars {
-		_, exists := c.BuildEnvVars[k]
+		_, exists := config.BuildEnvVars[k]
 
 		if !exists {
-			c.BuildEnvVars[k] = v
+			config.BuildEnvVars[k] = v
 		}
 	}
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (pathEnum, string, error) {
+	pwd, err := utils.Getwd()
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return "", "", errors.Wrap(err, "failed to get current working directory")
+	}
+
+	if config.Path == "" {
+		return pathEnumRoot, pwd, nil
+	}
+	source, err := utils.Abs(config.Path)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", "", errors.Wrapf(err, "Failed to resolve absolute path for '%s'", config.Path)
+	}
+
+	dir, err := utils.DirExists(source)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return "", "", errors.Wrapf(err, "Checking file info '%s' failed", source)
+	}
+
+	if dir {
+		return pathEnumFolder, source, nil
+	} else {
+		return pathEnumArchive, source, nil
+	}
+}
+
+func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryData, config *cnbBuildOptions) {
+	var bindingKeys []string
+	for k := range config.Bindings {
+		bindingKeys = append(bindingKeys, k)
+	}
+	data.ImageTag = config.ContainerImageTag
+	data.AdditionalTags = config.AdditionalTags
+	data.BindingKeys = bindingKeys
+	data.Path, _, _ = config.resolvePath(utils) // ignore error here, telemetry problems should not fail the build
+
+	configKeys := data.BuildEnv.KeysFromConfig
+	overallKeys := data.BuildEnv.KeysOverall
+	for key := range config.BuildEnvVars {
+		configKeys = append(configKeys, key)
+		overallKeys = append(overallKeys, key)
+	}
+	data.BuildEnv.KeysFromConfig = configKeys
+	data.BuildEnv.KeysOverall = overallKeys
+
+	buildTool, _ := getBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
+	data.BuildTool = buildTool
+
+	data.Buildpacks.FromConfig = privacy.FilterBuildpacks(config.Buildpacks)
+
+	dockerImage, err := getDockerImageValue("cnbBuild")
+	if err != nil {
+		log.Entry().Warnf("Error while preparing telemetry: retrieving docker image failed: '%v'", err)
+		data.Builder = ""
+	} else {
+		data.Builder = privacy.FilterBuilder(dockerImage)
+	}
+}
+
+func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor project.Descriptor) {
+	descriptorKeys := data.BuildEnv.KeysFromProjectDescriptor
+	overallKeys := data.BuildEnv.KeysOverall
+	for key := range descriptor.EnvVars {
+		descriptorKeys = append(descriptorKeys, key)
+		overallKeys = append(overallKeys, key)
+	}
+	data.BuildEnv.KeysFromProjectDescriptor = descriptorKeys
+	data.BuildEnv.KeysOverall = overallKeys
+
+	data.Buildpacks.FromProjectDescriptor = privacy.FilterBuildpacks(descriptor.Buildpacks)
+
+	data.ProjectDescriptor.Used = true
+	data.ProjectDescriptor.IncludeUsed = descriptor.Include != nil
+	data.ProjectDescriptor.ExcludeUsed = descriptor.Exclude != nil
+}
+
+func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+	telemetry := &cnbBuildTelemetry{
+		Version: 3,
+	}
+	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
+	if err != nil {
+		return errors.Wrap(err, "failed to process config")
+	}
+	for _, c := range mergedConfigs {
+		err = runCnbBuild(&c, telemetryData, telemetry, utils, commonPipelineEnvironment, httpClient)
+		if err != nil {
+			return err
+		}
+	}
+
+	telemetryData.Custom1Label = "cnbBuildStepData"
+	customData, err := json.Marshal(telemetry)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal custom telemetry data")
+	}
+	telemetryData.Custom1 = string(customData)
+	return nil
+}
+
+func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
+
+	customTelemetryData := cnbBuildTelemetryData{}
+	addConfigTelemetryData(utils, &customTelemetryData, config)
 
 	err = isBuilder(utils)
 	if err != nil {
@@ -261,19 +385,20 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	include := ignore.CompileIgnoreLines("**/*")
 	exclude := ignore.CompileIgnoreLines("piper", ".pipeline")
 
-	projDescExists, err := utils.FileExists(config.ProjectDescriptor)
+	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
 
 	var projectID string
-	if projDescExists {
-		descriptor, err := project.ParseDescriptor(config.ProjectDescriptor, utils, httpClient)
+	if projDescPath != "" {
+		descriptor, err := project.ParseDescriptor(projDescPath, utils, httpClient)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to parse %s", config.ProjectDescriptor)
+			return errors.Wrapf(err, "failed to parse %s", projDescPath)
 		}
+		addProjectDescriptorTelemetryData(&customTelemetryData, *descriptor)
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
@@ -297,9 +422,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
+	customTelemetryData.Buildpacks.Overall = config.Buildpacks
+	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
+	telemetry.Data = append(telemetry.Data, customTelemetryData)
 
-	commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
-	commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
+	if commonPipelineEnvironment.container.imageNameTag == "" {
+		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
+		commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
+	}
+	commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag))
+	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, targetImage.ContainerImageName)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
@@ -326,27 +458,21 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	target := "/workspace"
-	pwd, err := utils.Getwd()
+
+	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to get current working directory")
+		return errors.Wrapf(err, "could no resolve path")
 	}
 
-	var source string
-	if config.Path != "" {
-		source = config.Path
-	} else {
-		source = pwd
-	}
-
-	dir, err := utils.DirExists(source)
+	err = cleanDir(target, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "Checking file info '%s' failed", source)
+		return errors.Wrapf(err, "failed to clean up target folder %s", target)
 	}
 
-	if dir {
-		err = copyProject(source, target, include, exclude, utils)
+	if pathType != pathEnumArchive {
+		err = cnbutils.CopyProject(source, target, include, exclude, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -360,7 +486,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
-		err = linkTargetFolder(utils, pwd, target)
+		err = linkTargetFolder(utils, source, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return err
@@ -387,14 +513,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
-	}
-
-	if dockerConfigFile != "" {
-		err = utils.FileRemove(dockerConfigFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrap(err, "failed to remove docker config.json file")
-		}
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
@@ -435,6 +553,26 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
+	}
+
+	digest, err := cnbutils.DigestFromReport(utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to read image digest")
+	}
+	commonPipelineEnvironment.container.imageDigest = digest
+	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
+
+	if len(config.PreserveFiles) > 0 {
+		if pathType != pathEnumArchive {
+			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorBuild)
+				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
+			}
+		} else {
+			log.Entry().Warnf("skipping preserving files because the source '%s' is an archive", source)
+		}
 	}
 
 	return nil

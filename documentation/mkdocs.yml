@@ -17,7 +17,7 @@ nav:
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
               - 'Clone Repositories': pipelines/abapEnvironment/stages/cloneRepositories.md
-              - 'Test': pipelines/abapEnvironment/stages/Test.md
+              - 'Test': pipelines/abapEnvironment/stages/test.md
               - 'Build': pipelines/abapEnvironment/stages/build.md
               - 'Integration Tests': pipelines/abapEnvironment/stages/integrationTest.md
               - 'Confirm': pipelines/abapEnvironment/stages/confirm.md
@@ -96,7 +96,7 @@ nav:
         - gctsCloneRepository: steps/gctsCloneRepository.md
         - gctsCreateRepository: steps/gctsCreateRepository.md
         - gctsDeploy: steps/gctsDeploy.md
-        - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
+        - gctsExecuteABAPQualityChecks: steps/gctsExecuteABAPQualityChecks.md
         - gctsRollback: steps/gctsRollback.md
         - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
         - githubCommentIssue: steps/githubCommentIssue.md
@@ -172,6 +172,7 @@ nav:
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - npmExecute: steps/npmExecute.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
     - 'Command line tool': cli/index.md
 
 theme:

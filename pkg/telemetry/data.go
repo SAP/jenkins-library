@@ -69,6 +69,21 @@ type CustomData struct {
 	Custom5         string `json:"e_30,omitempty"`
 }
 
+// StepTelemetryData definition for telemetry reporting and monitoring
+type StepTelemetryData struct {
+	StepStartTime   string                 `json:"StepStartTime"`
+	PipelineURLHash string                 `json:"PipelineURLHash"`
+	BuildURLHash    string                 `json:"BuildURLHash"`
+	StageName       string                 `json:"StageName"`
+	StepName        string                 `json:"StepName"`
+	ErrorCode       string                 `json:"ErrorCode"`
+	StepDuration    string                 `json:"StepDuration"`
+	ErrorCategory   string                 `json:"ErrorCategory"`
+	CorrelationID   string                 `json:"CorrelationID"`
+	PiperCommitHash string                 `json:"PiperCommitHash"`
+	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
+}
+
 // Data object definition containing all telemetry data
 type Data struct {
 	BaseData

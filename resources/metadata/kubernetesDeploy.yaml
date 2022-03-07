@@ -223,6 +223,22 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: valuesMapping
+        type: "map[string]interface{}"
+        longDescription: |
+          Mapping of values provided by Piper onto custom paths in format `[custom-path]: [piper-value]`
+
+          Example:
+          ```yaml
+          valuesMapping:
+            subchart.image.tag:        image.debug.tag
+            subchart.image.repository: image.debug.repository
+            subchart.image.pullsecret: secret.dockerconfigjson
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: image
         aliases:
           - name: deployImage
@@ -232,6 +248,26 @@ spec:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
         mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageNames
+        type: "[]string"
+        description: List of names of the images to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNames
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageNameTags
+        type: "[]string"
+        description: List of full names (registry and tag) of the images to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
         scope:
           - PARAMETERS
           - STAGES
@@ -254,6 +290,24 @@ spec:
       - name: keepFailedDeployments
         type: bool
         description: Defines whether a failed deployment will be purged
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: runHelmTests
+        type: bool
+        description: Defines whether or not to run helm tests against the recently deployed release
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: showTestLogs
+        type: bool
+        description: Defines whether to print the pod logs after running helm tests
         default: false
         scope:
           - GENERAL

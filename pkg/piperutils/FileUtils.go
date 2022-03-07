@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,7 @@ type FileUtils interface {
 	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
+	Move(src, dest string) error
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
@@ -41,6 +43,13 @@ type Files struct {
 
 // TempDir creates a temporary directory
 func (f Files) TempDir(dir, pattern string) (name string, err error) {
+	if len(dir) == 0 {
+		// lazy init system temp dir in case it doesn't exist
+		if exists, _ := f.DirExists(os.TempDir()); !exists {
+			f.MkdirAll(os.TempDir(), 0666)
+		}
+	}
+
 	return ioutil.TempDir(dir, pattern)
 }
 
@@ -103,6 +112,20 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
+}
+
+func (f Files) Move(src, dst string) error {
+	if exists, err := f.FileExists(src); err != nil {
+		return err
+	} else if !exists {
+		return fmt.Errorf("file doesn't exist: %s", src)
+	}
+
+	if _, err := f.Copy(src, dst); err != nil {
+		return err
+	}
+
+	return f.FileRemove(src)
 }
 
 //Chmod is a wrapper for os.Chmod().
@@ -389,4 +412,21 @@ func (f Files) Abs(path string) (string, error) {
 // Symlink is a wrapper for os.Symlink
 func (f Files) Symlink(oldname, newname string) error {
 	return os.Symlink(oldname, newname)
+}
+
+// Computes a SHA256 for a given file
+func (f Files) SHA256(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
 }

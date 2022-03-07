@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,11 +91,11 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 	sys.previousPName = projectName
 	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
-func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) checkmarx.Team {
+func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) (checkmarx.Team, error) {
 	if teamName == "OpenSource/Cracks/16" {
-		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, nil
 	}
-	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
+	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}, nil
 }
 func (sys *systemMock) FilterTeamByID(_ []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
 	teamIDBytes, _ := teamID.MarshalJSON()
@@ -177,8 +178,8 @@ func (sys *systemMockForExistingProject) GetProjectByID(int) (checkmarx.Project,
 func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 }
-func (sys *systemMockForExistingProject) FilterTeamByName([]checkmarx.Team, string) checkmarx.Team {
-	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+func (sys *systemMockForExistingProject) FilterTeamByName([]checkmarx.Team, string) (checkmarx.Team, error) {
+	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, nil
 }
 func (sys *systemMockForExistingProject) FilterTeamByID([]checkmarx.Team, json.RawMessage) checkmarx.Team {
 	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
@@ -240,6 +241,8 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnWriteFile      bool
 	errorOnPathMatch      bool
 	workspace             string
+	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
+	ghCreateIssueError    error
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
@@ -283,6 +286,14 @@ func (c checkmarxExecuteScanUtilsMock) Open(name string) (*os.File, error) {
 		return nil, fmt.Errorf("error on Open")
 	}
 	return os.Open(name)
+}
+
+func (c checkmarxExecuteScanUtilsMock) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	if c.ghCreateIssueError != nil {
+		return c.ghCreateIssueError
+	}
+	c.ghCreateIssueOptions = ghCreateIssueOptions
+	return nil
 }
 
 func TestFilterFileGlob(t *testing.T) {

@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
@@ -65,6 +69,44 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 	}
 }
 
+type mavenBuildReports struct {
+}
+
+func (p *mavenBuildReports) persist(stepConfig mavenBuildOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // MavenBuildCommand This step will install the maven project into the local maven repository.
 func MavenBuildCommand() *cobra.Command {
 	const STEP_NAME = "mavenBuild"
@@ -73,6 +115,7 @@ func MavenBuildCommand() *cobra.Command {
 	var stepConfig mavenBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment mavenBuildCommonPipelineEnvironment
+	var reports mavenBuildReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -82,7 +125,44 @@ func MavenBuildCommand() *cobra.Command {
 		Short: "This step will install the maven project into the local maven repository.",
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
-supports ci friendly versioning by flattening the pom before installing.`,
+supports ci friendly versioning by flattening the pom before installing.
+
+### build with depedencies from a private repository
+if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the ` + "`" + `<url>` + "`" + `
+tag with a valid private repo url).
+` + "`" + `` + "`" + `` + "`" + `xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+        <id>private.repo.id</id>
+        <username>${env.PIPER_VAULTCREDENTIAL_USERNAME}</username>
+        <password>${env.PIPER_VAULTCREDENTIAL_PASSWORD}</password>
+    </server>
+  </servers>
+</settings>
+` + "`" + `` + "`" + `` + "`" + `
+` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository and are exposed as environment variables that must be present
+in the environment where the Piper step runs or alternatively can be created using :
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
+
+include the below ` + "`" + `<repositories>` + "`" + ` tag in your ` + "`" + `pom.xml` + "`" + ` to reference the ` + "`" + `<server>` + "`" + ` and make sure the values in the ` + "`" + `<id>` + "`" + ` tags match
+` + "`" + `` + "`" + `` + "`" + `xml
+<repositories>
+    <repository>
+      <id>private.repo.id</id>
+      <url>https://private.repo.com/</url>
+    </repository>
+</repositories>
+` + "`" + `` + "`" + `` + "`" + `
+
+Ensure the following configuration in the Piper ` + "`" + `config.yaml` + "`" + ` to ensure the above settings xml is included and all steps can consume this parameter:
+
+` + "`" + `` + "`" + `` + "`" + `yaml
+general:
+  projectSettingsFile: <path to the above settings.xml>
+` + "`" + `` + "`" + `` + "`" + ``,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -128,6 +208,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -399,6 +480,15 @@ func mavenBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/TEST-*.xml", "type": "junit"},
+							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
 						},
 					},
 				},

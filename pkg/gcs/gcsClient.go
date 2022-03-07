@@ -99,7 +99,7 @@ func NewClient(opts ...gcsOption) (*gcsClient, error) {
 // UploadFile uploads a file into a google cloud storage bucket
 func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
 	target := g.client.Bucket(bucketID).Object(targetPath).NewWriter(g.context)
-	log.Entry().Debugf("uploading %v to %v\n", sourcePath, targetPath)
+	log.Entry().Debugf("uploading %v to %v", sourcePath, targetPath)
 	sourceFile, err := g.openFile(sourcePath)
 	if err != nil {
 		return errors.Wrapf(err, "could not open source file: %v", err)

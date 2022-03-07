@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 )
@@ -64,8 +65,9 @@ func TestRunContainerSaveImage(t *testing.T) {
 		config.FilePath = "testfile"
 
 		dClient := containerMock{}
+		files := mock.FilesMock{}
 
-		err = runContainerSaveImage(&config, &telemetryData, cacheFolder, tmpFolder, &dClient)
+		filePath, err := runContainerSaveImage(&config, &telemetryData, cacheFolder, tmpFolder, &dClient, &files)
 		assert.NoError(t, err)
 
 		assert.Equal(t, cacheFolder, dClient.filePath)
@@ -74,12 +76,15 @@ func TestRunContainerSaveImage(t *testing.T) {
 		content, err := ioutil.ReadFile(filepath.Join(tmpFolder, "testfile.tar"))
 		assert.NoError(t, err)
 		assert.Equal(t, "This is a test", string(content))
+
+		assert.Contains(t, filePath, "testfile.tar")
 	})
 
 	t.Run("failure - cache creation", func(t *testing.T) {
 		config := containerSaveImageOptions{}
 		dClient := containerMock{}
-		err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient)
+		files := mock.FilesMock{}
+		_, err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient, &files)
 		assert.Contains(t, fmt.Sprint(err), "failed to create cache: mkdir :")
 	})
 
@@ -92,7 +97,8 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{imageSourceErr: "image source error"}
-		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
+		files := mock.FilesMock{}
+		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
 		assert.EqualError(t, err, "failed to get docker image source: image source error")
 	})
 
@@ -105,7 +111,8 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{downloadImageErr: "download error"}
-		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
+		files := mock.FilesMock{}
+		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
 		assert.EqualError(t, err, "failed to download docker image: download error")
 	})
 
@@ -118,7 +125,8 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{tarImageErr: "tar error"}
-		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
+		files := mock.FilesMock{}
+		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
 		assert.EqualError(t, err, "failed to tar container image: tar error")
 	})
 }
@@ -140,4 +148,55 @@ func TestFilenameFromContainer(t *testing.T) {
 		assert.Equal(t, test.expected, filenameFromContainer(test.rootPath, test.containerImage))
 	}
 
+}
+
+func TestCorrectContainerDockerConfigEnvVar(t *testing.T) {
+	t.Run("with credentials", func(t *testing.T) {
+		// init
+		utilsMock := mock.FilesMock{}
+		utilsMock.CurrentDir = "/tmp/test"
+
+		dockerConfigFile := "myConfig/docker.json"
+		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		os.Setenv("DOCKER_CONFIG", "")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+
+		// test
+		correctContainerDockerConfigEnvVar(&containerSaveImageOptions{DockerConfigJSON: dockerConfigFile}, &utilsMock)
+		// assert
+		assert.NotNil(t, os.Getenv("DOCKER_CONFIG"))
+	})
+	t.Run("with added credentials", func(t *testing.T) {
+		// init
+		utilsMock := mock.FilesMock{}
+		utilsMock.CurrentDir = "/tmp/test"
+
+		dockerConfigFile := "myConfig/docker.json"
+		utilsMock.AddFile(dockerConfigFile, []byte("{}"))
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		os.Setenv("DOCKER_CONFIG", "")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+
+		// test
+		correctContainerDockerConfigEnvVar(&containerSaveImageOptions{DockerConfigJSON: dockerConfigFile, ContainerRegistryURL: "https://test.registry", ContainerRegistryUser: "testuser", ContainerRegistryPassword: "testPassword"}, &utilsMock)
+		// assert
+		assert.NotNil(t, os.Getenv("DOCKER_CONFIG"))
+		absoluteFilePath, _ := utilsMock.Abs(fmt.Sprintf("%s/%s", os.Getenv("DOCKER_CONFIG"), "config.json"))
+		content, _ := utilsMock.FileRead(absoluteFilePath)
+		assert.Contains(t, string(content), "https://test.registry")
+	})
+	t.Run("without credentials", func(t *testing.T) {
+		// init
+		utilsMock := mock.FilesMock{}
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		os.Setenv("DOCKER_CONFIG", "")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctContainerDockerConfigEnvVar(&containerSaveImageOptions{}, &utilsMock)
+		// assert
+		assert.NotNil(t, os.Getenv("DOCKER_CONFIG"))
+	})
 }

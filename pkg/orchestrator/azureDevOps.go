@@ -20,8 +20,10 @@ type AzureDevOpsConfigProvider struct {
 func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	a.client = piperHttp.Client{}
 	a.options = piperHttp.ClientOptions{
-		Username: "",
-		Password: settings.AzureToken,
+		Username:         "",
+		Password:         settings.AzureToken,
+		MaxRetries:       3,
+		TransportTimeout: time.Second * 10,
 	}
 	a.client.SetOptions(a.options)
 	log.Entry().Debug("Successfully initialized Azure config provider")
@@ -78,8 +80,8 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() map[string]interface{} {
 // GetJobName returns the pipeline job name
 func (a *AzureDevOpsConfigProvider) GetJobName() string {
 	responseInterface := a.getAPIInformation()
-	if val, ok := responseInterface["project"]; ok {
-		return val.(map[string]interface{})["name"].(string)
+	if val, ok := responseInterface["repository"]; ok {
+		return val.(map[string]interface{})["id"].(string)
 	}
 	return "n/a"
 }

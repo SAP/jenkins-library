@@ -212,7 +212,7 @@ func resolveVaultCredentials(config *StepConfig, client vaultClient) {
 	credPath, pathOk := config.Config[vaultCredentialPath].(string)
 	keys := getCredentialKeys(config)
 	if !(pathOk && keys != nil) || credPath == "" || len(keys) == 0 {
-		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
+		log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured")
 		return
 	}
 
