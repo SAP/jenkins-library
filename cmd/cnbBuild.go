@@ -442,6 +442,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		}
 	}
 
+	err = cleanDir("/layers", utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to clean up layers folder /layers")
+	}
+
 	err = bindings.ProcessBindings(utils, httpClient, platformPath, config.Bindings)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -457,24 +463,17 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		}
 	}
 
-	target := "/workspace"
-
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "could no resolve path")
 	}
 
+	target := "/workspace"
 	err = cleanDir(target, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "failed to clean up target folder %s", target)
-	}
-
-	err = cleanDir("/layers", utils)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "failed to clean up layers folder %s", target)
 	}
 
 	if pathType != pathEnumArchive {
