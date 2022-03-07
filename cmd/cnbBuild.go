@@ -540,11 +540,15 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
 
 	creatorArgs := []string{
-		"-log-level", "debug",
 		"-no-color",
 		"-buildpacks", buildpacksPath,
 		"-order", orderPath,
 		"-platform", platformPath,
+		"-skip-restore",
+	}
+
+	if GeneralConfig.Verbose {
+		creatorArgs = append(creatorArgs, "-log-level", "debug")
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
