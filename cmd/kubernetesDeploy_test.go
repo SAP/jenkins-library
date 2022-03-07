@@ -848,9 +848,17 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
-
-		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,image.myImage\.sub1.repository=my.registry:55555/myImage-sub1,image.myImage\.sub1.tag=myTag,image.myImage\.sub2.repository=my.registry:55555/myImage-sub2,image.myImage\.sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,subchart.image.registry=my.registry:55555/myImage,subchart.image.tag=myTag`, "Wrong upgrade parameters")
-
+		assert.Equal(t, len(mockUtils.Calls[1].Params), 21, "Unexpected upgrade command")
+		pos := 11
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage.repository=my.registry:55555/myImage", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage.tag=myTag", "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage\\.sub1.repository=my.registry:55555/myImage-sub1", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage\\.sub1.tag=myTag", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage\\.sub2.repository=my.registry:55555/myImage-sub2", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage\\.sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "imagePullSecrets[0].name=testSecret", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "subchart.image.registry=my.registry:55555/myImage", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "subchart.image.tag=myTag", "Missing update parameter")
 	})
 
 	t.Run("test helm v3 - with multiple images and incorrect valuesMapping", func(t *testing.T) {
