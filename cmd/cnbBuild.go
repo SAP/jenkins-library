@@ -371,7 +371,17 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 }
 
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
-	var err error
+	err := cleanDir("/layers", utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to clean up layers folder /layers")
+	}
+
+	err = cleanDir(platformPath, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
+	}
 
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, config)
@@ -440,12 +450,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to write environment variables to files")
 		}
-	}
-
-	err = cleanDir("/layers", utils)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to clean up layers folder /layers")
 	}
 
 	err = bindings.ProcessBindings(utils, httpClient, platformPath, config.Bindings)
