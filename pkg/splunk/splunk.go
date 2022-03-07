@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ type Splunk struct {
 	tags          map[string]string
 	splunkClient  piperhttp.Client
 	correlationID string
+	hostName      string
 	splunkDsn     string
 	splunkIndex   string
 
@@ -49,14 +51,20 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 		MaxRequestDuration:        5 * time.Second,
 		Token:                     token,
 		TransportSkipVerification: true,
-		MaxRetries:                -1,
+		MaxRetries:                5,
 	})
 
+	hostName, err := os.Hostname()
+	if err != nil {
+		log.Entry().WithError(err).Debug("Could not get hostName.")
+		hostName = "n/a"
+	}
+	s.hostName = hostName
 	s.splunkClient = client
 	s.splunkDsn = dsn
 	s.splunkIndex = index
 	s.correlationID = correlationID
-	s.postMessagesBatchSize = 20000
+	s.postMessagesBatchSize = 6000
 	s.sendLogs = sendLogs
 
 	return nil
@@ -138,11 +146,11 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}
 	splitted := strings.Split(readLogFile, "\n")
 	messagesLen := len(splitted)
 
-	log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 	log.Entry().Debugf("Sending pipeline telemetry data to Splunk: %v", pipelineTelemetryData)
 	s.postTelemetry(pipelineTelemetryData)
 
 	if s.sendLogs {
+		log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
 			upperBound := i + s.postMessagesBatchSize
 			if upperBound > messagesLen {
@@ -163,22 +171,23 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 	}
 	details := DetailsTelemetry{
 		Host:       s.correlationID,
-		SourceType: "_json",
+		SourceType: "piper:pipeline:telemetry",
 		Index:      s.splunkIndex,
 		Event:      telemetryData,
 	}
 
 	payload, err := json.Marshal(details)
-	if err != nil {
-		return errors.Wrap(err, "error while marshalling Splunk message details")
-	}
 
-	prettyPayload, err := json.MarshalIndent(payload, "", "    ")
+	prettyPayload, err := json.MarshalIndent(details, "", "    ")
 	if err != nil {
 		log.Entry().WithError(err).Warn("Failed to generate pretty payload json")
 		prettyPayload = nil
 	}
 	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %s", string(prettyPayload))
+
+	if err != nil {
+		return errors.Wrap(err, "error while marshalling Splunk message details")
+	}
 
 	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
@@ -211,23 +220,26 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 
 func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []string) error {
 
-	event := LogFileEvents{
-		Messages:  messages,
-		Telemetry: telemetryData,
+	var logfileEvents []string
+	for _, message := range messages {
+		logMessage := LogFileEvent{
+			Event:      message,
+			Host:       s.hostName,
+			Source:     s.correlationID,
+			SourceType: "piper:pipeline:logfile",
+			Index:      s.splunkIndex,
+		}
+		marshalledLogMessage, err := json.Marshal(logMessage)
+		if err != nil {
+			return errors.Wrap(err, "error while marshalling Splunk messages")
+		}
+		logfileEvents = append(logfileEvents, string(marshalledLogMessage))
 	}
-	details := DetailsLog{
-		Host:       s.correlationID,
-		SourceType: "txt",
-		Index:      s.splunkIndex,
-		Event:      event,
-	}
+	// creates payload {"event":"this is a sample event ", "Host":"myHost", "Source":"mySource", "SourceType":"valueA", "Index":"valueB"}{"event":"this is a sample event ", "Host":"myHost", "Source":"mySource", "SourceType":"valueA", "Index":"valueB"}..
+	strout := strings.Join(logfileEvents, ",")
+	payload := strings.NewReader(strout)
 
-	payload, err := json.Marshal(details)
-	if err != nil {
-		return errors.Wrap(err, "error while marshalling Splunk message details")
-	}
-
-	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
+	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, payload, nil, nil)
 
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
