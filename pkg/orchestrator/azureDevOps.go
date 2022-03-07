@@ -20,8 +20,10 @@ type AzureDevOpsConfigProvider struct {
 func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	a.client = piperHttp.Client{}
 	a.options = piperHttp.ClientOptions{
-		Username: "",
-		Password: settings.AzureToken,
+		Username:         "",
+		Password:         settings.AzureToken,
+		MaxRetries:       3,
+		TransportTimeout: time.Second * 10,
 	}
 	a.client.SetOptions(a.options)
 	log.Entry().Debug("Successfully initialized Azure config provider")
