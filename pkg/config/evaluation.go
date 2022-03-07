@@ -48,6 +48,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			}
 
 			stepActive := false
+			stepNotActive := false
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
 			if err != nil {
 				return err
@@ -73,6 +74,22 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					}
 				}
 			}
+			// TODO: should notActiveCondition be checked only there are condition (Fortify may be a problem)
+			if len(step.NotActiveConditions) > 0 {
+				for _, condition := range step.NotActiveConditions {
+					stepNotActive, err := condition.evaluateV1(stepConfig, utils)
+					if err != nil {
+						return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
+					}
+					if stepNotActive {
+						// first condition which matches will be considered to activate the step
+						break
+					}
+				}
+			}
+
+			stepActive = stepActive && !stepNotActive
+
 			if stepActive {
 				stageActive = true
 			}
