@@ -53,6 +53,17 @@ jobs:
         run: go fmt ./...
       - name: verify
         run: git diff --exit-code
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: staticcheck
+        uses: dominikh/staticcheck-action@v1.1.0
+        with:
+          cache-key: ${{ runner.os }}-golang-staticcheck
   generate:
     runs-on: ubuntu-latest
     steps:
