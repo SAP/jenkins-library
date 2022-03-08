@@ -51,7 +51,7 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 		MaxRequestDuration:        5 * time.Second,
 		Token:                     token,
 		TransportSkipVerification: true,
-		MaxRetries:                5,
+		MaxRetries:                -1,
 	})
 
 	hostName, err := os.Hostname()
@@ -170,7 +170,7 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 		telemetryData = map[string]interface{}{"Empty": "No telemetry available."}
 	}
 	details := DetailsTelemetry{
-		Host:       s.correlationID,
+		Host:       s.hostName,
 		SourceType: "piper:pipeline:telemetry",
 		Index:      s.splunkIndex,
 		Event:      telemetryData,
@@ -275,7 +275,7 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 		Telemetry: telemetryData,
 	}
 	details := Details{
-		Host:       s.correlationID,
+		Host:       s.hostName,
 		SourceType: "_json",
 		Index:      s.splunkIndex,
 		Event:      event,
