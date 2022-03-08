@@ -50,7 +50,6 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			stepActive := false
 			stepNotActive := false
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
-
 			if err != nil {
 				return err
 			}
@@ -104,6 +103,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 }
 
 func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
+
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
 	if s.Config != nil {
