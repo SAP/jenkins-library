@@ -71,18 +71,16 @@ type CustomData struct {
 
 // StepTelemetryData definition for telemetry reporting and monitoring
 type StepTelemetryData struct {
+	StepStartTime   string                 `json:"StepStartTime"`
 	PipelineURLHash string                 `json:"PipelineURLHash"`
 	BuildURLHash    string                 `json:"BuildURLHash"`
 	StageName       string                 `json:"StageName"`
 	StepName        string                 `json:"StepName"`
 	ErrorCode       string                 `json:"ErrorCode"`
-	Duration        string                 `json:"Duration"`
+	StepDuration    string                 `json:"StepDuration"`
 	ErrorCategory   string                 `json:"ErrorCategory"`
 	CorrelationID   string                 `json:"CorrelationID"`
-	CommitHash      string                 `json:"CommitHash"`
-	Branch          string                 `json:"Branch"`
-	GitOwner        string                 `json:"GitOwner"`
-	GitRepository   string                 `json:"GitRepository"`
+	PiperCommitHash string                 `json:"PiperCommitHash"`
 	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
 }
 

@@ -19,6 +19,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
@@ -370,7 +371,17 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 }
 
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
-	var err error
+	err := cleanDir("/layers", utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to clean up layers folder /layers")
+	}
+
+	err = cleanDir(platformPath, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
+	}
 
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, config)
@@ -456,14 +467,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		}
 	}
 
-	target := "/workspace"
-
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "could no resolve path")
 	}
 
+	target := "/workspace"
 	err = cleanDir(target, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -537,6 +547,11 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		"-buildpacks", buildpacksPath,
 		"-order", orderPath,
 		"-platform", platformPath,
+		"-skip-restore",
+	}
+
+	if GeneralConfig.Verbose {
+		creatorArgs = append(creatorArgs, "-log-level", "debug")
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
@@ -553,6 +568,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
 	}
+
+	digest, err := cnbutils.DigestFromReport(utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to read image digest")
+	}
+	commonPipelineEnvironment.container.imageDigest = digest
+	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != pathEnumArchive {

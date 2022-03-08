@@ -616,6 +616,12 @@ func whitesourceExecuteScanMetadata() config.StepData {
 								Name: "orgAdminUserTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:    "whitesourceVaultSecret",
+								Type:    "vaultSecret",
+								Default: "whitesource",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",

@@ -628,8 +628,8 @@ func TestFilesMockTempDir(t *testing.T) {
 		files := FilesMock{}
 		dir, err := files.TempDir("", "")
 		assert.NoError(t, err)
-		assert.Equal(t, "/tmp/test", dir)
-		ok, err := files.DirExists("/tmp/test")
+		assert.Equal(t, "/tmp", dir)
+		ok, err := files.DirExists("/tmp")
 		assert.NoError(t, err)
 		assert.True(t, ok)
 	})

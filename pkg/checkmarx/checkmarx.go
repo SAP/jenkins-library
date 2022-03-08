@@ -188,7 +188,7 @@ type System interface {
 	FilterPresetByName(presets []Preset, presetName string) Preset
 	FilterPresetByID(presets []Preset, presetID int) Preset
 	FilterProjectByName(projects []Project, projectName string) Project
-	FilterTeamByName(teams []Team, teamName string) Team
+	FilterTeamByName(teams []Team, teamName string) (Team, error)
 	FilterTeamByID(teams []Team, teamID json.RawMessage) Team
 	DownloadReport(reportID int) ([]byte, error)
 	GetReportStatus(reportID int) (ReportStatusResponse, error)
@@ -623,13 +623,13 @@ func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 }
 
 // FilterTeamByName filters a team by its name
-func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team {
+func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) (Team, error) {
 	for _, team := range teams {
 		if team.FullName == teamName || team.FullName == strings.ReplaceAll(teamName, `\`, `/`) {
-			return team
+			return team, nil
 		}
 	}
-	return Team{}
+	return Team{}, errors.New("Failed to find team with name " + teamName)
 }
 
 // FilterTeamByID filters a team by its ID
