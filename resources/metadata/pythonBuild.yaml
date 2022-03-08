@@ -12,14 +12,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: sources
-        type: "[]string"
-        description: Links to python project
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: false
       - name: createBOM
         type: bool
         description: Creates the bill of materials (BOM) using CycloneDX plugin.

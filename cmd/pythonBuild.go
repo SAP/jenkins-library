@@ -6,7 +6,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"os"
+)
+
+const (
+	PyBomFilename = "bom.xml"
 )
 
 type pythonBuildUtils interface {
@@ -42,58 +45,73 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData)
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils) error {
 
-	if len(config.Sources) != 0 {
-		for _, source := range config.Sources {
-			exists, err := utils.DirExists(source)
-			if err != nil {
-				log.Entry().WithError(err).Error("failed to check for python project dir")
-				return fmt.Errorf("failed to check for python project dir: %w", err)
-			}
-			if !exists {
-				log.Entry().WithError(err).Errorf("the python project dir '%v' could not be found: %v", source, err)
-				return fmt.Errorf("the python project dir '%v' could not be found", source)
-			} else {
-				tomlExists, err := utils.FileExists(source + "/pyproject.toml")
-				if err != nil {
-					log.SetErrorCategory(log.ErrorConfiguration)
-					return fmt.Errorf("failed to check for important file: %w", err)
-				}
-				if !tomlExists {
-					log.SetErrorCategory(log.ErrorConfiguration)
-					return fmt.Errorf("cannot run without important file")
-				}
-			}
-			err = buildExecute(source, config, utils)
-			if err != nil {
+	tomlExists, err := utils.FileExists("pyproject.toml")
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		fmt.Errorf("failed to check for important file: %w", err)
+	}
+	if !tomlExists {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("cannot run without important file")
+	}
 
-			}
-		}
-	} else {
-		source, err := os.Getwd()
-		if err != nil {
-			log.Entry().WithError(err).Error("Getting current working directory failed.")
-		}
+	err = buildExecute(config, utils)
 
-		err = buildExecute(source, config, utils)
+	if config.CreateBOM {
+		if err := utils.RunExecutable("python3", "-m", "pip", "install", "cyclonedx-bom"); err != nil {
+			return fmt.Errorf("failed to install 'cyclonedx-bom': %w", err)
+		}
+		if err := runBOMCreationForPy(utils); err != nil {
+			return fmt.Errorf("BOM creation failed: %w", err)
+		}
+	}
+
+	if config.Publish {
+		if err := utils.RunExecutable("python3", "-m", "pip", "install", "twine"); err != nil {
+			return fmt.Errorf("failed to install 'twine': %w", err)
+		}
+		if err := publishWithTwine(utils); err != nil {
+			return fmt.Errorf("failed to publish: %w", err)
+		}
 	}
 
 	return nil
 }
 
-func buildExecute(source string, config *pythonBuildOptions, utils pythonBuildUtils) error {
+//python3 -m pip install cyclonedx-bom
+
+func publishWithTwine(utils pythonBuildUtils) error {
+	if err := utils.RunExecutable("twine", "upload", "dist/*"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runBOMCreationForPy(utils pythonBuildUtils) error {
+	if err := utils.RunExecutable("cyclonedx-bom", "mod", "-licenses", "-test", "-output", PyBomFilename); err != nil {
+		return err
+	}
+	return nil
+}
+
+func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils) error {
 	var flags []string
 	flags = append(flags, "-m", "build")
 
 	if err := utils.RunExecutable("python3", "-m", "pip", "install", "--upgrade", "build"); err != nil {
 		return fmt.Errorf("failed to install 'build': %w", err)
 	}
-	flags = append(flags, source)
 	flags = append(flags, config.BuildFlags...)
 
-	log.Entry().Info("starting building python project:", source)
-	err := utils.RunExecutable("python3", flags...)
-	if err != nil {
-		log.Entry().Errorln("starting building python project can't start:", err)
+	setupPyExists, _ := utils.FileExists("setup.py")
+	setupCFGExists, _ := utils.FileExists("setup.cfg")
+	if setupPyExists || setupCFGExists {
+		log.Entry().Info("starting building python project:")
+		err := utils.RunExecutable("python3", flags...)
+		if err != nil {
+			log.Entry().Errorln("starting building python project can't start:", err)
+		}
 	}
+
 	return nil
 }
