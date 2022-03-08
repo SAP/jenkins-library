@@ -51,7 +51,7 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 		MaxRequestDuration:        5 * time.Second,
 		Token:                     token,
 		TransportSkipVerification: true,
-		MaxRetries:                5,
+		MaxRetries:                -1,
 	})
 
 	hostName, err := os.Hostname()
@@ -170,14 +170,16 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 		telemetryData = map[string]interface{}{"Empty": "No telemetry available."}
 	}
 	details := DetailsTelemetry{
-		Host:       s.correlationID,
+		Host:       s.hostName,
 		SourceType: "piper:pipeline:telemetry",
 		Index:      s.splunkIndex,
 		Event:      telemetryData,
 	}
 
 	payload, err := json.Marshal(details)
-
+	if err != nil {
+		return errors.Wrap(err, "error while marshalling Splunk message details")
+	}
 	prettyPayload, err := json.MarshalIndent(details, "", "    ")
 	if err != nil {
 		log.Entry().WithError(err).Warn("Failed to generate pretty payload json")
@@ -275,7 +277,7 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 		Telemetry: telemetryData,
 	}
 	details := Details{
-		Host:       s.correlationID,
+		Host:       s.hostName,
 		SourceType: "_json",
 		Index:      s.splunkIndex,
 		Event:      event,
