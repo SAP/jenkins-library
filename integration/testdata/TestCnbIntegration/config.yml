@@ -1,3 +1,5 @@
+general:
+  verbose: false
 steps:
   cnbBuild:
     bindings:
