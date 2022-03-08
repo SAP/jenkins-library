@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -50,6 +51,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			stepActive := false
 			stepNotActive := false
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
+
 			if err != nil {
 				return err
 			}
@@ -74,20 +76,22 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					}
 				}
 			}
-			// TODO: should notActiveCondition be checked only there are condition (Fortify may be a problem)
-			if len(step.NotActiveConditions) > 0 {
-				for _, condition := range step.NotActiveConditions {
-					stepNotActive, err := condition.evaluateV1(stepConfig, utils)
-					if err != nil {
-						return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
-					}
-					if stepNotActive {
-						// first condition which matches will be considered to activate the step
-						break
-					}
+
+			// TODO: PART 1 : if explicit activation/de-activation is available should notActiveConditions be checked ?
+			// Fortify has no anchor, so if we explicitly set it to true then it may run even during commit pipelines, if we implement TODO PART 1??
+			for _, condition := range step.NotActiveConditions {
+				log.Entry().Infof("executing for not active conditions")
+				stepNotActive, err = condition.evaluateV1(stepConfig, utils)
+				if err != nil {
+					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
+				}
+				if stepNotActive {
+					// first condition which matches will be considered to not activate the step
+					break
 				}
 			}
 
+			// final decision is when step is activated and negate when not active is true
 			stepActive = stepActive && !stepNotActive
 
 			if stepActive {
@@ -102,7 +106,6 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 }
 
 func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
-
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
 	if s.Config != nil {
