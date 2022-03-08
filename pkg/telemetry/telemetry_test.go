@@ -1,11 +1,16 @@
 package telemetry
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/jarcoal/httpmock"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"net/http"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
@@ -58,7 +63,7 @@ func TestTelemetry_Initialize(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t1 *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			telemetryClient := &Telemetry{}
 			telemetryClient.Initialize(tt.args.telemetryDisabled, tt.args.stepName)
 			// assert
@@ -250,6 +255,96 @@ func TestSetData(t *testing.T) {
 			if !reflect.DeepEqual(telemetryClient.data, tt.want) {
 				t.Errorf("CreateDataObject() t.data= %v, want %v", telemetryClient.data, tt.want)
 			}
+		})
+	}
+}
+
+func TestTelemetry_logStepTelemetryData(t *testing.T) {
+
+	provider := &orchestrator.UnknownOrchestratorConfigProvider{}
+
+	type fields struct {
+		data     Data
+		provider orchestrator.OrchestratorSpecificConfigProviding
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		fatalError logrus.Fields
+		logOutput  string
+	}{
+		{
+			name: "logging with error, no fatalError set",
+			fields: fields{
+				data: Data{
+					BaseData:     BaseData{},
+					BaseMetaData: BaseMetaData{},
+					CustomData: CustomData{
+						ErrorCode:       "1",
+						Duration:        "200",
+						PiperCommitHash: "n/a",
+					},
+				},
+				provider: provider,
+			},
+		},
+		{
+			name: "logging with error, fatal error set",
+			fields: fields{
+				data: Data{
+					BaseData:     BaseData{},
+					BaseMetaData: BaseMetaData{},
+					CustomData: CustomData{
+						ErrorCode:       "1",
+						Duration:        "200",
+						PiperCommitHash: "n/a",
+					},
+				},
+				provider: provider,
+			},
+			fatalError: logrus.Fields{
+				"message":       "Some error happened",
+				"error":         "Oh snap!",
+				"category":      "undefined",
+				"result":        "failure",
+				"correlationId": "test",
+				"time":          "0000-00-00 00:00:00.000",
+			},
+		},
+		{
+			name: "logging without error",
+			fields: fields{
+				data: Data{
+					CustomData: CustomData{
+						ErrorCode:       "0",
+						Duration:        "200",
+						PiperCommitHash: "n/a",
+					},
+				},
+				provider: provider,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, hook := test.NewNullLogger()
+			log.RegisterHook(hook)
+			telemetry := &Telemetry{
+				data:     tt.fields.data,
+				provider: tt.fields.provider,
+			}
+			var re *regexp.Regexp
+			if tt.fatalError != nil {
+				errDetails, _ := json.Marshal(&tt.fatalError)
+				log.SetFatalErrorDetail(errDetails)
+				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":{"category":"undefined","correlationId":"test","error":"Oh snap!","message":"Some error happened","result":"failure","time":"0000-00-00 00:00:00.000"}}`)
+
+			} else {
+				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":null}`)
+			}
+			telemetry.logStepTelemetryData()
+			assert.Regexp(t, re, hook.LastEntry().Message)
+			hook.Reset()
 		})
 	}
 }

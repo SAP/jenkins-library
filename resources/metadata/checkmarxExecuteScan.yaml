@@ -23,6 +23,14 @@ spec:
       - name: checkmarx
         type: stash
     params:
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
       - name: avoidDuplicateProjectScans
         type: bool
         description: Whether duplicate scans of the same project state shall be avoided or not
@@ -65,6 +73,33 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: githubApiUrl
+        description: "Set the GitHub API URL."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: "https://api.github.com"
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
       - name: incremental
         type: bool
         description: Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`
@@ -81,6 +116,19 @@ spec:
           - STAGES
           - STEPS
         default: 3
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: "Set the GitHub organization."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: password
         type: string
         description: The password to authenticate
@@ -124,6 +172,19 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: "Set the GitHub repository."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: serverUrl
         aliases:
           - name: checkmarxServerUrl
@@ -243,6 +304,18 @@ spec:
             param: custom/isOptimizedAndScheduled
         scope:
           - PARAMETERS
+      - name: createResultIssue
+        type: bool
+        description: "Whether the step creates a GitHub issue containing the scan results in the originating repo.
+        Since optimized pipelines are headless the creation is implicitly activated for schedules runs."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/optimizedAndScheduled
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx
@@ -328,3 +401,14 @@ spec:
               - name: preset
               - name: deep_link
               - name: report_creation_time
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/piper_checkmarx_report.html"
+            type: checkmarx
+          - filePattern: "**/CxSASTResults_*.xml"
+            type: checkmarx
+          - filePattern: "**/ScanReport.*"
+            type: checkmarx
+          - filePattern: "**/toolrun_checkmarx_*.json"
+            type: checkmarx

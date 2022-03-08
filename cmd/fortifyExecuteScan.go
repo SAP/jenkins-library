@@ -25,9 +25,11 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -43,11 +45,11 @@ type pullRequestService interface {
 
 type fortifyUtils interface {
 	maven.Utils
+	gradle.Utils
 
 	SetDir(d string)
-
-	GetArtifact(buildTool, buildDescriptorFile string,
-		options *versioning.Options) (versioning.Artifact, error)
+	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
 }
 
 type fortifyUtilsBundle struct {
@@ -56,9 +58,12 @@ type fortifyUtilsBundle struct {
 	*piperhttp.Client
 }
 
-func (bundle *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string,
-	options *versioning.Options) (versioning.Artifact, error) {
-	return versioning.GetArtifact(buildTool, buildDescriptorFile, options, bundle)
+func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
+	return versioning.GetArtifact(buildTool, buildDescriptorFile, options, f)
+}
+
+func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func newFortifyUtilsBundle() fortifyUtils {
@@ -158,9 +163,15 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		}
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
 	} else {
-		prID := determinePullRequestMerge(config)
-		if len(prID) > 0 {
+		prID, prAuthor := determinePullRequestMerge(config)
+		if prID != "0" {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
+			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
+				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
+				config.Assignees = append(config.Assignees, prAuthor)
+			} else {
+				log.Entry().Debugf("Unable to determine PR Author, using assignees: %v", config.Assignees)
+			}
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
 			if err != nil {
@@ -186,7 +197,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	if config.VerifyOnly {
 		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+		err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 		reports = append(reports, paths...)
 		return reports, err
 	}
@@ -236,6 +247,20 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
+	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	if config.ConvertToSarif {
+		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		if err != nil {
+			return reports, fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := fortify.WriteSarif(sarif)
+		if err != nil {
+			return reports, fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed
 	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
@@ -243,8 +268,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if err != nil {
 		return reports, err
 	}
-
-	err, paths := verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+	err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
 }
@@ -255,7 +279,7 @@ func classifyErrorOnLookup(err error) {
 	}
 }
 
-func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
+func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
@@ -294,11 +318,21 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 
 	fortifyReportingData := prepareReportData(influx)
 	scanReport := fortify.CreateCustomReport(fortifyReportingData, issueGroups)
-	paths, err := fortify.WriteCustomReports(scanReport, influx.fortify_data.fields.projectName, influx.fortify_data.fields.projectVersion)
+	paths, err := fortify.WriteCustomReports(scanReport)
 	if err != nil {
 		return errors.Wrap(err, "failed to write custom reports"), reports
 	}
 	reports = append(reports, paths...)
+
+	log.Entry().Debug("Checking whether GitHub issue creation/update is active")
+	log.Entry().Debugf("%v, %v, %v, %v, %v, %v", config.CreateResultIssue, numberOfViolations > 0, len(config.GithubToken) > 0, len(config.GithubAPIURL) > 0, len(config.Owner) > 0, len(config.Repository) > 0)
+	if config.CreateResultIssue && numberOfViolations > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+		log.Entry().Debug("Creating/updating GitHub issue with scan results")
+		err = reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Fortify SAST Results", config.Assignees, utils)
+		if err != nil {
+			return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
+		}
+	}
 
 	jsonReport := fortify.CreateJSONReport(fortifyReportingData, spotChecksCountByCategory, config.ServerURL)
 	paths, err = fortify.WriteJSONReport(jsonReport)
@@ -330,6 +364,7 @@ func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportDa
 	output.Suppressed = input.suppressed
 	output.Suspicious = input.suspicious
 	output.ProjectVersionID = input.projectVersionID
+	output.Violations = input.violations
 	return output
 }
 
@@ -805,7 +840,10 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
 
-	translateProject(&config, utils, buildID, classpath)
+	err = translateProject(&config, utils, buildID, classpath)
+	if err != nil {
+		return err
+	}
 
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
@@ -851,7 +889,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	return string(translateJSON), err
 }
 
-func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, buildID, classpath string) {
+func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, buildID, classpath string) error {
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
 	log.Entry().Debugf("Translating with options: %v", translateList)
@@ -859,8 +897,12 @@ func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, bui
 		if len(classpath) > 0 {
 			translate["autoClasspath"] = classpath
 		}
-		handleSingleTranslate(config, utils, buildID, translate)
+		err := handleSingleTranslate(config, utils, buildID, translate)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyUtils, buildID string, t map[string]string) error {
@@ -917,33 +959,45 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 	return nil
 }
 
-func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
-	if err == nil {
-		result, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
+func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
+	author := ""
+	//TODO provide parameter for trusted certs
+	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	if err == nil && ctx != nil && client != nil {
+		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
 			log.Entry().WithError(err).Warn("Failed to get PR metadata via GitHub client")
 		} else {
-			return result
+			return prID, author
 		}
+	} else {
+		log.Entry().WithError(err).Warn("Failed to instantiate GitHub client to get PR metadata")
 	}
 
 	log.Entry().Infof("Trying to determine PR ID in commit message: %v", config.CommitMessage)
 	r, _ := regexp.Compile(config.PullRequestMessageRegex)
 	matches := r.FindSubmatch([]byte(config.CommitMessage))
 	if matches != nil && len(matches) > 1 {
-		return string(matches[config.PullRequestMessageRegexGroup])
+		return string(matches[config.PullRequestMessageRegexGroup]), author
 	}
-	return ""
+	return "0", ""
 }
 
-func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, error) {
+func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
+	number := "0"
+	author := ""
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
 	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
-	if err == nil && len(prList) > 0 {
-		return fmt.Sprintf("%v", prList[0].GetNumber()), nil
+	if err == nil && prList != nil && len(prList) > 0 {
+		number = fmt.Sprintf("%v", prList[0].GetNumber())
+		if prList[0].GetUser() != nil {
+			author = prList[0].GetUser().GetLogin()
+		}
+		return number, author, nil
+	} else {
+		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
-	return "", err
+	return number, author, err
 }
 
 func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {

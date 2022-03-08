@@ -14,6 +14,10 @@ const (
 	ignoreFilename = ".npmignore"
 )
 
+var (
+	writeIgnoreFile = ioutil.WriteFile
+)
+
 func NewNPMIgnore(path string) NPMIgnore {
 	if !strings.HasSuffix(path, ignoreFilename) {
 		path = filepath.Join(path, ignoreFilename)
@@ -29,7 +33,7 @@ type NPMIgnore struct {
 func (ignorefile *NPMIgnore) Write() error {
 	content := strings.Join(ignorefile.values, "\n")
 
-	if err := ioutil.WriteFile(ignorefile.filepath, []byte(content+"\n"), 0644); err != nil {
+	if err := writeIgnoreFile(ignorefile.filepath, []byte(content+"\n"), 0644); err != nil {
 		return errors.Wrapf(err, "failed to write %s", ignorefile.filepath)
 	}
 	return nil

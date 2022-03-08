@@ -74,7 +74,8 @@ func TestParameterFurtherInfo(t *testing.T) {
 					},
 				},
 			},
-			contains: "id of credentials",
+			notContains: []string{"deprecated"},
+			contains:    "id of credentials",
 		},
 		{
 			paramName:  "testSecret1",
@@ -88,7 +89,22 @@ func TestParameterFurtherInfo(t *testing.T) {
 					},
 				},
 			},
-			contains: "credentials ([`mytestSecret`](#mytestsecret))",
+			notContains: []string{"deprecated"},
+			contains:    "credentials ([`mytestSecret`](#mytestsecret))",
+		},
+		{
+			paramName:  "testSecret1Deprecated",
+			stepParams: []string{"testSecret1Deprecated"},
+			stepData: &config.StepData{
+				Spec: config.StepSpec{
+					Inputs: config.StepInputs{
+						Parameters: []config.StepParameters{
+							{Name: "testSecret1Deprecated", Secret: true, ResourceRef: []config.ResourceReference{{Name: "mytestSecret", Type: "secret"}}, DeprecationMessage: "don't use"},
+						},
+					},
+				},
+			},
+			contains: "![deprecated](https://img.shields.io/badge/-deprecated-red)[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#)",
 		},
 		{
 			paramName:  "testSecret2",
@@ -102,7 +118,22 @@ func TestParameterFurtherInfo(t *testing.T) {
 					},
 				},
 			},
-			contains: "",
+			notContains: []string{"deprecated"},
+			contains:    "",
+		},
+		{
+			paramName:  "testDeprecated",
+			stepParams: []string{"testDeprecated"},
+			stepData: &config.StepData{
+				Spec: config.StepSpec{
+					Inputs: config.StepInputs{
+						Parameters: []config.StepParameters{
+							{Name: "testDeprecated", DeprecationMessage: "don't use"},
+						},
+					},
+				},
+			},
+			contains: "![deprecated](https://img.shields.io/badge/-deprecated-red)",
 		},
 	}
 
@@ -184,6 +215,7 @@ func TestCreateParameterDetails(t *testing.T) {
 		assert.Contains(t, res, "no")
 		assert.Contains(t, res, "**yes**")
 		assert.Contains(t, res, "steps")
+		assert.NotContains(t, res, "| Deprecated |")
 	})
 
 	t.Run("conditional mandatory parameters", func(t *testing.T) {
@@ -204,6 +236,27 @@ func TestCreateParameterDetails(t *testing.T) {
 		res := createParameterDetails(&stepData)
 
 		assert.Contains(t, res, "mandatory in case of:<br />- [`param1`](#param1)=`param1Val`")
+	})
+
+	t.Run("deprecated parameters", func(t *testing.T) {
+		stepData := config.StepData{
+			Spec: config.StepSpec{
+				Inputs: config.StepInputs{
+					Parameters: []config.StepParameters{
+						{
+							Name:               "param2",
+							Type:               "string",
+							DeprecationMessage: "this is deprecated",
+						},
+					},
+				},
+			},
+		}
+
+		res := createParameterDetails(&stepData)
+
+		assert.Contains(t, res, "| Deprecated |")
+		assert.Contains(t, res, "this is deprecated")
 	})
 
 }

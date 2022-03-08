@@ -65,6 +65,8 @@ id = "paketo-buildpacks/nodejs"
 		assert.Equal(t, descriptor.EnvVars["VAR1"], "VAL1")
 		assert.Equal(t, descriptor.EnvVars["VAR2"], "VAL2")
 
+		assert.Equal(t, descriptor.ProjectID, "io.buildpacks.my-app")
+
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-java@5.9.1")
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-nodejs@1.1.1")
 
