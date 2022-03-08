@@ -55,7 +55,7 @@ func CheckStepActiveCommand() *cobra.Command {
 
 func checkIfStepActive(utils piperutils.FileUtils) error {
 	// make the stageName the leading parameter
-	if GeneralConfig.StageName != "" {
+	if len(checkStepActiveOptions.stageName) == 0 && GeneralConfig.StageName != "" {
 		checkStepActiveOptions.stageName = GeneralConfig.StageName
 	}
 	if checkStepActiveOptions.stageName == "" {
