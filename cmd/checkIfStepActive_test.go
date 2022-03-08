@@ -70,7 +70,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
 			GeneralConfig.CustomConfig = ".pipeline/config.yml"
 			GeneralConfig.DefaultConfig = []string{".pipeline/defaults.yaml"}
-			GeneralConfig.StageName = "testStage"
+			GeneralConfig.StageName = "testStage1"
 			cmd.Run(cmd, []string{})
 		})
 		t.Run("Success case - set only stage parameter", func(t *testing.T) {
