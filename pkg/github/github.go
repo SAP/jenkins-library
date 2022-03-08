@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v32/github"
 	"github.com/pkg/errors"
@@ -34,14 +35,20 @@ type CreateIssueOptions struct {
 	Title          string   `json:"title,omitempty"`
 	UpdateExisting bool     `json:"updateExisting,omitempty"`
 	Token          string   `json:"token,omitempty"`
+	TrustedCerts   []string `json:"trustedCerts,omitempty"`
 }
 
 //NewClient creates a new GitHub client using an OAuth token for authentication
-func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client, error) {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
+func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
+	httpClient := piperhttp.Client{}
+	httpClient.SetOptions(piperhttp.ClientOptions{
+		TrustedCerts:             trustedCerts,
+		DoLogRequestBodyOnDebug:  true,
+		DoLogResponseBodyOnDebug: true,
+	})
+	stdClient := httpClient.StandardClient()
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, stdClient)
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
 	tc := oauth2.NewClient(ctx, ts)
 
 	if !strings.HasSuffix(apiURL, "/") {
@@ -68,7 +75,7 @@ func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client
 }
 
 func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) error {
-	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "")
+	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "", ghCreateIssueOptions.TrustedCerts)
 	if err != nil {
 		return errors.Wrap(err, "failed to get GitHub client")
 	}
@@ -100,7 +107,7 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
 		if err != nil {
 			if resp != nil {
-				log.Entry().Errorf("GitHub response code %v", resp.Status)
+				log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
 			}
 			return errors.Wrap(err, "error occurred when looking for existing issue")
 		} else {
@@ -116,9 +123,9 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 			_, resp, err := ghCreateCommentService.CreateComment(ctx, ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, *existingIssue.Number, comment)
 			if err != nil {
 				if resp != nil {
-					log.Entry().Errorf("GitHub response code %v", resp.Status)
+					log.Entry().Errorf("GitHub create comment returned response code %v", resp.Status)
 				}
-				return errors.Wrap(err, "error occurred when looking for existing issue")
+				return errors.Wrap(err, "error occurred when adding comment to existing issue")
 			}
 		}
 	}
@@ -127,7 +134,7 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 		newIssue, resp, err := ghCreateIssueService.Create(ctx, ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, &issue)
 		if err != nil {
 			if resp != nil {
-				log.Entry().Errorf("GitHub response code %v", resp.Status)
+				log.Entry().Errorf("GitHub create issue returned response code %v", resp.Status)
 			}
 			return errors.Wrap(err, "error occurred when creating issue")
 		}

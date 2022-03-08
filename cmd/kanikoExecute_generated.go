@@ -18,22 +18,31 @@ import (
 )
 
 type kanikoExecuteOptions struct {
-	BuildOptions                []string `json:"buildOptions,omitempty"`
-	ContainerBuildOptions       string   `json:"containerBuildOptions,omitempty"`
-	ContainerImage              string   `json:"containerImage,omitempty"`
-	ContainerImageName          string   `json:"containerImageName,omitempty"`
-	ContainerImageTag           string   `json:"containerImageTag,omitempty"`
-	ContainerPreparationCommand string   `json:"containerPreparationCommand,omitempty"`
-	ContainerRegistryURL        string   `json:"containerRegistryUrl,omitempty"`
-	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
-	DockerConfigJSON            string   `json:"dockerConfigJSON,omitempty"`
-	DockerfilePath              string   `json:"dockerfilePath,omitempty"`
+	BuildOptions                     []string `json:"buildOptions,omitempty"`
+	BuildSettingsInfo                string   `json:"buildSettingsInfo,omitempty"`
+	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
+	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
+	ContainerBuildOptions            string   `json:"containerBuildOptions,omitempty"`
+	ContainerImage                   string   `json:"containerImage,omitempty"`
+	ContainerImageName               string   `json:"containerImageName,omitempty"`
+	ContainerImageTag                string   `json:"containerImageTag,omitempty"`
+	ContainerPreparationCommand      string   `json:"containerPreparationCommand,omitempty"`
+	ContainerRegistryURL             string   `json:"containerRegistryUrl,omitempty"`
+	CustomTLSCertificateLinks        []string `json:"customTlsCertificateLinks,omitempty"`
+	DockerConfigJSON                 string   `json:"dockerConfigJSON,omitempty"`
+	DockerfilePath                   string   `json:"dockerfilePath,omitempty"`
+	TargetArchitectures              []string `json:"targetArchitectures,omitempty"`
+	ReadImageDigest                  bool     `json:"readImageDigest,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
 	container struct {
-		registryURL  string
-		imageNameTag string
+		registryURL   string
+		imageNameTag  string
+		imageDigest   string
+		imageNames    []string
+		imageNameTags []string
+		imageDigests  []string
 	}
 	custom struct {
 		buildSettingsInfo string
@@ -48,6 +57,10 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "container", name: "imageDigest", value: p.container.imageDigest},
+		{category: "container", name: "imageNames", value: p.container.imageNames},
+		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
+		{category: "container", name: "imageDigests", value: p.container.imageDigests},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
@@ -79,7 +92,21 @@ func KanikoExecuteCommand() *cobra.Command {
 	var createKanikoExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.",
-		Long:  `Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.`,
+		Long: `Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
+
+### Building multiple container images
+
+The step allows you to build multiple container images with one run.
+This is suitable in case you need to create multiple images for one microservice, e.g. for testing.
+
+All images will get the same "root" name and the same versioning.<br />
+**Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
+or implement a custom logic and for example execute this ` + "`" + `kanikoExecute` + "`" + ` step multiple times in your custom pipeline.
+
+You can activate multiple builds using the parameters
+
+* [containerMultiImageBuild](#containermultiimagebuild) for activation
+* [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -156,7 +183,10 @@ func KanikoExecuteCommand() *cobra.Command {
 }
 
 func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.ContainerMultiImageBuild, "containerMultiImageBuild", false, "Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).")
+	cmd.Flags().StringSliceVar(&stepConfig.ContainerMultiImageBuildExcludes, "containerMultiImageBuildExcludes", []string{}, "Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).")
 	cmd.Flags().StringVar(&stepConfig.ContainerBuildOptions, "containerBuildOptions", os.Getenv("PIPER_containerBuildOptions"), "Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`")
@@ -166,6 +196,8 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `Dockerfile`, "Defines the location of the Dockerfile relative to the Jenkins workspace.")
+	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{``}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma. (EXPERIMENTAL)")
+	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
 
 }
 
@@ -190,7 +222,39 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{`--skip-tls-verify-pull`},
+						Default:     []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`},
+					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "containerMultiImageBuild",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "containerMultiImageBuildExcludes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "containerBuildOptions",
@@ -299,10 +363,28 @@ func kanikoExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
 						Default:     `Dockerfile`,
 					},
+					{
+						Name:        "targetArchitectures",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{``},
+					},
+					{
+						Name:        "readImageDigest",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}, {Name: "TMPDIR", Value: "/"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -312,6 +394,10 @@ func kanikoExecuteMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
+							{"name": "container/imageDigest"},
+							{"name": "container/imageNames", "type": "[]string"},
+							{"name": "container/imageNameTags", "type": "[]string"},
+							{"name": "container/imageDigests", "type": "[]string"},
 							{"name": "custom/buildSettingsInfo"},
 						},
 					},

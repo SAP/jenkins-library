@@ -22,6 +22,7 @@ type FileUtils interface {
 	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
+	Move(src, dest string) error
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
@@ -42,6 +43,13 @@ type Files struct {
 
 // TempDir creates a temporary directory
 func (f Files) TempDir(dir, pattern string) (name string, err error) {
+	if len(dir) == 0 {
+		// lazy init system temp dir in case it doesn't exist
+		if exists, _ := f.DirExists(os.TempDir()); !exists {
+			f.MkdirAll(os.TempDir(), 0666)
+		}
+	}
+
 	return ioutil.TempDir(dir, pattern)
 }
 
@@ -104,6 +112,20 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
+}
+
+func (f Files) Move(src, dst string) error {
+	if exists, err := f.FileExists(src); err != nil {
+		return err
+	} else if !exists {
+		return fmt.Errorf("file doesn't exist: %s", src)
+	}
+
+	if _, err := f.Copy(src, dst); err != nil {
+		return err
+	}
+
+	return f.FileRemove(src)
 }
 
 //Chmod is a wrapper for os.Chmod().
