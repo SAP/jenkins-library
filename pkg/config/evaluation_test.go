@@ -138,7 +138,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 
 }
 
-func TestNotAvtiveEvaluateConditionsV1(t *testing.T) {
+func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 	filesMock := mock.FilesMock{}
 
 	runConfig := RunConfigV1{
