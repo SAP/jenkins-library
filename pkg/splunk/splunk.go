@@ -177,7 +177,9 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 	}
 
 	payload, err := json.Marshal(details)
-
+	if err != nil {
+		return errors.Wrap(err, "error while marshalling Splunk message details")
+	}
 	prettyPayload, err := json.MarshalIndent(details, "", "    ")
 	if err != nil {
 		log.Entry().WithError(err).Warn("Failed to generate pretty payload json")
