@@ -1,0 +1,40 @@
+metadata:
+  name: apiProviderDownload
+  description: Download a specific API Provider from the API Portal
+  longDescription: |
+    With this step you can download a specific API Provider from the API Portal, which returns a JSON file with the api provider contents in to current workspace using the OData API. Learn more about the SAP API Management API for downloading an api provider artifact [here](https://api.sap.com/api/APIPortal_CF/overview).
+
+spec:
+  inputs:
+    secrets:
+      - name: apimApiServiceKeyCredentialsId
+        description: Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'
+        type: jenkins
+    params:
+      - name: apiServiceKey
+        type: string
+        description: Service key JSON string to access the API Management Runtime service instance of plan 'api'
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: apimApiServiceKeyCredentialsId
+            type: secret
+            param: apiServiceKey
+      - name: apiProviderName
+        type: string
+        description: Specifies the name of the API Provider.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: downloadPath
+        type: string
+        description: Specifies api provider download directory location. The file name must not be included in the path.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
