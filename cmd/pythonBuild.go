@@ -12,6 +12,8 @@ const (
 	PyBomFilename = "bom.xml"
 )
 
+var installFlags = []string{"-m", "pip", "install", "--upgrade"}
+
 type pythonBuildUtils interface {
 	command.ExecRunner
 	FileExists(filename string) (bool, error)
@@ -58,18 +60,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	err = buildExecute(config, utils)
 
 	if config.CreateBOM {
-		if err := utils.RunExecutable("python3", "-m", "pip", "install", "--upgrade", "cyclonedx-bom"); err != nil {
-			return fmt.Errorf("failed to install 'cyclonedx-bom': %w", err)
-		}
 		if err := runBOMCreationForPy(utils); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
 
 	if config.Publish {
-		if err := utils.RunExecutable("python3", "-m", "pip", "install", "--upgrade", "twine"); err != nil {
-			return fmt.Errorf("failed to install 'twine': %w", err)
-		}
 		if err := publishWithTwine(config, utils); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
@@ -81,8 +77,9 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils) error {
 	var flags []string
 	flags = append(flags, "-m", "build")
+	installFlags = append(installFlags, "build")
 
-	if err := utils.RunExecutable("python3", "-m", "pip", "install", "--upgrade", "build"); err != nil {
+	if err := utils.RunExecutable("python3", installFlags...); err != nil {
 		return fmt.Errorf("failed to install 'build': %w", err)
 	}
 	flags = append(flags, config.BuildFlags...)
@@ -101,6 +98,10 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils) error {
 }
 
 func runBOMCreationForPy(utils pythonBuildUtils) error {
+	installFlags[len(installFlags)-1] = "cyclonedx-bom"
+	if err := utils.RunExecutable("python3", installFlags...); err != nil {
+		return err
+	}
 	if err := utils.RunExecutable("cyclonedx-bom", "--e", "--output", PyBomFilename); err != nil {
 		return err
 	}
@@ -108,6 +109,10 @@ func runBOMCreationForPy(utils pythonBuildUtils) error {
 }
 
 func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils) error {
+	installFlags[len(installFlags)-1] = "twine"
+	if err := utils.RunExecutable("python3", installFlags...); err != nil {
+		return err
+	}
 	if err := utils.RunExecutable("twine", "upload", "--username", config.TargetRepositoryUser,
 		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
 		"dist/*.tar.gz"); err != nil {
