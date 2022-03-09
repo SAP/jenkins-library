@@ -72,6 +72,25 @@ func TestGetImageName(t *testing.T) {
 		assert.Equal(t, "tag", targetImage.ContainerImageTag)
 	})
 
+	t.Run("Image name is taken from github repo", func(t *testing.T) {
+		t.Parallel()
+
+		tmpdir, err := ioutil.TempDir("", "cpe")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpdir)
+
+		err = os.MkdirAll(filepath.Join(tmpdir, "commonPipelineEnvironment", "github"), os.ModePerm)
+		assert.NoError(t, err)
+
+		err = ioutil.WriteFile(filepath.Join(tmpdir, "commonPipelineEnvironment", "github", "repository"), []byte("repo-name"), os.ModePerm)
+		assert.NoError(t, err)
+
+		targetImage, err := cnbutils.GetTargetImage("http://registry", "", "tag", "", tmpdir)
+		assert.NoError(t, err)
+		assert.Equal(t, "repo-name", targetImage.ContainerImageName)
+		assert.Equal(t, "tag", targetImage.ContainerImageTag)
+	})
+
 	t.Run("throws an error if unable to find image name", func(t *testing.T) {
 		t.Parallel()
 
