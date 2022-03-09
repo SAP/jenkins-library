@@ -58,7 +58,7 @@ type LOC struct {
 }
 
 // These structures are relevant to the Build object
-// Build
+// The Build object transports all build and scan related information
 type Build struct {
 	XMLName        xml.Name `xml:"Build"`
 	Project        string   `xml:"Project"`
