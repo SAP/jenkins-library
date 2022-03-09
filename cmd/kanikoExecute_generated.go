@@ -135,7 +135,7 @@ Following final image names will be built:
 * ` + "`" + `myImage-sub1` + "`" + `
 * ` + "`" + `myImage-sub2` + "`" + `
 
-#### Multiple containers in sub directories while trimming a directory part 
+#### Multiple containers in sub directories while trimming a directory part
 
 Configuration as follows:
 
