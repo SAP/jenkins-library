@@ -58,7 +58,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	err = buildExecute(config, utils)
 
 	if config.CreateBOM {
-		if err := utils.RunExecutable("python3", "-m", "pip", "install", "cyclonedx-bom"); err != nil {
+		if err := utils.RunExecutable("python3", "-m", "pip", "install", "--upgrade", "cyclonedx-bom"); err != nil {
 			return fmt.Errorf("failed to install 'cyclonedx-bom': %w", err)
 		}
 		if err := runBOMCreationForPy(utils); err != nil {
@@ -67,30 +67,14 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.Publish {
-		if err := utils.RunExecutable("python3", "-m", "pip", "install", "twine"); err != nil {
+		if err := utils.RunExecutable("python3", "-m", "pip", "install", "--upgrade", "twine"); err != nil {
 			return fmt.Errorf("failed to install 'twine': %w", err)
 		}
-		if err := publishWithTwine(utils); err != nil {
+		if err := publishWithTwine(config, utils); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
 
-	return nil
-}
-
-//python3 -m pip install cyclonedx-bom
-
-func publishWithTwine(utils pythonBuildUtils) error {
-	if err := utils.RunExecutable("twine", "upload", "dist/*"); err != nil {
-		return err
-	}
-	return nil
-}
-
-func runBOMCreationForPy(utils pythonBuildUtils) error {
-	if err := utils.RunExecutable("cyclonedx-bom", "mod", "-licenses", "-test", "-output", PyBomFilename); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -113,5 +97,21 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils) error {
 		}
 	}
 
+	return nil
+}
+
+func runBOMCreationForPy(utils pythonBuildUtils) error {
+	if err := utils.RunExecutable("cyclonedx-bom", "--e", "--output", PyBomFilename); err != nil {
+		return err
+	}
+	return nil
+}
+
+func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils) error {
+	if err := utils.RunExecutable("twine", "upload", "--username", config.TargetRepositoryUser,
+		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
+		"dist/*.tar.gz"); err != nil {
+		return err
+	}
 	return nil
 }
