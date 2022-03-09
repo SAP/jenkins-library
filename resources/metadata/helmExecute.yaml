@@ -58,7 +58,6 @@ spec:
       - name: targetChartRepositoryURL
         description: "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
-        default: "https://charts.helm.sh/stable"
         scope:
           - PARAMETERS
           - STAGES

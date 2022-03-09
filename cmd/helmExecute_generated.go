@@ -159,7 +159,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for Helm like  \"helm install [NAME] [CHART] [flags]\".")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for helm.")
-	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryURL, "targetChartRepositoryURL", `https://charts.helm.sh/stable`, "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryURL, "targetChartRepositoryURL", os.Getenv("PIPER_targetChartRepositoryURL"), "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryName, "targetChartRepositoryName", `stable`, "set the chart repository")
 	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryUser, "targetChartRepositoryUser", os.Getenv("PIPER_targetChartRepositoryUser"), "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryPassword, "targetChartRepositoryPassword", os.Getenv("PIPER_targetChartRepositoryPassword"), "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
@@ -235,7 +235,7 @@ func helmExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   `https://charts.helm.sh/stable`,
+						Default:   os.Getenv("PIPER_targetChartRepositoryURL"),
 					},
 					{
 						Name:        "targetChartRepositoryName",
