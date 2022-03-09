@@ -469,6 +469,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 
 func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry string) (*deploymentValues, error) {
 	var err error
+	var useDigests bool
 	dv := &deploymentValues{
 		mapping: config.ValuesMapping,
 	}
@@ -477,10 +478,22 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return nil, fmt.Errorf("number of imageNames and imageNameTags must be equal")
 		}
+		if len(config.ImageDigests) > 0 {
+			if len(config.ImageDigests) != len(config.ImageNameTags) {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return nil, fmt.Errorf("number of imageDigests and imageNameTags must be equal")
+			}
+
+			useDigests = true
+		}
 		for i, key := range config.ImageNames {
 			name, tag, err := splitFullImageName(config.ImageNameTags[i])
 			if err != nil {
 				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[i])
+			}
+
+			if useDigests {
+				tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
 			}
 
 			dv.add(joinKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
