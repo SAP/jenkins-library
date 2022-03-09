@@ -179,6 +179,7 @@ func Execute() {
 	rootCmd.AddCommand(ShellExecuteCommand())
 	rootCmd.AddCommand(ApiProxyDownloadCommand())
 	rootCmd.AddCommand(ApiKeyValueMapDownloadCommand())
+	rootCmd.AddCommand(ApiProviderDownloadCommand())
 	rootCmd.AddCommand(ApiProxyUploadCommand())
 	rootCmd.AddCommand(GradleExecuteBuildCommand())
 	rootCmd.AddCommand(ApiKeyValueMapUploadCommand())

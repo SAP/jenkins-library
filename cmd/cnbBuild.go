@@ -432,7 +432,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-	customTelemetryData.Buildpacks.Overall = config.Buildpacks
+	customTelemetryData.Buildpacks.Overall = privacy.FilterBuildpacks(config.Buildpacks)
 	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
 	telemetry.Data = append(telemetry.Data, customTelemetryData)
 
