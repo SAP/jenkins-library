@@ -36,6 +36,7 @@ type kubernetesDeployOptions struct {
 	Image                      string                 `json:"image,omitempty"`
 	ImageNames                 []string               `json:"imageNames,omitempty"`
 	ImageNameTags              []string               `json:"imageNameTags,omitempty"`
+	ImageDigests               []string               `json:"imageDigests,omitempty"`
 	IngressHosts               []string               `json:"ingressHosts,omitempty"`
 	KeepFailedDeployments      bool                   `json:"keepFailedDeployments,omitempty"`
 	RunHelmTests               bool                   `json:"runHelmTests,omitempty"`
@@ -180,6 +181,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageNames, "imageNames", []string{}, "List of names of the images to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageDigests, "imageDigests", []string{}, "List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`")
 	cmd.Flags().StringSliceVar(&stepConfig.IngressHosts, "ingressHosts", []string{}, "(Deprecated) List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().BoolVar(&stepConfig.KeepFailedDeployments, "keepFailedDeployments", false, "Defines whether a failed deployment will be purged")
 	cmd.Flags().BoolVar(&stepConfig.RunHelmTests, "runHelmTests", false, "Defines whether or not to run helm tests against the recently deployed release")
@@ -435,6 +437,20 @@ func kubernetesDeployMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "imageDigests",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageDigests",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

@@ -323,6 +323,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: imageDigests
+        type: "[]string"
+        description: List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageDigests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: ingressHosts
         type: "[]string"
         description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
