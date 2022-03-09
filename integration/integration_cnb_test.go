@@ -44,15 +44,32 @@ func TestNpmProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--customConfig", "TestCnbIntegration/config_env.yml", "--path", "TestMtaIntegration/npm", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:0.1.342-full",
+		User:    "cnb",
+		TestDir: []string{"testdata"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	})
 
+	err := container.whenRunningPiperCommand("cnbBuild", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
+	container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
 	container.assertHasOutput(t, "*** Images (sha256:")
 	container.assertHasOutput(t, "SUCCESS")
 	container.terminate(t)
+
+	err = container2.whenRunningPiperCommand("cnbBuild", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
+	container2.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
+	container2.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
+	container2.assertHasOutput(t, "Paketo NPM Start Buildpack")
+	container2.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
+	container2.assertHasOutput(t, "*** Images (sha256:")
+	container2.assertHasOutput(t, "SUCCESS")
+	container2.terminate(t)
 }
 
 func TestProjectDescriptor(t *testing.T) {

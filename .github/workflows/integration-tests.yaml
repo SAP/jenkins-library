@@ -55,7 +55,7 @@ jobs:
           curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.15.x'
+          go-version: '1.17.x'
       - name: build
         env:
           CGO_ENABLED: 0
