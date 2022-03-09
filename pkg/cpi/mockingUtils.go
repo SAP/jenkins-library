@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package cpi
@@ -26,7 +27,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 		}
 		return GetParameterKeyMissingResponseBody()
-	case "IntegrationArtifactGetMplStatus", "APIKeyValueMapDownload":
+	case "IntegrationArtifactGetMplStatus", "APIKeyValueMapDownload", "APIProviderDownload":
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
@@ -52,9 +53,15 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return TriggerIntegrationTestMockResponse(testType)
 	case "IntegrationArtifactGetMplStatusError":
 		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
-	case "IntegrationArtifactResourceCreate":
+	case "IntegrationArtifactResourceCreate", "ApiKeyValueMapUpload":
 		if testType == "Negative" {
 			return GetRespBodyHTTPStatusServiceErrorResponse()
+		}
+		if testType == "HttpResponseNotAccepted" {
+			return GetEmptyHTTPResponseBodyAndErrorNil()
+		}
+		if testType == "NilHttpResponse" {
+			return nil, errors.New("invalid payalod")
 		}
 		return GetRespBodyHTTPStatusCreated()
 	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete", "ApiProxyUpload":

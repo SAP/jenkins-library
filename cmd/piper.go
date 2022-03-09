@@ -124,6 +124,7 @@ func Execute() {
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(GctsExecuteABAPQualityChecksCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
@@ -178,8 +179,10 @@ func Execute() {
 	rootCmd.AddCommand(ShellExecuteCommand())
 	rootCmd.AddCommand(ApiProxyDownloadCommand())
 	rootCmd.AddCommand(ApiKeyValueMapDownloadCommand())
+	rootCmd.AddCommand(ApiProviderDownloadCommand())
 	rootCmd.AddCommand(ApiProxyUploadCommand())
 	rootCmd.AddCommand(GradleExecuteBuildCommand())
+	rootCmd.AddCommand(ApiKeyValueMapUploadCommand())
 
 	addRootFlags(rootCmd)
 

@@ -51,6 +51,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdResult  string   `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
 	VulnerabilityThresholdUnit    string   `json:"vulnerabilityThresholdUnit,omitempty"`
 	IsOptimizedAndScheduled       bool     `json:"isOptimizedAndScheduled,omitempty"`
+	CreateResultIssue             bool     `json:"createResultIssue,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -201,6 +202,7 @@ func (p *checkmarxExecuteScanReports) persist(stepConfig checkmarxExecuteScanOpt
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -353,6 +355,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", `FAILURE`, "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for schedules runs.")
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
@@ -683,6 +686,20 @@ func checkmarxExecuteScanMetadata() config.StepData {
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
+					},
+					{
+						Name: "createResultIssue",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/optimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},

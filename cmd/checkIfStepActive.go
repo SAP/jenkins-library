@@ -32,7 +32,7 @@ func CheckStepActiveCommand() *cobra.Command {
 	var checkStepActiveCmd = &cobra.Command{
 		Use:   "checkIfStepActive",
 		Short: "Checks if a step is active in a defined stage.",
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRun: func(cmd *cobra.Command, _ []string) {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -54,6 +54,13 @@ func CheckStepActiveCommand() *cobra.Command {
 }
 
 func checkIfStepActive(utils piperutils.FileUtils) error {
+	// make the stageName the leading parameter
+	if len(checkStepActiveOptions.stageName) == 0 && GeneralConfig.StageName != "" {
+		checkStepActiveOptions.stageName = GeneralConfig.StageName
+	}
+	if checkStepActiveOptions.stageName == "" {
+		return errors.New("stage name must not be empty")
+	}
 	var pConfig config.Config
 
 	// load project config and defaults
@@ -140,7 +147,6 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
 	cmd.MarkFlagRequired("step")
-	cmd.MarkFlagRequired("stage")
 }
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {

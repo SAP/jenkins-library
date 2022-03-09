@@ -65,7 +65,13 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'verbose'
 ]
-@Field STAGE_STEP_KEYS = []
+@Field STAGE_STEP_KEYS = [
+    /**
+     * Sets the build version.
+     * @possibleValues `true`, `false`
+     */
+    'artifactPrepareVersion'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -220,6 +226,11 @@ void call(Map parameters = [:]) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
+
+            config.artifactPrepareVersion = true
+        }
+
+        if (config.artifactPrepareVersion) {
             Map prepareVersionParams = [script: script]
             if (config.inferBuildTool) {
                 prepareVersionParams.buildTool = buildTool

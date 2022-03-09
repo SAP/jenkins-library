@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -278,7 +279,7 @@ func TestUploadRequest(t *testing.T) {
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
 
-			assert.Equal(t, testFile.Name(), multipartHeader.Filename, "Uploaded file incorrect")
+			assert.Equal(t, filepath.Base(testFile.Name()), multipartHeader.Filename, "Uploaded file incorrect")
 			assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
 
 			for k, h := range test.header {
@@ -307,7 +308,7 @@ func TestUploadRequest(t *testing.T) {
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
 
-			assert.Equal(t, testFile.Name(), multipartHeader.Filename, "Uploaded file incorrect")
+			assert.Equal(t, filepath.Base(testFile.Name()), multipartHeader.Filename, "Uploaded file incorrect")
 			assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
 
 			for k, h := range test.header {

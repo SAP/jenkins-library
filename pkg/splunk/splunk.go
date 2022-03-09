@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -25,13 +26,14 @@ type Splunk struct {
 	tags          map[string]string
 	splunkClient  piperhttp.Client
 	correlationID string
+	hostName      string
 	splunkDsn     string
 	splunkIndex   string
 
 	// boolean which forces to send all logs on error or none at all
 	sendLogs bool
 
-	// How big can be batch of messages
+	// How large a batch of messages can be
 	postMessagesBatchSize int
 }
 
@@ -52,11 +54,17 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 		MaxRetries:                -1,
 	})
 
+	hostName, err := os.Hostname()
+	if err != nil {
+		log.Entry().WithError(err).Debug("Could not get hostName.")
+		hostName = "n/a"
+	}
+	s.hostName = hostName
 	s.splunkClient = client
 	s.splunkDsn = dsn
 	s.splunkIndex = index
 	s.correlationID = correlationID
-	s.postMessagesBatchSize = 20000
+	s.postMessagesBatchSize = 6000
 	s.sendLogs = sendLogs
 
 	return nil
@@ -96,7 +104,7 @@ func readCommonPipelineEnvironment(filePath string) string {
 	// TODO: Dependent on a groovy step, which creates the folder.
 	contentFile, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
 	if err != nil {
-		log.Entry().Warnf("Could not read %v file. %v", filePath, err)
+		log.Entry().Debugf("Could not read %v file. %v", filePath, err)
 		contentFile = []byte("N/A")
 	}
 	return string(contentFile)
@@ -122,10 +130,10 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	monitoringJson, err := json.Marshal(monitoringData)
 	if err != nil {
 		log.Entry().Error("could not marshal monitoring data")
-		log.Entry().Infof("Step monitoring data: {n/a}")
+		log.Entry().Debugf("Step monitoring data: {n/a}")
 	} else {
 		// log step monitoring data, changes here need to change the regex in the internal piper lib
-		log.Entry().Infof("Step monitoring data:%v", string(monitoringJson))
+		log.Entry().Debugf("Step monitoring data:%v", string(monitoringJson))
 	}
 
 	return monitoringData
@@ -138,11 +146,11 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}
 	splitted := strings.Split(readLogFile, "\n")
 	messagesLen := len(splitted)
 
-	log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 	log.Entry().Debugf("Sending pipeline telemetry data to Splunk: %v", pipelineTelemetryData)
 	s.postTelemetry(pipelineTelemetryData)
 
 	if s.sendLogs {
+		log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
 			upperBound := i + s.postMessagesBatchSize
 			if upperBound > messagesLen {
@@ -162,8 +170,8 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 		telemetryData = map[string]interface{}{"Empty": "No telemetry available."}
 	}
 	details := DetailsTelemetry{
-		Host:       s.correlationID,
-		SourceType: "_json",
+		Host:       s.hostName,
+		SourceType: "piper:pipeline:telemetry",
 		Index:      s.splunkIndex,
 		Event:      telemetryData,
 	}
@@ -172,7 +180,17 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "error while marshalling Splunk message details")
 	}
-	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %v", string(payload))
+	prettyPayload, err := json.MarshalIndent(details, "", "    ")
+	if err != nil {
+		log.Entry().WithError(err).Warn("Failed to generate pretty payload json")
+		prettyPayload = nil
+	}
+	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %s", string(prettyPayload))
+
+	if err != nil {
+		return errors.Wrap(err, "error while marshalling Splunk message details")
+	}
+
 	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if resp != nil {
@@ -204,23 +222,26 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 
 func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []string) error {
 
-	event := LogFileEvents{
-		Messages:  messages,
-		Telemetry: telemetryData,
+	var logfileEvents []string
+	for _, message := range messages {
+		logMessage := LogFileEvent{
+			Event:      message,
+			Host:       s.hostName,
+			Source:     s.correlationID,
+			SourceType: "piper:pipeline:logfile",
+			Index:      s.splunkIndex,
+		}
+		marshalledLogMessage, err := json.Marshal(logMessage)
+		if err != nil {
+			return errors.Wrap(err, "error while marshalling Splunk messages")
+		}
+		logfileEvents = append(logfileEvents, string(marshalledLogMessage))
 	}
-	details := DetailsLog{
-		Host:       s.correlationID,
-		SourceType: "txt",
-		Index:      s.splunkIndex,
-		Event:      event,
-	}
+	// creates payload {"event":"this is a sample event ", "Host":"myHost", "Source":"mySource", "SourceType":"valueA", "Index":"valueB"}{"event":"this is a sample event ", "Host":"myHost", "Source":"mySource", "SourceType":"valueA", "Index":"valueB"}..
+	strout := strings.Join(logfileEvents, ",")
+	payload := strings.NewReader(strout)
 
-	payload, err := json.Marshal(details)
-	if err != nil {
-		return errors.Wrap(err, "error while marshalling Splunk message details")
-	}
-
-	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
+	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, payload, nil, nil)
 
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
@@ -256,7 +277,7 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 		Telemetry: telemetryData,
 	}
 	details := Details{
-		Host:       s.correlationID,
+		Host:       s.hostName,
 		SourceType: "_json",
 		Index:      s.splunkIndex,
 		Event:      event,

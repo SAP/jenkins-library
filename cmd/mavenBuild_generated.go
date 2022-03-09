@@ -89,6 +89,7 @@ func (p *mavenBuildReports) persist(stepConfig mavenBuildOptions, gcpJsonKeyFile
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -136,26 +137,30 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http:/
   <servers>
     <server>
         <id>private.repo.id</id>
-        <username>${env.PIPER_CREDENTIAL_USERNAME}</username>
-        <password>${env.PIPER_CREDENTIAL_PASSWORD}</password>
+        <username>${env.PIPER_VAULTCREDENTIAL_USERNAME}</username>
+        <password>${env.PIPER_VAULTCREDENTIAL_PASSWORD}</password>
     </server>
   </servers>
-  <repositories>
+</settings>
+` + "`" + `` + "`" + `` + "`" + `
+` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository and are exposed as environment variables that must be present
+in the environment where the Piper step runs or alternatively can be created using :
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
+
+include the below ` + "`" + `<repositories>` + "`" + ` tag in your ` + "`" + `pom.xml` + "`" + ` to reference the ` + "`" + `<server>` + "`" + ` and make sure the values in the ` + "`" + `<id>` + "`" + ` tags match
+` + "`" + `` + "`" + `` + "`" + `xml
+<repositories>
     <repository>
       <id>private.repo.id</id>
       <url>https://private.repo.com/</url>
     </repository>
-  </repositories>
-</settings>
+</repositories>
 ` + "`" + `` + "`" + `` + "`" + `
-` + "`" + `PIPER_CREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_CREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository and are exposed as environment variables that must be present
-in the environment where the Piper step runs or alternatively can be created using :
-[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
 
-Ensure the following configuration in the Piper config yaml to ensure the above settings xml is included during mavenBuild:
+Ensure the following configuration in the Piper ` + "`" + `config.yaml` + "`" + ` to ensure the above settings xml is included and all steps can consume this parameter:
 
 ` + "`" + `` + "`" + `` + "`" + `yaml
-mavenBuild:
+general:
   projectSettingsFile: <path to the above settings.xml>
 ` + "`" + `` + "`" + `` + "`" + ``,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {

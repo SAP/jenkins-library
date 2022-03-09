@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
@@ -20,6 +19,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
@@ -147,31 +147,6 @@ func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commo
 	}
 }
 
-func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
-	if exclude != nil {
-		filtered := exclude.MatchesPath(find)
-
-		if filtered {
-			log.Entry().Debugf("%s matches exclude pattern, ignoring", find)
-			return true
-		}
-	}
-
-	if include != nil {
-		filtered := !include.MatchesPath(find)
-
-		if filtered {
-			log.Entry().Debugf("%s doesn't match include pattern, ignoring", find)
-			return true
-		} else {
-			log.Entry().Debugf("%s matches include pattern", find)
-			return false
-		}
-	}
-
-	return false
-}
-
 func isBuilder(utils cnbutils.BuildUtils) error {
 	exists, err := utils.FileExists(creatorPath)
 	if err != nil {
@@ -212,62 +187,6 @@ func cleanDir(dir string, utils cnbutils.BuildUtils) error {
 		}
 	}
 
-	return nil
-}
-
-func copyFile(source, target string, utils cnbutils.BuildUtils) error {
-	targetDir := filepath.Dir(target)
-
-	exists, err := utils.DirExists(targetDir)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		log.Entry().Debugf("Creating directory %s", targetDir)
-		err = utils.MkdirAll(targetDir, os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = utils.Copy(source, target)
-	return err
-}
-
-func copyProject(source, target string, include, exclude *ignore.GitIgnore, utils cnbutils.BuildUtils) error {
-	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
-	for _, sourceFile := range sourceFiles {
-		relPath, err := filepath.Rel(source, sourceFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
-		}
-		if !isIgnored(relPath, include, exclude) {
-			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := utils.DirExists(sourceFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorBuild)
-				return errors.Wrapf(err, "Checking file info '%s' failed", target)
-			}
-
-			if dir {
-				err = utils.MkdirAll(target, os.ModePerm)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Creating directory '%s' failed", target)
-				}
-			} else {
-				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				err = copyFile(sourceFile, target, utils)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
-				}
-			}
-
-		}
-	}
 	return nil
 }
 
@@ -452,7 +371,17 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 }
 
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
-	var err error
+	err := cleanDir("/layers", utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to clean up layers folder /layers")
+	}
+
+	err = cleanDir(platformPath, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
+	}
 
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, config)
@@ -503,7 +432,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-	customTelemetryData.Buildpacks.Overall = config.Buildpacks
+	customTelemetryData.Buildpacks.Overall = privacy.FilterBuildpacks(config.Buildpacks)
 	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
 	telemetry.Data = append(telemetry.Data, customTelemetryData)
 
@@ -538,14 +467,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		}
 	}
 
-	target := "/workspace"
-
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "could no resolve path")
 	}
 
+	target := "/workspace"
 	err = cleanDir(target, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -553,7 +481,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	}
 
 	if pathType != pathEnumArchive {
-		err = copyProject(source, target, include, exclude, utils)
+		err = cnbutils.CopyProject(source, target, include, exclude, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -619,6 +547,11 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		"-buildpacks", buildpacksPath,
 		"-order", orderPath,
 		"-platform", platformPath,
+		"-skip-restore",
+	}
+
+	if GeneralConfig.Verbose {
+		creatorArgs = append(creatorArgs, "-log-level", "debug")
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
@@ -634,6 +567,26 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
+	}
+
+	digest, err := cnbutils.DigestFromReport(utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to read image digest")
+	}
+	commonPipelineEnvironment.container.imageDigest = digest
+	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
+
+	if len(config.PreserveFiles) > 0 {
+		if pathType != pathEnumArchive {
+			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorBuild)
+				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
+			}
+		} else {
+			log.Entry().Warnf("skipping preserving files because the source '%s' is an archive", source)
+		}
 	}
 
 	return nil

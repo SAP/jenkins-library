@@ -25,6 +25,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -44,6 +45,8 @@ type pullRequestService interface {
 
 type fortifyUtils interface {
 	maven.Utils
+	gradle.Utils
+
 	SetDir(d string)
 	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
 	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
@@ -958,7 +961,8 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
+	//TODO provide parameter for trusted certs
+	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
