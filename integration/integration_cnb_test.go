@@ -85,7 +85,7 @@ func TestProjectDescriptor(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "-v", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container.whenRunningPiperCommand("cnbBuild", "-v", "--noTelemetry", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Dockerfile doesn't match include pattern, ignoring")
@@ -115,7 +115,7 @@ func TestZipPath(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip")
+	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Installing Go")
@@ -139,7 +139,7 @@ func TestNonZipPath(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
+	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
 
 	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 	container.terminate(t)
@@ -158,7 +158,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
 	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
@@ -183,7 +183,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
 	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
@@ -202,7 +202,7 @@ func TestWrongBuilderProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
+	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
 	container.terminate(t)
