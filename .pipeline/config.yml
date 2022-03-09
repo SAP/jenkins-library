@@ -1,7 +1,4 @@
 steps:
-  pythonBuild:
-    sources:
-      - './integration/testdata/TestPythonIntegration'
   githubPublishRelease:
     addClosedIssues: true
     addDeltaToLastRelease: true
