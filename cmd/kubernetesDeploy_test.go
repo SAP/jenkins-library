@@ -307,7 +307,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		var stdout bytes.Buffer
 
 		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
+		assert.EqualError(t, err, "failed to process deployment values: image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
 	t.Run("test helm v3", func(t *testing.T) {
@@ -712,7 +712,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
 
-		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,image.myImage\.sub1.repository=my.registry:55555/myImage-sub1,image.myImage\.sub1.tag=myTag,image.myImage\.sub2.repository=my.registry:55555/myImage-sub2,image.myImage\.sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret`, "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,image.myImage_sub1.repository=my.registry:55555/myImage-sub1,image.myImage_sub1.tag=myTag,image.myImage_sub2.repository=my.registry:55555/myImage-sub2,image.myImage_sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret`, "Wrong upgrade parameters")
 
 	})
 
@@ -796,7 +796,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		var stdout bytes.Buffer
 
 		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.EqualError(t, err, "number of imageNames and imageNameTags must be equal")
+		assert.EqualError(t, err, "failed to process deployment values: number of imageNames and imageNameTags must be equal")
 	})
 
 	t.Run("test helm v3 - with multiple images and valuesMapping", func(t *testing.T) {
@@ -848,9 +848,17 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
-
-		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,image.myImage\.sub1.repository=my.registry:55555/myImage-sub1,image.myImage\.sub1.tag=myTag,image.myImage\.sub2.repository=my.registry:55555/myImage-sub2,image.myImage\.sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,subchart.image.registry=my.registry:55555/myImage,subchart.image.tag=myTag`, "Wrong upgrade parameters")
-
+		assert.Equal(t, len(mockUtils.Calls[1].Params), 21, "Unexpected upgrade command")
+		pos := 11
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage.repository=my.registry:55555/myImage", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage.tag=myTag", "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub1.repository=my.registry:55555/myImage-sub1", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub1.tag=myTag", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub2.repository=my.registry:55555/myImage-sub2", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "imagePullSecrets[0].name=testSecret", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "subchart.image.registry=my.registry:55555/myImage", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "subchart.image.tag=myTag", "Missing update parameter")
 	})
 
 	t.Run("test helm v3 - with multiple images and incorrect valuesMapping", func(t *testing.T) {
@@ -908,7 +916,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		var stdout bytes.Buffer
 
 		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
+		assert.EqualError(t, err, "failed to process deployment values: image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
 	t.Run("test helm v3 - keep failed deployments", func(t *testing.T) {
@@ -1225,6 +1233,126 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
 	})
 
+	t.Run("test kubectl - with containerImageName and containerImageTag instead of image using go template", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			ContainerImageTag:       "latest",
+			ContainerImageName:      "path/to/Image",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte("image: {{ .Values.image.repository }}:{{ .Values.image.tag }}"))
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+
+		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		assert.NoError(t, err)
+		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - with multiple images using go template", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			ValuesMapping: map[string]interface{}{
+				"subchart.image.repository": "image.myImage.repository",
+				"subchart.image.tag":        "image.myImage.tag",
+			},
+			ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
+			ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte(`image: {{ .Values.image.myImage.repository }}:{{ .Values.image.myImage.tag }}
+image2: {{ .Values.subchart.image.repository }}:{{ .Values.subchart.image.tag }}
+image3: {{ .Values.image.myImage_sub1.repository }}:{{ .Values.image.myImage_sub1.tag }}`))
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+
+		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		assert.NoError(t, err)
+		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/myImage:myTag\nimage2: my.registry:55555/myImage:myTag\nimage3: my.registry:55555/myImage-sub1:myTag", "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - with multiple images and digests", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			ValuesMapping: map[string]interface{}{
+				"subchart.image.repository": "image.myImage.repository",
+				"subchart.image.tag":        "image.myImage.tag",
+			},
+			ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
+			ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+			ImageDigests:  []string{"sha256:111", "sha256:222", "sha256:333"},
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte(`image: {{ .Values.image.myImage.repository }}:{{ .Values.image.myImage.tag }}
+image2: {{ .Values.subchart.image.repository }}:{{ .Values.subchart.image.tag }}
+image3: {{ .Values.image.myImage_sub1.repository }}:{{ .Values.image.myImage_sub1.tag }}
+image4: {{ .Values.image.myImage_sub2.repository }}:{{ .Values.image.myImage_sub2.tag }}`))
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+
+		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		assert.NoError(t, err)
+		assert.Contains(t, string(appTemplateFileContents), `image: my.registry:55555/myImage:myTag@sha256:111
+image2: my.registry:55555/myImage:myTag@sha256:111
+image3: my.registry:55555/myImage-sub1:myTag@sha256:222
+image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - fail with multiple images using placeholder", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			ImageNames:              []string{"myImage", "myImage-sub1", "myImage-sub2"},
+			ImageNameTags:           []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte("image: <image-name>"))
+
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.EqualError(t, err, "multi-image replacement not supported for single image placeholder")
+	})
+
 	t.Run("test kubectl - fails without image information", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			APIServer:               "https://my.api.server",
@@ -1243,7 +1371,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		var stdout bytes.Buffer
 
 		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.EqualError(t, err, "image information not given - please either set image or containerImageName and containerImageTag")
+		assert.EqualError(t, err, "failed to process deployment values: image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
 	t.Run("test kubectl - use replace deploy command", func(t *testing.T) {

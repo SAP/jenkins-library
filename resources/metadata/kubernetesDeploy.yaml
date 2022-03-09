@@ -70,7 +70,58 @@ spec:
         aliases:
           - name: k8sAppTemplate
         type: string
-        description: 'Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.'
+        description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).
+        longDescription: |
+          There are two supported ways for the template rendering:
+
+          1. For a deployments using single image, you can use a placeholder `<image-name>`, which will be replaced with the image GUN.
+          ```
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: app
+            labels:
+              app: app
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: app
+            template:
+              metadata:
+                labels:
+                  app: app
+              spec:
+                containers:
+                - name: app
+                  image: <image-name>
+          ```
+
+          2. Helm styled templates, with the support for multi-image deployments.
+
+          ```
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: app
+            labels:
+              app: app
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: app
+            template:
+              metadata:
+                labels:
+                  app: app
+              spec:
+                containers:
+                - name: app-1
+                  image: "{{ .Values.image.repository}}:{{ .Values.image.tag }}"
+                - name: app-2
+                  image: "{{ .Values.image.app_2.repository}}:{{ .Values.image.app_2.tag }}"
+          ```
         scope:
           - PARAMETERS
           - STAGES
@@ -268,6 +319,16 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageDigests
+        type: "[]string"
+        description: List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageDigests
         scope:
           - PARAMETERS
           - STAGES

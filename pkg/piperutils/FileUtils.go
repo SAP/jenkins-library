@@ -22,6 +22,7 @@ type FileUtils interface {
 	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
+	Move(src, dest string) error
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
@@ -111,6 +112,20 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
+}
+
+func (f Files) Move(src, dst string) error {
+	if exists, err := f.FileExists(src); err != nil {
+		return err
+	} else if !exists {
+		return fmt.Errorf("file doesn't exist: %s", src)
+	}
+
+	if _, err := f.Copy(src, dst); err != nil {
+		return err
+	}
+
+	return f.FileRemove(src)
 }
 
 //Chmod is a wrapper for os.Chmod().

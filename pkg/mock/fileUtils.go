@@ -228,6 +228,21 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	return int64(len(*props.content)), nil
 }
 
+// Move moves a file to the given destination
+func (f *FilesMock) Move(src, dst string) error {
+	if exists, err := f.FileExists(src); err != nil {
+		return err
+	} else if !exists {
+		return fmt.Errorf("file doesn't exist: %s", src)
+	}
+
+	if _, err := f.Copy(src, dst); err != nil {
+		return err
+	}
+
+	return f.FileRemove(src)
+}
+
 // FileRead returns the content previously associated with the given path via AddFile(), or an error if no
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {

@@ -16,8 +16,10 @@ type JenkinsConfigProvider struct {
 func (j *JenkinsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	j.client = piperHttp.Client{}
 	j.options = piperHttp.ClientOptions{
-		Username: settings.JenkinsUser,
-		Password: settings.JenkinsToken,
+		Username:         settings.JenkinsUser,
+		Password:         settings.JenkinsToken,
+		MaxRetries:       3,
+		TransportTimeout: time.Second * 10,
 	}
 	j.client.SetOptions(j.options)
 	log.Entry().Debug("Successfully initialized Jenkins config provider")
