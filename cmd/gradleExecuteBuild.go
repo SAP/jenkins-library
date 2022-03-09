@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,6 +13,8 @@ import (
 type gradleExecuteBuildUtils interface {
 	command.ExecRunner
 	FileExists(filename string) (bool, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRemove(path string) error
 }
 
 type gradleExecuteBuildUtilsBundle struct {

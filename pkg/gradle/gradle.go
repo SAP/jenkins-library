@@ -19,12 +19,34 @@ const (
 	initScriptName        = "cyclonedx.gradle"
 )
 
+const initScriptContent = `
+initscript {
+  repositories {
+    mavenCentral()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
+  }
+}
+
+rootProject {
+    apply plugin: 'java'
+    apply plugin: 'maven'
+    apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+}
+`
+
 type Utils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
 
 	FileExists(filename string) (bool, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRemove(path string) error
 }
 
 // ExecuteOptions are used by Execute() to construct the Gradle command line.
@@ -95,53 +117,15 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	} else {
-		if err := createInitScript(options.BuildGradlePath); err != nil {
-			return err
+		err := utils.FileWrite(filepath.Join(options.BuildGradlePath, initScriptName), []byte(initScriptContent), 0644)
+		if err != nil {
+			return fmt.Errorf("failed create init script: %w", err)
 		}
-		defer deleteInitScript(options.BuildGradlePath)
+		defer utils.FileRemove(filepath.Join(options.BuildGradlePath, initScriptName))
 		if err := utils.RunExecutable(exec, "--init-script", filepath.Join(options.BuildGradlePath, initScriptName), bomTaskName); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
 
-	return nil
-}
-
-func createInitScript(buildGradlePath string) error {
-	initScript, err := os.Create(filepath.Join(buildGradlePath, initScriptName))
-	if err != nil {
-		return fmt.Errorf("failed create init script: %w", err)
-	}
-	defer initScript.Close()
-
-	initScriptText := `
-initscript {
-  repositories {
-    mavenCentral()
-    maven {
-      url "https://plugins.gradle.org/m2/"
-    }
-  }
-  dependencies {
-    classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
-  }
-}
-
-rootProject {
-    apply plugin: 'java'
-    apply plugin: 'maven'
-    apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
-}
-`
-	if _, err := initScript.WriteString(initScriptText); err != nil {
-		return fmt.Errorf("failed append plugin to script file: %w", err)
-	}
-	return nil
-}
-
-func deleteInitScript(buildGradlePath string) error {
-	if err := os.Remove(filepath.Join(buildGradlePath, initScriptName)); err != nil {
-		return fmt.Errorf("failed remove init script: %w", err)
-	}
 	return nil
 }
