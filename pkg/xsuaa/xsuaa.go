@@ -75,6 +75,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 		return
 	}
 	request.Header.Add("Accept", "application/json")
+	request.SetBasicAuth(x.ClientID, x.ClientSecret)
 
 	response, httpErr := httpClient.Do(request)
 	if httpErr != nil {

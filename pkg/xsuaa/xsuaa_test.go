@@ -1,6 +1,7 @@
 package xsuaa
 
 import (
+	"encoding/base64"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -128,12 +129,14 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var requestedUrlPath string
+			var requestedAuthHeader string
 			// Start a local HTTP server
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				requestedUrlPath = req.URL.String()
 				if tt.response.statusCode != 0 {
 					rw.WriteHeader(tt.response.statusCode)
 				}
+				requestedAuthHeader = req.Header.Get(authHeaderKey)
 				rw.Write([]byte(tt.response.bodyText))
 			}))
 			// Close the server when test finishes
@@ -163,6 +166,8 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 			}
 			wantUrlPath := "/oauth/token?grant_type=client_credentials&response_type=token"
 			assert.Equal(t, wantUrlPath, requestedUrlPath)
+			wantAuth := tt.fields.ClientID + ":" + tt.fields.ClientSecret
+			assert.Equal(t, "Basic "+base64.StdEncoding.EncodeToString([]byte(wantAuth)), requestedAuthHeader)
 		})
 	}
 }
