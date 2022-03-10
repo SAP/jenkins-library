@@ -185,6 +185,18 @@ func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 							},
 						},
 					},
+					{
+						Name:        "stage3",
+						DisplayName: "Test Stage 3",
+						Steps: []Step{
+							{
+								Name: "step3_1",
+								NotActiveConditions: []StepCondition{
+									{ConfigKey: "testKey"},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -203,11 +215,15 @@ func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 2": {
 			"step2_1": true,
 		},
+		"Test Stage 3": {
+			"step3_1": false,
+		},
 	}
 
 	expectedStages := map[string]bool{
 		"Test Stage 1": true,
 		"Test Stage 2": true,
+		"Test Stage 3": false,
 	}
 
 	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock)
