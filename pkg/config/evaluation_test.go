@@ -112,7 +112,6 @@ func TestEvaluateConditionsV1(t *testing.T) {
 
 	expectedSteps := map[string]map[string]bool{
 		"Test Stage 1": {
-			"step1_1": true,
 			"step1_2": true,
 			"step1_3": false,
 		},
@@ -150,12 +149,8 @@ func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 						DisplayName: "Test Stage 1",
 						Steps: []Step{
 							{
-								Name:       "step1_1",
-								Conditions: []StepCondition{},
-								NotActiveConditions: []StepCondition{
-									{ConfigKey: "testKeyNotExisting"},
-									{ConfigKey: "testKey"},
-								},
+								Name:          "step1_1",
+								Conditions:    []StepCondition{},
 								Orchestrators: []string{"Jenkins"},
 							},
 							{
@@ -168,9 +163,12 @@ func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 								},
 							},
 							{
-								Name:                "step1_3",
-								Conditions:          []StepCondition{},
-								NotActiveConditions: []StepCondition{},
+								Name:       "step1_3",
+								Conditions: []StepCondition{},
+								NotActiveConditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
 							},
 						},
 					},
@@ -194,13 +192,13 @@ func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 	config := Config{Stages: map[string]map[string]interface{}{
 		"Test Stage 1": {"testKey": "testVal"},
 		"Test Stage 2": {"testKey": "testVal"},
+		"Test Stage 3": {"testKey": "testVal"},
 	}}
 
 	expectedSteps := map[string]map[string]bool{
 		"Test Stage 1": {
-			"step1_1": false,
 			"step1_2": true,
-			"step1_3": true,
+			"step1_3": false,
 		},
 		"Test Stage 2": {
 			"step2_1": true,
