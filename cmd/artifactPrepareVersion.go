@@ -146,9 +146,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
 
-	now := time.Now()
-
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
+		now := time.Now()
+
 		newVersion, err := calculateCloudVersion(artifact, config, version, gitCommitID, now)
 		if err != nil {
 			return err
