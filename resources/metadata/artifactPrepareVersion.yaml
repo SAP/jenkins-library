@@ -121,7 +121,7 @@ spec:
         longDescription: |
           **Only for versioning types `cloud` and `cloud_noTag`.** In case default build descriptors cannot be used for [`additionalTargetTools`](additionaltargettools) this parameter allows to define a dedicated search pattern per build tool.
           For each entry in [`additionalTargetTools`](additionaltargettools) a dedicated entry has to be maintained.
-          
+
           You can use either a file name or a glob pattern like `**/package.json`.
 
           For `helm` the default value is `**/Chart.yaml`, thus typically no adaptions are required.
