@@ -22,7 +22,6 @@ type helmExecuteOptions struct {
 	TargetChartRepositoryName     string   `json:"targetChartRepositoryName,omitempty"`
 	TargetChartRepositoryUser     string   `json:"targetChartRepositoryUser,omitempty"`
 	TargetChartRepositoryPassword string   `json:"targetChartRepositoryPassword,omitempty"`
-	DeploymentName                string   `json:"deploymentName,omitempty"`
 	HelmDeployWaitSeconds         int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                    []string `json:"helmValues,omitempty"`
 	Image                         string   `json:"image,omitempty"`
@@ -32,7 +31,6 @@ type helmExecuteOptions struct {
 	Namespace                     string   `json:"namespace,omitempty"`
 	DockerConfigJSON              string   `json:"dockerConfigJSON,omitempty"`
 	HelmCommand                   string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade install lint test uninstall package publish"`
-	PackageVersion                string   `json:"packageVersion,omitempty"`
 	AppVersion                    string   `json:"appVersion,omitempty"`
 	DependencyUpdate              bool     `json:"dependencyUpdate,omitempty"`
 	DumpLogs                      bool     `json:"dumpLogs,omitempty"`
@@ -163,7 +161,6 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryName, "targetChartRepositoryName", `stable`, "set the chart repository")
 	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryUser, "targetChartRepositoryUser", os.Getenv("PIPER_targetChartRepositoryUser"), "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryPassword, "targetChartRepositoryPassword", os.Getenv("PIPER_targetChartRepositoryPassword"), "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
-	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when deploying with helm.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -173,7 +170,6 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.HelmCommand, "helmCommand", os.Getenv("PIPER_helmCommand"), "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc.")
-	cmd.Flags().StringVar(&stepConfig.PackageVersion, "packageVersion", os.Getenv("PIPER_packageVersion"), "set the version on the chart to this semver version")
 	cmd.Flags().StringVar(&stepConfig.AppVersion, "appVersion", os.Getenv("PIPER_appVersion"), "set the appVersion on the chart to this version")
 	cmd.Flags().BoolVar(&stepConfig.DependencyUpdate, "dependencyUpdate", false, "set the appVersion on the chart to this version")
 	cmd.Flags().BoolVar(&stepConfig.DumpLogs, "dumpLogs", false, "dump the logs from test pods (this runs after all tests are complete, but before any cleanup)")
@@ -273,15 +269,6 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_targetChartRepositoryPassword"),
-					},
-					{
-						Name:        "deploymentName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
-						Default:     os.Getenv("PIPER_deploymentName"),
 					},
 					{
 						Name:        "helmDeployWaitSeconds",
@@ -390,15 +377,6 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_helmCommand"),
-					},
-					{
-						Name:        "packageVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_packageVersion"),
 					},
 					{
 						Name:        "appVersion",

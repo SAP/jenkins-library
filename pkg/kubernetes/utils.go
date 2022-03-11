@@ -1,11 +1,14 @@
 package kubernetes
 
 import (
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"gopkg.in/yaml.v2"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -65,4 +68,30 @@ func NewDeployUtilsBundle(customTLSCertificateLinks []string) DeployUtils {
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	utils.Stderr(log.Writer())
 	return &utils
+}
+
+// GetChartInfo is used to get name and version of helm chart
+func GetChartInfo(chartYamlFile string, utils DeployUtils) (string, string, error) {
+
+	var result map[string]interface{}
+	p, err := utils.FileRead(chartYamlFile)
+	if err != nil {
+		return "", "", fmt.Errorf("file couldn't read: %w", err)
+	}
+	err = yaml.Unmarshal(p, &result)
+	if err != nil {
+		return "", "", fmt.Errorf("failed unmarshal: %w", err)
+	}
+
+	name, ok := result["name"].(string)
+	if !ok || len(name) == 0 {
+		return "", "", errors.New("name not found in chart yaml file (or wrong type)")
+	}
+
+	version, ok := result["version"].(string)
+	if !ok || len(name) == 0 {
+		return "", "", errors.New("version not found in chart yaml file (or wrong type)")
+	}
+
+	return name, version, nil
 }

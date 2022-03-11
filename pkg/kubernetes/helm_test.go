@@ -10,14 +10,15 @@ import (
 )
 
 type helmMockUtilsBundle struct {
-	*mock.FilesMock
 	*mock.ExecMockRunner
+	*mock.FilesMock
 	*mock.HttpClientMock
 }
 
 func newHelmMockUtilsBundle() helmMockUtilsBundle {
 	utils := helmMockUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
 		HttpClientMock: &mock.HttpClientMock{
 			FileUploads: map[string]string{},
 		},
