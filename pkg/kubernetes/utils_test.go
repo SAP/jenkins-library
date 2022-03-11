@@ -49,6 +49,14 @@ func TestRunUtils(t *testing.T) {
 				expectedError:          errors.New("version not found in chart yaml file (or wrong type)"),
 				setFileReadError:       false,
 			},
+			{
+				chartYamlFile:          "path/to/Chart.yaml",
+				dataChartYaml:          "name=nginx-testChart",
+				expectedChartName:      "nginx-testChart",
+				expectedPackageVersion: "1.3.5",
+				expectedError:          errors.New("failed unmarshal"),
+				setFileReadError:       false,
+			},
 		}
 
 		for _, testCase := range testTable {
