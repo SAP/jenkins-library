@@ -65,6 +65,9 @@ spec:
           - name: gitHttpsCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            name: gitHttpsCredentialVaultSecretName
+            default: gitHttpsCredential
       - name: password
         type: string
         description: Password/token for git authentication.
@@ -78,6 +81,9 @@ spec:
           - name: gitHttpsCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            name: gitHttpsCredentialVaultSecretName
+            default: gitHttpsCredential
       - name: filePath
         description: |
           Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:

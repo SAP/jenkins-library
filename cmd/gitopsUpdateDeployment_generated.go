@@ -206,6 +206,12 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+
+							{
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -220,6 +226,12 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 								Name:  "gitHttpsCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
