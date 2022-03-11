@@ -12,12 +12,12 @@ metadata:
 
     ```
     @privateScope:registry=https://private.repository.com/
-    //private.repository.com/:username=${PIPER_CREDENTIAL_USER}
-    //private.repository.com/:_password=${PIPER_CREDENTIAL_PASSWORD_BASE64}
+    //private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER}
+    //private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64}
     //private.repository.com/:always-auth=true
     registry=https://registry.npmjs.org
     ```
-    `PIPER_CREDENTIAL_USER` and `PIPER_CREDENTIAL_PASSWORD_BASE64` (Base64 encoded password) are the username and password for the private repository
+    `PIPER_VAULTCREDENTIAL_USER` and `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` (Base64 encoded password) are the username and password for the private repository
     and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
     [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
 spec:
@@ -144,7 +144,7 @@ spec:
       - name: packBeforePublish
         type: bool
         default: false
-        description: used for pack
+        description: used for executing npm pack first, followed by npm publish. This two step maybe required when you are building a scoped packages and have npm dependencies from the same scope
         scope:
           - STEPS
           - STAGES

@@ -105,6 +105,9 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 			return err
 		}
 	} else {
+		if len(teamID) == 0 {
+			return errors.Wrap(err, "TeamName or TeamID is required to create a new project")
+		}
 		project, err = createNewProject(config, sys, projectName, teamID)
 		if err != nil {
 			return err
@@ -161,10 +164,15 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
+	var err error
 	if len(teams) > 0 && len(teamName) > 0 {
-		return sys.FilterTeamByName(teams, teamName), nil
+		team, err = sys.FilterTeamByName(teams, teamName)
 	}
-	return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	if err != nil {
+		return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	} else {
+		return team, nil
+	}
 }
 
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
@@ -198,7 +206,19 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		if len(projects) == 0 {
 			return checkmarx.Project{}, projectName, nil
 		}
-		project = projects[0]
+		if len(projects) == 1 {
+			project = projects[0]
+		} else {
+			for _, current_project := range projects {
+				if projectName == current_project.Name {
+					project = current_project
+					break
+				}
+			}
+			if len(project.Name) == 0 {
+				return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the teamName parameter if you want a new project to be created.")
+			}
+		}
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
 	}
 	return project, projectName, nil
@@ -335,7 +355,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
 
-		if insecure && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
 			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Checkmarx SAST Results", config.Assignees, utils)
 			if err != nil {
