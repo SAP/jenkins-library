@@ -16,8 +16,10 @@ import (
 )
 
 type gradleExecuteBuildOptions struct {
-	Path string `json:"path,omitempty"`
-	Task string `json:"task,omitempty"`
+	Path      string `json:"path,omitempty"`
+	Task      string `json:"task,omitempty"`
+	Publish   bool   `json:"publish,omitempty"`
+	CreateBOM bool   `json:"createBOM,omitempty"`
 }
 
 // GradleExecuteBuildCommand This step runs a gradle build command with parameters provided to the step.
@@ -111,6 +113,8 @@ func GradleExecuteBuildCommand() *cobra.Command {
 func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with gradle.build file which should be executed.")
 	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed.")
+	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 
 }
 
@@ -142,6 +146,24 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `build`,
+					},
+					{
+						Name:        "publish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
