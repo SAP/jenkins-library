@@ -60,10 +60,11 @@ type Stage struct {
 }
 
 type Step struct {
-	Name          string          `json:"name,omitempty"`
-	Description   string          `json:"description,omitempty"`
-	Conditions    []StepCondition `json:"conditions,omitempty"`
-	Orchestrators []string        `json:"orchestrators,omitempty"`
+	Name                string          `json:"name,omitempty"`
+	Description         string          `json:"description,omitempty"`
+	Conditions          []StepCondition `json:"conditions,omitempty"`
+	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty"`
+	Orchestrators       []string        `json:"orchestrators,omitempty"`
 }
 
 type StepCondition struct {

@@ -1,3 +1,6 @@
+general:
+  verbose: false
+  collectTelemetryData: false
 steps:
   cnbBuild:
     bindings:

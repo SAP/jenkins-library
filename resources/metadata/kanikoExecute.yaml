@@ -13,10 +13,59 @@ metadata:
     **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
     or implement a custom logic and for example execute this `kanikoExecute` step multiple times in your custom pipeline.
 
-    You can activate multiple builds using the parameters
+    You can activate multiple builds using the parameter [containerMultiImageBuild](#containermultiimagebuild)
 
-    * [containerMultiImageBuild](#containermultiimagebuild) for activation
+    Behavior can be adapted using:
+
     * [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes
+    * [containerMultiImageBuildTrimDir](#containermultiimagebuildtrimdir) for removing parent directory part from image name
+
+    Examples:
+
+    #### Multiple containers in sub directories
+
+    Configuration as follows:
+
+    ```
+    general:
+      containerImageName: myImage
+    steps:
+      kanikoExecute:
+        containerMultiImageBuild: true
+    ```
+
+    Following Dockerfiles are available in the repository:
+
+    * sub1/Dockerfile
+    * sub2/Dockerfile
+
+    Following final image names will be built:
+
+    * `myImage-sub1`
+    * `myImage-sub2`
+
+    #### Multiple containers in sub directories while trimming a directory part
+
+    Configuration as follows:
+
+    ```
+    general:
+      containerImageName: myImage
+    steps:
+      kanikoExecute:
+        containerMultiImageBuild: true
+        containerMultiImageBuildTrimDir: .ci
+    ```
+
+    Following Dockerfiles are available in the repository:
+
+    * .ci/sub1/Dockerfile
+    * .ci/sub2/Dockerfile
+
+    Following final image names will be built:
+
+    * `myImage-sub1`
+    * `myImage-sub2`
 
 spec:
   inputs:
@@ -36,6 +85,7 @@ spec:
           - --skip-tls-verify-pull
           # fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
           # as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536
+          - --ignore-path=/workspace
           - --ignore-path=/busybox
       - name: buildSettingsInfo
         type: string
@@ -47,22 +97,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
-      - name: containerMultiImageBuild
-        type: bool
-        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: containerMultiImageBuildExcludes
-        type: '[]string'
-        description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: containerBuildOptions
         type: string
         description: Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.
@@ -103,6 +137,29 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: containerMultiImageBuild
+        type: bool
+        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildExcludes
+        type: '[]string'
+        description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildTrimDir
+        type: 'string'
+        description: Defines a trailing directory part which should not be considered in the final image name.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: containerPreparationCommand
         type: string
         description: Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.
