@@ -1293,6 +1293,44 @@ image3: {{ .Values.image.myImage_sub1.repository }}:{{ .Values.image.myImage_sub
 		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/myImage:myTag\nimage2: my.registry:55555/myImage:myTag\nimage3: my.registry:55555/myImage-sub1:myTag", "kubectl parameters incorrect")
 	})
 
+	t.Run("test kubectl - with multiple images and digests", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			KubeConfig:              "This is my kubeconfig",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			ValuesMapping: map[string]interface{}{
+				"subchart.image.repository": "image.myImage.repository",
+				"subchart.image.tag":        "image.myImage.tag",
+			},
+			ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
+			ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+			ImageDigests:  []string{"sha256:111", "sha256:222", "sha256:333"},
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile("test.yaml", []byte(`image: {{ .Values.image.myImage.repository }}:{{ .Values.image.myImage.tag }}
+image2: {{ .Values.subchart.image.repository }}:{{ .Values.subchart.image.tag }}
+image3: {{ .Values.image.myImage_sub1.repository }}:{{ .Values.image.myImage_sub1.tag }}
+image4: {{ .Values.image.myImage_sub2.repository }}:{{ .Values.image.myImage_sub2.tag }}`))
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+
+		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		assert.NoError(t, err)
+		assert.Contains(t, string(appTemplateFileContents), `image: my.registry:55555/myImage:myTag@sha256:111
+image2: my.registry:55555/myImage:myTag@sha256:111
+image3: my.registry:55555/myImage-sub1:myTag@sha256:222
+image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters incorrect")
+	})
+
 	t.Run("test kubectl - fail with multiple images using placeholder", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			APIServer:               "https://my.api.server",

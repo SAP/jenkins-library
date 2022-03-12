@@ -520,7 +520,7 @@ uri = "some-buildpack"
 		assert.Equal(t, "11", customData.Data[0].BuildEnv.KeyValues["BP_NODE_VERSION"])
 		assert.NotContains(t, customData.Data[0].BuildEnv.KeyValues, "PROJECT_KEY")
 
-		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "some-buildpack")
+		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "<redacted>")
 	})
 
 	t.Run("success case (multiple images configured)", func(t *testing.T) {
