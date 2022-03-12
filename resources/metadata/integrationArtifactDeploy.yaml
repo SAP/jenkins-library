@@ -3,44 +3,6 @@ metadata:
   description: Deploy an SAP Cloud Integration integration flow.
   longDescription: |
     With this step, you can deploy an integration flow artifact to SAP Cloud Integration using OData API. For more information on the SAP Cloud Integration remote API for deploying an integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on the SAP Help Portal.
-spec:
-  inputs:
-    secrets:
-      - name: cpiCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration APIs.
-        type: jenkins
-    params:
-      - name: username
-        type: string
-        description: User to authenticate to the SAP Cloud Integration service.
-        scope:
-          - PARAMETERS
-          - STAGES
-@@ -26,7 +26,7 @@ spec:
-            param: username
-      - name: password
-        type: string
-        description: Password to authenticate to the SAP Cloud Integration service.
-        scope:
-          - PARAMETERS
-          - STAGES
-@@ -55,7 +55,7 @@ spec:
-        mandatory: true
-      - name: platform
-        type: string
-        description: Specifies the running platform of the SAP Cloud Integration service.
-        scope:
-          - PARAMETERS
-          - STAGES
-@@ -71,7 +71,7 @@ spec:
-        mandatory: true
-      - name: oAuthTokenProviderUrl
-        type: string
-        description: Specifies the OAuth Provider protocol and host address, including the port. Please provide it in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
-        scope:
-          - PARAMETERS
-          - STAGES
-
 
 spec:
   inputs:
