@@ -1,19 +1,19 @@
 metadata:
   name: integrationArtifactTriggerIntegrationTest
-  description: Test the service endpoint of your iFlow
+  description: Test the service endpoint of your iFlow.
   longDescription: |
-    With this step you can test your intergration flow  exposed by SAP Cloud Platform Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).
+    With this step, you can test your intergration flow exposed by SAP Cloud Integration on a tenant using OData API. For more information on the SAP Cloud Integration remote API for getting a service endpoint of a deployed integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on the SAP Help Portal.
 
 spec:
   inputs:
     secrets:
       - name: integrationFlowServiceKeyCredentialsId
-        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'
+        description: Jenkins secret text credential ID containing the service key to the Process Integration runtime service instance of plan 'integration-flow'.
         type: jenkins
     params:
       - name: integrationFlowServiceKey
         type: string
-        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'
+        description: Service key JSON string to access the Process Integration runtime service instance of plan 'integration-flow'.
         scope:
           - PARAMETERS
         mandatory: true
@@ -24,7 +24,7 @@ spec:
             param: integrationFlowServiceKey
       - name: integrationFlowId
         type: string
-        description: Specifies the ID of the Integration Flow artifact
+        description: Specifies the ID of the integration flow artifact.
         scope:
           - PARAMETERS
           - STAGES
@@ -36,13 +36,13 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/integrationFlowServiceEndpoint
         type: string
-        description: Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        description: Specifies the URL endpoint of the iFlow. Please provide it in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
           - PARAMETERS
         mandatory: true
       - name: contentType
         type: string
-        description: Specifies the content type of the file defined in messageBodyPath e.g. application/json
+        description: Specifies the content type of the file defined in messageBodyPath, for example, `application/json`.
         scope:
           - PARAMETERS
           - STAGES
@@ -50,7 +50,7 @@ spec:
         mandatory: false
       - name: messageBodyPath
         type: string
-        description: Speficfies the relative file path to the message body.
+        description: Specifies the relative file path to the message body.
         scope:
           - PARAMETERS
           - STAGES

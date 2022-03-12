@@ -1,19 +1,19 @@
 metadata:
   name: integrationArtifactUnDeploy
-  description: Undeploy a integration flow
+  description: Undeploy an integration flow.
   longDescription: |
-    With this step you can undeploy a integration flow artifact in SAP Cloud integration runtime using OData API. Learn more about the SAP Cloud Integration remote API for undeploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html)
+    With this step, you can undeploy an integration flow artifact in SAP Cloud Integration using OData API. For more information on the SAP Cloud Integration remote API for deploying an integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on the SAP Help Portal.
 
 spec:
   inputs:
     secrets:
       - name: cpiApiServiceKeyCredentialsId
-        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'
+        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'.
         type: jenkins
     params:
       - name: apiServiceKey
         type: string
-        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'api'
+        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'api'.
         scope:
           - PARAMETERS
         mandatory: true
@@ -24,7 +24,7 @@ spec:
             param: apiServiceKey
       - name: integrationFlowId
         type: string
-        description: Specifies the ID of the Integration Flow artifact
+        description: Specifies the ID of the integration flow artifact.
         scope:
           - PARAMETERS
           - GENERAL

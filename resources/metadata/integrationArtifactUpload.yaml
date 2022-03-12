@@ -1,19 +1,19 @@
 metadata:
   name: integrationArtifactUpload
-  description: Upload or Update an integration flow designtime artifact
+  description: Upload or update an integration flow design time artifact.
   longDescription: |
-    With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).
+    With this step, you can either upload or update an integration flow design time artifact using the OData API. For more information on the SAP Cloud Integration remote API for updating an integration flow artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on SAP Help Portal.
 
 spec:
   inputs:
     secrets:
       - name: cpiApiServiceKeyCredentialsId
-        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'
+        description: Jenkins secret text credential ID containing the service key to access the Process Integration runtime service instance of plan 'api'.
         type: jenkins
     params:
       - name: apiServiceKey
         type: string
-        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'api'
+        description: Service key JSON string to access the Process Integration runtime service instance of plan 'api'.
         scope:
           - PARAMETERS
         mandatory: true
@@ -24,7 +24,7 @@ spec:
             param: apiServiceKey
       - name: integrationFlowId
         type: string
-        description: Specifies the ID of the Integration Flow artifact
+        description: Specifies the ID of the integration flow artifact.
         scope:
           - PARAMETERS
           - GENERAL
@@ -33,7 +33,7 @@ spec:
         mandatory: true
       - name: integrationFlowName
         type: string
-        description: Specifies the Name of the Integration Flow artifact
+        description: Specifies the name of the integration flow artifact.
         scope:
           - PARAMETERS
           - STAGES
@@ -41,7 +41,7 @@ spec:
         mandatory: true
       - name: packageId
         type: string
-        description: Specifies the ID of the Integration Package
+        description: Specifies the ID of the integration package.
         scope:
           - PARAMETERS
           - STAGES
@@ -49,7 +49,7 @@ spec:
         mandatory: false
       - name: filePath
         type: string
-        description: Specifies integration artifact relative file path.
+        description: Specifies the relative file path to the file containing the integration artifact.
         scope:
           - PARAMETERS
           - STAGES
