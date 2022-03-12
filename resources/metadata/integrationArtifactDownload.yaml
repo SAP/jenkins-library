@@ -3,44 +3,6 @@ metadata:
   description: Download an integration flow runtime artifact.
   longDescription: |
      With this step, you can download an integration flow runtime artifact, which returns a zip file with the integration flow contents into your current workspace using the OData API. For more information on the SAP Cloud Integration remote API for deploying an integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/460dee19f9c141e88ba0454ce892247a.html) on the SAP Help Portal.
-spec:
-  inputs:
-    secrets:
-      - name: cpiCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the SAP Cloud Integration APIs
-        type: jenkins
-    params:
-      - name: username
-        type: string
-        description: User to authenticate to the SAP Cloud Integration Service
-        scope:
-          - PARAMETERS
-          - STAGES
-@@ -26,7 +26,7 @@ spec:
-            param: username
-      - name: password
-        type: string
-        description: Password to authenticate to the SAP Cloud Integration Service
-        scope:
-          - PARAMETERS
-          - STAGES
-@@ -63,15 +63,15 @@ spec:
-        mandatory: true
-      - name: oAuthTokenProviderUrl
-        type: string
-        description: Specifies the OAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
-      - name: downloadPath
-        type: string
-        description: Specifies the integration artifact download location.
-        scope:
-          - PARAMETERS
-          - STAGES
-
 
 spec:
   inputs:
