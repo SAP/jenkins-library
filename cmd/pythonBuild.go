@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -11,8 +12,6 @@ import (
 const (
 	PyBomFilename = "bom.xml"
 )
-
-var installFlags = []string{"-m", "pip", "install", "--upgrade"}
 
 type pythonBuildUtils interface {
 	command.ExecRunner
@@ -47,6 +46,8 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData)
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils) error {
 
+	installFlags := []string{"-m", "pip", "install", "--upgrade"}
+
 	tomlExists, err := utils.FileExists("pyproject.toml")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -57,16 +58,19 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		return fmt.Errorf("cannot run without important file")
 	}
 
-	err = buildExecute(config, utils)
+	err = buildExecute(config, utils, installFlags)
+	if err != nil {
+		return fmt.Errorf("Python build failed with error: %w", err)
+	}
 
 	if config.CreateBOM {
-		if err := runBOMCreationForPy(utils); err != nil {
+		if err := runBOMCreationForPy(utils, installFlags); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
 
 	if config.Publish {
-		if err := publishWithTwine(config, utils); err != nil {
+		if err := publishWithTwine(config, utils, installFlags); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
@@ -74,7 +78,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
-func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils) error {
+func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
 	var flags []string
 	flags = append(flags, "-m", "build")
 	installFlags = append(installFlags, "build")
@@ -97,8 +101,8 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils) error {
 	return nil
 }
 
-func runBOMCreationForPy(utils pythonBuildUtils) error {
-	installFlags[len(installFlags)-1] = "cyclonedx-bom"
+func runBOMCreationForPy(utils pythonBuildUtils, installFlags []string) error {
+	installFlags = append(installFlags, "cyclonedx-bom")
 	if err := utils.RunExecutable("python3", installFlags...); err != nil {
 		return err
 	}
@@ -108,8 +112,8 @@ func runBOMCreationForPy(utils pythonBuildUtils) error {
 	return nil
 }
 
-func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils) error {
-	installFlags[len(installFlags)-1] = "twine"
+func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
+	installFlags = append(installFlags, "twine")
 	if err := utils.RunExecutable("python3", installFlags...); err != nil {
 		return err
 	}
