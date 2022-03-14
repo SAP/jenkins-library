@@ -87,22 +87,16 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 }
 
 func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
-	if config.LintFlag {
-		if err := helmExecutor.RunHelmLint(); err != nil {
-			return fmt.Errorf("failed to execute helm lint: %v", err)
-		}
+	if err := helmExecutor.RunHelmLint(); err != nil {
+		return fmt.Errorf("failed to execute helm lint: %v", err)
 	}
 
-	if config.PackageFlag {
-		if err := helmExecutor.RunHelmPackage(); err != nil {
-			return fmt.Errorf("failed to execute helm package: %v", err)
-		}
+	if err := helmExecutor.RunHelmPackage(); err != nil {
+		return fmt.Errorf("failed to execute helm package: %v", err)
 	}
 
-	if config.PublishFlag {
-		if err := helmExecutor.RunHelmPublish(); err != nil {
-			return fmt.Errorf("failed to execute helm publish: %v", err)
-		}
+	if err := helmExecutor.RunHelmPublish(); err != nil {
+		return fmt.Errorf("failed to execute helm publish: %v", err)
 	}
 
 	return nil
