@@ -38,6 +38,7 @@ func GetTargetImage(imageRegistry, imageName, imageTag, projectID, envRootPath s
 
 	cpePath := filepath.Join(envRootPath, "commonPipelineEnvironment")
 	gitRepository := piperenv.GetResourceParameter(cpePath, "git", "repository")
+	githubRepository := piperenv.GetResourceParameter(cpePath, "github", "repository")
 
 	if imageName != "" {
 		targetImage.ContainerImageName = imageName
@@ -46,6 +47,8 @@ func GetTargetImage(imageRegistry, imageName, imageTag, projectID, envRootPath s
 		targetImage.ContainerImageName = name
 	} else if gitRepository != "" {
 		targetImage.ContainerImageName = strings.ReplaceAll(gitRepository, ".", "-")
+	} else if githubRepository != "" {
+		targetImage.ContainerImageName = strings.ReplaceAll(githubRepository, ".", "-")
 	} else {
 		return nil, errors.New("failed to derive default for image name")
 	}
