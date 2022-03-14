@@ -371,7 +371,17 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 }
 
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
-	var err error
+	err := cleanDir("/layers", utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, "failed to clean up layers folder /layers")
+	}
+
+	err = cleanDir(platformPath, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
+	}
 
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, config)
@@ -422,7 +432,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-	customTelemetryData.Buildpacks.Overall = config.Buildpacks
+	customTelemetryData.Buildpacks.Overall = privacy.FilterBuildpacks(config.Buildpacks)
 	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
 	telemetry.Data = append(telemetry.Data, customTelemetryData)
 
@@ -457,14 +467,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		}
 	}
 
-	target := "/workspace"
-
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "could no resolve path")
 	}
 
+	target := "/workspace"
 	err = cleanDir(target, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -538,6 +547,11 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		"-buildpacks", buildpacksPath,
 		"-order", orderPath,
 		"-platform", platformPath,
+		"-skip-restore",
+	}
+
+	if GeneralConfig.Verbose {
+		creatorArgs = append(creatorArgs, "-log-level", "debug")
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
