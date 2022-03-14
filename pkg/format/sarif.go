@@ -122,7 +122,7 @@ type Help struct {
 	Markdown string `json:"markdown,omitempty"`
 }
 
-// SnippetSarif
+// SnippetSarif holds the code snippet where the finding appears
 type SnippetSarif struct {
 	Text string `json:"text"`
 }
