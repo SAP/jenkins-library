@@ -7,9 +7,9 @@ import (
 	"path"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/influxdata/influxdb-client-go/v2/internal/log"
 
 	"github.com/pkg/errors"
 )
@@ -166,9 +166,9 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 
 		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
 		for cpeFilePath, _ := range s.Cpe {
-			log.Infof("value of cpeFilePath %v", cpeFilePath)
+			log.Entry().Infof("value of cpeFilePath %v", cpeFilePath)
 			for _, activationValue := range cpeFilePath {
-				log.Infof("value of activation %v", activationValue)
+				log.Entry().Infof("value of activation %v", activationValue)
 				// if activationValue == config.Config[param] {
 				// 	return true, nil
 				// }
