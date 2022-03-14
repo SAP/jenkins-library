@@ -60,6 +60,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: commitID
+        type: string
+        description: Specifies a commitID, for which a tag will be created
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: tagName
         type: string
         description: Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system
@@ -68,14 +75,14 @@ spec:
           - STAGES
           - STEPS
       - name: createTagForAddonProductVersion
-        type: string
+        type: bool
         description: Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: createTagForAddonComponentVersion
-        type: string
+        type: bool
         description: Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system
         scope:
           - PARAMETERS

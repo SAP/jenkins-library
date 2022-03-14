@@ -1,78 +1,180 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http/cookiejar"
+	"time"
+
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
-type abapEnvironmentCreateTagUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The abapEnvironmentCreateTagUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-type abapEnvironmentCreateTagUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-
-	// Embed more structs as necessary to implement methods or interfaces you add to abapEnvironmentCreateTagUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// abapEnvironmentCreateTagUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newAbapEnvironmentCreateTagUtils() abapEnvironmentCreateTagUtils {
-	utils := abapEnvironmentCreateTagUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func abapEnvironmentCreateTag(config abapEnvironmentCreateTagOptions, telemetryData *telemetry.CustomData) {
-	// Utils can be used wherever the command.ExecRunner interface is expected.
-	// It can also be used for example as a mavenExecRunner.
-	utils := newAbapEnvironmentCreateTagUtils()
 
-	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
+	c := command.Command{}
 
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runAbapEnvironmentCreateTag(&config, telemetryData, utils)
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
+
+	client := piperhttp.Client{}
+
+	err := runAbapEnvironmentCreateTag(&config, telemetryData, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentCreateTagUtils) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 
-	// Example of calling methods from external dependencies directly on utils:
-	exists, err := utils.FileExists("file.txt")
-	if err != nil {
-		// It is good practice to set an error category.
-		// Most likely you want to do this at the place where enough context is known.
-		log.SetErrorCategory(log.ErrorConfiguration)
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-		return fmt.Errorf("failed to check for important file: %w", err)
+	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(convertTagConfig(config), "")
+	if errorGetInfo != nil {
+		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
+
+	// Configuring the HTTP Client and CookieJar
+	cookieJar, errorCookieJar := cookiejar.New(nil)
+	if errorCookieJar != nil {
+		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
 	}
+
+	client.SetOptions(piperhttp.ClientOptions{
+		MaxRequestDuration: 180 * time.Second,
+		CookieJar:          cookieJar,
+		Username:           connectionDetails.User,
+		Password:           connectionDetails.Password,
+	})
+
+	backlog, errorPrepare := prepareBacklog(config)
+	if errorPrepare != nil {
+		return fmt.Errorf("Something failed during the tag creation: %w", errorPrepare)
+	}
+
+	createTags(backlog, telemetryData, connectionDetails, client)
 
 	return nil
+}
+
+func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+
+	connection := con
+	connection.XCsrfToken = "fetch"
+	resp, err := abaputils.GetHTTPResponse("HEAD", connection, nil, client)
+	if err != nil {
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", con)
+		return err
+	}
+	defer resp.Body.Close()
+
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", con.URL).Debug("Authentication on the ABAP system successful")
+	con.XCsrfToken = resp.Header.Get("X-Csrf-Token")
+
+	con.URL = con.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Tags"
+
+	for _, item := range backlog {
+		err = createTagsForSingleItem(item, telemetryData, con, client)
+	}
+	return err
+}
+
+func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+
+	for index, _ := range item.tags {
+		err = createSingleTag(item, index, telemetryData, con, client)
+	}
+	return err
+}
+
+func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+
+	requestBodyStruct := CreateTagBody{repositoryName: item.repositoryName, commitID: item.commitID, tag: item.tags[index]}
+	requestBodyJson, err := json.Marshal(&requestBodyStruct)
+	if err != nil {
+		return err
+	}
+
+	log.Entry().Debugf("Request body: %s", requestBodyJson)
+	resp, err := abaputils.GetHTTPResponse("POST", con, requestBodyJson, client)
+	if err != nil {
+		err = abaputils.HandleHTTPError(resp, err, "Could not create tag "+requestBodyStruct.tag+" for repository "+requestBodyStruct.repositoryName+" with commitID "+requestBodyStruct.commitID, con)
+		return err
+	}
+	defer resp.Body.Close()
+
+	log.Entry().Info("Created tag " + requestBodyStruct.tag + " for repository " + requestBodyStruct.repositoryName + " with commitID " + requestBodyStruct.commitID)
+
+	return err
+}
+
+func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTagBacklog, err error) {
+
+	descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
+	if err != nil {
+		return
+	}
+	repos := descriptor.Repositories
+
+	for _, repo := range repos {
+
+		backlogInstance := CreateTagBacklog{repositoryName: repo.Name, commitID: repo.CommitID}
+		backlogInstance.tags = append(backlogInstance.tags, repo.VersionYAML)
+		backlog = append(backlog, backlogInstance)
+
+	}
+
+	if config.RepositoryName != "" && config.CommitID != "" {
+		backlog = append(backlog, CreateTagBacklog{repositoryName: config.RepositoryName, commitID: config.CommitID})
+	}
+
+	if config.CreateTagForAddonProductVersion {
+		backlog = addTagToList(backlog, descriptor.AddonVersion)
+	}
+	if config.TagName != "" {
+		backlog = addTagToList(backlog, config.TagName)
+	}
+
+	return
+}
+
+func addTagToList(backlog []CreateTagBacklog, tag string) []CreateTagBacklog {
+
+	for _, item := range backlog {
+		item.tags = append(item.tags, tag)
+	}
+	return backlog
+}
+
+func convertTagConfig(config *abapEnvironmentCreateTagOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+
+	return subOptions
+}
+
+type CreateTagBacklog struct {
+	repositoryName string
+	commitID       string
+	tags           []string
+}
+
+type CreateTagBody struct {
+	repositoryName string `json:"sc_name"`
+	commitID       string `json:"commit_id"`
+	tag            string `json:"tag_name"`
 }
