@@ -164,6 +164,7 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
 	}
 
+	// TODO: complex CPE value checks : currently implemented for boolean and string cpe values directly from the file and not for deep json inside the cpe file
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions / NotActiveConditions list
 	if s.Cpe != nil {
