@@ -122,7 +122,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 			if config.ContainerMultiImageBuild {
 				log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
-				imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, fileUtils)
+				imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, config.ContainerMultiImageBuildTrimDir, fileUtils)
 				if err != nil {
 					return fmt.Errorf("failed to identify image list for multi image build: %w", err)
 				}
