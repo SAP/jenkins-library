@@ -127,7 +127,7 @@ type SnippetSarif struct {
 	Text string `json:"text"`
 }
 
-// ContextRegion
+// ContextRegion provides the context for the finding
 type ContextRegion struct {
 	StartLine int          `json:"startLine"`
 	EndLine   int          `json:"endLine"`
