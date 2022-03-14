@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/influxdata/influxdb-client-go/v2/internal/log"
 
 	"github.com/pkg/errors"
 )
@@ -159,6 +160,21 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 
 	if len(s.NpmScript) > 0 {
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
+	}
+
+	if len(s.Cpe) > 1 {
+
+		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
+		for cpeFilePath, _ := range s.Cpe {
+			log.Infof("value of cpeFilePath %v", cpeFilePath)
+			for _, activationValue := range cpeFilePath {
+				log.Infof("value of activation %v", activationValue)
+				// if activationValue == config.Config[param] {
+				// 	return true, nil
+				// }
+			}
+			return false, nil
+		}
 	}
 
 	// needs to be checked last:

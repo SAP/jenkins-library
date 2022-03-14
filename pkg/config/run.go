@@ -74,6 +74,7 @@ type StepCondition struct {
 	FilePatternFromConfig string                   `json:"filePatternFromConfig,omitempty"`
 	Inactive              bool                     `json:"inactive,omitempty"`
 	NpmScript             string                   `json:"npmScript,omitempty"`
+	Cpe                   map[string][]interface{} `json:"cpe,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
