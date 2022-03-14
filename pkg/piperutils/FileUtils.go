@@ -115,6 +115,12 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	stats, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	os.Chmod(dst, stats.Mode())
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
@@ -236,7 +242,7 @@ func Untar(src string, dest string, stripComponentLevel int) error {
 	defer file.Close()
 
 	if err != nil {
-		fmt.Errorf("unable to open src: %v", err)
+		return fmt.Errorf("unable to open src: %v", err)
 	}
 
 	if b, err := isFileGzipped(src); err == nil && b {

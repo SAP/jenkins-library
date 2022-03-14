@@ -2,7 +2,8 @@ package mock
 
 import (
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/v1"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 // DownloadMock .
@@ -41,4 +42,9 @@ func (c *DownloadMock) DownloadImageContent(imageRef, targetFile string) (v1.Ima
 		return nil, fmt.Errorf(c.ReturnError)
 	}
 	return c.ReturnImage, nil
+}
+
+// GetRemoteImageInfo .
+func (c *DownloadMock) GetRemoteImageInfo(imgSource string) (v1.Image, error) {
+	return nil, nil
 }

@@ -11,11 +11,14 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/pkg/errors"
 
 	cranecmd "github.com/google/go-containerregistry/cmd/crane/cmd"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
@@ -94,6 +97,7 @@ type ClientOptions struct {
 type Download interface {
 	DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	DownloadImageContent(imageSource, targetDir string) (v1.Image, error)
+	GetRemoteImageInfo(string) (v1.Image, error)
 }
 
 // SetOptions sets options used for the docker client
@@ -103,7 +107,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.localPath = options.LocalPath
 }
 
-//DownloadImageToPath downloads the image content into the given targetDir. Returns with an error if the targetDir doesnt exist
+//DownloadImageContent downloads the image content into the given targetDir. Returns with an error if the targetDir doesnt exist
 func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, error) {
 	if fileInfo, err := os.Stat(targetDir); err != nil {
 		return nil, err
@@ -176,6 +180,16 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	}
 
 	return img, nil
+}
+
+// GetRemoteImageInfo retrieves information about the image (e.g. digest) without actually downoading it
+func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
+	ref, err := name.ParseReference(imageSource, name.WeakValidation)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing image reference")
+	}
+
+	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 }
 
 func (c *Client) getImageRef(image string) (name.Reference, error) {
