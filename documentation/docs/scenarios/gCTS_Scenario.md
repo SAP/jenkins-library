@@ -5,12 +5,14 @@ For current information about gCTS, see SAP Note [Central Note for Git-enabled C
 ## Introduction
 
 [Git-enabled Change & Transport System (gCTS)](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/f319b168e87e42149e25e13c08d002b9.html) enables you to manage your ABAP change and transport management processes using Git as an external version management system. It allows you to set up continuous integration processes for ABAP development.
-This scenario explains how to use a pipeline to deploy a commit to a test system, and execute ABAP unit tests and ATC (ABAP Test Cockpit) checks in the test system. In detail, this scenario covers the following steps:    
 For each new commit that arrives in the remote repository, the pipeline executes the following Piper steps in the test system:
+This scenario explains how to use a pipeline to deploy a commit to a test system, and execute [ABAP unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) and [ATC (ABAP Test Cockpit)](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks in the test system. In detail, this scenario covers the following steps:    
 1. [gctsDeploy](https://www.project-piper.io/steps/gctsDeploy/): Deploys the commit on the test system.
 2. [gctsExecuteABAPUnitTests](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/): Executes ABAP unit tests and ATC checks for the ABAP development objects of the commit.
-- If the result of the testing is success, the pipeline finishes.  
-- If the result of the testing is error, a rollback to the previous commit is executed. You can check the results of the testing using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) in Jenkins.
+- If the result of the testing is *success*, the pipeline finishes.  
+- If the result of the testing is *error*, a rollback is executed (see next step).
+3. [gctsRollback](https://www.project-piper.io/steps/gctsRollback/): A rollback to the previous commit is executed. In  case of errors, you can check these using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) in Jenkins.
+
 
 ## Prerequisites
 
@@ -21,7 +23,7 @@ The Git repository is usually created as part of the gCTS configuration. It is u
 You can use this Git repository also for the pipeline configuration.  
 The repository used for the pipeline configuration needs to be accessed by the Jenkins instance. If the repository is password protected, the user and password (or access token) should be stored in the Jenkins Credentials Store (Manage Jenkins  &rightarrow; Manage Credentials).
 - You have at least two ABAP systems with a version SAP S/4HANA 2020 or higher. You need one development system that you use to push objects to the Git repository, and a test system on which you run the pipeline. You have created and cloned the Git repository on all systems, on the development system with the *Development* role, and in the others with the *Provided* role.
-- You have enabled [ATC](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/latest/en-US/4ec5711c6e391014adc9fffe4e204223.html) checks in transaction ATC in the test system.
+- You have enabled [ATC](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks in transaction ATC in the test system.
 - You have access to a Jenkins instance including the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/). The plug-in must be installed separately. It is required to view the results of the testing after the pipeline has run.  
 For the gCTS scenario, we recommend that you use the [Custom Jenkins setup](https://www.project-piper.io/infrastructure/customjenkins/) even though it is possible to run the gCTS scenario with [Piper´s CX server](https://www.project-piper.io/infrastructure/overview/).
 - You have set up a suitable Jenkins instance as described under [Getting Started with Project "Piper"](https://www.project-piper.io/guidedtour/) under *Create Your First Pipeline*.
@@ -33,11 +35,16 @@ For the gCTS scenario, we recommend that you use the [Custom Jenkins setup](http
 The process is as follows:  
 You create or change ABAP objects in the development system. When you release the transport request, the objects are pushed to the remote repository in a new commit. The pipeline is triggered by the new commit. It can be started manually in Jenkins, or automatically when the new commit arrives in the Git repository (by setting a webhook in GitHub).  
 The following image shows the library steps involved when the tests are run successfully:
+
 ![Process: Deploy Git repository on local system and execute tests - Tests are successful](../images/checkSuccessful.png "Process: Deploy and execute tests: Success")  
 
 The following image shows the library steps involved when the tests result in an error:
+
 ![Process: Deploy Git repository on local system and execute tests - Tests are not successful](../images/checkNotSuccessful.png "Process: Deploy and execute tests: Success")
 
+When the tests result in an error, you can view them in the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/). For more information about the mapping of the quality check errors to errors displayed in Jenkins, see the description of the following parameters in the  [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/) step:
+  - Severities of ABAP Unit Test results: [aUnitTest](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/#aunittest) parameter
+  - Priorities of ATC Check results: [atcCheck](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/#atccheck) parameter
 
 
 ## Example
@@ -68,7 +75,7 @@ pipeline {
     stage('gCTS Deploy') {
       when {
         anyOf {
-          branch 'master'
+          branch 'main'
         }
       }
       steps {
@@ -80,19 +87,19 @@ pipeline {
           repository: REPO,
           remoteRepositoryURL: REPO_URL,
           role: 'SOURCE',
-          vSID: 'ABC')
+          vSID: '<vSID>')
 
       }
     }
 
-    stage('gctsExecuteABAPUnitTests') {
+    stage('gctsExecuteABAPQualityChecks') {
       when {
         anyOf {
           branch 'main'
         }
       }
       steps {
-        gctsExecuteABAPUnitTests(
+        gctsExecuteABAPQualityChecks(
           script: this,
           host: HOST,
           client: CLIENT,
@@ -101,31 +108,22 @@ pipeline {
           scope: 'localChangedObjects',
           commit: "${GIT_COMMIT}",
           workspace: "${WORKSPACE}")
+        } catch (Exception ex) {
+          currentBuild.result = 'FAILURE'
+          unstable(message: "${STAGE_NAME} is unstable")
+        }
 
       }
     }
   }
 }
-stage('ABAP Unit Tests') {
-  steps{
 
-   script{
-
-     try{
-           gctsExecuteABAPUnitTests(
-              script: this,
-              commit: "${GIT_COMMIT}",
-              workspace: "${WORKSPACE}")
-        }
-          catch (Exception ex) {
-            currentBuild.result = 'FAILURE'
-            unstable(message: "${STAGE_NAME} is unstable")
-             }
-
-        }
+stage('Results in Checkstyle') {
+  when {
+      anyOf {
+        branch 'main'
       }
     }
-stage('Results in Checkstyle') {
   steps{
 
      recordIssues(
@@ -134,7 +132,23 @@ stage('Results in Checkstyle') {
        )
 
       }
+    }   
+stage('Rollback') {
+            when {
+              expression { currentBuild.result == 'FAILURE' }
+            }
+            steps {
+              gctsRollback(
+                script: this,
+                host: HOST,
+                client: CLIENT,
+                abapCredentialsId: DEMOCREDS,
+                repository: REPO
+          )
+
+      }
     }
+  }
 
 }
 ```   
@@ -160,7 +174,7 @@ steps:
       rollback: true,
       configuration: [VCS_AUTOMATIC_PULL: 'FALSE',VCS_AUTOMATIC_PUSH: 'FALSE',CLIENT_VCS_LOGLVL: 'debug']
     )
-    gctsExecuteABAPUnitTests(
+    gctsExecuteABAPQualityChecks(
       script: this,
       host: 'https://abap.server.com:port',
       client: '000',
@@ -175,7 +189,7 @@ steps:
 
 ### Parameters
 
-For a detailed description of the relevant parameters, see [gctsDeploy](../../steps/gctsDeploy/) and [gctsExecuteABAPUnitTests](../../steps/gctsExecuteABAPUnitTests/).
+For a detailed description of the relevant parameters, see [gctsDeploy](../../steps/gctsDeploy/) and [gctsExecuteABAPQualityChecks](../../steps/gctsExecuteABAPQualityChecks/).
 
 ## Troubleshooting
 
