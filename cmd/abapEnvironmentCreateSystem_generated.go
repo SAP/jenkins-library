@@ -35,7 +35,7 @@ type abapEnvironmentCreateSystemOptions struct {
 	IncludeAddon                   bool   `json:"includeAddon,omitempty"`
 }
 
-// AbapEnvironmentCreateSystemCommand Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
+// AbapEnvironmentCreateSystemCommand Creates a SAP BTP ABAP Environment system (aka Steampunk system)
 func AbapEnvironmentCreateSystemCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentCreateSystem"
 
@@ -48,8 +48,8 @@ func AbapEnvironmentCreateSystemCommand() *cobra.Command {
 
 	var createAbapEnvironmentCreateSystemCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)",
-		Long:  `This step creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system) via the cloud foundry command line interface (cf CLI). This can be done by providing a service manifest as a configuration file (parameter ` + "`" + `serviceManifest` + "`" + `) or by passing the configuration values directly via the other parameters of this step.`,
+		Short: "Creates a SAP BTP ABAP Environment system (aka Steampunk system)",
+		Long:  `This step creates a SAP BTP ABAP Environment system (aka Steampunk system) via the cloud foundry command line interface (cf CLI). This can be done by providing a service manifest as a configuration file (parameter ` + "`" + `serviceManifest` + "`" + `) or by passing the configuration values directly via the other parameters of this step.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -157,7 +157,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentCreateSystem",
 			Aliases:     []config.Alias{},
-			Description: "Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)",
+			Description: "Creates a SAP BTP ABAP Environment system (aka Steampunk system)",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
