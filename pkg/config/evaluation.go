@@ -162,7 +162,7 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
 	}
 
-	if len(s.Cpe) > 1 {
+	if len(s.Cpe) > 0 {
 
 		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
 		for cpeFilePath, _ := range s.Cpe {
