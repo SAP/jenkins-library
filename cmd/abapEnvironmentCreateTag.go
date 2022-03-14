@@ -87,7 +87,7 @@ func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData,
 
 func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
 
-	for index, _ := range item.tags {
+	for index := range item.tags {
 		err = createSingleTag(item, index, telemetryData, con, client)
 	}
 	return err
@@ -95,7 +95,7 @@ func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.Cus
 
 func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
 
-	requestBodyStruct := CreateTagBody{repositoryName: item.repositoryName, commitID: item.commitID, tag: item.tags[index]}
+	requestBodyStruct := CreateTagBody{RepositoryName: item.repositoryName, CommitID: item.commitID, Tag: item.tags[index]}
 	requestBodyJson, err := json.Marshal(&requestBodyStruct)
 	if err != nil {
 		return err
@@ -104,12 +104,12 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	log.Entry().Debugf("Request body: %s", requestBodyJson)
 	resp, err := abaputils.GetHTTPResponse("POST", con, requestBodyJson, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not create tag "+requestBodyStruct.tag+" for repository "+requestBodyStruct.repositoryName+" with commitID "+requestBodyStruct.commitID, con)
+		err = abaputils.HandleHTTPError(resp, err, "Could not create tag "+requestBodyStruct.Tag+" for repository "+requestBodyStruct.RepositoryName+" with commitID "+requestBodyStruct.CommitID, con)
 		return err
 	}
 	defer resp.Body.Close()
 
-	log.Entry().Info("Created tag " + requestBodyStruct.tag + " for repository " + requestBodyStruct.repositoryName + " with commitID " + requestBodyStruct.commitID)
+	log.Entry().Info("Created tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
 
 	return err
 }
@@ -174,7 +174,7 @@ type CreateTagBacklog struct {
 }
 
 type CreateTagBody struct {
-	repositoryName string `json:"sc_name"`
-	commitID       string `json:"commit_id"`
-	tag            string `json:"tag_name"`
+	RepositoryName string `json:"sc_name"`
+	CommitID       string `json:"commit_id"`
+	Tag            string `json:"tag_name"`
 }
