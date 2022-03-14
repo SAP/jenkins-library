@@ -80,13 +80,8 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
 	var flags []string
-	flags = append(flags, "-m", "build")
-	installFlags = append(installFlags, "build")
-
-	if err := utils.RunExecutable("python3", installFlags...); err != nil {
-		return fmt.Errorf("failed to install 'build': %w", err)
-	}
 	flags = append(flags, config.BuildFlags...)
+	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
 
 	setupPyExists, _ := utils.FileExists("setup.py")
 	setupCFGExists, _ := utils.FileExists("setup.cfg")
@@ -119,7 +114,7 @@ func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, instal
 	}
 	if err := utils.RunExecutable("twine", "upload", "--username", config.TargetRepositoryUser,
 		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
-		"dist/*.tar.gz"); err != nil {
+		"dist/*"); err != nil {
 		return err
 	}
 	return nil
