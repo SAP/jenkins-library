@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/pkg/errors"
@@ -162,19 +164,43 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
 	}
 
-	if len(s.Cpe) > 0 {
+	// only the first condition will be evaluated.
+	// if multiple conditions should be checked they need to provided via the Conditions / NotActiveConditions list
+	if s.Cpe != nil {
+		if len(s.Cpe) > 1 {
+			return false, errors.Errorf("only one cpe key allowed per condition but %v provided", len(s.Cpe))
+		}
 
-		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
-		for cpeFilePath, _ := range s.Cpe {
-			log.Entry().Infof("value of cpeFilePath %v", cpeFilePath)
-			for _, activationValue := range cpeFilePath {
-				log.Entry().Infof("value of activation %v", activationValue)
-				// if activationValue == config.Config[param] {
-				// 	return true, nil
-				// }
+		cpeBasePath := filepath.Join(".pipeline", "commonPipelineEnvironment")
+		cpeFileName := ""
+		fileExtension := ".json"
+		// for loop will only cover first entry since we throw an error in case there is more than one cpe key defined already above
+		for cpeFilePath, activationValues := range s.Cpe {
+			if strings.Contains(cpeFilePath, ".") {
+				lastInd := strings.LastIndex(cpeFilePath, ".")
+				cpeFilePath = strings.ReplaceAll(cpeFilePath, ".", string(os.PathSeparator))
+				cpeBasePath = filepath.Join(cpeBasePath, cpeFilePath[:lastInd])
+				cpeFileName = cpeFilePath[lastInd+1:]
+
+			} else {
+				cpeFileName = cpeFilePath
+			}
+			for _, activationValue := range activationValues {
+				if _, ok := activationValue.(string); ok {
+					fileExtension = ""
+				}
+				cpeValue := piperenv.GetParameter(cpeBasePath, cpeFileName+fileExtension)
+				if cpeValue == "" {
+					return false, errors.Errorf("cpe value could not be obtained from %v provided", cpeFilePath)
+				}
+				// cpeValue returned from the file systems is always a string hence the comparision needs formatting
+				if fmt.Sprint(activationValue) == cpeValue {
+					return true, nil
+				}
 			}
 			return false, nil
 		}
+
 	}
 
 	// needs to be checked last:
