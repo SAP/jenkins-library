@@ -75,6 +75,7 @@ func ConfigCommand() *cobra.Command {
 	return createConfigCmd
 }
 
+// GetDockerImageValue provides Piper commands additional access to configuration of step execution image if required
 func GetDockerImageValue(stepName string) (string, error) {
 	configOptions.contextConfig = true
 	configOptions.stepName = stepName
@@ -108,7 +109,7 @@ func getBuildToolFromStageConfig(stepName string) (string, error) {
 	return buildTool, nil
 }
 
-// GetStageConfig provides Piper commands additional access to stage configuration if required
+// GetStageConfig provides Piper commands additional access to stage configuration if required.
 // This allows steps to refer to configuration parameters which are not part of the step itself.
 func GetStageConfig() (config.StepConfig, error) {
 	myConfig := config.Config{}
