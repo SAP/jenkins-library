@@ -37,6 +37,7 @@ type AddonDescriptor struct {
 // Repository contains fields for the repository/component version
 type Repository struct {
 	Name                string `json:"name"`
+	UseClassicCTS       bool   `json:"useClassicCTS"`
 	Tag                 string `json:"tag"`
 	Branch              string `json:"branch"`
 	CommitID            string `json:"commitID"`

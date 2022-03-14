@@ -165,6 +165,11 @@ func (br *buildWithRepository) start() error {
 			},
 		},
 	}
+	if br.repo.UseClassicCTS {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "useClassicCTS",
+				Value: "true"})
+	}
 	if br.repo.PredecessorCommitID != "" {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
