@@ -16,18 +16,19 @@ import (
 )
 
 type abapEnvironmentCreateTagOptions struct {
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Repositories      string `json:"repositories,omitempty"`
-	RepositoryName    string `json:"repositoryName,omitempty"`
-	TagName           string `json:"tagName,omitempty"`
-	GenerateTag       string `json:"generateTag,omitempty"`
-	Host              string `json:"host,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
+	Username                          string `json:"username,omitempty"`
+	Password                          string `json:"password,omitempty"`
+	Repositories                      string `json:"repositories,omitempty"`
+	RepositoryName                    string `json:"repositoryName,omitempty"`
+	TagName                           string `json:"tagName,omitempty"`
+	CreateTagForAddonProductVersion   string `json:"createTagForAddonProductVersion,omitempty"`
+	CreateTagForAddonComponentVersion string `json:"createTagForAddonComponentVersion,omitempty"`
+	Host                              string `json:"host,omitempty"`
+	CfAPIEndpoint                     string `json:"cfApiEndpoint,omitempty"`
+	CfOrg                             string `json:"cfOrg,omitempty"`
+	CfSpace                           string `json:"cfSpace,omitempty"`
+	CfServiceInstance                 string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName                  string `json:"cfServiceKeyName,omitempty"`
 }
 
 // AbapEnvironmentCreateTagCommand Creates a tag for a git repository to a SAP BTP ABAP Environment system
@@ -131,7 +132,8 @@ func addAbapEnvironmentCreateTagFlags(cmd *cobra.Command, stepConfig *abapEnviro
 	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a repository (Software Components) on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.TagName, "tagName", os.Getenv("PIPER_tagName"), "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.GenerateTag, "generateTag", os.Getenv("PIPER_generateTag"), "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.CreateTagForAddonProductVersion, "createTagForAddonProductVersion", os.Getenv("PIPER_createTagForAddonProductVersion"), "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.CreateTagForAddonComponentVersion, "createTagForAddonComponentVersion", os.Getenv("PIPER_createTagForAddonComponentVersion"), "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
@@ -215,13 +217,22 @@ func abapEnvironmentCreateTagMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_tagName"),
 					},
 					{
-						Name:        "generateTag",
+						Name:        "createTagForAddonProductVersion",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_generateTag"),
+						Default:     os.Getenv("PIPER_createTagForAddonProductVersion"),
+					},
+					{
+						Name:        "createTagForAddonComponentVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_createTagForAddonComponentVersion"),
 					},
 					{
 						Name:        "host",
