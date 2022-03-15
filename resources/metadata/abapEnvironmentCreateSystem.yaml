@@ -1,8 +1,8 @@
 metadata:
   name: abapEnvironmentCreateSystem
-  description: Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
+  description: Creates a SAP BTP ABAP Environment system (aka Steampunk system)
   longDescription: |
-    This step creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system) via the cloud foundry command line interface (cf CLI). This can be done by providing a service manifest as a configuration file (parameter `serviceManifest`) or by passing the configuration values directly via the other parameters of this step.
+    This step creates a SAP BTP ABAP Environment system (aka Steampunk system) via the cloud foundry command line interface (cf CLI). This can be done by providing a service manifest as a configuration file (parameter `serviceManifest`) or by passing the configuration values directly via the other parameters of this step.
 
 spec:
   inputs:
