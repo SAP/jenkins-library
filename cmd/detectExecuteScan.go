@@ -476,30 +476,30 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 }
 
 func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
-	errorsOccured := []error{}
+	errorsOccured := []string{}
 	vulns, _, err := getVulnsAndComponents(config, influx, sys)
 	if err != nil {
-		errorsOccured = append(errorsOccured, errors.Wrap(err, "failed to fetch vulnerabilities and components"))
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debugf("Creating result issues for %v alert(s)", vulns.TotalCount)
 		err = bd.CreateGithubResultIssues(vulns, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
 		if err != nil {
-			errorsOccured = append(errorsOccured, errors.Wrap(err, "failed to create GitHub issues for detected vulnerabilities"))
+			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
 	}
 
 	sarif := bd.CreateSarifResultFile(vulns)
 	paths, err := bd.WriteSarifFile(sarif, utils)
 	if err != nil {
-		errorsOccured = append(errorsOccured, errors.Wrap(err, "failed to write SARIF output file"))
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 
 	scanReport := createVulnerabilityReport(config, vulns, influx, sys)
 	vulnerabilityReportPaths, err := bd.WriteVulnerabilityReports(scanReport, utils)
 	if err != nil {
-		errorsOccured = append(errorsOccured, errors.Wrap(err, "failed to write vulnerability report"))
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 	paths = append(paths, vulnerabilityReportPaths...)
 
@@ -507,23 +507,23 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	policyReport := createPolicyStatusReport(config, policyStatus, influx, sys)
 	policyReportPaths, err := writePolicyStatusReports(policyReport, config, utils)
 	if err != nil {
-		errorsOccured = append(errorsOccured, errors.Wrap(err, "failed to write policy report"))
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 	paths = append(paths, policyReportPaths...)
 
 	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
 	if err != nil {
-		errorsOccured = append(errorsOccured, errors.Wrap(err, "failed to persist reports and links"))
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 
 	err, violationCount := writeIpPolicyJson(config, utils, paths, sys)
 	if err != nil {
-		errorsOccured = append(errorsOccured, errors.Wrap(err, errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file"))
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 
 	if violationCount > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
-		errorsOccured = append(errorsOccured, errors.Errorf("License Policy Violations found"))
+		errorsOccured = append(errorsOccured, fmt.Sprint("License Policy Violations found"))
 	}
 
 	if len(errorsOccured) > 0 {
