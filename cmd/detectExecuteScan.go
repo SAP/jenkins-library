@@ -16,15 +16,15 @@ import (
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 type detectUtils interface {
@@ -32,12 +32,19 @@ type detectUtils interface {
 	FileExists(filename string) (bool, error)
 	FileRemove(filename string) error
 	Copy(src, dest string) (int64, error)
+	Move(src, dest string) error
 	DirExists(dest string) (bool, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
+	Chdir(path string) error
+	TempDir(string, string) (string, error)
+	RemoveAll(string) error
+	FileRename(string, string) error
+	Getwd() (string, error)
+	Symlink(oldname string, newname string) error
 
 	GetExitCode() int
 	GetOsEnv() []string
@@ -380,63 +387,6 @@ func getVersionName(config detectExecuteScanOptions) string {
 	return detectVersionName
 }
 
-func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
-	vulns, _, err := getVulnsAndComponents(config, influx, sys)
-	if err != nil {
-		return err
-	}
-	scanReport := createVulnerabilityReport(config, vulns, influx, sys)
-	paths, err := writeVulnerabilityReports(scanReport, config, utils)
-
-	policyStatus, err := getPolicyStatus(config, influx, sys)
-	policyReport := createPolicyStatusReport(config, policyStatus, influx, sys)
-	policyReportPaths, err := writePolicyStatusReports(policyReport, config, utils)
-
-	paths = append(paths, policyReportPaths...)
-	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check and report scan results")
-	}
-	policyJsonErr, violationCount := writeIpPolicyJson(config, utils, paths, sys)
-	if policyJsonErr != nil {
-		return errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file")
-	}
-	if violationCount > 0 {
-		return errors.Errorf("License Policy Violations found")
-	}
-	return nil
-}
-
-func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
-	detectVersionName := getVersionName(config)
-	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	majorVulns := 0
-	activeVulns := 0
-	for _, vuln := range vulns.Items {
-		if isActiveVulnerability(vuln) {
-			activeVulns++
-			if isMajorVulnerability(vuln) {
-				majorVulns++
-			}
-		}
-	}
-	influx.detect_data.fields.vulnerabilities = activeVulns
-	influx.detect_data.fields.major_vulnerabilities = majorVulns
-	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
-
-	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
-	if err != nil {
-		return vulns, nil, err
-	}
-	influx.detect_data.fields.components = components.TotalCount
-
-	return vulns, components, nil
-}
-
 func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux, sys *blackduckSystem) reporting.ScanReport {
 	versionName := getVersionName(config)
 	versionUrl, _ := sys.Client.GetProjectVersionLink(config.ProjectName, versionName)
@@ -501,29 +451,97 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 	return scanReport
 }
 
-func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExecuteScanOptions, utils detectUtils) ([]piperutils.Path, error) {
-	reportPaths := []piperutils.Path{}
-
-	htmlReport, _ := scanReport.ToHTML()
-	htmlReportPath := "piper_detect_vulnerability_report.html"
-	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+func isActiveVulnerability(v bd.Vulnerability) bool {
+	switch v.VulnerabilityWithRemediation.RemediationStatus {
+	case "NEW":
+		return true
+	case "REMEDIATION_REQUIRED":
+		return true
+	case "NEEDS_REVIEW":
+		return true
+	default:
+		return false
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Vulnerability Report", Target: htmlReportPath})
+}
 
-	jsonReport, _ := scanReport.ToJSON()
-	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+func isMajorVulnerability(v bd.Vulnerability) bool {
+	switch v.VulnerabilityWithRemediation.Severity {
+	case "CRITICAL":
+		return true
+	case "HIGH":
+		return true
+	default:
+		return false
+	}
+}
+
+func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
+	vulns, _, err := getVulnsAndComponents(config, influx, sys)
+	if err != nil {
+		return err
+	}
+
+	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+		log.Entry().Debugf("Creating result issues for %v alert(s)", vulns.TotalCount)
+		err = bd.CreateGithubResultIssues(vulns, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return err
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+
+	sarif := bd.CreateSarifResultFile(vulns)
+	bd.WriteSarifFile(sarif, utils)
+
+	scanReport := createVulnerabilityReport(config, vulns, influx, sys)
+	paths, err := bd.WriteVulnerabilityReports(scanReport, utils)
+
+	policyStatus, err := getPolicyStatus(config, influx, sys)
+	policyReport := createPolicyStatusReport(config, policyStatus, influx, sys)
+	policyReportPaths, err := writePolicyStatusReports(policyReport, config, utils)
+
+	paths = append(paths, policyReportPaths...)
+	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check and report scan results")
+	}
+	policyJsonErr, violationCount := writeIpPolicyJson(config, utils, paths, sys)
+	if policyJsonErr != nil {
+		return errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file")
+	}
+	if violationCount > 0 {
+		return errors.Errorf("License Policy Violations found")
+	}
+	return nil
+}
+
+func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
+	detectVersionName := getVersionName(config)
+	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return reportPaths, nil
+	majorVulns := 0
+	activeVulns := 0
+	for _, vuln := range vulns.Items {
+		if isActiveVulnerability(vuln) {
+			activeVulns++
+			if isMajorVulnerability(vuln) {
+				majorVulns++
+			}
+		}
+	}
+	influx.detect_data.fields.vulnerabilities = activeVulns
+	influx.detect_data.fields.major_vulnerabilities = majorVulns
+	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
+
+	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
+	if err != nil {
+		return vulns, nil, err
+	}
+	influx.detect_data.fields.components = components.TotalCount
+
+	return vulns, components, nil
 }
 
 func getPolicyStatus(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.PolicyStatus, error) {
@@ -656,30 +674,6 @@ func isActivePolicyViolation(status string) bool {
 		return true
 	}
 	return false
-}
-
-func isActiveVulnerability(v bd.Vulnerability) bool {
-	switch v.VulnerabilityWithRemediation.RemediationStatus {
-	case "NEW":
-		return true
-	case "REMEDIATION_REQUIRED":
-		return true
-	case "NEEDS_REVIEW":
-		return true
-	default:
-		return false
-	}
-}
-
-func isMajorVulnerability(v bd.Vulnerability) bool {
-	switch v.VulnerabilityWithRemediation.Severity {
-	case "CRITICAL":
-		return true
-	case "HIGH":
-		return true
-	default:
-		return false
-	}
 }
 
 // create toolrecord file for detectExecute

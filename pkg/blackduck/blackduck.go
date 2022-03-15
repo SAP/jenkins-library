@@ -14,6 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ReportsDirectory defines the subfolder for the Blackduck reports which are generated
+const ReportsDirectory = "blackduck"
+
 const (
 	HEADER_PROJECT_DETAILS_V4 = "application/vnd.blackducksoftware.project-detail-4+json"
 	HEADER_USER_V4            = "application/vnd.blackducksoftware.user-4+json"
@@ -86,6 +89,11 @@ type VulnerabilityWithRemediation struct {
 	RemediationStatus string  `json:"remediationStatus,omitempty"`
 	Description       string  `json:"description,omitempty"`
 	OverallScore      float32 `json:"overallScore,omitempty"`
+}
+
+// ToMarkdown returns the markdown representation of the contents
+func (v *Vulnerability) ToMarkdown() string {
+	return fmt.Sprintf("**Vulnerability %v**\n| Severity | Package | Installed Version | Fix Resolution | Link |\n| --- | --- | --- | --- | --- |\n|%v|%v|%v|%v|[%v](%v)|\n", v.VulnerabilityWithRemediation.VulnerabilityName, v.VulnerabilityWithRemediation.Severity, v.Name, v.Version, v.VulnerabilityWithRemediation.RemediationStatus, "", "")
 }
 
 type PolicyStatus struct {
