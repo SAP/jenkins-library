@@ -172,8 +172,8 @@ func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
 	for _, packages := range set.PackageNames {
 		objectSetString += `<osl:package name="` + packages.Name + `"/>`
 	}
-	for _, packages := range set.PackageTrees {
-		objectSetString += `<osl:package name="` + packages.Name + ` includeSubpackages="true"/>`
+	for _, packagetrees := range set.PackageTrees {
+		objectSetString += `<osl:package name="` + packagetrees.Name + `" includeSubpackages="true"/>`
 	}
 	for _, objectTypeGroup := range set.ObjectTypeGroups {
 		objectSetString += `<osl:objectTypeGroup name="` + objectTypeGroup.Name + `"/>`

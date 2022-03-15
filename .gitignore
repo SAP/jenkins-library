@@ -54,3 +54,4 @@ AUnitResults.html
 /cmd/fortify
 /cmd/protecode
 cmd/dockerimagename_latest.tar
+cmd/atcSystemConfig.json
