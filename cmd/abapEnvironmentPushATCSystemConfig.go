@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -163,7 +164,6 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
-
 	var err error
 	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
 	if err != nil {
@@ -348,7 +348,7 @@ func doPushATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, at
 	connectionDetails.URL = abapEndpoint + "/configuration"
 
 	resp, err := abaputils.GetHTTPResponse("POST", connectionDetails, atcSystemConfiguartionJsonFile, client)
-	return parseOdataResponse(resp, err, connectionDetails, config)
+	return HandleHttpResponse(resp, err, "Post Request for Creating ATC System Configuration", connectionDetails)
 }
 
 func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, batchRequestBodyFile string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
@@ -361,8 +361,7 @@ func doBatchATCSystemConfig(config *abapEnvironmentPushATCSystemConfigOptions, b
 
 	batchRequestBodyFileByte := []byte(batchRequestBodyFile)
 	resp, err := client.SendRequest("POST", connectionDetails.URL, bytes.NewBuffer(batchRequestBodyFileByte), header, nil)
-
-	return parseOdataResponse(resp, err, connectionDetails, config)
+	return HandleHttpResponse(resp, err, "Batch Request for Patching ATC System Configuration", connectionDetails)
 }
 
 func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOptions, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (bool, string, string, time.Time, error) {
@@ -411,50 +410,73 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	}
 }
 
-func parseOdataResponse(resp *http.Response, errorIn error, connectionDetails abaputils.ConnectionDetailsHTTP, config *abapEnvironmentPushATCSystemConfigOptions) error {
+func HandleHttpResponse(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
+
+	var bodyText []byte
+	var readError error
 
 	if resp == nil {
-		return errorIn
-	}
+		// Response is nil in case of a timeout
+		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+	} else {
+		log.Entry().WithField("StatusCode", resp.Status).Info(message)
+		bodyText, readError = ioutil.ReadAll(resp.Body)
+		if readError != nil {
+			defer resp.Body.Close()
+			return readError
+		}
+		log.Entry().Infof("Response body: %s", bodyText)
 
-	log.Entry().Info("parsedResp: StatusCode: " + resp.Status)
-
-	var err error
-	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		defer resp.Body.Close()
-		return fmt.Errorf("parsing response failed: %w", err)
+		errorDetails, parsingError := getErrorDetailsFromBody(resp, bodyText)
+		if parsingError == nil &&
+			errorDetails != "" {
+			err = errors.New(errorDetails)
+		}
 	}
 	defer resp.Body.Close()
+	return err
 
-	switch resp.StatusCode {
-	case 200: //Retrieved entities & OK in Patch & OK in Batch
-		log.Entry().Infof("parsedRespBody: " + string(body))
+}
 
-	case 201: //CREATED
-		log.Entry().Infof("parsedRespBody: " + string(body))
+func getErrorDetailsFromBody(resp *http.Response, bodyText []byte) (errorString string, err error) {
 
-	case 400: //BAD REQUEST
-		//no errorIn, Error in Body
-		if err != nil {
-			return fmt.Errorf("parsing oData response failed: %w", err)
+	// Include the error message of the ABAP Environment system, if available
+	var abapErrorResponse AbapError
+	var abapResp map[string]*json.RawMessage
+
+	//errors could also be reported inside an e.g. BATCH request wich returned with status code 200!!!
+	contentType := resp.Header.Get("Content-type")
+	if len(bodyText) != 0 &&
+		strings.Contains(contentType, "multipart/mixed") {
+		//scan for inner errors! (by now count as error only RespCode starting with 4 or 5)
+		if strings.Contains(string(bodyText), "HTTP/1.1 4") ||
+			strings.Contains(string(bodyText), "HTTP/1.1 5") {
+			errorString = fmt.Sprintf("Outer Response Code: %v - but at least one Inner response returned StatusCode 4* or 5*. Please check Log for details.", resp.StatusCode)
+		} else {
+			log.Entry().Info("no Inner Response Errors")
 		}
-		if len(body) == 0 {
-			return fmt.Errorf("parsing oData response failed: %w", errors.New("body is empty, can't parse empty body"))
+		if errorString != "" {
+			return errorString, nil
 		}
-		var parsedOdataErrors interface{}
-		err = json.Unmarshal(body, &parsedOdataErrors)
-		if err != nil {
-			return fmt.Errorf("unmarshal oData response json failed: %w", err)
+	}
+	if len(bodyText) != 0 &&
+		strings.Contains(contentType, "application/json") {
+		errUnmarshal := json.Unmarshal(bodyText, &abapResp)
+		if errUnmarshal != nil {
+			return errorString, errUnmarshal
 		}
-		return fmt.Errorf("bad Request Errors: %v", parsedOdataErrors)
-
-	default: //unhandled OK Code
-		return fmt.Errorf("unhandled StatusCode: "+resp.Status, errorIn)
+		if _, ok := abapResp["error"]; ok {
+			json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+			if (AbapError{}) != abapErrorResponse {
+				log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+				errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
+				return errorString, nil
+			}
+		}
 	}
 
-	return nil
+	return errorString, errors.New("Could not parse the JSON error response")
+
 }
 
 func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) abaputils.AbapEnvironmentOptions {
@@ -506,4 +528,16 @@ type parsedConfigPriority struct {
 
 type priorityJson struct {
 	Priority json.Number `json:"priority"`
+}
+
+// AbapError contains the error code and the error message for ABAP errors
+type AbapError struct {
+	Code    string           `json:"code"`
+	Message AbapErrorMessage `json:"message"`
+}
+
+// AbapErrorMessage contains the lanuage and value fields for ABAP errors
+type AbapErrorMessage struct {
+	Lang  string `json:"lang"`
+	Value string `json:"value"`
 }
