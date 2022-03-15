@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Creates a SARIF result from the Alerts that were brought up by the scan
+// Creates a SARIF result from the Vulnerabilities that were brought up by the scan
 func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
