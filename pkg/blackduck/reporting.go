@@ -32,45 +32,47 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	tool.Driver.InformationUri = "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus"
 
 	// Handle results/vulnerabilities
-	for i := 0; i < len(vulns.Items); i++ {
-		v := vulns.Items[i]
-		result := *new(format.Results)
-		id := fmt.Sprintf("%v/%v/%v%v", "SECURITY_VULNERABILITY", v.VulnerabilityName, v.Name, v.Version)
-		log.Entry().Debugf("Transforming alert %v into SARIF format", id)
-		result.RuleID = id
-		result.Level = v.VulnerabilityWithRemediation.Severity
-		result.RuleIndex = i //Seems very abstract
-		result.Message = format.Message{Text: v.VulnerabilityWithRemediation.Description}
-		result.AnalysisTarget = format.ArtifactLocation{URI: v.Name, Index: 0}
-		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}}
-		result.Locations = append(result.Locations, location)
+	if vulns != nil && vulns.Items != nil {
+		for i := 0; i < len(vulns.Items); i++ {
+			v := vulns.Items[i]
+			result := *new(format.Results)
+			id := fmt.Sprintf("%v/%v/%v%v", "SECURITY_VULNERABILITY", v.VulnerabilityName, v.Name, v.Version)
+			log.Entry().Debugf("Transforming alert %v into SARIF format", id)
+			result.RuleID = id
+			result.Level = v.VulnerabilityWithRemediation.Severity
+			result.RuleIndex = i //Seems very abstract
+			result.Message = format.Message{Text: v.VulnerabilityWithRemediation.Description}
+			result.AnalysisTarget = format.ArtifactLocation{URI: v.Name, Index: 0}
+			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}}
+			result.Locations = append(result.Locations, location)
 
-		sarifRule := *new(format.SarifRule)
-		sarifRule.ID = id
-		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)}
-		sarifRule.FullDescription = format.Message{Text: v.VulnerabilityWithRemediation.Description}
-		sarifRule.DefaultConfiguration.Level = v.Severity
-		sarifRule.HelpURI = ""
-		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", v.VulnerabilityName, v.Severity, v.Name, v.Version, v.VulnerabilityWithRemediation.RemediationStatus, "", ""), Markdown: v.ToMarkdown()}
+			sarifRule := *new(format.SarifRule)
+			sarifRule.ID = id
+			sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)}
+			sarifRule.FullDescription = format.Message{Text: v.VulnerabilityWithRemediation.Description}
+			sarifRule.DefaultConfiguration.Level = v.Severity
+			sarifRule.HelpURI = ""
+			sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", v.VulnerabilityName, v.Severity, v.Name, v.Version, v.VulnerabilityWithRemediation.RemediationStatus, "", ""), Markdown: v.ToMarkdown()}
 
-		// Avoid empty descriptions to respect standard
-		if sarifRule.ShortDescription.Text == "" {
-			sarifRule.ShortDescription.Text = "None."
+			// Avoid empty descriptions to respect standard
+			if sarifRule.ShortDescription.Text == "" {
+				sarifRule.ShortDescription.Text = "None."
+			}
+			if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
+				sarifRule.FullDescription.Text = "None."
+			}
+
+			ruleProp := *new(format.SarifRuleProperties)
+			ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
+			ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.Description)
+			ruleProp.Tags = append(ruleProp.Tags, v.Name)
+			ruleProp.Precision = "very-high"
+			sarifRule.Properties = &ruleProp
+
+			//Finalize: append the result and the rule
+			sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
+			tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 		}
-		if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-			sarifRule.FullDescription.Text = "None."
-		}
-
-		ruleProp := *new(format.SarifRuleProperties)
-		ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
-		ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.Description)
-		ruleProp.Tags = append(ruleProp.Tags, v.Name)
-		ruleProp.Precision = "very-high"
-		sarifRule.Properties = &ruleProp
-
-		//Finalize: append the result and the rule
-		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
-		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 	}
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
