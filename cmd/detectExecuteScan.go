@@ -479,7 +479,7 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	errorsOccured := []string{}
 	vulns, _, err := getVulnsAndComponents(config, influx, sys)
 	if err != nil {
-		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+		return errors.Wrap(err, "failed to fetch vulnerabilities")
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
