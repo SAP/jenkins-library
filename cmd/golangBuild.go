@@ -72,7 +72,7 @@ func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.
 }
 
 func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
-	return getDockerImageValue(stepName)
+	return GetDockerImageValue(stepName)
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
