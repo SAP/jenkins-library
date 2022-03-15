@@ -47,4 +47,9 @@ AUnitResults.xml
 ATCResults.html
 AUnitResults.html
 
-/cmd/*
+/cmd/temp-*
+/cmd/toolruns
+/cmd/checkmarx
+/cmd/.pipeline
+/cmd/fortify
+/cmd/protecode
