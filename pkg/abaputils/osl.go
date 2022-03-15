@@ -19,6 +19,7 @@ type ObjectSet struct {
 type MultiPropertySet struct {
 	Type                  string                 `json:"type,omitempty"`
 	PackageNames          []Package              `json:"packages,omitempty"`
+	PackageTrees          []PackageTree          `json:"packagetrees,omitempty"`
 	ObjectTypeGroups      []ObjectTypeGroup      `json:"objecttypegroups,omitempty"`
 	ObjectTypes           []ObjectType           `json:"objecttypes,omitempty"`
 	Owners                []Owner                `json:"owners,omitempty"`
@@ -71,6 +72,11 @@ type ObjectTypeSet struct {
 
 //Package for MPS
 type Package struct {
+	Name string `json:"name,omitempty"`
+}
+
+//Packagetree for MPS
+type PackageTree struct {
 	Name string `json:"name,omitempty"`
 }
 
@@ -165,6 +171,9 @@ func BuildOSLString(OSLConfig ObjectSet) (objectSetString string) {
 func writeObjectSetProperties(set MultiPropertySet) (objectSetString string) {
 	for _, packages := range set.PackageNames {
 		objectSetString += `<osl:package name="` + packages.Name + `"/>`
+	}
+	for _, packages := range set.PackageTrees {
+		objectSetString += `<osl:package name="` + packages.Name + ` includeSubpackages="true"/>`
 	}
 	for _, objectTypeGroup := range set.ObjectTypeGroups {
 		objectSetString += `<osl:objectTypeGroup name="` + objectTypeGroup.Name + `"/>`

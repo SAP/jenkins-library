@@ -53,3 +53,4 @@ AUnitResults.html
 /cmd/.pipeline
 /cmd/fortify
 /cmd/protecode
+cmd/dockerimagename_latest.tar
