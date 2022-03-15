@@ -47,4 +47,14 @@ AUnitResults.xml
 ATCResults.html
 AUnitResults.html
 
+<<<<<<< HEAD
 /cmd/*
+=======
+/cmd/temp-*
+/cmd/toolruns
+/cmd/checkmarx
+/cmd/.pipeline
+/cmd/fortify
+/cmd/protecode
+cmd/dockerimagename_latest.tar
+>>>>>>> 06e5ca29 (OSL - AUnit & ATC usage)
