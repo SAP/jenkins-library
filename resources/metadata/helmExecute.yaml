@@ -55,7 +55,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: targetChartRepositoryURL
+      - name: targetRepositoryURL
         description: "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
@@ -65,7 +65,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
-      - name: targetChartRepositoryName
+      - name: targetRepositoryName
         type: string
         description: set the chart repository
         default: "stable"
@@ -74,7 +74,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: targetChartRepositoryUser
+      - name: targetRepositoryUser
         description: "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
@@ -85,7 +85,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-      - name: targetChartRepositoryPassword
+      - name: targetRepositoryPassword
         description: "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:

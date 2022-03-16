@@ -32,29 +32,29 @@ type HelmExecute struct {
 
 // HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
-	AdditionalParameters          []string `json:"additionalParameters,omitempty"`
-	ChartPath                     string   `json:"chartPath,omitempty"`
-	DeploymentName                string   `json:"deploymentName,omitempty"`
-	ForceUpdates                  bool     `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds         int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                    []string `json:"helmValues,omitempty"`
-	Image                         string   `json:"image,omitempty"`
-	KeepFailedDeployments         bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                    string   `json:"kubeConfig,omitempty"`
-	KubeContext                   string   `json:"kubeContext,omitempty"`
-	Namespace                     string   `json:"namespace,omitempty"`
-	DockerConfigJSON              string   `json:"dockerConfigJSON,omitempty"`
-	PackageVersion                string   `json:"packageVersion,omitempty"`
-	AppVersion                    string   `json:"appVersion,omitempty"`
-	DependencyUpdate              bool     `json:"dependencyUpdate,omitempty"`
-	DumpLogs                      bool     `json:"dumpLogs,omitempty"`
-	FilterTest                    string   `json:"filterTest,omitempty"`
-	TargetChartRepositoryURL      string   `json:"targetChartRepositoryURL,omitempty"`
-	TargetChartRepositoryName     string   `json:"targetChartRepositoryName,omitempty"`
-	TargetChartRepositoryUser     string   `json:"targetChartRepositoryUser,omitempty"`
-	TargetChartRepositoryPassword string   `json:"targetChartRepositoryPassword,omitempty"`
-	HelmCommand                   string   `json:"helmCommand,omitempty"`
-	CustomTLSCertificateLinks     []string `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
+	ChartPath                 string   `json:"chartPath,omitempty"`
+	DeploymentName            string   `json:"deploymentName,omitempty"`
+	ForceUpdates              bool     `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                []string `json:"helmValues,omitempty"`
+	Image                     string   `json:"image,omitempty"`
+	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                string   `json:"kubeConfig,omitempty"`
+	KubeContext               string   `json:"kubeContext,omitempty"`
+	Namespace                 string   `json:"namespace,omitempty"`
+	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
+	PackageVersion            string   `json:"packageVersion,omitempty"`
+	AppVersion                string   `json:"appVersion,omitempty"`
+	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
+	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
+	FilterTest                string   `json:"filterTest,omitempty"`
+	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
+	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
+	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
+	HelmCommand               string   `json:"helmCommand,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -92,8 +92,8 @@ func (h *HelmExecute) RunHelmAdd() error {
 		"repo",
 		"add",
 	}
-	helmParams = append(helmParams, h.config.TargetChartRepositoryName)
-	helmParams = append(helmParams, h.config.TargetChartRepositoryURL)
+	helmParams = append(helmParams, h.config.TargetRepositoryName)
+	helmParams = append(helmParams, h.config.TargetRepositoryURL)
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -328,13 +328,13 @@ func (h *HelmExecute) RunHelmPublish() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	if len(h.config.TargetChartRepositoryURL) == 0 {
+	if len(h.config.TargetRepositoryURL) == 0 {
 		return fmt.Errorf("there's no target repository for helm chart publishing configured")
 	}
 
 	repoClientOptions := piperhttp.ClientOptions{
-		Username:     h.config.TargetChartRepositoryUser,
-		Password:     h.config.TargetChartRepositoryPassword,
+		Username:     h.config.TargetRepositoryUser,
+		Password:     h.config.TargetRepositoryPassword,
 		TrustedCerts: h.config.CustomTLSCertificateLinks,
 	}
 
@@ -342,15 +342,15 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PackageVersion+".tgz")
 
-	targetPath := fmt.Sprintf("helm/%s/%s", h.config.PackageVersion, binary)
+	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
 
 	separator := "/"
 
-	if strings.HasSuffix(h.config.TargetChartRepositoryURL, "/") {
+	if strings.HasSuffix(h.config.TargetRepositoryURL, "/") {
 		separator = ""
 	}
 
-	targetURL := fmt.Sprintf("%s%s%s", h.config.TargetChartRepositoryURL, separator, targetPath)
+	targetURL := fmt.Sprintf("%s%s%s", h.config.TargetRepositoryURL, separator, targetPath)
 
 	log.Entry().Infof("publishing artifact: %s", targetURL)
 

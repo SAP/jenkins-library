@@ -38,16 +38,16 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					TargetChartRepositoryURL:  "https://charts.helm.sh/stable",
-					TargetChartRepositoryName: "stable",
+					TargetRepositoryURL:  "https://charts.helm.sh/stable",
+					TargetRepositoryName: "stable",
 				},
 				expectedConfig: []string{"repo", "add", "stable", "https://charts.helm.sh/stable"},
 				generalVerbose: false,
 			},
 			{
 				config: HelmExecuteOptions{
-					TargetChartRepositoryURL:  "https://charts.helm.sh/stable",
-					TargetChartRepositoryName: "test",
+					TargetRepositoryURL:  "https://charts.helm.sh/stable",
+					TargetRepositoryName: "test",
 				},
 				expectedConfig: []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"},
 				generalVerbose: true,
@@ -140,12 +140,12 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:                 ".",
-					DeploymentName:            "testPackage",
-					Namespace:                 "test-namespace",
-					HelmDeployWaitSeconds:     525,
-					TargetChartRepositoryURL:  "https://charts.helm.sh/stable",
-					TargetChartRepositoryName: "test",
+					ChartPath:             ".",
+					DeploymentName:        "testPackage",
+					Namespace:             "test-namespace",
+					HelmDeployWaitSeconds: 525,
+					TargetRepositoryURL:   "https://charts.helm.sh/stable",
+					TargetRepositoryName:  "test",
 				},
 				generalVerbose:        false,
 				expectedConfigAdd:     []string{"repo", "add", "test", "https://charts.helm.sh/stable"},
@@ -153,14 +153,14 @@ func TestRunHelm(t *testing.T) {
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:                 ".",
-					DeploymentName:            "testPackage",
-					Namespace:                 "test-namespace",
-					HelmDeployWaitSeconds:     525,
-					KeepFailedDeployments:     false,
-					AdditionalParameters:      []string{"--set-file my_script=dothings.sh"},
-					TargetChartRepositoryURL:  "https://charts.helm.sh/stable",
-					TargetChartRepositoryName: "test",
+					ChartPath:             ".",
+					DeploymentName:        "testPackage",
+					Namespace:             "test-namespace",
+					HelmDeployWaitSeconds: 525,
+					KeepFailedDeployments: false,
+					AdditionalParameters:  []string{"--set-file my_script=dothings.sh"},
+					TargetRepositoryURL:   "https://charts.helm.sh/stable",
+					TargetRepositoryName:  "test",
 				},
 				generalVerbose:        true,
 				expectedConfigAdd:     []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"},
@@ -377,11 +377,11 @@ func TestRunHelm(t *testing.T) {
 		utils := newHelmMockUtilsBundle()
 
 		config := HelmExecuteOptions{
-			TargetChartRepositoryURL:      "https://my.target.repository.local/",
-			TargetChartRepositoryUser:     "testUser",
-			TargetChartRepositoryPassword: "testPWD",
-			PackageVersion:                "1.2.3",
-			DeploymentName:                "test_helm_chart",
+			TargetRepositoryURL:      "https://my.target.repository.local/",
+			TargetRepositoryUser:     "testUser",
+			TargetRepositoryPassword: "testPWD",
+			PackageVersion:           "1.2.3",
+			DeploymentName:           "test_helm_chart",
 		}
 		utils.ReturnFileUploadStatus = 200
 
@@ -395,7 +395,7 @@ func TestRunHelm(t *testing.T) {
 		err := helmExecute.RunHelmPublish()
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.FileUploads))
-			assert.Equal(t, "https://my.target.repository.local/helm/1.2.3/test_helm_chart-1.2.3.tgz", utils.FileUploads["test_helm_chart-1.2.3.tgz"])
+			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", utils.FileUploads["test_helm_chart-1.2.3.tgz"])
 		}
 	})
 

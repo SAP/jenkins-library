@@ -16,26 +16,26 @@ import (
 )
 
 type helmExecuteOptions struct {
-	AdditionalParameters          []string `json:"additionalParameters,omitempty"`
-	ChartPath                     string   `json:"chartPath,omitempty"`
-	TargetChartRepositoryURL      string   `json:"targetChartRepositoryURL,omitempty"`
-	TargetChartRepositoryName     string   `json:"targetChartRepositoryName,omitempty"`
-	TargetChartRepositoryUser     string   `json:"targetChartRepositoryUser,omitempty"`
-	TargetChartRepositoryPassword string   `json:"targetChartRepositoryPassword,omitempty"`
-	HelmDeployWaitSeconds         int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                    []string `json:"helmValues,omitempty"`
-	Image                         string   `json:"image,omitempty"`
-	KeepFailedDeployments         bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                    string   `json:"kubeConfig,omitempty"`
-	KubeContext                   string   `json:"kubeContext,omitempty"`
-	Namespace                     string   `json:"namespace,omitempty"`
-	DockerConfigJSON              string   `json:"dockerConfigJSON,omitempty"`
-	HelmCommand                   string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade install lint test uninstall package publish"`
-	AppVersion                    string   `json:"appVersion,omitempty"`
-	DependencyUpdate              bool     `json:"dependencyUpdate,omitempty"`
-	DumpLogs                      bool     `json:"dumpLogs,omitempty"`
-	FilterTest                    string   `json:"filterTest,omitempty"`
-	CustomTLSCertificateLinks     []string `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
+	ChartPath                 string   `json:"chartPath,omitempty"`
+	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
+	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
+	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
+	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                []string `json:"helmValues,omitempty"`
+	Image                     string   `json:"image,omitempty"`
+	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                string   `json:"kubeConfig,omitempty"`
+	KubeContext               string   `json:"kubeContext,omitempty"`
+	Namespace                 string   `json:"namespace,omitempty"`
+	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
+	HelmCommand               string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade install lint test uninstall package publish"`
+	AppVersion                string   `json:"appVersion,omitempty"`
+	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
+	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
+	FilterTest                string   `json:"filterTest,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -90,8 +90,8 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.TargetChartRepositoryUser)
-			log.RegisterSecret(stepConfig.TargetChartRepositoryPassword)
+			log.RegisterSecret(stepConfig.TargetRepositoryUser)
+			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 
@@ -154,10 +154,10 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for Helm like  \"helm install [NAME] [CHART] [flags]\".")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for helm.")
-	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryURL, "targetChartRepositoryURL", os.Getenv("PIPER_targetChartRepositoryURL"), "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
-	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryName, "targetChartRepositoryName", `stable`, "set the chart repository")
-	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryUser, "targetChartRepositoryUser", os.Getenv("PIPER_targetChartRepositoryUser"), "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
-	cmd.Flags().StringVar(&stepConfig.TargetChartRepositoryPassword, "targetChartRepositoryPassword", os.Getenv("PIPER_targetChartRepositoryPassword"), "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.TargetRepositoryName, "targetRepositoryName", `stable`, "set the chart repository")
+	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -214,7 +214,7 @@ func helmExecuteMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_chartPath"),
 					},
 					{
-						Name: "targetChartRepositoryURL",
+						Name: "targetRepositoryURL",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -225,10 +225,10 @@ func helmExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetChartRepositoryURL"),
+						Default:   os.Getenv("PIPER_targetRepositoryURL"),
 					},
 					{
-						Name:        "targetChartRepositoryName",
+						Name:        "targetRepositoryName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -237,7 +237,7 @@ func helmExecuteMetadata() config.StepData {
 						Default:     `stable`,
 					},
 					{
-						Name: "targetChartRepositoryUser",
+						Name: "targetRepositoryUser",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -248,10 +248,10 @@ func helmExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetChartRepositoryUser"),
+						Default:   os.Getenv("PIPER_targetRepositoryUser"),
 					},
 					{
-						Name: "targetChartRepositoryPassword",
+						Name: "targetRepositoryPassword",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -262,7 +262,7 @@ func helmExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetChartRepositoryPassword"),
+						Default:   os.Getenv("PIPER_targetRepositoryPassword"),
 					},
 					{
 						Name:        "helmDeployWaitSeconds",
