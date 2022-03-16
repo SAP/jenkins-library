@@ -50,6 +50,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 
 			stepActive := false
 			stepNotActive := false
+
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
 			if err != nil {
 				return err
@@ -81,7 +82,6 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			for _, condition := range step.NotActiveConditions {
 				stepNotActive, err = condition.evaluateV1(stepConfig, utils)
 				if err != nil {
-					log.Entry().Infof("anil test here")
 					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
 				}
 				if stepNotActive {
@@ -89,9 +89,9 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					break
 				}
 			}
-			log.Entry().Infof("anil test here value of notActive %v", stepNotActive)
+
 			// final decision is when step is activated and negate when not active is true
-			stepActive = stepActive && !stepNotActive
+			stepActive = stepActive && !(stepNotActive)
 
 			if stepActive {
 				stageActive = true
@@ -165,27 +165,37 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
-	// if s.CommonPipelineEnvironment != nil {
-	// 	if len(s.CommonPipelineEnvironment) > 1 {
-	// 		return false, errors.Errorf("only one commonPipelineEnvironment key allowed per condition but %v provided", len(s.CommonPipelineEnvironment))
-	// 	}
+	if s.CommonPipelineEnvironment != nil {
 
-	// 	log.Entry().Infof("anil test value is %v", s.CommonPipelineEnvironment)
+		// metadata.Spec.In
+		for path, value := range s.CommonPipelineEnvironment {
+			log.Entry().Infof("anil test path is %v", path)
+			log.Entry().Infof("anil test value is %v", value)
+		}
+		if len(s.CommonPipelineEnvironment) > 1 {
+			return false, errors.Errorf("only one commonPipelineEnvironment key allowed per condition but %v provided", len(s.CommonPipelineEnvironment))
+		}
 
-	// 	log.Entry().Infof("anil test value is %v", config.Config)
+		var metadata StepData
+		metadata.Spec.Inputs.Parameters = []StepParameters{
+			{Name: "notActiveCondition",
+				ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "actual file name with json"}},
+			},
+		}
 
-	// 	// config.Config.GeneralConfig.
+		// config.Config.GeneralConfig.
 
-	// 	// // for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
-	// 	// for param, activationValues := range s.Config {
-	// 	// 	for _, activationValue := range activationValues {
-	// 	// 		if activationValue == config.Config[param] {
-	// 	// 			return true, nil
-	// 	// 		}
-	// 	// 	}
-	// 	// 	return false, nil
-	// 	// }
-	// }
+		// // for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
+		// for param, activationValues := range s.Config {
+		// 	for _, activationValue := range activationValues {
+		// 		if activationValue == config.Config[param] {
+		// 			return true, nil
+		// 		}
+		// 	}
+		// 	return false, nil
+		// }
+		return false, nil
+	}
 
 	// needs to be checked last:
 	// if none of the other conditions matches, step will be active unless set to inactive
