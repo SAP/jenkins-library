@@ -91,7 +91,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}
