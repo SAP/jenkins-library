@@ -568,7 +568,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
 					rawMessage = strings.ReplaceAll(rawMessage, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
 				}
-				result.Message = format.Message{rawMessage}
+				msg := new(format.Message)
+				msg.Text = rawMessage
+				result.Message = msg
 				break
 			}
 		}
@@ -743,7 +745,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					nameArray = append(nameArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
 				}
 				sarifRule.Name = strings.Join(nameArray, "/")
-				sarifRule.DefaultConfiguration.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
+				defaultConfig := new(format.DefaultConfiguration)
+				defaultConfig.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
+				sarifRule.DefaultConfiguration = defaultConfig
 				break
 			}
 		}
@@ -767,8 +771,12 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						if fvdl.Description[j].CustomDescription.RuleID != "" {
 							rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
 						}
-						sarifRule.ShortDescription.Text = rawAbstract
-						sarifRule.FullDescription.Text = rawExplanation
+						sd := new(format.Message)
+						sd.Text = rawAbstract
+						sarifRule.ShortDescription = sd
+						fd := new(format.Message)
+						fd.Text = rawExplanation
+						sarifRule.FullDescription = fd
 						break
 					}
 				}
@@ -877,7 +885,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs[0].Invocations = append(sarif.Runs[0].Invocations, invocation)
 
 	//handle originalUriBaseIds
-	sarif.Runs[0].OriginalUriBaseIds.SrcRoot.Uri = "file:///" + fvdl.Build.SourceBasePath + "/"
+	oubi := new(format.OriginalUriBaseIds)
+	oubi.SrcRoot.Uri = "file:///" + fvdl.Build.SourceBasePath + "/"
+	sarif.Runs[0].OriginalUriBaseIds = oubi
 
 	//handle artifacts
 	for i := 0; i < len(fvdl.Build.SourceFiles); i++ { //i iterates on source files
@@ -993,7 +1003,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
-	for key, _ := range cweIdsForTaxonomies {
+	for key := range cweIdsForTaxonomies {
 		taxa := *new(format.Taxa)
 		taxa.Id = key
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
