@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -24,7 +23,7 @@ const (
 
 // EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
 func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
 
 	// initialize in case not initialized
 	if r.RunConfig.RunSteps == nil {
@@ -65,7 +64,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					stepActive = true
 				} else {
 					for _, condition := range step.Conditions {
-						stepActive, err = condition.evaluateV1(stepConfig, utils)
+						stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
 						if err != nil {
 							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
 						}
@@ -80,7 +79,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			// TODO: PART 1 : if explicit activation/de-activation is available should notActiveConditions be checked ?
 			// Fortify has no anchor, so if we explicitly set it to true then it may run even during commit pipelines, if we implement TODO PART 1??
 			for _, condition := range step.NotActiveConditions {
-				stepNotActive, err = condition.evaluateV1(stepConfig, utils)
+				stepNotActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
 				if err != nil {
 					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
 				}
@@ -91,7 +90,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			}
 
 			// final decision is when step is activated and negate when not active is true
-			stepActive = stepActive && !(stepNotActive)
+			stepActive = stepActive && !stepNotActive
 
 			if stepActive {
 				stageActive = true
@@ -104,7 +103,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 	return nil
 }
 
-func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
+func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils, stepName string, envRootPath string) (bool, error) {
 
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
@@ -163,37 +162,26 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
 	}
 
-	// only the first condition will be evaluated.
-	// if multiple conditions should be checked they need to provided via the Conditions list
 	if s.CommonPipelineEnvironment != nil {
 
-		// metadata.Spec.In
-		for path, value := range s.CommonPipelineEnvironment {
-			log.Entry().Infof("anil test path is %v", path)
-			log.Entry().Infof("anil test value is %v", value)
-		}
-		if len(s.CommonPipelineEnvironment) > 1 {
-			return false, errors.Errorf("only one commonPipelineEnvironment key allowed per condition but %v provided", len(s.CommonPipelineEnvironment))
-		}
-
 		var metadata StepData
-		metadata.Spec.Inputs.Parameters = []StepParameters{
-			{Name: "notActiveCondition",
-				ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "actual file name with json"}},
-			},
+		for param, value := range s.CommonPipelineEnvironment {
+			dataType := "interface"
+			_, ok := value.(string)
+			if ok {
+				dataType = "string"
+			}
+			metadata.Spec.Inputs.Parameters = []StepParameters{
+				{Name: stepName,
+					Type:        dataType,
+					ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
+				},
+			}
+			resourceParams := metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
+			if resourceParams[stepName] == value {
+				return true, nil
+			}
 		}
-
-		// config.Config.GeneralConfig.
-
-		// // for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
-		// for param, activationValues := range s.Config {
-		// 	for _, activationValue := range activationValues {
-		// 		if activationValue == config.Config[param] {
-		// 			return true, nil
-		// 		}
-		// 	}
-		// 	return false, nil
-		// }
 		return false, nil
 	}
 
