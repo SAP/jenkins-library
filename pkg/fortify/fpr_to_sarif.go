@@ -504,7 +504,7 @@ func (a Action) isEmpty() bool {
 }
 
 // ConvertFprToSarif converts the FPR file contents into SARIF format
-func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string) (format.SARIF, error) {
+func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
@@ -530,11 +530,11 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 	}
 
 	log.Entry().Debug("Calling Parse.")
-	return Parse(sys, project, projectVersion, data)
+	return Parse(sys, project, projectVersion, data, filterSet)
 }
 
 // Parse parses the FPR file
-func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte) (format.SARIF, error) {
+func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -704,7 +704,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := integrateAuditData(&prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion); err != nil {
+			if err := integrateAuditData(&prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
@@ -1013,7 +1013,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet) error {
 	if sys == nil {
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
@@ -1070,6 +1070,17 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 			return err
 		}
 		ruleProp.ToolAuditMessage = *commentData[0].Comment
+	}
+	if filterSet != nil {
+		for i := 0; i < len(filterSet.Folders); i++ {
+			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
+				ruleProp.FortifyCategory = filterSet.Folders[i].Name
+				break
+			}
+		}
+	} else {
+		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
+		return err
 	}
 	return nil
 }
