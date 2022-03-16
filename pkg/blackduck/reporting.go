@@ -36,7 +36,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 		for i := 0; i < len(vulns.Items); i++ {
 			v := vulns.Items[i]
 			result := *new(format.Results)
-			id := fmt.Sprintf("%v/%v/%v%v", "SECURITY_VULNERABILITY", v.VulnerabilityName, v.Name, v.Version)
+			id := fmt.Sprintf("%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityName, v.Name, v.Version)
 			log.Entry().Debugf("Transforming alert %v into SARIF format", id)
 			result.RuleID = id
 			result.Level = v.VulnerabilityWithRemediation.Severity
@@ -131,7 +131,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 func CreateGithubResultIssues(vulns *Vulnerabilities, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
 	for i := 0; i < len(vulns.Items); i++ {
 		vuln := vulns.Items[i]
-		title := fmt.Sprintf("%v/%v/%v%v", "SECURITY_VULNERABILITY", vuln.VulnerabilityName, vuln.Name, vuln.Version)
+		title := fmt.Sprintf("%v/%v/%v-%v", "SECURITY_VULNERABILITY", vuln.VulnerabilityName, vuln.Name, vuln.Version)
 		markdownReport := vuln.ToMarkdown()
 		options := piperGithub.CreateIssueOptions{
 			Token:          token,
