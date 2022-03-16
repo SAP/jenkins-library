@@ -68,12 +68,13 @@ type Step struct {
 }
 
 type StepCondition struct {
-	Config                map[string][]interface{} `json:"config,omitempty"`
-	ConfigKey             string                   `json:"configKey,omitempty"`
-	FilePattern           string                   `json:"filePattern,omitempty"`
-	FilePatternFromConfig string                   `json:"filePatternFromConfig,omitempty"`
-	Inactive              bool                     `json:"inactive,omitempty"`
-	NpmScript             string                   `json:"npmScript,omitempty"`
+	Config                    map[string][]interface{} `json:"config,omitempty"`
+	ConfigKey                 string                   `json:"configKey,omitempty"`
+	FilePattern               string                   `json:"filePattern,omitempty"`
+	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty"`
+	Inactive                  bool                     `json:"inactive,omitempty"`
+	NpmScript                 string                   `json:"npmScript,omitempty"`
+	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,

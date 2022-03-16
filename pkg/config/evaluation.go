@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -80,6 +81,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			for _, condition := range step.NotActiveConditions {
 				stepNotActive, err = condition.evaluateV1(stepConfig, utils)
 				if err != nil {
+					log.Entry().Infof("anil test here")
 					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
 				}
 				if stepNotActive {
@@ -87,7 +89,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					break
 				}
 			}
-
+			log.Entry().Infof("anil test here value of notActive %v", stepNotActive)
 			// final decision is when step is activated and negate when not active is true
 			stepActive = stepActive && !stepNotActive
 
@@ -160,6 +162,30 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	if len(s.NpmScript) > 0 {
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
 	}
+
+	// only the first condition will be evaluated.
+	// if multiple conditions should be checked they need to provided via the Conditions list
+	// if s.CommonPipelineEnvironment != nil {
+	// 	if len(s.CommonPipelineEnvironment) > 1 {
+	// 		return false, errors.Errorf("only one commonPipelineEnvironment key allowed per condition but %v provided", len(s.CommonPipelineEnvironment))
+	// 	}
+
+	// 	log.Entry().Infof("anil test value is %v", s.CommonPipelineEnvironment)
+
+	// 	log.Entry().Infof("anil test value is %v", config.Config)
+
+	// 	// config.Config.GeneralConfig.
+
+	// 	// // for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
+	// 	// for param, activationValues := range s.Config {
+	// 	// 	for _, activationValue := range activationValues {
+	// 	// 		if activationValue == config.Config[param] {
+	// 	// 			return true, nil
+	// 	// 		}
+	// 	// 	}
+	// 	// 	return false, nil
+	// 	// }
+	// }
 
 	// needs to be checked last:
 	// if none of the other conditions matches, step will be active unless set to inactive
