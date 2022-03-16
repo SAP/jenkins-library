@@ -45,6 +45,8 @@ type detectUtils interface {
 	FileRename(string, string) error
 	Getwd() (string, error)
 	Symlink(oldname string, newname string) error
+	SHA256(path string) (string, error)
+	CurrentTime() string
 
 	GetExitCode() int
 	GetOsEnv() []string

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -98,7 +97,7 @@ func WriteVulnerabilityReports(scanReport reporting.ScanReport, utils piperutils
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", utils.CurrentTime()))), jsonReport, 0666); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 

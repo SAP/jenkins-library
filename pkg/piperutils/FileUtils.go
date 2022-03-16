@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bmatcuk/doublestar"
 )
@@ -35,6 +36,8 @@ type FileUtils interface {
 	FileRename(string, string) error
 	Getwd() (string, error)
 	Symlink(oldname string, newname string) error
+	SHA256(path string) (string, error)
+	CurrentTime() string
 }
 
 // Files ...
@@ -429,4 +432,9 @@ func (f Files) SHA256(path string) (string, error) {
 	}
 
 	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
+}
+
+// CurrentTime returns the current time
+func (f Files) CurrentTime() string {
+	return fmt.Sprint(time.Now())
 }
