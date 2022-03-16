@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -348,6 +350,18 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      true,
 		},
 		{
+			name:          "CommonPipelineEnvironment - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{CommonPipelineEnvironment: map[string]interface{}{"myCpeTrueFile": "myTrueValue"}},
+			expected:      true,
+		},
+		{
+			name:          "CommonPipelineEnvironment - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{CommonPipelineEnvironment: map[string]interface{}{"myCpeTrueFile": "notMyTrueValue"}},
+			expected:      false,
+		},
+		{
 			name:     "No condition - true",
 			config:   StepConfig{Config: map[string]interface{}{}},
 			expected: true,
@@ -365,9 +379,23 @@ func TestEvaluateV1(t *testing.T) {
 	filesMock.AddFile("my.postman_collection.json", []byte("{}"))
 	filesMock.AddFile("package.json", []byte(packageJson))
 
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal("Failed to create temporary directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(dir)
+
+	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
+	err = os.MkdirAll(cpeDir, 0700)
+	if err != nil {
+		t.Fatal("Failed to create sub directory")
+	}
+	ioutil.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0700)
+
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
-			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", ".pipeline")
+			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", dir)
 			if test.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
