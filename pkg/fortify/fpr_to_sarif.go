@@ -784,12 +784,12 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			}
 		}
 		// Avoid empty descriptions to respect standard
-		if sarifRule.ShortDescription.Text == "" {
-			sarifRule.ShortDescription.Text = "None."
-		}
-		if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-			sarifRule.FullDescription.Text = "None."
-		}
+		//if sarifRule.ShortDescription.Text == "" {
+		//	sarifRule.ShortDescription.Text = "None."
+		//}
+		//if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
+		//	sarifRule.FullDescription.Text = "None."
+		//}
 
 		//properties
 		//Prepare a CWE id object as an in-case
