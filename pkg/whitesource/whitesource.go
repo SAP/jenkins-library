@@ -57,7 +57,7 @@ type Alert struct {
 
 // ToMarkdown returns the markdown representation of the contents
 func (a *Alert) ToMarkdown() string {
-	return fmt.Sprintf("**Vulnerability %v**\n| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n| --- | --- | --- | --- | --- |\n|%v|%v|%v|%v|%v|[%v](%v)|\n", a.Vulnerability.Name, a.Vulnerability.Severity, a.Library.ArtifactID, a.Library.Version, a.Vulnerability.Description, a.Vulnerability.TopFix.FixResolution, a.Vulnerability.Name, a.Vulnerability.URL)
+	return fmt.Sprintf("**Vulnerability %v**\n| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n| --- | --- | --- | --- | --- | --- |\n|%v|%v|%v|%v|%v|[%v](%v)|\n", a.Vulnerability.Name, a.Vulnerability.Severity, a.Library.ArtifactID, a.Library.Version, a.Vulnerability.Description, a.Vulnerability.TopFix.FixResolution, a.Vulnerability.Name, a.Vulnerability.URL)
 }
 
 // Library
