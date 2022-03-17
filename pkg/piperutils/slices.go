@@ -120,5 +120,5 @@ func UniqueStrings(values []string) []string {
 func CopyAtoB(a, b interface{}) {
 	src := reflect.ValueOf(a)
 	tgt := reflect.ValueOf(b)
-	reflect.Copy(tgt, src)
+	reflect.AppendSlice(tgt, src)
 }
