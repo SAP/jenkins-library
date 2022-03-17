@@ -236,7 +236,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	return &sarif
 }
 
-// WriteSarifFile write a JSON sarif format file for upload into Cumulus
+// WriteSarifFile write a JSON sarif format file for upload into e.g. GCP
 func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 

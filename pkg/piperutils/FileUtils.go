@@ -37,7 +37,7 @@ type FileUtils interface {
 	Getwd() (string, error)
 	Symlink(oldname string, newname string) error
 	SHA256(path string) (string, error)
-	CurrentTime() string
+	CurrentTime(format string) string
 }
 
 // Files ...
@@ -434,7 +434,11 @@ func (f Files) SHA256(path string) (string, error) {
 	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
 }
 
-// CurrentTime returns the current time
-func (f Files) CurrentTime() string {
-	return fmt.Sprint(time.Now())
+// CurrentTime returns the current time in the specified format
+func (f Files) CurrentTime(format string) string {
+	fString := format
+	if len(format) == 0 {
+		fString = "20060102-150405"
+	}
+	return fmt.Sprint(time.Now().Format(fString))
 }

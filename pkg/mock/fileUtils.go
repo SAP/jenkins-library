@@ -61,7 +61,6 @@ type FilesMock struct {
 	FileReadErrors   map[string]error
 	FileWriteError   error
 	FileWriteErrors  map[string]error
-	currentTimeNow   string
 }
 
 func (f *FilesMock) init() {
@@ -123,8 +122,8 @@ func (f *FilesMock) SHA256(path string) (string, error) {
 }
 
 // CurrentTime returns the current time as a fixed value
-func (f *FilesMock) CurrentTime() string {
-	return "fixedTimestamp"
+func (f *FilesMock) CurrentTime(format string) string {
+	return "20220102-150405"
 }
 
 func (f *FilesMock) associateContent(path string, content *[]byte, mode os.FileMode) {

@@ -97,14 +97,14 @@ func WriteVulnerabilityReports(scanReport reporting.ScanReport, utils piperutils
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", utils.CurrentTime()))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", utils.CurrentTime("")))), jsonReport, 0666); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 
 	return reportPaths, nil
 }
 
-// WriteSarifFile write a JSON sarif format file for upload into Cumulus
+// WriteSarifFile write a JSON sarif format file for upload into e.g. GCP
 func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 

@@ -49,7 +49,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
-		exists, err = utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "detectExecuteScan_oss_fixedTimestamp.json"))
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "detectExecuteScan_oss_20220102-150405.json"))
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	})
@@ -58,7 +58,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		scanReport := reporting.ScanReport{}
 		utilsMock := &mock.FilesMock{}
 		utilsMock.FileWriteErrors = map[string]error{
-			filepath.Join(reporting.StepReportDirectory, "detectExecuteScan_oss_fixedTimestamp.json"): fmt.Errorf("write error"),
+			filepath.Join(reporting.StepReportDirectory, "detectExecuteScan_oss_20220102-150405.json"): fmt.Errorf("write error"),
 		}
 
 		_, err := WriteVulnerabilityReports(scanReport, utilsMock)

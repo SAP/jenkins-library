@@ -46,7 +46,7 @@ type detectUtils interface {
 	Getwd() (string, error)
 	Symlink(oldname string, newname string) error
 	SHA256(path string) (string, error)
-	CurrentTime() string
+	CurrentTime(format string) string
 
 	GetExitCode() int
 	GetOsEnv() []string

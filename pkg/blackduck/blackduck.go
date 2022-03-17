@@ -93,7 +93,20 @@ type VulnerabilityWithRemediation struct {
 
 // ToMarkdown returns the markdown representation of the contents
 func (v *Vulnerability) ToMarkdown() string {
-	return fmt.Sprintf("**Vulnerability %v**\n| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n| --- | --- | --- | --- | --- | --- |\n|%v|%v|%v|%v|%v|[%v](%v)|\n", v.VulnerabilityWithRemediation.VulnerabilityName, v.VulnerabilityWithRemediation.Severity, v.Name, v.Version, v.Description, "", "", "")
+	return fmt.Sprintf(
+		`**Vulnerability %v**\n
+		| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n
+		| --- | --- | --- | --- | --- | --- |\n
+		|%v|%v|%v|%v|%v|[%v](%v)|\n`,
+		v.VulnerabilityWithRemediation.VulnerabilityName,
+		v.VulnerabilityWithRemediation.Severity,
+		v.Name,
+		v.Version,
+		v.Description,
+		"",
+		"",
+		"",
+	)
 }
 
 type PolicyStatus struct {
