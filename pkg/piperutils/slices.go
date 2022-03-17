@@ -121,14 +121,19 @@ func CopyAtoB(a, b interface{}) {
 	src := reflect.ValueOf(a)
 	tgt := reflect.ValueOf(b)
 	if src.Kind() != reflect.Slice || tgt.Kind() != reflect.Slice {
-        panic("CopyAtoB() given a non-slice type")
-    }
+		panic("CopyAtoB() given a non-slice type")
+	}
 
-    // Keep the distinction between nil and empty slice input
-    if src.IsNil() {
-        return
-    }
+	if src.Len() != tgt.Len() {
+		panic("CopyAtoB() given non equal sized slices")
+	}
+
+	// Keep the distinction between nil and empty slice input
+	if src.IsNil() {
+		return
+	}
+
 	for i := 0; i < src.Len(); i++ {
-        tgt.Index(i).Set(src.Index(i))
-    }
+		tgt.Index(i).Set(src.Index(i))
+	}
 }

@@ -153,3 +153,12 @@ func TestUniqueStrings(t *testing.T) {
 		assert.Subset(t, []string{"123", "abc", "xyz"}, unique)
 	}
 }
+
+func TestCopyAtoB(t *testing.T) {
+	src :=  []string{"abc", "xyz", "123", "abc"}
+	target := make([]string, 4)
+	CopyAtoB(src, target)
+	if assert.Len(t, target, 4) {
+		assert.EqualValues(t, src, target)
+	}
+}

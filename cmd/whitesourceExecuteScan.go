@@ -563,7 +563,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 
 		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
-			issueDetails := []reporting.IssueDetail{}
+			issueDetails := make([]reporting.IssueDetail, len(allAlerts))
 			piperutils.CopyAtoB(allAlerts, issueDetails)
 			err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
 			if err != nil {
