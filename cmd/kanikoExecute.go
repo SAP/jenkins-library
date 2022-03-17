@@ -89,7 +89,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	log.Entry().Debugf("preparing build settings information...")
 	stepName := "kanikoExecute"
 	// ToDo: better testability required. So far retrieval of config is rather non deterministic
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve dockerImage configuration: %w", err)
 	}
