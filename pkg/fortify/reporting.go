@@ -1,6 +1,7 @@
 package fortify
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -140,8 +141,20 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
 	}
 
-	file, _ := json.MarshalIndent(sarif, "", "  ")
-	if err := utils.FileWrite(sarifReportPath, file, 0666); err != nil {
+	// This solution did not allow for special HTML characters. If this causes any issue, revert l148-l157 with these two
+	/*file, _ := json.MarshalIndent(sarif, "", "  ")
+	if err := utils.FileWrite(sarifReportPath, file, 0666); err != nil {*/
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
 	}

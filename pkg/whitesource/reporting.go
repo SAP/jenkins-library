@@ -197,19 +197,33 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.RuleID = id
 		result.Level = alert.Level
 		result.RuleIndex = i //Seems very abstract
-		result.Message = format.Message{Text: alert.Vulnerability.Description}
+		msg := new(format.Message)
+		msg.Text = alert.Vulnerability.Description
+		result.Message = msg
 		result.Level = alert.Level
-		result.AnalysisTarget = format.ArtifactLocation{URI: alert.Library.Filename, Index: 0}
-		location := format.Location{PhysicalLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}
+		artLoc := new(format.ArtifactLocation)
+		artLoc.Index = 0
+		artLoc.URI = alert.Library.Filename
+		result.AnalysisTarget = artLoc
+		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}, Message: nil}
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)
 		sarifRule.ID = id
-		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)}
-		sarifRule.FullDescription = format.Message{Text: alert.Vulnerability.Description}
-		sarifRule.DefaultConfiguration.Level = alert.Level
+		sd := new(format.Message)
+		sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
+		sarifRule.ShortDescription = sd
+		fd := new(format.Message)
+		fd.Text = alert.Vulnerability.Description
+		sarifRule.FullDescription = fd
+		defaultConfig := new(format.DefaultConfiguration)
+		defaultConfig.Level = alert.Level
+		sarifRule.DefaultConfiguration = defaultConfig
 		sarifRule.HelpURI = alert.Vulnerability.URL
-		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alert.Vulnerability.Name, alert.Vulnerability.Severity, alert.Library.ArtifactID, alert.Library.Version, alert.Vulnerability.TopFix.FixResolution, alert.Vulnerability.Name, alert.Vulnerability.URL), Markdown: alert.ToMarkdown()}
+		help := new(format.Help)
+		help.Text = fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alert.Vulnerability.Name, alert.Vulnerability.Severity, alert.Library.ArtifactID, alert.Library.Version, alert.Vulnerability.TopFix.FixResolution, alert.Vulnerability.Name, alert.Vulnerability.URL)
+		help.Markdown = alert.ToMarkdown()
+		sarifRule.Help = help
 
 		// Avoid empty descriptions to respect standard
 		if sarifRule.ShortDescription.Text == "" {
