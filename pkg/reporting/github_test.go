@@ -36,7 +36,7 @@ func (idm issueDetailMock) ToMarkdown() ([]byte, error) {
 | Severity | Package | Installed Version | Description | Fix Resolution | Link |
 | --- | --- | --- | --- | --- | --- |
 |%v|%v|%v|%v|%v|[%v](%v)|
-`, idm.vulnerabilityName, idm.vulnerabilitySeverity, idm.libraryName, "", "", "", "")), nil
+`, idm.vulnerabilityName, idm.vulnerabilitySeverity, idm.libraryName, "", "", "", "", "")), nil
 }
 
 func TestUploadSingleReportToGithub(t *testing.T) {
