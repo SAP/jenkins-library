@@ -241,6 +241,11 @@ func helmExecuteMetadata() config.StepData {
 
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
 						},
@@ -294,6 +299,11 @@ func helmExecuteMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
 							},
 
 							{
