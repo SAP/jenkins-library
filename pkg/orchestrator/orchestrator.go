@@ -101,6 +101,7 @@ func truthy(key string) bool {
 // Wrapper function to read env variable and set default value
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
+		log.Entry().Debugf("For: %s, found: %s", key, value)
 		return value
 	}
 	log.Entry().Debugf("Could not read env variable %v using fallback value %v", key, fallback)

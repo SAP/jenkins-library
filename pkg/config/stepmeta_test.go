@@ -291,7 +291,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Containers", func(t *testing.T) {
 		filters := metadata2.GetContextParameterFilters()
-		params := defaultParams("containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType")
+		params := defaultParams("containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "dockerRegistryUrl", "dockerRegistryCredentialsId", "pip", "scanType")
 
 		assert.Equal(t, params, filters.All, "incorrect filter All")
 		assert.Equal(t, params, filters.General, "incorrect filter General")
@@ -649,6 +649,13 @@ func TestGetResourceParameters(t *testing.T) {
 					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValueString"}}, Type: "string"},
 				}}}},
 			expected: map[string]interface{}{"param4": "{\"key\":\"valueString\"}"},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam1"}, {Name: "commonPipelineEnvironment", Param: "envparam2"}}, Type: "string"},
+				}}}},
+			expected: map[string]interface{}{"param1": "val1"},
 		},
 	}
 
