@@ -63,10 +63,11 @@ func (a Alert) Title() string {
 // ToMarkdown returns the markdown representation of the contents
 func (a Alert) ToMarkdown() ([]byte, error) {
 	return []byte(fmt.Sprintf(
-		`**Vulnerability %v**\n
-		| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n
-		| --- | --- | --- | --- | --- | --- |\n
-		|%v|%v|%v|%v|%v|[%v](%v)|\n`,
+		`**Vulnerability %v**
+| Severity | Package | Installed Version | Description | Fix Resolution | Link |
+| --- | --- | --- | --- | --- | --- |
+|%v|%v|%v|%v|%v|[%v](%v)|
+`,
 		a.Vulnerability.Name,
 		a.Vulnerability.Severity,
 		a.Library.ArtifactID,
