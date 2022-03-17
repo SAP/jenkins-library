@@ -140,7 +140,7 @@ func TestUploadMultipleReportsToGithub(t *testing.T) {
 	t.Run("error case", func(t *testing.T) {
 		t.Parallel()
 		testUploader := mockUploader{uploadError: fmt.Errorf("upload failed")}
-		reports := []IssueDetail{}
+		reports := []IssueDetail{issueDetailMock{vulnerabilityType: "SECURITY_VULNERABILITY", libraryName: "test-component", vulnerabilityName: "CVE-2022001", vulnerabilitySeverity: "MEDIUM", vulnerabilityScore: 5.3}}
 		err := UploadMultipleReportsToGithub(&reports, "", "", "", "", []string{}, []string{}, &testUploader)
 
 		assert.Contains(t, fmt.Sprint(err), "upload failed")

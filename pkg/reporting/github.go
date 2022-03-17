@@ -5,7 +5,6 @@ import (
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type Uploader interface {
@@ -55,7 +54,7 @@ func UploadMultipleReportsToGithub(scanReports *[]IssueDetail, token, APIURL, ow
 		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v in org %v and repo %v", title, owner, repository)
 		err := uploader.CreateIssue(&options)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to upload WhiteSource result for %v into GitHub issue", vuln.Title())
+			return fmt.Errorf("failed to upload results for '%v' into GitHub issue: %w", vuln.Title(), err)
 		}
 	}
 
