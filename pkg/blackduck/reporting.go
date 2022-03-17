@@ -39,19 +39,24 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			result.RuleID = id
 			result.Level = v.VulnerabilityWithRemediation.Severity
 			result.RuleIndex = i //Seems very abstract
-			result.Message = format.Message{Text: v.VulnerabilityWithRemediation.Description}
-			result.AnalysisTarget = format.ArtifactLocation{URI: v.Name, Index: 0}
+			result.Message = new(format.Message)
+			result.Message.Text = v.VulnerabilityWithRemediation.Description
+			result.AnalysisTarget = new(format.ArtifactLocation)
+			result.AnalysisTarget.URI = v.Name
+			result.AnalysisTarget.Index = 0
 			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}}
 			result.Locations = append(result.Locations, location)
 
 			sarifRule := *new(format.SarifRule)
 			sarifRule.ID = id
-			sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)}
-			sarifRule.FullDescription = format.Message{Text: v.VulnerabilityWithRemediation.Description}
+			sarifRule.ShortDescription = new(format.Message)
+			sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)
+			sarifRule.FullDescription = new(format.Message)
+			sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
 			sarifRule.DefaultConfiguration.Level = v.Severity
 			sarifRule.HelpURI = ""
 			markdown, _ := v.ToMarkdown()
-			sarifRule.Help = format.Help{}
+			sarifRule.Help = new(format.Help)
 			sarifRule.Help.Text = v.ToTxt()
 			sarifRule.Help.Markdown = string(markdown)
 
