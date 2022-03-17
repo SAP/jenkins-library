@@ -54,6 +54,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: containerRegistryUser
         description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
@@ -64,6 +66,8 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: filePath

@@ -369,6 +369,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 				if val := getParameterValue(path, res, param); val != nil {
 					resourceParams[param.Name] = val
 				}
+				break
 			}
 		}
 	}
