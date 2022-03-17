@@ -115,7 +115,7 @@ func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
 	f.associateContent(path, &dirContent, mode)
 }
 
-// Return a random SHA256
+// SHA256 returns a random SHA256
 func (f *FilesMock) SHA256(path string) (string, error) {
 	hash := sha256.New()
 	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
