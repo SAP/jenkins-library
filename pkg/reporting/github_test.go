@@ -19,11 +19,11 @@ func (m *mockUploader) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssue
 }
 
 type issueDetailMock struct {
-	vulnerabilityType string
-	vulnerabilityName string
-	libraryName string
-	vulnerabilitySeverity string
-	vulnerabilityScore float64
+	vulnerabilityType       string
+	vulnerabilityName       string
+	libraryName             string
+	vulnerabilitySeverity   string
+	vulnerabilityScore      float64
 	vulnerabilityCVSS3Score float64
 }
 
