@@ -120,5 +120,15 @@ func UniqueStrings(values []string) []string {
 func CopyAtoB(a, b interface{}) {
 	src := reflect.ValueOf(a)
 	tgt := reflect.ValueOf(b)
-	reflect.AppendSlice(tgt, src)
+	if src.Kind() != reflect.Slice || tgt.Kind() != reflect.Slice {
+        panic("CopyAtoB() given a non-slice type")
+    }
+
+    // Keep the distinction between nil and empty slice input
+    if src.IsNil() {
+        return
+    }
+	for i := 0; i < src.Len(); i++ {
+        tgt.Index(i).Set(src.Index(i))
+    }
 }
