@@ -486,7 +486,9 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debugf("Creating result issues for %v alert(s)", len(vulns.Items))
-		err = bd.CreateGithubResultIssues(vulns.Items, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+		issueDetails := []reporting.IssueDetail{}
+		piperutils.CopyAtoB(vulns.Items, issueDetails)
+		err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}

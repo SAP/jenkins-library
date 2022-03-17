@@ -1,6 +1,7 @@
 package piperutils
 
 import (
+	"reflect"
 	"strings"
 )
 
@@ -114,4 +115,10 @@ func UniqueStrings(values []string) []string {
 		i++
 	}
 	return keys
+}
+
+func CopyAtoB(a, b interface{}) {
+	src := reflect.ValueOf(a)
+	tgt := reflect.ValueOf(b)
+	reflect.Copy(tgt, src)
 }

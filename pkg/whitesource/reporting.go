@@ -257,15 +257,3 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 
 	return reportPaths, nil
 }
-
-// CreateGithubResultIssues creates a number of GitHub issues, one per Alert to create transparency on the findings
-func CreateGithubResultIssues(alerts *[]Alert, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
-	issueDetails := []reporting.IssueDetail{}
-	var issueDetail reporting.IssueDetail
-	for i := 0; i < len(*alerts); i++ {
-		issueDetail = (*alerts)[i]
-		issueDetails = append(issueDetails, issueDetail)
-	}
-
-	return reporting.UploadMultipleReportsToGithub(&issueDetails, token, APIURL, owner, repository, assignees, trustedCerts)
-}
