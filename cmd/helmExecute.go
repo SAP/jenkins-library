@@ -95,8 +95,10 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 		return fmt.Errorf("failed to execute helm package: %v", err)
 	}
 
-	if err := helmExecutor.RunHelmPublish(); err != nil {
-		return fmt.Errorf("failed to execute helm publish: %v", err)
+	if config.Publish {
+		if err := helmExecutor.RunHelmPublish(); err != nil {
+			return fmt.Errorf("failed to execute helm publish: %v", err)
+		}
 	}
 
 	return nil

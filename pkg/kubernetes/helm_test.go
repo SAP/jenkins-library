@@ -61,7 +61,7 @@ func TestRunHelm(t *testing.T) {
 				verbose: testCase.generalVerbose,
 				stdout:  log.Writer(),
 			}
-			err := helmExecute.RunHelmAdd()
+			err := helmExecute.runHelmAdd()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}

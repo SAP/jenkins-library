@@ -12,7 +12,6 @@ import (
 
 // HelmExecutor is used for mock
 type HelmExecutor interface {
-	RunHelmAdd() error
 	RunHelmUpgrade() error
 	RunHelmLint() error
 	RunHelmInstall() error
@@ -86,8 +85,8 @@ func (h *HelmExecute) runHelmInit() error {
 	return nil
 }
 
-// RunHelmAdd is used to add a chart repository
-func (h *HelmExecute) RunHelmAdd() error {
+// runHelmAdd is used to add a chart repository
+func (h *HelmExecute) runHelmAdd() error {
 	helmParams := []string{
 		"repo",
 		"add",
@@ -185,7 +184,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	if err := h.RunHelmAdd(); err != nil {
+	if err := h.runHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 

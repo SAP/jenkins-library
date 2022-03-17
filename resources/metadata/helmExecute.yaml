@@ -68,7 +68,9 @@ spec:
       - name: targetRepositoryName
         type: string
         description: set the chart repository
-        default: "stable"
+        mandatoryIf:
+          - name: helmCommand
+            value: install
         scope:
           - GENERAL
           - PARAMETERS
@@ -231,6 +233,15 @@ spec:
       - name: customTlsCertificateLinks
         type: "[]string"
         description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: publish
+        type: bool
+        description: Configures helm to run the deploy command to publish artifacts to a repository.
+        default: false
         scope:
           - GENERAL
           - PARAMETERS
