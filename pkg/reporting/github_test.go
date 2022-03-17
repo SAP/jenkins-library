@@ -39,6 +39,17 @@ func (idm issueDetailMock) ToMarkdown() ([]byte, error) {
 `, idm.vulnerabilityName, idm.vulnerabilitySeverity, idm.libraryName, "", "", "", "", "")), nil
 }
 
+func (idm issueDetailMock) ToTxt() string {
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Package: %v
+Installed Version: %v
+Description: %v
+Fix Resolution: %v
+Link: %v
+`, idm.vulnerabilityName, idm.vulnerabilitySeverity, idm.libraryName, "", "", "", "")
+}
+
 func TestUploadSingleReportToGithub(t *testing.T) {
 	t.Parallel()
 

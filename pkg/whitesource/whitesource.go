@@ -79,6 +79,26 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 	)), nil
 }
 
+// ToTxt returns the textual representation of the contents
+func (a Alert) ToTxt() string {
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Package: %v
+Installed Version: %v
+Description: %v
+Fix Resolution: %v
+Link: [%v](%v)`,
+		a.Vulnerability.Name,
+		a.Vulnerability.Severity,
+		a.Library.ArtifactID,
+		a.Library.Version,
+		a.Vulnerability.Description,
+		a.Vulnerability.TopFix.FixResolution,
+		a.Vulnerability.Name,
+		a.Vulnerability.URL,
+	)
+}
+
 // Library
 type Library struct {
 	Name       string `json:"name,omitempty"`

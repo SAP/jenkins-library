@@ -155,7 +155,7 @@ func TestUniqueStrings(t *testing.T) {
 }
 
 func TestCopyAtoB(t *testing.T) {
-	src :=  []string{"abc", "xyz", "123", "abc"}
+	src := []string{"abc", "xyz", "123", "abc"}
 	target := make([]string, 4)
 	CopyAtoB(src, target)
 	if assert.Len(t, target, 4) {

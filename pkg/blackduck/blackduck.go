@@ -115,6 +115,26 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	)), nil
 }
 
+// ToTxt returns the textual representation of the contents
+func (v Vulnerability) ToTxt() string {
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Package: %v
+Installed Version: %v
+Description: %v
+Fix Resolution: %v
+Link: [%v](%v)`,
+		v.VulnerabilityName,
+		v.Severity,
+		v.Name,
+		v.Version,
+		v.Description,
+		"",
+		"",
+		"",
+	)
+}
+
 type PolicyStatus struct {
 	OverallStatus        string `json:"overallStatus,omitempty"`
 	PolicyVersionDetails `json:"componentVersionPolicyViolationDetails,omitempty"`

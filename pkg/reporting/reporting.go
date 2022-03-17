@@ -14,6 +14,7 @@ import (
 type IssueDetail interface {
 	Title() string
 	ToMarkdown() ([]byte, error)
+	ToTxt() string
 }
 
 // ScanReport defines the elements of a scan report used by various scan steps
@@ -97,6 +98,12 @@ const StepReportDirectory = ".pipeline/stepReports"
 // ToJSON returns the report in JSON format
 func (s *ScanReport) ToJSON() ([]byte, error) {
 	return json.Marshal(s)
+}
+
+// ToTxt up to now returns the report in JSON format
+func (s ScanReport) ToTxt() string {
+	txt, _ := s.ToJSON()
+	return string(txt)
 }
 
 const reportHTMLTemplate = `<!DOCTYPE html>
