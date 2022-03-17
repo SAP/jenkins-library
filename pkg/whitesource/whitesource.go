@@ -55,9 +55,14 @@ type Alert struct {
 	Status           string        `json:"status,omitempty"`
 }
 
+// Title returns the issue title representation of the contents
+func (a Alert) Title() string {
+	return fmt.Sprintf("%v/%v/%v", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
+}
+
 // ToMarkdown returns the markdown representation of the contents
-func (a *Alert) ToMarkdown() string {
-	return fmt.Sprintf(
+func (a Alert) ToMarkdown() ([]byte, error) {
+	return []byte(fmt.Sprintf(
 		`**Vulnerability %v**\n
 		| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n
 		| --- | --- | --- | --- | --- | --- |\n
@@ -70,7 +75,7 @@ func (a *Alert) ToMarkdown() string {
 		a.Vulnerability.TopFix.FixResolution,
 		a.Vulnerability.Name,
 		a.Vulnerability.URL,
-	)
+	)), nil
 }
 
 // Library

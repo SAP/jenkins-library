@@ -492,7 +492,7 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 
 	// create a json report to be used later, e.g. issue creation in GitHub
 	ipReport := reporting.ScanReport{
-		Title: "WhiteSource IP Report",
+		ReportTitle: "WhiteSource IP Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "WhiteSource product name", Details: config.ProductName},
 			{Description: "Filtered project names", Details: strings.Join(scan.ScannedProjectNames(), ", ")},
@@ -563,7 +563,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 
 		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
-			err = ws.CreateGithubResultIssues(scan, &allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+			err = ws.CreateGithubResultIssues(&allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
 			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}

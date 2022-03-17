@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/format"
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -51,7 +50,8 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			sarifRule.FullDescription = format.Message{Text: v.VulnerabilityWithRemediation.Description}
 			sarifRule.DefaultConfiguration.Level = v.Severity
 			sarifRule.HelpURI = ""
-			sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", v.VulnerabilityName, v.Severity, v.Name, v.Version, v.VulnerabilityWithRemediation.RemediationStatus, "", ""), Markdown: v.ToMarkdown()}
+			markdown, _ := v.ToMarkdown()
+			sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", v.VulnerabilityName, v.Severity, v.Name, v.Version, v.VulnerabilityWithRemediation.RemediationStatus, "", ""), Markdown: string(markdown)}
 
 			// Avoid empty descriptions to respect standard
 			if sarifRule.ShortDescription.Text == "" {
@@ -127,29 +127,13 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 }
 
 // CreateGithubResultIssues creates a number of GitHub issues, one per Vulnerability to create transparency on the findings
-func CreateGithubResultIssues(vulns *Vulnerabilities, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
-	for i := 0; i < len(vulns.Items); i++ {
-		vuln := vulns.Items[i]
-		title := fmt.Sprintf("%v/%v/%v-%v", "SECURITY_VULNERABILITY", vuln.VulnerabilityName, vuln.Name, vuln.Version)
-		markdownReport := vuln.ToMarkdown()
-		options := piperGithub.CreateIssueOptions{
-			Token:          token,
-			APIURL:         APIURL,
-			Owner:          owner,
-			Repository:     repository,
-			Title:          title,
-			Body:           []byte(markdownReport),
-			Assignees:      assignees,
-			UpdateExisting: true,
-			TrustedCerts:   trustedCerts,
-		}
-
-		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v in org %v and repo %v", title, owner, repository)
-		err := piperGithub.CreateIssue(&options)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to upload WhiteSource result for %v into GitHub issue", vuln.VulnerabilityName)
-		}
+func CreateGithubResultIssues(vulns []Vulnerability, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
+	issueDetails := []reporting.IssueDetail{}
+	var issueDetail reporting.IssueDetail
+	for i := 0; i < len(vulns); i++ {
+		issueDetail = vulns[i]
+		issueDetails = append(issueDetails, issueDetail)
 	}
 
-	return nil
+	return reporting.UploadMultipleReportsToGithub(&issueDetails, token, APIURL, owner, repository, assignees, trustedCerts)	
 }

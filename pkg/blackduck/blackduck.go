@@ -91,9 +91,14 @@ type VulnerabilityWithRemediation struct {
 	OverallScore      float32 `json:"overallScore,omitempty"`
 }
 
+// Title returns the issue title representation of the contents
+func (v Vulnerability) Title() string {
+	return fmt.Sprintf("%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityName, v.Name, v.Version)
+}
+
 // ToMarkdown returns the markdown representation of the contents
-func (v *Vulnerability) ToMarkdown() string {
-	return fmt.Sprintf(
+func (v Vulnerability) ToMarkdown() ([]byte, error) {
+	return []byte(fmt.Sprintf(
 		`**Vulnerability %v**\n
 		| Severity | Package | Installed Version | Description | Fix Resolution | Link |\n
 		| --- | --- | --- | --- | --- | --- |\n
@@ -106,7 +111,7 @@ func (v *Vulnerability) ToMarkdown() string {
 		"",
 		"",
 		"",
-	)
+	)), nil
 }
 
 type PolicyStatus struct {

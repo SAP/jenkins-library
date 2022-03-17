@@ -393,7 +393,7 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 	versionName := getVersionName(config)
 	versionUrl, _ := sys.Client.GetProjectVersionLink(config.ProjectName, versionName)
 	scanReport := reporting.ScanReport{
-		Title: "BlackDuck Security Vulnerability Report",
+		ReportTitle: "BlackDuck Security Vulnerability Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "BlackDuck Project Name ", Details: config.ProjectName},
 			{Description: "BlackDuck Project Version ", Details: fmt.Sprintf("<a href='%v'>%v</a>", versionUrl, versionName)},
@@ -485,8 +485,8 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
-		log.Entry().Debugf("Creating result issues for %v alert(s)", vulns.TotalCount)
-		err = bd.CreateGithubResultIssues(vulns, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+		log.Entry().Debugf("Creating result issues for %v alert(s)", len(vulns.Items))
+		err = bd.CreateGithubResultIssues(vulns.Items, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
@@ -584,7 +584,7 @@ func createPolicyStatusReport(config detectExecuteScanOptions, policyStatus *bd.
 	versionName := getVersionName(config)
 	versionUrl, _ := sys.Client.GetProjectVersionLink(config.ProjectName, versionName)
 	policyReport := reporting.ScanReport{
-		Title: "BlackDuck Policy Violations Report",
+		ReportTitle: "BlackDuck Policy Violations Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "BlackDuck project name ", Details: config.ProjectName},
 			{Description: "BlackDuck project version name", Details: fmt.Sprintf("<a href='%v'>%v</a>", versionUrl, versionName)},
