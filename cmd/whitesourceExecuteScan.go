@@ -10,6 +10,7 @@ import (
 	"time"
 
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
@@ -50,6 +51,8 @@ type whitesourceUtils interface {
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
+
 	Now() time.Time
 }
 
@@ -58,6 +61,11 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
+}
+
+// CreateIssue supplies capability for GitHub issue creation
+func (w *whitesourceUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (ws.File, error) {
@@ -565,7 +573,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
 			issueDetails := make([]reporting.IssueDetail, len(allAlerts))
 			piperutils.CopyAtoB(allAlerts, issueDetails)
-			err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+			err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks, utils)
 			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}

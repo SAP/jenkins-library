@@ -35,7 +35,7 @@ func UploadSingleReportToGithub(scanReport IssueDetail, token, APIURL, owner, re
 }
 
 // UploadMultipleReportsToGithub uploads a number of reports to GitHub, one per IssueDetail to create transparency
-func UploadMultipleReportsToGithub(scanReports *[]IssueDetail, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
+func UploadMultipleReportsToGithub(scanReports *[]IssueDetail, token, APIURL, owner, repository string, assignees, trustedCerts []string, uploader Uploader) error {
 	for i := 0; i < len(*scanReports); i++ {
 		vuln := (*scanReports)[i]
 		title := vuln.Title()
@@ -53,7 +53,7 @@ func UploadMultipleReportsToGithub(scanReports *[]IssueDetail, token, APIURL, ow
 		}
 
 		log.Entry().Debugf("Creating/updating GitHub issue(s) with title %v in org %v and repo %v", title, owner, repository)
-		err := piperGithub.CreateIssue(&options)
+		err := uploader.CreateIssue(&options)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to upload WhiteSource result for %v into GitHub issue", vuln.Title())
 		}

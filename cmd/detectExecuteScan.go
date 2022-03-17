@@ -14,6 +14,7 @@ import (
 	"time"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -58,12 +59,19 @@ type detectUtils interface {
 	RunShell(shell, script string) error
 
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
 }
 
 type detectUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
+}
+
+// CreateIssue supplies capability for GitHub issue creation
+func (d *detectUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 type blackduckSystem struct {
@@ -488,7 +496,7 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 		log.Entry().Debugf("Creating result issues for %v alert(s)", len(vulns.Items))
 		issueDetails := make([]reporting.IssueDetail, len(vulns.Items))
 		piperutils.CopyAtoB(vulns.Items, issueDetails)
-		err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+		err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks, utils)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
