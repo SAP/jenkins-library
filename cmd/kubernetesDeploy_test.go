@@ -18,6 +18,7 @@ type kubernetesDeployMockUtils struct {
 	requestedFiles []string
 	*mock.FilesMock
 	*mock.ExecMockRunner
+	*mock.HttpClientMock
 }
 
 func newKubernetesDeployMockUtils() kubernetesDeployMockUtils {
