@@ -117,6 +117,7 @@ func UniqueStrings(values []string) []string {
 	return keys
 }
 
+// CopyAtoB copies the contents of a into slice b given that they are of equal size and compatible type
 func CopyAtoB(a, b interface{}) {
 	src := reflect.ValueOf(a)
 	tgt := reflect.ValueOf(b)

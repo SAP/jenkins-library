@@ -417,7 +417,7 @@ func (f Files) Symlink(oldname, newname string) error {
 	return os.Symlink(oldname, newname)
 }
 
-// Computes a SHA256 for a given file
+// SHA256 computes a SHA256 for a given file
 func (f Files) SHA256(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {

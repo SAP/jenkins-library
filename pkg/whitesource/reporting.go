@@ -208,7 +208,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		sarifRule.FullDescription = format.Message{Text: alert.Vulnerability.Description}
 		sarifRule.DefaultConfiguration.Level = alert.Level
 		sarifRule.HelpURI = alert.Vulnerability.URL
-		markdown, _ := alert.ToMarkdown() 
+		markdown, _ := alert.ToMarkdown()
 		sarifRule.Help = format.Help{Text: fmt.Sprintf("Vulnerability %v\nSeverity: %v\nPackage: %v\nInstalled Version: %v\nFix Resolution: %v\nLink: [%v](%v)", alert.Vulnerability.Name, alert.Vulnerability.Severity, alert.Library.ArtifactID, alert.Library.Version, alert.Vulnerability.TopFix.FixResolution, alert.Vulnerability.Name, alert.Vulnerability.URL), Markdown: string(markdown)}
 
 		// Avoid empty descriptions to respect standard

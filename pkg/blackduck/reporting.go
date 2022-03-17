@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Creates a SARIF result from the Vulnerabilities that were brought up by the scan
+// CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
 func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
@@ -79,6 +79,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	return &sarif
 }
 
+// WriteVulnerabilityReports writes vulnerability information from ScanReport into dedicated outputs e.g. HTML
 func WriteVulnerabilityReports(scanReport reporting.ScanReport, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
@@ -124,16 +125,4 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Blackduck Detect Vulnerability SARIF file", Target: sarifReportPath})
 
 	return reportPaths, nil
-}
-
-// CreateGithubResultIssues creates a number of GitHub issues, one per Vulnerability to create transparency on the findings
-func CreateGithubResultIssues(vulns []Vulnerability, token, APIURL, owner, repository string, assignees, trustedCerts []string) error {
-	issueDetails := []reporting.IssueDetail{}
-	var issueDetail reporting.IssueDetail
-	for i := 0; i < len(vulns); i++ {
-		issueDetail = vulns[i]
-		issueDetails = append(issueDetails, issueDetail)
-	}
-
-	return reporting.UploadMultipleReportsToGithub(&issueDetails, token, APIURL, owner, repository, assignees, trustedCerts)	
 }
