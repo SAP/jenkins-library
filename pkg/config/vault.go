@@ -33,6 +33,7 @@ const (
 	vaultCredentialEnvPrefix            = "vaultCredentialEnvPrefix"
 	vaultTestCredentialEnvPrefixDefault = "PIPER_TESTCREDENTIAL_"
 	vaultCredentialEnvPrefixDefault     = "PIPER_VAULTCREDENTIAL_"
+	vaultSecretName                     = ".+VaultSecretName$"
 )
 
 var (
@@ -53,6 +54,7 @@ var (
 		vaultCredentialPath,
 		vaultCredentialKeys,
 		vaultCredentialEnvPrefix,
+		vaultSecretName,
 	}
 
 	// VaultRootPaths are the lookup paths piper tries to use during the vault lookup.

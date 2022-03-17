@@ -178,6 +178,11 @@ func containerSaveImageMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
 						},
@@ -190,6 +195,11 @@ func containerSaveImageMetadata() config.StepData {
 					{
 						Name: "containerRegistryUser",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
