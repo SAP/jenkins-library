@@ -106,6 +106,8 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/npmRepositoryURL
+          - name: commonPipelineEnvironment
             param: custom/repositoryUrl
       - name: repositoryPassword
         type: string
@@ -118,6 +120,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/npmRepositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: repositoryUsername
         type: string
@@ -129,6 +133,8 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/npmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: buildSettingsInfo
