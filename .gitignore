@@ -53,5 +53,6 @@ AUnitResults.html
 /cmd/.pipeline
 /cmd/fortify
 /cmd/protecode
-cmd/dockerimagename_latest.tar
-cmd/atcSystemConfig.json
+/cmd/dockerimagename_latest.tar
+/cmd/atcSystemConfig.json
+__debug_bin.exe
