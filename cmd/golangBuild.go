@@ -447,7 +447,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
 	if len(ldflags) > 0 {
-	   buildOptions = append(buildOptions, "-ldflags", ldflags)
+		buildOptions = append(buildOptions, "-ldflags", ldflags)
 	}
 	buildOptions = append(buildOptions, config.Packages...)
 
