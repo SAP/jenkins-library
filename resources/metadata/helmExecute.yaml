@@ -69,6 +69,8 @@ spec:
             type: secret
             param: password
           - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: containerImageName
         aliases:
@@ -119,6 +121,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: containerRegistrySecret
