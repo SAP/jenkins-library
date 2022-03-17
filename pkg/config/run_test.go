@@ -60,7 +60,7 @@ func TestInitRunConfigV1(t *testing.T) {
 		stageConfig := ioutil.NopCloser(strings.NewReader(test.stageConfig))
 		runConfig := RunConfig{StageConfigFile: stageConfig}
 		runConfigV1 := RunConfigV1{RunConfig: runConfig}
-		err := runConfigV1.InitRunConfigV1(&test.config, nil, nil, nil, nil, &filesMock)
+		err := runConfigV1.InitRunConfigV1(&test.config, nil, nil, nil, nil, &filesMock, ".pipeline")
 		if len(test.errorContains) > 0 {
 			assert.Contains(t, fmt.Sprint(err), test.errorContains)
 		} else {
