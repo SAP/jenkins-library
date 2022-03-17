@@ -196,20 +196,31 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.RuleID = id
 		result.Level = alert.Level
 		result.RuleIndex = i //Seems very abstract
-		result.Message = format.Message{Text: alert.Vulnerability.Description}
+		msg := new(format.Message)
+		msg.Text = alert.Vulnerability.Description
+		result.Message = msg
 		result.Level = alert.Level
-		result.AnalysisTarget = format.ArtifactLocation{URI: alert.Library.Filename, Index: 0}
+		artLoc := new(format.ArtifactLocation)
+		artLoc.Index = 0
+		artLoc.URI = alert.Library.Filename
+		result.AnalysisTarget = artLoc
 		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}, Message: nil}
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)
 		sarifRule.ID = id
-		sarifRule.ShortDescription = format.Message{Text: fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)}
-		sarifRule.FullDescription = format.Message{Text: alert.Vulnerability.Description}
-		sarifRule.DefaultConfiguration.Level = alert.Level
+		sd := new(format.Message)
+		sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
+		sarifRule.ShortDescription = sd
+		fd := new(format.Message)
+		fd.Text = alert.Vulnerability.Description
+		sarifRule.FullDescription = fd
+		defaultConfig := new(format.DefaultConfiguration)
+		defaultConfig.Level = alert.Level
+		sarifRule.DefaultConfiguration = defaultConfig
 		sarifRule.HelpURI = alert.Vulnerability.URL
 		markdown, _ := alert.ToMarkdown()
-		sarifRule.Help = format.Help{}
+		sarifRule.Help = new(format.Help)
 		sarifRule.Help.Text = alert.ToTxt()
 		sarifRule.Help.Markdown = string(markdown)
 

@@ -657,6 +657,13 @@ func TestGetResourceParameters(t *testing.T) {
 				}}}},
 			expected: map[string]interface{}{"param1": "val1"},
 		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "sthwhichclearlydoesntexist"}, {Name: "commonPipelineEnvironment", Param: "envparam2"}}, Type: "string"},
+				}}}},
+			expected: map[string]interface{}{"param1": "val2"},
+		},
 	}
 
 	dir, err := ioutil.TempDir("", "")
