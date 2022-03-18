@@ -710,7 +710,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := integrateAuditData(&prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
+			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
