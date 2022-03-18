@@ -57,7 +57,33 @@ type Alert struct {
 
 // Title returns the issue title representation of the contents
 func (a Alert) Title() string {
-	return fmt.Sprintf("%v/%v/%v", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
+	return fmt.Sprintf("%v_%v/%v/%v", consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
+}
+
+func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
+	switch cvss3severity {
+		case "low":
+			return "LOW"	
+		case "medium":
+			return "MEDIUM"
+		case "high":
+			if cvss3score >= 9 {
+				return "CRITICAL"
+			}
+			return "HIGH"
+	}
+	switch cvss2severity {
+		case "low":
+			return "LOW"	
+		case "medium":
+			return "MEDIUM"
+		case "high":
+			if cvss2score >= 9 {
+				return "CRITICAL"
+			}
+			return "HIGH"
+		}
+	return "none"
 }
 
 // ToMarkdown returns the markdown representation of the contents

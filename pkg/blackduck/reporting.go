@@ -81,16 +81,16 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 
 func transformToLevel(severity string) string {
 	switch severity {
-	case "LOW":
-		return "warning"	
-	case "MEDIUM":
-		return "warning"
-	case "HIGH":
-		return "error"
-	case "CRITICAL":
-		return "error"
-}
-return "none"
+		case "LOW":
+			return "warning"	
+		case "MEDIUM":
+			return "warning"
+		case "HIGH":
+			return "error"
+		case "CRITICAL":
+			return "error"
+	}
+	return "none"
 }
 
 // WriteVulnerabilityReports writes vulnerability information from ScanReport into dedicated outputs e.g. HTML
