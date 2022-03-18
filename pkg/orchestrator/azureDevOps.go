@@ -79,7 +79,7 @@ func (a *AzureDevOpsConfigProvider) getBuildId() string {
 
 // GetJobName returns the pipeline job name, currently org/repo
 func (a *AzureDevOpsConfigProvider) GetJobName() string {
-	return getEnv("BUILD_REPOSITORY_ID", "n/a")
+	return getEnv("BUILD_REPOSITORY_NAME", "n/a")
 }
 
 // OrchestratorVersion returns the agent version on ADO
