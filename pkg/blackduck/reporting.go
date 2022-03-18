@@ -17,7 +17,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
-	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var wsRun format.Runs
 	sarif.Runs = append(sarif.Runs, wsRun)
