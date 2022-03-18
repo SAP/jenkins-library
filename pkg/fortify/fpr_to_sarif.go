@@ -608,7 +608,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
 							threadFlowLocation.Location.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 							threadFlowLocation.Location.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text = fvdl.Snippets[j].Text
+							snippetSarif := new(format.SnippetSarif)
+							snippetSarif.Text = fvdl.Snippets[j].Text
+							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 							break
 						}
 					}
@@ -654,13 +656,17 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 								break
 							}
 						}
+						snippetSarif := new(format.SnippetSarif)
 						if snippetText != "" {
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = snippetText
+							snippetSarif.Text = snippetText
 						} else {
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
 						}
+						threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 					} else {
-						threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+						snippetSarif := new(format.SnippetSarif)
+						snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+						threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 					}
 					location = *threadFlowLocation.Location
 					//set Kinds
@@ -942,7 +948,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			if fvdl.Snippets[j].SnippetId == targetSnippetId {
 				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-				loc.PhysicalLocation.ContextRegion.Snippet.Text = fvdl.Snippets[j].Text
+				snippetSarif := new(format.SnippetSarif)
+				snippetSarif.Text = fvdl.Snippets[j].Text
+				loc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 				break
 			}
 		}
@@ -976,18 +984,22 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		default:
 			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
 		}
-		physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-		snippetText := ""
-		for j := 0; j < len(physLocationSnippetLines); j++ {
-			if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-				snippetText = physLocationSnippetLines[j]
-				break
+		if loc.PhysicalLocation.ContextRegion.Snippet != nil {
+			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+			snippetText := ""
+			for j := 0; j < len(physLocationSnippetLines); j++ {
+				if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+					snippetText = physLocationSnippetLines[j]
+					break
+				}
 			}
-		}
-		if snippetText != "" {
-			loc.PhysicalLocation.Region.Snippet.Text = snippetText
-		} else {
-			loc.PhysicalLocation.Region.Snippet.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
+			snippetSarif := new(format.SnippetSarif)
+			if snippetText != "" {
+				snippetSarif.Text = snippetText
+			} else {
+				snippetSarif.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
+			}
+			loc.PhysicalLocation.Region.Snippet = snippetSarif
 		}
 		locations.Location = loc
 		locations.Kinds = append(locations.Kinds, "unknown")
