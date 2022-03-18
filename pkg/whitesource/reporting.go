@@ -241,20 +241,20 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 
 func transformToLevel(cvss2severity, cvss3severity string) string {
 	switch cvss3severity {
-		case "low":
-			return "warning"	
-		case "medium":
-			return "warning"
-		case "high":
-			return "error"
+	case "low":
+		return "warning"
+	case "medium":
+		return "warning"
+	case "high":
+		return "error"
 	}
 	switch cvss2severity {
-		case "low":
-			return "warning"	
-		case "medium":
-			return "warning"
-		case "high":
-			return "error"
+	case "low":
+		return "warning"
+	case "medium":
+		return "warning"
+	case "high":
+		return "error"
 	}
 	return "none"
 }
