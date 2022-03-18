@@ -202,7 +202,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		artLoc.Index = 0
 		artLoc.URI = alert.Library.Filename
 		result.AnalysisTarget = artLoc
-		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{StartLine: 1, EndLine: 1}}, Message: nil}
+		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}}}
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)

@@ -44,7 +44,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			result.AnalysisTarget = new(format.ArtifactLocation)
 			result.AnalysisTarget.URI = v.Name
 			result.AnalysisTarget.Index = 0
-			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}, Region: format.Region{StartLine: 1, EndLine: 1}}}
+			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
 
 			sarifRule := *new(format.SarifRule)
