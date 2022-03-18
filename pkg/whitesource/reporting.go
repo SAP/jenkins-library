@@ -202,7 +202,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		artLoc.Index = 0
 		artLoc.URI = alert.Library.Filename
 		result.AnalysisTarget = artLoc
-		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}, Message: nil}
+		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{StartLine: 1, EndLine: 1}}, Message: nil}
 		result.Locations = append(result.Locations, location)
 
 		sarifRule := *new(format.SarifRule)
@@ -242,17 +242,17 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 func transformToLevel(cvss2severity, cvss3severity string) string {
 	switch cvss3severity {
 		case "low":
-			return "warn"	
+			return "warning"	
 		case "medium":
-			return "warn"
+			return "warning"
 		case "high":
 			return "error"
 	}
 	switch cvss2severity {
 		case "low":
-			return "warn"	
+			return "warning"	
 		case "medium":
-			return "warn"
+			return "warning"
 		case "high":
 			return "error"
 	}
