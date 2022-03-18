@@ -30,7 +30,7 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 
 		scanReport := CreateCustomVulnerabilityReport(config.ProductName, scan, &alerts, 7.0)
 
-		assert.Equal(t, "WhiteSource Security Vulnerability Report", scanReport.Title)
+		assert.Equal(t, "WhiteSource Security Vulnerability Report", scanReport.Title())
 		assert.Equal(t, 3, len(scanReport.DetailTable.Rows))
 
 		// assert that library info is filled and sorting has been executed

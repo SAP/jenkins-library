@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -29,6 +30,10 @@ func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptor
 	w.usedBuildDescriptorFile = buildDescriptorFile
 	w.usedOptions = *options
 	return w.coordinates, nil
+}
+
+func (w *whitesourceUtilsMock) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return nil
 }
 
 const wsTimeNow = "2010-05-10 00:15:42"

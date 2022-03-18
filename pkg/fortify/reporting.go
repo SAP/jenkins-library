@@ -50,7 +50,7 @@ type SpotChecksAuditCount struct {
 func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVersionIssueGroup) reporting.ScanReport {
 
 	scanReport := reporting.ScanReport{
-		Title: "Fortify SAST Report",
+		ReportTitle: "Fortify SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Fortify project name", Details: data.ProjectName},
 			{Description: "Fortify project version", Details: data.ProjectVersion},
