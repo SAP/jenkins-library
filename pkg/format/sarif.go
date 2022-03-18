@@ -2,7 +2,7 @@ package format
 
 // SARIF format related JSON structs
 type SARIF struct {
-	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"`
+	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"`
 	Version string `json:"version" default:"2.1.0"`
 	Runs    []Runs `json:"runs"`
 }
