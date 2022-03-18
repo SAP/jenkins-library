@@ -30,7 +30,7 @@ type Results struct {
 	Locations        []Location        `json:"locations,omitempty"`
 	CodeFlows        []CodeFlow        `json:"codeFlows,omitempty"`
 	RelatedLocations []RelatedLocation `json:"relatedLocations,omitempty"`
-	Properties       *SarifProperties  `json:"properties,omitempty"`
+	Properties       *SarifProperties  `json:"properties"`
 }
 
 // Message to detail the finding
@@ -47,8 +47,8 @@ type Location struct {
 // PhysicalLocation
 type PhysicalLocation struct {
 	ArtifactLocation ArtifactLocation  `json:"artifactLocation"`
-	Region           *Region           `json:"region,omitempty"`
-	ContextRegion    *ContextRegion    `json:"contextRegion,omitempty"`
+	Region           Region            `json:"region"`
+	ContextRegion    ContextRegion     `json:"contextRegion"`
 	LogicalLocations []LogicalLocation `json:"logicalLocations,omitempty"`
 }
 
