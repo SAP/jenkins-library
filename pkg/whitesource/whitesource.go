@@ -62,27 +62,27 @@ func (a Alert) Title() string {
 
 func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
 	switch cvss3severity {
-		case "low":
-			return "LOW"	
-		case "medium":
-			return "MEDIUM"
-		case "high":
-			if cvss3score >= 9 {
-				return "CRITICAL"
-			}
-			return "HIGH"
+	case "low":
+		return "LOW"
+	case "medium":
+		return "MEDIUM"
+	case "high":
+		if cvss3score >= 9 {
+			return "CRITICAL"
+		}
+		return "HIGH"
 	}
 	switch cvss2severity {
-		case "low":
-			return "LOW"	
-		case "medium":
-			return "MEDIUM"
-		case "high":
-			if cvss2score >= 9 {
-				return "CRITICAL"
-			}
-			return "HIGH"
+	case "low":
+		return "LOW"
+	case "medium":
+		return "MEDIUM"
+	case "high":
+		if cvss2score >= 9 {
+			return "CRITICAL"
 		}
+		return "HIGH"
+	}
 	return "none"
 }
 
