@@ -35,7 +35,7 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() {
 	// if apiInformation is empty fill it otherwise do nothing
 	if len(apiInformation) == 0 {
 		log.Entry().Debugf("apiInformation is empty, getting infos from API")
-		URL := a.getSystemCollectionURI() + a.getTeamProjectId() + "/_apis/build/builds/" + a.getBuildId() + "/"
+		URL := a.getSystemCollectionURI() + a.getTeamProjectId() + "/_apis/build/builds/" + a.getBuildID() + "/"
 		log.Entry().Debugf("API URL: %s", URL)
 		response, err := a.client.GetRequest(URL, nil, nil)
 		if err != nil {
@@ -71,7 +71,7 @@ func (a *AzureDevOpsConfigProvider) getTeamProjectId() string {
 	return getEnv("SYSTEM_TEAMPROJECTID", "n/a")
 }
 
-func (a *AzureDevOpsConfigProvider) getBuildId() string {
+func (a *AzureDevOpsConfigProvider) getBuildID() string {
 	// INFO: Private function only used for API requests, buildId for e.g. reporting
 	// is buildNumber to align with the UI of ADO
 	return getEnv("BUILD_BUILDID", "n/a")
@@ -108,7 +108,7 @@ func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
 
 // GetLog returns the whole logfile for the current pipeline run
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
-	URL := a.getSystemCollectionURI() + a.getTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
+	URL := a.getSystemCollectionURI() + a.getTeamProjectId() + "/_apis/build/builds/" + a.GetBuildID() + "/logs"
 
 	response, err := a.client.GetRequest(URL, nil, nil)
 
@@ -161,10 +161,10 @@ func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 
 }
 
-// GetBuildId returns the BuildNumber displayed in the ADO UI
-func (a *AzureDevOpsConfigProvider) GetBuildId() string {
+// GetBuildID returns the BuildNumber displayed in the ADO UI
+func (a *AzureDevOpsConfigProvider) GetBuildID() string {
 	// INFO: ADO has BUILD_ID and buildNumber, as buildNumber is used in the UI we return this value
-	// for the buildID used only for API requests we have a private method getBuildId
+	// for the buildID used only for API requests we have a private method getBuildID
 	// example: buildNumber: 20220318.16 buildId: 76443
 	return getEnv("BUILD_BUILDNUMBER", "n/a")
 }
@@ -180,7 +180,7 @@ func (a *AzureDevOpsConfigProvider) GetBranch() string {
 }
 
 func (a *AzureDevOpsConfigProvider) GetBuildUrl() string {
-	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + a.getBuildId()
+	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + a.getBuildID()
 }
 
 func (a *AzureDevOpsConfigProvider) GetJobUrl() string {
