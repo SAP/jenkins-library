@@ -66,7 +66,7 @@ type Region struct {
 	EndColumn   int          `json:"endColumn,omitempty"`
 	ByteOffset  int          `json:"byteOffset,omitempty"`
 	ByteLength  int          `json:"byteLength,omitempty"`
-	Snippet     SnippetSarif `json:"snippet"`
+	Snippet     SnippetSarif `json:"snippet,omitempty"`
 }
 
 // LogicalLocation of the finding
@@ -130,9 +130,9 @@ type SnippetSarif struct {
 
 // ContextRegion provides the context for the finding
 type ContextRegion struct {
-	StartLine int          `json:"startLine"`
-	EndLine   int          `json:"endLine"`
-	Snippet   SnippetSarif `json:"snippet"`
+	StartLine int          `json:"startLine,omitempty"`
+	EndLine   int          `json:"endLine,omitempty"`
+	Snippet   SnippetSarif `json:"snippet,omitempty"`
 }
 
 // CodeFlow
