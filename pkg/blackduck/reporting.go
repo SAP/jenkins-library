@@ -87,6 +87,8 @@ func transformToLevel(severity string) string {
 		return "warning"
 	case "HIGH":
 		return "error"
+	case "CRITICAL":
+		return "error"
 }
 return "none"
 }
