@@ -62,14 +62,20 @@ func (a Alert) Title() string {
 
 // ToMarkdown returns the markdown representation of the contents
 func (a Alert) ToMarkdown() ([]byte, error) {
+	score := a.Vulnerability.CVSS3Score
+	if score == 0 {
+		score = a.Vulnerability.Score
+	}
 	return []byte(fmt.Sprintf(
 		`**Vulnerability %v**
-| Severity | Package | Installed Version | Description | Fix Resolution | Link |
-| --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|[%v](%v)|
+| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
 `,
 		a.Vulnerability.Name,
 		a.Vulnerability.Severity,
+		score,
+		score,
 		a.Library.ArtifactID,
 		a.Library.Version,
 		a.Vulnerability.Description,
@@ -81,8 +87,14 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 
 // ToTxt returns the textual representation of the contents
 func (a Alert) ToTxt() string {
+	score := a.Vulnerability.CVSS3Score
+	if score == 0 {
+		score = a.Vulnerability.Score
+	}
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
+Base (NVD) Score: %v
+Temporal Score: %v
 Package: %v
 Installed Version: %v
 Description: %v
@@ -90,6 +102,8 @@ Fix Resolution: %v
 Link: [%v](%v)`,
 		a.Vulnerability.Name,
 		a.Vulnerability.Severity,
+		score,
+		score,
 		a.Library.ArtifactID,
 		a.Library.Version,
 		a.Vulnerability.Description,

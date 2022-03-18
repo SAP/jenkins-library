@@ -100,12 +100,14 @@ func (v Vulnerability) Title() string {
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	return []byte(fmt.Sprintf(
 		`**Vulnerability %v**
-| Severity | Package | Installed Version | Description | Fix Resolution | Link |
-| --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|[%v](%v)|
+| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
 `,
 		v.VulnerabilityWithRemediation.VulnerabilityName,
 		v.VulnerabilityWithRemediation.Severity,
+		v.VulnerabilityWithRemediation.BaseScore,
+		v.VulnerabilityWithRemediation.OverallScore,
 		v.Name,
 		v.Version,
 		v.Description,
@@ -119,6 +121,8 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 func (v Vulnerability) ToTxt() string {
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
+Base (NVD) Score: %v
+Temporal Score: %v
 Package: %v
 Installed Version: %v
 Description: %v
@@ -126,6 +130,8 @@ Fix Resolution: %v
 Link: [%v](%v)`,
 		v.VulnerabilityName,
 		v.Severity,
+		v.VulnerabilityWithRemediation.BaseScore,
+		v.VulnerabilityWithRemediation.OverallScore,
 		v.Name,
 		v.Version,
 		v.Description,

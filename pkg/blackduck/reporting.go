@@ -37,7 +37,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			id := v.Title()
 			log.Entry().Debugf("Transforming alert %v into SARIF format", id)
 			result.RuleID = id
-			result.Level = v.VulnerabilityWithRemediation.Severity
+			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 			result.RuleIndex = i //Seems very abstract
 			result.Message = new(format.Message)
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
@@ -61,14 +61,6 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			sarifRule.Help.Text = v.ToTxt()
 			sarifRule.Help.Markdown = string(markdown)
 
-			// Avoid empty descriptions to respect standard
-			if sarifRule.ShortDescription.Text == "" {
-				sarifRule.ShortDescription.Text = "None."
-			}
-			if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-				sarifRule.FullDescription.Text = "None."
-			}
-
 			ruleProp := *new(format.SarifRuleProperties)
 			ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
 			ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.Description)
@@ -85,6 +77,18 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	sarif.Runs[0].Tool = tool
 
 	return &sarif
+}
+
+func transformToLevel(severity string) string {
+	switch severity {
+	case "LOW":
+		return "warn"	
+	case "MEDIUM":
+		return "warn"
+	case "HIGH":
+		return "error"
+}
+return "none"
 }
 
 // WriteVulnerabilityReports writes vulnerability information from ScanReport into dedicated outputs e.g. HTML
