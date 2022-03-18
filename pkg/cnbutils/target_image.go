@@ -18,8 +18,12 @@ type TargetImage struct {
 }
 
 func GetTargetImage(imageRegistry, imageName, imageTag, projectID, envRootPath string) (*TargetImage, error) {
-	if imageRegistry == "" || imageTag == "" {
-		return nil, errors.New("containerRegistryUrl and containerImageTag must be present")
+	if imageRegistry == "" {
+		return nil, errors.New("containerRegistryUrl must be present")
+	}
+
+	if imageTag == "" {
+		return nil, errors.New("containerImageTag must be present")
 	}
 
 	targetImage := &TargetImage{
