@@ -54,7 +54,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			sarifRule.FullDescription = new(format.Message)
 			sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
 			sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
-			sarifRule.DefaultConfiguration.Level = v.Severity
+			sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 			sarifRule.HelpURI = ""
 			markdown, _ := v.ToMarkdown()
 			sarifRule.Help = new(format.Help)

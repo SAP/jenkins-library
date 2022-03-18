@@ -214,7 +214,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		fd.Text = alert.Vulnerability.Description
 		sarifRule.FullDescription = fd
 		defaultConfig := new(format.DefaultConfiguration)
-		defaultConfig.Level = alert.Level
+		defaultConfig.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
 		sarifRule.DefaultConfiguration = defaultConfig
 		sarifRule.HelpURI = alert.Vulnerability.URL
 		markdown, _ := alert.ToMarkdown()
