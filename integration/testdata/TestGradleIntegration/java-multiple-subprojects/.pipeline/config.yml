@@ -1,6 +1,0 @@
-general:
-  createBOM: true
-
-steps:
-  gradleExecuteBuild:
-    path: app
