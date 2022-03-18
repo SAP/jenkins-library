@@ -721,7 +721,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Unknown"
 			prop.ToolAuditMessage = "Cannot fetch audit state"
 		}
-		result.Properties = prop
+		result.Properties = &prop
 
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 	}
