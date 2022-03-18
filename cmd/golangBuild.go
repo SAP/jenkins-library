@@ -451,7 +451,6 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 	}
 	buildOptions = append(buildOptions, config.Packages...)
 
-
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)
 		log.SetErrorCategory(log.ErrorBuild)
