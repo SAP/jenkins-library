@@ -547,7 +547,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 	//Now, we handle the sarif
 	var sarif format.SARIF
-	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var fortifyRun format.Runs
 	fortifyRun.ColumnKind = "utf16CodeUnits"
