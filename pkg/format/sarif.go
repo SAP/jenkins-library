@@ -60,6 +60,7 @@ type ArtifactLocation struct {
 
 // Region where the finding was detected
 type Region struct {
+<<<<<<< HEAD
 	StartLine   int          `json:"startLine,omitempty"`
 	StartColumn int          `json:"startColumn,omitempty"`
 	EndLine     int          `json:"endLine,omitempty"`
@@ -67,6 +68,15 @@ type Region struct {
 	ByteOffset  int          `json:"byteOffset,omitempty"`
 	ByteLength  int          `json:"byteLength,omitempty"`
 	Snippet     *SnippetSarif `json:"snippet"`
+=======
+	StartLine   int           `json:"startLine,omitempty"`
+	StartColumn int           `json:"startColumn,omitempty"`
+	EndLine     int           `json:"endLine,omitempty"`
+	EndColumn   int           `json:"endColumn,omitempty"`
+	ByteOffset  int           `json:"byteOffset,omitempty"`
+	ByteLength  int           `json:"byteLength,omitempty"`
+	Snippet     *SnippetSarif `json:"snippet,omitempty"`
+>>>>>>> cc9e9725b0dec7ee14846fb2d7f113a2c5efe11b
 }
 
 // LogicalLocation of the finding
@@ -130,9 +140,15 @@ type SnippetSarif struct {
 
 // ContextRegion provides the context for the finding
 type ContextRegion struct {
+<<<<<<< HEAD
 	StartLine int          `json:"startLine,omitempty"`
 	EndLine   int          `json:"endLine,omitempty"`
 	Snippet   *SnippetSarif `json:"snippet"`
+=======
+	StartLine int           `json:"startLine,omitempty"`
+	EndLine   int           `json:"endLine,omitempty"`
+	Snippet   *SnippetSarif `json:"snippet,omitempty"`
+>>>>>>> cc9e9725b0dec7ee14846fb2d7f113a2c5efe11b
 }
 
 // CodeFlow
