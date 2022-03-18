@@ -1,6 +1,7 @@
 package piperutils
 
 import (
+	"reflect"
 	"strings"
 )
 
@@ -114,4 +115,26 @@ func UniqueStrings(values []string) []string {
 		i++
 	}
 	return keys
+}
+
+// CopyAtoB copies the contents of a into slice b given that they are of equal size and compatible type
+func CopyAtoB(a, b interface{}) {
+	src := reflect.ValueOf(a)
+	tgt := reflect.ValueOf(b)
+	if src.Kind() != reflect.Slice || tgt.Kind() != reflect.Slice {
+		panic("CopyAtoB() given a non-slice type")
+	}
+
+	if src.Len() != tgt.Len() {
+		panic("CopyAtoB() given non equal sized slices")
+	}
+
+	// Keep the distinction between nil and empty slice input
+	if src.IsNil() {
+		return
+	}
+
+	for i := 0; i < src.Len(); i++ {
+		tgt.Index(i).Set(src.Index(i))
+	}
 }
