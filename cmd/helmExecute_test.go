@@ -37,7 +37,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUpgrade").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -75,7 +75,7 @@ func TestRunHelmLint(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmLint").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -113,7 +113,7 @@ func TestRunHelmInstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmInstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -150,7 +150,7 @@ func TestRunHelmTest(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmTest").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -187,7 +187,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUninstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -224,7 +224,7 @@ func TestRunHelmPackage(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmPackage").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -243,29 +243,87 @@ func TestRunHelmPush(t *testing.T) {
 	}{
 		{
 			config: helmExecuteOptions{
-				HelmCommand: "push",
+				HelmCommand: "publish",
 			},
 			methodError: nil,
 		},
 		{
 			config: helmExecuteOptions{
-				HelmCommand: "push",
+				HelmCommand: "publish",
 			},
 			methodError:    errors.New("some error"),
-			expectedErrStr: "failed to execute helm push: some error",
+			expectedErrStr: "failed to execute helm publish: some error",
 		},
 	}
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmPush").Return(testCase.methodError)
+			helmExecute.On("RunHelmPublish").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config.HelmCommand, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
 		})
 
 	}
+}
+
+func TestRunHelmDefaultCommand(t *testing.T) {
+	t.Parallel()
+
+	testTable := []struct {
+		config             helmExecuteOptions
+		methodLintError    error
+		methodPackageError error
+		methodPublishError error
+		expectedErrStr     string
+	}{
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodLintError:    nil,
+			methodPackageError: nil,
+			methodPublishError: nil,
+		},
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodLintError: errors.New("some error"),
+			expectedErrStr:  "failed to execute helm lint: some error",
+		},
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodPackageError: errors.New("some error"),
+			expectedErrStr:     "failed to execute helm package: some error",
+		},
+		{
+			config: helmExecuteOptions{
+				HelmCommand: "",
+			},
+			methodPublishError: errors.New("some error"),
+			expectedErrStr:     "failed to execute helm publish: some error",
+		},
+	}
+
+	for i, testCase := range testTable {
+		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
+			helmExecute := &mocks.HelmExecutor{}
+			helmExecute.On("RunHelmLint").Return(testCase.methodLintError)
+			helmExecute.On("RunHelmPackage").Return(testCase.methodPackageError)
+			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
+
+			err := runHelmExecute(testCase.config, helmExecute)
+			if err != nil {
+				assert.Equal(t, testCase.expectedErrStr, err.Error())
+			}
+
+		})
+	}
+
 }

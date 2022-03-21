@@ -98,6 +98,7 @@ func TestRunGolangBuild(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests:            true,
 			LdflagsTemplate:     "test",
+			Packages:            []string{"package/foo"},
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
@@ -110,7 +111,7 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - tests with coverage", func(t *testing.T) {

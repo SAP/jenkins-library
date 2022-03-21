@@ -821,13 +821,19 @@ func TestMerge(t *testing.T) {
 			MergeData:      map[string]interface{}{"key1": map[string]interface{}{"key1_2": "value2"}},
 			ExpectedOutput: map[string]interface{}{"key1": map[string]interface{}{"key1_1": "value1", "key1_2": "value2"}},
 		},
+		{
+			Source:         map[string]interface{}{"key1": "value1"},
+			Filter:         []string{"key1", ".+Key$"},
+			MergeData:      map[string]interface{}{"regexKey": "value2", "regexKeyIgnored": "value3", "Key": "value3"},
+			ExpectedOutput: map[string]interface{}{"key1": "value1", "regexKey": "value2"},
+		},
 	}
 
 	for _, row := range testTable {
 		t.Run(fmt.Sprintf("Merging %v into %v", row.MergeData, row.Source), func(t *testing.T) {
 			stepConfig := StepConfig{Config: row.Source}
 			stepConfig.mixIn(row.MergeData, row.Filter)
-			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin  was incorrect")
+			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin was incorrect")
 		})
 	}
 }
