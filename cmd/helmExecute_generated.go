@@ -220,6 +220,11 @@ func helmExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/helmRepositoryURL",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
 							},
 						},
@@ -243,6 +248,11 @@ func helmExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/helmRepositoryUsername",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
 							},
 						},
@@ -255,6 +265,11 @@ func helmExecuteMetadata() config.StepData {
 					{
 						Name: "targetRepositoryPassword",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/helmRepositoryPassword",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
