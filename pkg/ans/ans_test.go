@@ -94,7 +94,7 @@ func TestANS_Send(t *testing.T) {
 	}
 }
 
-func TestReadServiceKey(t *testing.T) {
+func TestUnmarshallServiceKey(t *testing.T) {
 	tests := []struct {
 		name              string
 		serviceKeyJSON    string
