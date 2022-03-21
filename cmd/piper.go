@@ -108,6 +108,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
+	rootCmd.AddCommand(AbapEnvironmentCreateTagCommand())
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
