@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 
@@ -180,6 +181,10 @@ func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header
 		c.downloadedFiles = make(map[string]string)
 	}
 	c.downloadedFiles[url] = filename
+	return nil
+}
+
+func (w *detectTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
 	return nil
 }
 
