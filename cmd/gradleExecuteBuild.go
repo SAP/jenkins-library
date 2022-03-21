@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,6 +13,8 @@ import (
 type gradleExecuteBuildUtils interface {
 	command.ExecRunner
 	FileExists(filename string) (bool, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRemove(path string) error
 }
 
 type gradleExecuteBuildUtilsBundle struct {
@@ -30,18 +34,20 @@ func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 
 func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemetry.CustomData) {
 	utils := newGradleExecuteBuildUtils()
-	fileUtils := &piperutils.Files{}
-	err := runGradleExecuteBuild(&config, telemetryData, utils, fileUtils)
+	err := runGradleExecuteBuild(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed: %w", err)
 	}
 }
 
-func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils, fileUtils piperutils.FileUtils) error {
-	opt := &gradle.ExecuteOptions{BuildGradlePath: config.Path, Task: config.Task}
+func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
+	opt := &gradle.ExecuteOptions{
+		BuildGradlePath: config.Path,
+		Task:            config.Task,
+		CreateBOM:       config.CreateBOM,
+	}
 
-	_, err := gradle.Execute(opt, utils, fileUtils)
-	if err != nil {
+	if err := gradle.Execute(opt, utils); err != nil {
 		log.Entry().WithError(err).Errorln("build.gradle execution was failed: %w", err)
 		return err
 	}
