@@ -83,7 +83,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
@@ -134,7 +134,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--skip-tls-verify-pull", "--destination", "myImage:tag", "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag", "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt"}, runner.Calls[1].Params)
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
@@ -184,7 +184,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
 		assert.Equal(t, "myImage:1.2.3-a-x", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
@@ -228,7 +228,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.other.registry.com:50000/myImage:3.2.1-a-x"}, runner.Calls[1].Params)
 
 		assert.Equal(t, "myImage:3.2.1-a-x", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, "https://my.other.registry.com:50000", commonPipelineEnvironment.container.registryURL)
@@ -290,7 +290,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, `{"auths":{}}`, string(c))
 
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
 	})
 
 	t.Run("success case - backward compatibility", func(t *testing.T) {
@@ -317,7 +317,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.NoError(t, err)
 		cwd, _ := fileUtils.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -347,9 +347,9 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", cwd, "--reproducible", "--destination", "my.registry.com:50000/myImage:myTag"},
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--reproducible", "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--reproducible", "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
@@ -403,8 +403,8 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--reproducible", "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--reproducible", "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range runner.Calls {
