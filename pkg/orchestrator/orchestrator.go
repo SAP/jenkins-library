@@ -41,6 +41,7 @@ type PullRequestConfig struct {
 	Key    string
 }
 
+// OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
 type OrchestratorSettings struct {
 	JenkinsUser  string
 	JenkinsToken string
@@ -60,6 +61,7 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	}
 }
 
+// DetectOrchestrator returns the name of the current orchestrator e.g. Jenkins, Azure, Unknown
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
 		return Orchestrator(AzureDevOps)
