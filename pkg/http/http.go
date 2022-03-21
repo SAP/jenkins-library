@@ -67,7 +67,7 @@ type ClientOptions struct {
 	TrustedCerts              []string
 }
 
-// TransportWrapper is a wrapper for central roundtrip capabilities
+// TransportWrapper is a wrapper for central round trip capabilities
 type TransportWrapper struct {
 	Transport                http.RoundTripper
 	doLogRequestBodyOnDebug  bool
@@ -196,7 +196,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	}
 }
 
-// SendRequest sends an http request with a defined method
+// SendRequest sends a http request with a defined method
 //
 // On error, any Response can be ignored and the Response.Body
 // does not need to be closed.
@@ -209,7 +209,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	return c.Send(request)
 }
 
-// Send sends an http request
+// Send sends a http request
 func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	httpClient := c.initialize()
 	response, err := httpClient.Do(request)
@@ -339,7 +339,7 @@ var contextKeyRequestStart = &contextKey{"RequestStart"}
 var authHeaderKey = "Authorization"
 
 // RoundTrip is the core part of this module and implements http.RoundTripper.
-// Executes HTTP request with request/response logging.
+// Executes HTTP requests with request/response logging.
 func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
 	req = req.WithContext(ctx)
@@ -356,7 +356,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func handleAuthentication(req *http.Request, username, password, token string) {
-	// Handle authenticaion if not done already
+	// Handle authentication if not done already
 	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.SetBasicAuth(username, password)
 		log.Entry().Debug("Using Basic Authentication ****/****")
@@ -416,9 +416,9 @@ func transformHeaders(header http.Header) http.Header {
 			// Since
 			//   1.) The auth header type itself might serve as a vector for an
 			//       intrusion
-			//   2.) We cannot make assumtions about the structure of the auth
+			//   2.) We cannot make assumptions about the structure of the auth
 			//       header value since that depends on the type, e.g. several tokens
-			//       where only some of the tokens define the secret
+			//       where only some tokens define the secret
 			// we hide the full auth header value anyway in order to be on the
 			// save side.
 			value = []string{"<set>"}
@@ -608,7 +608,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	return nil
 }
 
-// default truststore location
+// TrustStoreDirectory default truststore location
 const TrustStoreDirectory = ".pipeline/trustStore"
 
 func getWorkingDirForTrustStore() (string, error) {
@@ -622,7 +622,7 @@ func getWorkingDirForTrustStore() (string, error) {
 	return TrustStoreDirectory, nil
 }
 
-// ParseHTTPResponseBodyXML parses a XML http response into a given interface
+// ParseHTTPResponseBodyXML parses an XML http response into a given interface
 func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 	if resp == nil {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
