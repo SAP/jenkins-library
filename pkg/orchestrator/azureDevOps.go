@@ -60,16 +60,17 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() {
 	}
 }
 
-// GetSystemCollectionURI returns the URI of the TFS collection or Azure DevOps organization e.g. https://dev.azure.com/fabrikamfiber/
+// getSystemCollectionURI returns the URI of the TFS collection or Azure DevOps organization e.g. https://dev.azure.com/fabrikamfiber/
 func (a *AzureDevOpsConfigProvider) getSystemCollectionURI() string {
 	return getEnv("SYSTEM_COLLECTIONURI", "n/a")
 }
 
-// GetTeamProjectID is the name of the project that contains this build e.g. 123a4567-ab1c-12a1-1234-123456ab7890
+// getTeamProjectID is the name of the project that contains this build e.g. 123a4567-ab1c-12a1-1234-123456ab7890
 func (a *AzureDevOpsConfigProvider) getTeamProjectID() string {
 	return getEnv("SYSTEM_TEAMPROJECTID", "n/a")
 }
 
+// getAzureBuildID returns the id of the build, e.g. 1234
 func (a *AzureDevOpsConfigProvider) getAzureBuildID() string {
 	// INFO: Private function only used for API requests, buildId for e.g. reporting
 	// is GetBuildNumber to align with the UI of ADO
