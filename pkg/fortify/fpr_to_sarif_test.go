@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -321,6 +322,7 @@ If you are concerned about leaking system data via NFC on an Android device, you
               "primaryTag": "Exploitable",
               "audited": true,
               "issueStatus": "Reviewed",
+              "folderGuid": "aaaaaaaa-1111-aaaa-1111-1111aaaaaaaa",
               "hasComments": true,
               "friority": "High",
               "_href": "https://fortify-stage.tools.sap/ssc/api/v1/projectVersions/11037"
@@ -348,12 +350,129 @@ If you are concerned about leaking system data via NFC on an Android device, you
 	})
 	// Close the server when test finishes
 	defer server.Close()
-	project := models.Project{}
-	projectVersion := models.ProjectVersion{ID: 11037}
-	sarif, err := Parse(sys, &project, &projectVersion, []byte(testFvdl))
-	assert.NoError(t, err, "error")
-	assert.Equal(t, len(sarif.Runs[0].Results), 2)
-	assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
-	assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Exploitable")
-	assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
+
+	filterSet := new(models.FilterSet)
+	filterSet.Folders = append(filterSet.Folders, &models.FolderDto{GUID: "aaaaaaaa-1111-aaaa-1111-1111aaaaaaaa", Name: "Audit All"})
+
+	t.Run("Valid config", func(t *testing.T) {
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		sarif, err := Parse(sys, &project, &projectVersion, []byte(testFvdl), filterSet)
+		assert.NoError(t, err, "error")
+		assert.Equal(t, len(sarif.Runs[0].Results), 2)
+		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Exploitable")
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
+	})
+
+	t.Run("Missing data", func(t *testing.T) {
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		_, err := Parse(sys, &project, &projectVersion, []byte{}, filterSet)
+		assert.Error(t, err, "EOF")
+	})
+
+	t.Run("No system instance", func(t *testing.T) {
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		sarif, err := Parse(nil, &project, &projectVersion, []byte(testFvdl), filterSet)
+		assert.NoError(t, err, "error")
+		assert.Equal(t, len(sarif.Runs[0].Results), 2)
+		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Unknown")
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state")
+	})
+}
+
+func TestIntegrateAuditData(t *testing.T) {
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if strings.Split(req.URL.Path, "/")[1] == "projectVersions" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{
+          "data": [
+            {
+              "projectVersionId": 11037,
+              "issueInstanceId": "DUMMYDUMMYDUMMY",
+              "issueName": "Dummy issue",
+              "primaryTag": "Exploitable",
+              "audited": true,
+              "issueStatus": "Reviewed",
+              "folderGuid": "aaaaaaaa-1111-aaaa-1111-1111aaaaaaaa",
+              "hasComments": true,
+              "friority": "High",
+              "_href": "https://fortify-stage.tools.sap/ssc/api/v1/projectVersions/11037"
+            }
+          ],
+          "count": 1,
+          "responseCode": 200}`))
+			return
+		}
+		if strings.Split(req.URL.Path, "/")[1] == "issues" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{
+          "data": [
+            {
+              "issueId": 47009919,
+              "comment": "Dummy comment."
+            }
+          ],
+          "count": 1,
+          "responseCode": 200}`))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	filterSet := new(models.FilterSet)
+	filterSet.Folders = append(filterSet.Folders, &models.FolderDto{GUID: "aaaaaaaa-1111-aaaa-1111-1111aaaaaaaa", Name: "Audit All"})
+
+	t.Run("Successful lookup", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := integrateAuditData(&ruleProp, "11037", sys, &project, &projectVersion, filterSet)
+		assert.NoError(t, err, "error")
+		assert.Equal(t, ruleProp.Audited, true)
+		assert.Equal(t, ruleProp.ToolState, "Exploitable")
+		assert.Equal(t, ruleProp.ToolStateIndex, 5)
+		assert.Equal(t, ruleProp.ToolSeverity, "High")
+		assert.Equal(t, ruleProp.ToolSeverityIndex, 3)
+		assert.Equal(t, ruleProp.ToolAuditMessage, "Dummy comment.")
+		assert.Equal(t, ruleProp.FortifyCategory, "Audit All")
+	})
+
+	t.Run("Missing project", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := integrateAuditData(&ruleProp, "11037", sys, nil, &projectVersion, filterSet)
+		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
+	})
+
+	t.Run("Missing project version", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		err := integrateAuditData(&ruleProp, "11037", sys, &project, nil, filterSet)
+		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
+	})
+
+	t.Run("Missing sys", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := integrateAuditData(&ruleProp, "11037", nil, &project, &projectVersion, filterSet)
+		assert.Error(t, err, "no system instance, lookup impossible for 11037")
+	})
+
+	t.Run("Missing filterSet", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := integrateAuditData(&ruleProp, "11037", sys, &project, &projectVersion, nil)
+		assert.Error(t, err, "no filter set defined, category will be missing from 11037")
+	})
 }

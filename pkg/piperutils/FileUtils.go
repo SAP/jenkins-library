@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bmatcuk/doublestar"
 )
@@ -22,6 +23,7 @@ type FileUtils interface {
 	DirExists(path string) (bool, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
+	Move(src, dest string) error
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
@@ -34,6 +36,8 @@ type FileUtils interface {
 	FileRename(string, string) error
 	Getwd() (string, error)
 	Symlink(oldname string, newname string) error
+	SHA256(path string) (string, error)
+	CurrentTime(format string) string
 }
 
 // Files ...
@@ -111,6 +115,20 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
+}
+
+func (f Files) Move(src, dst string) error {
+	if exists, err := f.FileExists(src); err != nil {
+		return err
+	} else if !exists {
+		return fmt.Errorf("file doesn't exist: %s", src)
+	}
+
+	if _, err := f.Copy(src, dst); err != nil {
+		return err
+	}
+
+	return f.FileRemove(src)
 }
 
 //Chmod is a wrapper for os.Chmod().
@@ -399,7 +417,7 @@ func (f Files) Symlink(oldname, newname string) error {
 	return os.Symlink(oldname, newname)
 }
 
-// Computes a SHA256 for a given file
+// SHA256 computes a SHA256 for a given file
 func (f Files) SHA256(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -414,4 +432,13 @@ func (f Files) SHA256(path string) (string, error) {
 	}
 
 	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
+}
+
+// CurrentTime returns the current time in the specified format
+func (f Files) CurrentTime(format string) string {
+	fString := format
+	if len(format) == 0 {
+		fString = "20060102-150405"
+	}
+	return fmt.Sprint(time.Now().Format(fString))
 }

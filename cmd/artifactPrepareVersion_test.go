@@ -11,7 +11,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"helm.sh/helm/v3/pkg/chart"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
@@ -188,6 +190,24 @@ func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.
 	w.commitMsg = msg
 	w.commitOpts = opts
 	return w.commitHash, nil
+}
+
+type artifactPrepareVersionMockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func newArtifactPrepareVersionMockUtils() *artifactPrepareVersionMockUtils {
+	utils := artifactPrepareVersionMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return &utils
+}
+
+func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	// so far no dedicated logic required for testing
+	return nil
 }
 
 func TestRunArtifactPrepareVersion(t *testing.T) {
@@ -765,4 +785,80 @@ func TestConvertHTTPToSSHURL(t *testing.T) {
 	for _, test := range tt {
 		assert.Equal(t, test.expected, convertHTTPToSSHURL(test.httpURL))
 	}
+}
+
+func TestPropagateVersion(t *testing.T) {
+	t.Parallel()
+
+	gitCommitID := "theGitCommitId"
+	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC) //20200101000000
+
+	t.Run("success case", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			VersioningType:        "cloud",
+			AdditionalTargetTools: []string{"helm"},
+		}
+
+		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		content, err := yaml.Marshal(chartMetadata)
+		assert.NoError(t, err)
+
+		utils := newArtifactPrepareVersionMockUtils()
+		utils.AddFile("myChart/Chart.yaml", content)
+		artifactOpts := versioning.Options{}
+
+		err = propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
+		assert.NoError(t, err)
+	})
+
+	t.Run("success case - dedicated build descriptors", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			VersioningType:              "cloud",
+			AdditionalTargetTools:       []string{"helm"},
+			AdditionalTargetDescriptors: []string{"myChart/Chart.yaml"},
+		}
+
+		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		content, err := yaml.Marshal(chartMetadata)
+		assert.NoError(t, err)
+
+		utils := newArtifactPrepareVersionMockUtils()
+		utils.AddFile("myChart/Chart.yaml", content)
+		artifactOpts := versioning.Options{}
+
+		err = propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
+		assert.NoError(t, err)
+	})
+
+	t.Run("success case - noop", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{}
+		utils := newArtifactPrepareVersionMockUtils()
+		artifactOpts := versioning.Options{}
+
+		err := propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error case - wrong config", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			AdditionalTargetDescriptors: []string{"pom.xml"},
+			AdditionalTargetTools:       []string{"maven", "helm"},
+		}
+		utils := newArtifactPrepareVersionMockUtils()
+		artifactOpts := versioning.Options{}
+
+		err := propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
+		assert.EqualError(t, err, "additionalTargetDescriptors cannot have a different number of entries than additionalTargetTools")
+	})
+
+	t.Run("error case - wrong target tool", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			AdditionalTargetTools: []string{"notKnown"},
+		}
+		utils := newArtifactPrepareVersionMockUtils()
+		artifactOpts := versioning.Options{}
+
+		err := propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve artifact")
+	})
 }

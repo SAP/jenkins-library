@@ -9,41 +9,46 @@ import (
 )
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
-	utils := kubernetes.NewDeployUtilsBundle()
-
 	helmConfig := kubernetes.HelmExecuteOptions{
-		ChartPath:             config.ChartPath,
-		DeploymentName:        config.DeploymentName,
-		ContainerRegistryURL:  config.ContainerRegistryURL,
-		Image:                 config.Image,
-		ContainerImageName:    config.ContainerImageName,
-		ContainerImageTag:     config.ContainerImageTag,
-		Namespace:             config.Namespace,
-		KubeContext:           config.KubeContext,
-		KubeConfig:            config.KubeConfig,
-		HelmDeployWaitSeconds: config.HelmDeployWaitSeconds,
-		DryRun:                config.DryRun,
-		PackageVersion:        config.PackageVersion,
-		AppVersion:            config.AppVersion,
-		DependencyUpdate:      config.DependencyUpdate,
-		HelmValues:            config.HelmValues,
-		FilterTest:            config.FilterTest,
-		DumpLogs:              config.DumpLogs,
-		ChartRepo:             config.ChartRepo,
-		HelmRegistryUser:      config.HelmRegistryUser,
-		HelmChartServer:       config.HelmChartServer,
+		ChartPath:                 config.ChartPath,
+		Image:                     config.Image,
+		Namespace:                 config.Namespace,
+		KubeContext:               config.KubeContext,
+		KubeConfig:                config.KubeConfig,
+		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
+		AppVersion:                config.AppVersion,
+		DependencyUpdate:          config.DependencyUpdate,
+		HelmValues:                config.HelmValues,
+		FilterTest:                config.FilterTest,
+		DumpLogs:                  config.DumpLogs,
+		TargetRepositoryURL:       config.TargetRepositoryURL,
+		TargetRepositoryName:      config.TargetRepositoryName,
+		TargetRepositoryUser:      config.TargetRepositoryUser,
+		TargetRepositoryPassword:  config.TargetRepositoryPassword,
+		HelmCommand:               config.HelmCommand,
+		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
 	}
+
+	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
+
+	helmChart := config.ChartPath + "Chart.yaml"
+	nameChart, packageVersion, err := kubernetes.GetChartInfo(helmChart, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("failed to get version in Chart.yaml: %v", err)
+	}
+	helmConfig.DeploymentName = nameChart
+	helmConfig.PackageVersion = packageVersion
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config.HelmCommand, helmExecutor); err != nil {
+	if err := runHelmExecute(config, helmExecutor); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) error {
-	switch helmCommand {
+func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+	switch config.HelmCommand {
 	case "upgrade":
 		if err := helmExecutor.RunHelmUpgrade(); err != nil {
 			return fmt.Errorf("failed to execute upgrade: %v", err)
@@ -68,9 +73,31 @@ func runHelmExecute(helmCommand string, helmExecutor kubernetes.HelmExecutor) er
 		if err := helmExecutor.RunHelmPackage(); err != nil {
 			return fmt.Errorf("failed to execute helm package: %v", err)
 		}
-	case "push":
-		if err := helmExecutor.RunHelmPush(); err != nil {
-			return fmt.Errorf("failed to execute helm push: %v", err)
+	case "publish":
+		if err := helmExecutor.RunHelmPublish(); err != nil {
+			return fmt.Errorf("failed to execute helm publish: %v", err)
+		}
+	default:
+		if err := runHelmExecuteDefault(config, helmExecutor); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+	if err := helmExecutor.RunHelmLint(); err != nil {
+		return fmt.Errorf("failed to execute helm lint: %v", err)
+	}
+
+	if err := helmExecutor.RunHelmPackage(); err != nil {
+		return fmt.Errorf("failed to execute helm package: %v", err)
+	}
+
+	if config.Publish {
+		if err := helmExecutor.RunHelmPublish(); err != nil {
+			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 	}
 

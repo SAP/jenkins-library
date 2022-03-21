@@ -79,7 +79,7 @@ func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverUR
 	var err error
 	g.repository, err = gitUtil.PlainClone(username, password, serverURL, directory)
 	if err != nil {
-		return errors.Wrap(err, "plain clone failed")
+		return errors.Wrapf(err, "plain clone failed '%s'", serverURL)
 	}
 	g.worktree, err = g.repository.Worktree()
 	return errors.Wrap(err, "failed to retrieve worktree")

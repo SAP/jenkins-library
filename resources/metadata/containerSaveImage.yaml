@@ -7,6 +7,13 @@ metadata:
     It can be used no matter if a Docker daemon is available or not. It will also work inside a Kubernetes cluster without access to a daemon.
 spec:
   inputs:
+    secrets:
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        type: jenkins
+        aliases:
+          - name: dockerCredentialsId
+            deprecated: true
     params:
       - name: containerRegistryUrl
         aliases:
@@ -37,6 +44,32 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: containerRegistryPassword
+        description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerRegistryUser
+        description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: filePath
         type: string
         description: The path to the file to which the image should be saved. Defaults to `containerImage.tar`
@@ -51,3 +84,19 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config

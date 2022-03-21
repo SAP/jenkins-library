@@ -150,7 +150,7 @@ The `vaultTestCredentialKeys`parameter is a list of credential IDs. The secret v
 !!! hint "Using a custom prefix for test credentials"
     By default the prefix for test credentials is `PIPER_TESTCREDENTIAL_`.
 
-    It is possible to use a custom prefix by setting for example `vaultTestCredentialEnvPrefix: MY_CUSTOM_PREFIX` in your configuration.
+    It is possible to use a custom prefix by setting for example `vaultTestCredentialEnvPrefix: MY_CUSTOM_PREFIX_` in your configuration.
     With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
 
 Extended logging for Vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.

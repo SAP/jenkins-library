@@ -44,6 +44,7 @@ spec:
             1. `containerImageName` parameter.
             2. `project.id` field of a `project.toml` file.
             3. `git/repository` parameter of the `commonPipelineEnvironment`.
+            4. `github/repository` parameter of the `commonPipelineEnvironment`.
           If none of the above was found - an error will be raised.
         scope:
           - GENERAL
@@ -236,10 +237,13 @@ spec:
         type: piperEnvironment
         params:
           - name: container/registryUrl
+          - name: container/imageDigest
           - name: container/imageNameTag
           - name: container/imageNames
             type: "[]string"
           - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
             type: "[]string"
   containers:
     - image: "paketobuildpacks/builder:full"

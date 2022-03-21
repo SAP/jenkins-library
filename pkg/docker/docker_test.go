@@ -140,12 +140,14 @@ func TestImageListWithFilePath(t *testing.T) {
 	tt := []struct {
 		name          string
 		excludes      []string
+		trimDir       string
 		fileList      []string
 		expected      map[string]string
 		expectedError error
 	}{
 		{name: "Dockerfile only", fileList: []string{"Dockerfile"}, expected: map[string]string{imageName: "Dockerfile"}},
 		{name: "Dockerfile in subdir", fileList: []string{"sub/Dockerfile"}, expected: map[string]string{fmt.Sprintf("%v-sub", imageName): filepath.FromSlash("sub/Dockerfile")}},
+		{name: "Dockerfile in subdir excluding top dir", fileList: []string{".ci/sub/Dockerfile"}, trimDir: ".ci", expected: map[string]string{fmt.Sprintf("%v-sub", imageName): filepath.FromSlash(".ci/sub/Dockerfile")}},
 		{name: "Dockerfiles in multiple subdirs & parent", fileList: []string{"Dockerfile", "sub1/Dockerfile", "sub2/Dockerfile"}, expected: map[string]string{fmt.Sprintf("%v", imageName): filepath.FromSlash("Dockerfile"), fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("sub1/Dockerfile"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("sub2/Dockerfile")}},
 		{name: "Dockerfiles in multiple subdirs & parent - with excludes", excludes: []string{"Dockerfile"}, fileList: []string{"Dockerfile", "sub1/Dockerfile", "sub2/Dockerfile"}, expected: map[string]string{fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("sub1/Dockerfile"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("sub2/Dockerfile")}},
 		{name: "Dockerfiles with extensions", fileList: []string{"Dockerfile_main", "Dockerfile_sub1", "Dockerfile_sub2"}, expected: map[string]string{fmt.Sprintf("%v-main", imageName): filepath.FromSlash("Dockerfile_main"), fmt.Sprintf("%v-sub1", imageName): filepath.FromSlash("Dockerfile_sub1"), fmt.Sprintf("%v-sub2", imageName): filepath.FromSlash("Dockerfile_sub2")}},
@@ -161,7 +163,7 @@ func TestImageListWithFilePath(t *testing.T) {
 				fileMock.AddFile(file, []byte("someContent"))
 			}
 
-			imageList, err := ImageListWithFilePath(imageName, test.excludes, &fileMock)
+			imageList, err := ImageListWithFilePath(imageName, test.excludes, test.trimDir, &fileMock)
 
 			if test.expectedError != nil {
 				assert.EqualError(t, err, fmt.Sprint(test.expectedError))
