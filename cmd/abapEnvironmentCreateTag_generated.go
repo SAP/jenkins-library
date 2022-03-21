@@ -22,6 +22,7 @@ type abapEnvironmentCreateTagOptions struct {
 	RepositoryName                    string `json:"repositoryName,omitempty"`
 	CommitID                          string `json:"commitID,omitempty"`
 	TagName                           string `json:"tagName,omitempty"`
+	TagDescription                    string `json:"tagDescription,omitempty"`
 	CreateTagForAddonProductVersion   bool   `json:"createTagForAddonProductVersion,omitempty"`
 	CreateTagForAddonComponentVersion bool   `json:"createTagForAddonComponentVersion,omitempty"`
 	Host                              string `json:"host,omitempty"`
@@ -134,6 +135,7 @@ func addAbapEnvironmentCreateTagFlags(cmd *cobra.Command, stepConfig *abapEnviro
 	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a repository (Software Components) on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitID", os.Getenv("PIPER_commitID"), "Specifies a commitID, for which a tag will be created")
 	cmd.Flags().StringVar(&stepConfig.TagName, "tagName", os.Getenv("PIPER_tagName"), "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.TagDescription, "tagDescription", os.Getenv("PIPER_tagDescription"), "Specifies a description for the created tag")
 	cmd.Flags().BoolVar(&stepConfig.CreateTagForAddonProductVersion, "createTagForAddonProductVersion", false, "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
 	cmd.Flags().BoolVar(&stepConfig.CreateTagForAddonComponentVersion, "createTagForAddonComponentVersion", false, "Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
@@ -226,6 +228,15 @@ func abapEnvironmentCreateTagMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_tagName"),
+					},
+					{
+						Name:        "tagDescription",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_tagDescription"),
 					},
 					{
 						Name:        "createTagForAddonProductVersion",

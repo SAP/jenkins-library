@@ -74,6 +74,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: tagDescription
+        type: string
+        description: Specifies a description for the created tag
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: createTagForAddonProductVersion
         type: bool
         description: Specifies a tagName that will be created for the repositories on the SAP BTP ABAP Environment system
