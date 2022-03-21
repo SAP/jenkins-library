@@ -30,7 +30,7 @@ type artifactPrepareVersionOptions struct {
 	FilePath                    string   `json:"filePath,omitempty"`
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID             bool     `json:"includeCommitId,omitempty"`
-	IsOptimizedAndScheduled bool   `json:"isOptimizedAndScheduled,omitempty"`
+	IsOptimizedAndScheduled     bool     `json:"isOptimizedAndScheduled,omitempty"`
 	M2Path                      string   `json:"m2Path,omitempty"`
 	Password                    string   `json:"password,omitempty"`
 	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`

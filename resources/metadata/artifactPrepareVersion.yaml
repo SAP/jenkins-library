@@ -319,10 +319,9 @@ spec:
       - name: versioningType
         type: string
         description: Defines the type of versioning
-          
         longDescription: |
           Defines the type of versioning:
-          
+
           * `cloud`: fully automatic while also commiting a tag into the git repository containing the updated build descriptors
           * `cloud_noTag`: fully automatic but no tag created
           * `library`: manual, i.e. the pipeline will pick up the version from the build descriptor, but not generate a new version
