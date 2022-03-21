@@ -136,7 +136,7 @@ func (j *JenkinsConfigProvider) getJenkinsHome() string {
 	return getEnv("JENKINS_HOME", "n/a")
 }
 
-func (j *JenkinsConfigProvider) GetBuildId() string {
+func (j *JenkinsConfigProvider) GetBuildID() string {
 	return getEnv("BUILD_ID", "n/a")
 }
 

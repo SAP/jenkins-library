@@ -31,8 +31,8 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	return nil, nil
 }
 
-func (g *GitHubActionsConfigProvider) GetBuildId() string {
-	log.Entry().Infof("GetBuildId() for GitHub Actions not yet implemented.")
+func (g *GitHubActionsConfigProvider) GetBuildID() string {
+	log.Entry().Infof("GetBuildID() for GitHub Actions not yet implemented.")
 	return "n/a"
 }
 

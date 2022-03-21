@@ -21,7 +21,7 @@ func (u *UnknownOrchestratorConfigProvider) GetBuildStatus() string {
 	return "SUCCESS"
 }
 
-func (u *UnknownOrchestratorConfigProvider) GetBuildId() string {
+func (u *UnknownOrchestratorConfigProvider) GetBuildID() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "n/a"
 }

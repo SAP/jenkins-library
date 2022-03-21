@@ -23,7 +23,7 @@ type OrchestratorSpecificConfigProviding interface {
 	GetStageName() string
 	GetBranch() string
 	GetBuildUrl() string
-	GetBuildId() string
+	GetBuildID() string
 	GetJobUrl() string
 	GetJobName() string
 	GetCommit() string
