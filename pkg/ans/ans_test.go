@@ -217,7 +217,7 @@ func TestUnmarshallEventJSON(t *testing.T) {
 				t.Errorf("UnmarshallEventJSON() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			assert.Equal(t, tt.wantEvent, gotEvent, "Gotten Event is not as expected.")
+			assert.Equal(t, tt.wantEvent, gotEvent, "Received Event is not as expected.")
 		})
 	}
 }
