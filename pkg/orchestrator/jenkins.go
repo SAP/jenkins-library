@@ -140,7 +140,7 @@ func (j *JenkinsConfigProvider) GetBuildID() string {
 	return getEnv("BUILD_ID", "n/a")
 }
 
-func (a *JenkinsConfigProvider) GetStageName() string {
+func (j *JenkinsConfigProvider) GetStageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
