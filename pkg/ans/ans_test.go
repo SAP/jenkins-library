@@ -34,7 +34,6 @@ func TestANS_Send(t *testing.T) {
 		wantErrf    string
 		wantRequest request
 	}{
-		// TODO: Add test cases.
 		{
 			name: "Straight forward",
 			event: Event{
