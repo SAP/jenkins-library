@@ -697,7 +697,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
 		//handle properties
-		prop := *new(format.SarifProperties)
+		prop := new(format.SarifProperties)
 		prop.InstanceSeverity = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
@@ -710,7 +710,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := integrateAuditData(&prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
+			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
@@ -721,7 +721,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Unknown"
 			prop.ToolAuditMessage = "Cannot fetch audit state"
 		}
-		result.Properties = &prop
+		result.Properties = prop
 
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 	}
