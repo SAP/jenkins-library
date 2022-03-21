@@ -164,7 +164,7 @@ func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 		}
 		return parsed.UTC()
 	}
-	return time.Time{}
+	return time.Time{}.UTC()
 
 }
 
