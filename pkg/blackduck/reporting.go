@@ -46,6 +46,10 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			result.AnalysisTarget.Index = 0
 			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
+			//TODO add audit and tool related information, maybe fortifyCategory needs to become more general
+			//result.Properties = new(format.SarifProperties)
+			//result.Properties.ToolSeverity
+			//result.Properties.ToolAuditMessage
 
 			sarifRule := *new(format.SarifRule)
 			sarifRule.ID = id
