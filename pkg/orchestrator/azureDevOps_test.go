@@ -90,9 +90,9 @@ func TestAzure(t *testing.T) {
 		p := AzureDevOpsConfigProvider{}
 
 		assert.Equal(t, "https://dev.azure.com/fabrikamfiber/", p.getSystemCollectionURI())
-		assert.Equal(t, "123a4567-ab1c-12a1-1234-123456ab7890", p.getTeamProjectId())
-		assert.Equal(t, "42", p.getBuildId())          // Don't confuse getBuildId and GetBuildId!
-		assert.Equal(t, "20220318.16", p.GetBuildId()) // buildNumber is used in the UI
+		assert.Equal(t, "123a4567-ab1c-12a1-1234-123456ab7890", p.getTeamProjectID())
+		assert.Equal(t, "42", p.getAzureBuildID())     // Don't confuse getAzureBuildID and GetBuildID!
+		assert.Equal(t, "20220318.16", p.GetBuildID()) // buildNumber is used in the UI
 		assert.Equal(t, "2.193.0", p.OrchestratorVersion())
 		assert.Equal(t, "repo-org/repo-name", p.GetJobName())
 
