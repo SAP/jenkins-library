@@ -85,9 +85,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
+	}
+
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}

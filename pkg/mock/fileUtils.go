@@ -4,6 +4,7 @@
 package mock
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -112,6 +113,17 @@ func (f *FilesMock) AddDir(path string) {
 // AddDirWithMode establishes the existence of a virtual directory.
 func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
 	f.associateContent(path, &dirContent, mode)
+}
+
+// SHA256 returns a random SHA256
+func (f *FilesMock) SHA256(path string) (string, error) {
+	hash := sha256.New()
+	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
+}
+
+// CurrentTime returns the current time as a fixed value
+func (f *FilesMock) CurrentTime(format string) string {
+	return "20220102-150405"
 }
 
 func (f *FilesMock) associateContent(path string, content *[]byte, mode os.FileMode) {

@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"os"
+	"fmt"
+	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
@@ -12,14 +13,17 @@ import (
 
 type gradleExecuteBuildUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	FileRemove(path string) error
+	piperutils.FileUtils
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type gradleExecuteBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+}
+
+func (g *gradleExecuteBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
 }
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
@@ -36,7 +40,7 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 	utils := newGradleExecuteBuildUtils()
 	err := runGradleExecuteBuild(&config, telemetryData, utils)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed: %w", err)
+		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
@@ -44,15 +48,18 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	opt := &gradle.ExecuteOptions{
 		BuildGradlePath:    config.Path,
 		Task:               config.Task,
+		CreateBOM:          config.CreateBOM,
 		Publish:            config.Publish,
 		RepositoryURL:      config.RepositoryURL,
 		RepositoryPassword: config.RepositoryPassword,
 		RepositoryUsername: config.RepositoryUsername,
+		ArtifactVersion:    config.ArtifactVersion,
+		ArtifactGroupID:    config.ArtifactGroupID,
+		ArtifactID:         config.ArtifactID,
 	}
 
-	_, err := gradle.Execute(opt, utils)
-	if err != nil {
-		log.Entry().WithError(err).Errorln("build.gradle execution was failed: %w", err)
+	if err := gradle.Execute(opt, utils); err != nil {
+		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
 		return err
 	}
 

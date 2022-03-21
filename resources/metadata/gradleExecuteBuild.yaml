@@ -10,7 +10,7 @@ spec:
           - name: buildGradlePath
             deprecated: false
         type: string
-        description: Path to the folder with gradle.build file which should be executed.
+        description: Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.
         scope:
           - PARAMETERS
           - STAGES
@@ -68,6 +68,46 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: artifactVersion
+        type: string
+        description: Version of the artifact to be built.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: artifactGroupId
+        type: string
+        description:
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: artifactId
+        type: string
+        description:
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom.xml"
+            type: sbom
   containers:
     - name: gradle
       image: gradle:6-jdk11-alpine

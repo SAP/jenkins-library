@@ -149,6 +149,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/mavenRepositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
           - name: altDeploymentRepositoryPasswordId
             type: secret
@@ -165,6 +167,8 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/mavenRepositoryUsername
+          - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: altDeploymentRepositoryUrl
         type: string
@@ -175,6 +179,8 @@ spec:
           - STAGES
           - STEPS
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/mavenRepositoryURL
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
       - name: altDeploymentRepositoryID

@@ -332,6 +332,11 @@ func npmExecuteScriptsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/npmRepositoryURL",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
 							},
 						},
@@ -346,6 +351,11 @@ func npmExecuteScriptsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/npmRepositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
 						},
@@ -358,6 +368,11 @@ func npmExecuteScriptsMetadata() config.StepData {
 					{
 						Name: "repositoryUsername",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/npmRepositoryUsername",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
