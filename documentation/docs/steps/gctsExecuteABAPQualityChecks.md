@@ -5,8 +5,9 @@
 ## Prerequisites
 
 * [ATC](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks are enabled in transaction ATC in the ABAP systems where you want to use the step.
-* [ABAP Unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) are available for the source code that you want to check.
+* [ABAP Unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) are available for the source code that you want to check. Note: Do not execute unit tests in client 000, and not in your production client.
 * [gCTS](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/26c9c6c5a89244cb9506c253d36c3fda.html) is available and configured in the ABAP systems where you want to use the step.
+* If you want to use environmental variables as parameters, for example, `GIT_COMMIT`: The [Git Plugin](https://plugins.jenkins.io/git/) is installed in Jenkins.
 * The [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin is installed in Jenkins.
 
 ## ${docGenParameters}

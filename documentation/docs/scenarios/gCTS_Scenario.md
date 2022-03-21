@@ -5,13 +5,12 @@ For current information about gCTS, see SAP Note [Central Note for Git-enabled C
 ## Introduction
 
 [Git-enabled Change & Transport System (gCTS)](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/f319b168e87e42149e25e13c08d002b9.html) enables you to manage your ABAP change and transport management processes using Git as an external version management system. It allows you to set up continuous integration processes for ABAP development.
-For each new commit that arrives in the remote repository, the pipeline executes the following Piper steps in the test system:
-This scenario explains how to use a pipeline to deploy a commit to a test system, and execute [ABAP unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) and [ATC (ABAP Test Cockpit)](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks in the test system. In detail, this scenario covers the following steps:    
-1. [gctsDeploy](https://www.project-piper.io/steps/gctsDeploy/): Deploys the commit on the test system.
-2. [gctsExecuteABAPUnitTests](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/): Executes ABAP unit tests and ATC checks for the ABAP development objects of the commit.
+This scenario explains how to use a pipeline to deploy a commit to a test system, and execute [ABAP unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) and [ATC (ABAP Test Cockpit)](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks in the test system. For each new commit that arrives in the remote repository, the pipeline executes the following Piper steps in the test system:     
+1. [gctsDeploy](https://www.project-piper.io/steps/gctsDeploy/) step: Deploys the commit on the test system.
+2. [gctsExecuteABAPUnitTests](https://www.project-piper.io/steps/gctsExecuteABAPUnitTests/) step: Executes ABAP unit tests and ATC checks for the ABAP development objects of the commit.
 - If the result of the testing is *success*, the pipeline finishes.  
 - If the result of the testing is *error*, a rollback is executed (see next step).
-3. [gctsRollback](https://www.project-piper.io/steps/gctsRollback/): A rollback to the previous commit is executed. In  case of errors, you can check these using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) in Jenkins.
+3. [gctsRollback](https://www.project-piper.io/steps/gctsRollback/) step: Executes a rollback to the previous commit. You can check the cause of the errors using the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) in Jenkins.
 
 
 ## Prerequisites
