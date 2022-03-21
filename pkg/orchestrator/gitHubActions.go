@@ -10,7 +10,7 @@ import (
 type GitHubActionsConfigProvider struct{}
 
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	log.Entry().Debug("Successfully initalized GitHubActions config provider")
+	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
@@ -23,12 +23,12 @@ func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 
 func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 	log.Entry().Infof("GetBuildStatus() for GitHub Actions not yet implemented.")
-	return "SUCCESS"
+	return "FAILURE"
 }
 
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	log.Entry().Infof("GetLog() for GitHub Actions not yet implemented.")
-	return nil, nil
+	return []byte{}, nil
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildID() string {
@@ -38,8 +38,7 @@ func (g *GitHubActionsConfigProvider) GetBuildID() string {
 
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
-	timestamp, _ := time.Parse(time.UnixDate, "Wed Feb 25 11:06:39 PST 1970")
-	return timestamp
+	return time.Time{}.UTC()
 }
 func (g *GitHubActionsConfigProvider) GetStageName() string {
 	return "GITHUB_WORKFLOW" //TODO: is there something like is "stage" in GH Actions?
@@ -60,7 +59,7 @@ func (g *GitHubActionsConfigProvider) GetJobUrl() string {
 
 func (g *GitHubActionsConfigProvider) GetJobName() string {
 	log.Entry().Debugf("GetJobName() for GitHubActions not yet implemented.")
-	return "N/A"
+	return "n/a"
 }
 
 func (g *GitHubActionsConfigProvider) GetCommit() string {
