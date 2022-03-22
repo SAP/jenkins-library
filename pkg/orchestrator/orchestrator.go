@@ -22,17 +22,18 @@ type OrchestratorSpecificConfigProviding interface {
 	OrchestratorVersion() string
 	GetStageName() string
 	GetBranch() string
-	GetBuildUrl() string
+	GetBuildURL() string
 	GetBuildID() string
-	GetJobUrl() string
+	GetJobURL() string
 	GetJobName() string
 	GetCommit() string
 	GetPullRequestConfig() PullRequestConfig
-	GetRepoUrl() string
+	GetRepoURL() string
 	IsPullRequest() bool
 	GetLog() ([]byte, error)
 	GetPipelineStartTime() time.Time
 	GetBuildStatus() string
+	GetBuildReason() string
 }
 
 type PullRequestConfig struct {
