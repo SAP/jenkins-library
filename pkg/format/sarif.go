@@ -2,7 +2,7 @@ package format
 
 // SARIF format related JSON structs
 type SARIF struct {
-	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"`
+	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"`
 	Version string `json:"version" default:"2.1.0"`
 	Runs    []Runs `json:"runs"`
 }
@@ -30,7 +30,7 @@ type Results struct {
 	Locations        []Location        `json:"locations,omitempty"`
 	CodeFlows        []CodeFlow        `json:"codeFlows,omitempty"`
 	RelatedLocations []RelatedLocation `json:"relatedLocations,omitempty"`
-	Properties       SarifProperties   `json:"properties"`
+	Properties       *SarifProperties  `json:"properties"`
 }
 
 // Message to detail the finding
@@ -60,13 +60,13 @@ type ArtifactLocation struct {
 
 // Region where the finding was detected
 type Region struct {
-	StartLine   int          `json:"startLine,omitempty"`
-	StartColumn int          `json:"startColumn,omitempty"`
-	EndLine     int          `json:"EndLine,omitempty"`
-	EndColumn   int          `json:"EndColumn,omitempty"`
-	ByteOffset  int          `json:"ByteOffset,omitempty"`
-	ByteLength  int          `json:"ByteLength,omitempty"`
-	Snippet     SnippetSarif `json:"snippet"`
+	StartLine   int           `json:"startLine,omitempty"`
+	StartColumn int           `json:"startColumn,omitempty"`
+	EndLine     int           `json:"endLine,omitempty"`
+	EndColumn   int           `json:"endColumn,omitempty"`
+	ByteOffset  int           `json:"byteOffset,omitempty"`
+	ByteLength  int           `json:"byteLength,omitempty"`
+	Snippet     *SnippetSarif `json:"snippet,omitempty"`
 }
 
 // LogicalLocation of the finding
@@ -76,17 +76,17 @@ type LogicalLocation struct {
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
-	InstanceID        string `json:"InstanceID,omitempty"`
-	InstanceSeverity  string `json:"InstanceSeverity,omitempty"`
-	Confidence        string `json:"Confidence,omitempty"`
-	FortifyCategory   string `json:"FortifyCategory,omitempty"`
-	Audited           bool   `json:"Audited"`
-	ToolSeverity      string `json:"ToolSeverity"`
-	ToolSeverityIndex int    `json:"ToolSeverityIndex"`
-	ToolState         string `json:"ToolState"`
-	ToolStateIndex    int    `json:"ToolStateIndex"`
-	ToolAuditMessage  string `json:"ToolAuditMessage"`
-	UnifiedAuditState string `json:"UnifiedAuditState"`
+	InstanceID        string `json:"instanceID,omitempty"`
+	InstanceSeverity  string `json:"instanceSeverity,omitempty"`
+	Confidence        string `json:"confidence,omitempty"`
+	FortifyCategory   string `json:"fortifyCategory,omitempty"`
+	Audited           bool   `json:"audited"`
+	ToolSeverity      string `json:"toolSeverity"`
+	ToolSeverityIndex int    `json:"toolSeverityIndex"`
+	ToolState         string `json:"toolState"`
+	ToolStateIndex    int    `json:"toolStateIndex"`
+	ToolAuditMessage  string `json:"toolAuditMessage"`
+	UnifiedAuditState string `json:"unifiedAuditState"`
 }
 
 // Tool these structs are relevant to the Tool object
@@ -130,9 +130,9 @@ type SnippetSarif struct {
 
 // ContextRegion provides the context for the finding
 type ContextRegion struct {
-	StartLine int          `json:"startLine"`
-	EndLine   int          `json:"endLine"`
-	Snippet   SnippetSarif `json:"snippet"`
+	StartLine int           `json:"startLine,omitempty"`
+	EndLine   int           `json:"endLine,omitempty"`
+	Snippet   *SnippetSarif `json:"snippet,omitempty"`
 }
 
 // CodeFlow
@@ -185,7 +185,7 @@ type DefaultConfiguration struct {
 
 // DefaultProperties
 type DefaultProperties struct {
-	DefaultSeverity string `json:"DefaultSeverity,omitempty"`
+	DefaultSeverity string `json:"defaultSeverity,omitempty"`
 }
 
 // Relationships
@@ -208,9 +208,9 @@ type ToolComponent struct {
 
 //SarifRuleProperties
 type SarifRuleProperties struct {
-	Accuracy    string   `json:"Accuracy,omitempty"`
-	Impact      string   `json:"Impact,omitempty"`
-	Probability string   `json:"Probability,omitempty"`
+	Accuracy    string   `json:"accuracy,omitempty"`
+	Impact      string   `json:"impact,omitempty"`
+	Probability string   `json:"probability,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
 	Precision   string   `json:"precision,omitempty"`
 }
@@ -239,7 +239,7 @@ type Descriptor struct {
 
 // InvocationProperties
 type InvocationProperties struct {
-	Platform string `json:"Platform"`
+	Platform string `json:"platform"`
 }
 
 // OriginalUriBaseIds These structs are relevant to the originalUriBaseIds object

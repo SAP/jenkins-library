@@ -65,6 +65,8 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+          - name: commonPipelineEnvironment
+            param: git/commitId
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
