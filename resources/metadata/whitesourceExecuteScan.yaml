@@ -648,6 +648,9 @@ spec:
     - image: golang:1
       workingDir: /go
       env: []
+      options:
+        - name: -u
+          value: "0"
       conditions:
         - conditionRef: strings-equal
           params:
