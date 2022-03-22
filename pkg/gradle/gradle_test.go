@@ -86,4 +86,25 @@ func TestExecute(t *testing.T) {
 		assert.Equal(t, []string{"cyclonedx.gradle"}, utils.writtenFiles)
 		assert.Equal(t, []string{"cyclonedx.gradle"}, utils.removedFiles)
 	})
+
+	t.Run("success - publish to staging repository", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		opts := ExecuteOptions{
+			Task:               "build",
+			Publish:            true,
+			RepositoryURL:      "url",
+			RepositoryPassword: "password",
+			RepositoryUsername: "username",
+			ArtifactVersion:    "1.1.0",
+		}
+
+		err := Execute(&opts, utils)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 2, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"--init-script", "maven-publish.gradle", "--info", "publish"}}, utils.Calls[1])
+		assert.Equal(t, []string{"maven-publish.gradle"}, utils.writtenFiles)
+		assert.Equal(t, []string{"maven-publish.gradle"}, utils.removedFiles)
+	})
 }

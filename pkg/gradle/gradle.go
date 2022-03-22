@@ -196,7 +196,7 @@ func publish(options *ExecuteOptions, utils Utils) error {
 	if err != nil {
 		return fmt.Errorf("failed create init script: %v", err)
 	}
-	// defer utils.FileRemove(filepath.Join(options.BuildGradlePath, publishInitScriptName))
+	defer utils.FileRemove(filepath.Join(options.BuildGradlePath, publishInitScriptName))
 
 	if err := utils.RunExecutable(exec, "--init-script", filepath.Join(options.BuildGradlePath, publishInitScriptName), "--info", "publish"); err != nil {
 		return fmt.Errorf("publishing failed: %v", err)
