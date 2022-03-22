@@ -1,10 +1,30 @@
 package versioning
 
 import (
+	"net/http"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
+
+type versioningMockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func newVersioningMockUtils() *versioningMockUtils {
+	utils := versioningMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return &utils
+}
+
+func (v *versioningMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	// so far no dedicated logic required for testing
+	return nil
+}
 
 func TestGetArtifact(t *testing.T) {
 	t.Run("custom", func(t *testing.T) {
@@ -74,6 +94,17 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "gradle.properties", theType.path)
 		assert.Equal(t, "theversion", theType.versionField)
 		assert.Equal(t, "semver2", gradle.VersioningScheme())
+	})
+
+	t.Run("helm", func(t *testing.T) {
+		helm, err := GetArtifact("helm", "testchart/Chart.yaml", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := helm.(*HelmChart)
+		assert.True(t, ok)
+		assert.Equal(t, "testchart/Chart.yaml", theType.path)
+		assert.Equal(t, "semver2", helm.VersioningScheme())
 	})
 
 	t.Run("maven", func(t *testing.T) {

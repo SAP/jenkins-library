@@ -41,7 +41,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
-		Title: "Checkmarx SAST Report",
+		ReportTitle: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
 			{Description: "Project ID", Details: fmt.Sprint(data["ProjectID"])},

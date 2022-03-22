@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -508,7 +509,8 @@ func merge(base, overlay map[string]interface{}) map[string]interface{} {
 
 func sliceContains(slice []string, find string) bool {
 	for _, elem := range slice {
-		if elem == find {
+		matches, _ := regexp.MatchString(elem, find)
+		if matches {
 			return true
 		}
 	}

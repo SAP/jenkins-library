@@ -174,7 +174,7 @@ func (c *Client) TarImage(writer io.Writer, image pkgutil.Image) error {
 // * Dockerfile: `imageName`
 // * sub1/Dockerfile: `imageName-sub1`
 // * sub2/Dockerfile_proxy: `imageName-sub2-proxy`
-func ImageListWithFilePath(imageName string, excludes []string, utils piperutils.FileUtils) (map[string]string, error) {
+func ImageListWithFilePath(imageName string, excludes []string, trimDir string, utils piperutils.FileUtils) (map[string]string, error) {
 
 	imageList := map[string]string{}
 
@@ -200,7 +200,16 @@ func ImageListWithFilePath(imageName string, excludes []string, utils piperutils
 		} else {
 			var finalName string
 			if base := filepath.Base(dockerfilePath); base == "Dockerfile" {
-				finalName = fmt.Sprintf("%v-%v", imageName, strings.ReplaceAll(filepath.Dir(dockerfilePath), string(filepath.Separator), "-"))
+				subName := strings.ReplaceAll(filepath.Dir(dockerfilePath), string(filepath.Separator), "-")
+				if len(trimDir) > 0 {
+					// allow to remove trailing sub directories
+					// example .ci/app/Dockerfile
+					// with trimDir = .ci/ imagename would only contain app part.
+					subName = strings.TrimPrefix(subName, strings.ReplaceAll(trimDir, "/", "-"))
+					// make sure that subName does not start with a - (e.g. due not configuring trailing slash for trimDir)
+					subName = strings.TrimPrefix(subName, "-")
+				}
+				finalName = fmt.Sprintf("%v-%v", imageName, subName)
 			} else {
 				parts := strings.FieldsFunc(base, func(separator rune) bool {
 					return separator == []rune("-")[0] || separator == []rune("_")[0]
