@@ -3,7 +3,7 @@ package xsuaa
 import (
 	"encoding/json"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/body"
 	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
@@ -84,7 +84,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 		return
 	}
 
-	bodyText, err := piperhttp.ReadResponseBody(response)
+	bodyText, err := body.ReadResponseBody(response)
 	if err != nil {
 		return
 	}
