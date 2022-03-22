@@ -52,7 +52,7 @@ func TestANS_Send(t *testing.T) {
 		{
 			name:     "Wrong status code in response error",
 			wantErrf: "http request to '%s/cf/producer/v1/resource-events' did not return expected status code 202; " +
-				"instead got 200; response body: 'an error occurred'",
+				"instead got 200; response body: an error occurred",
 		},
 	}
 	for _, tt := range tests {

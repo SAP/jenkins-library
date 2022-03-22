@@ -117,9 +117,15 @@ func (ans ANS) Send(event Event) error {
 		return err
 	}
 	if response.StatusCode != http.StatusAccepted {
-		responseBody, _ := piperhttp.ReadResponseBody(response)
-		return fmt.Errorf("http request to '%s' did not return expected status code %d; instead got %d; response body: '%s'",
-			entireUrl, http.StatusAccepted, response.StatusCode, responseBody)
+		statusCodeError := fmt.Errorf("http request to '%s' did not return expected status code %d; instead got %d",
+			entireUrl, http.StatusAccepted, response.StatusCode)
+		responseBody, err := piperhttp.ReadResponseBody(response)
+		if err != nil {
+			err = errors.Wrapf(err, "%s; reading response body failed", statusCodeError.Error())
+		} else {
+			err = fmt.Errorf("%s; response body: %s", statusCodeError.Error(), responseBody)
+		}
+		return err
 	}
 
 	return nil
