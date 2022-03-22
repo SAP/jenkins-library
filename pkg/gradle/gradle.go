@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
@@ -86,9 +85,18 @@ rootProject {
 `
 
 type Utils interface {
-	command.ExecRunner
-	piperutils.FileUtils
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(e string, p ...string) error
+
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Glob(pattern string) (matches []string, err error)
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
+	FileRemove(path string) error
 }
 
 // ExecuteOptions are used by Execute() to construct the Gradle command line.
