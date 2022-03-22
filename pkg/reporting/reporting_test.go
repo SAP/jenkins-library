@@ -10,8 +10,8 @@ import (
 func TestToHTML(t *testing.T) {
 	t.Run("empty table", func(t *testing.T) {
 		report := ScanReport{
-			Title:      "Report Test Title",
-			Subheaders: []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
+			ReportTitle: "Report Test Title",
+			Subheaders:  []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
 			Overview: []OverviewRow{
 				{"overview 1", "1", Green},
 				{"overview 2", "2", Green},
@@ -52,8 +52,8 @@ func TestToHTML(t *testing.T) {
 
 	t.Run("table with content", func(t *testing.T) {
 		report := ScanReport{
-			Title:      "Report Test Title",
-			ReportTime: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			ReportTitle: "Report Test Title",
+			ReportTime:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 			DetailTable: ScanDetailTable{
 				Headers: []string{"column 1", "column 2"},
 				Rows: []ScanRow{
@@ -84,8 +84,8 @@ func TestToHTML(t *testing.T) {
 func TestToMarkdown(t *testing.T) {
 	t.Run("table with details", func(t *testing.T) {
 		report := ScanReport{
-			Title:      "Report Test Title",
-			Subheaders: []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
+			ReportTitle: "Report Test Title",
+			Subheaders:  []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
 			Overview: []OverviewRow{
 				{"overview 1", "1", Green},
 				{"overview 2", "2", Green},
@@ -120,8 +120,8 @@ func TestToMarkdown(t *testing.T) {
 
 	t.Run("table without details", func(t *testing.T) {
 		report := ScanReport{
-			Title:      "Report Test Title",
-			Subheaders: []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
+			ReportTitle: "Report Test Title",
+			Subheaders:  []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
 			Overview: []OverviewRow{
 				{"overview 1", "1", Green},
 				{"overview 2", "2", Green},
