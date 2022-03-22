@@ -64,6 +64,8 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/helmRepositoryURL
+          - name: commonPipelineEnvironment
             param: custom/repositoryUrl
       - name: targetRepositoryName
         type: string
@@ -86,6 +88,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/helmRepositoryUsername
+          - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: targetRepositoryPassword
         description: "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
@@ -96,6 +100,8 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: helmDeployWaitSeconds
