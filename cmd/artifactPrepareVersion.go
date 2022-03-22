@@ -163,7 +163,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		}
 		if provider.IsPullRequest() || config.IsOptimizedAndScheduled {
-			config.versioningType = "cloud_noTag"
+			config.VersioningType = "cloud_noTag"
 		}
 
 		newVersion, err = calculateCloudVersion(artifact, config, version, gitCommitID, now)

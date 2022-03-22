@@ -60,27 +60,6 @@ func (a *artifactVersioningMock) GetCoordinates() (versioning.Coordinates, error
 	return a.coordinates, nil
 }
 
-type artifactPrepareVersionMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func (a *artifactPrepareVersionMockUtils) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
-	return &orchestrator.UnknownOrchestratorConfigProvider{}, nil
-}
-
-func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return nil
-}
-
-func newArtifactPrepareVersionMockUtils() *artifactPrepareVersionMockUtils {
-	utils := artifactPrepareVersionMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return &utils
-}
-
 type gitRepositoryMock struct {
 	createRemoteConfigs []*gitConfig.RemoteConfig
 	createRemoteCalls   int
@@ -208,6 +187,10 @@ func newArtifactPrepareVersionMockUtils() *artifactPrepareVersionMockUtils {
 func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	// so far no dedicated logic required for testing
 	return nil
+}
+
+func (a *artifactPrepareVersionMockUtils) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
+	return &orchestrator.UnknownOrchestratorConfigProvider{}, nil
 }
 
 func TestRunArtifactPrepareVersion(t *testing.T) {
