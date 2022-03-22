@@ -89,14 +89,14 @@ spec:
             param: artifactVersion
       - name: artifactGroupId
         type: string
-        description:
+        description: The group of the artifact.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: artifactId
         type: string
-        description:
+        description: The name of the artifact.
         scope:
           - PARAMETERS
           - STAGES
