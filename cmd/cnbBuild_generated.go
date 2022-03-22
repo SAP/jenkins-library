@@ -211,6 +211,11 @@ func cnbBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "artifactVersion",
 							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "git/commitId",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
