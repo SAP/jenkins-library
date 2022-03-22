@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"testing"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 
@@ -39,6 +40,17 @@ func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 }
 
 func TestRunPythonBuild(t *testing.T) {
+
+	t.Run("success - build", func(t *testing.T) {
+		config := pythonBuildOptions{}
+		utils := newPythonBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
+	})
 
 	t.Run("failure - build failure", func(t *testing.T) {
 		config := pythonBuildOptions{}
