@@ -35,7 +35,7 @@ func TestANS_Send(t *testing.T) {
 		wantRequest request
 	}{
 		{
-			name: "Straight forward",
+			name: "Successfully send event",
 			event: Event{
 				EventType:      "my event",
 				EventTimestamp: 1647526655,
