@@ -11,8 +11,9 @@ import (
 )
 
 type AzureDevOpsConfigProvider struct {
-	client  piperHttp.Client
-	options piperHttp.ClientOptions
+	client         piperHttp.Client
+	options        piperHttp.ClientOptions
+	apiInformation map[string]interface{}
 }
 
 //InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
@@ -28,31 +29,29 @@ func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *Orchestra
 	log.Entry().Debug("Successfully initialized Azure config provider")
 }
 
-var apiInformation map[string]interface{}
-
 func (a *AzureDevOpsConfigProvider) getAPIInformation() {
 	// if apiInformation is empty fill it otherwise do nothing
-	if len(apiInformation) == 0 {
+	if len(a.apiInformation) == 0 {
 		log.Entry().Debugf("apiInformation is empty, getting infos from API")
 		URL := a.getSystemCollectionURI() + a.getTeamProjectID() + "/_apis/build/builds/" + a.getAzureBuildID() + "/"
 		log.Entry().Debugf("API URL: %s", URL)
 		response, err := a.client.GetRequest(URL, nil, nil)
 		if err != nil {
 			log.Entry().Error("failed to get http response, returning empty API information", err)
-			apiInformation = map[string]interface{}{}
+			a.apiInformation = map[string]interface{}{}
 			return
 		}
 
 		if response.StatusCode != 200 { //http.StatusNoContent
 			log.Entry().Errorf("Response-Code is %v . \n Could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
-			apiInformation = map[string]interface{}{}
+			a.apiInformation = map[string]interface{}{}
 			return
 		}
 
-		err = piperHttp.ParseHTTPResponseBodyJSON(response, &apiInformation)
+		err = piperHttp.ParseHTTPResponseBodyJSON(response, &a.apiInformation)
 		if err != nil {
 			log.Entry().Error("failed to parse http response, returning with empty interface", err)
-			apiInformation = map[string]interface{}{}
+			a.apiInformation = map[string]interface{}{}
 			return
 		}
 	} else {
@@ -157,7 +156,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 	//"2022-03-18T07:30:31.1915758Z"
 	a.getAPIInformation()
-	if val, ok := apiInformation["startTime"]; ok {
+	if val, ok := a.apiInformation["startTime"]; ok {
 		parsed, err := time.Parse(time.RFC3339, val.(string))
 		if err != nil {
 			log.Entry().Errorf("could not parse timestamp, %v", err)
