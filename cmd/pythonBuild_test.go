@@ -1,10 +1,14 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
-	"strings"
+	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type pythonBuildMockUtils struct {
@@ -14,10 +18,12 @@ type pythonBuildMockUtils struct {
 	*mock.FilesMock
 }
 
-type pythonBuildFileMock struct {
+type puthonBuildMockUtils struct {
+	*mock.ExecMockRunner
 	*mock.FilesMock
-	dirPathContent map[string]string
-	dirPathErr     map[string]error
+
+	clientOptions []piperhttp.ClientOptions // set by mock
+	fileUploads   map[string]string         // set by mock
 }
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
@@ -28,38 +34,78 @@ func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	return utils
 }
 
-func (f *pythonBuildFileMock) DirExists(path string) (bool, error) {
-	return strings.EqualFold(path, "path/to/dir/python-project"), nil
-}
-
 func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 	return f.config
 }
 
 func TestRunPythonBuild(t *testing.T) {
-	t.Run("negative case - python project is not present", func(t *testing.T) {
-		c := &pythonBuildOptions{
-			Sources: []string{"path/to/python-project"},
+
+	t.Run("failure - build failure", func(t *testing.T) {
+		config := pythonBuildOptions{}
+		utils := newPythonBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"python3 setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "Python build failed with error: build failure")
+	})
+
+	t.Run("success - publishes binaries", func(t *testing.T) {
+		config := pythonBuildOptions{
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
 		}
-		u := newPythonBuildTestsUtils()
-		err := runPythonBuild(c, nil, u)
-		assert.EqualError(t, err, "the python project dir 'path/to/python-project' could not be found")
-	})
+		utils := newPythonBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
 
-	t.Run("success case - python project is present", func(t *testing.T) {
-		o := &pythonBuildOptions{}
-		u := newPythonBuildTestsUtils()
-
-		err := runPythonBuild(o, nil, u)
+		err := runPythonBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "twine", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
+			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
+			"dist/*"}, utils.ExecMockRunner.Calls[1].Params)
 	})
 
-	t.Run("success case - python project build successfully", func(t *testing.T) {
-		o := &pythonBuildOptions{}
-		u := newPythonBuildTestsUtils()
+	t.Run("success - create BOM", func(t *testing.T) {
+		config := pythonBuildOptions{
+			CreateBOM: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(o, nil, u)
+		err := runPythonBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-bom", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
 	})
 
+	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
+		config := pythonBuildOptions{
+			CreateBOM: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"python3 -m pip install --upgrade cyclonedx-bom": fmt.Errorf("install failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "BOM creation failed: install failure")
+	})
+
+	t.Run("failure - install pre-requisites for Twine upload", func(t *testing.T) {
+		config := pythonBuildOptions{
+			Publish: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"python3 -m pip install --upgrade twine": fmt.Errorf("install failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils)
+		assert.EqualError(t, err, "failed to publish: install failure")
+	})
 }

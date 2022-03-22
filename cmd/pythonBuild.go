@@ -48,17 +48,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	installFlags := []string{"-m", "pip", "install", "--upgrade"}
 
-	tomlExists, err := utils.FileExists("pyproject.toml")
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		fmt.Errorf("failed to check for important file: %w", err)
-	}
-	if !tomlExists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
-	}
-
-	err = buildExecute(config, utils, installFlags)
+	err := buildExecute(config, utils, installFlags)
 	if err != nil {
 		return fmt.Errorf("Python build failed with error: %w", err)
 	}
@@ -83,14 +73,10 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFla
 	flags = append(flags, config.BuildFlags...)
 	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
 
-	setupPyExists, _ := utils.FileExists("setup.py")
-	setupCFGExists, _ := utils.FileExists("setup.cfg")
-	if setupPyExists || setupCFGExists {
-		log.Entry().Info("starting building python project:")
-		err := utils.RunExecutable("python3", flags...)
-		if err != nil {
-			log.Entry().Errorln("starting building python project can't start:", err)
-		}
+	log.Entry().Info("starting building python project:")
+	err := utils.RunExecutable("python3", flags...)
+	if err != nil {
+		return err
 	}
 
 	return nil
