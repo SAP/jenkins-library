@@ -24,7 +24,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 
 	sarif := CreateSarifResultFile(&vulns)
 
-	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json", sarif.Schema)
+	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json", sarif.Schema)
 	assert.Equal(t, "2.1.0", sarif.Version)
 	assert.Equal(t, 1, len(sarif.Runs))
 	assert.Equal(t, "Blackduck Hub Detect", sarif.Runs[0].Tool.Driver.Name)
