@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,30 +10,70 @@ import (
 func TestRunUtils(t *testing.T) {
 	t.Run("Get container info", func(t *testing.T) {
 		testTable := []struct {
-			config                HelmExecuteOptions
-			expectedContainerInfo map[string]string
-			expectedError         error
+			chartYamlFile          string
+			dataChartYaml          string
+			expectedChartName      string
+			expectedPackageVersion string
+			expectedError          error
+			setFileReadError       bool
 		}{
 			{
-				config: HelmExecuteOptions{
-					Image:                "dtzar/helm-kubectl:3.4.1",
-					ContainerImageName:   "",
-					ContainerImageTag:    "",
-					ContainerRegistryURL: "https://hub.docker.com/",
-				},
-				expectedContainerInfo: map[string]string{
-					"containerImageName": "dtzar/helm-kubectl",
-					"containerImageTag":  "3.4.1",
-				},
-				expectedError: nil,
+				chartYamlFile:          "path/to/Chart.yaml",
+				dataChartYaml:          "name: nginx-testChart\nversion: 1.3.5",
+				expectedChartName:      "nginx-testChart",
+				expectedPackageVersion: "1.3.5",
+				expectedError:          nil,
+				setFileReadError:       false,
+			},
+			{
+				chartYamlFile:          "path/to/Chart.yaml",
+				dataChartYaml:          "name: nginx-testChart\nversion: 1.3.5",
+				expectedChartName:      "nginx-testChart",
+				expectedPackageVersion: "1.3.5",
+				expectedError:          errors.New("file couldn't read"),
+				setFileReadError:       true,
+			},
+			{
+				chartYamlFile:          "path/to/Chart.yaml",
+				dataChartYaml:          "version: 1.3.5",
+				expectedChartName:      "nginx-testChart",
+				expectedPackageVersion: "1.3.5",
+				expectedError:          errors.New("name not found in chart yaml file (or wrong type)"),
+				setFileReadError:       false,
+			},
+			{
+				chartYamlFile:          "path/to/Chart.yaml",
+				dataChartYaml:          "name: nginx-testChart",
+				expectedChartName:      "nginx-testChart",
+				expectedPackageVersion: "1.3.5",
+				expectedError:          errors.New("version not found in chart yaml file (or wrong type)"),
+				setFileReadError:       false,
+			},
+			{
+				chartYamlFile:          "path/to/Chart.yaml",
+				dataChartYaml:          "name=nginx-testChart",
+				expectedChartName:      "nginx-testChart",
+				expectedPackageVersion: "1.3.5",
+				expectedError:          errors.New("failed unmarshal"),
+				setFileReadError:       false,
 			},
 		}
 
 		for _, testCase := range testTable {
-			containerInfo, err := getContainerInfo(testCase.config)
-			assert.NoError(t, err)
-			assert.Equal(t, testCase.expectedContainerInfo["containerImageName"], containerInfo["containerImageName"])
-			assert.Equal(t, testCase.expectedContainerInfo["containerImageTag"], containerInfo["containerImageTag"])
+			utils := newHelmMockUtilsBundle()
+			utils.AddFile(testCase.chartYamlFile, []byte(testCase.dataChartYaml))
+			if testCase.setFileReadError {
+				utils.FileReadErrors = map[string]error{testCase.chartYamlFile: testCase.expectedError}
+			}
+			nameChart, packageVersion, err := GetChartInfo(testCase.chartYamlFile, utils)
+			if testCase.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), testCase.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.expectedChartName, nameChart)
+				assert.Equal(t, testCase.expectedPackageVersion, packageVersion)
+			}
 
 		}
 	})

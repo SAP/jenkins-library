@@ -9,15 +9,15 @@ type SARIF struct {
 
 // Runs of a Tool and related Results
 type Runs struct {
-	Results             []Results          `json:"results"`
-	Tool                Tool               `json:"tool"`
-	Invocations         []Invocations      `json:"invocations"`
-	OriginalUriBaseIds  OriginalUriBaseIds `json:"originalUriBaseIds"`
-	Artifacts           []Artifact         `json:"artifacts"`
-	AutomationDetails   AutomationDetails  `json:"automationDetails"`
-	ColumnKind          string             `json:"columnKind" default:"utf16CodeUnits"`
-	ThreadFlowLocations []Locations        `json:"threadFlowLocations"`
-	Taxonomies          []Taxonomies       `json:"taxonomies"`
+	Results             []Results           `json:"results"`
+	Tool                Tool                `json:"tool"`
+	Invocations         []Invocations       `json:"invocations,omitempty"`
+	OriginalUriBaseIds  *OriginalUriBaseIds `json:"originalUriBaseIds,omitempty"`
+	Artifacts           []Artifact          `json:"artifacts,omitempty"`
+	AutomationDetails   AutomationDetails   `json:"automationDetails,omitempty"`
+	ColumnKind          string              `json:"columnKind,omitempty" default:"utf16CodeUnits"`
+	ThreadFlowLocations []Locations         `json:"threadFlowLocations,omitempty"`
+	Taxonomies          []Taxonomies        `json:"taxonomies,omitempty"`
 }
 
 // Results these structs are relevant to the Results object
@@ -25,11 +25,11 @@ type Results struct {
 	RuleID           string            `json:"ruleId"`
 	RuleIndex        int               `json:"ruleIndex"`
 	Level            string            `json:"level,omitempty"`
-	Message          Message           `json:"message"`
-	AnalysisTarget   ArtifactLocation  `json:"analysisTarget,omitempty"`
-	Locations        []Location        `json:"locations"`
-	CodeFlows        []CodeFlow        `json:"codeFlows"`
-	RelatedLocations []RelatedLocation `json:"relatedLocations"`
+	Message          *Message          `json:"message,omitempty"`
+	AnalysisTarget   *ArtifactLocation `json:"analysisTarget,omitempty"`
+	Locations        []Location        `json:"locations,omitempty"`
+	CodeFlows        []CodeFlow        `json:"codeFlows,omitempty"`
+	RelatedLocations []RelatedLocation `json:"relatedLocations,omitempty"`
 	Properties       SarifProperties   `json:"properties"`
 }
 
@@ -55,7 +55,7 @@ type PhysicalLocation struct {
 // ArtifactLocation describing the path of the artifact
 type ArtifactLocation struct {
 	URI   string `json:"uri"`
-	Index int    `json:"index,omitempty"`
+	Index int    `json:"index"`
 }
 
 // Region where the finding was detected
@@ -76,9 +76,10 @@ type LogicalLocation struct {
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
-	InstanceID        string `json:"InstanceID"`
-	InstanceSeverity  string `json:"InstanceSeverity"`
-	Confidence        string `json:"Confidence"`
+	InstanceID        string `json:"InstanceID,omitempty"`
+	InstanceSeverity  string `json:"InstanceSeverity,omitempty"`
+	Confidence        string `json:"Confidence,omitempty"`
+	FortifyCategory   string `json:"FortifyCategory,omitempty"`
 	Audited           bool   `json:"Audited"`
 	ToolSeverity      string `json:"ToolSeverity"`
 	ToolSeverityIndex int    `json:"ToolSeverityIndex"`
@@ -99,21 +100,21 @@ type Driver struct {
 	Version             string                `json:"version"`
 	InformationUri      string                `json:"informationUri,omitempty"`
 	Rules               []SarifRule           `json:"rules"`
-	SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies"`
+	SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies,omitempty"`
 }
 
 // SarifRule related rule use to identify the finding
 type SarifRule struct {
-	ID                   string               `json:"id"`
-	GUID                 string               `json:"guid"`
-	Name                 string               `json:"name,omitempty"`
-	ShortDescription     Message              `json:"shortDescription"`
-	FullDescription      Message              `json:"fullDescription"`
-	DefaultConfiguration DefaultConfiguration `json:"defaultConfiguration"`
-	HelpURI              string               `json:"helpUri,omitempty"`
-	Help                 Help                 `json:"help,omitempty"`
-	Relationships        []Relationships      `json:"relationships,omitempty"`
-	Properties           *SarifRuleProperties `json:"properties,omitempty"`
+	ID                   string                `json:"id"`
+	GUID                 string                `json:"guid,omitempty"`
+	Name                 string                `json:"name,omitempty"`
+	ShortDescription     *Message              `json:"shortDescription,omitempty"`
+	FullDescription      *Message              `json:"fullDescription,omitempty"`
+	DefaultConfiguration *DefaultConfiguration `json:"defaultConfiguration,omitempty"`
+	HelpURI              string                `json:"helpUri,omitempty"`
+	Help                 *Help                 `json:"help,omitempty"`
+	Relationships        []Relationships       `json:"relationships,omitempty"`
+	Properties           *SarifRuleProperties  `json:"properties,omitempty"`
 }
 
 // Help provides additional guidance to resolve the finding
@@ -178,13 +179,13 @@ type SupportedTaxonomies struct {
 
 // DefaultConfiguration
 type DefaultConfiguration struct {
-	Properties DefaultProperties `json:"properties"`
+	Properties DefaultProperties `json:"properties,omitempty"`
 	Level      string            `json:"level,omitempty"` //This exists in the template, but not sure how it is populated. TODO.
 }
 
 // DefaultProperties
 type DefaultProperties struct {
-	DefaultSeverity string `json:"DefaultSeverity"`
+	DefaultSeverity string `json:"DefaultSeverity,omitempty"`
 }
 
 // Relationships
