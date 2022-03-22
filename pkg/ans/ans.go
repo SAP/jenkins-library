@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -116,7 +117,9 @@ func (ans ANS) Send(event Event) error {
 		return err
 	}
 	if response.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("http request to '%s' did not return expected status code %d; instead got %d", entireUrl, http.StatusAccepted, response.StatusCode)
+		responseBody, _ := piperhttp.ReadResponseBody(response)
+		return fmt.Errorf("http request to '%s' did not return expected status code %d; instead got %d; response body: '%s'",
+			entireUrl, http.StatusAccepted, response.StatusCode, responseBody)
 	}
 
 	return nil

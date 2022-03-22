@@ -51,7 +51,8 @@ func TestANS_Send(t *testing.T) {
 		},
 		{
 			name:     "Wrong status code in response error",
-			wantErrf: "http request to '%s/cf/producer/v1/resource-events' did not return expected status code 202; instead got 200",
+			wantErrf: "http request to '%s/cf/producer/v1/resource-events' did not return expected status code 202; " +
+				"instead got 200; response body: 'an error occurred'",
 		},
 	}
 	for _, tt := range tests {
@@ -67,6 +68,8 @@ func TestANS_Send(t *testing.T) {
 				requestedMethod = req.Method
 				if tt.wantErrf == "" {
 					rw.WriteHeader(http.StatusAccepted)
+				} else {
+					rw.Write([]byte("an error occurred"))
 				}
 				requestedAuthHeader = req.Header.Get(authHeaderKey)
 				requestedContentTypeHeader = req.Header.Get("Content-Type")

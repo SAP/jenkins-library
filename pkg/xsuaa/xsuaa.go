@@ -3,8 +3,8 @@ package xsuaa
 import (
 	"encoding/json"
 	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -84,7 +84,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 		return
 	}
 
-	bodyText, err := readResponseBody(response)
+	bodyText, err := piperhttp.ReadResponseBody(response)
 	if err != nil {
 		return
 	}
@@ -119,18 +119,4 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 
 func setExpireTime(now time.Time, secondsValid time.Duration) time.Time {
 	return now.Add(time.Second * secondsValid)
-}
-
-func readResponseBody(response *http.Response) ([]byte, error) {
-	if response == nil {
-		return nil, errors.Errorf("did not retrieve an HTTP response")
-	}
-	if response.Body != nil {
-		defer response.Body.Close()
-	}
-	bodyText, readErr := ioutil.ReadAll(response.Body)
-	if readErr != nil {
-		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
-	}
-	return bodyText, nil
 }
