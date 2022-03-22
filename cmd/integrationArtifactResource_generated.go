@@ -22,7 +22,7 @@ type integrationArtifactResourceOptions struct {
 	ResourcePath      string `json:"resourcePath,omitempty"`
 }
 
-// IntegrationArtifactResourceCommand Add, Delete or Update an resource file of integration flow designtime artifact
+// IntegrationArtifactResourceCommand Add, delete, or update a resource file of an integration flow design time artifact.
 func IntegrationArtifactResourceCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactResource"
 
@@ -35,8 +35,8 @@ func IntegrationArtifactResourceCommand() *cobra.Command {
 
 	var createIntegrationArtifactResourceCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Add, Delete or Update an resource file of integration flow designtime artifact",
-		Long:  `With this step you can either add, delete or update a resource of integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for managing an resource of integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Add, delete, or update a resource file of an integration flow design time artifact.",
+		Long:  `With this step, you can either add, delete, or update a resource of an integration flow design time artifact using the OData API. For more information on the SAP Cloud Integration remote API for managing a resource of an integration flow artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on SAP Help Portal.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -112,10 +112,10 @@ func IntegrationArtifactResourceCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactResourceFlags(cmd *cobra.Command, stepConfig *integrationArtifactResourceOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.Operation, "operation", os.Getenv("PIPER_operation"), "Specifies the operation(create/update/delete) for resource file of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.ResourcePath, "resourcePath", os.Getenv("PIPER_resourcePath"), "Specifies integration artifact resource file relative path.")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the integration flow artifact.")
+	cmd.Flags().StringVar(&stepConfig.Operation, "operation", os.Getenv("PIPER_operation"), "Specifies the operation (create, update, or delete) for the resource file of the integration flow artifact.")
+	cmd.Flags().StringVar(&stepConfig.ResourcePath, "resourcePath", os.Getenv("PIPER_resourcePath"), "Specifies the relative path to the integration artifact resource file.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
@@ -129,12 +129,12 @@ func integrationArtifactResourceMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactResource",
 			Aliases:     []config.Alias{},
-			Description: "Add, Delete or Update an resource file of integration flow designtime artifact",
+			Description: "Add, delete, or update a resource file of an integration flow design time artifact.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

@@ -23,7 +23,7 @@ type integrationArtifactUpdateConfigurationOptions struct {
 	ParameterValue         string `json:"parameterValue,omitempty"`
 }
 
-// IntegrationArtifactUpdateConfigurationCommand Update integration flow Configuration parameter
+// IntegrationArtifactUpdateConfigurationCommand Update integration flow configuration parameters.
 func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactUpdateConfiguration"
 
@@ -36,8 +36,8 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 
 	var createIntegrationArtifactUpdateConfigurationCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Update integration flow Configuration parameter",
-		Long:  `With this step you can update the value for a configuration parameters of a designtime integration flow using the OData API. Learn more about the SAP Cloud Integration remote API for configuration update of the integration flow parameter [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Update integration flow configuration parameters.",
+		Long:  `With this step, you can update the value of a configuration parameter of a designtime integration flow using the OData API. For more information on the SAP Cloud Integration remote API for deploying an integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/83733a65c0214aa6acba035e8640bb5a.html) on the SAP Help Portal.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -113,9 +113,9 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactUpdateConfigurationFlags(cmd *cobra.Command, stepConfig *integrationArtifactUpdateConfigurationOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the integration flow artifact.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the integration flow artifact.")
 	cmd.Flags().StringVar(&stepConfig.ParameterKey, "parameterKey", os.Getenv("PIPER_parameterKey"), "Specifies the externalized parameter name.")
 	cmd.Flags().StringVar(&stepConfig.ParameterValue, "parameterValue", os.Getenv("PIPER_parameterValue"), "Specifies the externalized parameter value.")
 
@@ -132,12 +132,12 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactUpdateConfiguration",
 			Aliases:     []config.Alias{},
-			Description: "Update integration flow Configuration parameter",
+			Description: "Update integration flow configuration parameters.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

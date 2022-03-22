@@ -52,7 +52,7 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 	}
 }
 
-// IntegrationArtifactGetMplStatusCommand Get the MPL status of an integration flow
+// IntegrationArtifactGetMplStatusCommand Get the MPL status of an integration flow.
 func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactGetMplStatus"
 
@@ -66,8 +66,8 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 
 	var createIntegrationArtifactGetMplStatusCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Get the MPL status of an integration flow",
-		Long:  `With this step you can obtain information about the Message Processing Log (MPL) status of integration flow using OData API. Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Get the MPL status of an integration flow.",
+		Long:  `With this step, you can obtain information about the Message processing log status of an integration flow using OData API. For more information on the SAP Cloud Integration remote API for deploying an integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/05fa2a8b31d14c11a4e72e833e5e9f7d.html) on the SAP Help Portal.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -157,7 +157,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactGetMplStatus",
 			Aliases:     []config.Alias{},
-			Description: "Get the MPL status of an integration flow",
+			Description: "Get the MPL status of an integration flow.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

@@ -23,7 +23,7 @@ type integrationArtifactUploadOptions struct {
 	FilePath            string `json:"filePath,omitempty"`
 }
 
-// IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artifact
+// IntegrationArtifactUploadCommand Upload or update an integration flow design time artifact.
 func IntegrationArtifactUploadCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactUpload"
 
@@ -36,8 +36,8 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 
 	var createIntegrationArtifactUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Upload or Update an integration flow designtime artifact",
-		Long:  `With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Upload or update an integration flow design time artifact.",
+		Long:  `With this step, you can either upload or update an integration flow design time artifact using the OData API. For more information on the SAP Cloud Integration remote API for updating an integration flow artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on SAP Help Portal.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -113,11 +113,11 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactUploadFlags(cmd *cobra.Command, stepConfig *integrationArtifactUploadOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowName, "integrationFlowName", os.Getenv("PIPER_integrationFlowName"), "Specifies the Name of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.PackageID, "packageId", os.Getenv("PIPER_packageId"), "Specifies the ID of the Integration Package")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies integration artifact relative file path.")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration runtime service instance of plan 'api'.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the integration flow artifact.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowName, "integrationFlowName", os.Getenv("PIPER_integrationFlowName"), "Specifies the name of the integration flow artifact.")
+	cmd.Flags().StringVar(&stepConfig.PackageID, "packageId", os.Getenv("PIPER_packageId"), "Specifies the ID of the integration package.")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies the relative file path to the file containing the integration artifact.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
@@ -131,12 +131,12 @@ func integrationArtifactUploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactUpload",
 			Aliases:     []config.Alias{},
-			Description: "Upload or Update an integration flow designtime artifact",
+			Description: "Upload or update an integration flow design time artifact.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to access the Process Integration runtime service instance of plan 'api'.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

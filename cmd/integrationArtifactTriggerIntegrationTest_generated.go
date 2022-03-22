@@ -23,7 +23,7 @@ type integrationArtifactTriggerIntegrationTestOptions struct {
 	MessageBodyPath                   string `json:"messageBodyPath,omitempty"`
 }
 
-// IntegrationArtifactTriggerIntegrationTestCommand Test the service endpoint of your iFlow
+// IntegrationArtifactTriggerIntegrationTestCommand Test the service endpoint of your iFlow.
 func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactTriggerIntegrationTest"
 
@@ -36,8 +36,8 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 
 	var createIntegrationArtifactTriggerIntegrationTestCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Test the service endpoint of your iFlow",
-		Long:  `With this step you can test your intergration flow  exposed by SAP Cloud Platform Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Test the service endpoint of your iFlow.",
+		Long:  `With this step, you can test your intergration flow exposed by SAP Cloud Integration on a tenant using OData API. For more information on the SAP Cloud Integration remote API for getting a service endpoint of a deployed integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on the SAP Help Portal.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -113,11 +113,11 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactTriggerIntegrationTestFlags(cmd *cobra.Command, stepConfig *integrationArtifactTriggerIntegrationTestOptions) {
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowServiceKey, "integrationFlowServiceKey", os.Getenv("PIPER_integrationFlowServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowServiceEndpointURL, "integrationFlowServiceEndpointUrl", os.Getenv("PIPER_integrationFlowServiceEndpointUrl"), "Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
-	cmd.Flags().StringVar(&stepConfig.ContentType, "contentType", os.Getenv("PIPER_contentType"), "Specifies the content type of the file defined in messageBodyPath e.g. application/json")
-	cmd.Flags().StringVar(&stepConfig.MessageBodyPath, "messageBodyPath", os.Getenv("PIPER_messageBodyPath"), "Speficfies the relative file path to the message body.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowServiceKey, "integrationFlowServiceKey", os.Getenv("PIPER_integrationFlowServiceKey"), "Service key JSON string to access the Process Integration runtime service instance of plan 'integration-flow'.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the integration flow artifact.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowServiceEndpointURL, "integrationFlowServiceEndpointUrl", os.Getenv("PIPER_integrationFlowServiceEndpointUrl"), "Specifies the URL endpoint of the iFlow. Please provide it in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
+	cmd.Flags().StringVar(&stepConfig.ContentType, "contentType", os.Getenv("PIPER_contentType"), "Specifies the content type of the file defined in messageBodyPath, for example, `application/json`.")
+	cmd.Flags().StringVar(&stepConfig.MessageBodyPath, "messageBodyPath", os.Getenv("PIPER_messageBodyPath"), "Specifies the relative file path to the message body.")
 
 	cmd.MarkFlagRequired("integrationFlowServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
@@ -130,12 +130,12 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactTriggerIntegrationTest",
 			Aliases:     []config.Alias{},
-			Description: "Test the service endpoint of your iFlow",
+			Description: "Test the service endpoint of your iFlow.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "integrationFlowServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'", Type: "jenkins"},
+					{Name: "integrationFlowServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration runtime service instance of plan 'integration-flow'.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

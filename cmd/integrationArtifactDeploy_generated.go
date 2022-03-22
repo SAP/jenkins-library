@@ -20,7 +20,7 @@ type integrationArtifactDeployOptions struct {
 	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
 }
 
-// IntegrationArtifactDeployCommand Deploy a CPI integration flow
+// IntegrationArtifactDeployCommand Deploy an SAP Cloud Integration integration flow.
 func IntegrationArtifactDeployCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactDeploy"
 
@@ -33,8 +33,8 @@ func IntegrationArtifactDeployCommand() *cobra.Command {
 
 	var createIntegrationArtifactDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploy a CPI integration flow",
-		Long:  `With this step you can deploy a integration flow artifact in to SAP Cloud Platform integration runtime using OData API. Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html)`,
+		Short: "Deploy an SAP Cloud Integration integration flow.",
+		Long:  `With this step, you can deploy an integration flow artifact to SAP Cloud Integration using OData API. For more information on the SAP Cloud Integration remote API for deploying an integration artifact, see [Integration Content](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html) on the SAP Help Portal.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -110,8 +110,8 @@ func IntegrationArtifactDeployCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactDeployFlags(cmd *cobra.Command, stepConfig *integrationArtifactDeployOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the integration flow artifact.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
@@ -123,12 +123,12 @@ func integrationArtifactDeployMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactDeploy",
 			Aliases:     []config.Alias{},
-			Description: "Deploy a CPI integration flow",
+			Description: "Deploy an SAP Cloud Integration integration flow.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
