@@ -53,7 +53,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	for _, source := range config.Sources {
 
 		if strings.Contains(source, "https") {
-			scriptName, err := downloadScripts(config, utils, source)
+			scriptName, err := downloadScript(config, utils, source)
 			if err != nil {
 				return errors.Wrapf(err, "script download error")
 			}
@@ -95,7 +95,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	return nil
 }
 
-func downloadScripts(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
+func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
 	header := http.Header{}
 	if len(config.GithubToken) > 0 {
 		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
