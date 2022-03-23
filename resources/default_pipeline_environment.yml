@@ -19,7 +19,7 @@ general:
       format: '%b'
     solman:
       docker:
-        image: 'ppiper/cm-client'
+        image: 'ppiper/cm-client:3.0.0.0'
         options: []
         envVars: {}
         pullImage: true
@@ -37,7 +37,7 @@ general:
         envVars: {}
         pullImage: true
       docker:
-        image: 'ppiper/cm-client'
+        image: 'node'
         options: []
         envVars: {}
         pullImage: true

@@ -57,10 +57,10 @@ general:
 
 steps:
   isChangeInDevelopment:
-    dockerImage: 'ppiper/cm-client'
+    dockerImage: 'ppiper/cm-client:3.0.0.0'
 
   transportRequestUploadSOLMAN:
-    dockerImage: 'ppiper/cm-client'
+    dockerImage: 'ppiper/cm-client:3.0.0.0'
     applicationId: 'APPID',
     filePath: '/path/file.ext',
 ```
