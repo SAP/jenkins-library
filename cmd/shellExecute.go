@@ -68,6 +68,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 			return fmt.Errorf("the script '%v' could not be found", source)
 		}
 		log.Entry().Info("starting running script:", source)
+
 		err = utils.RunExecutable(source)
 		if err != nil {
 			log.Entry().Errorln("starting running script:", source)
@@ -106,6 +107,10 @@ func downloadScripts(config *shellExecuteOptions, utils shellExecuteUtils) error
 			return errors.Wrapf(err, "unable to download script from %v", scriptLocation)
 		}
 		log.Entry().Infof("downloaded script %v successfully", scriptLocation)
+		err = utils.Chmod(fileName, 0700)
+		if err != nil {
+			return fmt.Errorf("unable to change file permission for script '%v'", fileName)
+		}
 		config.Sources = append(config.Sources, "./"+fileName)
 	}
 	return nil
