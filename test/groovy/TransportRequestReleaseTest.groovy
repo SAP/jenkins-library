@@ -262,7 +262,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         assert receivedParameters == [
                     docker: [
-                        image:'ppiper/cm-client:3.0.0.0',
+                        image:'node',
                         options:[],
                         envVars:[:],
                         pullImage:true,
