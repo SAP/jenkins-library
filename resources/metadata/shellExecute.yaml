@@ -15,15 +15,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        description: Scripts names for execution or links to scripts
-      - name: scriptLocations
-        type: "[]string"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        description: "List of http(s) url(s) which point to the scripts that will be downloaded and appended to the sources param for a final list of a scripts to be executed. 
-          Authentication for the download is only supported via the githubToken param"
+        description: Scripts names for execution which must be present in the current workspace or https links to scripts.
+            Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script}
+            Authentication for the download is only supported via the githubToken param"
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"

@@ -16,9 +16,8 @@ import (
 )
 
 type shellExecuteOptions struct {
-	Sources         []string `json:"sources,omitempty"`
-	ScriptLocations []string `json:"scriptLocations,omitempty"`
-	GithubToken     string   `json:"githubToken,omitempty"`
+	Sources     []string `json:"sources,omitempty"`
+	GithubToken string   `json:"githubToken,omitempty"`
 }
 
 // ShellExecuteCommand Step executes defined script
@@ -111,8 +110,7 @@ func ShellExecuteCommand() *cobra.Command {
 }
 
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
-	cmd.Flags().StringSliceVar(&stepConfig.ScriptLocations, "scriptLocations", []string{}, "List of http(s) url(s) which point to the scripts that will be downloaded and appended to the sources param for a final list of a scripts to be executed. Authentication for the download is only supported via the githubToken param")
+	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution which must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the githubToken param\"")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 
 }
@@ -133,15 +131,6 @@ func shellExecuteMetadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{
 						Name:        "sources",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "scriptLocations",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",

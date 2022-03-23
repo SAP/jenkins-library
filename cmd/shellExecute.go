@@ -50,13 +50,15 @@ func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomDat
 func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
 	// check input data
 	// example for script: sources: ["./script.sh"]
-	if len(config.ScriptLocations) > 0 {
-		err := downloadScripts(config, utils)
-		if err != nil {
-			return errors.Wrapf(err, "script download error")
-		}
-	}
 	for _, source := range config.Sources {
+
+		if strings.Contains(source, "https") {
+			scriptName, err := downloadScripts(config, utils, source)
+			if err != nil {
+				return errors.Wrapf(err, "script download error")
+			}
+			source = scriptName
+		}
 		// check if the script is physically present
 		exists, err := utils.FileExists(source)
 		if err != nil {
@@ -93,25 +95,24 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	return nil
 }
 
-func downloadScripts(config *shellExecuteOptions, utils shellExecuteUtils) error {
+func downloadScripts(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
 	header := http.Header{}
 	if len(config.GithubToken) > 0 {
 		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
 	}
-	for _, scriptLocation := range config.ScriptLocations {
-		log.Entry().Infof("downloading script : %v", scriptLocation)
-		fileNameParts := strings.Split(scriptLocation, "/")
-		fileName := fileNameParts[len(fileNameParts)-1]
-		err := utils.DownloadFile(scriptLocation, fileName, header, []*http.Cookie{})
-		if err != nil {
-			return errors.Wrapf(err, "unable to download script from %v", scriptLocation)
-		}
-		log.Entry().Infof("downloaded script %v successfully", scriptLocation)
-		err = utils.Chmod(fileName, 0700)
-		if err != nil {
-			return fmt.Errorf("unable to change file permission for script '%v'", fileName)
-		}
-		config.Sources = append(config.Sources, "./"+fileName)
+
+	log.Entry().Infof("downloading script : %v", url)
+	fileNameParts := strings.Split(url, "/")
+	fileName := fileNameParts[len(fileNameParts)-1]
+	err := utils.DownloadFile(url, fileName, header, []*http.Cookie{})
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to download script from %v", url)
 	}
-	return nil
+	log.Entry().Infof("downloaded script %v successfully", url)
+	err = utils.Chmod(fileName, 0700)
+	if err != nil {
+		return "", fmt.Errorf("unable to change file permission for script '%v'", fileName)
+	}
+
+	return "./" + fileName, nil
 }
