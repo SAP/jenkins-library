@@ -57,15 +57,18 @@ type Event struct {
 	Region         string                 `json:"region,omitempty"`
 	RegionType     string                 `json:"regionType,omitempty"`
 	Tags           map[string]interface{} `json:"tags,omitempty"`
-	Resource       *struct {
-		GlobalAccount    string                 `json:"globalAccount,omitempty"`
-		SubAccount       string                 `json:"subAccount,omitempty"`
-		ResourceGroup    string                 `json:"resourceGroup,omitempty"`
-		ResourceName     string                 `json:"resourceName,omitempty"`
-		ResourceType     string                 `json:"resourceType,omitempty"`
-		ResourceInstance string                 `json:"resourceInstance,omitempty"`
-		Tags             map[string]interface{} `json:"tags,omitempty"`
-	} `json:"resource,omitempty"`
+	Resource       *Resource              `json:"resource,omitempty"`
+}
+
+// Resource structure of the SAP Alert Notification Service Event
+type Resource struct {
+	GlobalAccount    string                 `json:"globalAccount,omitempty"`
+	SubAccount       string                 `json:"subAccount,omitempty"`
+	ResourceGroup    string                 `json:"resourceGroup,omitempty"`
+	ResourceName     string                 `json:"resourceName,omitempty"`
+	ResourceType     string                 `json:"resourceType,omitempty"`
+	ResourceInstance string                 `json:"resourceInstance,omitempty"`
+	Tags             map[string]interface{} `json:"tags,omitempty"`
 }
 
 // UnmarshallServiceKeyJSON unmarshalls the given json service key string.
