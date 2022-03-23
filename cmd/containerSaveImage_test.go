@@ -2,104 +2,45 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
-	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/fake"
 )
-
-type containerMock struct {
-	filePath         string
-	imageSource      string
-	registryURL      string
-	localPath        string
-	includeLayers    bool
-	downloadImageErr string
-	imageSourceErr   string
-	tarImageErr      string
-}
-
-func (c *containerMock) DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error) {
-	c.imageSource = imageSource
-	c.filePath = filePath
-	if c.downloadImageErr != "" {
-		return pkgutil.Image{}, fmt.Errorf(c.downloadImageErr)
-	}
-	return pkgutil.Image{}, nil
-}
-
-func (c *containerMock) GetImageSource() (string, error) {
-	if c.imageSourceErr != "" {
-		return "", fmt.Errorf(c.imageSourceErr)
-	}
-	return "imageSource", nil
-}
-
-func (c *containerMock) TarImage(writer io.Writer, image pkgutil.Image) error {
-	if c.tarImageErr != "" {
-		return fmt.Errorf(c.tarImageErr)
-	}
-	writer.Write([]byte("This is a test"))
-	return nil
-}
 
 func TestRunContainerSaveImage(t *testing.T) {
 	telemetryData := telemetry.CustomData{}
 
 	t.Run("success case", func(t *testing.T) {
 		config := containerSaveImageOptions{}
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		config.FilePath = "testfile.tar"
 
-		cacheFolder := filepath.Join(tmpFolder, "cache")
-
-		config.FilePath = "testfile"
-
-		dClient := containerMock{}
+		dClient := mock.DownloadMock{}
 		files := mock.FilesMock{}
 
-		filePath, err := runContainerSaveImage(&config, &telemetryData, cacheFolder, tmpFolder, &dClient, &files)
+		cacheFolder, err := files.TempDir("", "containerSaveImage-")
 		assert.NoError(t, err)
 
-		assert.Equal(t, cacheFolder, dClient.filePath)
-		assert.Equal(t, "imageSource", dClient.imageSource)
+		dClient.Stub = func(imgRef string, dest string) (v1.Image, error) {
+			files.AddFile(dest, []byte("This is a test"))
+			return &fake.FakeImage{}, nil
+		}
 
-		content, err := ioutil.ReadFile(filepath.Join(tmpFolder, "testfile.tar"))
+		filePath, err := runContainerSaveImage(&config, &telemetryData, cacheFolder, cacheFolder, &dClient, &files)
+		assert.NoError(t, err)
+
+		content, err := files.FileRead(filepath.Join(cacheFolder, "testfile.tar"))
 		assert.NoError(t, err)
 		assert.Equal(t, "This is a test", string(content))
 
 		assert.Contains(t, filePath, "testfile.tar")
-	})
-
-	t.Run("failure - cache creation", func(t *testing.T) {
-		config := containerSaveImageOptions{}
-		dClient := containerMock{}
-		files := mock.FilesMock{}
-		_, err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient, &files)
-		assert.Contains(t, fmt.Sprint(err), "failed to create cache: mkdir :")
-	})
-
-	t.Run("failure - get image source", func(t *testing.T) {
-		config := containerSaveImageOptions{}
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
-
-		dClient := containerMock{imageSourceErr: "image source error"}
-		files := mock.FilesMock{}
-		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
-		assert.EqualError(t, err, "failed to get docker image source: image source error")
 	})
 
 	t.Run("failure - download image", func(t *testing.T) {
@@ -110,24 +51,10 @@ func TestRunContainerSaveImage(t *testing.T) {
 		}
 		defer os.RemoveAll(tmpFolder)
 
-		dClient := containerMock{downloadImageErr: "download error"}
+		dClient := mock.DownloadMock{ReturnError: "download error"}
 		files := mock.FilesMock{}
 		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
 		assert.EqualError(t, err, "failed to download docker image: download error")
-	})
-
-	t.Run("failure - tar image", func(t *testing.T) {
-		config := containerSaveImageOptions{}
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
-
-		dClient := containerMock{tarImageErr: "tar error"}
-		files := mock.FilesMock{}
-		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
-		assert.EqualError(t, err, "failed to tar container image: tar error")
 	})
 }
 
