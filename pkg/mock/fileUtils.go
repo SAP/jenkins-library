@@ -6,6 +6,7 @@ package mock
 import (
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -538,11 +539,15 @@ type FileMock struct {
 
 // Reads the content of the mock
 func (f *FileMock) Read(b []byte) (n int, err error) {
+	if len(b) == 0 {
+		return 0, nil
+	}
+
 	for i, p := range f.content {
 		b[i] = p
 	}
 
-	return len(f.content), nil
+	return len(f.content), io.EOF
 }
 
 // Close mocks freeing the associated OS resources.
@@ -609,4 +614,12 @@ func (f *FilesMock) OpenFile(path string, flag int, perm os.FileMode) (*FileMock
 	}
 
 	return &file, nil
+}
+
+func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
+	return f.OpenFile(name, os.O_RDONLY, 0)
+}
+
+func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
+	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 }

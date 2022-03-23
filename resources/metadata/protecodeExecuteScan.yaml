@@ -99,13 +99,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: includeLayers
-        type: bool
-        description: Flag if the docker layers should be included
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: timeoutMinutes
         aliases:
           - name: protecodeTimeoutMinutes
