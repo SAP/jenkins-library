@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/format"
@@ -147,6 +148,7 @@ func Parse(data []byte) (format.SARIF, error) {
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 	baseUrl := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "CxWebClient/ScanQueryDescription.aspx?"
+	cweIdsForTaxonomies := make(map[string]string) //use a map to avoid duplicates
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
@@ -156,7 +158,7 @@ func Parse(data []byte) (format.SARIF, error) {
 			result := *new(format.Results)
 
 			//General
-			result.RuleID = cxxml.Query[i].Result[j].NodeId
+			result.RuleID = cxxml.Query[i].Result[j].Path.ResultId + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathId)
 			result.RuleIndex = cxxml.Query[i].Result[j].Path.PathId
 			result.Level = "none"
 			msg := new(format.Message)
@@ -174,7 +176,7 @@ func Parse(data []byte) (format.SARIF, error) {
 				loc := *new(format.Location)
 				loc.PhysicalLocation.ArtifactLocation.URI = cxxml.Query[i].Result[j].FileName
 				loc.PhysicalLocation.Region.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				snip := *new(format.SnippetSarif)
+				snip := new(format.SnippetSarif)
 				snip.Text = cxxml.Query[i].Result[j].Path.PathNode[k].Snippet.Line.Code
 				loc.PhysicalLocation.Region.Snippet = snip
 				loc.PhysicalLocation.ContextRegion.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
@@ -195,11 +197,12 @@ func Parse(data []byte) (format.SARIF, error) {
 			}
 
 			//Properties
-			props := *new(format.SarifProperties)
+			props := new(format.SarifProperties)
 			props.Audited = false
 			if cxxml.Query[i].Result[j].Remark != "" {
 				props.Audited = true
 			}
+			props.CheckmarxSimilarityId = cxxml.Query[i].Result[j].Path.SimilarityId
 			props.ToolSeverity = cxxml.Query[i].Result[j].Severity
 			props.ToolSeverityIndex = cxxml.Query[i].Result[j].SeverityIndex
 			props.ToolStateIndex = cxxml.Query[i].Result[j].State
@@ -243,6 +246,9 @@ func Parse(data []byte) (format.SARIF, error) {
 		rule.Name = cxxml.Query[i].Name
 		rule.HelpURI = baseUrl + "queryID=" + cxxml.Query[i].Id + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
 		rulesArray = append(rulesArray, rule)
+
+		//add cweid to array
+		cweIdsForTaxonomies[cxxml.Query[i].CweId] = cxxml.Query[i].CweId
 	}
 
 	// Handle driver object
@@ -255,6 +261,19 @@ func Parse(data []byte) (format.SARIF, error) {
 
 	//handle automationDetails
 	sarif.Runs[0].AutomationDetails.Id = cxxml.DeepLink // Use deeplink to pass a maximum of information
+
+	//handle taxonomies
+	//Only one exists apparently: CWE. It is fixed
+	taxonomy := *new(format.Taxonomies)
+	taxonomy.Name = "CWE"
+	taxonomy.Organization = "MITRE"
+	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	for key := range cweIdsForTaxonomies {
+		taxa := *new(format.Taxa)
+		taxa.Id = key
+		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
+	}
+	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
 
 	return sarif, nil
 }
