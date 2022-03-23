@@ -177,10 +177,9 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			ContainerRegistryUser:     config.ContainerRegistryUser,
 			ContainerRegistryPassword: config.ContainerRegistryPassword,
 			DockerConfigJSON:          config.DockerConfigJSON,
-			IncludeLayers:             config.ScanImageIncludeLayers,
 			FilePath:                  config.ProjectName,
 		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: ""}
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
 		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {

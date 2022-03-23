@@ -13,7 +13,6 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -42,6 +41,7 @@ type Client struct {
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
 	trustedCerts              []string
+	fileUtils                 piperutils.FileUtils
 }
 
 // ClientOptions defines the options to be set on the client
@@ -110,6 +110,15 @@ type Uploader interface {
 	Upload(data UploadRequestData) (*http.Response, error)
 }
 
+// fileUtils lazy initializes the utils
+func (c *Client) getFileUtils() piperutils.FileUtils {
+	if c.fileUtils == nil {
+		c.fileUtils = &piperutils.Files{}
+	}
+
+	return c.fileUtils
+}
+
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies, uploadType)
@@ -117,7 +126,8 @@ func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header,
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
 func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
-	fileHandle, err := os.Open(file)
+	fileHandle, err := c.getFileUtils().Open(file)
+
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
 	}
@@ -245,6 +255,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 	}
 	c.cookieJar = options.CookieJar
 	c.trustedCerts = options.TrustedCerts
+	c.fileUtils = &piperutils.Files{}
+}
+
+// SetFileUtils can be used to overwrite the default file utils
+func (c *Client) SetFileUtils(fileUtils piperutils.FileUtils) {
+	c.fileUtils = fileUtils
 }
 
 // StandardClient returns a stdlib *http.Client which respects the custom settings.
@@ -500,7 +516,6 @@ func (c *Client) applyDefaults() {
 func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) error {
 
 	trustStoreDir, err := getWorkingDirForTrustStore()
-	fileUtils := &piperutils.Files{}
 	if err != nil {
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
@@ -539,7 +554,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		filename := path.Base(certificate)
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
-		if exists, _ := fileUtils.FileExists(target); !exists {
+		if exists, _ := c.getFileUtils().FileExists(target); !exists {
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			request, err := http.NewRequest("GET", certificate, nil)
 			if err != nil {
@@ -561,11 +576,11 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				defer response.Body.Close()
 				parent := filepath.Dir(target)
 				if len(parent) > 0 {
-					if err = os.MkdirAll(parent, 0777); err != nil {
+					if err = c.getFileUtils().MkdirAll(parent, 0777); err != nil {
 						return err
 					}
 				}
-				fileHandler, err := os.Create(target)
+				fileHandler, err := c.getFileUtils().Create(target)
 				if err != nil {
 					return errors.Wrapf(err, "unable to create file %v", filename)
 				}
