@@ -64,7 +64,7 @@ rootProject {
 }
 `
 
-const initScriptContent = `
+const bomInitScriptContent = `
 initscript {
   repositories {
     mavenCentral()
@@ -235,7 +235,7 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 			return fmt.Errorf("BOM creation failed: %v", err)
 		}
 	} else {
-		err := utils.FileWrite(filepath.Join(options.BuildGradlePath, createBOMScriptName), []byte(initScriptContent), 0644)
+		err := utils.FileWrite(filepath.Join(options.BuildGradlePath, createBOMScriptName), []byte(bomInitScriptContent), 0644)
 		if err != nil {
 			return fmt.Errorf("failed create init script: %v", err)
 		}
