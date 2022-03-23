@@ -2,9 +2,9 @@
 
 ## ${docGenDescription}
 
-With this step you can adds a new entity to the API Providers. An API provider is a concept in SAP Integration Suite, API Management which defines the connection details for services running on specific hosts whose details you want to access. 
+With this step you can adds a new entity to the API Providers.An API provider is a concept in SAP Integration Suite, API Management which defines the connection details for services running on specific hosts whose details you want to access.
 
-You use an API provider to define not only the details of the host you want an application to reach, but also to define any further details that are necessary to establish the connection, for example, proxy settings. for more details you can refer the blog [API Providers](https://blogs.sap.com/2017/07/27/blog-series-api-providers/)
+You use an API provider to define not only the details of the host you want an application to reach, but also to define any further details that are necessary to establish the connection, for example, proxy settings.for more details you can refer the blog [API Providers](https://blogs.sap.com/2017/07/27/blog-series-api-providers/)
 
 To consume the ApiProviderUpload step, proceed as follows:
 
