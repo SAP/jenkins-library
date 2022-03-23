@@ -57,7 +57,7 @@ type Event struct {
 	Region         string                 `json:"region,omitempty"`
 	RegionType     string                 `json:"regionType,omitempty"`
 	Tags           map[string]interface{} `json:"tags,omitempty"`
-	Resource       struct {
+	Resource       *struct {
 		GlobalAccount    string                 `json:"globalAccount,omitempty"`
 		SubAccount       string                 `json:"subAccount,omitempty"`
 		ResourceGroup    string                 `json:"resourceGroup,omitempty"`

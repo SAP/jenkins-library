@@ -26,7 +26,7 @@ func TestANS_Send(t *testing.T) {
 	type request struct {
 		path       string
 		authHeader string
-		event      Event
+		event      string
 	}
 	tests := []struct {
 		name        string
@@ -43,10 +43,7 @@ func TestANS_Send(t *testing.T) {
 			wantRequest: request{
 				path:       "/cf/producer/v1/resource-events",
 				authHeader: "bearer 1234",
-				event: Event{
-					EventType:      "my event",
-					EventTimestamp: 1647526655,
-				},
+				event:      `{"eventType":"my event","eventTimestamp":1647526655}`,
 			},
 		},
 		{
@@ -61,7 +58,7 @@ func TestANS_Send(t *testing.T) {
 			var requestedMethod string
 			var requestedAuthHeader string
 			var requestedContentTypeHeader string
-			var requestedEvent Event
+			var requestedBody string
 			// Start a local HTTP server
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				requestedUrlPath = req.URL.String()
@@ -73,10 +70,9 @@ func TestANS_Send(t *testing.T) {
 				}
 				requestedAuthHeader = req.Header.Get(authHeaderKey)
 				requestedContentTypeHeader = req.Header.Get("Content-Type")
-				requestedBody, err := ioutil.ReadAll(req.Body)
+				requestedBodyBytes, err := ioutil.ReadAll(req.Body)
 				require.NoError(t, err)
-				requestedEvent, err = UnmarshallEventJSON(string(requestedBody))
-				require.NoError(t, err)
+				requestedBody = string(requestedBodyBytes)
 			}))
 			ans := ANS{
 				XSUAA: testXSUAA,
@@ -91,7 +87,7 @@ func TestANS_Send(t *testing.T) {
 				assert.Equal(t, http.MethodPost, requestedMethod, "Mismatch in requested method")
 				assert.Equal(t, tt.wantRequest.authHeader, requestedAuthHeader, "Mismatch in requested auth header")
 				assert.Equal(t, "application/json", requestedContentTypeHeader, "Mismatch in requested content type header")
-				assert.Equal(t, tt.wantRequest.event, requestedEvent, "Mismatch in requested body")
+				assert.Equal(t, tt.wantRequest.event, requestedBody, "Mismatch in requested body")
 			}
 		})
 	}
