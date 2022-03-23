@@ -662,6 +662,16 @@ func TestRunGitopsUpdateDeploymentWithKustomize(t *testing.T) {
 		assert.Equal(t, "image", runnerMock.params[6])
 		assert.Equal(t, "myFancyDeployment=myregistry.com/containers/myFancyContainer:1337", runnerMock.params[7])
 	})
+	t.Run("with forcePush", func(t *testing.T) {
+		t.Parallel()
+		runner := &gitOpsExecRunnerMock{}
+		validConfiguration.ForcePush = true
+		gitUtilsMock := &gitUtilsMock{forcePush: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, runner, gitUtilsMock, &filesMock{})
+		assert.NoError(t, err)
+		assert.Equal(t, "This is the commit message", gitUtilsMock.commitMessage)
+	})
 
 	t.Run("error on kustomize execution", func(t *testing.T) {
 		t.Parallel()
@@ -802,6 +812,7 @@ type gitUtilsMock struct {
 	failOnCommit       bool
 	failOnPush         bool
 	skipClone          bool
+	forcePush          bool
 }
 
 func (gitUtilsMock) GetWorktree() (*git.Worktree, error) {
@@ -834,9 +845,12 @@ func (v *gitUtilsMock) CommitFiles(newFiles []string, commitMessage string, _ st
 	return [20]byte{123}, nil
 }
 
-func (v gitUtilsMock) PushChangesToRepository(string, string, *bool) error {
+func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool) error {
 	if v.failOnPush {
 		return errors.New("error on push")
+	}
+	if v.forcePush && !*force {
+		return errors.New("expected forcePush but not defined")
 	}
 	return nil
 }
