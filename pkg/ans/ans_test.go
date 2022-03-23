@@ -189,10 +189,11 @@ func TestTranslateLogrusLogLevel(t *testing.T) {
 
 func TestUnmarshallEventJSON(t *testing.T) {
 	tests := []struct {
-		name      string
-		eventJSON string
-		wantEvent Event
-		wantErr   bool
+		name          string
+		eventJSON     string
+		existingEvent Event
+		wantEvent     Event
+		wantErr       bool
 	}{
 		{
 			name:      "Proper event JSON yields correct event",
@@ -204,6 +205,31 @@ func TestUnmarshallEventJSON(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:      "Merging events includes all parts",
+			eventJSON: `{"eventType": "my event", "eventTimestamp": 1647526655, "tags": {"we": "were", "here": "first"}, "resource": {"resourceGroup": "blarp", "resourceName": "was changed"}}`,
+			existingEvent: Event{
+				EventType: "Bleep",
+				Subject:   "Bloop",
+				Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
+				Resource: &Resource{
+					ResourceType: "blurp",
+					ResourceName: "blorp",
+				},
+			},
+			wantEvent: Event{
+				EventType:      "my event",
+				EventTimestamp: 1647526655,
+				Subject:        "Bloop",
+				Tags:           map[string]interface{}{"we": "were", "here": "first", "Some": 1.0, "Additional": "a string", "Tags": true},
+				Resource: &Resource{
+					ResourceType:  "blurp",
+					ResourceName:  "was changed",
+					ResourceGroup: "blarp",
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:      "Faulty JSON yields error",
 			eventJSON: `bli-da-blup`,
 			wantErr:   true,
@@ -211,9 +237,10 @@ func TestUnmarshallEventJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotEvent, err := UnmarshallEventJSON(tt.eventJSON)
+			gotEvent := tt.existingEvent
+			err := gotEvent.MergeWithJSON([]byte(tt.eventJSON))
 			if (err != nil) != tt.wantErr {
-				t.Errorf("UnmarshallEventJSON() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MergeWithJSON() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			assert.Equal(t, tt.wantEvent, gotEvent, "Received Event is not as expected.")

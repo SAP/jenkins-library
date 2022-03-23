@@ -81,9 +81,9 @@ func UnmarshallServiceKeyJSON(serviceKeyJSON string) (ansServiceKey ServiceKey, 
 	return
 }
 
-// UnmarshallEventJSON unmarshalls an ANS Event JSON string
-func UnmarshallEventJSON(eventJSON string) (event Event, err error) {
-	err = json.Unmarshal([]byte(eventJSON), &event)
+// MergeWithJSON unmarshalls an ANS Event JSON string and merges it with the existing receiver Event
+func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
+	err = json.Unmarshal(eventJSON, &event)
 	if err != nil {
 		err = errors.Wrapf(err, "error unmarshalling ANS event from JSON string %q", eventJSON)
 		return
