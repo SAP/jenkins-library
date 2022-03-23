@@ -1,13 +1,17 @@
 package log
 
 import (
+	"encoding/json"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
+
+const testCorrelationID = "1234"
 
 func TestANSHook_Levels(t *testing.T) {
 	hook := NewANSHook("", "", "")
@@ -44,36 +48,36 @@ func TestNewANSHook(t *testing.T) {
 			name: "Straight forward test",
 			args: args{
 				serviceKey:    testServiceKeyJSON,
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 			},
 			want: ANSHook{
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 				client:        testClient,
+				event:         defaultEvent(),
 			},
 		},
 		{
 			name: "No service key = no client",
 			args: args{
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 			},
 			want: ANSHook{
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 				client:        ans.ANS{},
+				event:         defaultEvent(),
 			},
 		},
 		{
 			name: "With event template",
 			args: args{
 				serviceKey:    testServiceKeyJSON,
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 				eventTemplate: `{"priority":123}`,
 			},
 			want: ANSHook{
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 				client:        testClient,
-				event: ans.Event{
-					Priority: 123,
-				},
+				event:         mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
 			},
 		},
 	}
@@ -102,8 +106,9 @@ func TestANSHook_Fire(t *testing.T) {
 		{
 			name: "Straight forward test",
 			fields: fields{
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 				client:        testClient,
+				event:         defaultEvent(),
 			},
 			entryArg: &logrus.Entry{
 				Level:   logrus.InfoLevel,
@@ -118,19 +123,23 @@ func TestANSHook_Fire(t *testing.T) {
 				Category:       "NOTIFICATION",
 				Subject:        "testStep",
 				Body:           "my log message",
-				Tags:           map[string]interface{}{"ans:correlationId": "1234", "stepName": "testStep", "logLevel": "info"},
+				Resource: &ans.Resource{
+					ResourceType: "Piper",
+					ResourceName: "Pipeline",
+				},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "stepName": "testStep", "logLevel": "info"},
 			},
 		},
 		{
 			name: "Event already set",
 			fields: fields{
-				correlationID: "1234",
+				correlationID: testCorrelationID,
 				client:        testClient,
-				event: ans.Event{
+				event: mergeEvents(t, defaultEvent(), ans.Event{
 					EventType: "My event type",
 					Subject:   "My subject line",
-					Tags:      map[string]interface{}{"Some": 1, "Additional": "a string", "Tags": true},
-				},
+					Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
+				}),
 			},
 			entryArg: &logrus.Entry{
 				Level:   logrus.InfoLevel,
@@ -145,7 +154,11 @@ func TestANSHook_Fire(t *testing.T) {
 				Category:       "NOTIFICATION",
 				Subject:        "My subject line",
 				Body:           "my log message",
-				Tags:           map[string]interface{}{"ans:correlationId": "1234", "stepName": "testStep", "logLevel": "info", "Some": 1, "Additional": "a string", "Tags": true},
+				Resource: &ans.Resource{
+					ResourceType: "Piper",
+					ResourceName: "Pipeline",
+				},
+				Tags: map[string]interface{}{"ans:correlationId": testCorrelationID, "stepName": "testStep", "logLevel": "info", "Some": 1.0, "Additional": "a string", "Tags": true},
 			},
 		},
 	}
@@ -156,11 +169,30 @@ func TestANSHook_Fire(t *testing.T) {
 				client:        tt.fields.client,
 				event:         tt.fields.event,
 			}
-			defer func() {testEvent = ans.Event{}}()
+			defer func() { testEvent = ans.Event{} }()
 			ansHook.Fire(tt.entryArg)
 			assert.Equal(t, tt.wantEvent, testEvent, "Event is not as expected.")
 		})
 	}
+}
+
+func defaultEvent() ans.Event {
+	return ans.Event{
+		EventType: "Piper",
+		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID},
+		Resource: &ans.Resource{
+			ResourceType: "Piper",
+			ResourceName: "Pipeline",
+		},
+	}
+}
+
+func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
+	event2JSON, err := json.Marshal(event2)
+	require.NoError(t, err)
+	err = event1.MergeWithJSON(event2JSON)
+	require.NoError(t, err)
+	return event1
 }
 
 type ansMock struct{}

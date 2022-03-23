@@ -20,9 +20,16 @@ func NewANSHook(serviceKey, correlationID, eventTemplate string) ANSHook {
 	if err != nil {
 		Entry().Warnf("cannot initialize ans due to faulty serviceKey json: %v", err)
 	}
-	var event ans.Event
+	event := ans.Event{
+		EventType: "Piper",
+		Tags:      map[string]interface{}{"ans:correlationId": correlationID},
+		Resource: &ans.Resource{
+			ResourceType: "Piper",
+			ResourceName: "Pipeline",
+		},
+	}
 	if len(eventTemplate) > 0 {
-		event, err = ans.UnmarshallEventJSON(eventTemplate)
+		err = event.MergeWithJSON([]byte(eventTemplate))
 		if err != nil {
 			Entry().Warnf("provided ANS event template could not be unmarshalled: %v", err)
 		}
@@ -47,20 +54,13 @@ func (ansHook *ANSHook) Levels() []logrus.Level {
 
 // Fire creates a new event from the logrus and sends an event to the ANS backend
 func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
-	if len(ansHook.event.EventType) == 0 {
-		ansHook.event.EventType = "Piper"
-	}
 	ansHook.event.EventTimestamp = entry.Time.Unix()
 	ansHook.event.Severity, ansHook.event.Category = ans.TranslateLogrusLogLevel(entry.Level)
 	if ansHook.event.Subject == "" {
 		ansHook.event.Subject = fmt.Sprint(entry.Data["stepName"])
 	}
 	ansHook.event.Body = entry.Message
-	if len(ansHook.event.Tags) == 0 {
-		ansHook.event.Tags = make(map[string]interface{})
-	}
 	ansHook.event.Tags["logLevel"] = entry.Level.String()
-	ansHook.event.Tags["ans:correlationId"] = ansHook.correlationID
 	for k, v := range entry.Data {
 		ansHook.event.Tags[k] = v
 	}
