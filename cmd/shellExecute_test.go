@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -14,6 +15,11 @@ type shellExecuteMockUtils struct {
 	config *shellExecuteOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*mock.HttpClientMock
+	downloadError error
+	filename      string
+	header        http.Header
+	url           string
 }
 
 type shellExecuteFileMock struct {
@@ -33,12 +39,22 @@ func (f *shellExecuteFileMock) FileExists(path string) (bool, error) {
 	return strings.EqualFold(path, "path/to/script/script.sh"), nil
 }
 
-func newShellExecuteTestsUtils() shellExecuteMockUtils {
+func (f *shellExecuteMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if f.downloadError != nil {
+		return f.downloadError
+	}
+	f.url = url
+	f.filename = filename
+	f.header = header
+	return nil
+}
+
+func newShellExecuteTestsUtils() *shellExecuteMockUtils {
 	utils := shellExecuteMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utils
+	return &utils
 }
 
 func (v *shellExecuteMockUtils) GetConfig() *shellExecuteOptions {
