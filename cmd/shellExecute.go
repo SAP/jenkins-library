@@ -106,8 +106,7 @@ func downloadScripts(config *shellExecuteOptions, utils shellExecuteUtils) error
 			return errors.Wrapf(err, "unable to download script from %v", scriptLocation)
 		}
 		log.Entry().Infof("downloaded script %v successfully", scriptLocation)
-		config.Sources = append(config.Sources, fileName)
+		config.Sources = append(config.Sources, "./"+fileName)
 	}
-	log.Entry().Infof("config sources are %v", config.Sources)
 	return nil
 }
