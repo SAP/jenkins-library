@@ -4,6 +4,10 @@ metadata:
   longDescription: Step executes defined script with using test Vault credentials
 spec:
   inputs:
+    secrets:
+      - name: githubTokenCredentialsId
+        description: Jenkins credentials ID containing the github token.
+        type: jenkins
     params:
       - name: sources
         type: "[]string"
@@ -12,6 +16,32 @@ spec:
           - STAGES
           - STEPS
         description: Scripts names for execution or links to scripts
+      - name: scriptLocations
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        description: "List of http(s) url(s) which point to the scripts that will be downloaded and appended to the sources param for a final list of a scripts to be executed. 
+          Authentication for the download is only supported via the githubToken param"
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
   containers:
     - name: shell
       image: node:lts-stretch
