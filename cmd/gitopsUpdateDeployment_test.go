@@ -611,7 +611,7 @@ func TestRunGitopsUpdateDeploymentWithKustomize(t *testing.T) {
 		Password:              "validAccessToken",
 		FilePath:              "kustomization.yaml",
 		ContainerRegistryURL:  "https://myregistry.com",
-		ContainerImageNameTag: "registry/containers/myFancyContainer:1337",
+		ContainerImageNameTag: "containers/myFancyContainer:1337",
 		Tool:                  "kustomize",
 		DeploymentName:        "myFancyDeployment",
 	}
@@ -634,7 +634,7 @@ func TestRunGitopsUpdateDeploymentWithKustomize(t *testing.T) {
 		assert.Equal(t, "edit", runnerMock.params[0])
 		assert.Equal(t, "set", runnerMock.params[1])
 		assert.Equal(t, "image", runnerMock.params[2])
-		assert.Equal(t, "myFancyDeployment=registry/containers/myFancyContainer:1337", runnerMock.params[3])
+		assert.Equal(t, "myFancyDeployment=myregistry.com/containers/myFancyContainer:1337", runnerMock.params[3])
 	})
 	t.Run("successful run with glob", func(t *testing.T) {
 		t.Parallel()
@@ -656,11 +656,11 @@ func TestRunGitopsUpdateDeploymentWithKustomize(t *testing.T) {
 		assert.Equal(t, "edit", runnerMock.params[0])
 		assert.Equal(t, "set", runnerMock.params[1])
 		assert.Equal(t, "image", runnerMock.params[2])
-		assert.Equal(t, "myFancyDeployment=registry/containers/myFancyContainer:1337", runnerMock.params[3])
+		assert.Equal(t, "myFancyDeployment=myregistry.com/containers/myFancyContainer:1337", runnerMock.params[3])
 		assert.Equal(t, "edit", runnerMock.params[4])
 		assert.Equal(t, "set", runnerMock.params[5])
 		assert.Equal(t, "image", runnerMock.params[6])
-		assert.Equal(t, "myFancyDeployment=registry/containers/myFancyContainer:1337", runnerMock.params[7])
+		assert.Equal(t, "myFancyDeployment=myregistry.com/containers/myFancyContainer:1337", runnerMock.params[7])
 	})
 
 	t.Run("error on kustomize execution", func(t *testing.T) {
@@ -834,7 +834,7 @@ func (v *gitUtilsMock) CommitFiles(newFiles []string, commitMessage string, _ st
 	return [20]byte{123}, nil
 }
 
-func (v gitUtilsMock) PushChangesToRepository(string, string) error {
+func (v gitUtilsMock) PushChangesToRepository(string, string, *bool) error {
 	if v.failOnPush {
 		return errors.New("error on push")
 	}
