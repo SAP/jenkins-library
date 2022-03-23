@@ -98,13 +98,16 @@ func downloadScripts(config *shellExecuteOptions, utils shellExecuteUtils) error
 		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
 	}
 	for _, scriptLocation := range config.ScriptLocations {
+		log.Entry().Infof("downloading script : %v", scriptLocation)
 		fileNameParts := strings.Split(scriptLocation, "/")
 		fileName := fileNameParts[len(fileNameParts)-1]
 		err := utils.DownloadFile(scriptLocation, fileName, header, []*http.Cookie{})
 		if err != nil {
 			return errors.Wrapf(err, "unable to download script from %v", scriptLocation)
 		}
+		log.Entry().Infof("downloaded script %v successfully", scriptLocation)
 		config.Sources = append(config.Sources, fileName)
 	}
+	log.Entry().Infof("config sources are %v", config.Sources)
 	return nil
 }
