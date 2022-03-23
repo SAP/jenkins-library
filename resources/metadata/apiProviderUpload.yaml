@@ -25,7 +25,7 @@ spec:
             param: apiServiceKey
       - name: filePath
         type: string
-        description: Specifies api provider json relative file path
+        description: Specifies api provider json file relative path
         scope:
           - PARAMETERS
           - STAGES

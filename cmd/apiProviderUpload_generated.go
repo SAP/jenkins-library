@@ -112,7 +112,7 @@ Learn more about the SAP API Management API for creating an API provider artifac
 
 func addApiProviderUploadFlags(cmd *cobra.Command, stepConfig *apiProviderUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies api provider json relative file path")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies api provider json file relative path")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("filePath")
