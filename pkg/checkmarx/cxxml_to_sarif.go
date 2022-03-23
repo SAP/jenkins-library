@@ -148,18 +148,22 @@ func Parse(data []byte) (format.SARIF, error) {
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 	baseUrl := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "CxWebClient/ScanQueryDescription.aspx?"
-	cweIdsForTaxonomies := make(map[string]string) //use a map to avoid duplicates
+	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
+	cweCounter := 0
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
 	for i := 0; i < len(cxxml.Query); i++ {
+		//add cweid to array
+		cweIdsForTaxonomies[cxxml.Query[i].CweId] = cweCounter
+		cweCounter = cweCounter + 1
 		for j := 0; j < len(cxxml.Query[i].Result); j++ {
 			result := *new(format.Results)
 
 			//General
-			result.RuleID = cxxml.Query[i].Result[j].Path.ResultId + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathId)
-			result.RuleIndex = cxxml.Query[i].Result[j].Path.PathId
+			result.RuleID = cxxml.Query[i].Id
+			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweId]
 			result.Level = "none"
 			msg := new(format.Message)
 			msg.Text = cxxml.Query[i].Categories
@@ -203,6 +207,7 @@ func Parse(data []byte) (format.SARIF, error) {
 				props.Audited = true
 			}
 			props.CheckmarxSimilarityId = cxxml.Query[i].Result[j].Path.SimilarityId
+			props.InstanceID = cxxml.Query[i].Result[j].Path.ResultId + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathId)
 			props.ToolSeverity = cxxml.Query[i].Result[j].Severity
 			props.ToolSeverityIndex = cxxml.Query[i].Result[j].SeverityIndex
 			props.ToolStateIndex = cxxml.Query[i].Result[j].State
@@ -246,9 +251,6 @@ func Parse(data []byte) (format.SARIF, error) {
 		rule.Name = cxxml.Query[i].Name
 		rule.HelpURI = baseUrl + "queryID=" + cxxml.Query[i].Id + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
 		rulesArray = append(rulesArray, rule)
-
-		//add cweid to array
-		cweIdsForTaxonomies[cxxml.Query[i].CweId] = cxxml.Query[i].CweId
 	}
 
 	// Handle driver object
