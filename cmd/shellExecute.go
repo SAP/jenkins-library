@@ -99,6 +99,7 @@ func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url st
 	header := http.Header{}
 	if len(config.GithubToken) > 0 {
 		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
+		header.Set("Accept", "application/vnd.github.v3.raw")
 	}
 
 	log.Entry().Infof("downloading script : %v", url)
@@ -109,10 +110,10 @@ func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url st
 		return "", errors.Wrapf(err, "unable to download script from %v", url)
 	}
 	log.Entry().Infof("downloaded script %v successfully", url)
-	err = utils.Chmod(fileName, 0777)
-	if err != nil {
-		return "", fmt.Errorf("unable to change file permission for script '%v'", fileName)
-	}
+	// err = utils.Chmod(fileName, 0700)
+	// if err != nil {
+	// 	return "", fmt.Errorf("unable to change file permission for script '%v'", fileName)
+	// }
 
 	return "./" + fileName, nil
 }
