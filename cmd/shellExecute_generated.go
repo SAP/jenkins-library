@@ -110,7 +110,7 @@ func ShellExecuteCommand() *cobra.Command {
 }
 
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution which must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the githubToken param\"")
+	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts paths that must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the githubToken param\"")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 
 }

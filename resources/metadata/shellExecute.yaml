@@ -15,7 +15,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        description: Scripts names for execution which must be present in the current workspace or https links to scripts.
+        description: Scripts paths that must be present in the current workspace or https links to scripts.
             Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script}
             Authentication for the download is only supported via the githubToken param"
       - name: githubToken
