@@ -17,7 +17,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
-	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var wsRun format.Runs
 	sarif.Runs = append(sarif.Runs, wsRun)
@@ -37,15 +37,19 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			id := v.Title()
 			log.Entry().Debugf("Transforming alert %v into SARIF format", id)
 			result.RuleID = id
-			result.Level = v.VulnerabilityWithRemediation.Severity
+			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 			result.RuleIndex = i //Seems very abstract
 			result.Message = new(format.Message)
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
 			result.AnalysisTarget = new(format.ArtifactLocation)
 			result.AnalysisTarget.URI = v.Name
 			result.AnalysisTarget.Index = 0
-			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}}
+			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
+			//TODO add audit and tool related information, maybe fortifyCategory needs to become more general
+			//result.Properties = new(format.SarifProperties)
+			//result.Properties.ToolSeverity
+			//result.Properties.ToolAuditMessage
 
 			sarifRule := *new(format.SarifRule)
 			sarifRule.ID = id
@@ -54,20 +58,12 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			sarifRule.FullDescription = new(format.Message)
 			sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
 			sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
-			sarifRule.DefaultConfiguration.Level = v.Severity
+			sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 			sarifRule.HelpURI = ""
 			markdown, _ := v.ToMarkdown()
 			sarifRule.Help = new(format.Help)
 			sarifRule.Help.Text = v.ToTxt()
 			sarifRule.Help.Markdown = string(markdown)
-
-			// Avoid empty descriptions to respect standard
-			if sarifRule.ShortDescription.Text == "" {
-				sarifRule.ShortDescription.Text = "None."
-			}
-			if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-				sarifRule.FullDescription.Text = "None."
-			}
 
 			ruleProp := *new(format.SarifRuleProperties)
 			ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
@@ -85,6 +81,20 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	sarif.Runs[0].Tool = tool
 
 	return &sarif
+}
+
+func transformToLevel(severity string) string {
+	switch severity {
+	case "LOW":
+		return "warning"
+	case "MEDIUM":
+		return "warning"
+	case "HIGH":
+		return "error"
+	case "CRITICAL":
+		return "error"
+	}
+	return "none"
 }
 
 // WriteVulnerabilityReports writes vulnerability information from ScanReport into dedicated outputs e.g. HTML
