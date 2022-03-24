@@ -75,11 +75,13 @@ func TestRunPythonBuild(t *testing.T) {
 		err := runPythonBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[0].Params)
-		assert.Equal(t, "twine", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "twine", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
 			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
-			"dist/*"}, utils.ExecMockRunner.Calls[1].Params)
+			"dist/*"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - create BOM", func(t *testing.T) {
@@ -92,9 +94,11 @@ func TestRunPythonBuild(t *testing.T) {
 		err := runPythonBuild(&config, &telemetryData, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[0].Params)
-		assert.Equal(t, "cyclonedx-bom", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "cyclonedx-bom", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
