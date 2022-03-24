@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -29,25 +28,7 @@ import (
 )
 
 type detectUtils interface {
-	Abs(path string) (string, error)
-	FileExists(filename string) (bool, error)
-	FileRemove(filename string) error
-	Copy(src, dest string) (int64, error)
-	Move(src, dest string) error
-	DirExists(dest string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	MkdirAll(path string, perm os.FileMode) error
-	Chmod(path string, mode os.FileMode) error
-	Glob(pattern string) (matches []string, err error)
-	Chdir(path string) error
-	TempDir(string, string) (string, error)
-	RemoveAll(string) error
-	FileRename(string, string) error
-	Getwd() (string, error)
-	Symlink(oldname string, newname string) error
-	SHA256(path string) (string, error)
-	CurrentTime(format string) string
+	piperutils.FileUtils
 
 	GetExitCode() int
 	GetOsEnv() []string
