@@ -43,7 +43,7 @@ rootProject {
 				groupId = '{{.ArtifactGroupID}}'
 				{{- end }}
 				{{- if .ArtifactID}}
-				groupId = '{{.ArtifactID}}'
+				artifactId = '{{.ArtifactID}}'
 				{{- end }}
 				{{- if .ArtifactVersion}}
 				version = '{{.ArtifactVersion}}'
