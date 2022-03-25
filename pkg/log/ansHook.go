@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
@@ -56,26 +57,40 @@ func (ansHook *ANSHook) Levels() []logrus.Level {
 // Fire creates a new event from the logrus and sends an event to the ANS backend
 func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	logLevel := entry.Level
-	ansHook.event.EventTimestamp = entry.Time.Unix()
-	if ansHook.event.Subject == "" {
-		ansHook.event.Subject = fmt.Sprint(entry.Data["stepName"])
+	event, err := copyEvent(ansHook.event)
+	if err != nil {
+		return err
+	}
+
+	event.EventTimestamp = entry.Time.Unix()
+	if event.Subject == "" {
+		event.Subject = fmt.Sprint(entry.Data["stepName"])
 	}
 	if strings.HasPrefix(entry.Message, "fatal error") {
 		logLevel = logrus.FatalLevel
 	}
-	ansHook.event.Body = entry.Message
+	event.Body = entry.Message
 	for k, v := range entry.Data {
 		if k == "error" {
 			logLevel = logrus.ErrorLevel
 		}
-		ansHook.event.Tags[k] = v
+		event.Tags[k] = v
 	}
-	ansHook.event.Severity, ansHook.event.Category = ans.TranslateLogrusLogLevel(logLevel)
-	ansHook.event.Tags["logLevel"] = logLevel.String()
+	event.Severity, event.Category = ans.TranslateLogrusLogLevel(logLevel)
+	event.Tags["logLevel"] = logLevel.String()
 
-	err := ansHook.client.Send(ansHook.event)
+	err = ansHook.client.Send(event)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func copyEvent(source ans.Event) (destination ans.Event, err error) {
+	sourceJSON, err := json.Marshal(source)
+	if err != nil {
+		return
+	}
+	err = destination.MergeWithJSON(sourceJSON)
+	return
 }
