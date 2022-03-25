@@ -32,7 +32,7 @@ gctsExecuteABAPUnitTests(
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
   repository: 'myrepo',
   scope: 'remoteChangedObjects',
-  commit: "${GIT_COMMIT}",
+  commit: "${env.GIT_COMMIT}",
   workspace: "${WORKSPACE}"
 
   )
@@ -93,7 +93,7 @@ stage('ABAP Unit Tests') {
      try{
            gctsExecuteABAPUnitTests(
               script: this,
-              commit: "${GIT_COMMIT}",
+              commit: "${env.GIT_COMMIT}",
               workspace: "${WORKSPACE}")
         }
           catch (Exception ex) {

@@ -28,7 +28,7 @@ gctsExecuteABAPQualityChecks(
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
   repository: 'myrepo',
   scope: 'remoteChangedObjects',
-  commit: "${GIT_COMMIT}",
+  commit: "${env.GIT_COMMIT}",
   workspace: "${WORKSPACE}"
 
   )
@@ -89,7 +89,7 @@ stage('ABAP Unit Tests') {
      try{
            gctsExecuteABAPQualityChecks(
               script: this,
-              commit: "${GIT_COMMIT}",
+              commit: "${env.GIT_COMMIT}",
               workspace: "${WORKSPACE}")
         }
           catch (Exception ex) {
