@@ -37,23 +37,22 @@ func (a *AzureDevOpsConfigProvider) getAPIInformation() {
 		log.Entry().Debugf("API URL: %s", URL)
 		response, err := a.client.GetRequest(URL, nil, nil)
 		if err != nil {
-			log.Entry().Error("failed to get http response, returning empty API information", err)
+			log.Entry().Error("failed to get HTTP response, returning empty API information", err)
 			a.apiInformation = map[string]interface{}{}
 			return
-		}
-
-		if response.StatusCode != 200 { //http.StatusNoContent
-			log.Entry().Errorf("Response-Code is %v . \n Could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
+		} else if response.StatusCode != 200 { //http.StatusNoContent
+			log.Entry().Errorf("response code is %v, could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
 			a.apiInformation = map[string]interface{}{}
 			return
 		}
 
 		err = piperHttp.ParseHTTPResponseBodyJSON(response, &a.apiInformation)
 		if err != nil {
-			log.Entry().Error("failed to parse http response, returning with empty interface", err)
+			log.Entry().Error("failed to parse HTTP response, returning with empty interface", err)
 			a.apiInformation = map[string]interface{}{}
 			return
 		}
+		log.Entry().Debugf("successfully retrieved apiInformation")
 	} else {
 		log.Entry().Debugf("apiInformation already set")
 	}
@@ -186,11 +185,11 @@ func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(tmp, "refs/heads/")
 }
 
-func (a *AzureDevOpsConfigProvider) GetBuildUrl() string {
+func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + a.getAzureBuildID()
 }
 
-func (a *AzureDevOpsConfigProvider) GetJobUrl() string {
+func (a *AzureDevOpsConfigProvider) GetJobURL() string {
 	// TODO: Check if thi is the correct URL
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT")
 }
@@ -199,8 +198,14 @@ func (a *AzureDevOpsConfigProvider) GetCommit() string {
 	return getEnv("BUILD_SOURCEVERSION", "n/a")
 }
 
-func (a *AzureDevOpsConfigProvider) GetRepoUrl() string {
+func (a *AzureDevOpsConfigProvider) GetRepoURL() string {
 	return getEnv("BUILD_REPOSITORY_URI", "n/a")
+}
+
+// GetBuildReason returns the build reason
+func (a *AzureDevOpsConfigProvider) GetBuildReason() string {
+	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
+	return getEnv("BUILD_REASON", "n/a")
 }
 
 func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {

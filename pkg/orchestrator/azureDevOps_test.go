@@ -1,7 +1,10 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/jarcoal/httpmock"
+	"github.com/pkg/errors"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -10,6 +13,7 @@ import (
 )
 
 func TestAzure(t *testing.T) {
+	t.Parallel()
 	t.Run("Azure - BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
@@ -25,9 +29,9 @@ func TestAzure(t *testing.T) {
 
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "feat/test-azure", p.GetBranch())
-		assert.Equal(t, "https://pogo.foobar/_build/results?buildId=42", p.GetBuildUrl())
+		assert.Equal(t, "https://pogo.foobar/_build/results?buildId=42", p.GetBuildURL())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
-		assert.Equal(t, "github.com/foo/bar", p.GetRepoUrl())
+		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
 		assert.Equal(t, "Azure", p.OrchestratorType())
 	})
 
@@ -100,61 +104,38 @@ func TestAzure(t *testing.T) {
 }
 
 func TestAzureDevOpsConfigProvider_GetPipelineStartTime(t *testing.T) {
-	type fields struct {
-		client  http.Client
-		options http.ClientOptions
-	}
+	t.Parallel()
 
 	tests := []struct {
 		name           string
-		fields         fields
 		apiInformation map[string]interface{}
 		want           time.Time
 	}{
 		{
-			name: "Retrieve correct time",
-			fields: fields{
-				client:  http.Client{},
-				options: http.ClientOptions{},
-			},
+			name:           "Retrieve correct time",
 			apiInformation: map[string]interface{}{"startTime": "2022-03-18T12:30:42.0Z"},
 			want:           time.Date(2022, time.March, 18, 12, 30, 42, 0, time.UTC),
 		},
 		{
-			name: "Empty apiInformation",
-			fields: fields{
-				client:  http.Client{},
-				options: http.ClientOptions{},
-			},
+			name:           "Empty apiInformation",
 			apiInformation: map[string]interface{}{},
 			want:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "apiInformation does not contain key",
-			fields: fields{
-				client:  http.Client{},
-				options: http.ClientOptions{},
-			},
-			apiInformation: map[string]interface{}{"Somekey": "somevalue"},
+			name:           "apiInformation does not contain key",
+			apiInformation: map[string]interface{}{"someKey": "someValue"},
 			want:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "apiInformation contains malformed date",
-			fields: fields{
-				client:  http.Client{},
-				options: http.ClientOptions{},
-			},
+			name:           "apiInformation contains malformed date",
 			apiInformation: map[string]interface{}{"startTime": "2022-03/18 12:30:42.0Z"},
 			want:           time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{
-				client:  tt.fields.client,
-				options: tt.fields.options,
-			}
-			apiInformation = tt.apiInformation
+			a := &AzureDevOpsConfigProvider{}
+			a.apiInformation = tt.apiInformation
 			pipelineStartTime := a.GetPipelineStartTime()
 			assert.Equalf(t, tt.want, pipelineStartTime, "GetPipelineStartTime()")
 		})
@@ -162,6 +143,7 @@ func TestAzureDevOpsConfigProvider_GetPipelineStartTime(t *testing.T) {
 }
 
 func TestAzureDevOpsConfigProvider_GetBuildStatus(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name   string
@@ -200,3 +182,93 @@ func TestAzureDevOpsConfigProvider_GetBuildStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestAzureDevOpsConfigProvider_getAPIInformation(t *testing.T) {
+	tests := []struct {
+		name                    string
+		wantHTTPErr             bool
+		wantHTTPStatusCodeError bool
+		wantHTTPJSONParseError  bool
+		apiInformation          map[string]interface{}
+		wantAPIInformation      map[string]interface{}
+	}{
+		{
+			name:               "success case",
+			apiInformation:     map[string]interface{}{},
+			wantAPIInformation: map[string]interface{}{"Success": "Case"},
+		},
+		{
+			name:               "apiInformation already set",
+			apiInformation:     map[string]interface{}{"API info": "set"},
+			wantAPIInformation: map[string]interface{}{"API info": "set"},
+		},
+		{
+			name:               "failed to get response",
+			apiInformation:     map[string]interface{}{},
+			wantHTTPErr:        true,
+			wantAPIInformation: map[string]interface{}{},
+		},
+		{
+			name:                    "response code != 200 http.StatusNoContent",
+			wantHTTPStatusCodeError: true,
+			apiInformation:          map[string]interface{}{},
+			wantAPIInformation:      map[string]interface{}{},
+		},
+		{
+			name:                   "parseResponseBodyJson fails",
+			wantHTTPJSONParseError: true,
+			apiInformation:         map[string]interface{}{},
+			wantAPIInformation:     map[string]interface{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &AzureDevOpsConfigProvider{
+				apiInformation: tt.apiInformation,
+			}
+
+			a.client.SetOptions(piperhttp.ClientOptions{
+				MaxRequestDuration:        5 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true, // need to use default transport for http mock
+				MaxRetries:                -1,
+			})
+
+			defer resetEnv(os.Environ())
+			os.Clearenv()
+			os.Setenv("SYSTEM_COLLECTIONURI", "https://dev.azure.com/fabrikamfiber/")
+			os.Setenv("SYSTEM_TEAMPROJECTID", "123a4567-ab1c-12a1-1234-123456ab7890")
+			os.Setenv("BUILD_BUILDID", "1234")
+
+			fakeUrl := "https://dev.azure.com/fabrikamfiber/123a4567-ab1c-12a1-1234-123456ab7890/_apis/build/builds/1234/"
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			httpmock.RegisterResponder("GET", fakeUrl,
+				func(req *http.Request) (*http.Response, error) {
+					if tt.wantHTTPErr {
+						return nil, errors.New("this error shows up")
+					}
+					if tt.wantHTTPStatusCodeError {
+						return &http.Response{
+							Status:     "204",
+							StatusCode: http.StatusNoContent,
+							Request:    req,
+						}, nil
+					}
+					if tt.wantHTTPJSONParseError {
+						// Intentionally malformed JSON response
+						return httpmock.NewJsonResponse(200, "timestamp:broken")
+					}
+					return httpmock.NewStringResponse(200, "{\"Success\":\"Case\"}"), nil
+				},
+			)
+
+			a.getAPIInformation()
+			assert.Equal(t, tt.wantAPIInformation, a.apiInformation)
+		})
+	}
+}
+
+// GET LOG MISSING
