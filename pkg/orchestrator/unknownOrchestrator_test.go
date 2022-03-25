@@ -16,10 +16,10 @@ func TestUnknownOrchestrator(t *testing.T) {
 		p, _ := NewOrchestratorSpecificConfigProvider()
 
 		assert.False(t, p.IsPullRequest())
-		assert.Equal(t, "n/a", p.GetBuildUrl())
+		assert.Equal(t, "n/a", p.GetBuildURL())
 		assert.Equal(t, "n/a", p.GetBranch())
 		assert.Equal(t, "n/a", p.GetCommit())
-		assert.Equal(t, "n/a", p.GetRepoUrl())
+		assert.Equal(t, "n/a", p.GetRepoURL())
 		assert.Equal(t, "Unknown", p.OrchestratorType())
 	})
 
@@ -48,8 +48,8 @@ func TestUnknownOrchestrator(t *testing.T) {
 		assert.Equal(t, "Unknown", p.OrchestratorType())
 		assert.Equal(t, time.Time{}.UTC(), p.GetPipelineStartTime())
 		assert.Equal(t, "FAILURE", p.GetBuildStatus())
-		assert.Equal(t, "n/a", p.GetRepoUrl())
-		assert.Equal(t, "n/a", p.GetBuildUrl())
+		assert.Equal(t, "n/a", p.GetRepoURL())
+		assert.Equal(t, "n/a", p.GetBuildURL())
 		assert.Equal(t, "n/a", p.GetStageName())
 		log, err := p.GetLog()
 		assert.Equal(t, []byte{}, log)

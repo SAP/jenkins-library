@@ -24,6 +24,12 @@ func (u *UnknownOrchestratorConfigProvider) GetBuildStatus() string {
 	return "FAILURE"
 }
 
+// GetBuildReason returns n/a for the unknownOrchestrator
+func (u *UnknownOrchestratorConfigProvider) GetBuildReason() string {
+	log.Entry().Infof("Unknown orchestrator - returning default values.")
+	return "n/a"
+}
+
 // GetBuildID returns n/a for the unknownOrchestrator
 func (u *UnknownOrchestratorConfigProvider) GetBuildID() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
@@ -66,14 +72,14 @@ func (u *UnknownOrchestratorConfigProvider) GetBranch() string {
 	return "n/a"
 }
 
-// GetBuildUrl returns n/a for the unknownOrchestrator
-func (u *UnknownOrchestratorConfigProvider) GetBuildUrl() string {
+// GetBuildURL returns n/a for the unknownOrchestrator
+func (u *UnknownOrchestratorConfigProvider) GetBuildURL() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "n/a"
 }
 
-// GetJobUrl returns n/a for the unknownOrchestrator
-func (u *UnknownOrchestratorConfigProvider) GetJobUrl() string {
+// GetJobURL returns n/a for the unknownOrchestrator
+func (u *UnknownOrchestratorConfigProvider) GetJobURL() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "n/a"
 }
@@ -84,8 +90,8 @@ func (u *UnknownOrchestratorConfigProvider) GetCommit() string {
 	return "n/a"
 }
 
-// GetRepoUrl returns n/a for the unknownOrchestrator
-func (u *UnknownOrchestratorConfigProvider) GetRepoUrl() string {
+// GetRepoURL returns n/a for the unknownOrchestrator
+func (u *UnknownOrchestratorConfigProvider) GetRepoURL() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "n/a"
 }
