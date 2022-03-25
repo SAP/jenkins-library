@@ -24,7 +24,6 @@ func TestRunApiProviderUpload(t *testing.T) {
 			t.Run("check url", func(t *testing.T) {
 				assert.Equal(t, "/apiportal/api/1.0/Management.svc/APIProviders", httpClient.URL)
 			})
-
 			t.Run("check method", func(t *testing.T) {
 				assert.Equal(t, "POST", httpClient.Method)
 			})

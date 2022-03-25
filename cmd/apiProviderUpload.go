@@ -51,7 +51,6 @@ func createApiProvider(config *apiProviderUploadOptions, apim cpi.APIM, readFile
 		return err
 	}
 	apiProviderUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiProviderStatusURL, bytes.NewBuffer(payload), header, nil)
-
 	failureMessage := "Failed to create API provider artefact"
 	successMessage := "Successfully created api provider artefact in API Portal"
 	httpFileUploadRequestParameters := cpi.HttpFileUploadRequestParameters{
