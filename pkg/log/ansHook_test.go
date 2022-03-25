@@ -131,6 +131,33 @@ func TestANSHook_Fire(t *testing.T) {
 			},
 		},
 		{
+			name: "If error key set in data, severity should be error",
+			fields: fields{
+				correlationID: testCorrelationID,
+				client:        testClient,
+				event:         defaultEvent(),
+			},
+			entryArg: &logrus.Entry{
+				Level:   logrus.InfoLevel,
+				Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
+				Message: "my log message",
+				Data:    map[string]interface{}{"stepName": "testStep", "error": "an error occurred!"},
+			},
+			wantEvent: ans.Event{
+				EventType:      "Piper",
+				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC).Unix(),
+				Severity:       "ERROR",
+				Category:       "EXCEPTION",
+				Subject:        "testStep",
+				Body:           "my log message",
+				Resource: &ans.Resource{
+					ResourceType: "Piper",
+					ResourceName: "Pipeline",
+				},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "stepName": "testStep", "error": "an error occurred!", "logLevel": "error"},
+			},
+		},
+		{
 			name: "Event already set",
 			fields: fields{
 				correlationID: testCorrelationID,

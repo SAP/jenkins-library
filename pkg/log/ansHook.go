@@ -55,15 +55,18 @@ func (ansHook *ANSHook) Levels() []logrus.Level {
 // Fire creates a new event from the logrus and sends an event to the ANS backend
 func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	ansHook.event.EventTimestamp = entry.Time.Unix()
-	ansHook.event.Severity, ansHook.event.Category = ans.TranslateLogrusLogLevel(entry.Level)
 	if ansHook.event.Subject == "" {
 		ansHook.event.Subject = fmt.Sprint(entry.Data["stepName"])
 	}
 	ansHook.event.Body = entry.Message
-	ansHook.event.Tags["logLevel"] = entry.Level.String()
 	for k, v := range entry.Data {
+		if k == "error" {
+			entry.Level = logrus.ErrorLevel
+		}
 		ansHook.event.Tags[k] = v
 	}
+	ansHook.event.Severity, ansHook.event.Category = ans.TranslateLogrusLogLevel(entry.Level)
+	ansHook.event.Tags["logLevel"] = entry.Level.String()
 
 	err := ansHook.client.Send(ansHook.event)
 	if err != nil {
