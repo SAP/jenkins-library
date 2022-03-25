@@ -88,13 +88,13 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobUrl := t.provider.GetJobURL()
-	return t.toSha1OrNA(jobUrl)
+	jobURL := t.provider.GetJobURL()
+	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildUrl := t.provider.GetBuildURL()
-	return t.toSha1OrNA(buildUrl)
+	buildURL := t.provider.GetBuildURL()
+	return t.toSha1OrNA(buildURL)
 }
 
 func (t *Telemetry) toSha1OrNA(input string) string {
