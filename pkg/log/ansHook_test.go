@@ -191,6 +191,7 @@ func TestANSHook_Fire(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			originalLogLevel := tt.entryArg.Level
 			ansHook := &ANSHook{
 				correlationID: tt.fields.correlationID,
 				client:        tt.fields.client,
@@ -199,6 +200,7 @@ func TestANSHook_Fire(t *testing.T) {
 			defer func() { testEvent = ans.Event{} }()
 			ansHook.Fire(tt.entryArg)
 			assert.Equal(t, tt.wantEvent, testEvent, "Event is not as expected.")
+			assert.Equal(t, originalLogLevel.String(), tt.entryArg.Level.String(), "Entry error level has been altered")
 		})
 	}
 }
