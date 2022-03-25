@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 // ANSHook is used to set the hook features for the logrus hook
@@ -58,6 +59,9 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	ansHook.event.EventTimestamp = entry.Time.Unix()
 	if ansHook.event.Subject == "" {
 		ansHook.event.Subject = fmt.Sprint(entry.Data["stepName"])
+	}
+	if strings.HasPrefix(entry.Message, "fatal error") {
+		logLevel = logrus.FatalLevel
 	}
 	ansHook.event.Body = entry.Message
 	for k, v := range entry.Data {

@@ -158,6 +158,33 @@ func TestANSHook_Fire(t *testing.T) {
 			},
 		},
 		{
+			name: "If message is fatal error, severity should be fatal",
+			fields: fields{
+				correlationID: testCorrelationID,
+				client:        testClient,
+				event:         defaultEvent(),
+			},
+			entryArg: &logrus.Entry{
+				Level:   logrus.InfoLevel,
+				Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
+				Message: "fatal error: an error occurred",
+				Data:    map[string]interface{}{"stepName": "testStep"},
+			},
+			wantEvent: ans.Event{
+				EventType:      "Piper",
+				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC).Unix(),
+				Severity:       "FATAL",
+				Category:       "EXCEPTION",
+				Subject:        "testStep",
+				Body:           "fatal error: an error occurred",
+				Resource: &ans.Resource{
+					ResourceType: "Piper",
+					ResourceName: "Pipeline",
+				},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "stepName": "testStep", "logLevel": "fatal"},
+			},
+		},
+		{
 			name: "Event already set",
 			fields: fields{
 				correlationID: testCorrelationID,
