@@ -10,8 +10,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/xsuaa"
-	"github.com/pkg/errors"
 )
 
 func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry.CustomData) {
@@ -33,29 +31,18 @@ func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry
 
 func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
-	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
-	if err != nil {
-		return err
+	apim := cpi.APIM{APIServiceKey: config.APIServiceKey, Client: httpClient}
+	error := cpi.APIMUtils.PrepareAPIMStruct(apim)
+	if error != nil {
+		return error
 	}
-	clientOptions := piperhttp.ClientOptions{}
-	x := xsuaa.XSUAA{
-		OAuthURL:     serviceKey.OAuth.OAuthTokenProviderURL,
-		ClientID:     serviceKey.OAuth.ClientID,
-		ClientSecret: serviceKey.OAuth.ClientSecret,
-	}
-	token, tokenErr := x.GetBearerToken()
-
-	if tokenErr != nil {
-		return errors.Wrap(tokenErr, "failed to fetch Bearer Token")
-	}
-	clientOptions.Token = fmt.Sprintf("Bearer %s", token.AccessToken)
-	httpClient.SetOptions(clientOptions)
-	return createApiProvider(config, telemetryData, httpClient, serviceKey.OAuth.Host, ioutil.ReadFile)
+	return createApiProvider(config, apim, ioutil.ReadFile)
 }
 
-func createApiProvider(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, host string, readFile func(string) ([]byte, error)) error {
+func createApiProvider(config *apiProviderUploadOptions, apim cpi.APIM, readFile func(string) ([]byte, error)) error {
+	httpClient := apim.Client
 	httpMethod := http.MethodPost
-	uploadApiProviderStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProviders", host)
+	uploadApiProviderStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProviders", apim.Host)
 	header := make(http.Header)
 	header.Add("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
@@ -65,30 +52,15 @@ func createApiProvider(config *apiProviderUploadOptions, telemetryData *telemetr
 	}
 	apiProviderUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiProviderStatusURL, bytes.NewBuffer(payload), header, nil)
 
-	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %q request to %q failed with error", httpMethod, uploadApiProviderStatusURL)
-	}
-
-	if apiProviderUploadStatusResp != nil && apiProviderUploadStatusResp.Body != nil {
-		defer apiProviderUploadStatusResp.Body.Close()
-	}
-
-	if apiProviderUploadStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response")
-	}
-
-	if apiProviderUploadStatusResp.StatusCode == http.StatusCreated {
-		log.Entry().
-			WithField("apiProvider", config.FilePath).
-			Info("Successfully created api provider artefact in API Portal")
-		return nil
-	}
-	response, readErr := ioutil.ReadAll(apiProviderUploadStatusResp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", apiProviderUploadStatusResp.StatusCode)
-	}
-
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(response), apiProviderUploadStatusResp.StatusCode)
-	return errors.Errorf("Failed to create API provider artefact, Response Status code: %v", apiProviderUploadStatusResp.StatusCode)
+	failureMessage := "Failed to create API provider artefact"
+	successMessage := "Successfully created api provider artefact in API Portal"
+	httpFileUploadRequestParameters := cpi.HttpFileUploadRequestParameters{
+		ErrMessage:     failureMessage,
+		FilePath:       config.FilePath,
+		Response:       apiProviderUploadStatusResp,
+		HTTPMethod:     httpMethod,
+		HTTPURL:        uploadApiProviderStatusURL,
+		HTTPErr:        httpErr,
+		SuccessMessage: successMessage}
+	return cpi.HTTPUploadUtils.HandleHTTPFileUploadResponse(httpFileUploadRequestParameters)
 }
