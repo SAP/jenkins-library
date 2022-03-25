@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"encoding/json"
+	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -9,8 +11,9 @@ import (
 )
 
 type JenkinsConfigProvider struct {
-	client  piperHttp.Client
-	options piperHttp.ClientOptions
+	client         piperHttp.Client
+	options        piperHttp.ClientOptions
+	apiInformation map[string]interface{}
 }
 
 // InitOrchestratorProvider initializes the Jenkins orchestrator with credentials
@@ -36,33 +39,39 @@ func (j *JenkinsConfigProvider) OrchestratorType() string {
 	return "Jenkins"
 }
 
-func (j *JenkinsConfigProvider) getAPIInformation() map[string]interface{} {
-	URL := j.GetBuildUrl() + "api/json"
+func (j *JenkinsConfigProvider) getAPIInformation() {
+	if len(j.apiInformation) == 0 {
+		log.Entry().Debugf("apiInformation is empty, getting infos from API")
+		URL := j.GetBuildURL() + "api/json"
+		log.Entry().Debugf("API URL: %s", URL)
+		response, err := j.client.GetRequest(URL, nil, nil)
+		if err != nil {
+			log.Entry().WithError(err).Error("could not get API information from Jenkins")
+			j.apiInformation = map[string]interface{}{}
+			return
+		}
 
-	response, err := j.client.GetRequest(URL, nil, nil)
-	if err != nil {
-		log.Entry().WithError(err).Error("could not get api information from Jenkins")
-		return map[string]interface{}{}
+		if response.StatusCode != 200 { //http.StatusNoContent
+			log.Entry().Errorf("Response-Code is %v, could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
+			j.apiInformation = map[string]interface{}{}
+			return
+		}
+		err = piperHttp.ParseHTTPResponseBodyJSON(response, &j.apiInformation)
+		if err != nil {
+			log.Entry().WithError(err).Errorf("could not parse HTTP response body")
+			j.apiInformation = map[string]interface{}{}
+			return
+		}
+		log.Entry().Debugf("successfully retrieved apiInformation")
+	} else {
+		log.Entry().Debugf("apiInformation already set")
 	}
-
-	if response.StatusCode != 200 { //http.StatusNoContent
-		log.Entry().Errorf("Response-Code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
-		return map[string]interface{}{}
-	}
-	var responseInterface map[string]interface{}
-	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
-	if err != nil {
-		log.Entry().Error(err)
-		return map[string]interface{}{}
-	}
-	return responseInterface
 }
 
 // GetBuildStatus returns build status of the current job
 func (j *JenkinsConfigProvider) GetBuildStatus() string {
-	responseInterface := j.getAPIInformation()
-
-	if val, ok := responseInterface["result"]; ok {
+	j.getAPIInformation()
+	if val, ok := j.apiInformation["result"]; ok {
 		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
 		switch result := val; result {
 		case "SUCCESS":
@@ -80,14 +89,13 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 
 // GetLog returns the logfile from the current job as byte object
 func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
-	URL := j.GetBuildUrl() + "consoleText"
+	URL := j.GetBuildURL() + "consoleText"
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "Could not read Jenkins logfile. %v", err)
-	}
-	if response.StatusCode != 200 {
-		log.Entry().Error("Could not get log information from Jenkins. Returning with empty log.")
+		return []byte{}, errors.Wrapf(err, "could not read Jenkins logfile. %v", err)
+	} else if response.StatusCode != 200 {
+		log.Entry().Error("could not get log information from Jenkins. Returning with empty log.")
 		return []byte{}, nil
 	}
 	defer response.Body.Close()
@@ -103,15 +111,15 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 
 // GetPipelineStartTime returns the pipeline start time in UTC
 func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
-	URL := j.GetBuildUrl() + "api/json"
-
+	URL := j.GetBuildURL() + "api/json"
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		log.Entry().Error(err)
+		log.Entry().WithError(err).Errorf("could not getRequest to URL %s", URL)
+		return time.Time{}.UTC()
 	}
 
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().Errorf("Response-Code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
+		log.Entry().Errorf("response code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
 		return time.Time{}.UTC()
 	}
 	var responseInterface map[string]interface{}
@@ -134,11 +142,12 @@ func (j *JenkinsConfigProvider) GetJobName() string {
 	return getEnv("JOB_NAME", "n/a")
 }
 
-// GetJobUrl returns the current job URL e.g. https://JAAS.URL/job/foo/job/bar/job/main
-func (j *JenkinsConfigProvider) GetJobUrl() string {
+// GetJobURL returns the current job URL e.g. https://jaas.url/job/foo/job/bar/job/main
+func (j *JenkinsConfigProvider) GetJobURL() string {
 	return getEnv("JOB_URL", "n/a")
 }
 
+// getJenkinsHome returns the jenkins home e.g. /var/lib/jenkins
 func (j *JenkinsConfigProvider) getJenkinsHome() string {
 	return getEnv("JENKINS_HOME", "n/a")
 }
@@ -153,13 +162,42 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
+//GetBuildReason returns the build reason of the current build
+func (j *JenkinsConfigProvider) GetBuildReason() string {
+	j.getAPIInformation()
+	marshal, err := json.Marshal(j.apiInformation)
+	if err != nil {
+		log.Entry().WithError(err).Debugf("could not marshal apiInformation")
+		return "Unknown"
+	}
+	jsonParsed, err := gabs.ParseJSON(marshal)
+	for _, child := range jsonParsed.S("actions").Children() {
+		class := child.S("_class")
+		if class.String() == "\"hudson.model.CauseAction\"" {
+			for _, val := range child.S("causes").Children() {
+				subclass := val.S("_class")
+				if subclass.String() == "\"hudson.model.Cause$UserIdCause\"" {
+					return "Manual"
+				} else if subclass.String() == "\"hudson.triggers.TimerTrigger$TimerTriggerCause\"" {
+					return "Schedule"
+				} else {
+					return "Unknown"
+				}
+			}
+		}
+
+	}
+
+	return "Unknown"
+}
+
 // GetBranch returns the branch name, only works with the git plugin enabled
 func (j *JenkinsConfigProvider) GetBranch() string {
 	return getEnv("BRANCH_NAME", "n/a")
 }
 
-// GetBuildUrl returns the build url, e.g. https://JAAS.URL/job/foo/job/bar/job/main/1234/
-func (j *JenkinsConfigProvider) GetBuildUrl() string {
+// GetBuildURL returns the build url, e.g. https://jaas.url/job/foo/job/bar/job/main/1234/
+func (j *JenkinsConfigProvider) GetBuildURL() string {
 	return getEnv("BUILD_URL", "n/a")
 }
 
@@ -168,8 +206,8 @@ func (j *JenkinsConfigProvider) GetCommit() string {
 	return getEnv("GIT_COMMIT", "n/a")
 }
 
-// GetRepoUrl returns the repo URL of the current build, only works with the git plugin enabled
-func (j *JenkinsConfigProvider) GetRepoUrl() string {
+// GetRepoURL returns the repo URL of the current build, only works with the git plugin enabled
+func (j *JenkinsConfigProvider) GetRepoURL() string {
 	return getEnv("GIT_URL", "n/a")
 }
 
