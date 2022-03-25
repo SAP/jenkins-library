@@ -46,12 +46,12 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 		defer utils.RemoveAll(tempDir)
 
 		log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, tempDir)
-		img, err := utils.DownloadImageToPath(bpack, tempDir)
+		img, err := utils.DownloadImageContent(bpack, tempDir)
 		if err != nil {
 			return Order{}, fmt.Errorf("failed download buildpack image '%s', error: %s", bpack, err.Error())
 		}
 
-		imgConf, err := img.Image.ConfigFile()
+		imgConf, err := img.ConfigFile()
 		if err != nil {
 			return Order{}, fmt.Errorf("failed to read '%s' image config, error: %s", bpack, err.Error())
 		}

@@ -4,10 +4,9 @@
 package cnbutils
 
 import (
-	"io"
+	"fmt"
 	"path/filepath"
 
-	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -23,7 +22,7 @@ func (c *MockUtils) GetFileUtils() piperutils.FileUtils {
 	return c.FilesMock
 }
 
-func (c *MockUtils) DownloadImageToPath(bpack, filePath string) (pkgutil.Image, error) {
+func (c *MockUtils) DownloadImageContent(bpack, targetDir string) (v1.Image, error) {
 	fakeImage := fakeImage.FakeImage{}
 	fakeImage.ConfigFileReturns(&v1.ConfigFile{
 		Config: v1.Config{
@@ -33,18 +32,15 @@ func (c *MockUtils) DownloadImageToPath(bpack, filePath string) (pkgutil.Image, 
 		},
 	}, nil)
 
-	c.AddDir(filepath.Join(filePath, "cnb/buildpacks", bpack))
-	c.AddDir(filepath.Join(filePath, "cnb/buildpacks", bpack, "0.0.1"))
-	img := pkgutil.Image{
-		Image: &fakeImage,
-	}
-	return img, nil
+	c.AddDir(filepath.Join(targetDir, "cnb/buildpacks", bpack))
+	c.AddDir(filepath.Join(targetDir, "cnb/buildpacks", bpack, "0.0.1"))
+	return &fakeImage, nil
+}
+
+func (c *MockUtils) DownloadImage(src, dst string) (v1.Image, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (c *MockUtils) GetImageSource() (string, error) {
 	return "imageSource", nil
-}
-
-func (c *MockUtils) TarImage(writer io.Writer, image pkgutil.Image) error {
-	return nil
 }
