@@ -11,15 +11,15 @@ metadata:
     * [Helm Charts] (https://artifacthub.io/)
     ```
     Available Commands:
-      install     install a chart
-      lint        examine a chart for possible issues
-      package     package a chart directory into a chart archive
-      repo        add, list, remove, update, and index chart repositories
-      test        run tests for a release
-      uninstall   uninstall a release
-      upgrade     upgrade a release
-      verify      verify that a chart at the given path has been signed and is valid
-      push        upload a chart to a registry
+    `upgrade`, `lint`, `install`, `test`, `uninstall`, `dependency`, `publish`
+
+      upgrade       upgrade a release
+      lint          examine a chart for possible issues
+      install       install a chart
+      test          run tests for a release
+      uninstall     uninstall a release
+      dependency     package a chart directory into a chart archive
+      publish       package and puslish a release
 
     ```
 
@@ -189,18 +189,18 @@ spec:
             default: docker-config
       - name: helmCommand
         type: string
-        description: "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc."
+        description: "Helm: defines the command `upgrade`, `lint`, `install`, `test`, `uninstall`, `dependency`, `publish`."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         possibleValues:
           - upgrade
-          - install
           - lint
+          - install
           - test
           - uninstall
-          - package
+          - dependency
           - publish
       - name: appVersion
         type: string
@@ -210,6 +210,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: dependency
+        type: string
+        description: "manage a chart's dependencies"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - build
+          - list
+          - update
       - name: dependencyUpdate
         type: bool
         description: set the appVersion on the chart to this version

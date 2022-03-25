@@ -258,7 +258,7 @@ func TestRunHelm(t *testing.T) {
 				verbose: false,
 				stdout:  log.Writer(),
 			}
-			err := helmExecute.RunHelmPackage()
+			err := helmExecute.runHelmPackage()
 			assert.NoError(t, err)
 			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[i])
 		}
@@ -368,6 +368,50 @@ func TestRunHelm(t *testing.T) {
 				assert.Equal(t, testCase.expectedError, err)
 			} else {
 				assert.NoError(t, err)
+			}
+
+		}
+	})
+
+	t.Run("Helm dependency command", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config         HelmExecuteOptions
+			expectedError  error
+			expectedResult []string
+		}{
+			{
+				config: HelmExecuteOptions{
+					ChartPath: ".",
+				},
+				expectedError:  errors.New("there is no dependency value. Possible values are build, list, update"),
+				expectedResult: nil,
+			},
+			{
+				config: HelmExecuteOptions{
+					ChartPath:  ".",
+					Dependency: "update",
+				},
+				expectedError:  nil,
+				expectedResult: []string{"dependency", "update", "."},
+			},
+		}
+
+		for _, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			err := helmExecute.RunHelmDependency()
+			if testCase.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, testCase.expectedError, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedResult}, utils.Calls[0])
 			}
 
 		}
