@@ -44,17 +44,22 @@ func (g *GitHubActionsConfigProvider) GetStageName() string {
 	return "GITHUB_WORKFLOW" //TODO: is there something like is "stage" in GH Actions?
 }
 
+func (g *GitHubActionsConfigProvider) GetBuildReason() string {
+	log.Entry().Infof("GetBuildReason() for GitHub Actions not yet implemented.")
+	return "n/a"
+}
+
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
 }
 
-func (g *GitHubActionsConfigProvider) GetBuildUrl() string {
-	return g.GetRepoUrl() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+func (g *GitHubActionsConfigProvider) GetBuildURL() string {
+	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
-func (g *GitHubActionsConfigProvider) GetJobUrl() string {
+func (g *GitHubActionsConfigProvider) GetJobURL() string {
 	log.Entry().Debugf("Not yet implemented.")
-	return g.GetRepoUrl() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetJobName() string {
@@ -66,7 +71,7 @@ func (g *GitHubActionsConfigProvider) GetCommit() string {
 	return getEnv("GITHUB_SHA", "n/a")
 }
 
-func (g *GitHubActionsConfigProvider) GetRepoUrl() string {
+func (g *GitHubActionsConfigProvider) GetRepoURL() string {
 	return getEnv("GITHUB_SERVER_URL", "n/a") + getEnv("GITHUB_REPOSITORY", "n/a")
 }
 
