@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"os"
 	"testing"
@@ -408,4 +409,73 @@ func TestJenkinsConfigProvider_getAPIInformation(t *testing.T) {
 	}
 }
 
-// GET LOG MISSING
+func TestJenkinsConfigProvider_GetLog(t *testing.T) {
+
+	tests := []struct {
+		name                    string
+		want                    []byte
+		wantErr                 assert.ErrorAssertionFunc
+		wantHTTPErr             bool
+		wantHTTPStatusCodeError bool
+		responseBodyError       bool
+	}{
+		{
+			name:    "Successfully got log file",
+			want:    []byte("Success!"),
+			wantErr: assert.NoError,
+		},
+		{
+			name:        "HTTP error",
+			want:        []byte(""),
+			wantErr:     assert.Error,
+			wantHTTPErr: true,
+		},
+		{
+			name:                    "Status code error",
+			want:                    []byte(""),
+			wantErr:                 assert.NoError,
+			wantHTTPStatusCodeError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			j := &JenkinsConfigProvider{}
+			j.client.SetOptions(piperhttp.ClientOptions{
+				MaxRequestDuration:        5 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true, // need to use default transport for http mock
+				MaxRetries:                -1,
+			})
+
+			defer resetEnv(os.Environ())
+			os.Clearenv()
+			os.Setenv("BUILD_URL", "https://jaas.url/job/foo/job/bar/job/main/1234/")
+
+			fakeUrl := "https://jaas.url/job/foo/job/bar/job/main/1234/consoleText"
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			httpmock.RegisterResponder("GET", fakeUrl,
+				func(req *http.Request) (*http.Response, error) {
+					if tt.wantHTTPErr {
+						return nil, errors.New("this error shows up")
+					}
+					if tt.wantHTTPStatusCodeError {
+						return &http.Response{
+							Status:     "204",
+							StatusCode: http.StatusNoContent,
+							Request:    req,
+						}, nil
+					}
+					return httpmock.NewStringResponse(200, "Success!"), nil
+				},
+			)
+
+			got, err := j.GetLog()
+			if !tt.wantErr(t, err, fmt.Sprintf("GetLog()")) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "GetLog()")
+		})
+	}
+}

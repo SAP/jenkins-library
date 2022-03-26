@@ -93,19 +93,16 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "could not read Jenkins logfile. %v", err)
+		return []byte{}, errors.Wrapf(err, "could not GET Jenkins log file %v", err)
 	} else if response.StatusCode != 200 {
-		log.Entry().Error("could not get log information from Jenkins. Returning with empty log.")
+		log.Entry().Error("response code !=200 could not get log information from Jenkins, returning with empty log.")
 		return []byte{}, nil
 	}
-	defer response.Body.Close()
-
 	logFile, err := ioutil.ReadAll(response.Body)
-
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "could not read Jenkins logfile from request. %v", err)
+		return []byte{}, errors.Wrapf(err, "could not read Jenkins log file from request %v", err)
 	}
-
+	defer response.Body.Close()
 	return logFile, nil
 }
 
@@ -171,6 +168,10 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		return "Unknown"
 	}
 	jsonParsed, err := gabs.ParseJSON(marshal)
+	if err != nil {
+		log.Entry().WithError(err).Debugf("could not parse apiInformation")
+		return "Unknown"
+	}
 	for _, child := range jsonParsed.S("actions").Children() {
 		class := child.S("_class")
 		if class.String() == "\"hudson.model.CauseAction\"" {
