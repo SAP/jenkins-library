@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
@@ -271,4 +272,91 @@ func TestAzureDevOpsConfigProvider_getAPIInformation(t *testing.T) {
 	}
 }
 
-// GET LOG MISSING
+func TestAzureDevOpsConfigProvider_GetLog(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                    string
+		want                    []byte
+		wantErr                 assert.ErrorAssertionFunc
+		wantHTTPErr             bool
+		wantHTTPStatusCodeError bool
+		wantLogCountError       bool
+	}{
+		{
+			name:    "Successfully got log file",
+			want:    []byte("Success"),
+			wantErr: assert.NoError,
+		},
+		{
+			name:              "Log count variable not available",
+			want:              []byte(""),
+			wantErr:           assert.NoError,
+			wantLogCountError: true,
+		},
+		{
+			name:        "HTTP error",
+			want:        []byte(""),
+			wantErr:     assert.Error,
+			wantHTTPErr: true,
+		},
+		{
+			name:                    "Status code error",
+			want:                    []byte(""),
+			wantErr:                 assert.NoError,
+			wantHTTPStatusCodeError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &AzureDevOpsConfigProvider{}
+			a.client.SetOptions(piperhttp.ClientOptions{
+				MaxRequestDuration:        5 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true, // need to use default transport for http mock
+				MaxRetries:                -1,
+			})
+
+			defer resetEnv(os.Environ())
+			os.Clearenv()
+			os.Setenv("SYSTEM_COLLECTIONURI", "https://dev.azure.com/fabrikamfiber/")
+			os.Setenv("SYSTEM_TEAMPROJECTID", "123a4567-ab1c-12a1-1234-123456ab7890")
+			os.Setenv("BUILD_BUILDID", "1234")
+
+			fakeUrl := "https://dev.azure.com/fabrikamfiber/123a4567-ab1c-12a1-1234-123456ab7890/_apis/build/builds/1234/logs"
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			httpmock.RegisterResponder("GET", fakeUrl+"/1",
+				func(req *http.Request) (*http.Response, error) {
+					return httpmock.NewStringResponse(200, "Success"), nil
+				})
+			httpmock.RegisterResponder("GET", fakeUrl,
+				func(req *http.Request) (*http.Response, error) {
+					if tt.wantHTTPErr {
+						return nil, errors.New("this error shows up")
+					}
+					if tt.wantHTTPStatusCodeError {
+						return &http.Response{
+							Status:     "204",
+							StatusCode: http.StatusNoContent,
+							Request:    req,
+						}, nil
+					}
+					if tt.wantLogCountError {
+						return httpmock.NewJsonResponse(200, map[string]interface{}{
+							"some": "value",
+						})
+					}
+					return httpmock.NewJsonResponse(200, map[string]interface{}{
+						"count": 1,
+					})
+				},
+			)
+			got, err := a.GetLog()
+			if !tt.wantErr(t, err, fmt.Sprintf("GetLog()")) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "GetLog()")
+		})
+	}
+}

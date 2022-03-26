@@ -111,21 +111,27 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	response, err := a.client.GetRequest(URL, nil, nil)
 
 	if err != nil {
-		log.Entry().Error("failed to get http response", err)
+		log.Entry().Error("failed to get HTTP response: ", err)
 		return []byte{}, err
 	}
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().Errorf("Response-Code is %v . \n Could not get log information from AzureDevOps. Returning with empty log.", response.StatusCode)
+		log.Entry().Errorf("response-Code is %v, could not get log information from AzureDevOps, returning with empty log.", response.StatusCode)
 		return []byte{}, nil
 	}
 	var responseInterface map[string]interface{}
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
 	if err != nil {
-		log.Entry().Error("failed to parse http response", err)
+		log.Entry().Error("failed to parse http response: ", err)
 		return []byte{}, err
 	}
 	// check if response interface is empty or non-existent
-	logCount := int(responseInterface["count"].(float64))
+	var logCount int
+	if val, ok := responseInterface["count"]; ok {
+		logCount = int(val.(float64))
+	} else {
+		log.Entry().Error("log count variable not found, returning empty log")
+		return []byte{}, err
+	}
 	var logs []byte
 	for i := 1; i <= logCount; i++ {
 		counter := strconv.Itoa(i)
@@ -137,7 +143,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 			return []byte{}, err
 		}
 		if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-			log.Entry().Errorf("Response-Code is %v, could not get log information from AzureDevOps ", response.StatusCode)
+			log.Entry().Errorf("response code is %v, could not get log information from AzureDevOps ", response.StatusCode)
 			return []byte{}, err
 		}
 		content, err := ioutil.ReadAll(response.Body)
@@ -164,7 +170,6 @@ func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 		return parsed.UTC()
 	}
 	return time.Time{}.UTC()
-
 }
 
 // GetBuildID returns the BuildNumber displayed in the ADO UI
@@ -185,6 +190,7 @@ func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(tmp, "refs/heads/")
 }
 
+// GetBuildURL returns the builds URL e.g.
 func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + a.getAzureBuildID()
 }

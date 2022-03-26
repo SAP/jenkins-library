@@ -417,7 +417,6 @@ func TestJenkinsConfigProvider_GetLog(t *testing.T) {
 		wantErr                 assert.ErrorAssertionFunc
 		wantHTTPErr             bool
 		wantHTTPStatusCodeError bool
-		responseBodyError       bool
 	}{
 		{
 			name:    "Successfully got log file",
