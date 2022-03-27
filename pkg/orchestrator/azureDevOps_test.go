@@ -25,6 +25,7 @@ func TestAzure(t *testing.T) {
 		os.Setenv("BUILD_SOURCEVERSION", "abcdef42713")
 		os.Setenv("BUILD_REPOSITORY_URI", "github.com/foo/bar")
 		os.Setenv("SYSTEM_DEFINITIONNAME", "bar")
+		os.Setenv("SYSTEM_DEFINITIONID", "1234")
 		p, _ := NewOrchestratorSpecificConfigProvider()
 
 		assert.False(t, p.IsPullRequest())
@@ -33,6 +34,7 @@ func TestAzure(t *testing.T) {
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
 		assert.Equal(t, "Azure", p.OrchestratorType())
+		assert.Equal(t, "https://pogo.sap/foo/bar/_build?definitionId=1234", p.GetJobURL())
 	})
 
 	t.Run("PR", func(t *testing.T) {

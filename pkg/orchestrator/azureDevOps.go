@@ -195,10 +195,10 @@ func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build/results?buildId=" + a.getAzureBuildID()
 }
 
-// GetJobURL returns tje current job url e.g. https://dev.azure.com/fabrikamfiber/your-repo-name
+// GetJobURL returns tje current job url e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build?definitionId=1234
 func (a *AzureDevOpsConfigProvider) GetJobURL() string {
 	// TODO: Check if this is the correct URL
-	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME")
+	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build?definitionId=" + os.Getenv("SYSTEM_DEFINITIONID")
 }
 
 // GetCommit returns commit SHA of current build
