@@ -15,6 +15,7 @@ import (
 )
 
 func TestJenkins(t *testing.T) {
+	t.Parallel()
 	t.Run("BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
@@ -475,6 +476,28 @@ func TestJenkinsConfigProvider_GetLog(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "GetLog()")
+		})
+	}
+}
+
+func TestJenkinsConfigProvider_InitOrchestratorProvider(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		settings       *OrchestratorSettings
+		apiInformation map[string]interface{}
+	}{
+		{
+			name:     "Init, test empty apiInformation",
+			settings: &OrchestratorSettings{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			j := &JenkinsConfigProvider{}
+			j.InitOrchestratorProvider(tt.settings)
+			var expected map[string]interface{}
+			assert.Equal(t, j.apiInformation, expected)
 		})
 	}
 }
