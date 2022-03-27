@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -16,7 +15,7 @@ type AzureDevOpsConfigProvider struct {
 	apiInformation map[string]interface{}
 }
 
-//InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
+// InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
 func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	a.client = piperHttp.Client{}
 	a.options = piperHttp.ClientOptions{
@@ -29,6 +28,7 @@ func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *Orchestra
 	log.Entry().Debug("Successfully initialized Azure config provider")
 }
 
+// fetchAPIInformation fetches Azure API information of current build
 func (a *AzureDevOpsConfigProvider) fetchAPIInformation() {
 	// if apiInformation is empty fill it otherwise do nothing
 	if len(a.apiInformation) == 0 {
@@ -185,25 +185,28 @@ func (a *AzureDevOpsConfigProvider) GetStageName() string {
 	return getEnv("SYSTEM_STAGEDISPLAYNAME", "n/a")
 }
 
+// GetBranch returns the source branch name, e.g. main
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
-	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
-	return strings.TrimPrefix(tmp, "refs/heads/")
+	return getEnv("BUILD_SOURCEBRANCHNAME", "n/a")
 }
 
-// GetBuildURL returns the builds URL e.g.
+// GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build/results?buildId=1234
 func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + a.getAzureBuildID()
 }
 
+// GetJobURL returns tje current job url e.g. https://dev.azure.com/fabrikamfiber/your-repo-name
 func (a *AzureDevOpsConfigProvider) GetJobURL() string {
 	// TODO: Check if thi is the correct URL
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT")
 }
 
+// GetCommit returns commit SHA of current build
 func (a *AzureDevOpsConfigProvider) GetCommit() string {
 	return getEnv("BUILD_SOURCEVERSION", "n/a")
 }
 
+// GetRepoURL returns current repo URL e.g. https://github.com/SAP/jenkins-library
 func (a *AzureDevOpsConfigProvider) GetRepoURL() string {
 	return getEnv("BUILD_REPOSITORY_URI", "n/a")
 }
@@ -214,6 +217,7 @@ func (a *AzureDevOpsConfigProvider) GetBuildReason() string {
 	return getEnv("BUILD_REASON", "n/a")
 }
 
+// GetPullRequestConfig returns pull request configuration
 func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	prKey := getEnv("SYSTEM_PULLREQUEST_PULLREQUESTID", "n/a")
 
@@ -232,6 +236,7 @@ func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	}
 }
 
+// IsPullRequest indicates whether the current build is a PR
 func (a *AzureDevOpsConfigProvider) IsPullRequest() bool {
 	return getEnv("BUILD_REASON", "n/a") == "PullRequest"
 }
