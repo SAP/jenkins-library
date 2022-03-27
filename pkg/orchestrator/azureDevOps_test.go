@@ -266,7 +266,7 @@ func TestAzureDevOpsConfigProvider_getAPIInformation(t *testing.T) {
 				},
 			)
 
-			a.getAPIInformation()
+			a.fetchAPIInformation()
 			assert.Equal(t, tt.wantAPIInformation, a.apiInformation)
 		})
 	}

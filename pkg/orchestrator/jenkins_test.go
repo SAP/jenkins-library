@@ -403,7 +403,7 @@ func TestJenkinsConfigProvider_getAPIInformation(t *testing.T) {
 					return httpmock.NewStringResponse(200, "{\"Success\":\"Case\"}"), nil
 				},
 			)
-			j.getAPIInformation()
+			j.fetchAPIInformation()
 			assert.Equal(t, tt.wantAPIInformation, j.apiInformation)
 		})
 	}

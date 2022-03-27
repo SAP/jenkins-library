@@ -39,7 +39,7 @@ func (j *JenkinsConfigProvider) OrchestratorType() string {
 	return "Jenkins"
 }
 
-func (j *JenkinsConfigProvider) getAPIInformation() {
+func (j *JenkinsConfigProvider) fetchAPIInformation() {
 	if len(j.apiInformation) == 0 {
 		log.Entry().Debugf("apiInformation is empty, getting infos from API")
 		URL := j.GetBuildURL() + "api/json"
@@ -70,7 +70,7 @@ func (j *JenkinsConfigProvider) getAPIInformation() {
 
 // GetBuildStatus returns build status of the current job
 func (j *JenkinsConfigProvider) GetBuildStatus() string {
-	j.getAPIInformation()
+	j.fetchAPIInformation()
 	if val, ok := j.apiInformation["result"]; ok {
 		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
 		switch result := val; result {
@@ -83,7 +83,6 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 			return "FAILURE"
 		}
 	}
-
 	return "FAILURE"
 }
 
@@ -161,7 +160,7 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 
 //GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
-	j.getAPIInformation()
+	j.fetchAPIInformation()
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
 		log.Entry().WithError(err).Debugf("could not marshal apiInformation")

@@ -29,7 +29,7 @@ func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *Orchestra
 	log.Entry().Debug("Successfully initialized Azure config provider")
 }
 
-func (a *AzureDevOpsConfigProvider) getAPIInformation() {
+func (a *AzureDevOpsConfigProvider) fetchAPIInformation() {
 	// if apiInformation is empty fill it otherwise do nothing
 	if len(a.apiInformation) == 0 {
 		log.Entry().Debugf("apiInformation is empty, getting infos from API")
@@ -160,7 +160,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 // GetPipelineStartTime returns the pipeline start time in UTC
 func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 	//"2022-03-18T07:30:31.1915758Z"
-	a.getAPIInformation()
+	a.fetchAPIInformation()
 	if val, ok := a.apiInformation["startTime"]; ok {
 		parsed, err := time.Parse(time.RFC3339, val.(string))
 		if err != nil {
