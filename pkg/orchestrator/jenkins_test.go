@@ -15,7 +15,6 @@ import (
 )
 
 func TestJenkins(t *testing.T) {
-	t.Parallel()
 	t.Run("BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
@@ -79,7 +78,6 @@ func TestJenkins(t *testing.T) {
 }
 
 func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
-	t.Parallel()
 	type fields struct {
 		client  piperhttp.Client
 		options piperhttp.ClientOptions
@@ -172,8 +170,6 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 }
 
 func TestJenkinsConfigProvider_GetBuildStatus(t *testing.T) {
-	t.Parallel()
-
 	apiSuccess := []byte(`{ "queueId":376475,
 				"result":"SUCCESS",
 				"timestamp":1647946800925
@@ -234,7 +230,6 @@ func TestJenkinsConfigProvider_GetBuildStatus(t *testing.T) {
 }
 
 func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
-	t.Parallel()
 	apiJsonSchedule := []byte(`{
 				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
 				"actions": [{

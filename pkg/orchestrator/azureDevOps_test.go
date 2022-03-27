@@ -14,12 +14,11 @@ import (
 )
 
 func TestAzure(t *testing.T) {
-	t.Parallel()
 	t.Run("Azure - BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")
-		os.Setenv("BUILD_SOURCEBRANCH", "refs/heads/feat/test-azure")
+		os.Setenv("BUILD_SOURCEBRANCHNAME", "feat/test-azure")
 		os.Setenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", "https://pogo.foo")
 		os.Setenv("SYSTEM_TEAMPROJECT", "bar")
 		os.Setenv("BUILD_BUILDID", "42")
@@ -105,7 +104,6 @@ func TestAzure(t *testing.T) {
 }
 
 func TestAzureDevOpsConfigProvider_GetPipelineStartTime(t *testing.T) {
-	t.Parallel()
 
 	tests := []struct {
 		name           string
@@ -144,7 +142,6 @@ func TestAzureDevOpsConfigProvider_GetPipelineStartTime(t *testing.T) {
 }
 
 func TestAzureDevOpsConfigProvider_GetBuildStatus(t *testing.T) {
-	t.Parallel()
 
 	tests := []struct {
 		name   string
@@ -273,7 +270,6 @@ func TestAzureDevOpsConfigProvider_getAPIInformation(t *testing.T) {
 }
 
 func TestAzureDevOpsConfigProvider_GetLog(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name                    string
 		want                    []byte
