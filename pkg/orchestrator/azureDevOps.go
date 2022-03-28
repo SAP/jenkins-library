@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -187,7 +188,8 @@ func (a *AzureDevOpsConfigProvider) GetStageName() string {
 
 // GetBranch returns the source branch name, e.g. main
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
-	return getEnv("BUILD_SOURCEBRANCHNAME", "n/a")
+	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
+	return strings.TrimPrefix(tmp, "refs/heads/")
 }
 
 // GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build/results?buildId=1234
