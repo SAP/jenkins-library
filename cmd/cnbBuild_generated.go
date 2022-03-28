@@ -119,7 +119,7 @@ func CnbBuildCommand() *cobra.Command {
 
 			if len(GeneralConfig.ANSServiceKey) > 0 {
 				log.RegisterSecret(GeneralConfig.ANSServiceKey)
-				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplate)
+				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
 				log.RegisterHook(&ansHook)
 			}
 
