@@ -11,9 +11,8 @@ import (
 
 // ANSHook is used to set the hook features for the logrus hook
 type ANSHook struct {
-	correlationID string
-	client        ans.Client
-	event         ans.Event
+	client ans.Client
+	event  ans.Event
 }
 
 // NewANSHook creates a new ANS hook for logrus
@@ -42,9 +41,8 @@ func NewANSHook(serviceKey, correlationID, eventTemplate string) ANSHook {
 		ClientSecret: ansServiceKey.ClientSecret,
 	}
 	h := ANSHook{
-		correlationID: correlationID,
-		client:        ans.ANS{XSUAA: x, URL: ansServiceKey.Url},
-		event:         event,
+		client: ans.ANS{XSUAA: x, URL: ansServiceKey.Url},
+		event:  event,
 	}
 	return h
 }

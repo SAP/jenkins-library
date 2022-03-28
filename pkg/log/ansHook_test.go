@@ -51,9 +51,8 @@ func TestNewANSHook(t *testing.T) {
 				correlationID: testCorrelationID,
 			},
 			want: ANSHook{
-				correlationID: testCorrelationID,
-				client:        testClient,
-				event:         defaultEvent(),
+				client: testClient,
+				event:  defaultEvent(),
 			},
 		},
 		{
@@ -62,9 +61,8 @@ func TestNewANSHook(t *testing.T) {
 				correlationID: testCorrelationID,
 			},
 			want: ANSHook{
-				correlationID: testCorrelationID,
-				client:        ans.ANS{},
-				event:         defaultEvent(),
+				client: ans.ANS{},
+				event:  defaultEvent(),
 			},
 		},
 		{
@@ -75,9 +73,8 @@ func TestNewANSHook(t *testing.T) {
 				eventTemplate: `{"priority":123}`,
 			},
 			want: ANSHook{
-				correlationID: testCorrelationID,
-				client:        testClient,
-				event:         mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
+				client: testClient,
+				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
 			},
 		},
 	}
@@ -262,9 +259,8 @@ func TestANSHook_Fire(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ansHook := &ANSHook{
-				correlationID: tt.fields.correlationID,
-				client:        tt.fields.client,
-				event:         tt.fields.event,
+				client: tt.fields.client,
+				event:  tt.fields.event,
 			}
 			defer func() { testEvent = ans.Event{} }()
 			for _, entryArg := range tt.entryArgs {
