@@ -14,8 +14,8 @@ type BaseData struct {
 	URL             string `json:"url"`
 	StepName        string `json:"e_3"` // set by step generator
 	StageName       string `json:"e_10"`
-	PipelineURLHash string `json:"e_4"`  // defaults to sha1 of provider.GetBuildUrl()
-	BuildURLHash    string `json:"e_5"`  // defaults to sha1 of provider.GetJobUrl()
+	PipelineURLHash string `json:"e_4"`  // defaults to sha1 of provider.GetBuildURL()
+	BuildURLHash    string `json:"e_5"`  // defaults to sha1 of provider.GetJobURL()
 	Orchestrator    string `json:"e_14"` // defaults to provider.OrchestratorType()
 }
 
@@ -71,18 +71,16 @@ type CustomData struct {
 
 // StepTelemetryData definition for telemetry reporting and monitoring
 type StepTelemetryData struct {
+	StepStartTime   string                 `json:"StepStartTime"`
 	PipelineURLHash string                 `json:"PipelineURLHash"`
 	BuildURLHash    string                 `json:"BuildURLHash"`
 	StageName       string                 `json:"StageName"`
 	StepName        string                 `json:"StepName"`
 	ErrorCode       string                 `json:"ErrorCode"`
-	Duration        string                 `json:"Duration"`
+	StepDuration    string                 `json:"StepDuration"`
 	ErrorCategory   string                 `json:"ErrorCategory"`
 	CorrelationID   string                 `json:"CorrelationID"`
-	CommitHash      string                 `json:"CommitHash"`
-	Branch          string                 `json:"Branch"`
-	GitOwner        string                 `json:"GitOwner"`
-	GitRepository   string                 `json:"GitRepository"`
+	PiperCommitHash string                 `json:"PiperCommitHash"`
 	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
 }
 

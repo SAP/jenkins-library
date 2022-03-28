@@ -67,7 +67,9 @@ nav:
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - abapEnvironmentRunAUnitTest: steps/abapEnvironmentRunAUnitTest.md
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
+        - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
+        - apiProviderDownload: steps/apiProviderDownload.md
         - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md

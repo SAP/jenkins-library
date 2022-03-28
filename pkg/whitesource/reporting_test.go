@@ -30,7 +30,7 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 
 		scanReport := CreateCustomVulnerabilityReport(config.ProductName, scan, &alerts, 7.0)
 
-		assert.Equal(t, "WhiteSource Security Vulnerability Report", scanReport.Title)
+		assert.Equal(t, "WhiteSource Security Vulnerability Report", scanReport.Title())
 		assert.Equal(t, 3, len(scanReport.DetailTable.Rows))
 
 		// assert that library info is filled and sorting has been executed
@@ -69,7 +69,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 
 	sarif := CreateSarifResultFile(scan, &alerts)
 
-	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json", sarif.Schema)
+	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json", sarif.Schema)
 	assert.Equal(t, "2.1.0", sarif.Version)
 	assert.Equal(t, 1, len(sarif.Runs))
 	assert.Equal(t, "Some test agent", sarif.Runs[0].Tool.Driver.Name)

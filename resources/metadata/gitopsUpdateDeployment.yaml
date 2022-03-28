@@ -65,6 +65,9 @@ spec:
           - name: gitHttpsCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            name: gitHttpsCredentialVaultSecretName
+            default: gitHttpsCredential
       - name: password
         type: string
         description: Password/token for git authentication.
@@ -78,6 +81,9 @@ spec:
           - name: gitHttpsCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            name: gitHttpsCredentialVaultSecretName
+            default: gitHttpsCredential
       - name: filePath
         description: |
           Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:
@@ -167,7 +173,7 @@ spec:
           - helm
           - kustomize
   containers:
-    - image: dtzar/helm-kubectl:3.3.4
+    - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config
       options:
         - name: -u
@@ -177,7 +183,7 @@ spec:
           params:
             - name: tool
               value: helm
-    - image: dtzar/helm-kubectl:2.17.0
+    - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config
       options:
         - name: -u
@@ -187,7 +193,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: k8s.gcr.io/kustomize/kustomize:v3.8.7
+    - image: nekottyo/kustomize-kubeval:kustomizev4
       workingDir: /config
       options:
         - name: -u

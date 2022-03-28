@@ -43,8 +43,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var defines []string
 	var goals []string
 
-	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
-
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
@@ -66,6 +64,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		defines = append(defines, createBOMConfig...)
 	}
 
+	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
+
 	if config.Verify {
 		goals = append(goals, "verify")
 	} else {
@@ -85,9 +85,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
+	}
+
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,7 +32,7 @@ type ReportData struct {
 }
 
 // WriteReport ...
-func WriteReport(data ReportData, reportPath string, reportFileName string, result map[string]int, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func WriteReport(data ReportData, reportPath string, reportFileName string, result map[string]int, fileUtils piperutils.FileUtils) error {
 	data.Mandatory = true
 	data.Count = fmt.Sprintf("%v", result["count"])
 	data.Cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
@@ -46,20 +45,20 @@ func WriteReport(data ReportData, reportPath string, reportFileName string, resu
 		data.Count, data.Cvss2GreaterOrEqualSeven, data.Cvss3GreaterOrEqualSeven,
 		data.ExcludedVulnerabilities, data.ExcludeCVEs, data.TriagedVulnerabilities,
 		data.HistoricalVulnerabilities, data.Vulnerabilities)
-	return writeJSON(reportPath, reportFileName, data, writeToFile)
+	return writeJSON(reportPath, reportFileName, data, fileUtils)
 }
 
-func writeJSON(path, name string, data interface{}, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func writeJSON(path, name string, data interface{}, fileUtils piperutils.FileUtils) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	return writeToFile(filepath.Join(path, name), jsonData, 0644)
+	return fileUtils.FileWrite(filepath.Join(path, name), jsonData, 0644)
 }
 
 func CreateCustomReport(productName string, productID int, data map[string]int, vulns []Vuln) reporting.ScanReport {
 	scanReport := reporting.ScanReport{
-		Title: "Protecode Vulnerability Report",
+		ReportTitle: "Protecode Vulnerability Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Product name", Details: productName},
 			{Description: "Product ID", Details: fmt.Sprint(productID)},
@@ -98,18 +97,17 @@ func CreateCustomReport(productName string, productID int, data map[string]int, 
 	return scanReport
 }
 
-func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID string) ([]piperutils.Path, error) {
-	utils := piperutils.Files{}
+func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID string, fileUtils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
 	htmlReportPath := filepath.Join(ReportsDirectory, "piper_protecode_report.html")
 	// Ensure reporting directory exists
-	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+	if err := fileUtils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
 	}
-	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
+	if err := fileUtils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write html report")
 	}
@@ -118,13 +116,13 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	// ignore JSON errors since structure is in our hands
 	jsonReport, _ := scanReport.ToJSON()
-	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
+		err := fileUtils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("protecodeExecuteScan_osvm_%v.json", reportShaProtecode([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
+	if err := fileUtils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("protecodeExecuteScan_osvm_%v.json", reportShaProtecode([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,

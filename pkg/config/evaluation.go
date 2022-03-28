@@ -23,7 +23,7 @@ const (
 
 // EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
 func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
 
 	// initialize in case not initialized
 	if r.RunConfig.RunSteps == nil {
@@ -48,6 +48,8 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			}
 
 			stepActive := false
+			stepNotActive := false
+
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
 			if err != nil {
 				return err
@@ -62,7 +64,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					stepActive = true
 				} else {
 					for _, condition := range step.Conditions {
-						stepActive, err = condition.evaluateV1(stepConfig, utils)
+						stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
 						if err != nil {
 							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
 						}
@@ -73,6 +75,23 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					}
 				}
 			}
+
+			// TODO: PART 1 : if explicit activation/de-activation is available should notActiveConditions be checked ?
+			// Fortify has no anchor, so if we explicitly set it to true then it may run even during commit pipelines, if we implement TODO PART 1??
+			for _, condition := range step.NotActiveConditions {
+				stepNotActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
+				if err != nil {
+					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
+				}
+				if stepNotActive {
+					// first condition which matches will be considered to not activate the step
+					break
+				}
+			}
+
+			// final decision is when step is activated and negate when not active is true
+			stepActive = stepActive && !stepNotActive
+
 			if stepActive {
 				stageActive = true
 			}
@@ -84,7 +103,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 	return nil
 }
 
-func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
+func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils, stepName string, envRootPath string) (bool, error) {
 
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
@@ -141,6 +160,29 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 
 	if len(s.NpmScript) > 0 {
 		return checkForNpmScriptsInPackagesV1(s.NpmScript, config, utils)
+	}
+
+	if s.CommonPipelineEnvironment != nil {
+
+		var metadata StepData
+		for param, value := range s.CommonPipelineEnvironment {
+			dataType := "interface"
+			_, ok := value.(string)
+			if ok {
+				dataType = "string"
+			}
+			metadata.Spec.Inputs.Parameters = []StepParameters{
+				{Name: stepName,
+					Type:        dataType,
+					ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
+				},
+			}
+			resourceParams := metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
+			if resourceParams[stepName] == value {
+				return true, nil
+			}
+		}
+		return false, nil
 	}
 
 	// needs to be checked last:

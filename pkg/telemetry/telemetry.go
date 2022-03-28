@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"strconv"
 	"time"
 
 	"net/http"
@@ -87,13 +88,13 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobUrl := t.provider.GetJobUrl()
-	return t.toSha1OrNA(jobUrl)
+	jobURL := t.provider.GetJobURL()
+	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildUrl := t.provider.GetBuildUrl()
-	return t.toSha1OrNA(buildUrl)
+	buildURL := t.provider.GetBuildURL()
+	return t.toSha1OrNA(buildURL)
 }
 
 func (t *Telemetry) toSha1OrNA(input string) string {
@@ -145,20 +146,23 @@ func (t *Telemetry) logStepTelemetryData() {
 		}
 	}
 
+	// Subtracts the duration from now to estimate the step start time
+	i, err := strconv.ParseInt(t.data.CustomData.Duration, 10, 64)
+	duration := time.Millisecond * time.Duration(i)
+	starTime := time.Now().UTC().Add(-duration)
+
 	stepTelemetryData := StepTelemetryData{
+		StepStartTime:   starTime.String(),
 		PipelineURLHash: t.data.PipelineURLHash,
 		BuildURLHash:    t.data.BuildURLHash,
 		StageName:       t.data.StageName,
 		StepName:        t.data.BaseData.StepName,
 		ErrorCode:       t.data.CustomData.ErrorCode,
-		Duration:        t.data.CustomData.Duration,
+		StepDuration:    t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
-		CorrelationID:   t.provider.GetBuildUrl(),
-		CommitHash:      t.provider.GetCommit(),
-		Branch:          t.provider.GetBranch(),
-		GitOwner:        t.provider.GetRepoUrl(), // TODO not correct
-		GitRepository:   t.provider.GetRepoUrl(), // TODO not correct
+		CorrelationID:   t.provider.GetBuildURL(),
+		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
 	if err != nil {

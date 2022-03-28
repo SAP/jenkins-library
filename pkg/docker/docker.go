@@ -4,17 +4,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/url"
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
-	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
-	"github.com/google/go-containerregistry/pkg/legacy/tarball"
+	cranecmd "github.com/google/go-containerregistry/cmd/crane/cmd"
+	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1"
 )
 
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
@@ -84,87 +85,109 @@ type Client struct {
 
 // ClientOptions defines the options to be set on the client
 type ClientOptions struct {
-	ImageName     string
-	RegistryURL   string
-	LocalPath     string
-	IncludeLayers bool
+	ImageName   string
+	RegistryURL string
+	LocalPath   string
 }
 
 //Download interface for download an image to a local path
 type Download interface {
-	GetImageSource() (string, error)
-	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
-	TarImage(writer io.Writer, image pkgutil.Image) error
+	DownloadImage(imageSource, targetFile string) (v1.Image, error)
+	DownloadImageContent(imageSource, targetDir string) (v1.Image, error)
 }
 
 // SetOptions sets options used for the docker client
 func (c *Client) SetOptions(options ClientOptions) {
 	c.imageName = options.ImageName
 	c.registryURL = options.RegistryURL
-	c.includeLayers = options.IncludeLayers
 	c.localPath = options.LocalPath
 }
 
-const (
-	daemonPrefix = "daemon://"
-	remotePrefix = "remote://"
-)
-
-//GetImageSource get the image source from client attributes (localPath, imageName, registryURL)
-func (c *Client) GetImageSource() (string, error) {
-
-	imageSource := c.imageName
-
-	if len(c.registryURL) > 0 && len(c.localPath) <= 0 {
-		registry := c.registryURL
-
-		url, err := url.Parse(c.registryURL)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse registryURL %v: %w", c.registryURL, err)
-		}
-
-		//remove protocol from registryURL to get registry
-		if len(url.Scheme) > 0 {
-			registry = strings.Replace(c.registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
-		}
-
-		if strings.HasSuffix(registry, "/") {
-			imageSource = fmt.Sprintf("%v%v%v", remotePrefix, registry, c.imageName)
-		} else {
-			imageSource = fmt.Sprintf("%v%v/%v", remotePrefix, registry, c.imageName)
-		}
-	} else if len(c.localPath) > 0 {
-		imageSource = c.localPath
-		if !pkgutil.IsTar(c.localPath) {
-			imageSource = fmt.Sprintf("%v%v", daemonPrefix, c.localPath)
-		}
+//DownloadImageToPath downloads the image content into the given targetDir. Returns with an error if the targetDir doesnt exist
+func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, error) {
+	if fileInfo, err := os.Stat(targetDir); err != nil {
+		return nil, err
+	} else if !fileInfo.IsDir() {
+		return nil, fmt.Errorf("specified target is not a directory: %s", targetDir)
 	}
 
-	if len(imageSource) <= 0 {
-		return imageSource, fmt.Errorf("no image found for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath)
+	noOpts := []crane.Option{}
+
+	imageRef, err := c.getImageRef(imageSource)
+	if err != nil {
+		return nil, err
 	}
 
-	return imageSource, nil
+	img, err := crane.Pull(imageRef.Name(), noOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpFile, err := os.CreateTemp(".", ".piper-download-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmpFile.Name())
+
+	args := []string{imageRef.Name(), tmpFile.Name()}
+
+	exportCmd := cranecmd.NewCmdExport(&noOpts)
+	exportCmd.SetArgs(args)
+
+	if err := exportCmd.Execute(); err != nil {
+		return nil, err
+	}
+
+	return img, piperutils.Untar(tmpFile.Name(), targetDir, 0)
 }
 
-//DownloadImageToPath download the image to the specified path
-func (c *Client) DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error) {
+// DownloadImage downloads the image and saves it as tar at the given path
+func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error) {
+	noOpts := []crane.Option{}
 
-	return pkgutil.GetImage(imageSource, c.includeLayers, filePath)
+	imageRef, err := c.getImageRef(imageSource)
+	if err != nil {
+		return nil, err
+	}
+
+	img, err := crane.Pull(imageRef.Name(), noOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpFile, err := os.CreateTemp(".", ".piper-download-")
+	if err != nil {
+		return nil, err
+	}
+
+	craneCmd := cranecmd.NewCmdPull(&noOpts)
+	craneCmd.SetOut(log.Writer())
+	craneCmd.SetErr(log.Writer())
+	craneCmd.SetArgs([]string{imageRef.Name(), tmpFile.Name(), "--format=tarball"})
+
+	if err := craneCmd.Execute(); err != nil {
+		defer os.Remove(tmpFile.Name())
+		return nil, err
+	}
+
+	if err := os.Rename(tmpFile.Name(), targetFile); err != nil {
+		defer os.Remove(tmpFile.Name())
+		return nil, err
+	}
+
+	return img, nil
 }
 
-//TarImage write a tar from the given image
-func (c *Client) TarImage(writer io.Writer, image pkgutil.Image) error {
+func (c *Client) getImageRef(image string) (name.Reference, error) {
+	opts := []name.Option{}
 
-	reference, err := name.ParseReference(image.Digest.String(), name.WeakValidation)
-	if err != nil {
-		return err
+	if len(c.registryURL) > 0 {
+		re := regexp.MustCompile(`(?i)^https?://`)
+		registry := re.ReplaceAllString(c.registryURL, "")
+		opts = append(opts, name.WithDefaultRegistry(registry))
 	}
-	err = tarball.Write(reference, image.Image, writer)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return name.ParseReference(image, opts...)
 }
 
 // ImageListWithFilePath compiles container image names based on all Dockerfiles found, considering excludes
@@ -174,7 +197,7 @@ func (c *Client) TarImage(writer io.Writer, image pkgutil.Image) error {
 // * Dockerfile: `imageName`
 // * sub1/Dockerfile: `imageName-sub1`
 // * sub2/Dockerfile_proxy: `imageName-sub2-proxy`
-func ImageListWithFilePath(imageName string, excludes []string, utils piperutils.FileUtils) (map[string]string, error) {
+func ImageListWithFilePath(imageName string, excludes []string, trimDir string, utils piperutils.FileUtils) (map[string]string, error) {
 
 	imageList := map[string]string{}
 
@@ -200,7 +223,16 @@ func ImageListWithFilePath(imageName string, excludes []string, utils piperutils
 		} else {
 			var finalName string
 			if base := filepath.Base(dockerfilePath); base == "Dockerfile" {
-				finalName = fmt.Sprintf("%v-%v", imageName, strings.ReplaceAll(filepath.Dir(dockerfilePath), string(filepath.Separator), "-"))
+				subName := strings.ReplaceAll(filepath.Dir(dockerfilePath), string(filepath.Separator), "-")
+				if len(trimDir) > 0 {
+					// allow to remove trailing sub directories
+					// example .ci/app/Dockerfile
+					// with trimDir = .ci/ imagename would only contain app part.
+					subName = strings.TrimPrefix(subName, strings.ReplaceAll(trimDir, "/", "-"))
+					// make sure that subName does not start with a - (e.g. due not configuring trailing slash for trimDir)
+					subName = strings.TrimPrefix(subName, "-")
+				}
+				finalName = fmt.Sprintf("%v-%v", imageName, subName)
 			} else {
 				parts := strings.FieldsFunc(base, func(separator rune) bool {
 					return separator == []rune("-")[0] || separator == []rune("_")[0]
