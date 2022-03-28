@@ -120,7 +120,7 @@ func (ans ANS) Send(event Event) error {
 		return err
 	}
 	if response.StatusCode != http.StatusAccepted {
-		statusCodeError := fmt.Errorf("http request to '%s' did not return expected status code %d; instead got %d",
+		statusCodeError := fmt.Errorf("ANS http request to '%s' failed. Did not get expected status code %d; instead got %d",
 			entireUrl, http.StatusAccepted, response.StatusCode)
 		responseBody, err := body.ReadResponseBody(response)
 		if err != nil {
