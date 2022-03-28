@@ -20,12 +20,13 @@ import (
 type kanikoExecuteOptions struct {
 	BuildOptions                     []string `json:"buildOptions,omitempty"`
 	BuildSettingsInfo                string   `json:"buildSettingsInfo,omitempty"`
-	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
-	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
 	ContainerBuildOptions            string   `json:"containerBuildOptions,omitempty"`
 	ContainerImage                   string   `json:"containerImage,omitempty"`
 	ContainerImageName               string   `json:"containerImageName,omitempty"`
 	ContainerImageTag                string   `json:"containerImageTag,omitempty"`
+	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
+	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
+	ContainerMultiImageBuildTrimDir  string   `json:"containerMultiImageBuildTrimDir,omitempty"`
 	ContainerPreparationCommand      string   `json:"containerPreparationCommand,omitempty"`
 	ContainerRegistryURL             string   `json:"containerRegistryUrl,omitempty"`
 	CustomTLSCertificateLinks        []string `json:"customTlsCertificateLinks,omitempty"`
@@ -103,10 +104,59 @@ All images will get the same "root" name and the same versioning.<br />
 **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
 or implement a custom logic and for example execute this ` + "`" + `kanikoExecute` + "`" + ` step multiple times in your custom pipeline.
 
-You can activate multiple builds using the parameters
+You can activate multiple builds using the parameter [containerMultiImageBuild](#containermultiimagebuild)
 
-* [containerMultiImageBuild](#containermultiimagebuild) for activation
-* [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes`,
+Behavior can be adapted using:
+
+* [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes
+* [containerMultiImageBuildTrimDir](#containermultiimagebuildtrimdir) for removing parent directory part from image name
+
+Examples:
+
+#### Multiple containers in sub directories
+
+Configuration as follows:
+
+` + "`" + `` + "`" + `` + "`" + `
+general:
+  containerImageName: myImage
+steps:
+  kanikoExecute:
+    containerMultiImageBuild: true
+` + "`" + `` + "`" + `` + "`" + `
+
+Following Dockerfiles are available in the repository:
+
+* sub1/Dockerfile
+* sub2/Dockerfile
+
+Following final image names will be built:
+
+* ` + "`" + `myImage-sub1` + "`" + `
+* ` + "`" + `myImage-sub2` + "`" + `
+
+#### Multiple containers in sub directories while trimming a directory part
+
+Configuration as follows:
+
+` + "`" + `` + "`" + `` + "`" + `
+general:
+  containerImageName: myImage
+steps:
+  kanikoExecute:
+    containerMultiImageBuild: true
+    containerMultiImageBuildTrimDir: .ci
+` + "`" + `` + "`" + `` + "`" + `
+
+Following Dockerfiles are available in the repository:
+
+* .ci/sub1/Dockerfile
+* .ci/sub2/Dockerfile
+
+Following final image names will be built:
+
+* ` + "`" + `myImage-sub1` + "`" + `
+* ` + "`" + `myImage-sub2` + "`" + ``,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -183,14 +233,15 @@ You can activate multiple builds using the parameters
 }
 
 func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`, `--ignore-path=/busybox`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
-	cmd.Flags().BoolVar(&stepConfig.ContainerMultiImageBuild, "containerMultiImageBuild", false, "Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).")
-	cmd.Flags().StringSliceVar(&stepConfig.ContainerMultiImageBuildExcludes, "containerMultiImageBuildExcludes", []string{}, "Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).")
 	cmd.Flags().StringVar(&stepConfig.ContainerBuildOptions, "containerBuildOptions", os.Getenv("PIPER_containerBuildOptions"), "Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used instead of parameter `containerImage`")
+	cmd.Flags().BoolVar(&stepConfig.ContainerMultiImageBuild, "containerMultiImageBuild", false, "Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).")
+	cmd.Flags().StringSliceVar(&stepConfig.ContainerMultiImageBuildExcludes, "containerMultiImageBuildExcludes", []string{}, "Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).")
+	cmd.Flags().StringVar(&stepConfig.ContainerMultiImageBuildTrimDir, "containerMultiImageBuildTrimDir", os.Getenv("PIPER_containerMultiImageBuildTrimDir"), "Defines a trailing directory part which should not be considered in the final image name.")
 	cmd.Flags().StringVar(&stepConfig.ContainerPreparationCommand, "containerPreparationCommand", `rm -f /kaniko/.docker/config.json`, "Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
@@ -222,7 +273,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{`--skip-tls-verify-pull`, `--ignore-path=/busybox`},
+						Default:     []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`},
 					},
 					{
 						Name: "buildSettingsInfo",
@@ -237,24 +288,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
-					},
-					{
-						Name:        "containerMultiImageBuild",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "containerMultiImageBuildExcludes",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
 					},
 					{
 						Name:        "containerBuildOptions",
@@ -296,6 +329,33 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
+					},
+					{
+						Name:        "containerMultiImageBuild",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "containerMultiImageBuildExcludes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "containerMultiImageBuildTrimDir",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerMultiImageBuildTrimDir"),
 					},
 					{
 						Name:        "containerPreparationCommand",

@@ -57,11 +57,7 @@ type ExecRunner interface {
 
 // Utils interface for mocking
 type Utils interface {
-	Chdir(path string) error
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	Getwd() (string, error)
-	Glob(pattern string) (matches []string, err error)
+	piperutils.FileUtils
 
 	GetExecRunner() ExecRunner
 }

@@ -72,7 +72,7 @@ func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.
 }
 
 func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
-	return getDockerImageValue(stepName)
+	return GetDockerImageValue(stepName)
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
@@ -446,10 +446,10 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 		buildOptions = append(buildOptions, "-o", binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
-	buildOptions = append(buildOptions, config.Packages...)
 	if len(ldflags) > 0 {
 		buildOptions = append(buildOptions, "-ldflags", ldflags)
 	}
+	buildOptions = append(buildOptions, config.Packages...)
 
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)

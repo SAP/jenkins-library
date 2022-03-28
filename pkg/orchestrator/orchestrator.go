@@ -22,17 +22,18 @@ type OrchestratorSpecificConfigProviding interface {
 	OrchestratorVersion() string
 	GetStageName() string
 	GetBranch() string
-	GetBuildUrl() string
-	GetBuildId() string
-	GetJobUrl() string
+	GetBuildURL() string
+	GetBuildID() string
+	GetJobURL() string
 	GetJobName() string
 	GetCommit() string
 	GetPullRequestConfig() PullRequestConfig
-	GetRepoUrl() string
+	GetRepoURL() string
 	IsPullRequest() bool
 	GetLog() ([]byte, error)
 	GetPipelineStartTime() time.Time
 	GetBuildStatus() string
+	GetBuildReason() string
 }
 
 type PullRequestConfig struct {
@@ -41,6 +42,7 @@ type PullRequestConfig struct {
 	Key    string
 }
 
+// OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
 type OrchestratorSettings struct {
 	JenkinsUser  string
 	JenkinsToken string
@@ -60,6 +62,7 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	}
 }
 
+// DetectOrchestrator returns the name of the current orchestrator e.g. Jenkins, Azure, Unknown
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
 		return Orchestrator(AzureDevOps)
@@ -101,6 +104,7 @@ func truthy(key string) bool {
 // Wrapper function to read env variable and set default value
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
+		log.Entry().Debugf("For: %s, found: %s", key, value)
 		return value
 	}
 	log.Entry().Debugf("Could not read env variable %v using fallback value %v", key, fallback)

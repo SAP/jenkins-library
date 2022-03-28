@@ -1,21 +1,39 @@
 package npm
 
 import (
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
+
+type npmMinimalPackageDescriptor struct {
+	Name    string `json:version`
+	Version string `json:version`
+}
+
+func (pd *npmMinimalPackageDescriptor) Scope() string {
+	r := regexp.MustCompile(`^(?:(?P<scope>@[^\/]+)\/)?(?P<package>.+)$`)
+
+	matches := r.FindStringSubmatch(pd.Name)
+
+	if len(matches) == 0 {
+		return ""
+	}
+
+	return matches[1]
+}
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
 func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error {
 	for _, packageJSON := range packageJSONFiles {
+		log.Entry().Infof("triggering publish for %s", packageJSON)
+
 		fileExists, err := exec.Utils.FileExists(packageJSON)
 		if err != nil {
 			return fmt.Errorf("cannot check if '%s' exists: %w", packageJSON, err)
@@ -36,8 +54,14 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	scope, err := exec.readPackageScope(packageJSON)
+
+	if err != nil {
+		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
+	}
+
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
-	if exists, err := FileUtils.FileExists(npmignore.filepath); exists {
+	if exists, err := exec.Utils.FileExists(npmignore.filepath); exists {
 		if err != nil {
 			return errors.Wrapf(err, "failed to check for existing %s file", npmignore.filepath)
 		}
@@ -65,7 +89,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	// update .piperNpmrc
 	if len(registry) > 0 {
 		// check existing .npmrc file
-		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
+		if exists, err := exec.Utils.FileExists(npmrc.filepath); exists {
 			if err != nil {
 				return errors.Wrapf(err, "failed to check for existing %s file", npmrc.filepath)
 			}
@@ -79,6 +103,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// set registry
 		log.Entry().Debugf("adding registry %s", registry)
 		npmrc.Set("registry", registry)
+
+		if len(scope) > 0 {
+			npmrc.Set(fmt.Sprintf("%s:registry", scope), registry)
+		}
+
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
 			log.Entry().Debug("adding registry credentials")
@@ -94,62 +123,84 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		tmpDirectory := getTempDirForNpmTarBall()
-		defer os.RemoveAll(tmpDirectory)
+		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
-		err := execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+		if err != nil {
+			return errors.Wrap(err, "creating temp directory failed")
+		}
+
+		defer exec.Utils.RemoveAll(tmpDirectory)
+
+		err = execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
 		if err != nil {
 			return err
 		}
 
-		_, err = FileUtils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
+		_, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
 				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
 		}
 
-		tarballFileName := ""
-		err = filepath.Walk(tmpDirectory, func(path string, info os.FileInfo, err error) error {
-			if filepath.Ext(path) == ".tgz" {
-				tarballFileName = "." + string(filepath.Separator) + path
-				log.Entry().Debugf("found tarball file at %v", tarballFileName)
+		tarballs, err := exec.Utils.Glob(filepath.Join(tmpDirectory, "*.tgz"))
+
+		if err != nil {
+			return err
+		}
+
+		if len(tarballs) != 1 {
+			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
+		}
+
+		tarballFilePath, err := exec.Utils.Abs(tarballs[0])
+
+		if err != nil {
+			return err
+		}
+
+		projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
+		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
+
+		if projectNpmrcExists {
+			// rename the .npmrc file since it interferes with publish
+			err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
+			if err != nil {
+				return fmt.Errorf("error when renaming current .npmrc file : %w", err)
 			}
-			return nil
-		})
-		if err != nil {
-			return err
 		}
 
-		// rename the .npmrc file since it interferes with publish
-		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".npmrc"), filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"))
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
 		if err != nil {
-			return fmt.Errorf("error when renaming current .npmrc file : %w", err)
+			return errors.Wrap(err, "failed publishing artifact")
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFileName, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
-		if err != nil {
-			return err
-		}
-
-		// undo the renaming ot the .npmrc to keep the workspace like before
-		err = os.Rename(filepath.Join(filepath.Dir(packageJSON), ".tmpNpmrc"), filepath.Join(filepath.Dir(packageJSON), ".npmrc"))
-		if err != nil {
-			log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
+		if projectNpmrcExists {
+			// undo the renaming ot the .npmrc to keep the workspace like before
+			err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
+			if err != nil {
+				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
+			}
 		}
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed publishing artifact")
 		}
 	}
 
 	return nil
 }
 
-func getTempDirForNpmTarBall() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
+	b, err := exec.Utils.FileRead(packageJSON)
+
 	if err != nil {
-		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
+		return "", err
 	}
-	return tmpFolder
+
+	var pd npmMinimalPackageDescriptor
+
+	json.Unmarshal(b, &pd)
+
+	return pd.Scope(), nil
 }
