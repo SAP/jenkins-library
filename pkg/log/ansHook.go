@@ -20,7 +20,7 @@ type ANSHook struct {
 func NewANSHook(serviceKey, correlationID, eventTemplateFilePath string) ANSHook {
 	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(serviceKey)
 	if err != nil {
-		Entry().Warnf("cannot initialize ans due to faulty serviceKey json: %v", err)
+		Entry().WithField("stepName", "ANS").Warnf("cannot initialize ans due to faulty serviceKey json: %v", err)
 	}
 	event := ans.Event{
 		EventType: "Piper",
@@ -33,11 +33,11 @@ func NewANSHook(serviceKey, correlationID, eventTemplateFilePath string) ANSHook
 	if len(eventTemplateFilePath) > 0 {
 		eventTemplate, err := ioutil.ReadFile(eventTemplateFilePath)
 		if err != nil {
-			Entry().Warnf("provided ANS event template file with path '%s' could not be read: %v", eventTemplateFilePath, err)
+			Entry().WithField("stepName", "ANS").Warnf("provided ANS event template file with path '%s' could not be read: %v", eventTemplateFilePath, err)
 		}
 		err = event.MergeWithJSON(eventTemplate)
 		if err != nil {
-			Entry().Warnf("provided ANS event template '%s' could not be unmarshalled: %v", eventTemplate, err)
+			Entry().WithField("stepName", "ANS").Warnf("provided ANS event template '%s' could not be unmarshalled: %v", eventTemplate, err)
 		}
 	}
 	x := xsuaa.XSUAA{
