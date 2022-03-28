@@ -25,6 +25,7 @@ type GeneralConfigOptions struct {
 	CustomConfig         string
 	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
 	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	CustomDefaultConfig  []string // ordered list
 	IgnoreCustomDefaults bool
 	ParametersJSON       string
 	EnvRootPath          string
@@ -206,6 +207,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", AccessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.CustomDefaultConfig, "customDefaultConfig", []string{}, "Custom default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
@@ -374,6 +376,18 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 				}
 			} else {
 				log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
+				defaultConfig = append(defaultConfig, fc)
+			}
+		}
+		if len(GeneralConfig.CustomDefaultConfig) == 0 {
+			log.Entry().Info("Custom defaults: NONE")
+		}
+		for _, customDefaultFile := range GeneralConfig.CustomDefaultConfig {
+			fc, err := openFile(customDefaultFile, GeneralConfig.GitHubAccessTokens)
+			log.Entry().Infof("Custom defaults: '%s'", customDefaultFile)
+			if err != nil {
+				return errors.Wrapf(err, "Cannot read '%s'", customDefaultFile)
+			} else {
 				defaultConfig = append(defaultConfig, fc)
 			}
 		}
