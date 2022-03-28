@@ -80,7 +80,7 @@ type SarifProperties struct {
 	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
 	Confidence            string `json:"confidence,omitempty"`
 	FortifyCategory       string `json:"fortifyCategory,omitempty"`
-	CheckmarxSimilarityId string `json:"checkmarxSimilarityID,omitempty`
+	CheckmarxSimilarityId string `json:"checkmarxSimilarityID,omitempty"`
 	Audited               bool   `json:"audited"`
 	ToolSeverity          string `json:"toolSeverity"`
 	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
