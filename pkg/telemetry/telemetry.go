@@ -88,13 +88,13 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobUrl := t.provider.GetJobUrl()
-	return t.toSha1OrNA(jobUrl)
+	jobURL := t.provider.GetJobURL()
+	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildUrl := t.provider.GetBuildUrl()
-	return t.toSha1OrNA(buildUrl)
+	buildURL := t.provider.GetBuildURL()
+	return t.toSha1OrNA(buildURL)
 }
 
 func (t *Telemetry) toSha1OrNA(input string) string {
@@ -161,7 +161,7 @@ func (t *Telemetry) logStepTelemetryData() {
 		StepDuration:    t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
-		CorrelationID:   t.provider.GetBuildUrl(),
+		CorrelationID:   t.provider.GetBuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
