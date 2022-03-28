@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 	"time"
 )
@@ -37,11 +38,11 @@ func TestNewANSHook(t *testing.T) {
 	type args struct {
 		serviceKey    string
 		correlationID string
-		eventTemplate string
 	}
 	tests := []struct {
 		name string
 		args args
+		eventTemplate string
 		want ANSHook
 	}{
 		{
@@ -70,8 +71,8 @@ func TestNewANSHook(t *testing.T) {
 			args: args{
 				serviceKey:    testServiceKeyJSON,
 				correlationID: testCorrelationID,
-				eventTemplate: `{"priority":123}`,
 			},
+			eventTemplate: `{"priority":123}`,
 			want: ANSHook{
 				client: testClient,
 				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
@@ -80,7 +81,20 @@ func TestNewANSHook(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewANSHook(tt.args.serviceKey, tt.args.correlationID, tt.args.eventTemplate)
+			var testEventTemplateFilePath string
+			if len(tt.eventTemplate) > 0 {
+				var err error
+				testEventTemplateFile, err := os.CreateTemp("", "event_template_*.json")
+				require.NoError(t, err, "File creation failed!")
+				defer testEventTemplateFile.Close()
+				defer os.Remove(testEventTemplateFile.Name())
+				data := []byte(tt.eventTemplate)
+				_, err = testEventTemplateFile.Write(data)
+				require.NoError(t, err, "Could not write test data to test file!")
+				testEventTemplateFilePath = testEventTemplateFile.Name()
+			}
+
+			got := NewANSHook(tt.args.serviceKey, tt.args.correlationID, testEventTemplateFilePath)
 			assert.Equal(t, tt.want, got, "new ANSHook not as expected")
 		})
 	}

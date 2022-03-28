@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ type ANSHook struct {
 }
 
 // NewANSHook creates a new ANS hook for logrus
-func NewANSHook(serviceKey, correlationID, eventTemplate string) ANSHook {
+func NewANSHook(serviceKey, correlationID, eventTemplateFilePath string) ANSHook {
 	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(serviceKey)
 	if err != nil {
 		Entry().Warnf("cannot initialize ans due to faulty serviceKey json: %v", err)
@@ -29,10 +30,14 @@ func NewANSHook(serviceKey, correlationID, eventTemplate string) ANSHook {
 			ResourceName: "Pipeline",
 		},
 	}
-	if len(eventTemplate) > 0 {
-		err = event.MergeWithJSON([]byte(eventTemplate))
+	if len(eventTemplateFilePath) > 0 {
+		eventTemplate, err := ioutil.ReadFile(eventTemplateFilePath)
 		if err != nil {
-			Entry().Warnf("provided ANS event template could not be unmarshalled: %v", err)
+			Entry().Warnf("provided ANS event template file with path '%s' could not be read: %v", eventTemplateFilePath, err)
+		}
+		err = event.MergeWithJSON(eventTemplate)
+		if err != nil {
+			Entry().Warnf("provided ANS event template '%s' could not be unmarshalled: %v", eventTemplate, err)
 		}
 	}
 	x := xsuaa.XSUAA{
