@@ -54,11 +54,11 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	for _, source := range config.Sources {
 
 		if strings.Contains(source, "https") {
-			scriptName, err := downloadScript(config, utils, source)
+			scriptLocation, err := downloadScript(config, utils, source)
 			if err != nil {
 				return errors.Wrapf(err, "script download error")
 			}
-			source = scriptName
+			source = scriptLocation
 		}
 		// check if the script is physically present
 		exists, err := utils.FileExists(source)
