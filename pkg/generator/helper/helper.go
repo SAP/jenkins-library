@@ -150,6 +150,12 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSServiceKey) > 0 {
+				log.RegisterSecret({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSServiceKey)
+				ansHook := log.NewANSHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSServiceKey, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSEventTemplateFilePath)
+				log.RegisterHook(&ansHook)
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
