@@ -31,6 +31,8 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         Map stepParameters = prepareStepParameters(parameters)
         echo "Step params $stepParameters"
 
+        //generalConfig = script.commonPipelineEnvironment.configuration.general
+
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
@@ -47,6 +49,9 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config = getStepContextConfig(script, piperGoPath, metadataFile, defaultConfigArgs, customConfigArg)
                 echo "Context Config: ${config}"
             }
+
+            //Add ANS credential information to the config
+            config += ["ansServiceKeyCredentialsId": script.commonPipelineEnvironment.configuration.general.ansServiceKeyCredentialsId]
 
             // prepare stashes
             // first eliminate empty stashes
@@ -168,7 +173,7 @@ void dockerWrapper(script, stepName, config, body) {
 // reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
     credentialInfo = handleVaultCredentials(config, credentialInfo)
-
+    credentialInfo = handleANSCredentials(config, credentialInfo)
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
@@ -251,6 +256,18 @@ List handleVaultCredentials(config, List credentialInfo) {
 
     if (config.containsKey('vaultTokenCredentialsId')) {
         credentialInfo += [[type: 'token', id: 'vaultTokenCredentialsId', env: ['PIPER_vaultToken']]]
+    }
+
+//    if (config.containsKey('ansServiceKeyCredentialsId')) {
+//        credentialInfo += [[type: 'token', id: 'ansServiceKeyCredentialsId', env: ['PIPER_ansServiceKey']]]
+//    }
+
+    return credentialInfo
+}
+
+List handleANSCredentials(config, List credentialInfo){
+    if (config.containsKey('ansServiceKeyCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'ansServiceKeyCredentialsId', env: ['PIPER_ansServiceKey']]]
     }
 
     return credentialInfo
