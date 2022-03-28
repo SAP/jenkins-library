@@ -111,10 +111,6 @@ func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url st
 		return "", errors.Wrapf(err, "unable to download script from %v", url)
 	}
 	log.Entry().Infof("downloaded script %v successfully", url)
-	err = utils.Chmod(filepath.Join(".pipeline", fileName), 0777)
-	if err != nil {
-		return "", fmt.Errorf("unable to change file permission for script '%v'", fileName)
-	}
 
 	return filepath.Join(".pipeline", fileName), nil
 }
