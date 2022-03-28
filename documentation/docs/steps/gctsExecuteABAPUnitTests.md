@@ -6,7 +6,6 @@
 Please use the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) instead.
 Don´t worry, if you´re already using the step. You can continue to use it. It will call the functions of the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) step.
 
-
 ## Prerequisites
 
 * [ATC](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ec5711c6e391014adc9fffe4e204223.html) checks are enabled in transaction ATC in the ABAP systems where you want to use the step.
