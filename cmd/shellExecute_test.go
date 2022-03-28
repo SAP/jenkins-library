@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -89,4 +90,17 @@ func TestRunShellExecute(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("success case - download script header", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:     []string{"https://myScriptLocation/myScript.sh"},
+			GithubToken: "dummy@12345",
+		}
+		u := newShellExecuteTestsUtils()
+
+		err := runShellExecute(o, nil, u)
+
+		assert.Equal(t, http.Header{"Accept": []string{"application/vnd.github.v3.raw"}, "Authorization": []string{"Token dummy@12345"}}, u.header)
+		fileScriptName := filepath.Join(".pipeline", "myScript.sh")
+		assert.EqualError(t, err, "the script '"+fileScriptName+"' could not be found")
+	})
 }
