@@ -72,6 +72,12 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.ANSServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.ANSServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+				log.RegisterHook(&ansHook)
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err

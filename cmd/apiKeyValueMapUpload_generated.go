@@ -67,6 +67,12 @@ Learn more about the SAP API Management API for creating an API key value map ar
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.ANSServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.ANSServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+				log.RegisterHook(&ansHook)
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err

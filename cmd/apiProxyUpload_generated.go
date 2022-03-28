@@ -65,6 +65,12 @@ Learn more about the SAP API Management API for uploading an api proxy artifact 
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.ANSServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.ANSServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+				log.RegisterHook(&ansHook)
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err

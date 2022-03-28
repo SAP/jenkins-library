@@ -65,6 +65,12 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.ANSServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.ANSServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+				log.RegisterHook(&ansHook)
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err

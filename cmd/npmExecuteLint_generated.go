@@ -66,6 +66,12 @@ either use ESLint configurations present in the project or use the provided gene
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.ANSServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.ANSServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+				log.RegisterHook(&ansHook)
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
