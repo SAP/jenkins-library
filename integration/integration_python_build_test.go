@@ -6,8 +6,15 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestBuildProject(t *testing.T) {
@@ -15,6 +22,11 @@ func TestBuildProject(t *testing.T) {
 	pwd, err := os.Getwd()
 	assert.NoError(t, err, "Getting current working directory failed.")
 	pwd = filepath.Dir(pwd)
+
+	tempDir, err := createTmpDir("")
+	defer os.RemoveAll(tempDir) // clean up
+	assert.NoError(t, err, "Error when creating temp dir")
+
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPythonIntegration"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
