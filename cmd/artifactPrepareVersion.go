@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
@@ -61,12 +62,18 @@ type artifactPrepareVersionUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRead(path string) ([]byte, error)
+
+	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
+}
+
+func (a *artifactPrepareVersionUtilsBundle) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
+	return orchestrator.NewOrchestratorSpecificConfigProvider()
 }
 
 func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
@@ -148,6 +155,16 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
 		now := time.Now()
+
+		// make sure that versioning does not create tags (when set to "cloud")
+		// for PR pipelines, optimized pipelines (= no build)
+		provider, err := utils.NewOrchestratorSpecificConfigProvider()
+		if err != nil {
+			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		}
+		if provider.IsPullRequest() || config.IsOptimizedAndScheduled {
+			config.VersioningType = "cloud_noTag"
+		}
 
 		newVersion, err = calculateCloudVersion(artifact, config, version, gitCommitID, now)
 		if err != nil {

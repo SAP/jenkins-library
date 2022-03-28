@@ -126,6 +126,11 @@ func (pc *Protecode) SetOptions(options Options) {
 	pc.client.SetOptions(httpOptions)
 }
 
+//SetHttpClient setter function to set the http client
+func (pc *Protecode) SetHttpClient(client piperHttp.Uploader) {
+	pc.client = client
+}
+
 func (pc *Protecode) createURL(path string, pValue string, fParam string) string {
 
 	protecodeURL, err := url.Parse(pc.serverURL)
@@ -339,7 +344,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, vers
 	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil, "binary")
 	if err != nil {
 		//TODO: bubble up error
-		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
+		pc.logger.WithError(err).Fatalf("Error during upload request %v", uploadURL)
 	} else {
 		pc.logger.Info("Upload successful")
 	}
