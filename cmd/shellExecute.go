@@ -116,5 +116,5 @@ func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url st
 	// 	return "", fmt.Errorf("unable to change file permission for script '%v'", fileName)
 	// }
 
-	return "./" + fileName, nil
+	return filepath.Join(".pipeline", fileName), nil
 }
