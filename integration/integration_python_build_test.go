@@ -28,7 +28,7 @@ func TestBuildProject(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPythonIntegration"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPythonIntegration", "python-project"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
@@ -92,18 +92,18 @@ func TestBuildProject2(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "python:3.9",
-		TestDir: []string{"testdata", "TestPythonIntegration"},
+		TestDir: []string{"testdata", "TestPythonIntegration", "python-project"},
 		Mounts:  map[string]string{},
 		Setup:   []string{},
 	})
 
-	err := container.whenRunningPiperCommand("pythonBuild", "--createBOM=true", "--publish=false")
+	err := container.whenRunningPiperCommand("pythonBuild", "")
 	if err != nil {
 		t.Fatalf("Calling piper command failed %s", err)
 	}
 
 	container.assertHasOutput(t, "Successfully built example-pkg-0.0.1.tar.gz and example_pkg-0.0.1-py3-none-any.whl")
-	container.asserrHasOutput(t, "bom.xml")
+	container.assertHasOutput(t, "bom.xml")
 	container.assertHasFile(t, "/dist/example-pkg-0.0.1.tar.gz")
 	container.assertHasFile(t, "/dist/example_pkg-0.0.1-py3-none-any.whl")
 }
