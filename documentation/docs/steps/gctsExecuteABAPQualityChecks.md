@@ -4,8 +4,10 @@
 
 ## Prerequisites
 
-* [ATC](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ec5711c6e391014adc9fffe4e204223.html) checks are enabled in transaction ATC in the ABAP systems where you want to use the step.
+* [ATC](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks are enabled in transaction ATC in the ABAP systems where you want to use the step.
+* [ABAP Unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) are available for the source code that you want to check. Note: Do not execute unit tests in client 000, and not in your production client.
 * [gCTS](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/26c9c6c5a89244cb9506c253d36c3fda.html) is available and configured in the ABAP systems where you want to use the step.
+* If you want to use environmental variables as parameters, for example, `GIT_COMMIT`: The [Git Plugin](https://plugins.jenkins.io/git/) is installed in Jenkins.
 * The [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin is installed in Jenkins.
 
 ## ${docGenParameters}
@@ -26,13 +28,13 @@ gctsExecuteABAPQualityChecks(
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
   repository: 'myrepo',
   scope: 'remoteChangedObjects',
-  commit: "${GIT_COMMIT}",
+  commit: "${env.GIT_COMMIT}",
   workspace: "${WORKSPACE}"
 
   )
 ```
 
-Example configuration for the use in a yaml config file (such as `.pipeline/config.yaml`).
+Example configuration for the use in a .yaml config file (such as `.pipeline/config.yaml`).
 
 ```yaml
 steps:
@@ -47,7 +49,7 @@ steps:
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
 
-Example configuration when you define scope: *repository* or *packages*. For these two cases you do not need to specify a *commit*.
+Example configuration with the *repository* scope defined. Here, you don´t need to specify a *commit*. This sample configuration can also be used with the *packages* scope.
 
 ```yaml
 steps:
@@ -61,7 +63,7 @@ steps:
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
 
-Example configuration when you want to execute only ABAP Unit Test.
+Example configuration when you want to execute only ABAP Unit tests.
 
 ```yaml
 steps:
@@ -76,7 +78,7 @@ steps:
     workspace: '/var/jenkins_home/workspace/myFirstPipeline'
 ```
 
-Example configuration for the use of *recordIssue* step to make the findings visible in Jenkins interface.
+Example configuration for the use of the *recordIssue* step in a Jenkinsfile to make the check results visible in the Warnings-Next-Generation Plugin in Jenkins.
 
 ```groovy
 stage('ABAP Unit Tests') {
@@ -87,7 +89,7 @@ stage('ABAP Unit Tests') {
      try{
            gctsExecuteABAPQualityChecks(
               script: this,
-              commit: "${GIT_COMMIT}",
+              commit: "${env.GIT_COMMIT}",
               workspace: "${WORKSPACE}")
         }
           catch (Exception ex) {
@@ -112,7 +114,7 @@ stage('Results in Checkstyle') {
 }
 ```
 
-**Note:** If you have disabled *atcCheck* or *aUnitTest*, than you also need to remove the corresponding *ATCResults.xml* or *AUnitResults.xml* from *recordIssues* step. In the example below the *atcCheck* was disabled, so *ATCResults.xml* was removed.
+**Note:** If you have disabled the *atcCheck* or *aUnitTest* parameters, you must also remove the corresponding *ATCResults.xml* or *AUnitResults.xml* from the *recordIssues* step. In the example below, the *atcCheck* is disabled. Therefore, the *ATCResults.xml* is missing.
 
 ```groovy
 recordIssues(
