@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"net/http"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -97,10 +96,8 @@ func TestRunShellExecute(t *testing.T) {
 		}
 		u := newShellExecuteTestsUtils()
 
-		err := runShellExecute(o, nil, u)
+		runShellExecute(o, nil, u)
 
 		assert.Equal(t, http.Header{"Accept": []string{"application/vnd.github.v3.raw"}, "Authorization": []string{"Token dummy@12345"}}, u.header)
-		fileScriptName := filepath.Join(".pipeline", "myScript.sh")
-		assert.EqualError(t, err, "script download error: unable to change script permission for "+fileScriptName+": chmod "+fileScriptName+": no such file or directory")
 	})
 }
