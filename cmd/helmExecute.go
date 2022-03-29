@@ -18,7 +18,7 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
 		AppVersion:                config.AppVersion,
 		Dependency:                config.Dependency,
-		DependencyUpdate:          config.DependencyUpdate,
+		PackageDependencyUpdate:   config.PackageDependencyUpdate,
 		HelmValues:                config.HelmValues,
 		FilterTest:                config.FilterTest,
 		DumpLogs:                  config.DumpLogs,

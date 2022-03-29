@@ -46,7 +46,7 @@ type HelmExecuteOptions struct {
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
-	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
+	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
 	FilterTest                string   `json:"filterTest,omitempty"`
 	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
@@ -279,7 +279,7 @@ func (h *HelmExecute) runHelmPackage() error {
 	if len(h.config.PackageVersion) > 0 {
 		helmParams = append(helmParams, "--version", h.config.PackageVersion)
 	}
-	if h.config.DependencyUpdate {
+	if h.config.PackageDependencyUpdate {
 		helmParams = append(helmParams, "--dependency-update")
 	}
 	if len(h.config.AppVersion) > 0 {

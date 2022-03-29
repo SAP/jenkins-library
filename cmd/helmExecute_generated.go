@@ -33,7 +33,7 @@ type helmExecuteOptions struct {
 	HelmCommand               string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall dependency publish"`
 	AppVersion                string   `json:"appVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
-	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
+	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
 	FilterTest                string   `json:"filterTest,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
@@ -171,7 +171,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.HelmCommand, "helmCommand", os.Getenv("PIPER_helmCommand"), "Helm: defines the command `upgrade`, `lint`, `install`, `test`, `uninstall`, `dependency`, `publish`.")
 	cmd.Flags().StringVar(&stepConfig.AppVersion, "appVersion", os.Getenv("PIPER_appVersion"), "set the appVersion on the chart to this version")
 	cmd.Flags().StringVar(&stepConfig.Dependency, "dependency", os.Getenv("PIPER_dependency"), "manage a chart's dependencies")
-	cmd.Flags().BoolVar(&stepConfig.DependencyUpdate, "dependencyUpdate", false, "set the appVersion on the chart to this version")
+	cmd.Flags().BoolVar(&stepConfig.PackageDependencyUpdate, "packageDependencyUpdate", false, "update dependencies from \"Chart.yaml\" to dir \"charts/\" before packaging")
 	cmd.Flags().BoolVar(&stepConfig.DumpLogs, "dumpLogs", false, "dump the logs from test pods (this runs after all tests are complete, but before any cleanup)")
 	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
@@ -410,7 +410,7 @@ func helmExecuteMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_dependency"),
 					},
 					{
-						Name:        "dependencyUpdate",
+						Name:        "packageDependencyUpdate",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",

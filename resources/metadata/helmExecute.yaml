@@ -221,9 +221,9 @@ spec:
           - build
           - list
           - update
-      - name: dependencyUpdate
+      - name: packageDependencyUpdate
         type: bool
-        description: set the appVersion on the chart to this version
+        description: update dependencies from "Chart.yaml" to dir "charts/" before packaging
         default: false
         scope:
           - GENERAL

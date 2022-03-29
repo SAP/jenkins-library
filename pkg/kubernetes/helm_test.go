@@ -241,11 +241,11 @@ func TestRunHelm(t *testing.T) {
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:        ".",
-					DeploymentName:   "testPackage",
-					PackageVersion:   "1.2.3",
-					DependencyUpdate: true,
-					AppVersion:       "9.8.7",
+					ChartPath:               ".",
+					DeploymentName:          "testPackage",
+					PackageVersion:          "1.2.3",
+					PackageDependencyUpdate: true,
+					AppVersion:              "9.8.7",
 				},
 				expectedConfig: []string{"package", ".", "--version", "1.2.3", "--dependency-update", "--app-version", "9.8.7"},
 			},
