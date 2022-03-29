@@ -334,10 +334,12 @@ func untar(r io.Reader, dir string, level int) (err error) {
 
 // isFileGzipped checks the first 3 bytes of the given file to determine if it is gzipped or not. Returns `true` if the file is gzipped.
 func isFileGzipped(file string) (bool, error) {
+	log.Entry().Infof("anil test : inside gzip check")
 	f, err := os.Open(file)
 	defer f.Close()
 
 	if err != nil {
+		log.Entry().Infof("anil test : unable to read file")
 		return false, err
 	}
 
@@ -345,6 +347,7 @@ func isFileGzipped(file string) (bool, error) {
 	_, err = io.ReadFull(f, b)
 
 	if err != nil {
+		log.Entry().Infof("anil test : unable to read full byte")
 		return false, err
 	}
 
