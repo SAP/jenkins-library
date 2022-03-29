@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/SAP/jenkins-library/pkg/apim"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -31,15 +32,15 @@ func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry
 
 func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
-	apim := cpi.APIM{APIServiceKey: config.APIServiceKey, Client: httpClient}
-	error := cpi.APIMUtils.PrepareAPIMStruct(apim)
+	apimStruct := apim.APIMCommon{APIServiceKey: config.APIServiceKey, Client: httpClient}
+	error := apim.APIMCommonUtils.PrepareAPIMStruct(apimStruct)
 	if error != nil {
 		return error
 	}
-	return createApiProvider(config, apim, ioutil.ReadFile)
+	return createApiProvider(config, apimStruct, ioutil.ReadFile)
 }
 
-func createApiProvider(config *apiProviderUploadOptions, apim cpi.APIM, readFile func(string) ([]byte, error)) error {
+func createApiProvider(config *apiProviderUploadOptions, apim apim.APIMCommon, readFile func(string) ([]byte, error)) error {
 	httpClient := apim.Client
 	httpMethod := http.MethodPost
 	uploadApiProviderStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProviders", apim.Host)

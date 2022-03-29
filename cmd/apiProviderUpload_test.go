@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/cpi"
+	"github.com/SAP/jenkins-library/pkg/apim"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +16,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 		filesMock.AddFile("test.json", []byte("Test content"))
 		config := getDefaultOptionsForApiProvider()
 		httpClient := httpMock{StatusCode: 201, ResponseBody: ``}
-		apim := cpi.APIM{APIServiceKey: config.APIServiceKey, Client: &httpClient}
+		apim := apim.APIMCommon{APIServiceKey: config.APIServiceKey, Client: &httpClient}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert
@@ -35,7 +35,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 		filesMock.AddFile("test.json", []byte("Test content"))
 		config := getDefaultOptionsForApiProvider()
 		httpClient := httpMockGcts{StatusCode: 400, ResponseBody: ``}
-		apim := cpi.APIM{APIServiceKey: config.APIServiceKey, Client: &httpClient}
+		apim := apim.APIMCommon{APIServiceKey: config.APIServiceKey, Client: &httpClient}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/xsuaa"
 
 	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -21,11 +20,6 @@ import (
 //CommonUtils for CPI
 type CommonUtils interface {
 	GetBearerToken() (string, error)
-}
-
-//CommonUtils for CPI
-type APIMUtils interface {
-	PrepareAPIMStruct() error
 }
 
 //HttpCPIUtils for CPI
@@ -42,12 +36,6 @@ type HTTPUploadUtils interface {
 type TokenParameters struct {
 	TokenURL, Username, Password string
 	Client                       piperhttp.Sender
-}
-
-//APIM struct
-type APIM struct {
-	APIServiceKey, Host string
-	Client              piperhttp.Sender
 }
 
 //HttpParameters struct
@@ -130,29 +118,6 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
-}
-
-func (apim APIM) PrepareAPIMStruct() error {
-	serviceKey, err := ReadCpiServiceKey(apim.APIServiceKey)
-	if err != nil {
-		return err
-	}
-	apim.Host = serviceKey.OAuth.Host
-	httpClient := apim.Client
-	clientOptions := piperhttp.ClientOptions{}
-	x := xsuaa.XSUAA{
-		OAuthURL:     serviceKey.OAuth.OAuthTokenProviderURL,
-		ClientID:     serviceKey.OAuth.ClientID,
-		ClientSecret: serviceKey.OAuth.ClientSecret,
-	}
-	token, tokenErr := x.GetBearerToken()
-
-	if tokenErr != nil {
-		return errors.Wrap(tokenErr, "failed to fetch Bearer Token")
-	}
-	clientOptions.Token = fmt.Sprintf("Bearer %s", token.AccessToken)
-	httpClient.SetOptions(clientOptions)
-	return nil
 }
 
 // HandleHTTPFileDownloadResponse - Handle the file download response for http multipart response
