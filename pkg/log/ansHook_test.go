@@ -269,6 +269,22 @@ func TestANSHook_Fire(t *testing.T) {
 				Tags: map[string]interface{}{"ans:correlationId": "1234", "stepName": "testStep", "logLevel": "warning"},
 			},
 		},
+		{
+			name: "White space messages should not send",
+			fields: fields{
+				correlationID: testCorrelationID,
+				client:        testClient,
+				event:         defaultEvent(),
+			},
+			entryArgs: []*logrus.Entry{
+				{
+					Level:   logrus.InfoLevel,
+					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
+					Message: "   ",
+					Data:    map[string]interface{}{"stepName": "testStep"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

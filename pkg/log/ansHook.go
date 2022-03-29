@@ -59,6 +59,9 @@ func (ansHook *ANSHook) Levels() []logrus.Level {
 
 // Fire creates a new event from the logrus and sends an event to the ANS backend
 func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
+	if len(strings.TrimSpace(entry.Message)) == 0 {
+		return nil
+	}
 	logLevel := entry.Level
 	event, err := copyEvent(ansHook.event)
 	if err != nil {
