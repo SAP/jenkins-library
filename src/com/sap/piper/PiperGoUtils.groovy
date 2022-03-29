@@ -48,7 +48,7 @@ class PiperGoUtils implements Serializable {
             }
 
             def fallbackUrl = 'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master'
-            def piperBinUrl = (version == 'master') ? fallbackUrl : "https://github.com/SAP/jenkins-library/releases/download/${version}/piper"
+            def piperBinUrl = (version == 'master') ? fallbackUrl : "https://github.com/JulianPSchmitt/jenkins-library/releases/download/${version}/piper"
 
             boolean downloaded = downloadGoBinary(piperBinUrl)
             if (!downloaded) {
