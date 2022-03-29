@@ -9,7 +9,7 @@ steps:
       - 'question'
       - 'wontfix'
       - 'stale'
-    owner: 'JulianPSchmitt'
+    owner: 'SAP'
     repository: 'jenkins-library'
     releaseBodyHeader: ''
   githubCreatePullRequest:
