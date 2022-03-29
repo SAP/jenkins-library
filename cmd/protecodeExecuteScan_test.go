@@ -6,95 +6,32 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/protecode"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/fake"
 )
 
-type DockerClientMock struct {
-	imageName     string
-	registryURL   string
-	localPath     string
-	includeLayers bool
-}
-
-//Download interface for download an image to a local path
-type Download interface {
-	GetImageSource() (string, error)
-	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
-	TarImage(writer io.Writer, image pkgutil.Image) error
-}
-
-const (
-	daemonPrefix = "daemon://"
-	remotePrefix = "remote://"
-)
-
-func (c *DockerClientMock) GetImageSource() (string, error) {
-
-	imageSource := c.imageName
-
-	if len(c.registryURL) > 0 && len(c.localPath) <= 0 {
-		registry := c.registryURL
-
-		url, _ := url.Parse(c.registryURL)
-		//remove protocoll from registryURL to get registry
-		if len(url.Scheme) > 0 {
-			registry = strings.Replace(c.registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
-		}
-
-		if strings.HasSuffix(registry, "/") {
-			imageSource = fmt.Sprintf("%v%v%v", remotePrefix, registry, c.imageName)
-		} else {
-			imageSource = fmt.Sprintf("%v%v/%v", remotePrefix, registry, c.imageName)
-		}
-	} else if len(c.localPath) > 0 {
-		imageSource = c.localPath
-		if !pkgutil.IsTar(c.localPath) {
-			imageSource = fmt.Sprintf("%v%v", daemonPrefix, c.localPath)
-		}
-	}
-
-	if len(imageSource) <= 0 {
-		return imageSource, fmt.Errorf("There is no image source for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath)
-	}
-
-	return imageSource, nil
-}
-
-//DownloadImageToPath download the image to the specified path
-func (c *DockerClientMock) DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error) {
-
-	return pkgutil.Image{}, nil
-}
-
-//TarImage write a tar from the given image
-func (c *DockerClientMock) TarImage(writer io.Writer, image pkgutil.Image) error {
-
-	return nil
+type protecodeTestUtilsBundle struct {
+	*mock.FilesMock
+	*mock.DownloadMock
 }
 
 func TestRunProtecodeScan(t *testing.T) {
 	requestURI := ""
-	dir, err := ioutil.TempDir("", "t")
-	require.NoError(t, err, "Failed to create temporary directory")
-	// clean up tmp dir
-	defer func() { _ = os.RemoveAll(dir) }()
-	testFile, err := ioutil.TempFile(dir, "t.tar")
-	require.NoError(t, err)
-	fileName := filepath.Base(testFile.Name())
-	path := strings.ReplaceAll(testFile.Name(), fileName, "")
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
@@ -141,24 +78,81 @@ func TestRunProtecodeScan(t *testing.T) {
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
 
-	dClient := &DockerClientMock{imageName: "t", registryURL: "", localPath: path, includeLayers: false}
-
 	influx := protecodeExecuteScanInflux{}
-	reportPath = dir
-	cachePath = dir
 
-	t.Run("With tar as scan image", func(t *testing.T) {
-		config := protecodeExecuteScanOptions{ServerURL: server.URL, TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
-		err = runProtecodeScan(&config, &influx, dClient)
-		assert.NoError(t, err)
-	})
+	ttt := []struct {
+		name string
+		opts protecodeExecuteScanOptions
+	}{
+		{
+			name: "With tar as scan image",
+			opts: protecodeExecuteScanOptions{
+				ServerURL:      server.URL,
+				TimeoutMinutes: "1",
+				VerifyOnly:     false,
+				CleanupMode:    "none",
+				Group:          "13",
+				FetchURL:       "/api/fetch/",
+				ExcludeCVEs:    "CVE-2018-1, CVE-2017-1000382",
+				ReportFileName: "./cache/report-file.txt",
+			},
+		},
+		{
+			name: "Without tar as scan image",
+			opts: protecodeExecuteScanOptions{
+				ServerURL:      server.URL,
+				ScanImage:      "t",
+				TimeoutMinutes: "1",
+				VerifyOnly:     false,
+				CleanupMode:    "none",
+				Group:          "13",
+				ExcludeCVEs:    "CVE-2018-1, CVE-2017-1000382",
+				ReportFileName: "./cache/report-file.txt",
+			},
+		},
+	}
 
-	t.Run("Without tar as scan image", func(t *testing.T) {
-		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
-		err = runProtecodeScan(&config, &influx, dClient)
-		assert.NoError(t, err)
-	})
+	for _, test := range ttt {
+		t.Run(test.name, func(t *testing.T) {
+			files := mock.FilesMock{}
 
+			httpClient := piperHttp.Client{}
+			httpClient.SetFileUtils(&files)
+
+			pc.SetHttpClient(&httpClient)
+
+			docker := mock.DownloadMock{}
+			docker.Stub = func(imageRef string, dest string) (v1.Image, error) {
+				files.AddFile(dest, []byte(""))
+				return &fake.FakeImage{}, nil
+			}
+
+			utils := protecodeTestUtilsBundle{DownloadMock: &docker, FilesMock: &files}
+
+			cacheDir, _ := files.TempDir("", "protecode-")
+			files.AddFile(filepath.Join(cacheDir, "t.tar"), []byte(""))
+
+			err := runProtecodeScan(&test.opts, &influx, pc, utils, cacheDir)
+
+			if assert.NoError(t, err) {
+				if protecodeExecuteJsonExists, err := files.FileExists("protecodeExecuteScan.json"); assert.NoError(t, err) {
+					assert.True(t, protecodeExecuteJsonExists, "protecodeExecuteScan.json expected")
+				}
+
+				if protecodeVulnsJsonExists, err := files.FileExists("protecodescan_vulns.json"); assert.NoError(t, err) {
+					assert.True(t, protecodeVulnsJsonExists, "protecodescan_vulns.json expected")
+				}
+
+				if userSpecifiedReportExists, err := files.FileExists(test.opts.ReportFileName); assert.NoError(t, err) {
+					assert.True(t, userSpecifiedReportExists, "%s must exist", test.opts.ReportFileName)
+				}
+			}
+
+			if cacheExists, err := files.DirExists(cacheDir); assert.NoError(t, err) {
+				assert.True(t, cacheExists, "Whoever calls runProtecodeScan is responsible to cleanup the cache.")
+			}
+		})
+	}
 }
 
 func TestHandleArtifactVersion(t *testing.T) {
@@ -175,13 +169,15 @@ func TestHandleArtifactVersion(t *testing.T) {
 		{"7.20.20", "7.20.20"},
 	}
 
-	for _, c := range cases {
-		got := handleArtifactVersion(c.version)
-		assert.Equal(t, c.want, got)
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			got := handleArtifactVersion(c.version)
+			assert.Equal(t, c.want, got)
+		})
 	}
 }
 
-func TestCreateClient(t *testing.T) {
+func TestCreateProtecodeClient(t *testing.T) {
 	cases := []struct {
 		timeout string
 	}{
@@ -190,28 +186,12 @@ func TestCreateClient(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{TimeoutMinutes: c.timeout}
+		t.Run(fmt.Sprintf("With timeout: %s", c.timeout), func(t *testing.T) {
+			config := protecodeExecuteScanOptions{TimeoutMinutes: c.timeout}
 
-		client := createClient(&config)
-		assert.NotNil(t, client, "client should not be empty")
-	}
-}
-
-func TestCreateDockerClient(t *testing.T) {
-	cases := []struct {
-		scanImage         string
-		dockerRegistryURL string
-		filePath          string
-		includeLayers     bool
-	}{
-		{"test", "url", "path", false},
-		{"", "", "", true},
-	}
-
-	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.dockerRegistryURL, FilePath: c.filePath, IncludeLayers: c.includeLayers}
-		client := createDockerClient(&config)
-		assert.NotNil(t, client, "client should not be empty")
+			client := createProtecodeClient(&config)
+			assert.NotNil(t, client, "client should not be empty")
+		})
 	}
 }
 
@@ -270,18 +250,21 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		{false, "test", "group1", "", path, "", 0, 4711},
 	}
 
-	for _, c := range cases {
-		// test
-		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
-		// got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
-		got := uploadScanOrDeclareFetch(config, c.prID, pc, fileName)
-		// assert
-		assert.Equal(t, c.want, got)
-	}
-}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			utils := protecodeTestUtilsBundle{
+				FilesMock:    &mock.FilesMock{},
+				DownloadMock: &mock.DownloadMock{},
+			}
 
-func writeReportToFileMock(resp io.ReadCloser, reportFileName string) error {
-	return nil
+			// test
+			config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
+			// got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
+			got := uploadScanOrDeclareFetch(utils, config, c.prID, pc, fileName)
+			// assert
+			assert.Equal(t, c.want, got)
+		})
+	}
 }
 
 func TestExecuteProtecodeScan(t *testing.T) {
@@ -333,26 +316,23 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	require.NoErrorf(t, err, "Failed to get current directory: %v", err)
 	defer func() { _ = os.Chdir(resetDir) }()
 
-	for _, c := range cases {
-		// init
-		dir, err := ioutil.TempDir("", "t")
-		require.NoErrorf(t, err, "Failed to create temporary directory: %v", err)
-		// clean up tmp dir
-		defer func() { _ = os.RemoveAll(dir) }()
-		// change into tmp dir and write test data
-		err = os.Chdir(dir)
-		require.NoErrorf(t, err, "Failed to change into temporary directory: %v", err)
-		reportPath = dir
-		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
-		influxData := &protecodeExecuteScanInflux{}
-		// test
-		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock)
-		// assert
-		assert.Equal(t, 1125, influxData.protecode_data.fields.historical_vulnerabilities)
-		assert.Equal(t, 0, influxData.protecode_data.fields.triaged_vulnerabilities)
-		assert.Equal(t, 1, influxData.protecode_data.fields.excluded_vulnerabilities)
-		assert.Equal(t, 142, influxData.protecode_data.fields.major_vulnerabilities)
-		assert.Equal(t, 226, influxData.protecode_data.fields.vulnerabilities)
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			utils := protecodeTestUtilsBundle{
+				FilesMock:    &mock.FilesMock{},
+				DownloadMock: &mock.DownloadMock{},
+			}
+			config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+			influxData := &protecodeExecuteScanInflux{}
+			// test
+			executeProtecodeScan(influxData, pc, &config, "dummy", utils)
+			// assert
+			assert.Equal(t, 1125, influxData.protecode_data.fields.historical_vulnerabilities)
+			assert.Equal(t, 0, influxData.protecode_data.fields.triaged_vulnerabilities)
+			assert.Equal(t, 1, influxData.protecode_data.fields.excluded_vulnerabilities)
+			assert.Equal(t, 142, influxData.protecode_data.fields.major_vulnerabilities)
+			assert.Equal(t, 226, influxData.protecode_data.fields.vulnerabilities)
+		})
 	}
 }
 
@@ -389,43 +369,4 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
-}
-
-func TestGetTarName(t *testing.T) {
-	cases := map[string]struct {
-		image   string
-		version string
-		expect  string
-	}{
-		"with version suffix": {
-			"com.sap.piper/sample-k8s-app-multistage:1.11-20200902040158_97a5cc34f1796ad735159f020dd55c0f3670a4cb",
-			"1.11-20200902040158_97a5cc34f1796ad735159f020dd55c0f3670a4cb",
-			"com.sap.piper_sample-k8s-app-multistage_1.tar",
-		},
-		"without version suffix": {
-			"abc",
-			"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e",
-			"abc_3.tar",
-		},
-		"without version": {
-			"abc",
-			"",
-			"abc.tar",
-		},
-		"ScanImage without sha as artifactVersion": {
-			"abc@sha256:12345",
-			"",
-			"abc.tar",
-		},
-		"ScanImage with sha as artifactVersion": {
-			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
-			"c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
-			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
-		},
-	}
-	for name, c := range cases {
-		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, Version: c.version}))
-		})
-	}
 }
