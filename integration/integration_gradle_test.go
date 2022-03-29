@@ -18,6 +18,7 @@ import (
 )
 
 func TestGradleExecuteBuild_JavaProject_BOMCreation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -90,6 +91,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 }
 
 func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()

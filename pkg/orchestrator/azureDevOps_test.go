@@ -18,7 +18,7 @@ func TestAzure(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")
-		os.Setenv("BUILD_SOURCEBRANCHNAME", "feat/test-azure")
+		os.Setenv("BUILD_SOURCEBRANCH", "feat/test-azure")
 		os.Setenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", "https://pogo.sap/")
 		os.Setenv("SYSTEM_TEAMPROJECT", "foo")
 		os.Setenv("BUILD_BUILDID", "42")
