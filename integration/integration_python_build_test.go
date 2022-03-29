@@ -18,6 +18,7 @@ import (
 )
 
 func TestBuildProject(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	pwd, err := os.Getwd()
 	assert.NoError(t, err, "Getting current working directory failed.")
