@@ -17,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestBuildProject(t *testing.T) {
+func TestBuildPythonProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	pwd, err := os.Getwd()
@@ -71,7 +71,7 @@ func TestBuildProject(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript = fmt.Sprintf(`#!/bin/sh
 		cd /test
-		ls -l >files-list.txt 2>&1`)
+		ls -l . dist build >files-list.txt 2>&1`)
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
@@ -84,26 +84,6 @@ func TestBuildProject(t *testing.T) {
 	}
 	output = string(content)
 	assert.Contains(t, output, "bom.xml")
-	assert.Contains(t, output, "/dist/example-pkg-0.0.1.tar.gz")
-	assert.Contains(t, output, "/dist/example_pkg-0.0.1-py3-none-any.whl")
-}
-
-func TestBuildProject2(t *testing.T) {
-	t.Parallel()
-	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "python:3.9",
-		TestDir: []string{"testdata", "TestPythonIntegration", "python-project"},
-		Mounts:  map[string]string{},
-		Setup:   []string{},
-	})
-
-	err := container.whenRunningPiperCommand("pythonBuild", "")
-	if err != nil {
-		t.Fatalf("Calling piper command failed %s", err)
-	}
-
-	container.assertHasOutput(t, "Successfully built example-pkg-0.0.1.tar.gz and example_pkg-0.0.1-py3-none-any.whl")
-	container.assertHasOutput(t, "bom.xml")
-	container.assertHasFile(t, "/dist/example-pkg-0.0.1.tar.gz")
-	container.assertHasFile(t, "/dist/example_pkg-0.0.1-py3-none-any.whl")
+	assert.Contains(t, output, "example-pkg-0.0.1.tar.gz")
+	assert.Contains(t, output, "example_pkg-0.0.1-py3-none-any.whl")
 }
