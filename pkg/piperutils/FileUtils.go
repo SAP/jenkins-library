@@ -353,7 +353,11 @@ func isFileGzipped(file string) (bool, error) {
 
 	log.Entry().Infof("anil test : value if 3 bytes is %v", b)
 
-	return (b[0] == 31 && b[1] == 139 && b[2] == 8), nil
+	if b[0] == 31 && b[1] == 139 && b[2] == 8 {
+		return true, nil
+	}
+	log.Entry().Infof("values not matching")
+	return false, nil
 }
 
 func validRelPath(p string) bool {
