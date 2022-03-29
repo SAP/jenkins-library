@@ -348,6 +348,8 @@ func isFileGzipped(file string) (bool, error) {
 		return false, err
 	}
 
+	log.Entry().Infof("anil test : value if 3 bytes is %v", b)
+
 	return b[0] == 0x1f && b[1] == 0x8b && b[2] == 8, nil
 }
 
