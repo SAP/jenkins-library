@@ -86,3 +86,23 @@ func TestBuildProject(t *testing.T) {
 	assert.Contains(t, output, "/dist/example-pkg-0.0.1.tar.gz")
 	assert.Contains(t, output, "/dist/example_pkg-0.0.1-py3-none-any.whl")
 }
+
+func TestBuildProject2(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "python:3.9",
+		TestDir: []string{"testdata", "TestPythonIntegration"},
+		Mounts:  map[string]string{},
+		Setup:   []string{},
+	})
+
+	err := container.whenRunningPiperCommand("pythonBuild", "--createBOM=true", "--publish=false")
+	if err != nil {
+		t.Fatalf("Calling piper command failed %s", err)
+	}
+
+	container.assertHasOutput(t, "Successfully built example-pkg-0.0.1.tar.gz and example_pkg-0.0.1-py3-none-any.whl")
+	container.asserrHasOutput(t, "bom.xml")
+	container.assertHasFile(t, "/dist/example-pkg-0.0.1.tar.gz")
+	container.assertHasFile(t, "/dist/example_pkg-0.0.1-py3-none-any.whl")
+}
