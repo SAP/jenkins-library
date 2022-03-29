@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
 )
 
@@ -240,6 +241,7 @@ func Untar(src string, dest string, stripComponentLevel int) error {
 	}
 
 	if b, err := isFileGzipped(src); err != nil && b {
+		log.Entry().Infof("anil test: inside")
 		zr, err := gzip.NewReader(file)
 
 		if err != nil {
