@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
 )
 
@@ -241,7 +240,6 @@ func Untar(src string, dest string, stripComponentLevel int) error {
 	}
 
 	if b, err := isFileGzipped(src); err == nil && b {
-		log.Entry().Infof("anil test: inside")
 		zr, err := gzip.NewReader(file)
 
 		if err != nil {
@@ -334,12 +332,10 @@ func untar(r io.Reader, dir string, level int) (err error) {
 
 // isFileGzipped checks the first 3 bytes of the given file to determine if it is gzipped or not. Returns `true` if the file is gzipped.
 func isFileGzipped(file string) (bool, error) {
-	log.Entry().Infof("anil test : inside gzip check")
 	f, err := os.Open(file)
 	defer f.Close()
 
 	if err != nil {
-		log.Entry().Infof("anil test : unable to read file")
 		return false, err
 	}
 
@@ -347,19 +343,10 @@ func isFileGzipped(file string) (bool, error) {
 	_, err = io.ReadFull(f, b)
 
 	if err != nil {
-		log.Entry().Infof("anil test : unable to read full byte")
 		return false, err
 	}
 
-	log.Entry().Infof("anil test : value if 3 bytes is %v", b)
-
 	return b[0] == 0x1f && b[1] == 0x8b && b[2] == 8, nil
-
-	// if b[0] == 31 && b[1] == 139 && b[2] == 8 {
-	// 	return true, nil
-	// }
-	// log.Entry().Infof("values not matching")
-	// return false, nil
 }
 
 func validRelPath(p string) bool {
