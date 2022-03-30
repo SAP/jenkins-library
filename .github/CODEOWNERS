@@ -42,39 +42,39 @@
 # Default           #
 #####################
 
-*                                               @SAP/jenkins-library-admin
+*                                               @SAP/jenkins-library-core
 
 
 #####################
 # Steps             #
 #####################
 
-cnbBuild*                                       @SAP/piper-cnb
-CnbBuild*                                       @SAP/piper-cnb
+cnbBuild*                                       @SAP/jenkins-library-cnb
+CnbBuild*                                       @SAP/jenkins-library-cnb
 
 sonarExecuteScan*                               @CCFenner
 SonarExecuteScan*                               @CCFenner
 
-abapAddonAssemblyKit*                           @tiloKo @bluesbrother84 @rosemarieB
-AbapAddonAssemblyKit*                           @tiloKo @bluesbrother84 @rosemarieB
-abapEnvironmentAssemble*                        @tiloKo @bluesbrother84 @rosemarieB
-AbapEnvironmentAssemble*                        @tiloKo @bluesbrother84 @rosemarieB
-abapEnvironmentBuild*                           @tiloKo @bluesbrother84 @rosemarieB
-AbapEnvironmentBuild*                           @tiloKo @bluesbrother84 @rosemarieB
+abapAddonAssemblyKit*                           @SAP/jenkins-library-abap
+AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
+abapEnvironmentAssemble*                        @SAP/jenkins-library-abap
+AbapEnvironmentAssemble*                        @SAP/jenkins-library-abap
+abapEnvironmentBuild*                           @SAP/jenkins-library-abap
+AbapEnvironmentBuild*                           @SAP/jenkins-library-abap
 
 #####################
 # Integration tests #
 #####################
 
-integration/integration_cnb_test.go             @SAP/piper-cnb
-integration/testdata/TestCnbIntegration/        @SAP/piper-cnb
+integration/integration_cnb_test.go             @SAP/jenkins-library-cnb
+integration/testdata/TestCnbIntegration/        @SAP/jenkins-library-cnb
 
 
 ####################
 # Go packages      #
 ####################
 
-/pkg/cnbutils/                                  @SAP/piper-cnb
+/pkg/cnbutils/                                  @SAP/jenkins-library-cnb
 
 /pkg/sonar/                                     @CCFenner
 
@@ -82,7 +82,7 @@ integration/testdata/TestCnbIntegration/        @SAP/piper-cnb
 
 /pkg/orchestrator/                              @inf2381
 
-/pkg/abap/                                      @tiloKo @bluesbrother84 @rosemarieB
+/pkg/abap/                                      @SAP/jenkins-library-abap
 
 ####################
 # Misc             #
