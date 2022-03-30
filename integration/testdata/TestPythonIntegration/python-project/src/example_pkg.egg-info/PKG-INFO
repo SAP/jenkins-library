@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: example-pkg
+Version: 0.0.1
+Summary: A small example package
+Home-page: https://github.com/example/pypi/github
+Author: Example Author
+Author-email: author@example.com
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/pypa/sampleproject/issues
+Description: Long description for small example package
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
