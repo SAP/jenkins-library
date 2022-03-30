@@ -518,6 +518,7 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/optimizedAndScheduled
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -539,6 +540,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -551,6 +553,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
