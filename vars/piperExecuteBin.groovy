@@ -31,8 +31,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         Map stepParameters = prepareStepParameters(parameters)
         echo "Step params $stepParameters"
 
-        //generalConfig = script.commonPipelineEnvironment.configuration.general
-
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
@@ -51,7 +49,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             }
 
             //Add ANS credential information to the config
-            config += ["ansServiceKeyCredentialsId": script.commonPipelineEnvironment.configuration.general.ansServiceKeyCredentialsId]
+            config += ["ansServiceKeyCredentialsId": script.commonPipelineEnvironment.configuration.hooks.ansServiceKeyCredentialsId]
 
             // prepare stashes
             // first eliminate empty stashes
@@ -257,10 +255,6 @@ List handleVaultCredentials(config, List credentialInfo) {
     if (config.containsKey('vaultTokenCredentialsId')) {
         credentialInfo += [[type: 'token', id: 'vaultTokenCredentialsId', env: ['PIPER_vaultToken']]]
     }
-
-//    if (config.containsKey('ansServiceKeyCredentialsId')) {
-//        credentialInfo += [[type: 'token', id: 'ansServiceKeyCredentialsId', env: ['PIPER_ansServiceKey']]]
-//    }
 
     return credentialInfo
 }
