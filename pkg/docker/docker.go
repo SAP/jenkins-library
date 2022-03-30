@@ -184,7 +184,7 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 
 // GetRemoteImageInfo retrieves information about the image (e.g. digest) without actually downoading it
 func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
-	ref, err := name.ParseReference(imageSource, name.WeakValidation)
+	ref, err := c.getImageRef(imageSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing image reference")
 	}
