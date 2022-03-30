@@ -239,7 +239,7 @@ func Untar(src string, dest string, stripComponentLevel int) error {
 		fmt.Errorf("unable to open src: %v", err)
 	}
 
-	if b, err := isFileGzipped(src); err != nil && b {
+	if b, err := isFileGzipped(src); err == nil && b {
 		zr, err := gzip.NewReader(file)
 
 		if err != nil {
