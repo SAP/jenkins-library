@@ -44,3 +44,17 @@ func (c *MockUtils) DownloadImage(src, dst string) (v1.Image, error) {
 func (c *MockUtils) GetImageSource() (string, error) {
 	return "imageSource", nil
 }
+
+func (c *MockUtils) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
+	fakeImage := fakeImage.FakeImage{}
+	fakeImage.ConfigFileReturns(&v1.ConfigFile{
+		Config: v1.Config{
+			Labels: map[string]string{
+				"io.buildpacks.buildpackage.metadata": "{\"id\": \"testbuildpack\", \"version\": \"0.0.1\"}",
+			},
+		},
+	}, nil)
+	fakeImage.DigestReturns(v1.Hash{}, nil)
+
+	return &fakeImage, nil
+}

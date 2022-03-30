@@ -45,13 +45,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 	var createGctsExecuteABAPUnitTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.",
-		Long: `This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system.
-Depending on your use case, you can specify a scope of objects for which you want to execute the checks. In addition, you can choose whether you want to execute only ABAP units tests, or only ATC checks, or both.
-By default, both checks are executed.
-The results of the checks are stored in a [Checkstyle](https://checkstyle.sourceforge.io/) format. With the help of the Jenkins [Warnings-Next-Generation](https://plugins.jenkins.io/warnings-ng/) Plugin), you can view the issues found, and navigate to the exact line of the source code where the issue occurred.
-To make the findings visible in Jenkins interface, you will need to use step recordIssues. An example will be shown in the Example section.
-<br />
-You can use this step as of SAP S/4HANA 2020.`,
+		Long:  `This step executes ABAP unit test and ATC checks for a specified scope of objects that exist in a local Git repository on an ABAP system.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -128,19 +122,19 @@ You can use this step as of SAP S/4HANA 2020.`,
 }
 
 func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecuteABAPUnitTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password of the ABAP  user that authenticates to the ABAP system. Note – Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the abapCredentialsId parameter.")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Protocol and host of the ABAP system, including the port. Please provide in the format <protocol>://<host>:<port>. Supported protocols are http and https.")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User that authenticates to the ABAP system. Note - Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password of the ABAP user that authenticates to the ABAP system. Note - Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Protocol and host of the ABAP system, including the port. Please provide it in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name (ID) of the local repository on the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Client of the ABAP system in which you want to execute the checks")
-	cmd.Flags().BoolVar(&stepConfig.AUnitTest, "aUnitTest", true, "Indication whether you want to execute the unit test checks.")
-	cmd.Flags().BoolVar(&stepConfig.AtcCheck, "atcCheck", true, "Indication whether you want to execute the ATC checks.")
-	cmd.Flags().StringVar(&stepConfig.AtcVariant, "atcVariant", `DEFAULT_REMOTE_REF`, "Variant for ATC checks")
-	cmd.Flags().StringVar(&stepConfig.Scope, "scope", `repository`, "Scope of objects for which you want to execute the checks:\n\n * localChangedObjects - object delta derived from last activity in the local repository. The checks are executed for the individual objects.\n * remoteChangedObjects - object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.\n * localChangedPackages - object delta derived from last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.\n * remoteChangedPackages - object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.\n * repository - all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.\n * packages - all packages that are part of the local repository . The checks are executed for the packages.\n")
-	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes remoteChangedObjects and remoteChangedPackages secifying a commit it's mandatory.")
-	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to directory which contains the source code that your CI/CD tool checks out. For example in Jenkins, the workspace parameter is /var/jenkins_home/workspace/<jobName>/")
-	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC checks")
-	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit tests")
+	cmd.Flags().BoolVar(&stepConfig.AUnitTest, "aUnitTest", true, "Indication whether you want to execute the ABAP Unit tests. If the ABAP Unit tests fail, the results are mapped as follows to the statuses available in the Jenkins plugin. (Successful ABAP unit test results are not displayed.)\n   * Failed with severity 'fatal' is displayed as Error\n   * Failed with severity 'critical' is displayed as Error\n   * Failed with severity 'warning' is displayed as Warning\n")
+	cmd.Flags().BoolVar(&stepConfig.AtcCheck, "atcCheck", true, "Indication whether you want to execute the ATC checks. If the ATC checks result in errors with priorities 1 and 2, they are considered as failed. The results are mapped as follows to the statuses available in the Jenkins plugin. (Successful ATC check results are not displayed.)\n  * Priority 1 and 2 are displayed as Error\n  * Priority 3 is displayed as Warning\n")
+	cmd.Flags().StringVar(&stepConfig.AtcVariant, "atcVariant", `DEFAULT`, "Variant to be used for the ATC checks.")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", `repository`, "Scope of objects for which you want to execute the checks:\n\n * `localChangedObjects` - Object delta derived from last activity in the local repository. The checks are executed for the individual objects.\n * `remoteChangedObjects` - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.\n * `localChangedPackages` - Object delta derived from last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.\n * `remoteChangedPackages` - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.\n * `repository` - All objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.\n * `packages` - All packages that are part of the local repository. The checks are executed for the packages.\n")
+	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes `remoteChangedObjects` and `remoteChangedPackages` specifying a commit is mandatory.")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to directory which contains the source code that your CI/CD tool checks out. For example in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable WORKSPACE.")
+	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies the output file name for the results of the ATC checks.")
+	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies the output file name for the results of the AUnit tests.")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -246,7 +240,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `DEFAULT_REMOTE_REF`,
+						Default:     `DEFAULT`,
 					},
 					{
 						Name:        "scope",
