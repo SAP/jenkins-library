@@ -14,7 +14,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-var registryURL = "localhost:5000"
+const (
+	registryURL = "localhost:5000"
+	baseBuilder = "paketobuildpacks/builder:0.2.17-base"
+)
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
 	reqRegistry := testcontainers.ContainerRequest{
@@ -38,14 +41,14 @@ func TestNpmProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
 	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -79,7 +82,7 @@ func TestProjectDescriptor(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -109,7 +112,7 @@ func TestZipPath(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -133,7 +136,7 @@ func TestNonZipPath(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -152,7 +155,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -161,7 +164,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
+	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/buildpacks_cache/sha256:")
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -186,7 +189,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.14.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.14.0]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/nodejs")
+	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.14.0' to /tmp/buildpacks_cache/sha256:")
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
@@ -215,7 +218,7 @@ func TestBindings(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -236,7 +239,7 @@ func TestMultiImage(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -248,6 +251,8 @@ func TestMultiImage(t *testing.T) {
 	container.assertHasOutput(t, "Saving localhost:5000/io-buildpacks-my-app:latest...")
 	container.assertHasOutput(t, "Previous image with name \"localhost:5000/go-app:v1.0.0\" not found")
 	container.assertHasOutput(t, "Saving localhost:5000/go-app:v1.0.0...")
+	container.assertHasOutput(t, "Using cached buildpack")
+	container.assertHasOutput(t, "Saving localhost:5000/my-app2:latest...")
 	container.terminate(t)
 }
 
@@ -258,7 +263,7 @@ func TestPreserveFiles(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -277,7 +282,7 @@ func TestPreserveFilesIgnored(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:0.1.342-full",
+		Image:   baseBuilder,
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
