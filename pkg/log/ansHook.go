@@ -17,7 +17,7 @@ type ANSHook struct {
 }
 
 // NewANSHook creates a new ANS hook for logrus
-func NewANSHook(serviceKey, correlationID, eventTemplateFilePath string) ANSHook {
+func NewANSHook(serviceKey, correlationID, eventTemplateFilePath, eventTemplate string) ANSHook {
 	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(serviceKey)
 	if err != nil {
 		Entry().WithField("stepName", "ANS").Warnf("cannot initialize ans due to faulty serviceKey json: %v", err)
@@ -31,11 +31,18 @@ func NewANSHook(serviceKey, correlationID, eventTemplateFilePath string) ANSHook
 		},
 	}
 	if len(eventTemplateFilePath) > 0 {
-		eventTemplate, err := ioutil.ReadFile(eventTemplateFilePath)
+		eventTemplateString, err := ioutil.ReadFile(eventTemplateFilePath)
 		if err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided ANS event template file with path '%s' could not be read: %v", eventTemplateFilePath, err)
+		} else {
+			err = event.MergeWithJSON(eventTemplateString)
+			if err != nil {
+				Entry().WithField("stepName", "ANS").Warnf("provided ANS event template '%s' could not be unmarshalled: %v", eventTemplateString, err)
+			}
 		}
-		err = event.MergeWithJSON(eventTemplate)
+	}
+	if len(eventTemplate) > 0 {
+		err = event.MergeWithJSON([]byte(eventTemplate))
 		if err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided ANS event template '%s' could not be unmarshalled: %v", eventTemplate, err)
 		}

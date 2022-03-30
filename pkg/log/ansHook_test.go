@@ -15,7 +15,7 @@ import (
 const testCorrelationID = "1234"
 
 func TestANSHook_Levels(t *testing.T) {
-	hook := NewANSHook("", "", "")
+	hook := NewANSHook("", "", "", "")
 	assert.Equal(t, []logrus.Level{logrus.InfoLevel, logrus.DebugLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
 		hook.Levels())
 }
@@ -38,12 +38,13 @@ func TestNewANSHook(t *testing.T) {
 	type args struct {
 		serviceKey    string
 		correlationID string
+		eventTemplate string
 	}
 	tests := []struct {
-		name string
-		args args
-		eventTemplate string
-		want ANSHook
+		name                     string
+		args                     args
+		eventTemplateFileContent string
+		want                     ANSHook
 	}{
 		{
 			name: "Straight forward test",
@@ -67,34 +68,59 @@ func TestNewANSHook(t *testing.T) {
 			},
 		},
 		{
-			name: "With event template",
+			name: "With event template as file",
 			args: args{
 				serviceKey:    testServiceKeyJSON,
 				correlationID: testCorrelationID,
 			},
-			eventTemplate: `{"priority":123}`,
+			eventTemplateFileContent: `{"priority":123}`,
 			want: ANSHook{
 				client: testClient,
 				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
+			},
+		},
+		{
+			name: "With event template as string",
+			args: args{
+				serviceKey:    testServiceKeyJSON,
+				correlationID: testCorrelationID,
+				eventTemplate: `{"priority":123}`,
+			},
+			want: ANSHook{
+				client: testClient,
+				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
+			},
+		},
+		{
+			name: "With event template from two sources, string overwrites file",
+			args: args{
+				serviceKey:    testServiceKeyJSON,
+				correlationID: testCorrelationID,
+				eventTemplate: `{"priority":789}`,
+			},
+			eventTemplateFileContent: `{"priority":123}`,
+			want: ANSHook{
+				client: testClient,
+				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 789}),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var testEventTemplateFilePath string
-			if len(tt.eventTemplate) > 0 {
+			if len(tt.eventTemplateFileContent) > 0 {
 				var err error
 				testEventTemplateFile, err := os.CreateTemp("", "event_template_*.json")
 				require.NoError(t, err, "File creation failed!")
 				defer testEventTemplateFile.Close()
 				defer os.Remove(testEventTemplateFile.Name())
-				data := []byte(tt.eventTemplate)
+				data := []byte(tt.eventTemplateFileContent)
 				_, err = testEventTemplateFile.Write(data)
 				require.NoError(t, err, "Could not write test data to test file!")
 				testEventTemplateFilePath = testEventTemplateFile.Name()
 			}
 
-			got := NewANSHook(tt.args.serviceKey, tt.args.correlationID, testEventTemplateFilePath)
+			got := NewANSHook(tt.args.serviceKey, tt.args.correlationID, testEventTemplateFilePath, tt.args.eventTemplate)
 			assert.Equal(t, tt.want, got, "new ANSHook not as expected")
 		})
 	}
