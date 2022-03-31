@@ -71,7 +71,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
+	flags = append(flags, "setup.py", "sdist")
 
 	log.Entry().Info("starting building python project:")
 	err := utils.RunExecutable("python3", flags...)
