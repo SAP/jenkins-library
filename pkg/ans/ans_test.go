@@ -206,7 +206,7 @@ func TestUnmarshallEventJSON(t *testing.T) {
 		},
 		{
 			name:      "Merging events includes all parts",
-			eventJSON: `{"eventType": "my event", "eventTimestamp": 1647526655, "tags": {"we": "were", "here": "first"}, "resource": {"resourceGroup": "blarp", "resourceName": "was changed"}}`,
+			eventJSON: `{"eventType": "my event", "eventTimestamp": 1647526655, "tags": {"we": "were", "here": "first"}, "resource": {"resourceInstance": "blarp", "resourceName": "was changed"}}`,
 			existingEvent: Event{
 				EventType: "Bleep",
 				Subject:   "Bloop",
@@ -222,9 +222,9 @@ func TestUnmarshallEventJSON(t *testing.T) {
 				Subject:        "Bloop",
 				Tags:           map[string]interface{}{"we": "were", "here": "first", "Some": 1.0, "Additional": "a string", "Tags": true},
 				Resource: &Resource{
-					ResourceType:  "blurp",
-					ResourceName:  "was changed",
-					ResourceGroup: "blarp",
+					ResourceType:     "blurp",
+					ResourceName:     "was changed",
+					ResourceInstance: "blarp",
 				},
 			},
 			wantErr: false,
