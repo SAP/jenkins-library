@@ -17,7 +17,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		KubeConfig:                config.KubeConfig,
 		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
 		AppVersion:                config.AppVersion,
-		DependencyUpdate:          config.DependencyUpdate,
+		Dependency:                config.Dependency,
+		PackageDependencyUpdate:   config.PackageDependencyUpdate,
 		HelmValues:                config.HelmValues,
 		FilterTest:                config.FilterTest,
 		DumpLogs:                  config.DumpLogs,
@@ -69,9 +70,9 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 		if err := helmExecutor.RunHelmUninstall(); err != nil {
 			return fmt.Errorf("failed to execute helm uninstall: %v", err)
 		}
-	case "package":
-		if err := helmExecutor.RunHelmPackage(); err != nil {
-			return fmt.Errorf("failed to execute helm package: %v", err)
+	case "dependency":
+		if err := helmExecutor.RunHelmDependency(); err != nil {
+			return fmt.Errorf("failed to execute helm dependency: %v", err)
 		}
 	case "publish":
 		if err := helmExecutor.RunHelmPublish(); err != nil {
@@ -91,8 +92,10 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 		return fmt.Errorf("failed to execute helm lint: %v", err)
 	}
 
-	if err := helmExecutor.RunHelmPackage(); err != nil {
-		return fmt.Errorf("failed to execute helm package: %v", err)
+	if len(config.Dependency) > 0 {
+		if err := helmExecutor.RunHelmDependency(); err != nil {
+			return fmt.Errorf("failed to execute helm dependency: %v", err)
+		}
 	}
 
 	if config.Publish {
