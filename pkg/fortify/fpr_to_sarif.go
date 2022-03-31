@@ -648,25 +648,29 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						default:
 							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						}
-						physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-						snippetText := ""
-						for j := 0; j < len(physLocationSnippetLines); j++ {
-							if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-								snippetText = physLocationSnippetLines[j]
-								break
+						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+							physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+							snippetText := ""
+							for j := 0; j < len(physLocationSnippetLines); j++ {
+								if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+									snippetText = physLocationSnippetLines[j]
+									break
+								}
 							}
+							snippetSarif := new(format.SnippetSarif)
+							if snippetText != "" {
+								snippetSarif.Text = snippetText
+							} else {
+								snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							}
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 						}
-						snippetSarif := new(format.SnippetSarif)
-						if snippetText != "" {
-							snippetSarif.Text = snippetText
-						} else {
-							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
-						}
-						threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 					} else {
-						snippetSarif := new(format.SnippetSarif)
-						snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
-						threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+							snippetSarif := new(format.SnippetSarif)
+							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+						}
 					}
 					location = *threadFlowLocation.Location
 					//set Kinds
