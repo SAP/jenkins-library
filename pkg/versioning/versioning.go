@@ -94,7 +94,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt", "go.mod"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"go.mod", "VERSION", "version.txt"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
