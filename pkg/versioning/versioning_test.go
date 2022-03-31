@@ -65,8 +65,13 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", dub.VersioningScheme())
 	})
 
-	t.Run("golang", func(t *testing.T) {
-		fileExists = func(string) (bool, error) { return true, nil }
+	t.Run("golang - version file", func(t *testing.T) {
+		fileExists = func(s string) (bool, error) {
+			if s == "go.mod" {
+				return false, nil
+			}
+			return true, nil
+		}
 		golang, err := GetArtifact("golang", "", &Options{}, nil)
 
 		assert.NoError(t, err)
@@ -77,11 +82,28 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", golang.VersioningScheme())
 	})
 
+	t.Run("golang - gomod", func(t *testing.T) {
+		fileExists = func(s string) (bool, error) {
+			if s == "go.mod" {
+				return true, nil
+			}
+			return false, nil
+		}
+		golang, err := GetArtifact("golang", "", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := golang.(*GoMod)
+		assert.True(t, ok)
+		assert.Equal(t, "go.mod", theType.path)
+		assert.Equal(t, "semver2", golang.VersioningScheme())
+	})
+
 	t.Run("golang - error", func(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("golang", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [go.mod VERSION version.txt]")
 	})
 
 	t.Run("gradle", func(t *testing.T) {
