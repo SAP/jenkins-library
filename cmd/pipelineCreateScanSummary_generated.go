@@ -66,9 +66,9 @@ It is for example used to create a markdown file which can be used to create a G
 				log.RegisterHook(logCollector)
 			}
 
-			if len(GeneralConfig.ANSServiceKey) > 0 {
-				log.RegisterSecret(GeneralConfig.ANSServiceKey)
-				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)
 				log.RegisterHook(&ansHook)
 			}
 

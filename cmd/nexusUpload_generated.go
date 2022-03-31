@@ -93,9 +93,9 @@ If an image for mavenExecute is configured, and npm packages are to be published
 				log.RegisterHook(logCollector)
 			}
 
-			if len(GeneralConfig.ANSServiceKey) > 0 {
-				log.RegisterSecret(GeneralConfig.ANSServiceKey)
-				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)
 				log.RegisterHook(&ansHook)
 			}
 

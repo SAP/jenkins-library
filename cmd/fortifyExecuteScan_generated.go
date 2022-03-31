@@ -249,9 +249,9 @@ Besides triggering a scan the step verifies the results after they have been upl
 				log.RegisterHook(logCollector)
 			}
 
-			if len(GeneralConfig.ANSServiceKey) > 0 {
-				log.RegisterSecret(GeneralConfig.ANSServiceKey)
-				ansHook := log.NewANSHook(GeneralConfig.ANSServiceKey, GeneralConfig.CorrelationID, GeneralConfig.ANSEventTemplateFilePath)
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
+				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)
 				log.RegisterHook(&ansHook)
 			}
 
