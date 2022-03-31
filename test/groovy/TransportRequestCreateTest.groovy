@@ -150,7 +150,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '001'
         assert result == [
                          docker: [
-                             image: 'ppiper/cm-client:3.0.0.0',
+                             image: 'ppiper/cm-client:2.0.1.0',
                              pullImage: true,
                              options: [],
                              envVars: [:],
@@ -202,7 +202,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '001'
         assert result == [
                          docker: [
-                             image: 'node',
+                             image: 'ppiper/cm-client:2.0.1.0',
                              pullImage: true,
                              envVars: [:],
                              options: [],
