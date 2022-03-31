@@ -20,33 +20,33 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	GitHubAccessTokens       map[string]string // map of tokens with url as key in order to maintain url-specific tokens
-	CorrelationID            string
-	CustomConfig             string
-	GitHubTokens             []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig            []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	IgnoreCustomDefaults     bool
-	ParametersJSON           string
-	EnvRootPath              string
-	NoTelemetry              bool
-	StageName                string
-	StepConfigJSON           string
-	StepMetadata             string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName                 string
-	Verbose                  bool
-	LogFormat                string
-	VaultRoleID              string
-	VaultRoleSecretID        string
-	VaultToken               string
-	VaultServerURL           string
-	VaultNamespace           string
-	VaultPath                string
-	HookConfig               HookConfiguration
-	MetaDataResolver         func() map[string]config.StepData
-	GCPJsonKeyFilePath       string
-	GCSFolderPath            string
-	GCSBucketId              string
-	GCSSubFolder             string
+	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
+	CorrelationID        string
+	CustomConfig         string
+	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
+	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	IgnoreCustomDefaults bool
+	ParametersJSON       string
+	EnvRootPath          string
+	NoTelemetry          bool
+	StageName            string
+	StepConfigJSON       string
+	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName             string
+	Verbose              bool
+	LogFormat            string
+	VaultRoleID          string
+	VaultRoleSecretID    string
+	VaultToken           string
+	VaultServerURL       string
+	VaultNamespace       string
+	VaultPath            string
+	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
+	GCPJsonKeyFilePath   string
+	GCSFolderPath        string
+	GCSBucketId          string
+	GCSSubFolder         string
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far ANS, Sentry and Splunk are supported.
