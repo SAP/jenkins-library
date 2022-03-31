@@ -150,9 +150,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSServiceKey) > 0 {
-				log.RegisterSecret({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSServiceKey)
-				ansHook := log.NewANSHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSServiceKey, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.ANSEventTemplateFilePath)
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				log.RegisterSecret({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey)
+				ansHook := log.NewANSHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
 				log.RegisterHook(&ansHook)
 			}
 
