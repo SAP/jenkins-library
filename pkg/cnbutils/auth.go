@@ -1,6 +1,7 @@
 package cnbutils
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -26,6 +27,15 @@ func GenerateCnbAuth(config string, utils BuildUtils) (string, error) {
 
 	auth := map[string]string{}
 	for registry, value := range dockerConfig.AuthConfigs {
+		if value.Auth == "" && value.Username == "" && value.Password == "" {
+			log.Entry().Warnf("docker config.json contains empty credentials for registry %q. Either 'auth' or 'username' and 'password' have to be provided.", registry)
+			continue
+		}
+
+		if value.Auth == "" {
+			value.Auth = encodeAuth(value.Username, value.Password)
+		}
+
 		log.Entry().Debugf("Adding credentials for: registry %q", registry)
 
 		auth[registry] = fmt.Sprintf("Basic %s", value.Auth)
@@ -37,4 +47,9 @@ func GenerateCnbAuth(config string, utils BuildUtils) (string, error) {
 	}
 
 	return string(cnbRegistryAuth), nil
+}
+
+func encodeAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
