@@ -54,6 +54,12 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	currentWorkingDir, err := exec.Utils.Getwd()
+
+	if err != nil {
+		return errors.Wrapf(err, "unable to identify current working directory")
+	}
+
 	scope, err := exec.readPackageScope(packageJSON)
 
 	if err != nil {
@@ -158,29 +164,39 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
-		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
-
-		if projectNpmrcExists {
-			// rename the .npmrc file since it interferes with publish
-			err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
-			if err != nil {
-				return fmt.Errorf("error when renaming current .npmrc file : %w", err)
-			}
+		// change to temp directory since any existing .npmrc may interfere with publish
+		if err := exec.Utils.Chdir(currentWorkingDir); err != nil {
+			return fmt.Errorf("unable to change to temp directory for npm publish")
 		}
+
+		// projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
+		// projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
+
+		// if projectNpmrcExists {
+		// 	// rename the .npmrc file since it interferes with publish
+		// 	err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
+		// 	if err != nil {
+		// 		return fmt.Errorf("error when renaming current .npmrc file : %w", err)
+		// 	}
+		// }
 
 		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
 
-		if projectNpmrcExists {
-			// undo the renaming ot the .npmrc to keep the workspace like before
-			err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
-			if err != nil {
-				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
-			}
+		// change back to parent directory to keep the workspace clean
+		if err := exec.Utils.Chdir(tmpDirectory); err != nil {
+			return fmt.Errorf("unable to change to parent directory after npm publish")
 		}
+
+		// if projectNpmrcExists {
+		// 	// undo the renaming ot the .npmrc to keep the workspace like before
+		// 	err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
+		// 	if err != nil {
+		// 		log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
+		// 	}
+		// }
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
