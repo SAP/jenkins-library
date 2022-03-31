@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -20,41 +21,40 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	GitHubAccessTokens       map[string]string // map of tokens with url as key in order to maintain url-specific tokens
-	CorrelationID            string
-	CustomConfig             string
-	GitHubTokens             []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig            []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	IgnoreCustomDefaults     bool
-	ParametersJSON           string
-	ANSServiceKey            string
-	ANSEventTemplateFilePath string
-	EnvRootPath              string
-	NoTelemetry              bool
-	StageName                string
-	StepConfigJSON           string
-	StepMetadata             string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName                 string
-	Verbose                  bool
-	LogFormat                string
-	VaultRoleID              string
-	VaultRoleSecretID        string
-	VaultToken               string
-	VaultServerURL           string
-	VaultNamespace           string
-	VaultPath                string
-	HookConfig               HookConfiguration
-	MetaDataResolver         func() map[string]config.StepData
-	GCPJsonKeyFilePath       string
-	GCSFolderPath            string
-	GCSBucketId              string
-	GCSSubFolder             string
+	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
+	CorrelationID        string
+	CustomConfig         string
+	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
+	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	IgnoreCustomDefaults bool
+	ParametersJSON       string
+	EnvRootPath          string
+	NoTelemetry          bool
+	StageName            string
+	StepConfigJSON       string
+	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName             string
+	Verbose              bool
+	LogFormat            string
+	VaultRoleID          string
+	VaultRoleSecretID    string
+	VaultToken           string
+	VaultServerURL       string
+	VaultNamespace       string
+	VaultPath            string
+	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
+	GCPJsonKeyFilePath   string
+	GCSFolderPath        string
+	GCSBucketId          string
+	GCSSubFolder         string
 }
 
-// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
+// HookConfiguration contains the configuration for supported hooks, so far ANS, Sentry and Splunk are supported.
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
+	ANSConfig    ans.Configuration   `json:"ans,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -213,8 +213,8 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ANSServiceKey, "ansServiceKey", os.Getenv("PIPER_ansServiceKey"), "Service Key JSON needed for ANS")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ANSEventTemplateFilePath, "ansEventTemplateFilePath", os.Getenv("PIPER_ansEventTemplateFilePath"), "Optional file path to ANS event template JSON")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.HookConfig.ANSConfig.ServiceKey, "ansServiceKey", os.Getenv("PIPER_ansServiceKey"), "Service Key JSON needed for ANS")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.HookConfig.ANSConfig.EventTemplate, "ansEventTemplate", os.Getenv("PIPER_ansEventTemplate"), "Optional ANS event template JSON string")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", "", "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
