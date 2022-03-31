@@ -49,7 +49,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             }
 
             //Add ANS credential information to the config
-            config += ["ansServiceKeyCredentialsId": script.commonPipelineEnvironment.configuration.hooks.ansServiceKeyCredentialsId]
+            config += ["ansServiceKeyCredentialsId": script.commonPipelineEnvironment.configuration.hooks?.ans?.serviceKeyCredentialsId]
 
             // prepare stashes
             // first eliminate empty stashes
