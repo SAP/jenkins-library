@@ -198,7 +198,7 @@ func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOri
 		projectNpmrcExists, _ := exec.Utils.FileExists(orginalFileName)
 
 		if projectNpmrcExists {
-			// rename the .npmrc file since it interferes with publish
+			log.Entry().Debugf("renaming npmrc from %v to %v", orginalFileName, toBeReplaced)
 			err := exec.Utils.FileRename(orginalFileName, toBeReplaced)
 			if err != nil {
 				return fmt.Errorf("error when renaming current .npmrc from %v to %v : %w", orginalFileName, toBeReplaced, err)
