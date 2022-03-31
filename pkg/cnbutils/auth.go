@@ -28,7 +28,7 @@ func GenerateCnbAuth(config string, utils BuildUtils) (string, error) {
 	auth := map[string]string{}
 	for registry, value := range dockerConfig.AuthConfigs {
 		if value.Auth == "" && value.Username == "" && value.Password == "" {
-			log.Entry().Warnf("docker confing.json contains empty credentails for registry %q. Either 'auth' or 'username' and 'password' have to be provided.", registry)
+			log.Entry().Warnf("docker config.json contains empty credentials for registry %q. Either 'auth' or 'username' and 'password' have to be provided.", registry)
 			continue
 		}
 
