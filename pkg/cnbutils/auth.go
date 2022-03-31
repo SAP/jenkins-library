@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/docker/cli/cli/config/configfile"
 )
 
@@ -25,6 +26,8 @@ func GenerateCnbAuth(config string, utils BuildUtils) (string, error) {
 
 	auth := map[string]string{}
 	for registry, value := range dockerConfig.AuthConfigs {
+		log.Entry().Debugf("Adding credentials for: registry %q", registry)
+
 		auth[registry] = fmt.Sprintf("Basic %s", value.Auth)
 	}
 
