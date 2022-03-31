@@ -15,7 +15,7 @@ import (
 const testCorrelationID = "1234"
 
 func TestANSHook_Levels(t *testing.T) {
-	hook := NewANSHook("", "", "", "")
+	hook := NewANSHook(ans.Configuration{}, "")
 	assert.Equal(t, []logrus.Level{logrus.InfoLevel, logrus.DebugLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
 		hook.Levels())
 }
@@ -120,7 +120,12 @@ func TestNewANSHook(t *testing.T) {
 				testEventTemplateFilePath = testEventTemplateFile.Name()
 			}
 
-			got := NewANSHook(tt.args.serviceKey, tt.args.correlationID, testEventTemplateFilePath, tt.args.eventTemplate)
+			ansConfig := ans.Configuration{
+				ServiceKey:            tt.args.serviceKey,
+				EventTemplateFilePath: testEventTemplateFilePath,
+				EventTemplate:         tt.args.eventTemplate,
+			}
+			got := NewANSHook(ansConfig, tt.args.correlationID)
 			assert.Equal(t, tt.want, got, "new ANSHook not as expected")
 		})
 	}

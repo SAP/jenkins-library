@@ -19,6 +19,13 @@ type ANS struct {
 	URL   string
 }
 
+// Configuration defines the configuration options for the SAP Alert Notification Service on BTP
+type Configuration struct {
+	ServiceKey            string `json:"serviceKey,omitempty"`
+	EventTemplateFilePath string `json:"eventTemplateFilePath,omitempty"`
+	EventTemplate         string `json:"eventTemplate,omitempty"`
+}
+
 // Client to send the event to the SAP Alert Notification Service
 type Client interface {
 	Send(event Event) error
