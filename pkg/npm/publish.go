@@ -142,6 +142,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
+		if err = exec.Utils.Chdir(currentWorkingDirectory); err != nil {
+			return err
+		}
+
 		_, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
@@ -176,10 +180,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		// rename the all renamed npmrc file to original name since they would need to be packed in further publish , specially in cf deploy cases
 		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, false); err != nil {
-			return err
-		}
-
-		if err = exec.Utils.Chdir(currentWorkingDirectory); err != nil {
 			return err
 		}
 
