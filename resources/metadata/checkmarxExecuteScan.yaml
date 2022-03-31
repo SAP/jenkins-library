@@ -312,7 +312,7 @@ spec:
           Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/optimizedAndScheduled
+            param: custom/isOptimizedAndScheduled
         scope:
           - GENERAL
           - PARAMETERS
