@@ -125,7 +125,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	if packBeforePublish {
 		currentWorkingDirectory, err := exec.Utils.Getwd()
 
-		if err = exec.Utils.Chdir(filepath.Base(packageJSON)); err != nil {
+		if err = exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
 			return err
 		}
 
