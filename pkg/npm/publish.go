@@ -164,6 +164,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
+		log.Entry().Infof("switching directory to tmp")
+
 		// change to temp directory since any existing .npmrc may interfere with publish
 		if err := exec.Utils.Chdir(tmpDirectory); err != nil {
 			return fmt.Errorf("unable to change to temp directory for npm publish")
