@@ -165,7 +165,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// change to temp directory since any existing .npmrc may interfere with publish
-		if err := exec.Utils.Chdir(currentWorkingDir); err != nil {
+		if err := exec.Utils.Chdir(tmpDirectory); err != nil {
 			return fmt.Errorf("unable to change to temp directory for npm publish")
 		}
 
@@ -186,7 +186,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// change back to parent directory to keep the workspace clean
-		if err := exec.Utils.Chdir(tmpDirectory); err != nil {
+		if err := exec.Utils.Chdir(currentWorkingDir); err != nil {
 			return fmt.Errorf("unable to change to parent directory after npm publish")
 		}
 
