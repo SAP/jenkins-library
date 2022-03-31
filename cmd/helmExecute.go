@@ -10,12 +10,15 @@ import (
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
 	helmConfig := kubernetes.HelmExecuteOptions{
+		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
 		Image:                     config.Image,
 		Namespace:                 config.Namespace,
 		KubeContext:               config.KubeContext,
+		KeepFailedDeployments:     config.KeepFailedDeployments,
 		KubeConfig:                config.KubeConfig,
 		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
+		DockerConfigJSON:          config.DockerConfigJSON,
 		AppVersion:                config.AppVersion,
 		Dependency:                config.Dependency,
 		PackageDependencyUpdate:   config.PackageDependencyUpdate,
