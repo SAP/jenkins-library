@@ -123,6 +123,12 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
+		currentWorkingDirectory, err := exec.Utils.Getwd()
+
+		if err = exec.Utils.Chdir(filepath.Base(packageJSON)); err != nil {
+			return err
+		}
+
 		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
 		if err != nil {
@@ -170,6 +176,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		// rename the all renamed npmrc file to original name since they would need to be packed in further publish , specially in cf deploy cases
 		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, false); err != nil {
+			return err
+		}
+
+		if err = exec.Utils.Chdir(currentWorkingDirectory); err != nil {
 			return err
 		}
 
