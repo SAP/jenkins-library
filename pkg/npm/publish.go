@@ -129,7 +129,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
+		tmpDirectory, err := exec.Utils.TempDir(filepath.Dir(packageJSON), "temp-")
 
 		if err != nil {
 			return errors.Wrap(err, "creating temp directory failed")
