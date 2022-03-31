@@ -26,7 +26,7 @@ func NewANSHook(serviceKey, correlationID, eventTemplateFilePath, eventTemplate 
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
 		Resource: &ans.Resource{
-			ResourceType: "Piper",
+			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
 	}

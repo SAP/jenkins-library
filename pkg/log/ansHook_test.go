@@ -163,7 +163,7 @@ func TestANSHook_Fire(t *testing.T) {
 				Subject:        "testStep",
 				Body:           "my log message",
 				Resource: &ans.Resource{
-					ResourceType: "Piper",
+					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
 				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "info"},
@@ -192,7 +192,7 @@ func TestANSHook_Fire(t *testing.T) {
 				Subject:        "testStep",
 				Body:           "my log message",
 				Resource: &ans.Resource{
-					ResourceType: "Piper",
+					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
 				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "error": "an error occurred!", "logLevel": "error"},
@@ -221,7 +221,7 @@ func TestANSHook_Fire(t *testing.T) {
 				Subject:        "testStep",
 				Body:           "fatal error: an error occurred",
 				Resource: &ans.Resource{
-					ResourceType: "Piper",
+					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
 				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "fatal"},
@@ -254,7 +254,7 @@ func TestANSHook_Fire(t *testing.T) {
 				Subject:        "My subject line",
 				Body:           "my log message",
 				Resource: &ans.Resource{
-					ResourceType: "Piper",
+					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
 				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "info", "Some": 1.0, "Additional": "a string", "Tags": true},
@@ -289,7 +289,7 @@ func TestANSHook_Fire(t *testing.T) {
 				Subject:        "testStep",
 				Body:           "another message",
 				Resource: &ans.Resource{
-					ResourceType: "Piper",
+					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
 				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
@@ -334,7 +334,7 @@ func defaultEvent() ans.Event {
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
 		Resource: &ans.Resource{
-			ResourceType: "Piper",
+			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
 	}
