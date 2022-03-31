@@ -159,7 +159,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// all existing npmrc file may interfear with publish hence rename them
-		if err = exec.updateNpmrcFiles(packageJSONFiles, true); err != nil {
+		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, true); err != nil {
 			return err
 		}
 
@@ -169,7 +169,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// rename the all renamed npmrc file to original name since they would need to be packed in further publish , specially in cf deploy cases
-		if err = exec.updateNpmrcFiles(packageJSONFiles, false); err != nil {
+		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, false); err != nil {
 			return err
 		}
 
@@ -183,7 +183,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	return nil
 }
 
-func (exec *Execute) updateNpmrcFiles(packageJSONFiles []string, fromOriginalToTmp bool) error {
+func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOriginalToTmp bool) error {
 
 	for _, packageJSON := range packageJSONFiles {
 
