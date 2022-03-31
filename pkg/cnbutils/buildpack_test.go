@@ -14,11 +14,9 @@ func TestBuildpackDownload(t *testing.T) {
 		FilesMock:      &mock.FilesMock{},
 	}
 
-	t.Run("successfully downloads a buildpack", func(t *testing.T) {
-		mockUtils.AddDir("/tmp/testtest")
-		_, err := cnbutils.DownloadBuildpacks("/test", []string{"test"}, "/test/config.json", mockUtils)
-
+	t.Run("it creates an order object", func(t *testing.T) {
+		order, err := cnbutils.DownloadBuildpacks("/destination", []string{"buildpack"}, "/tmp/config.json", mockUtils)
 		assert.NoError(t, err)
-		assert.True(t, mockUtils.HasRemovedFile("/tmp/testtest"))
+		assert.Equal(t, 1, len(order.Order))
 	})
 }
