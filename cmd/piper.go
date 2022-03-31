@@ -27,8 +27,6 @@ type GeneralConfigOptions struct {
 	DefaultConfig            []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	IgnoreCustomDefaults     bool
 	ParametersJSON           string
-	ANSServiceKey            string
-	ANSEventTemplateFilePath string
 	EnvRootPath              string
 	NoTelemetry              bool
 	StageName                string
