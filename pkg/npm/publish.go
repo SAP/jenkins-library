@@ -125,8 +125,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	if packBeforePublish {
 		currentRootWorkingDirectory, err := exec.Utils.Getwd()
 
+		// switch directory to where package json file is or else the npm pack is always run in root folder.
 		if err = exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
-			return err
+			return fmt.Errorf("unable to switch to directory %v before npm pack", filepath.Dir(packageJSON))
 		}
 
 		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
@@ -142,6 +143,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
+		// since we are have already switched directory we can refer to the file as .piperNpmrc directly
 		_, err = exec.Utils.Copy(".piperNpmrc", filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
@@ -180,7 +182,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		if err = exec.Utils.Chdir(currentRootWorkingDirectory); err != nil {
-			return err
+			return fmt.Errorf("unable to switch to root directory %v after npm publish", filepath.Dir(packageJSON))
 		}
 
 	} else {
@@ -195,8 +197,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOriginalToTmp bool, currentRootWorkingDirectory string, packagJSONdir string) error {
 
+	// be back in the root directory so that all npmrc can be found correctly
 	if err := exec.Utils.Chdir(currentRootWorkingDirectory); err != nil {
-		return err
+		return fmt.Errorf("unable to switch to root directory %v before renaming existing npmrc files", currentRootWorkingDirectory)
 	}
 	for _, packageJSON := range packageJSONFiles {
 
@@ -219,8 +222,9 @@ func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOri
 		}
 	}
 
+	// switch back to package json directory to continue with npm publish correctly
 	if err := exec.Utils.Chdir(packagJSONdir); err != nil {
-		return err
+		return fmt.Errorf("unable to switch to root directory %v after renaming existing npmrc files", packagJSONdir)
 	}
 
 	return nil
