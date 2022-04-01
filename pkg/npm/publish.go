@@ -129,7 +129,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		tmpDirectory, err := exec.Utils.TempDir(filepath.Dir(packageJSON), "temp-")
+		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
 		if err != nil {
 			return errors.Wrap(err, "creating temp directory failed")
@@ -165,7 +165,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// all existing npmrc file may interfear with publish hence rename them
-		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, true); err != nil {
+		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, true, currentRootWorkingDirectory, filepath.Dir(packageJSON)); err != nil {
 			return err
 		}
 
@@ -175,7 +175,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// rename the all renamed npmrc file to original name since they would need to be packed in further publish , specially in cf deploy cases
-		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, false); err != nil {
+		if err = exec.renameExistingNpmrcFiles(packageJSONFiles, false, currentRootWorkingDirectory, filepath.Dir(packageJSON)); err != nil {
 			return err
 		}
 
@@ -193,11 +193,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	return nil
 }
 
-func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOriginalToTmp bool) error {
+func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOriginalToTmp bool, currentRootWorkingDirectory string, packagJSONdir string) error {
 
-	// if err := exec.Utils.Chdir(currentRootWorkingDirectory); err != nil {
-	// 	return err
-	// }
+	if err := exec.Utils.Chdir(currentRootWorkingDirectory); err != nil {
+		return err
+	}
 	for _, packageJSON := range packageJSONFiles {
 
 		orginalFileName := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
@@ -219,9 +219,9 @@ func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOri
 		}
 	}
 
-	// if err := exec.Utils.Chdir(TempDir); err != nil {
-	// 	return err
-	// }
+	if err := exec.Utils.Chdir(packagJSONdir); err != nil {
+		return err
+	}
 
 	return nil
 }
