@@ -123,13 +123,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		currentWorkingDirectory, err := exec.Utils.Getwd()
+		currentRootWorkingDirectory, err := exec.Utils.Getwd()
 
 		if err = exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
 			return err
 		}
 
-		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
+		tmpDirectory, err := exec.Utils.TempDir(filepath.Dir(packageJSON), "temp-")
 
 		if err != nil {
 			return errors.Wrap(err, "creating temp directory failed")
@@ -142,14 +142,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		if err = exec.Utils.Chdir(currentWorkingDirectory); err != nil {
-			return err
-		}
-
-		_, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
+		_, err = exec.Utils.Copy(".piperNpmrc", filepath.Join(tmpDirectory, ".piperNpmrc"))
 		if err != nil {
 			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
-				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
+				".piperNpmrc", filepath.Join(tmpDirectory, ".piperNpmrc"), err)
 		}
 
 		tarballs, err := exec.Utils.Glob(filepath.Join(tmpDirectory, "*.tgz"))
@@ -183,6 +179,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
+		if err = exec.Utils.Chdir(currentRootWorkingDirectory); err != nil {
+			return err
+		}
+
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
@@ -195,6 +195,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOriginalToTmp bool) error {
 
+	// if err := exec.Utils.Chdir(currentRootWorkingDirectory); err != nil {
+	// 	return err
+	// }
 	for _, packageJSON := range packageJSONFiles {
 
 		orginalFileName := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
@@ -215,6 +218,10 @@ func (exec *Execute) renameExistingNpmrcFiles(packageJSONFiles []string, fromOri
 			}
 		}
 	}
+
+	// if err := exec.Utils.Chdir(TempDir); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
