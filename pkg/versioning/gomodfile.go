@@ -70,10 +70,15 @@ func (m *GoMod) GetVersion() (string, error) {
 
 // SetVersion sets the go.mod descriptor version property
 func (m *GoMod) SetVersion(v string) error {
-	buildDescriptorFilePath, err := searchDescriptor([]string{"VERSION", "version.txt"}, m.fileExists)
-	if err != nil {
-		return fmt.Errorf("no version.txt/VERSION file available but required: %w", err)
+	buildDescriptorFilePath := m.path
+	if strings.Contains(m.path, "go.mod") {
+		var err error
+		buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt"}, m.fileExists)
+		if err != nil {
+			return fmt.Errorf("no version.txt/VERSION file available but required: %w", err)
+		}
 	}
+
 	artifact := &Versionfile{
 		path:             buildDescriptorFilePath,
 		readFile:         m.readFile,

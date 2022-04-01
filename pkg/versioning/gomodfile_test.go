@@ -80,6 +80,22 @@ func TestGolangSetVersion(t *testing.T) {
 		assert.Equal(t, "1.2.4", string(content))
 	})
 
+	t.Run("success case - no go.mod", func(t *testing.T) {
+		filesMock := mock.FilesMock{}
+		filesMock.AddFile("VERSION", []byte("1.2.3"))
+		gomod := GoMod{
+			path:       "VERSION",
+			readFile:   filesMock.FileRead,
+			fileExists: filesMock.FileExists,
+			writeFile:  filesMock.FileWrite,
+		}
+		err := gomod.SetVersion("1.2.4")
+		assert.NoError(t, err)
+		content, err := filesMock.FileRead("VERSION")
+		assert.NoError(t, err)
+		assert.Equal(t, "1.2.4", string(content))
+	})
+
 	t.Run("error case - no version file", func(t *testing.T) {
 		filesMock := mock.FilesMock{}
 		filesMock.AddFile("go.mod", []byte("module github.com/SAP/jenkins-library"))
