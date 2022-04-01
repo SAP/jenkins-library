@@ -33,6 +33,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: publish
+        type: bool
+        description: Configures the build to publish artifacts to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: reports
