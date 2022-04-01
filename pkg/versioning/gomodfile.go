@@ -1,6 +1,7 @@
 package versioning
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -41,11 +42,11 @@ func (m *GoMod) GetVersion() (string, error) {
 	buildDescriptorFilePath := m.path
 	var err error
 	if strings.Contains(m.path, "go.mod") {
-		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, m.fileExists)
+		buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt"}, m.fileExists)
 		if err != nil {
 			err = m.init()
 			if err != nil {
-				return "", errors.Wrapf(err, "failed to read file '%v'", m.path)
+				return "", err
 			}
 
 			parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
@@ -61,6 +62,7 @@ func (m *GoMod) GetVersion() (string, error) {
 	}
 	artifact := &Versionfile{
 		path:             buildDescriptorFilePath,
+		readFile:         m.readFile,
 		versioningScheme: m.VersioningScheme(),
 	}
 	return artifact.GetVersion()
@@ -68,7 +70,17 @@ func (m *GoMod) GetVersion() (string, error) {
 
 // SetVersion sets the go.mod descriptor version property
 func (m *GoMod) SetVersion(v string) error {
-	return nil
+	buildDescriptorFilePath, err := searchDescriptor([]string{"VERSION", "version.txt"}, m.fileExists)
+	if err != nil {
+		return fmt.Errorf("no version.txt/VERSION file available but required: %w", err)
+	}
+	artifact := &Versionfile{
+		path:             buildDescriptorFilePath,
+		readFile:         m.readFile,
+		writeFile:        m.writeFile,
+		versioningScheme: m.VersioningScheme(),
+	}
+	return artifact.SetVersion(v)
 }
 
 // VersioningScheme returns the relevant versioning scheme
@@ -79,25 +91,29 @@ func (m *GoMod) VersioningScheme() string {
 // GetCoordinates returns the go.mod build descriptor coordinates
 func (m *GoMod) GetCoordinates() (Coordinates, error) {
 	result := Coordinates{}
-	err := m.init()
-	if err != nil {
-		return result, err
+	if strings.Contains(m.path, "go.mod") {
+		err := m.init()
+		if err != nil {
+			return result, err
+		}
+
+		parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
+		if err != nil {
+			return result, errors.Wrap(err, "failed to parse go.mod file")
+		}
+
+		if parsed.Module == nil {
+			return result, errors.Wrap(err, "failed to parse go.mod file")
+		}
+		if parsed.Module.Mod.Path != "" {
+			artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
+			artifactID := artifactSplit[len(artifactSplit)-1]
+			result.ArtifactID = artifactID
+			result.GroupID = strings.Join(artifactSplit[:len(artifactSplit)-1], "/")
+		}
 	}
 
-	parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
-	if err != nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
-	}
-
-	if parsed.Module == nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
-	}
-	if parsed.Module.Mod.Path != "" {
-		artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
-		artifactID := artifactSplit[len(artifactSplit)-1]
-		result.ArtifactID = artifactID
-	}
-	result.Version = parsed.Module.Mod.Version
+	result.Version, _ = m.GetVersion()
 	if result.Version == "" {
 		result.Version = "unspecified"
 	}
