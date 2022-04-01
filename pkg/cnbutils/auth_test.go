@@ -15,10 +15,24 @@ func TestGenerateCnbAuth(t *testing.T) {
 	}
 
 	t.Run("successfully generates cnb auth env variable", func(t *testing.T) {
-		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{\"username\":\"username\",\"password\":\"password\",\"auth\":\"dXNlcm5hbWU6cGFzc3dvcmQ=\"}}}"))
+		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{\"auth\":\"dXNlcm5hbWU6cGFzc3dvcmQ=\"}}}"))
 		auth, err := cnbutils.GenerateCnbAuth("/test/valid_config.json", mockUtils)
 		assert.NoError(t, err)
 		assert.Equal(t, "{\"example.com\":\"Basic dXNlcm5hbWU6cGFzc3dvcmQ=\"}", auth)
+	})
+
+	t.Run("successfully generates cnb auth env variable from username and password", func(t *testing.T) {
+		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{\"username\":\"username\",\"password\":\"password\"}}}"))
+		auth, err := cnbutils.GenerateCnbAuth("/test/valid_config.json", mockUtils)
+		assert.NoError(t, err)
+		assert.Equal(t, "{\"example.com\":\"Basic dXNlcm5hbWU6cGFzc3dvcmQ=\"}", auth)
+	})
+
+	t.Run("skips registry with empty credentials", func(t *testing.T) {
+		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{}}}"))
+		auth, err := cnbutils.GenerateCnbAuth("/test/valid_config.json", mockUtils)
+		assert.NoError(t, err)
+		assert.Equal(t, "{}", auth)
 	})
 
 	t.Run("successfully generates cnb auth env variable if docker config is not present", func(t *testing.T) {
