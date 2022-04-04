@@ -159,7 +159,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
 
         def newScript = nullScript
-        newScript.commonPipelineEnvironment.configuration.hooks?.ans?.serviceKeyCredentialsId
+        newScript.commonPipelineEnvironment.configuration.hooks = [ans: [serviceKeyCredentialsId: "ansServiceKeyID"]]
 
         List stepCredentials = [
         ]
@@ -175,18 +175,8 @@ class PiperExecuteBinTest extends BasePiperTest {
                 stepCredentials
         )
         // asserts
-        assertThat(writeFileRule.files['.pipeline/tmp/metadata/test.yaml'], containsString('name: testStep'))
-        assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper testStep'))
-        assertThat(credentials.size(), is(3))
-        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_credFile')))
-        assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
-        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
-
-        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('my.Registry/my/image:latest'))
-        assertThat(dockerExecuteRule.dockerParams.stashContent, is([]))
-
-        assertThat(artifacts[0], allOf(hasEntry('artifacts', '1234.pdf'), hasEntry('allowEmptyArchive', false)))
+        assertThat(credentials.size(), is(1))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'ansServiceKeyID'), hasEntry('variable', 'PIPER_ansServiceKey')))
     }
 
     @Test
