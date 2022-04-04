@@ -33,17 +33,17 @@ jobs:
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
       - uses: SAP/project-piper-action@master
-        name: 'publish Linux master binary'
+        name: 'publish Mac master binary'
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master-darwin.x86_64
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-darwin.x86_64
       - uses: SAP/project-piper-action@master
-        name: 'publish Linux master binary'
+        name: 'publish Windows master binary'
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master-win.x86_64.exe
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-win.x86_64.exe
       - uses: SAP/project-piper-action@master
         name: 'publish Linux binary'
         with:
