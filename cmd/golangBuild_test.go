@@ -354,7 +354,7 @@ func TestRunGolangBuild(t *testing.T) {
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
-		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [go.mod VERSION version.txt]")
 	})
 
 	t.Run("failure - publish - received unexpected status code", func(t *testing.T) {
