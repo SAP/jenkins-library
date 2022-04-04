@@ -1072,11 +1072,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		}
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-<<<<<<< HEAD
 		//log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
-=======
-		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
->>>>>>> 6ca151df (fix(fortifyExecuteScan): check audit data length in all cases)
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
 	ruleProp.Audited = data[0].Audited
