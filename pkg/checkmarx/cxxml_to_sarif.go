@@ -233,7 +233,15 @@ func Parse(data []byte) (format.SARIF, error) {
 				remarks := strings.Split(cxxml.Query[i].Result[j].Remark, "\n")
 				messageCandidates := []string{}
 				for cnd := 0; cnd < len(remarks); cnd++ {
-					candidate := strings.Split(remarks[cnd], ": ")
+					candidate := strings.Split(remarks[cnd], "]: ")
+					if len(candidate) == 1 {
+						if len(candidate[0]) != 0 {
+							messageCandidates = append([]string{strings.Trim(candidate[0], "\r\n")}, messageCandidates...)
+						}
+						continue
+					} else if len(candidate) == 0 {
+						continue
+					}
 					messageCandidates = append([]string{strings.Trim(candidate[1], "\r\n")}, messageCandidates...) //Append in reverse order, trim to remove extra \r
 				}
 				props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
