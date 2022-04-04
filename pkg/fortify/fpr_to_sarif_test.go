@@ -60,6 +60,9 @@ func TestParse(t *testing.T) {
               <SourceLocation path="result/rules/Custom_Rules_for_Annotation_Management.xml" line="2" colStart="0" colEnd="0" snippet="DUMMYDUMMY#result/rules/Custom_Rules_for_Annotation_Management.xml:2:2"/>
             </Node>
           </Entry>
+          <Entry>
+            <NodeRef id="4491"/>
+          </Entry>
         </Primary>
       </Trace>
     </Unified>
@@ -86,6 +89,7 @@ func TestParse(t *testing.T) {
           <Entry>
             <Node isDefault="true">
               <SourceLocation path="result/rules/Custom_Rules_for_Annotation_Management.xml" line="2" colStart="0" colEnd="0" snippet="DUMMYDUMMY#result/rules/Custom_Rules_for_Annotation_Management.xml:2:2"/>
+              <Action>Dummy action</Action>
             </Node>
           </Entry>
         </Primary>
@@ -292,6 +296,7 @@ If you are concerned about leaking system data via NFC on an Android device, you
         <Group name="Impact">5</Group>
         <Group name="RemediationEffort">1</Group>
         <Group name="Probability">5</Group>
+        <Group name="altcategoryCWE">CWE ID 111</Group>
       </MetaInfo>
     </Rule>
   </RuleInfo>
