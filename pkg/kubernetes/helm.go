@@ -110,8 +110,16 @@ func (h *HelmExecute) runHelmAdd() error {
 
 // RunHelmUpgrade is used to upgrade a release
 func (h *HelmExecute) RunHelmUpgrade() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	err := h.runHelmInit()
 	if err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
+	if err := h.runHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
@@ -184,6 +192,10 @@ func (h *HelmExecute) RunHelmLint() error {
 
 // RunHelmInstall is used to install a chart
 func (h *HelmExecute) RunHelmInstall() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	if err := h.runHelmInit(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
@@ -235,6 +247,10 @@ func (h *HelmExecute) RunHelmUninstall() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
+	if err := h.runHelmAdd(); err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
 	helmParams := []string{
 		"uninstall",
 		h.config.DeploymentName,
@@ -267,6 +283,10 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 // RunHelmPackage is used to package a chart directory into a chart archive
 func (h *HelmExecute) runHelmPackage() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
