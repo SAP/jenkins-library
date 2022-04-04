@@ -545,6 +545,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		return format.SARIF{}, err
 	}
 
+	//Create an object containing all audit data
+	log.Entry().Debug("Querying Fortify SSC for batch audit data")
+	oneRequestPerIssueMode := false
+	auditData, err := sys.GetAllIssueDetails(projectVersion.ID)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
+		oneRequestPerIssueMode = true
+	}
+
 	//Now, we handle the sarif
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
@@ -714,7 +723,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
+			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
@@ -1029,7 +1038,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool) error {
 	if sys == nil {
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
@@ -1038,14 +1047,24 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}
-	data, err := sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
-	if err != nil {
-		return err
-	}
-	log.Entry().Debug("Looking up audit state of " + issueInstanceID)
-	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
-		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+	var data []*models.ProjectVersionIssue
+	if oneRequestPerIssue {
+		data, err := sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
+		if err != nil {
+			return err
+		}
+		log.Entry().Debug("operating in one-request-per-issue mode: looking up audit state of " + issueInstanceID)
+		if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
+			log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+			return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+		}
+	} else {
+		for i := 0; i < len(auditData); i++ {
+			if issueInstanceID == *auditData[i].IssueInstanceID {
+				data = append(data, auditData[i])
+				break
+			}
+		}
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
