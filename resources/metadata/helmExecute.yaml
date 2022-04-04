@@ -33,10 +33,11 @@ spec:
           - name: kubeCredentialsId
             deprecated: true
         type: jenkins
-      - name: dockerCredentialsId
-        type: jenkins
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
+        type: jenkins
+      - name: targetRepositoryCredentialsId
+        description: TBD
         type: jenkins
     resources:
       - name: deployDescriptor
@@ -93,6 +94,9 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: targetRepositoryCredentialsId
+            type: secret
+            param: username
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryUsername
           - name: commonPipelineEnvironment
@@ -106,6 +110,9 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: targetRepositoryCredentialsId
+            type: secret
+            param: password
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment

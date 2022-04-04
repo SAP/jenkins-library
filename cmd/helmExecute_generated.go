@@ -193,8 +193,8 @@ func helmExecuteMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
-					{Name: "dockerCredentialsId", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
+					{Name: "targetRepositoryCredentialsId", Description: "TBD", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
@@ -250,6 +250,12 @@ func helmExecuteMetadata() config.StepData {
 						Name: "targetRepositoryUser",
 						ResourceRef: []config.ResourceReference{
 							{
+								Name:  "targetRepositoryCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+
+							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/helmRepositoryUsername",
 							},
@@ -268,6 +274,12 @@ func helmExecuteMetadata() config.StepData {
 					{
 						Name: "targetRepositoryPassword",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "targetRepositoryCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/helmRepositoryPassword",
