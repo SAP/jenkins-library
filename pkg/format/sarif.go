@@ -80,7 +80,7 @@ type SarifProperties struct {
 	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
 	Confidence            string `json:"confidence,omitempty"`
 	FortifyCategory       string `json:"fortifyCategory,omitempty"`
-	CheckmarxSimilarityId string `json:"checkmarxSimilarityID,omitempty"`
+	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
 	Audited               bool   `json:"audited"`
 	ToolSeverity          string `json:"toolSeverity"`
 	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
@@ -276,7 +276,7 @@ type AutomationDetails struct {
 
 // Taxonomies These structs are relevant to the taxonomies object
 type Taxonomies struct {
-	Guid             string  `json:"guid,omitempty"`
+	GUID             string  `json:"guid,omitempty"`
 	Name             string  `json:"name"`
 	Organization     string  `json:"organization"`
 	ShortDescription Message `json:"shortDescription"`

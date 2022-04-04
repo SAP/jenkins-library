@@ -17,8 +17,8 @@ type CxXMLResults struct {
 	XMLName                  xml.Name     `xml:"CxXMLResults"`
 	InitiatorName            string       `xml:"InitiatorName,attr"`
 	Owner                    string       `xml:"Owner,attr"`
-	ScanId                   string       `xml:"ScanId,attr"`
-	ProjectId                string       `xml:"ProjectId,attr"`
+	ScanID                   string       `xml:"ScanId,attr"`
+	ProjectID                string       `xml:"ProjectId,attr"`
 	ProjectName              string       `xml:"ProjectName,attr"`
 	TeamFullPathOnReportDate string       `xml:"TeamFullPathOnReportDate,attr"`
 	DeepLink                 string       `xml:"DeepLink,attr"`
@@ -37,12 +37,12 @@ type CxXMLResults struct {
 	Query                    []CxxmlQuery `xml:"Query"`
 }
 
-// Query
+// CxxmlQuery
 type CxxmlQuery struct {
 	XMLName            xml.Name      `xml:"Query"`
-	Id                 string        `xml:"id,attr"`
+	ID                 string        `xml:"id,attr"`
 	Categories         string        `xml:"categories,attr"`
-	CweId              string        `xml:"cweId,attr"`
+	CweID              string        `xml:"cweId,attr"`
 	Name               string        `xml:"name,attr"`
 	Group              string        `xml:"group,attr"`
 	Severity           string        `xml:"Severity,attr"`
@@ -55,10 +55,10 @@ type CxxmlQuery struct {
 	Result             []CxxmlResult `xml:"Result"`
 }
 
-// Result
+// CxxmlResult
 type CxxmlResult struct {
 	XMLName       xml.Name `xml:"Result"`
-	NodeId        string   `xml:"NodeId,attr"`
+	NodeID        string   `xml:"NodeId,attr"`
 	FileName      string   `xml:"FileName,attr"`
 	Status        string   `xml:"Status,attr"`
 	Line          int      `xml:"Line,attr"`
@@ -78,9 +78,9 @@ type CxxmlResult struct {
 // Path
 type Path struct {
 	XMLName           xml.Name   `xml:"Path"`
-	ResultId          string     `xml:"ResultId,attr"`
-	PathId            int        `xml:"PathId,attr"`
-	SimilarityId      string     `xml:"SimilarityId,attr"`
+	ResultID          string     `xml:"ResultId,attr"`
+	PathID            int        `xml:"PathId,attr"`
+	SimilarityID      string     `xml:"SimilarityId,attr"`
 	SourceMethod      string     `xml:"SourceMethod,attr"`
 	DestinationMethod string     `xml:"DestinationMethod,attr"`
 	PathNode          []PathNode `xml:"PathNode"`
@@ -92,14 +92,14 @@ type PathNode struct {
 	FileName string   `xml:"FileName"`
 	Line     int      `xml:"Line"`
 	Column   int      `xml:"Column"`
-	NodeId   int      `xml:"NodeId"`
+	NodeID   int      `xml:"NodeId"`
 	Name     string   `xml:"Name"`
 	Type     string   `xml:"Type"`
 	Length   int      `xml:"Length"`
 	Snippet  Snippet  `xml:"Snippet"`
 }
 
-// Snippet
+//Snippet
 type Snippet struct {
 	XMLName xml.Name `xml:"Snippet"`
 	Line    Line     `xml:"Line"`
@@ -112,6 +112,7 @@ type Line struct {
 	Code    string   `xml:"Code"`
 }
 
+// ConvertCxxmlToSarif is the entrypoint for the Parse function
 func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
 	var sarif format.SARIF
 	data, err := ioutil.ReadFile(xmlReportName)
@@ -147,7 +148,7 @@ func Parse(data []byte) (format.SARIF, error) {
 	checkmarxRun.ColumnKind = "utf16CodeUnits"
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
-	baseUrl := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "CxWebClient/ScanQueryDescription.aspx?"
+	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "CxWebClient/ScanQueryDescription.aspx?"
 	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
 	cweCounter := 0
 
@@ -156,14 +157,14 @@ func Parse(data []byte) (format.SARIF, error) {
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
 	for i := 0; i < len(cxxml.Query); i++ {
 		//add cweid to array
-		cweIdsForTaxonomies[cxxml.Query[i].CweId] = cweCounter
+		cweIdsForTaxonomies[cxxml.Query[i].CweID] = cweCounter
 		cweCounter = cweCounter + 1
 		for j := 0; j < len(cxxml.Query[i].Result); j++ {
 			result := *new(format.Results)
 
 			//General
-			result.RuleID = cxxml.Query[i].Id
-			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweId]
+			result.RuleID = cxxml.Query[i].ID
+			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
 			msg := new(format.Message)
 			msg.Text = cxxml.Query[i].Categories
@@ -206,8 +207,8 @@ func Parse(data []byte) (format.SARIF, error) {
 			if cxxml.Query[i].Result[j].Remark != "" {
 				props.Audited = true
 			}
-			props.CheckmarxSimilarityId = cxxml.Query[i].Result[j].Path.SimilarityId
-			props.InstanceID = cxxml.Query[i].Result[j].Path.ResultId + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathId)
+			props.CheckmarxSimilarityID = cxxml.Query[i].Result[j].Path.SimilarityID
+			props.InstanceID = cxxml.Query[i].Result[j].Path.ResultID + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathID)
 			props.ToolSeverity = cxxml.Query[i].Result[j].Severity
 			props.ToolSeverityIndex = cxxml.Query[i].Result[j].SeverityIndex
 			props.ToolStateIndex = cxxml.Query[i].Result[j].State
@@ -255,9 +256,9 @@ func Parse(data []byte) (format.SARIF, error) {
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-		rule.ID = cxxml.Query[i].Id
+		rule.ID = cxxml.Query[i].ID
 		rule.Name = cxxml.Query[i].Name
-		rule.HelpURI = baseUrl + "queryID=" + cxxml.Query[i].Id + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
+		rule.HelpURI = baseURL + "queryID=" + cxxml.Query[i].ID + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
 		rulesArray = append(rulesArray, rule)
 	}
 
