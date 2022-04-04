@@ -288,4 +288,3 @@ func Parse(data []byte) (format.SARIF, error) {
 
 	return sarif, nil
 }
-
