@@ -184,6 +184,7 @@ func WriteJSONReport(jsonReport CheckmarxReportData) ([]piperutils.Path, error) 
 	return reportPaths, nil
 }
 
+// WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
 func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}

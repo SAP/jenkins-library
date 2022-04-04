@@ -37,7 +37,7 @@ type CxXMLResults struct {
 	Query                    []CxxmlQuery `xml:"Query"`
 }
 
-// CxxmlQuery
+// CxxmlQuery CxxmlQuery
 type CxxmlQuery struct {
 	XMLName            xml.Name      `xml:"Query"`
 	ID                 string        `xml:"id,attr"`
@@ -55,7 +55,7 @@ type CxxmlQuery struct {
 	Result             []CxxmlResult `xml:"Result"`
 }
 
-// CxxmlResult
+// CxxmlResult CxxmlResult
 type CxxmlResult struct {
 	XMLName       xml.Name `xml:"Result"`
 	NodeID        string   `xml:"NodeId,attr"`
@@ -75,7 +75,7 @@ type CxxmlResult struct {
 	Path          Path     `xml:"Path"`
 }
 
-// Path
+// Path Path
 type Path struct {
 	XMLName           xml.Name   `xml:"Path"`
 	ResultID          string     `xml:"ResultId,attr"`
@@ -86,7 +86,7 @@ type Path struct {
 	PathNode          []PathNode `xml:"PathNode"`
 }
 
-// PathNode
+// PathNode PathNode
 type PathNode struct {
 	XMLName  xml.Name `xml:"PathNode"`
 	FileName string   `xml:"FileName"`
@@ -99,13 +99,13 @@ type PathNode struct {
 	Snippet  Snippet  `xml:"Snippet"`
 }
 
-//Snippet
+// Snippet Snippet
 type Snippet struct {
 	XMLName xml.Name `xml:"Snippet"`
 	Line    Line     `xml:"Line"`
 }
 
-// Line
+// Line Line
 type Line struct {
 	XMLName xml.Name `xml:"Line"`
 	Number  int      `xml:"Number"`
