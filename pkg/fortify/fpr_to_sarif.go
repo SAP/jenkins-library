@@ -1048,15 +1048,12 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		return err
 	}
 	var data []*models.ProjectVersionIssue
+	var err error
 	if oneRequestPerIssue {
-		data, err := sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
+		log.Entry().Debug("operating in one-request-per-issue mode: looking up audit state of " + issueInstanceID)
+		data, err = sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
 		if err != nil {
 			return err
-		}
-		log.Entry().Debug("operating in one-request-per-issue mode: looking up audit state of " + issueInstanceID)
-		if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-			log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
-			return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 		}
 	} else {
 		for i := 0; i < len(auditData); i++ {
@@ -1065,6 +1062,10 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 				break
 			}
 		}
+	}
+	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
+		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
