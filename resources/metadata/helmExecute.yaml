@@ -27,6 +27,12 @@ metadata:
 spec:
   inputs:
     secrets:
+      - name: kubeConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
+        aliases:
+          - name: kubeCredentialsId
+            deprecated: true
+        type: jenkins
       - name: dockerCredentialsId
         type: jenkins
       - name: dockerConfigJsonCredentialsId
