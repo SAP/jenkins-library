@@ -37,7 +37,7 @@ spec:
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
       - name: targetRepositoryCredentialsId
-        description: TBD
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
         type: jenkins
     resources:
       - name: deployDescriptor
@@ -86,7 +86,7 @@ spec:
           - STAGES
           - STEPS
       - name: targetRepositoryUser
-        description: "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
+        description: "Username for the chart repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
           - PARAMETERS

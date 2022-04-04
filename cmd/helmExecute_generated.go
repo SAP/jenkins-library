@@ -158,7 +158,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for helm.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryName, "targetRepositoryName", os.Getenv("PIPER_targetRepositoryName"), "set the chart repository")
-	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the chart repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
@@ -194,7 +194,7 @@ func helmExecuteMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
-					{Name: "targetRepositoryCredentialsId", Description: "TBD", Type: "jenkins"},
+					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
