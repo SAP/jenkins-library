@@ -207,6 +207,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 		stepConfig.mixInHookConfig(def.Hooks)
 	}
+	// read hook info from user config file (.pipeline/config.yaml), overwrites hook config from defaults
+	stepConfig.mixInHookConfig(c.Hooks)
 
 	// read config & merge - general -> steps -> stages
 	stepConfig.mixIn(c.General, filters.General)
