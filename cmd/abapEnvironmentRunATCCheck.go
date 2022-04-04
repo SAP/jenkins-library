@@ -153,7 +153,7 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfig ATCConfiguration, err error) {
 
 	if config.AtcConfig != "" {
-		// Configuration defaults to AUnitConfig
+		// Configuration defaults to ATC Config
 		log.Entry().Infof("ATC Configuration: %s", config.AtcConfig)
 		atcConfigFile, err := abaputils.ReadConfigFile(config.AtcConfig)
 		if err != nil {
