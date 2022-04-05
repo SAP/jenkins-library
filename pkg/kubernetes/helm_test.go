@@ -71,8 +71,10 @@ func TestRunHelm(t *testing.T) {
 		utils := newHelmMockUtilsBundle()
 
 		testTable := []struct {
-			config         HelmExecuteOptions
-			expectedConfig []string
+			config                HelmExecuteOptions
+			generalVerbose        bool
+			expectedAddConfig     []string
+			expectedUpgradeConfig []string
 		}{
 			{
 				config: HelmExecuteOptions{
@@ -84,8 +86,11 @@ func TestRunHelm(t *testing.T) {
 					AdditionalParameters:  []string{"additional parameter"},
 					Image:                 "dtzar/helm-kubectl:3.4.1",
 					TargetRepositoryName:  "test",
+					TargetRepositoryURL:   "https://charts.helm.sh/stable",
 				},
-				expectedConfig: []string{"upgrade", "test_deployment", ".", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"},
+				generalVerbose:        true,
+				expectedAddConfig:     []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"},
+				expectedUpgradeConfig: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"},
 			},
 		}
 
@@ -93,12 +98,13 @@ func TestRunHelm(t *testing.T) {
 			helmExecute := HelmExecute{
 				utils:   utils,
 				config:  testCase.config,
-				verbose: false,
+				verbose: testCase.generalVerbose,
 				stdout:  log.Writer(),
 			}
 			err := helmExecute.RunHelmUpgrade()
 			assert.NoError(t, err)
-			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedConfig}, utils.Calls[1])
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedAddConfig}, utils.Calls[0])
+			assert.Equal(t, mock.ExecCall{Exec: "helm", Params: testCase.expectedUpgradeConfig}, utils.Calls[1])
 		}
 	})
 
