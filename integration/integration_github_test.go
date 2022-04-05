@@ -67,7 +67,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 
 		err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 		assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
-	}
+	})
 	t.Run("test multiple assets - success", func(t *testing.T) {
 		//prepare pipeline environment
 		now := time.Now()
@@ -93,7 +93,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 
 		err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 		assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
-	}
+	})
 }
 
 func TestGithubFetchCommitStatistics(t *testing.T) {
