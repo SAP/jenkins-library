@@ -548,9 +548,17 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//Create an object containing all audit data
 	log.Entry().Debug("Querying Fortify SSC for batch audit data")
 	oneRequestPerIssueMode := false
-	auditData, err := sys.GetAllIssueDetails(projectVersion.ID)
-	if err != nil {
-		log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
+	var auditData []*models.ProjectVersionIssue
+	if sys != nil {
+		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
+			oneRequestPerIssueMode = true
+		} else {
+			log.Entry().Debug("request successful, data frame size: ", len(auditData))
+		}
+	} else {
+		log.Entry().Error("no system instance found, lookup impossible")
 		oneRequestPerIssueMode = true
 	}
 
