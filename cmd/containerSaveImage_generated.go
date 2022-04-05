@@ -73,6 +73,9 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
+				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
+			}
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
 				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
 				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)

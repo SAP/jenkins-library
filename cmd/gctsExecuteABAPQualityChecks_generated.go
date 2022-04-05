@@ -83,6 +83,9 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
+				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
+			}
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
 				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
 				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)

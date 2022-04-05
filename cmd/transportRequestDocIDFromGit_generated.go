@@ -96,6 +96,9 @@ It is primarily made for the transportRequestUploadSOLMAN step to provide the ch
 				log.RegisterHook(logCollector)
 			}
 
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
+				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
+			}
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
 				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
 				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)
