@@ -260,6 +260,22 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: deploymentName
+        type: string
+        description: Defines the deployment name to use from helm package/publish commands.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: packageVersion
+        type: string
+        description: Defines the package version to use from helm package/publish commands.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config

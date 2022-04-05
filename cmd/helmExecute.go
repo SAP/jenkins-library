@@ -28,17 +28,25 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		TargetRepositoryPassword:  config.TargetRepositoryPassword,
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
+		DeploymentName:            config.DeploymentName,
+		PackageVersion:            config.PackageVersion,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
 
-	helmChart := config.ChartPath + "Chart.yaml"
-	nameChart, packageVersion, err := kubernetes.GetChartInfo(helmChart, utils)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("failed to get version in Chart.yaml: %v", err)
+	if len(config.DeploymentName) == 0 || len(config.PackageVersion) == 0 {
+		helmChart := config.ChartPath + "Chart.yaml"
+		nameChart, packageVersion, err := kubernetes.GetChartInfo(helmChart, utils)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("failed to get version in Chart.yaml: %v", err)
+		}
+		if len(config.DeploymentName) == 0 {
+			helmConfig.DeploymentName = nameChart
+		}
+		if len(config.PackageVersion) == 0 {
+			helmConfig.PackageVersion = packageVersion
+		}
 	}
-	helmConfig.DeploymentName = nameChart
-	helmConfig.PackageVersion = packageVersion
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
