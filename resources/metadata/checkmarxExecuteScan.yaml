@@ -319,6 +319,13 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: convertToSarif
+        type: bool
+        description: "[BETA] Convert the Checkmarx XML (Cxxml) scan results to the open SARIF standard. Uploaded through Cumulus later on."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: influx
