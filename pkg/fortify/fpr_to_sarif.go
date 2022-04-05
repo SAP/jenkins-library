@@ -1072,7 +1072,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		}
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+		//log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
 	ruleProp.Audited = data[0].Audited
