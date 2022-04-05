@@ -215,7 +215,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd, "--reproducible"}
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")

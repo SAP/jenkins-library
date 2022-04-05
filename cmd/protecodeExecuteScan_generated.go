@@ -29,7 +29,6 @@ type protecodeExecuteScanOptions struct {
 	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
 	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"possible-values=none binary complete"`
 	FilePath                    string `json:"filePath,omitempty"`
-	IncludeLayers               bool   `json:"includeLayers,omitempty"`
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
 	ServerURL                   string `json:"serverUrl,omitempty"`
 	ReportFileName              string `json:"reportFileName,omitempty"`
@@ -242,7 +241,6 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.CleanupMode, "cleanupMode", `binary`, "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
-	cmd.Flags().BoolVar(&stepConfig.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
 	cmd.Flags().StringVar(&stepConfig.TimeoutMinutes, "timeoutMinutes", `60`, "The timeout to wait for the scan to finish")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&stepConfig.ReportFileName, "reportFileName", `protecode_report.pdf`, "The file name of the report to be created")
@@ -366,15 +364,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_filePath"),
-					},
-					{
-						Name:        "includeLayers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
 					},
 					{
 						Name:        "timeoutMinutes",

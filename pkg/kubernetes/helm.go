@@ -16,9 +16,9 @@ type HelmExecutor interface {
 	RunHelmLint() error
 	RunHelmInstall() error
 	RunHelmUninstall() error
-	RunHelmPackage() error
 	RunHelmTest() error
 	RunHelmPublish() error
+	RunHelmDependency() error
 }
 
 // HelmExecute struct
@@ -45,7 +45,8 @@ type HelmExecuteOptions struct {
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
 	PackageVersion            string   `json:"packageVersion,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
-	DependencyUpdate          bool     `json:"dependencyUpdate,omitempty"`
+	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
+	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
 	FilterTest                string   `json:"filterTest,omitempty"`
 	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
@@ -265,7 +266,7 @@ func (h *HelmExecute) RunHelmUninstall() error {
 }
 
 // RunHelmPackage is used to package a chart directory into a chart archive
-func (h *HelmExecute) RunHelmPackage() error {
+func (h *HelmExecute) runHelmPackage() error {
 	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
@@ -278,7 +279,7 @@ func (h *HelmExecute) RunHelmPackage() error {
 	if len(h.config.PackageVersion) > 0 {
 		helmParams = append(helmParams, "--version", h.config.PackageVersion)
 	}
-	if h.config.DependencyUpdate {
+	if h.config.PackageDependencyUpdate {
 		helmParams = append(helmParams, "--dependency-update")
 	}
 	if len(h.config.AppVersion) > 0 {
@@ -323,9 +324,39 @@ func (h *HelmExecute) RunHelmTest() error {
 	return nil
 }
 
+// RunHelmDependency is used to manage a chart's dependencies
+func (h *HelmExecute) RunHelmDependency() error {
+	if len(h.config.Dependency) == 0 {
+		return fmt.Errorf("there is no dependency value. Possible values are build, list, update")
+	}
+
+	helmParams := []string{
+		"dependency",
+	}
+
+	helmParams = append(helmParams, h.config.Dependency)
+
+	helmParams = append(helmParams, h.config.ChartPath)
+
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.AdditionalParameters...)
+	}
+
+	if err := h.runHelmCommand(helmParams); err != nil {
+		log.Entry().WithError(err).Fatal("Helm dependency call failed")
+	}
+
+	return nil
+}
+
 //RunHelmPublish is used to upload a chart to a registry
 func (h *HelmExecute) RunHelmPublish() error {
 	err := h.runHelmInit()
+	if err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
+	err = h.runHelmPackage()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}

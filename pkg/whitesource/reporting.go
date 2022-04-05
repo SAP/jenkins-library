@@ -175,7 +175,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
-	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var wsRun format.Runs
 	sarif.Runs = append(sarif.Runs, wsRun)
@@ -194,18 +194,20 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		id := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
 		log.Entry().Debugf("Transforming alert %v into SARIF format", id)
 		result.RuleID = id
-		result.Level = alert.Level
+		result.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
 		result.RuleIndex = i //Seems very abstract
-		msg := new(format.Message)
-		msg.Text = alert.Vulnerability.Description
-		result.Message = msg
-		result.Level = alert.Level
+		result.Message = new(format.Message)
+		result.Message.Text = alert.Vulnerability.Description
 		artLoc := new(format.ArtifactLocation)
 		artLoc.Index = 0
 		artLoc.URI = alert.Library.Filename
 		result.AnalysisTarget = artLoc
-		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}, Region: format.Region{}, LogicalLocations: []format.LogicalLocation{{FullyQualifiedName: ""}}}, Message: nil}
+		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}}}
 		result.Locations = append(result.Locations, location)
+		//TODO add audit and tool related information, maybe fortifyCategory needs to become more general
+		//result.Properties = new(format.SarifProperties)
+		//result.Properties.ToolSeverity
+		//result.Properties.ToolAuditMessage
 
 		sarifRule := *new(format.SarifRule)
 		sarifRule.ID = id
@@ -216,21 +218,13 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		fd.Text = alert.Vulnerability.Description
 		sarifRule.FullDescription = fd
 		defaultConfig := new(format.DefaultConfiguration)
-		defaultConfig.Level = alert.Level
+		defaultConfig.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
 		sarifRule.DefaultConfiguration = defaultConfig
 		sarifRule.HelpURI = alert.Vulnerability.URL
 		markdown, _ := alert.ToMarkdown()
 		sarifRule.Help = new(format.Help)
 		sarifRule.Help.Text = alert.ToTxt()
 		sarifRule.Help.Markdown = string(markdown)
-
-		// Avoid empty descriptions to respect standard
-		if sarifRule.ShortDescription.Text == "" {
-			sarifRule.ShortDescription.Text = "None."
-		}
-		if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-			sarifRule.FullDescription.Text = "None."
-		}
 
 		ruleProp := *new(format.SarifRuleProperties)
 		ruleProp.Tags = append(ruleProp.Tags, alert.Type)
@@ -247,6 +241,26 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	sarif.Runs[0].Tool = tool
 
 	return &sarif
+}
+
+func transformToLevel(cvss2severity, cvss3severity string) string {
+	switch cvss3severity {
+	case "low":
+		return "warning"
+	case "medium":
+		return "warning"
+	case "high":
+		return "error"
+	}
+	switch cvss2severity {
+	case "low":
+		return "warning"
+	case "medium":
+		return "warning"
+	case "high":
+		return "error"
+	}
+	return "none"
 }
 
 // WriteSarifFile write a JSON sarif format file for upload into e.g. GCP

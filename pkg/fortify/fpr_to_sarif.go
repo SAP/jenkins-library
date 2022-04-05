@@ -547,7 +547,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 	//Now, we handle the sarif
 	var sarif format.SARIF
-	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos01/schemas/sarif-schema-2.1.0.json"
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var fortifyRun format.Runs
 	fortifyRun.ColumnKind = "utf16CodeUnits"
@@ -608,7 +608,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
 							threadFlowLocation.Location.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 							threadFlowLocation.Location.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text = fvdl.Snippets[j].Text
+							snippetSarif := new(format.SnippetSarif)
+							snippetSarif.Text = fvdl.Snippets[j].Text
+							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 							break
 						}
 					}
@@ -646,21 +648,29 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						default:
 							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						}
-						physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-						snippetText := ""
-						for j := 0; j < len(physLocationSnippetLines); j++ {
-							if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-								snippetText = physLocationSnippetLines[j]
-								break
+						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+							physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+							snippetText := ""
+							for j := 0; j < len(physLocationSnippetLines); j++ {
+								if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+									snippetText = physLocationSnippetLines[j]
+									break
+								}
 							}
-						}
-						if snippetText != "" {
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = snippetText
-						} else {
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							snippetSarif := new(format.SnippetSarif)
+							if snippetText != "" {
+								snippetSarif.Text = snippetText
+							} else {
+								snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							}
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 						}
 					} else {
-						threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+							snippetSarif := new(format.SnippetSarif)
+							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+						}
 					}
 					location = *threadFlowLocation.Location
 					//set Kinds
@@ -691,7 +701,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
 		//handle properties
-		prop := *new(format.SarifProperties)
+		prop := new(format.SarifProperties)
 		prop.InstanceSeverity = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
@@ -704,7 +714,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := integrateAuditData(&prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
+			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
@@ -942,7 +952,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			if fvdl.Snippets[j].SnippetId == targetSnippetId {
 				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-				loc.PhysicalLocation.ContextRegion.Snippet.Text = fvdl.Snippets[j].Text
+				snippetSarif := new(format.SnippetSarif)
+				snippetSarif.Text = fvdl.Snippets[j].Text
+				loc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 				break
 			}
 		}
@@ -976,18 +988,22 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		default:
 			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
 		}
-		physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-		snippetText := ""
-		for j := 0; j < len(physLocationSnippetLines); j++ {
-			if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-				snippetText = physLocationSnippetLines[j]
-				break
+		if loc.PhysicalLocation.ContextRegion.Snippet != nil {
+			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+			snippetText := ""
+			for j := 0; j < len(physLocationSnippetLines); j++ {
+				if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+					snippetText = physLocationSnippetLines[j]
+					break
+				}
 			}
-		}
-		if snippetText != "" {
-			loc.PhysicalLocation.Region.Snippet.Text = snippetText
-		} else {
-			loc.PhysicalLocation.Region.Snippet.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
+			snippetSarif := new(format.SnippetSarif)
+			if snippetText != "" {
+				snippetSarif.Text = snippetText
+			} else {
+				snippetSarif.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
+			}
+			loc.PhysicalLocation.Region.Snippet = snippetSarif
 		}
 		locations.Location = loc
 		locations.Kinds = append(locations.Kinds, "unknown")
@@ -999,7 +1015,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
 	taxonomy := *new(format.Taxonomies)
-	taxonomy.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+	taxonomy.GUID = "25F72D7E-8A92-459D-AD67-64853F788765"
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
