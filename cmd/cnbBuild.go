@@ -393,7 +393,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	}
 
 	include := ignore.CompileIgnoreLines("**/*")
-	exclude := ignore.CompileIgnoreLines("piper", ".pipeline")
+	exclude := ignore.CompileIgnoreLines("piper", ".pipeline", ".git")
 
 	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {

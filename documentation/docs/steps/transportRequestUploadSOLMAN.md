@@ -13,7 +13,7 @@
 
 The Change Management Client (CM Client) handles the access to SAP Solution Manager.
 The CM Client is a software running under Linux, which can initiate basic change management tasks
-in the Solution Manager as well as in the CTS. The client is used by default
+in the Solution Manager. The client is used by default
 as a [Docker image](https://hub.docker.com/r/ppiper/cm-client),
 but can also be installed as a [command line tool](https://github.com/SAP/devops-cm-client).
 
