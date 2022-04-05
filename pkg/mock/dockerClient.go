@@ -2,17 +2,20 @@ package mock
 
 import (
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/v1"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 // DownloadMock .
 type DownloadMock struct {
-	FilePath    string
-	ImageRef    string
-	RegistryURL string
+	FilePath       string
+	ImageRef       string
+	RemoteImageRef string
+	RegistryURL    string
 
-	ReturnImage v1.Image
-	ReturnError string
+	ReturnImage     v1.Image
+	RemoteImageInfo v1.Image
+	ReturnError     string
 
 	Stub func(imageRef, targetDir string) (v1.Image, error)
 }
@@ -41,4 +44,15 @@ func (c *DownloadMock) DownloadImageContent(imageRef, targetFile string) (v1.Ima
 		return nil, fmt.Errorf(c.ReturnError)
 	}
 	return c.ReturnImage, nil
+}
+
+// GetRemoteImageInfo .
+func (c *DownloadMock) GetRemoteImageInfo(imageRef string) (v1.Image, error) {
+	c.RemoteImageRef = imageRef
+
+	if len(c.ReturnError) > 0 {
+		return nil, fmt.Errorf(c.ReturnError)
+	}
+
+	return c.RemoteImageInfo, nil
 }

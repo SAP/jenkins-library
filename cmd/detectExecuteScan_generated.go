@@ -268,7 +268,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0) This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using detect6, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus)")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
@@ -555,10 +555,10 @@ func detectExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/optimizedAndScheduled",
+								Param: "custom/isOptimizedAndScheduled",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -581,7 +581,7 @@ func detectExecuteScanMetadata() config.StepData {
 								Param: "github/owner",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
@@ -595,7 +595,7 @@ func detectExecuteScanMetadata() config.StepData {
 								Param: "github/repository",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},

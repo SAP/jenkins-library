@@ -351,7 +351,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
-	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for schedules runs.")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 
 	cmd.MarkFlagRequired("authToken")
 	cmd.Flags().MarkDeprecated("pythonAdditionalPath", "this is deprecated")
@@ -958,10 +958,10 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/optimizedAndScheduled",
+								Param: "custom/isOptimizedAndScheduled",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},

@@ -516,8 +516,9 @@ spec:
           Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/optimizedAndScheduled
+            param: custom/isOptimizedAndScheduled
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -539,6 +540,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -551,6 +553,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
