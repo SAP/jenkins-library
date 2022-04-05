@@ -96,6 +96,13 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 	if len(config.AssetPath) > 0 {
 		return uploadReleaseAsset(ctx, createdRelease.GetID(), config, ghRepoClient)
 	}
+	for _, asset := range config.AssetPathList {
+		config.AssetPath = asset
+		err := uploadReleaseAsset(ctx, createdRelease.GetID(), config, ghRepoClient)
+		if err != nil {
+			return fmt.Errorf("failed to upload release asset: %w", err)
+		}
+	}
 
 	return nil
 }
