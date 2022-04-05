@@ -11,16 +11,16 @@ import (
 
 //APIMCommonUtils for apim
 type APIMCommonUtils interface {
-	PrepareAPIMStruct() error
+	NewAPIM() error
 }
 
-//APIMCommon struct
-type APIMCommon struct {
+//APIMBundle struct
+type APIMBundle struct {
 	APIServiceKey, Host string
 	Client              piperhttp.Sender
 }
 
-func (apim APIMCommon) PrepareAPIMStruct() error {
+func (apim APIMBundle) NewAPIM() error {
 	serviceKey, err := cpi.ReadCpiServiceKey(apim.APIServiceKey)
 	if err != nil {
 		return err

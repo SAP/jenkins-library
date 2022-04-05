@@ -15,8 +15,8 @@ func TestRunApiProviderUpload(t *testing.T) {
 		filesMock := mock.FilesMock{}
 		filesMock.AddFile("test.json", []byte("Test content"))
 		config := getDefaultOptionsForApiProvider()
-		httpClient := httpMock{StatusCode: 201, ResponseBody: ``}
-		apim := apim.APIMCommon{APIServiceKey: config.APIServiceKey, Client: &httpClient}
+		httpClientMock := httpMock{StatusCode: 201, ResponseBody: ``}
+		apim := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: &httpClientMock}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert
@@ -30,12 +30,12 @@ func TestRunApiProviderUpload(t *testing.T) {
 		}
 	})
 
-	t.Run("Failure path", func(t *testing.T) {
+	t.Run("Failure Path", func(t *testing.T) {
 		filesMock := mock.FilesMock{}
 		filesMock.AddFile("test.json", []byte("Test content"))
 		config := getDefaultOptionsForApiProvider()
-		httpClient := httpMockGcts{StatusCode: 400, ResponseBody: ``}
-		apim := apim.APIMCommon{APIServiceKey: config.APIServiceKey, Client: &httpClient}
+		httpClientMock := httpMockGcts{StatusCode: 400, ResponseBody: ``}
+		apim := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: &httpClientMock}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert

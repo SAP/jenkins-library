@@ -32,15 +32,15 @@ func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry
 
 func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
-	apimStruct := apim.APIMCommon{APIServiceKey: config.APIServiceKey, Client: httpClient}
-	error := apim.APIMCommonUtils.PrepareAPIMStruct(apimStruct)
+	apimData := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: httpClient}
+	error := apim.APIMCommonUtils.NewAPIM(apimData)
 	if error != nil {
 		return error
 	}
-	return createApiProvider(config, apimStruct, ioutil.ReadFile)
+	return createApiProvider(config, apimData, ioutil.ReadFile)
 }
 
-func createApiProvider(config *apiProviderUploadOptions, apim apim.APIMCommon, readFile func(string) ([]byte, error)) error {
+func createApiProvider(config *apiProviderUploadOptions, apim apim.APIMBundle, readFile func(string) ([]byte, error)) error {
 	httpClient := apim.Client
 	httpMethod := http.MethodPost
 	uploadApiProviderStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProviders", apim.Host)
