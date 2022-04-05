@@ -11,7 +11,7 @@ type Exec interface {
 	GetExitCode() int
 }
 
-// Connection Everything we need for connecting to CTS
+// Connection Everything we need for connecting to Solution Manager
 type Connection struct {
 	Endpoint string
 	User     string

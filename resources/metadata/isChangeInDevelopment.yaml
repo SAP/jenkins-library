@@ -85,4 +85,4 @@ spec:
             type: bool
   containers:
     - name: cmclient
-      image: ppiper/cm-client
+      image: ppiper/cm-client:3.0.0.0
