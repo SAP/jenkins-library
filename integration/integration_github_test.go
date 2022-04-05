@@ -41,7 +41,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	err = ioutil.WriteFile(testAsset, []byte("Test"), 0644)
 	assert.NoError(t, err, "Error when writing temporary file")
 	test2Asset := filepath.Join(dir, "test2.txt")
-	err = ioutil.WriteFile(testAsset, []byte("Test"), 0644)
+	err = ioutil.WriteFile(test2Asset, []byte("Test"), 0644)
 	assert.NoError(t, err, "Error when writing temporary file")
 
 	t.Run("test single asset - success", func(t *testing.T) {
