@@ -22,10 +22,10 @@ func TestRunApiProviderUpload(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "/apiportal/api/1.0/Management.svc/APIProviders", httpClient.URL)
+				assert.Equal(t, "/apiportal/api/1.0/Management.svc/APIProviders", httpClientMock.URL)
 			})
 			t.Run("check method", func(t *testing.T) {
-				assert.Equal(t, "POST", httpClient.Method)
+				assert.Equal(t, "POST", httpClientMock.Method)
 			})
 		}
 	})
