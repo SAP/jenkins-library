@@ -1015,7 +1015,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
 	taxonomy := *new(format.Taxonomies)
-	taxonomy.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+	taxonomy.GUID = "25F72D7E-8A92-459D-AD67-64853F788765"
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"

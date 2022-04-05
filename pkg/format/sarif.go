@@ -76,17 +76,18 @@ type LogicalLocation struct {
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
-	InstanceID        string `json:"instanceID,omitempty"`
-	InstanceSeverity  string `json:"instanceSeverity,omitempty"`
-	Confidence        string `json:"confidence,omitempty"`
-	FortifyCategory   string `json:"fortifyCategory,omitempty"`
-	Audited           bool   `json:"audited"`
-	ToolSeverity      string `json:"toolSeverity"`
-	ToolSeverityIndex int    `json:"toolSeverityIndex"`
-	ToolState         string `json:"toolState"`
-	ToolStateIndex    int    `json:"toolStateIndex"`
-	ToolAuditMessage  string `json:"toolAuditMessage"`
-	UnifiedAuditState string `json:"unifiedAuditState"`
+	InstanceID            string `json:"instanceID,omitempty"`
+	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
+	Confidence            string `json:"confidence,omitempty"`
+	FortifyCategory       string `json:"fortifyCategory,omitempty"`
+	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
+	Audited               bool   `json:"audited"`
+	ToolSeverity          string `json:"toolSeverity"`
+	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
+	ToolState             string `json:"toolState"`
+	ToolStateIndex        int    `json:"toolStateIndex"`
+	ToolAuditMessage      string `json:"toolAuditMessage"`
+	UnifiedAuditState     string `json:"unifiedAuditState"`
 }
 
 // Tool these structs are relevant to the Tool object
@@ -275,7 +276,7 @@ type AutomationDetails struct {
 
 // Taxonomies These structs are relevant to the taxonomies object
 type Taxonomies struct {
-	Guid             string  `json:"guid"`
+	GUID             string  `json:"guid,omitempty"`
 	Name             string  `json:"name"`
 	Organization     string  `json:"organization"`
 	ShortDescription Message `json:"shortDescription"`
