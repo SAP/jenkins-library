@@ -103,7 +103,6 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 			"--endpoint", a.Connection.Endpoint,
 			"--user", a.Connection.User,
 			"--password", a.Connection.Password,
-			"--backend-type", "SOLMAN",
 			"upload-file-to-transport",
 			"-cID", a.ChangeDocumentID,
 			"-tID", a.TransportRequestID,

@@ -248,7 +248,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cmclient", Image: "ppiper/cm-client"},
+				{Name: "cmclient", Image: "ppiper/cm-client:3.0.0.0"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
