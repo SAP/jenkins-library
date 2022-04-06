@@ -555,7 +555,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
 			oneRequestPerIssueMode = true
 		} else {
-			log.Entry().Debug("request successful, data frame size: ", len(auditData))
+			log.Entry().Debug("Request successful, data frame size: ", len(auditData), " audits")
 		}
 	} else {
 		log.Entry().Error("no system instance found, lookup impossible")
