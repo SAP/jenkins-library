@@ -1,10 +1,8 @@
 # Set up a Pipeline-Based ABAP Development and Testing Process Using Git-Enabled Change and Transport System.
 
-For current information about gCTS, see SAP Note [Central Note for Git-enabled Change and Transport System (gCTS)](https://launchpad.support.sap.com/#/notes/2821718)
-
 ## Introduction
 
-[Git-enabled Change & Transport System (gCTS)](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/f319b168e87e42149e25e13c08d002b9.html) enables you to manage your ABAP change and transport management processes using Git as an external version management system. It allows you to set up continuous integration processes for ABAP development.  
+[Git-enabled Change & Transport System (gCTS)](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/f319b168e87e42149e25e13c08d002b9.html) enables you to manage your ABAP change and transport management processes using Git as an external version management system. It allows you to set up continuous integration processes for ABAP development. For current information about gCTS, see SAP Note [2821718 - Central Note for Git-enabled Change and Transport System (gCTS)](https://launchpad.support.sap.com/#/notes/2821718).
 
 This scenario explains how to use a pipeline to deploy a commit to a test system, and execute [ABAP unit tests](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/491cfd8926bc14cde10000000a42189b.html) and [ATC (ABAP Test Cockpit)](https://help.sap.com/viewer/ba879a6e2ea04d9bb94c7ccd7cdac446/latest/en-US/62c41ad841554516bb06fb3620540e47.html) checks in the test system. For each new commit that arrives in the remote repository, the pipeline executes the following Piper steps in the test system:     
 
@@ -39,19 +37,18 @@ This scenario explains how to use a pipeline to deploy a commit to a test system
 
 ## Process
 
-The process is as follows:  
+The pipeline process is as follows:  
 
-You create or change ABAP objects in the development system. When you release the transport request, the objects are pushed to the remote repository in a new commit. The pipeline is triggered by the new commit. The pipeline can be started manually in Jenkins, or automatically when the new commit arrives in the Git repository (by setting a webhook in GitHub). For more information about webhooks, see [Creating webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
-
-The pipeline deploys the new commit on the test system and executes ATC checks and ABAP Unit tests for the objects of the commit depending on the specified object scope. In the sample scenario, this is `localChangedObjects`, which means, for all objects that were changed by the last activity in the local repository.
-
-If the checks don´t issue any errors, the pipeline finishes. The test system remains on the new commit, and you can continue your testing activities, for example, using manual tests.
-
-If the checks result in any errors, the pipeline executes a rollback to the last active commit in the test system. You can display errors and warnings of the checks in the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/). For more information about the mapping of the check errors to errors displayed in Jenkins, see the description of the following parameters in the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) step:
-- Severities of ABAP Unit test results: [aUnitTest](../../steps/gctsExecuteABAPQualityChecks/#aunittest) parameter
-- Priorities of ATC check results: [atcCheck](../../steps/gctsExecuteABAPQualityChecks/#atccheck) parameter
-
-After analyzing the errors, you can correct the issues in the development system. Once you release the new transport request, the pipeline is triggered again.
+1. You create or change ABAP objects in the development system. When you release the transport request, the objects are pushed to the remote repository in a new commit. The pipeline is triggered by the new commit. The pipeline can be started manually in Jenkins, or automatically when the new commit arrives in the Git repository (by setting a webhook on your Git server). For more information about webhooks on GitHub, see [Creating webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
+2. The pipeline deploys the new commit on the test system.
+3. If the deployment is successful, the pipeline executes ATC checks and ABAP Unit tests for the objects of the commit depending on the specified object scope. In the sample configuration provided below, this is `localChangedObjects`, which means, the checks are executed for all objects that were changed by the last activity in the local repository.    
+  - If the checks don´t issue any errors, the pipeline finishes. The test system remains on the new commit, and you can continue your testing activities, for example, using manual tests.
+  - If the checks find any errors, the pipeline continues with the next step.
+4. In case of warnings or errors, the pipeline executes a rollback to the last active commit in the test system.
+    You can display errors and warnings of the checks in the [Warnings-Next-Generation Plugin](https://plugins.jenkins.io/warnings-ng/). For more information about the mapping of the check errors to errors displayed in Jenkins, see the description of the following parameters in the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) step:    
+    - Severities of ABAP Unit test results: [aUnitTest](../../steps/gctsExecuteABAPQualityChecks/#aunittest) parameter
+    - Priorities of ATC check results: [atcCheck](../../steps/gctsExecuteABAPQualityChecks/#atccheck) parameter
+    After analyzing the errors, you can correct the issues in the development system. Once you release the new transport request, the pipeline is triggered again.
 
 The following image shows the steps involved when the checks finish successfully:
 
@@ -67,9 +64,7 @@ The following image shows the steps involved when the checks result in warnings 
 
 ## Example
 
-### Jenkinsfile
-
-Following the convention for pipeline definitions, use a Jenkinsfile, which resides in the root directory of your Git repository. In the following sample Jenkinsfile, all configuration information required for setting up the gCTS scenario is defined in the Jenkinsfile. As an alternative, you can use a `.pipeline/config.yml` file to define parts of your configuration. See the [Configuration](#Configuration) example below.   
+To implement the gCTS scenario, create a Jenkinsfile in the root directory of your Git repository. The sample Jenkinsfile below contains all configuration information required. It is also possible to use an additional `.pipeline/config.yml` file for the configuration of the step parameters. But the `config.yml` is not part of the sample described here. For general information about configuration options in "Piper" projects, see [Configuration](https://www.project-piper.io/configuration/).
 
 ```groovy
 @Library(['piper-lib-os']) _
@@ -172,47 +167,14 @@ stage('Rollback') {
 }
 ```   
 
-### Configuration  (`.pipeline/config.yml`)
-
-If you don´t define all configuration parameters directly in the Jenkinsfile (as done in the sample Jenkinsfile above), you can use an additional `config.yml` file for configuration. For general information about configuration in "Piper" projects, see [Configuration](https://www.project-piper.io/configuration/).
-
-```yaml
-steps:
-  gctsDeploy(
-      script: this,
-      host: 'https://abap.server.com:port',
-      client: '000',
-      abapCredentialsId: 'ABAPUserPasswordCredentialsId',
-      repository: 'myrepo',
-      remoteRepositoryURL: "https://remote.repository.url.com",
-      role: 'SOURCE',
-      vSID: 'ABC',
-      branch: 'feature1',
-      commit: '95952ec',
-      scope: 'LASTACTION',
-      rollback: true,
-      configuration: [VCS_AUTOMATIC_PULL: 'FALSE',VCS_AUTOMATIC_PUSH: 'FALSE',CLIENT_VCS_LOGLVL: 'debug']
-    )
-    gctsExecuteABAPQualityChecks(
-      script: this,
-      host: 'https://abap.server.com:port',
-      client: '000',
-      abapCredentialsId: 'ABAPUserPasswordCredentialsId',
-      repository: 'myrepo',
-      scope: 'localChangedObjects',
-      commit: "${GIT_COMMIT}",
-      workspace: "${WORKSPACE}"
-
-      )
-```
-
 ### Parameters
 
-For a detailed description of the relevant parameters, see:
+For a detailed description of the relevant parameters of the library steps used in the gCTS scenario, see:
 - [gctsDeploy](../../steps/gctsDeploy/)
 - [gctsExecuteABAPQualityChecks](../../steps/gctsExecuteABAPQualityChecks/)
 - [gctsRollback](../../steps/gctsRollback/)
 
+
 ## Troubleshooting
 
-If you encounter an issue with the pipeline itself, please open an issue in [GitHub](https://github.com/SAP/jenkins-library/issues) and add the label `gcts` to the issue.
+If you encounter an issue with the pipeline itself, please open an issue in [GitHub](https://github.com/SAP/jenkins-library/issues) and add the label `gcts` to it.
