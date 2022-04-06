@@ -60,7 +60,26 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
   containers:
     - name: python
       image: python:3.9
-      workingDir: /home/node
+      # workingDir: /home/node
+      options:
+        - name: -u
+          value: "0"
