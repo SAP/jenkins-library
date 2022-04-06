@@ -40,13 +40,13 @@ func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 }
 
 func TestRunPythonBuild(t *testing.T) {
-
+	cpe := pythonBuildCommonPipelineEnvironment{}
 	t.Run("success - build", func(t *testing.T) {
 		config := pythonBuildOptions{}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
@@ -58,7 +58,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"python3 setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "Python build failed with error: build failure")
 	})
 
@@ -72,7 +72,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
@@ -91,7 +91,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
@@ -109,7 +109,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"python3 -m pip install --upgrade cyclonedx-bom": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "BOM creation failed: install failure")
 	})
 
@@ -121,7 +121,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"python3 -m pip install --upgrade twine": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to publish: install failure")
 	})
 }
