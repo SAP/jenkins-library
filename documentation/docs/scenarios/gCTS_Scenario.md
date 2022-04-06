@@ -49,7 +49,6 @@ The following image shows the steps involved when the checks finish successfully
 
 **Image: Build and Deploy Process in Jenkins**
 
-
 The following image shows the steps involved when the checks result in warnings or errors:
 
 ![Process: Deploy Git repository on local system and execute tests - Tests are not successful](../images/gctscheckNotSuccessful.png "Process: Deploy and execute tests: Success")
@@ -140,7 +139,7 @@ stage('Results in Checkstyle') {
        )
 
       }
-    }   
+    }
 stage('Rollback') {
             when {
               expression {
@@ -161,7 +160,7 @@ stage('Rollback') {
   }
 
 }
-```   
+```
 
 ### Parameters
 
