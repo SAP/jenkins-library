@@ -87,19 +87,22 @@ The following translation from log message to ANS event is performed:
 - `subject`: defaults to the step name; can be overwritten with the event template
 - `body`: the log message
 - `priority`: not set by Piper, can be set with the event template
-- `region`: cannot be set
-- `regionType`: cannot be set
 - `tags`: optional key value pairs. The following are set by Piper:
   - `logLevel`: the logrus log level
-  - `ans:correlationId`: set to the Piper correlation ID
-  - `ans:sourceEventId`: set to the Piper correlation ID
+  - `ans:correlationId`: set to the Piper correlation ID, a unique
+    identifier of the pipeline run, usually set to the url of that run; can
+    be overwritten with the event template
+  - `ans:sourceEventId`: set to the Piper correlation ID, a unique
+    identifier of the pipeline run, usually set to the url of that run; can
+    be overwritten with the event template
 - `resource`: the following defaults are set by Piper
   - `resourceType`: defaults to 'Pipeline'; can be overwritten with the event template
   - `resourceName`: defaults to 'Pipeline'; can be overwritten with the event template
   - `resourceInstance`: not set by Piper, can be set with the event template
-  - `globalAccount`: cannot be set
-  - `subAccount`: cannot be set
-  - `resourceGroup`: cannot be set
+
+The following event properties cannot be set and is instead set by ANS:
+`region`, `regionType`, `resource.globalAccount`, `resource.subAccount` and
+`resource.resourceGroup`
 
 For a more detailed description and an example of the ANS event, please refer to
 [this SAP help page](https://help.sap.com/viewer/5967a369d4b74f7a9c2b91f5df8e6ab6/Cloud/en-US/eaaa37e6ff62486ebb849507dc33abc6.html).
@@ -129,7 +132,7 @@ add certain event details. There are two ways to do this:
    ```yaml
    hooks:
      ans:
-       eventTemplateFilePath: '.pipeline/eventTemplate.json'
+       eventTemplateFilePath: './path/to/my/eventTemplate.json'
    ```
 
 2. Another possibility is to provide the JSON string directly in the
