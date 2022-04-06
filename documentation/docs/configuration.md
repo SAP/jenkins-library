@@ -62,18 +62,22 @@ steps:
     newmanGlobals: 'myNewmanGlobals'
 ```
 
-## Sending log data to the SAP Alert Notification Service (ANS) on BTP
+## Sending log data to the SAP Alert Notification service for SAP BTP
 
-The SAP Alert Notification Service (ANS) on BTP allows a user to define
-certain actions, such as for example sending email or triggering http
-requests, on incoming events. If the ANS service key is configured in Piper,
-any Piper-go step will send log data to the ANS backend.
+The SAP Alert Notification service for SAP BTP (ANS) allows users to define
+certain delivery channels, for example, e-mail or triggering of HTTP
+requests, to receive notifications from pipeline events. If the ANS service
+key is properly configured in "Piper", any Piper golang step will send log
+data to the ANS backend.
 
-The following translation from log message to ANS event is performed:
+The ANS event properties are defined depending on the log entry content as
+follows:
 
-- `eventType`: defaults to 'Piper'; can be overwritten with the event template
+- `eventType`: the type of event type (defaults to 'Piper', but can be
+  overwritten with the event template)
 - `eventTimestamp`: the time of the log entry
-- `severity` and `category`: here the log level is translated:
+- `severity` and `category`: the event severity and the event category
+  depends on the log level:
 
   | log level | severity | category |
   |-----------|----------|----------|
@@ -84,37 +88,43 @@ The following translation from log message to ANS event is performed:
   | fatal | FATAL | EXCEPTION |
   | panic | FATAL | EXCEPTION |
 
-- `subject`: defaults to the step name; can be overwritten with the event template
+- `subject`: short description of the event (defaults to the step name, but
+  can be overwritten with the event template)
 - `body`: the log message
-- `priority`: not set by Piper, can be set with the event template
-- `tags`: optional key value pairs. The following are set by Piper:
-  - `logLevel`: the logrus log level
+- `priority`: (optional) an integer number in the range [1:1000] (not set by
+  "Piper", but can be set with the event template)
+- `tags`: optional key-value pairs. The following are set by "Piper":
+  - `logLevel`: the "Piper" log level
   - `ans:correlationId`: set to the Piper correlation ID, a unique
     identifier of the pipeline run, usually set to the url of that run; can
     be overwritten with the event template
   - `ans:sourceEventId`: set to the Piper correlation ID, a unique
     identifier of the pipeline run, usually set to the url of that run; can
     be overwritten with the event template
-- `resource`: the following defaults are set by Piper
-  - `resourceType`: defaults to 'Pipeline'; can be overwritten with the event template
-  - `resourceName`: defaults to 'Pipeline'; can be overwritten with the event template
-  - `resourceInstance`: not set by Piper, can be set with the event template
+- `resource`: the following default properties are set by "Piper":
+  - `resourceType`: resource type identifier (defaults to 'Pipeline', but
+    can be overwritten with the event template)
+  - `resourceName`: unique resource name (defaults to 'Pipeline', can be
+    overwritten with the event template)
+  - `resourceInstance`: (optional) resource instance identifier (not set by
+    "Piper", can be set with the event template)
 
 The following event properties cannot be set and is instead set by ANS:
 `region`, `regionType`, `resource.globalAccount`, `resource.subAccount` and
 `resource.resourceGroup`
 
-For a more detailed description and an example of the ANS event, please refer to
-[this SAP help page](https://help.sap.com/viewer/5967a369d4b74f7a9c2b91f5df8e6ab6/Cloud/en-US/eaaa37e6ff62486ebb849507dc33abc6.html).
+For more information and an example of the structure of an ANS event, see
+[SAP Alert Notification Service Events](https://help.sap.com/viewer/5967a369d4b74f7a9c2b91f5df8e6ab6/Cloud/en-US/eaaa37e6ff62486ebb849507dc33abc6.html)
+on SAP Help Portal.
 
 ### ANS configuration
 
-The ANS service key needs to be present in the environment, where the piper
+The ANS service key needs to be present in the environment, where the "Piper"
 binary is run. The environment variable used is: `PIPER_ansServiceKey`
 
-If Jenkins is used to run Piper, the Jenkins credential store can be used to
-store the ANS service key as a secret text credential. The credential id
-then needs to be provided in the configuration file as follows:
+If Jenkins is used to run "Piper", you can use the Jenkins credential store
+to store the ANS service key as a "Secret Text" credential. Provide the
+credential id in the configuration file as follows:
 
 ```yaml
 hooks:
@@ -122,12 +132,11 @@ hooks:
     serviceKeyCredentialsId: 'my_ANS_Service_Key'
 ```
 
-Optionally an event template in JSON format can be given, to overwrite or
-add certain event details. There are two ways to do this:
+You can also create an event template in JSON format to overwrite or add
+certain event details. There are two ways to do this:
 
-1. One can either provide a event template JSON file, in which case the
-   `eventTemplateFilePath` parameter needs to be set in the config file as
-   follows:
+1. Provide an event template file in JSON format and set the
+   `eventTemplateFilePath` parameter in the config file as follows:
 
    ```yaml
    hooks:
@@ -135,13 +144,13 @@ add certain event details. There are two ways to do this:
        eventTemplateFilePath: './path/to/my/eventTemplate.json'
    ```
 
-2. Another possibility is to provide the JSON string directly in the
-   environment where the piper binary is run. The environment variable used
-   in this case is: `PIPER_ansEventTemplate`. For example in unix:
+2. Provide the JSON string directly in the environment where the "Piper"
+   binary is run. The environment variable used in this case is:
+   `PIPER_ansEventTemplate`. For example in unix:
 
-  ```bash
-  export PIPER_ansEventTemplate='{"priority": 999}'
-  ```
+    ```bash
+    export PIPER_ansEventTemplate='{"priority": 999}'
+    ```
 
 ## Collecting telemetry and logging data for Splunk
 
