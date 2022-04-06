@@ -64,14 +64,15 @@ steps:
 
 ## Sending log data to the SAP Alert Notification service for SAP BTP
 
-The SAP Alert Notification service for SAP BTP (ANS) allows users to define
+The SAP Alert Notification service for SAP BTP allows users to define
 certain delivery channels, for example, e-mail or triggering of HTTP
-requests, to receive notifications from pipeline events. If the ANS service
-key is properly configured in "Piper", any Piper golang step will send log
-data to the ANS backend.
+requests, to receive notifications from pipeline events. If the alert
+notification service service-key is properly configured in "Piper", any "Piper"
+step implemented in golang will send log data to the alert notification
+service backend.
 
-The ANS event properties are defined depending on the log entry content as
-follows:
+The SAP Alert Notification service event properties are defined depending on the
+log entry content as follows:
 
 - `eventType`: the type of event type (defaults to 'Piper', but can be
   overwritten with the event template)
@@ -95,12 +96,11 @@ follows:
   "Piper", but can be set with the event template)
 - `tags`: optional key-value pairs. The following are set by "Piper":
   - `logLevel`: the "Piper" log level
-  - `ans:correlationId`: set to the Piper correlation ID, a unique
-    identifier of the pipeline run, usually set to the url of that run; can
-    be overwritten with the event template
-  - `ans:sourceEventId`: set to the Piper correlation ID, a unique
-    identifier of the pipeline run, usually set to the url of that run; can
-    be overwritten with the event template
+  - `ans:correlationId`: a unique correlation ID of the pipeline run
+    (defaults to the URL of that pipeline run, but can be overwritten with the
+    event template)
+  - `ans:sourceEventId`: also set to the "Piper" correlation ID (can also be
+    overwritten with the event template)
 - `resource`: the following default properties are set by "Piper":
   - `resourceType`: resource type identifier (defaults to 'Pipeline', but
     can be overwritten with the event template)
@@ -109,22 +109,25 @@ follows:
   - `resourceInstance`: (optional) resource instance identifier (not set by
     "Piper", can be set with the event template)
 
-The following event properties cannot be set and is instead set by ANS:
+The following event properties cannot be set and are instead set by the SAP
+Alert Notification service:
 `region`, `regionType`, `resource.globalAccount`, `resource.subAccount` and
 `resource.resourceGroup`
 
-For more information and an example of the structure of an ANS event, see
+For more information and an example of the structure of an alert
+notification service event, see
 [SAP Alert Notification Service Events](https://help.sap.com/viewer/5967a369d4b74f7a9c2b91f5df8e6ab6/Cloud/en-US/eaaa37e6ff62486ebb849507dc33abc6.html)
 on SAP Help Portal.
 
-### ANS configuration
+### SAP Alert Notification service configuration
 
-The ANS service key needs to be present in the environment, where the "Piper"
-binary is run. The environment variable used is: `PIPER_ansServiceKey`
+The SAP Alert Notification service service-key needs to be present in the
+environment, where the "Piper" binary is run. The environment variable used
+is: `PIPER_ansServiceKey`
 
 If Jenkins is used to run "Piper", you can use the Jenkins credential store
-to store the ANS service key as a "Secret Text" credential. Provide the
-credential id in the configuration file as follows:
+to store the alert notification service service-key as a "Secret Text"
+credential. Provide the credential id in the configuration file as follows:
 
 ```yaml
 hooks:
