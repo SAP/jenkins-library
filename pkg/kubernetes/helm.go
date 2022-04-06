@@ -43,7 +43,7 @@ type HelmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	PackageVersion            string   `json:"packageVersion,omitempty"`
+	Version                   string   `json:"version,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
 	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
@@ -296,8 +296,8 @@ func (h *HelmExecute) runHelmPackage() error {
 		"package",
 		h.config.ChartPath,
 	}
-	if len(h.config.PackageVersion) > 0 {
-		helmParams = append(helmParams, "--version", h.config.PackageVersion)
+	if len(h.config.Version) > 0 {
+		helmParams = append(helmParams, "--version", h.config.Version)
 	}
 	if h.config.PackageDependencyUpdate {
 		helmParams = append(helmParams, "--dependency-update")
@@ -393,7 +393,7 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PackageVersion+".tgz")
+	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.Version+".tgz")
 
 	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
 

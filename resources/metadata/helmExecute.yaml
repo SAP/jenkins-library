@@ -260,22 +260,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: deploymentName
+      - name: version
         type: string
-        description: Defines the deployment name to use from helm package/publish commands.
+        description: Defines the artifact version to use from helm package/publish commands.
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: packageVersion
-        type: string
-        description: Defines the package version to use from helm package/publish commands.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config
