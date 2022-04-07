@@ -138,8 +138,8 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 }
 
 func (br *buildWithRepository) start() error {
-	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.Namespace == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
-		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename")
+	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
+		return errors.New("Parameters missing. Please provide software component name, version, sp-level, packagetype and packagename")
 	}
 	valuesInput := abapbuild.Values{
 		Values: []abapbuild.Value{
@@ -152,10 +152,6 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.Name + "." + br.repo.Version + "." + br.repo.SpLevel,
 			},
 			{
-				ValueID: "NAMESPACE",
-				Value:   br.repo.Namespace,
-			},
-			{
 				ValueID: "PACKAGE_TYPE",
 				Value:   br.repo.PackageType,
 			},
@@ -164,6 +160,11 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.PackageName,
 			},
 		},
+	}
+	if br.repo.Namespace != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "NAMESPACE",
+				Value: br.repo.Namespace})
 	}
 	if br.repo.UseClassicCTS {
 		valuesInput.Values = append(valuesInput.Values,
