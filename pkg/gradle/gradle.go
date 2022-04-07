@@ -11,7 +11,6 @@ import (
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 const (
@@ -170,23 +169,6 @@ func publish(options *ExecuteOptions, utils Utils) error {
 	log.Entry().Info("Publishing artifact to staging repository...")
 	if len(options.RepositoryURL) == 0 {
 		return fmt.Errorf("there's no target repository for binary publishing configured")
-	}
-	if len(options.ArtifactVersion) == 0 {
-		artifactOpts := versioning.Options{
-			VersioningScheme: "library",
-		}
-
-		artifact, err := versioning.GetArtifact("gradle", "", &artifactOpts, utils)
-
-		if err != nil {
-			return err
-		}
-
-		options.ArtifactVersion, err = artifact.GetVersion()
-
-		if err != nil {
-			return err
-		}
 	}
 	publishInitScriptContent, err := getPublishInitScriptContent(options)
 	if err != nil {

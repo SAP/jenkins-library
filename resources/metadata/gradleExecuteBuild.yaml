@@ -94,6 +94,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: groupId
       - name: artifactId
         type: string
         description: The name of the artifact.
@@ -101,6 +104,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactId
   outputs:
     resources:
       - name: reports
