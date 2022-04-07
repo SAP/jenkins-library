@@ -394,19 +394,19 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	status := "Scan phase: New"
 	pastStatus := status
 	log.Entry().Info(status)
+	stepDetail := "..."
+	stageDetail := "..."
 	for true {
-		stepDetail := "..."
-		stageDetail := "..."
 		var detail checkmarx.ScanStatusDetail
 		status, detail = sys.GetScanStatusAndDetail(scan.ID)
-		if status == "Finished" || status == "Canceled" || status == "Failed" {
-			break
-		}
 		if len(detail.Stage) > 0 {
 			stageDetail = detail.Stage
 		}
 		if len(detail.Step) > 0 {
 			stepDetail = detail.Step
+		}
+		if status == "Finished" || status == "Canceled" || status == "Failed" {
+			break
 		}
 
 		status = fmt.Sprintf("Scan phase: %v (%v / %v)", status, stageDetail, stepDetail)
@@ -422,7 +422,10 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 		return fmt.Errorf("scan canceled via web interface")
 	}
 	if status == "Failed" {
-		return fmt.Errorf("scan failed, please check the Checkmarx UI for details")
+		if strings.Contains(stageDetail, "<ErrorCode>17033</ErrorCode>") { // Translate a cryptic XML error into a human-readable message
+			stageDetail = "Failed to start scanning due to one of following reasons: source folder is empty, all source files are of an unsupported language or file format"
+		}
+		return fmt.Errorf("Checkmarx scan failed with the following error: %v", stageDetail)
 	}
 	return nil
 }
