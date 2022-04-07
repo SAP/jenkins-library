@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -35,16 +36,16 @@ func newPythonBuildUtils() pythonBuildUtils {
 	return &utils
 }
 
-func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData) {
+func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) {
 	utils := newPythonBuildUtils()
 
-	err := runPythonBuild(&config, telemetryData, utils)
+	err := runPythonBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils) error {
+func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
 
 	installFlags := []string{"-m", "pip", "install", "--upgrade"}
 
@@ -58,6 +59,25 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "pythonBuild"
+	dockerImage, err := GetDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	pythonConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
+		Publish:           config.Publish,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+		DockerImage:       dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&pythonConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
 		if err := publishWithTwine(config, utils, installFlags); err != nil {

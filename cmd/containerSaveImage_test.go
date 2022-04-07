@@ -11,7 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/fake"
 )
 

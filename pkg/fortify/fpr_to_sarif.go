@@ -545,6 +545,23 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		return format.SARIF{}, err
 	}
 
+	//Create an object containing all audit data
+	log.Entry().Debug("Querying Fortify SSC for batch audit data")
+	oneRequestPerIssueMode := false
+	var auditData []*models.ProjectVersionIssue
+	if sys != nil {
+		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
+			oneRequestPerIssueMode = true
+		} else {
+			log.Entry().Debug("Request successful, data frame size: ", len(auditData), " audits")
+		}
+	} else {
+		log.Entry().Error("no system instance found, lookup impossible")
+		oneRequestPerIssueMode = true
+	}
+
 	//Now, we handle the sarif
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
@@ -648,25 +665,29 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						default:
 							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						}
-						physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-						snippetText := ""
-						for j := 0; j < len(physLocationSnippetLines); j++ {
-							if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-								snippetText = physLocationSnippetLines[j]
-								break
+						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+							physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+							snippetText := ""
+							for j := 0; j < len(physLocationSnippetLines); j++ {
+								if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+									snippetText = physLocationSnippetLines[j]
+									break
+								}
 							}
+							snippetSarif := new(format.SnippetSarif)
+							if snippetText != "" {
+								snippetSarif.Text = snippetText
+							} else {
+								snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							}
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 						}
-						snippetSarif := new(format.SnippetSarif)
-						if snippetText != "" {
-							snippetSarif.Text = snippetText
-						} else {
-							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
-						}
-						threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
 					} else {
-						snippetSarif := new(format.SnippetSarif)
-						snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
-						threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+							snippetSarif := new(format.SnippetSarif)
+							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+						}
 					}
 					location = *threadFlowLocation.Location
 					//set Kinds
@@ -710,7 +731,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
 		} else if sys != nil {
-			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, filterSet); err != nil {
+			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
 				prop.ToolState = "Unknown"
@@ -1011,7 +1032,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
 	taxonomy := *new(format.Taxonomies)
-	taxonomy.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+	taxonomy.GUID = "25F72D7E-8A92-459D-AD67-64853F788765"
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
@@ -1025,7 +1046,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool) error {
 	if sys == nil {
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
@@ -1034,13 +1055,24 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}
-	data, err := sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
-	if err != nil {
-		return err
+	var data []*models.ProjectVersionIssue
+	var err error
+	if oneRequestPerIssue {
+		log.Entry().Debug("operating in one-request-per-issue mode: looking up audit state of " + issueInstanceID)
+		data, err = sys.GetIssueDetails(projectVersion.ID, issueInstanceID)
+		if err != nil {
+			return err
+		}
+	} else {
+		for i := 0; i < len(auditData); i++ {
+			if issueInstanceID == *auditData[i].IssueInstanceID {
+				data = append(data, auditData[i])
+				break
+			}
+		}
 	}
-	log.Entry().Debug("Looking up audit state of " + issueInstanceID)
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-		log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+		//log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
 	ruleProp.Audited = data[0].Audited
