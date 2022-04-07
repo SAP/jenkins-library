@@ -158,8 +158,7 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 
 	// resolve path for build.gradle execution
 	if options.BuildGradlePath != "" {
-		parameters = append(parameters, "-p")
-		parameters = append(parameters, options.BuildGradlePath)
+		parameters = append(parameters, "-p", options.BuildGradlePath)
 	}
 
 	return parameters
@@ -180,7 +179,11 @@ func publish(options *ExecuteOptions, utils Utils) error {
 	}
 	defer utils.FileRemove(filepath.Join(options.BuildGradlePath, publishInitScriptName))
 
-	if err := utils.RunExecutable(exec, "--init-script", filepath.Join(options.BuildGradlePath, publishInitScriptName), "--info", "publish"); err != nil {
+	parameters := []string{"--init-script", filepath.Join(options.BuildGradlePath, publishInitScriptName), "--info", "publish"}
+	if options.BuildGradlePath != "" {
+		parameters = append(parameters, "-p", options.BuildGradlePath)
+	}
+	if err := utils.RunExecutable(exec, parameters...); err != nil {
 		return fmt.Errorf("publishing failed: %v", err)
 	}
 	return nil
@@ -209,7 +212,11 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 	stdOut := log.Writer()
 	stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	utils.Stdout(stdOut)
-	if err := utils.RunExecutable(exec, "tasks"); err != nil {
+	parameters := []string{"tasks"}
+	if options.BuildGradlePath != "" {
+		parameters = append(parameters, "-p", options.BuildGradlePath)
+	}
+	if err := utils.RunExecutable(exec, parameters...); err != nil {
 		return fmt.Errorf("failed list gradle tasks: %v", err)
 	}
 	if strings.Contains(stdOutBuf.String(), bomTaskName) {
@@ -222,7 +229,11 @@ func createBOM(options *ExecuteOptions, utils Utils) error {
 			return fmt.Errorf("failed create init script: %v", err)
 		}
 		defer utils.FileRemove(filepath.Join(options.BuildGradlePath, createBOMScriptName))
-		if err := utils.RunExecutable(exec, "--init-script", filepath.Join(options.BuildGradlePath, createBOMScriptName), bomTaskName); err != nil {
+		parameters := []string{"--init-script", filepath.Join(options.BuildGradlePath, createBOMScriptName), bomTaskName}
+		if options.BuildGradlePath != "" {
+			parameters = append(parameters, "-p", options.BuildGradlePath)
+		}
+		if err := utils.RunExecutable(exec, parameters...); err != nil {
 			return fmt.Errorf("BOM creation failed: %v", err)
 		}
 	}

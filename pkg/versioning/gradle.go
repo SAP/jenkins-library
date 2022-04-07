@@ -69,9 +69,6 @@ func (g *Gradle) initGetArtifact() error {
 		g.execRunner.Stdout(gradlePropsBuffer)
 		var p []string
 		p = append(p, "properties", "--no-daemon", "--console=plain", "-q")
-		// if g.path != "" {
-		// 	p = append(p, "-p", g.path)
-		// }
 		err := g.execRunner.RunExecutable("gradle", p...)
 		if err != nil {
 			return err
