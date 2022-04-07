@@ -43,7 +43,6 @@ func newGetDefaultsUtilsUtils() getDefaultsUtils {
 func DefaultsCommand() *cobra.Command {
 
 	defaultsOptions.openFile = config.OpenPiperFile
-	log.Entry().Info(defaultsOptions)
 	var createDefaultsCmd = &cobra.Command{
 		Use:   "getDefaults",
 		Short: "Retrieves multiple default configurations and outputs them embedded into a JSON object.",
