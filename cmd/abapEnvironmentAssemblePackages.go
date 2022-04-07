@@ -32,6 +32,9 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	}
 
 	client := piperhttp.Client{}
+	//TODO delete
+	log.Entry().Infof("Config %s", config)
+	log.Entry().Infof("Host %s", config.Host)
 	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -40,6 +43,7 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 
 func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	//TODO delete
+	log.Entry().Infof("Config %s", config)
 	log.Entry().Infof("Host %s", config.Host)
 	connBuild := new(abapbuild.Connector)
 	if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
