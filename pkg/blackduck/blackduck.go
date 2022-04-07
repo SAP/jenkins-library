@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -93,7 +94,7 @@ type VulnerabilityWithRemediation struct {
 
 // Title returns the issue title representation of the contents
 func (v Vulnerability) Title() string {
-	return fmt.Sprintf("%v/%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityWithRemediation.Severity, v.VulnerabilityName, v.Name, v.Version)
+	return strings.TrimSpace(fmt.Sprintf("%v/%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityWithRemediation.Severity, v.VulnerabilityName, v.Name, v.Version))
 }
 
 // ToMarkdown returns the markdown representation of the contents
@@ -102,7 +103,7 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 		`**Vulnerability %v**
 | Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
+| %v | %v | %v | %v | %v | %v | %v | [%v](%v) |
 `,
 		v.VulnerabilityWithRemediation.VulnerabilityName,
 		v.VulnerabilityWithRemediation.Severity,

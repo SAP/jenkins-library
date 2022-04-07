@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -57,7 +58,7 @@ type Alert struct {
 
 // Title returns the issue title representation of the contents
 func (a Alert) Title() string {
-	return fmt.Sprintf("%v/%v/%v/%v", a.Type, consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Vulnerability.Name, a.Library.ArtifactID)
+	return strings.TrimSpace(fmt.Sprintf("%v/%v/%v/%v", a.Type, consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Vulnerability.Name, a.Library.ArtifactID))
 }
 
 func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
@@ -96,7 +97,7 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 		`**Vulnerability %v**
 | Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
+| %v | %v | %v | %v | %v | %v | %v | [%v](%v) |
 `,
 		a.Vulnerability.Name,
 		a.Vulnerability.Severity,

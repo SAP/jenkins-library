@@ -18,6 +18,9 @@ spec:
           - name: apiTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
         type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
     params:
       - name: token
         aliases:

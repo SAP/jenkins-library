@@ -19,6 +19,9 @@ spec:
       - name: checkmarxCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.
         type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
     resources:
       - name: checkmarx
         type: stash
