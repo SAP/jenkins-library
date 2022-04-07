@@ -33,10 +33,7 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 
 	client := piperhttp.Client{}
 	//TODO delete
-	log.Entry().Infof("CPE %s", cpe)
 	log.Entry().Infof("Config %s", config)
-	log.Entry().Infof("User %S", config.Username)
-	log.Entry().Infof("AddonDescriptor %s", config.AddonDescriptor)
 	log.Entry().Infof("Host %s", config.Host)
 	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
@@ -45,9 +42,6 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 }
 
 func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
-	//TODO delete
-	log.Entry().Infof("Config %s", config)
-	log.Entry().Infof("Host %s", config.Host)
 	connBuild := new(abapbuild.Connector)
 	if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
 		return errConBuild
@@ -251,8 +245,6 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 }
 
 func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvironmentAssemblePackagesOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
-	//TODO delete
-	log.Entry().Infof("Host in initAssembly... %s", config.Host)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg
@@ -264,6 +256,7 @@ func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvir
 	connConfig.Password = config.Password
 	connConfig.AddonDescriptor = config.AddonDescriptor
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+	connConfig.CertificateNames = config.CertificateNames
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
