@@ -30,6 +30,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"apiProxyDownload":                          apiProxyDownloadMetadata(),
 		"apiProxyUpload":                            apiProxyUploadMetadata(),
 		"artifactPrepareVersion":                    artifactPrepareVersionMetadata(),
+		"awsS3Upload":                               awsS3UploadMetadata(),
 		"batsExecuteTests":                          batsExecuteTestsMetadata(),
 		"checkmarxExecuteScan":                      checkmarxExecuteScanMetadata(),
 		"cloudFoundryCreateService":                 cloudFoundryCreateServiceMetadata(),
