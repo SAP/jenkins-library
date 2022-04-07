@@ -11,6 +11,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -160,6 +161,57 @@ func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) er
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
 func InstallMavenArtifacts(options *EvaluateOptions, utils Utils) error {
 	return doInstallMavenArtifacts(options, utils)
+}
+
+func FindArtifacts(options *EvaluateOptions, utils Utils) (piperenv.Artifacts, error) {
+	var artifacts piperenv.Artifacts
+
+	pomFiles, err := utils.Glob(filepath.Join("**", "pom.xml"))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pomFile := range pomFiles {
+		dir := filepath.Dir(pomFile)
+
+		finalName, err := Evaluate(options, "project.build.finalName", utils)
+		if err != nil {
+			return nil, err
+		}
+		if finalName == "" {
+			log.Entry().Warnf("project.build.finalName is empty for module '%s', can not write artifacts to common pipeline environment", pomFile)
+			continue
+		}
+
+		jarFileName := jarFile(dir, finalName)
+		warFileName := warFile(dir, finalName)
+		classesJarFileName := classesJarFile(dir, finalName)
+
+		jarExists, _ := utils.FileExists(jarFileName)
+		warExists, _ := utils.FileExists(warFileName)
+		classesJarExists, _ := utils.FileExists(classesJarFileName)
+
+		if jarExists {
+			artifacts = append(artifacts, piperenv.Artifact{
+				Kind: "java:jar",
+				Path: jarFileName,
+			})
+		}
+		if warExists {
+			artifacts = append(artifacts, piperenv.Artifact{
+				Kind: "java:war",
+				Path: warFileName,
+			})
+		}
+		if classesJarExists {
+			artifacts = append(artifacts, piperenv.Artifact{
+				Kind: "java:classes-jar",
+				Path: classesJarFileName,
+			})
+		}
+	}
+
+	return artifacts, nil
 }
 
 func doInstallMavenArtifacts(options *EvaluateOptions, utils Utils) error {

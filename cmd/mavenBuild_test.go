@@ -3,10 +3,12 @@ package cmd
 import (
 	"testing"
 
+	piperconf "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMavenBuild(t *testing.T) {
+	configOptions.openFile = piperconf.OpenPiperFile
 
 	cpe := mavenBuildCommonPipelineEnvironment{}
 

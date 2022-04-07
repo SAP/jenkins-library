@@ -110,6 +110,15 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+	commonPipelineEnvironment.artifacts, err = maven.FindArtifacts(&maven.EvaluateOptions{
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Defines:             defines,
+		ProjectSettingsFile: config.ProjectSettingsFile,
+	}, utils)
+	if err != nil {
+		return errors.Wrap(err, "failed to populate commonPipelineEnvironment.artifacts")
+	}
 
 	if err == nil {
 		if config.Publish && !config.Verify {
