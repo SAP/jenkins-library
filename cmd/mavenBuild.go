@@ -194,7 +194,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		return errors.Wrap(err, "Could not copy existing cacerts into new cacerts location ")
 	}
 
-	if err := fileUtils.Chmod(trustStore, 0644); err != nil {
+	if err := fileUtils.Chmod(trustStore, 0666); err != nil {
 		return errors.Wrap(err, "unable to provide correct permission to trust store")
 	}
 
