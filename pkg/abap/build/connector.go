@@ -141,6 +141,8 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 
 // InitBuildFramework : initialize Connector for communication with ABAP SCP instance
 func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com abaputils.Communication, inputclient HTTPSendLoader) error {
+	//TODO delete
+	log.Entry().Infof("Host in InitBuildFramework %s", config.Host)
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}

@@ -39,6 +39,8 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 }
 
 func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
+	//TODO delete
+	log.Entry().Infof("Host %s", config.Host)
 	connBuild := new(abapbuild.Connector)
 	if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
 		return errConBuild
@@ -242,6 +244,8 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 }
 
 func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvironmentAssemblePackagesOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader) error {
+	//TODO delete
+	log.Entry().Infof("Host in initAssembly... %s", config.Host)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg

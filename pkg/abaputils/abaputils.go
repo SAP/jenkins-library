@@ -41,6 +41,9 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
 
+	//TODO delete
+	log.Entry().Infof("Host in  GetAbapCommunicationArrangementInfo %s", options.Host)
+
 	if options.Host != "" {
 		// Host, User and Password are directly provided -> check for host schema (double https)
 		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
