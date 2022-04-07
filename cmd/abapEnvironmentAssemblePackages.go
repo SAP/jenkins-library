@@ -233,7 +233,9 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
 			buildFailed = true
 		}
-		builds[i].build.PrintLogs()
+		if builds[i].build.BuildID != "" {
+			builds[i].build.PrintLogs()
+		}
 	}
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
