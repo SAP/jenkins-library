@@ -185,7 +185,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		return errors.Wrap(err, "Could not find the existing java cacerts")
 	}
 
-	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "mavenCaCerts")
+	trustStore := filepath.Join(".pipeline", "mavenCaCerts")
 
 	log.Entry().Infof("copying java cacerts : %s to new cacerts : %s", existingJavaCaCerts, trustStore)
 	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
@@ -240,14 +240,6 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
 	return nil
-}
-
-func getWorkingDirForTrustStore() string {
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Entry().WithError(err).WithField("path", workingDir).Debug("Retrieving of work directory failed")
-	}
-	return workingDir
 }
 
 func getTempDirForCertFile() string {
