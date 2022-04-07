@@ -69,10 +69,10 @@ func newAwsS3UploadUtils() awsS3UploadUtils {
 }
 
 type AWSCredentials struct {
-	access_key_id     string
-	bucket            string
-	secret_access_key string
-	region            string
+	AWS_ACCESS_KEY_ID     string `json:"access_key_id"`
+	Bucket                string `json:"bucket"`
+	AWS_SECRET_ACCESS_KEY string `json:"secret_access_key"`
+	AWS_REGION            string `json:"region"`
 }
 
 func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.CustomData) {
@@ -98,9 +98,9 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	}
 
 	//Set environment variables which are needed to initialize S3 Client
-	setenvIfEmpty("AWS_REGION", obj.region)
-	setenvIfEmpty("AWS_ACCESS_KEY_ID", obj.access_key_id)
-	setenvIfEmpty("AWS_SECRET_ACCESS_KEY", obj.secret_access_key)
+	setenvIfEmpty("AWS_REGION", obj.AWS_REGION)
+	setenvIfEmpty("AWS_ACCESS_KEY_ID", obj.AWS_ACCESS_KEY_ID)
+	setenvIfEmpty("AWS_SECRET_ACCESS_KEY", obj.AWS_SECRET_ACCESS_KEY)
 
 	//Initialize S3 Client
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -111,7 +111,7 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err = runAwsS3Upload(&configOptions, telemetryData, utils, client, obj.bucket)
+	err = runAwsS3Upload(&configOptions, telemetryData, utils, client, obj.Bucket)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}

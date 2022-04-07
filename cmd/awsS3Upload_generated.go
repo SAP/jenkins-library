@@ -136,7 +136,7 @@ func awsS3UploadMetadata() config.StepData {
 						Name: "jsonKeyFilePath",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "cumulusFileCredentialsId",
+								Name: "awsFileCredentialsId",
 								Type: "secret",
 							},
 						},

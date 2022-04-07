@@ -21,7 +21,7 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: cumulusFileCredentialsId
+          - name: awsFileCredentialsId
             type: secret
       - name: filePath
         resourceRef:
