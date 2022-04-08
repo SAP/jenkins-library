@@ -92,9 +92,13 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	}
 
 	//Set environment variables which are needed to initialize S3 Client
-	setenvIfEmpty("AWS_REGION", obj.AWS_REGION)
-	setenvIfEmpty("AWS_ACCESS_KEY_ID", obj.AWS_ACCESS_KEY_ID)
-	setenvIfEmpty("AWS_SECRET_ACCESS_KEY", obj.AWS_SECRET_ACCESS_KEY)
+	AWS_REGION_set := setenvIfEmpty("AWS_REGION", obj.AWS_REGION)
+	AWS_ACCESS_KEY_ID_set := setenvIfEmpty("AWS_ACCESS_KEY_ID", obj.AWS_ACCESS_KEY_ID)
+	AWS_SECRET_ACCESS_KEY_set := setenvIfEmpty("AWS_SECRET_ACCESS_KEY", obj.AWS_SECRET_ACCESS_KEY)
+
+	defer removeEnvIfPreviouslySet("AWS_REGION", AWS_REGION_set)
+	defer removeEnvIfPreviouslySet("AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID_set)
+	defer removeEnvIfPreviouslySet("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY_set)
 
 	//Initialize S3 Client
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -146,4 +150,11 @@ func setenvIfEmpty(env, val string) bool {
 		return true
 	}
 	return false
+}
+
+//Function to remove environment variables if they are set
+func removeEnvIfPreviouslySet(env string, previouslySet bool) {
+	if previouslySet {
+		os.Setenv(env, "")
+	}
 }
