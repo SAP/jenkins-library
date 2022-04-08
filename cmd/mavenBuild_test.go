@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	piperconf "github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,35 @@ func TestMavenBuild(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "install")
+	})
+
+	t.Run("mavenBuild should populate the cpe artifacts", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+		mockedUtils.AddFile("pom.xml", []byte{})
+		mockedUtils.AddFile("target/artifacts-test.jar", []byte{})
+		mockedUtils.AddFile("target/artifacts-test.war", []byte{})
+		mockedUtils.AddFile("target/artifacts-test-classes.jar", []byte{})
+
+		mockedUtils.StdoutReturn = map[string]string{
+			"mvn .*project.build.finalName": "artifacts-test",
+		}
+
+		config := mavenBuildOptions{}
+		cpe := mavenBuildCommonPipelineEnvironment{}
+
+		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
+
+		assert.Nil(t, err)
+		assert.ElementsMatch(t, cpe.artifacts, []piperenv.Artifact{{
+			Kind: "java:jar",
+			Path: "target/artifacts-test.jar",
+		}, {
+			Kind: "java:war",
+			Path: "target/artifacts-test.war",
+		}, {
+			Kind: "java:classes-jar",
+			Path: "target/artifacts-test-classes.jar",
+		}})
 	})
 
 	t.Run("mavenBuild should skip integration tests", func(t *testing.T) {
