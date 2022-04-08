@@ -3,7 +3,6 @@ package piperutils
 import (
 	"encoding/json"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,10 +12,7 @@ import (
 
 func TestPersistReportAndLinks(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
-		workspace, err := ioutil.TempDir("", "workspace5")
-		require.NoError(t, err, "Failed to create temporary workspace directory")
-		// clean up tmp dir
-		defer os.RemoveAll(workspace)
+		workspace := t.TempDir()
 
 		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
 		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
@@ -55,10 +51,7 @@ func TestPersistReportAndLinks(t *testing.T) {
 
 	t.Run("empty list", func(t *testing.T) {
 		// init
-		workspace, err := ioutil.TempDir("", "sonar-")
-		require.NoError(t, err, "Failed to create temporary workspace directory")
-		// clean up tmp dir
-		defer os.RemoveAll(workspace)
+		workspace := t.TempDir()
 
 		reportsJSONPath := filepath.Join(workspace, "sonarExecuteScan_reports.json")
 		linksJSONPath := filepath.Join(workspace, "sonarExecuteScan_links.json")
