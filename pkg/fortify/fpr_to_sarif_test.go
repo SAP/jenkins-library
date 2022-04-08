@@ -46,7 +46,7 @@ func TestParse(t *testing.T) {
     <DefaultSeverity>5.0</DefaultSeverity>
   </ClassInfo>
   <InstanceInfo>
-    <InstanceID>DUMMY</InstanceID>
+    <InstanceID>DUMMYDUMMYDUMMY</InstanceID>
     <InstanceSeverity>5.0</InstanceSeverity>
     <Confidence>5.0</Confidence>
   </InstanceInfo>
@@ -77,7 +77,7 @@ func TestParse(t *testing.T) {
     <DefaultSeverity>5.0</DefaultSeverity>
   </ClassInfo>
   <InstanceInfo>
-    <InstanceID>DUMMY</InstanceID>
+    <InstanceID>DUMMYDUMMYDUMMY</InstanceID>
     <InstanceSeverity>5.0</InstanceSeverity>
     <Confidence>5.0</Confidence>
   </InstanceInfo>
@@ -440,7 +440,8 @@ func TestIntegrateAuditData(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := integrateAuditData(&ruleProp, "11037", sys, &project, &projectVersion, filterSet)
+		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, filterSet, false)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, ruleProp.Audited, true)
 		assert.Equal(t, ruleProp.ToolState, "Exploitable")
@@ -454,14 +455,16 @@ func TestIntegrateAuditData(t *testing.T) {
 	t.Run("Missing project", func(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := integrateAuditData(&ruleProp, "11037", sys, nil, &projectVersion, filterSet)
+		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, nil, &projectVersion, auditData, filterSet, false)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 
 	t.Run("Missing project version", func(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
-		err := integrateAuditData(&ruleProp, "11037", sys, &project, nil, filterSet)
+		auditData, _ := sys.GetAllIssueDetails(11037)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, nil, auditData, filterSet, false)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 
@@ -469,15 +472,41 @@ func TestIntegrateAuditData(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := integrateAuditData(&ruleProp, "11037", nil, &project, &projectVersion, filterSet)
-		assert.Error(t, err, "no system instance, lookup impossible for 11037")
+		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", nil, &project, &projectVersion, auditData, filterSet, false)
+		assert.Error(t, err, "no system instance, lookup impossible for DUMMYDUMMYDUMMY")
 	})
 
 	t.Run("Missing filterSet", func(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := integrateAuditData(&ruleProp, "11037", sys, &project, &projectVersion, nil)
+		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, nil, false)
 		assert.Error(t, err, "no filter set defined, category will be missing from 11037")
 	})
+
+	t.Run("Missing Audit Data", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, false)
+		assert.Error(t, err, "not exactly 1 issue found, found 0")
+	})
+
+	t.Run("Successful lookup in oneRequestPerInstance mode", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, true)
+		assert.NoError(t, err, "error")
+		assert.Equal(t, ruleProp.Audited, true)
+		assert.Equal(t, ruleProp.ToolState, "Exploitable")
+		assert.Equal(t, ruleProp.ToolStateIndex, 5)
+		assert.Equal(t, ruleProp.ToolSeverity, "High")
+		assert.Equal(t, ruleProp.ToolSeverityIndex, 3)
+		assert.Equal(t, ruleProp.ToolAuditMessage, "Dummy comment.")
+		assert.Equal(t, ruleProp.FortifyCategory, "Audit All")
+	})
+
 }
