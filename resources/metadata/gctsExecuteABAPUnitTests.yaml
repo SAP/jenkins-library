@@ -66,9 +66,12 @@ spec:
         default: true
         description: |
          Indication whether you want to execute the ABAP Unit tests. If the ABAP Unit tests fail, the results are mapped as follows to the statuses available in the Jenkins plugin. (Successful ABAP unit test results are not displayed.)
-            * Failed with severity 'fatal' is displayed as Error
-            * Failed with severity 'critical' is displayed as Error
-            * Failed with severity 'warning' is displayed as Warning
+         <br/>
+         - Failed with severity `fatal` is displayed as an `Error`.
+         <br/>
+         - Failed with severity `critical` is displayed as an `Error`.
+         <br/>
+         - Failed with severity `warning` is displayed as a `Warning`.
         scope:
           - PARAMETERS
           - STAGES
@@ -78,8 +81,10 @@ spec:
         default: true
         description: |
           Indication whether you want to execute the ATC checks. If the ATC checks result in errors with priorities 1 and 2, they are considered as failed. The results are mapped as follows to the statuses available in the Jenkins plugin. (Successful ATC check results are not displayed.)
-            * Priority 1 and 2 are displayed as Error
-            * Priority 3 is displayed as Warning
+          <br/>
+          - Priorities 1 and 2 are displayed as an `Error`.
+          <br/>
+          - Priority 3 is displayed as a `Warning`.
         scope:
           - PARAMETERS
           - STAGES
@@ -87,7 +92,7 @@ spec:
       - name: atcVariant
         type: string
         default: "DEFAULT"
-        description: Variant to be used for the ATC checks.
+        description: Variant for ATC checks
         scope:
           - PARAMETERS
           - STAGES
@@ -103,21 +108,26 @@ spec:
           - repository
           - packages
         description: |
-           Scope of objects for which you want to execute the checks:
-
-            * `localChangedObjects` - Object delta derived from last activity in the local repository. The checks are executed for the individual objects.
-            * `remoteChangedObjects` - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
-            * `localChangedPackages` - Object delta derived from last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.
-            * `remoteChangedPackages` - Object delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
-            * `repository` - All objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
-            * `packages` - All packages that are part of the local repository. The checks are executed for the packages.
+          Scope of objects for which you want to execute the checks:
+          <br/>
+          - `localChangedObjects`: The object scope is derived from the last activity in the local repository. The checks are executed for the individual objects.
+          <br/>
+          - `remoteChangedObjects`: The object scope is the delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.
+          <br/>
+          - `localChangedPackages`: The object scope is derived from the last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.
+          <br/>
+          - `remoteChangedPackages`: The object scope is the delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.
+          <br/>
+          - `repository`: The object scope comprises all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.
+          <br/>
+          - `packages`: The object scope comprises all packages that are part of the local repository. The checks are executed for the packages.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: commit
         type: string
-        description: ID of the commit that triggered the pipeline or any other commit to compare objects. For scopes `remoteChangedObjects` and `remoteChangedPackages` specifying a commit is mandatory.
+        description: ID of the commit that triggered the pipeline or any other commit used to calculate the object scope. Specifying a commit is mandatory for the `remoteChangedObjects` and `remoteChangedPackages` scopes.
         scope:
           - PARAMETERS
           - STAGES
@@ -125,7 +135,7 @@ spec:
         mandatory: false
       - name: workspace
         type: string
-        description: Absolute path to directory which contains the source code that your CI/CD tool checks out. For example in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable WORKSPACE.
+        description: Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.
         scope:
           - PARAMETERS
           - STAGES
@@ -133,7 +143,7 @@ spec:
         mandatory: true
       - name: atcResultsFileName
         type: string
-        description: Specifies the output file name for the results of the ATC checks.
+        description: Specifies an output file name for the results of the ATC checks.
         scope:
           - PARAMETERS
           - STAGES
@@ -142,7 +152,7 @@ spec:
         default: "ATCResults.xml"
       - name: aUnitResultsFileName
         type: string
-        description: Specifies the output file name for the results of the AUnit tests.
+        description: Specifies an output file name for the results of the ABAP Unit tests.
         scope:
           - PARAMETERS
           - STAGES
