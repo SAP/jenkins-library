@@ -96,13 +96,8 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 
 	if len(config.AssetPath) > 0 {
 		return uploadReleaseAsset(ctx, createdRelease.GetID(), config, ghRepoClient)
-	}
-	for _, asset := range config.AssetPathList {
-		config.AssetPath = asset
-		err := uploadReleaseAsset(ctx, createdRelease.GetID(), config, ghRepoClient)
-		if err != nil {
-			return fmt.Errorf("failed to upload release asset: %w", err)
-		}
+	} else if len(config.AssetPathList) > 0 {
+		return uploadReleaseAssetList(ctx, createdRelease.GetID(), config, ghRepoClient)
 	}
 
 	return nil
@@ -163,6 +158,17 @@ func getReleaseDeltaText(config *githubPublishReleaseOptions, lastRelease *githu
 	)
 
 	return releaseDeltaText
+}
+
+func uploadReleaseAssetList(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient) error {
+	for _, asset := range config.AssetPathList {
+		config.AssetPath = asset
+		err := uploadReleaseAsset(ctx, releaseID, config, ghRepoClient)
+		if err != nil {
+			return fmt.Errorf("failed to upload release asset: %w", err)
+		}
+	}
+	return nil
 }
 
 func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient) error {
