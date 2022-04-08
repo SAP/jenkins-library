@@ -31,7 +31,38 @@ jobs:
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPathList ./piper_master --assetPathList ./piper --assetPathList ./piper_master-darwin.x86_64 --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-win.x86_64.exe --assetPathList ./piper-win.x86_64.exe
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
+      - uses: SAP/project-piper-action@master
+        name: 'publish Mac master binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-darwin.x86_64
+      - uses: SAP/project-piper-action@master
+        name: 'publish Windows master binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-win.x86_64.exe
+      - uses: SAP/project-piper-action@master
+        name: 'publish Linux binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
+      - uses: SAP/project-piper-action@master
+        name: 'publish Mac binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper-darwin.x86_64
+      - uses: SAP/project-piper-action@master
+        name: 'publish Windows binary'
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper-win.x86_64.exe
+
       - name: Build and publish jar for consumption in unit tests
         run: mvn package
       - uses: SAP/project-piper-action@master
