@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -85,14 +84,9 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	// Example: step checkmarxExecuteScan.go
 
 	//Prepare Credentials
-	data, err := ioutil.ReadFile(configOptions.JSONKeyFilePath)
-	if err != nil {
-		fmt.Print(err)
-	}
-
 	var obj AWSCredentials
 
-	err = json.Unmarshal(data, &obj)
+	err := json.Unmarshal([]byte(configOptions.JSONCredentialsAWS), &obj)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -122,29 +116,30 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 	file, err := os.Open(configOptions.FilePath)
 
 	if err != nil {
-		fmt.Println("Unable to open file " + configOptions.FilePath)
+		fmt.Println("Unable to open the following file " + configOptions.FilePath)
 		return err
 	}
 
 	defer file.Close()
 
 	//Intitialize S3 PutObjectInput
-	input := &s3.PutObjectInput{
+	inputObject := &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &configOptions.FilePath,
 		Body:   file,
 	}
 
 	//Upload File
-	_, err = PutFile(context.TODO(), client, input)
+	_, err = PutFile(context.TODO(), client, inputObject)
 	if err != nil {
-		fmt.Println("Got error uploading file:")
+		fmt.Println("An error occured during file upload:")
 		fmt.Println(err)
 	}
 
 	return err
 }
 
+//Function to set environment variables if they are not already set
 func setenvIfEmpty(env, val string) bool {
 	if len(os.Getenv(env)) == 0 {
 		os.Setenv(env, val)

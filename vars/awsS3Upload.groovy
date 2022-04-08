@@ -8,7 +8,8 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
 
     List credentials = [
-        [type: 'file', id: 'awsFileCredentialsId', env: ['PIPER_jsonKeyFilePath']]
+        [type: 'file', id: 'awsCredentialsId', env: ['PIPER_jsonCredentialsAWS']]
     ]
+    
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

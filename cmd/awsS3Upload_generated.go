@@ -16,11 +16,11 @@ import (
 )
 
 type awsS3UploadOptions struct {
-	JSONKeyFilePath string `json:"jsonKeyFilePath,omitempty"`
-	FilePath        string `json:"filePath,omitempty"`
+	JSONCredentialsAWS string `json:"jsonCredentialsAWS,omitempty"`
+	FilePath           string `json:"filePath,omitempty"`
 }
 
-// AwsS3UploadCommand Uploads a specified file into a given S3 Bucket
+// AwsS3UploadCommand Uploads a specified file into a given AWS S3 Bucket
 func AwsS3UploadCommand() *cobra.Command {
 	const STEP_NAME = "awsS3Upload"
 
@@ -33,8 +33,8 @@ func AwsS3UploadCommand() *cobra.Command {
 
 	var createAwsS3UploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads a specified file into a given S3 Bucket",
-		Long: `Uploads a specified file as a S3 Object into a given S3 Bucket.
+		Short: "Uploads a specified file into a given AWS S3 Bucket",
+		Long: `Uploads a specified file as a S3 Object into a given AWS S3 Bucket.
 If the Bucket already contains a file with the same name, it will be overidden.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -52,7 +52,7 @@ If the Bucket already contains a file with the same name, it will be overidden.`
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.JSONKeyFilePath)
+			log.RegisterSecret(stepConfig.JSONCredentialsAWS)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -111,10 +111,10 @@ If the Bucket already contains a file with the same name, it will be overidden.`
 }
 
 func addAwsS3UploadFlags(cmd *cobra.Command, stepConfig *awsS3UploadOptions) {
-	cmd.Flags().StringVar(&stepConfig.JSONKeyFilePath, "jsonKeyFilePath", os.Getenv("PIPER_jsonKeyFilePath"), "File path to AWS Credentials file (JSON).")
+	cmd.Flags().StringVar(&stepConfig.JSONCredentialsAWS, "jsonCredentialsAWS", os.Getenv("PIPER_jsonCredentialsAWS"), "JSON String Credentials to access AWS S3 Bucket")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Name/Path of the file which should be uploaded")
 
-	cmd.MarkFlagRequired("jsonKeyFilePath")
+	cmd.MarkFlagRequired("jsonCredentialsAWS")
 	cmd.MarkFlagRequired("filePath")
 }
 
@@ -124,27 +124,27 @@ func awsS3UploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "awsS3Upload",
 			Aliases:     []config.Alias{},
-			Description: "Uploads a specified file into a given S3 Bucket",
+			Description: "Uploads a specified file into a given AWS S3 Bucket",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "awsFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the JSON file to authenticate to the AWS S3 Bucket", Type: "jenkins"},
+					{Name: "awsCredentialsId", Description: "Jenkins 'Secret Text' credentials ID containing the JSON file to authenticate to the AWS S3 Bucket", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "jsonKeyFilePath",
+						Name: "jsonCredentialsAWS",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "awsFileCredentialsId",
+								Name: "awsCredentialsId",
 								Type: "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_jsonKeyFilePath"),
+						Default:   os.Getenv("PIPER_jsonCredentialsAWS"),
 					},
 					{
 						Name: "filePath",
