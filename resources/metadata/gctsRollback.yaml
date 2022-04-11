@@ -1,16 +1,16 @@
 metadata:
   name: gctsRollback
-  description: Perfoms roll back of one (default) or several commit(s)
+  description: Perfoms a rollback of one (default) or several commits
   longDescription: |
-    This step performs a rollback of commit(s) in a local ABAP system repository. If a <commit> parameter is specified, it will be used as the target commit for the rollback.
-    If no <commit> parameter is specified and the remote repository domain is 'github.com', the last commit with status 'success' will be used for the rollback. Otherwise,
-    gctsRollback will rollback to the previously active commit in the local repository.
+    This step performs a rollback of commits in a local ABAP repository. If a `commit` parameter is specified, it will be used as the target commit for the rollback.
+    If no `commit` parameter is specified and the remote repository domain is 'github.com', the last commit with the status 'success' will be used for the rollback. Otherwise,
+    `gctsRollback` will roll back to the previously active commit in the local repository.
 
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the rollback
+        description: ID taken from the Jenkins credentials store containing user name and password of the user that authenticates to the ABAP system on which you want to execute the rollback.
         type: jenkins
       - name: githubPersonalAccessTokenId
         description: GitHub personal access token with at least read permissions for the remote repository
@@ -18,7 +18,7 @@ spec:
     params:
       - name: username
         type: string
-        description: User to authenticate to the ABAP system
+        description: User that authenticates to the ABAP system. **Note** - Don't provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -31,7 +31,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password to authenticate to the ABAP system
+        description: Password of the ABAP user that authenticates to the ABAP system. **Note** - Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -52,7 +52,7 @@ spec:
         mandatory: true
       - name: host
         type: string
-        description: Specifies the protocol and host address, including the port. Please provide in the format '<protocol>://<host>:<port>'
+        description: Protocol and host of the ABAP system, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
           - PARAMETERS
           - STAGES
@@ -68,7 +68,7 @@ spec:
         mandatory: true
       - name: commit
         type: string
-        description: Specifies the commit to deploy
+        description: Specifies the target commit for the rollback
         scope:
           - PARAMETERS
           - STAGES
