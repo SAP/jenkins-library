@@ -107,7 +107,7 @@ spec:
       - name: path
         type: string
         description: |
-          The path should either point to a directory with your sources or an artifact in zip format.
+          Glob that should either point to a directory with your sources or one artifact in zip format.
           This property determines the input to the buildpack.
         scope:
           - PARAMETERS
