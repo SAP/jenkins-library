@@ -25,6 +25,16 @@ via _Jenkins_ -> _Credentials_ -> _System_ -> _Global credentials (unrestricted)
 To run the `cnbBuild` with a different builder, you can specify the `dockerImage` parameter.
 Without specifying it, the step will run with the `paketobuildpacks/builder:full` builder.
 
+#### Default Excludes
+
+When building images, these files/folders are excluded from the build by default:
+
+* Piper binary: `piper`
+* Piper configuration folder: `.pipeline`
+* Git folder: `.git`
+
+This behavior can be overwritten by using the respective sections in [`project.toml`](https://buildpacks.io/docs/reference/config/project-descriptor/). Keep in mind that by doing so, no default excludes will be applied by the `cnbBuild` step at all.
+
 ## ${docGenConfiguration}
 
 ## ${docJenkinsPluginDependencies}
