@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -116,30 +118,48 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 }
 
 func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.CustomData, utils awsS3UploadUtils, client S3PutObjectAPI, bucket string) error {
-	//Open File
-	file, err := os.Open(configOptions.FilePath)
+	//check if filepath is non-empty
+	if configOptions.FilePath == "" {
+		fmt.Println("File Path is empty. Please specify a file or directory to Upload to AWS!")
+		return errors.New("Empty File Path")
+	}
 
-	if err != nil {
-		fmt.Println("Unable to open the following file " + configOptions.FilePath)
+	//iterate through directories
+	err := filepath.Walk(configOptions.FilePath, func(currentFilePath string, f os.FileInfo, err error) error {
+		//skip directories, only store files
+		if !f.IsDir() {
+			//Open File
+			currentFile, e := os.Open(filepath.ToSlash(currentFilePath))
+
+			if e != nil {
+				fmt.Println("Unable to open the following file " + currentFilePath)
+				return e
+			}
+
+			//AWS SDK needs UNIX Filepaths
+			key := filepath.ToSlash(currentFilePath)
+
+			//Intitialize S3 PutObjectInput
+			inputObject := &s3.PutObjectInput{
+				Bucket: &bucket,
+				Key:    &key,
+				Body:   currentFile,
+			}
+
+			//Upload File
+			_, e = PutFile(context.TODO(), client, inputObject)
+			if e != nil {
+				fmt.Printf("An error occured during upload of file with path %q: %v\n", currentFilePath, e)
+				return e
+			}
+
+			//Close File
+			currentFile.Close()
+
+			return e
+		}
 		return err
-	}
-
-	defer file.Close()
-
-	//Intitialize S3 PutObjectInput
-	inputObject := &s3.PutObjectInput{
-		Bucket: &bucket,
-		Key:    &configOptions.FilePath,
-		Body:   file,
-	}
-
-	//Upload File
-	_, err = PutFile(context.TODO(), client, inputObject)
-	if err != nil {
-		fmt.Println("An error occured during file upload:")
-		fmt.Println(err)
-	}
-
+	})
 	return err
 }
 

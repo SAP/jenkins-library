@@ -23,7 +23,11 @@ For Example:
 }
 ```
 
-If the JSON string contains additional information, this is not a problem. These are automatically detected and skipped. 
+If the JSON string contains additional information, this is not a problem. These are automatically detected and skipped.
+
+## About Files/Directories to Upload
+
+With the step awsS3Upload you can upload single files as well as whole directories into your S3 bucket. File formats do not matter and directory structures are preserved. 
 
 ## ${docGenParameters}
 

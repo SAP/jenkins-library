@@ -53,7 +53,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 				if params.Key == nil {
 					return nil, fmt.Errorf("expect key to not be nil")
 				}
-				if e, a := filepath.Join("testdata", t.Name()+"_test.txt"), *params.Key; e != a {
+				if e, a := filepath.ToSlash(filepath.Join("testdata", t.Name()+"_test.txt")), *params.Key; e != a {
 					return nil, fmt.Errorf("expect %v, got %v", e, a)
 				}
 				if params.Body == nil {
@@ -89,7 +89,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 				if params.Key == nil {
 					return nil, fmt.Errorf("expect key to not be nil")
 				}
-				if e, a := filepath.Join("testdata", t.Name()+"_test.txt"), *params.Key; e != a {
+				if e, a := filepath.ToSlash(filepath.Join("testdata", t.Name()+"_test.txt")), *params.Key; e != a {
 					return nil, fmt.Errorf("expect %v, got %v", e, a)
 				}
 				if params.Body == nil {
@@ -105,7 +105,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 		err := runAwsS3Upload(&config, nil, utils, client(t), "fooBucket")
 
 		// assert
-		assert.EqualError(t, err, "open : The system cannot find the file specified.")
+		assert.EqualError(t, err, "Empty File Path")
 	})
 
 	t.Run("error path", func(t *testing.T) {
