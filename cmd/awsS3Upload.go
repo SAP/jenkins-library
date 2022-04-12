@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -90,7 +89,9 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 
 	err := json.Unmarshal([]byte(configOptions.JSONCredentialsAWS), &obj)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Entry().
+			WithError(err).
+			Fatal("failed to execute step awsS3Upload")
 	}
 
 	//Set environment variables which are needed to initialize S3 Client
@@ -105,7 +106,9 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	//Initialize S3 Client
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		panic("configuration error, " + err.Error())
+		log.Entry().
+			WithError(err).
+			Fatal("failed to execute step awsS3Upload")
 	}
 	client := s3.NewFromConfig(cfg)
 
@@ -120,19 +123,20 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.CustomData, utils awsS3UploadUtils, client S3PutObjectAPI, bucket string) error {
 	//check if filepath is non-empty
 	if configOptions.FilePath == "" {
-		fmt.Println("File Path is empty. Please specify a file or directory to Upload to AWS!")
-		return errors.New("Empty File Path")
+		p := errors.New("Empty FilePath")
+		log.Entry().WithError(p).Warnf("File Path Parameter is empty. Please specify a file or directory to Upload to AWS!")
+		return p
 	}
 
 	//iterate through directories
 	err := filepath.Walk(configOptions.FilePath, func(currentFilePath string, f os.FileInfo, err error) error {
-		//skip directories, only store files
+		//skip directories, only upload files
 		if !f.IsDir() {
+			log.Entry().Infof("Current target path is: %v", currentFilePath)
 			//Open File
 			currentFile, e := os.Open(filepath.ToSlash(currentFilePath))
-
 			if e != nil {
-				fmt.Println("Unable to open the following file " + currentFilePath)
+				log.Entry().WithError(e).Warnf("Could not open the file: '%s'", currentFilePath)
 				return e
 			}
 
@@ -146,16 +150,16 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 				Body:   currentFile,
 			}
 
+			log.Entry().Infof("Start upload of file: %v", currentFilePath)
 			//Upload File
 			_, e = PutFile(context.TODO(), client, inputObject)
 			if e != nil {
-				fmt.Printf("An error occured during upload of file with path %q: %v\n", currentFilePath, e)
+				log.Entry().WithError(e).Warnf("There was an error during the upload of file: %v", currentFilePath)
 				return e
 			}
 
 			//Close File
 			currentFile.Close()
-
 			return e
 		}
 		return err
