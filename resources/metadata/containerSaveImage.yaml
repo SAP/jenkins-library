@@ -19,7 +19,7 @@ spec:
         aliases:
           - name: dockerRegistryUrl
         type: string
-        description: The reference to the container registry where the image is located.
+        description: "For `buildTool: docker`: Url of the container registry - typically provided by the CI/CD environment."
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -54,6 +54,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: containerRegistryUser
         description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
@@ -65,17 +67,12 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+          - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: filePath
         type: string
-        description: The path to the file to which the image should be saved. Defaults to `containerImage.tar`
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: includeLayers
-        type: bool
-        description: Flag if the docker layers should be included
+        description: The path to the file to which the image should be saved.
         scope:
           - PARAMETERS
           - STAGES

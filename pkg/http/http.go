@@ -13,7 +13,6 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -42,6 +41,7 @@ type Client struct {
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
 	trustedCerts              []string
+	fileUtils                 piperutils.FileUtils
 }
 
 // ClientOptions defines the options to be set on the client
@@ -67,7 +67,7 @@ type ClientOptions struct {
 	TrustedCerts              []string
 }
 
-// TransportWrapper is a wrapper for central roundtrip capabilities
+// TransportWrapper is a wrapper for central round trip capabilities
 type TransportWrapper struct {
 	Transport                http.RoundTripper
 	doLogRequestBodyOnDebug  bool
@@ -110,6 +110,15 @@ type Uploader interface {
 	Upload(data UploadRequestData) (*http.Response, error)
 }
 
+// fileUtils lazy initializes the utils
+func (c *Client) getFileUtils() piperutils.FileUtils {
+	if c.fileUtils == nil {
+		c.fileUtils = &piperutils.Files{}
+	}
+
+	return c.fileUtils
+}
+
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies, uploadType)
@@ -117,7 +126,8 @@ func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header,
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
 func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
-	fileHandle, err := os.Open(file)
+	fileHandle, err := c.getFileUtils().Open(file)
+
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
 	}
@@ -196,7 +206,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	}
 }
 
-// SendRequest sends an http request with a defined method
+// SendRequest sends a http request with a defined method
 //
 // On error, any Response can be ignored and the Response.Body
 // does not need to be closed.
@@ -209,7 +219,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	return c.Send(request)
 }
 
-// Send sends an http request
+// Send sends a http request
 func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	httpClient := c.initialize()
 	response, err := httpClient.Do(request)
@@ -245,6 +255,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 	}
 	c.cookieJar = options.CookieJar
 	c.trustedCerts = options.TrustedCerts
+	c.fileUtils = &piperutils.Files{}
+}
+
+// SetFileUtils can be used to overwrite the default file utils
+func (c *Client) SetFileUtils(fileUtils piperutils.FileUtils) {
+	c.fileUtils = fileUtils
 }
 
 // StandardClient returns a stdlib *http.Client which respects the custom settings.
@@ -339,7 +355,7 @@ var contextKeyRequestStart = &contextKey{"RequestStart"}
 var authHeaderKey = "Authorization"
 
 // RoundTrip is the core part of this module and implements http.RoundTripper.
-// Executes HTTP request with request/response logging.
+// Executes HTTP requests with request/response logging.
 func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
 	req = req.WithContext(ctx)
@@ -356,7 +372,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func handleAuthentication(req *http.Request, username, password, token string) {
-	// Handle authenticaion if not done already
+	// Handle authentication if not done already
 	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.SetBasicAuth(username, password)
 		log.Entry().Debug("Using Basic Authentication ****/****")
@@ -416,9 +432,9 @@ func transformHeaders(header http.Header) http.Header {
 			// Since
 			//   1.) The auth header type itself might serve as a vector for an
 			//       intrusion
-			//   2.) We cannot make assumtions about the structure of the auth
+			//   2.) We cannot make assumptions about the structure of the auth
 			//       header value since that depends on the type, e.g. several tokens
-			//       where only some of the tokens define the secret
+			//       where only some tokens define the secret
 			// we hide the full auth header value anyway in order to be on the
 			// save side.
 			value = []string{"<set>"}
@@ -500,7 +516,6 @@ func (c *Client) applyDefaults() {
 func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) error {
 
 	trustStoreDir, err := getWorkingDirForTrustStore()
-	fileUtils := &piperutils.Files{}
 	if err != nil {
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
@@ -539,7 +554,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 		filename := path.Base(certificate)
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
-		if exists, _ := fileUtils.FileExists(target); !exists {
+		if exists, _ := c.getFileUtils().FileExists(target); !exists {
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			request, err := http.NewRequest("GET", certificate, nil)
 			if err != nil {
@@ -561,11 +576,11 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				defer response.Body.Close()
 				parent := filepath.Dir(target)
 				if len(parent) > 0 {
-					if err = os.MkdirAll(parent, 0777); err != nil {
+					if err = c.getFileUtils().MkdirAll(parent, 0777); err != nil {
 						return err
 					}
 				}
-				fileHandler, err := os.Create(target)
+				fileHandler, err := c.getFileUtils().Create(target)
 				if err != nil {
 					return errors.Wrapf(err, "unable to create file %v", filename)
 				}
@@ -608,7 +623,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	return nil
 }
 
-// default truststore location
+// TrustStoreDirectory default truststore location
 const TrustStoreDirectory = ".pipeline/trustStore"
 
 func getWorkingDirForTrustStore() (string, error) {
@@ -622,7 +637,7 @@ func getWorkingDirForTrustStore() (string, error) {
 	return TrustStoreDirectory, nil
 }
 
-// ParseHTTPResponseBodyXML parses a XML http response into a given interface
+// ParseHTTPResponseBodyXML parses an XML http response into a given interface
 func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 	if resp == nil {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")

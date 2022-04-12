@@ -226,7 +226,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 
 func zipWorkspaceFiles(filterPattern string, utils checkmarxExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
-	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
+	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
@@ -322,6 +322,20 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 
+	// generate sarif report
+	if config.ConvertToSarif {
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := checkmarx.ConvertCxxmlToSarif(xmlReportName)
+		if err != nil {
+			return fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := checkmarx.WriteSarif(sarif)
+		if err != nil {
+			return fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
+
 	// create toolrecord
 	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
 	if err != nil {
@@ -357,7 +371,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 
 		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
-			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Checkmarx SAST Results", config.Assignees, utils)
+			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, utils)
 			if err != nil {
 				return fmt.Errorf("failed to upload scan results into GitHub: %w", err)
 			}

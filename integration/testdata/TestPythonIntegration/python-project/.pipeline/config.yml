@@ -1,0 +1,6 @@
+general:
+
+steps:
+  pythonBuild:
+    createBOM: true
+    publish: false

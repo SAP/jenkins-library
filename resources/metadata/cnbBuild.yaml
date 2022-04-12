@@ -44,6 +44,7 @@ spec:
             1. `containerImageName` parameter.
             2. `project.id` field of a `project.toml` file.
             3. `git/repository` parameter of the `commonPipelineEnvironment`.
+            4. `github/repository` parameter of the `commonPipelineEnvironment`.
           If none of the above was found - an error will be raised.
         scope:
           - GENERAL
@@ -64,6 +65,8 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+          - name: commonPipelineEnvironment
+            param: git/commitId
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -104,7 +107,7 @@ spec:
       - name: path
         type: string
         description: |
-          The path should either point to a directory with your sources or an artifact in zip format.
+          Glob that should either point to a directory with your sources or one artifact in zip format.
           This property determines the input to the buildpack.
         scope:
           - PARAMETERS

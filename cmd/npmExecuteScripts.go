@@ -60,7 +60,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "npmExecuteScripts"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}

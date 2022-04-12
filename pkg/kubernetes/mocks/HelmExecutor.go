@@ -9,8 +9,8 @@ type HelmExecutor struct {
 	mock.Mock
 }
 
-// RunHelmAdd provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmAdd() error {
+// RunHelmDependency provides a mock function with given fields:
+func (_m *HelmExecutor) RunHelmDependency() error {
 	ret := _m.Called()
 
 	var r0 error
@@ -51,50 +51,8 @@ func (_m *HelmExecutor) RunHelmLint() error {
 	return r0
 }
 
-// RunHelmPackage provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmPackage() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// RunHelmPush provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmPush() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// RunHelmRegistryLogin provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmRegistryLogin() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// RunHelmRegistryLogout provides a mock function with given fields:
-func (_m *HelmExecutor) RunHelmRegistryLogout() error {
+// RunHelmPublish provides a mock function with given fields:
+func (_m *HelmExecutor) RunHelmPublish() error {
 	ret := _m.Called()
 
 	var r0 error

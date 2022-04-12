@@ -4,7 +4,9 @@
 package mock
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -112,6 +114,17 @@ func (f *FilesMock) AddDir(path string) {
 // AddDirWithMode establishes the existence of a virtual directory.
 func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
 	f.associateContent(path, &dirContent, mode)
+}
+
+// SHA256 returns a random SHA256
+func (f *FilesMock) SHA256(path string) (string, error) {
+	hash := sha256.New()
+	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
+}
+
+// CurrentTime returns the current time as a fixed value
+func (f *FilesMock) CurrentTime(format string) string {
+	return "20220102-150405"
 }
 
 func (f *FilesMock) associateContent(path string, content *[]byte, mode os.FileMode) {
@@ -526,11 +539,15 @@ type FileMock struct {
 
 // Reads the content of the mock
 func (f *FileMock) Read(b []byte) (n int, err error) {
+	if len(b) == 0 {
+		return 0, nil
+	}
+
 	for i, p := range f.content {
 		b[i] = p
 	}
 
-	return len(f.content), nil
+	return len(f.content), io.EOF
 }
 
 // Close mocks freeing the associated OS resources.
@@ -597,4 +614,12 @@ func (f *FilesMock) OpenFile(path string, flag int, perm os.FileMode) (*FileMock
 	}
 
 	return &file, nil
+}
+
+func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
+	return f.OpenFile(name, os.O_RDONLY, 0)
+}
+
+func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
+	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 }

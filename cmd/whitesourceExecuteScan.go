@@ -10,6 +10,7 @@ import (
 	"time"
 
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
@@ -50,6 +51,8 @@ type whitesourceUtils interface {
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
+
 	Now() time.Time
 }
 
@@ -58,6 +61,11 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
+}
+
+// CreateIssue supplies capability for GitHub issue creation
+func (w *whitesourceUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (ws.File, error) {
@@ -169,10 +177,9 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			ContainerRegistryUser:     config.ContainerRegistryUser,
 			ContainerRegistryPassword: config.ContainerRegistryPassword,
 			DockerConfigJSON:          config.DockerConfigJSON,
-			IncludeLayers:             config.ScanImageIncludeLayers,
 			FilePath:                  config.ProjectName,
 		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: ""}
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
 		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
@@ -492,7 +499,7 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 
 	// create a json report to be used later, e.g. issue creation in GitHub
 	ipReport := reporting.ScanReport{
-		Title: "WhiteSource IP Report",
+		ReportTitle: "WhiteSource IP Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "WhiteSource product name", Details: config.ProductName},
 			{Description: "Filtered project names", Details: strings.Join(scan.ScannedProjectNames(), ", ")},
@@ -563,7 +570,9 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 
 		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
-			err = ws.CreateGithubResultIssues(scan, &allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+			issueDetails := make([]reporting.IssueDetail, len(allAlerts))
+			piperutils.CopyAtoB(allAlerts, issueDetails)
+			err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks, utils)
 			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}

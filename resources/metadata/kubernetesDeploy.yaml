@@ -148,6 +148,8 @@ spec:
             type: secret
             param: password
           - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: containerImageName
         aliases:
@@ -198,6 +200,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: containerRegistrySecret
@@ -457,7 +461,7 @@ spec:
           - apply
           - replace
   containers:
-    - image: dtzar/helm-kubectl:3.4.1
+    - image: dtzar/helm-kubectl:3.8.1
       workingDir: /config
       options:
         - name: -u

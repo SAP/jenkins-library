@@ -277,10 +277,20 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (pathEnum,
 	if config.Path == "" {
 		return pathEnumRoot, pwd, nil
 	}
-	source, err := utils.Abs(config.Path)
+	matches, err := utils.Glob(config.Path)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", "", errors.Wrapf(err, "Failed to resolve absolute path for '%s'", config.Path)
+		return "", "", errors.Wrapf(err, "Failed to resolve glob for '%s'", config.Path)
+	}
+	numMatches := len(matches)
+	if numMatches != 1 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", "", errors.Errorf("Failed to resolve glob for '%s', matching %d file(s)", config.Path, numMatches)
+	}
+	source, err := utils.Abs(matches[0])
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", "", errors.Wrapf(err, "Failed to resolve absolute path for '%s'", matches[0])
 	}
 
 	dir, err := utils.DirExists(source)
@@ -320,7 +330,7 @@ func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryDa
 
 	data.Buildpacks.FromConfig = privacy.FilterBuildpacks(config.Buildpacks)
 
-	dockerImage, err := getDockerImageValue("cnbBuild")
+	dockerImage, err := GetDockerImageValue("cnbBuild")
 	if err != nil {
 		log.Entry().Warnf("Error while preparing telemetry: retrieving docker image failed: '%v'", err)
 		data.Builder = ""
@@ -393,7 +403,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	}
 
 	include := ignore.CompileIgnoreLines("**/*")
-	exclude := ignore.CompileIgnoreLines("piper", ".pipeline")
+	exclude := ignore.CompileIgnoreLines("piper", ".pipeline", ".git")
 
 	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {
@@ -432,7 +442,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-	customTelemetryData.Buildpacks.Overall = config.Buildpacks
+	customTelemetryData.Buildpacks.Overall = privacy.FilterBuildpacks(config.Buildpacks)
 	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
 	telemetry.Data = append(telemetry.Data, customTelemetryData)
 
@@ -470,7 +480,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "could no resolve path")
+		return errors.Wrapf(err, "could not resolve path")
 	}
 
 	target := "/workspace"
