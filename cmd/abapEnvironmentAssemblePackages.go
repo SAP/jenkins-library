@@ -161,13 +161,11 @@ func (br *buildWithRepository) start() error {
 			},
 		},
 	}
-
 	if br.repo.Namespace != "" {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "NAMESPACE",
 				Value: br.repo.Namespace})
 	}
-
 	if br.repo.UseClassicCTS {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "useClassicCTS",
