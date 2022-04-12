@@ -186,7 +186,11 @@ func (br *buildWithRepository) start() error {
 			abapbuild.Value{ValueID: "SSDC_EXPORT_LANGUAGE_VECTOR",
 				Value: br.repo.GetAakAasLanguageVector()})
 	}
-
+	if br.repo.AdditionalPiecelist != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "ADDITIONAL_PIECELIST",
+				Value: br.repo.AdditionalPiecelist})
+	}
 	phase := "BUILD_" + br.repo.PackageType
 	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
 	return br.build.Start(phase, valuesInput)
