@@ -14,31 +14,9 @@ The stated instructions assume the use of this application.
 * You have installed the newest version of Docker. See [Docker Community Edition](https://docs.docker.com/install/). **Note:** we have tested on Docker 18.09.6.
 * Your system has access to [GitHub.com][github].
 
-## **Recommended:** Install the Cx Server Life-cycle Management for Jenkins
+## Install your Jenkins
 
-Cx Server is a life-cycle management tool to bootstrap a pre-configured Jenkins instance within minutes.
-All required plugins and shared libraries are included automatically.
-It is based on Docker images provided by project "Piper".
-
-To get started, initialize Cx Server by using this `docker run` command:
-
-```sh
-docker run -it --rm -u $(id -u):$(id -g) -v "${PWD}":/cx-server/mount/ ppiper/cx-server-companion:latest init-cx-server
-```
-
-This creates a few files in your current working directory.
-The shell script `cx-server` and the configuration file `server.cfg` are of special interest.
-
-Now, you can start the Jenkins server by using the following command:
-
-```sh
-chmod +x ./cx-server
-./cx-server start
-```
-
-For more information on the Cx Server and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
-
-For alternative approaches to setup a Jenkins build sever which fits the needs of the project "Piper" pipelines and steps please read the [Infrastructure Overview][resources-infrastructure].
+For an approach to setup a Jenkins build sever which fits the needs of the project "Piper" pipelines and steps please read the [Infrastructure Overview][resources-infrastructure].
 
 ## (Optional) Sample Application
 

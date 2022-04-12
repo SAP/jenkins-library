@@ -94,6 +94,7 @@ func (c *componentVersion) validate() error {
 	c.SpLevel = jCV.ComponentVersion.SpLevel
 	c.PatchLevel = jCV.ComponentVersion.PatchLevel
 	log.Entry().Infof("Resolved version %s, splevel %s, patchlevel %s", c.Version, c.SpLevel, c.PatchLevel)
+	log.Entry().Infof("Using cCTS %t", c.UseClassicCTS)
 
 	if !c.UseClassicCTS && c.CommitID == "" {
 		return fmt.Errorf("CommitID missing in repo '%s' of the addon.yml", c.Name)

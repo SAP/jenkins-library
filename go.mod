@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	cloud.google.com/go/storage v1.10.0
-	github.com/GoogleContainerTools/container-diff v0.17.0
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/antchfx/htmlquery v1.2.4

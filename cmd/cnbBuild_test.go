@@ -465,6 +465,65 @@ uri = "some-buildpack"`))
 		assert.True(t, customData.Data[0].ProjectDescriptor.ExcludeUsed)
 	})
 
+	t.Run("error case, multiple artifacts in path", func(t *testing.T) {
+		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "3.1.5",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", imageRegistry),
+			DockerConfigJSON:     "/path/to/config.json",
+			ProjectDescriptor:    "project.toml",
+			AdditionalTags:       []string{"latest"},
+			Buildpacks:           []string{"paketobuildpacks/java", "gcr.io/paketo-buildpacks/node"},
+			Path:                 "target/*.jar",
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddDir("target")
+		utils.FilesMock.AddFile("target/app.jar", []byte(`FFFFFF`))
+		utils.FilesMock.AddFile("target/app-src.jar", []byte(`FFFFFF`))
+
+		addBuilderFiles(&utils)
+
+		telemetryData := telemetry.CustomData{}
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		require.EqualError(t, err, "could not resolve path: Failed to resolve glob for 'target/*.jar', matching 2 file(s)")
+	})
+
+	t.Run("success case, artifacts found by glob", func(t *testing.T) {
+		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "3.1.5",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", imageRegistry),
+			DockerConfigJSON:     "/path/to/config.json",
+			ProjectDescriptor:    "project.toml",
+			AdditionalTags:       []string{"latest"},
+			Buildpacks:           []string{"paketobuildpacks/java", "gcr.io/paketo-buildpacks/node"},
+			Path:                 "**/target",
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddDir("target")
+		utils.FilesMock.AddFile("target/app.jar", []byte(`FFFFFF`))
+
+		addBuilderFiles(&utils)
+
+		telemetryData := telemetry.CustomData{}
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+
+		require.NoError(t, err)
+		runner := utils.ExecMockRunner
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, "my-image:3.1.5", commonPipelineEnvironment.container.imageNameTag)
+	})
+
 	t.Run("success case (build env telemetry was added)", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
@@ -520,7 +579,7 @@ uri = "some-buildpack"
 		assert.Equal(t, "11", customData.Data[0].BuildEnv.KeyValues["BP_NODE_VERSION"])
 		assert.NotContains(t, customData.Data[0].BuildEnv.KeyValues, "PROJECT_KEY")
 
-		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "some-buildpack")
+		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "<redacted>")
 	})
 
 	t.Run("success case (multiple images configured)", func(t *testing.T) {

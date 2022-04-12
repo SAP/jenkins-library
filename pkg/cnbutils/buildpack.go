@@ -3,13 +3,14 @@ package cnbutils
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
+
+const bpCacheDir = "/tmp/buildpacks_cache"
 
 type BuildPackMetadata struct {
 	ID          string    `toml:"id,omitempty" json:"id,omitempty" yaml:"id,omitempty"`
@@ -37,33 +38,57 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 		Utils: utils,
 	}
 
+	err := utils.MkdirAll(bpCacheDir, os.ModePerm)
+	if err != nil {
+		return Order{}, errors.Wrap(err, "failed to create temp directory for buildpack cache")
+	}
+
 	for _, bpack := range bpacks {
 		var bpackMeta BuildPackMetadata
-		tempDir, err := utils.TempDir("", filepath.Base(bpack))
+		imageInfo, err := utils.GetRemoteImageInfo(bpack)
 		if err != nil {
-			return Order{}, fmt.Errorf("failed to create temp directory, error: %s", err.Error())
+			return Order{}, errors.Wrap(err, "failed to get remote image info of buildpack")
 		}
-		defer utils.RemoveAll(tempDir)
-
-		log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, tempDir)
-		img, err := utils.DownloadImageToPath(bpack, tempDir)
+		hash, err := imageInfo.Digest()
 		if err != nil {
-			return Order{}, fmt.Errorf("failed download buildpack image '%s', error: %s", bpack, err.Error())
+			return Order{}, errors.Wrap(err, "failed to get image digest")
+		}
+		cacheDir := filepath.Join(bpCacheDir, hash.String())
+
+		cacheExists, err := utils.DirExists(cacheDir)
+		if err != nil {
+			return Order{}, errors.Wrapf(err, "failed to check if cache dir '%s' exists", cacheDir)
 		}
 
-		imgConf, err := img.Image.ConfigFile()
+		if cacheExists {
+			log.Entry().Infof("Using cached buildpack '%s'", bpack)
+		} else {
+			err := utils.MkdirAll(cacheDir, os.ModePerm)
+			if err != nil {
+				return Order{}, errors.Wrap(err, "failed to create temp directory for buildpack cache")
+			}
+
+			log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, cacheDir)
+			img, err := utils.DownloadImageContent(bpack, cacheDir)
+			if err != nil {
+				return Order{}, errors.Wrapf(err, "failed download buildpack image '%s'", bpack)
+			}
+			imageInfo = img
+		}
+
+		imgConf, err := imageInfo.ConfigFile()
 		if err != nil {
-			return Order{}, fmt.Errorf("failed to read '%s' image config, error: %s", bpack, err.Error())
+			return Order{}, errors.Wrapf(err, "failed to read '%s' image config", bpack)
 		}
 
 		err = json.Unmarshal([]byte(imgConf.Config.Labels["io.buildpacks.buildpackage.metadata"]), &bpackMeta)
 		if err != nil {
-			return Order{}, fmt.Errorf("failed unmarshal '%s' image label, error: %s", bpack, err.Error())
+			return Order{}, errors.Wrapf(err, "failed unmarshal '%s' image label", bpack)
 		}
 		log.Entry().Debugf("Buildpack metadata: '%v'", bpackMeta)
 		orderEntry.Group = append(orderEntry.Group, bpackMeta)
 
-		err = copyBuildPack(filepath.Join(tempDir, "cnb/buildpacks"), path, utils)
+		err = CopyProject(filepath.Join(cacheDir, "cnb/buildpacks"), path, nil, nil, utils)
 		if err != nil {
 			return Order{}, err
 		}
@@ -72,39 +97,4 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 	order.Order = []OrderEntry{orderEntry}
 
 	return order, nil
-}
-
-func copyBuildPack(src, dst string, utils BuildUtils) error {
-	buildpacks, err := utils.Glob(filepath.Join(src, "*"))
-	if err != nil {
-		return fmt.Errorf("failed to read directory: %s, error: %s", src, err.Error())
-	}
-
-	for _, buildpack := range buildpacks {
-		versions, err := utils.Glob(filepath.Join(buildpack, "*"))
-		if err != nil {
-			return fmt.Errorf("failed to read directory: %s, error: %s", buildpack, err.Error())
-		}
-		for _, srcVersionPath := range versions {
-			destVersionPath := filepath.Join(dst, strings.ReplaceAll(srcVersionPath, src, ""))
-
-			exists, err := utils.FileExists(destVersionPath)
-			if err != nil {
-				return fmt.Errorf("failed to check if directory exists: '%s', error: '%s'", destVersionPath, err.Error())
-			}
-			if exists {
-				utils.RemoveAll(destVersionPath)
-			}
-
-			if err := utils.MkdirAll(filepath.Dir(destVersionPath), 0755); err != nil {
-				return fmt.Errorf("failed to create directory: '%s', error: '%s'", filepath.Dir(destVersionPath), err.Error())
-			}
-
-			err = utils.FileRename(srcVersionPath, destVersionPath)
-			if err != nil {
-				return fmt.Errorf("failed to move '%s' to '%s', error: %s", srcVersionPath, destVersionPath, err.Error())
-			}
-		}
-	}
-	return nil
 }

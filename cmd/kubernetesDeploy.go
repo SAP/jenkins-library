@@ -23,7 +23,8 @@ import (
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	utils := kubernetes.NewDeployUtilsBundle()
+	customTLSCertificateLinks := []string{}
+	utils := kubernetes.NewDeployUtilsBundle(customTLSCertificateLinks)
 
 	// error situations stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runKubernetesDeploy(config, telemetryData, utils, log.Writer())
