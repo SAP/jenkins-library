@@ -85,6 +85,7 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	// Example: step checkmarxExecuteScan.go
 
 	//Prepare Credentials
+	log.Entry().Infoln("Start reading AWS Credentials...")
 	var obj AWSCredentials
 
 	err := json.Unmarshal([]byte(configOptions.JSONCredentialsAWS), &obj)
@@ -95,6 +96,7 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	}
 
 	//Set environment variables which are needed to initialize S3 Client
+	log.Entry().Infoln("Successfully read AWS Credentials. Setting up environment variables...")
 	AWS_REGION_set := setenvIfEmpty("AWS_REGION", obj.AWS_REGION)
 	AWS_ACCESS_KEY_ID_set := setenvIfEmpty("AWS_ACCESS_KEY_ID", obj.AWS_ACCESS_KEY_ID)
 	AWS_SECRET_ACCESS_KEY_set := setenvIfEmpty("AWS_SECRET_ACCESS_KEY", obj.AWS_SECRET_ACCESS_KEY)
@@ -104,6 +106,7 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	defer removeEnvIfPreviouslySet("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY_set)
 
 	//Initialize S3 Client
+	log.Entry().Infoln("Loading Configuration for S3 Client...")
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Entry().
@@ -165,7 +168,7 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Upload failed: %v", err)
+		return errors.Wrapf(err, "Upload failed: ")
 	}
 	log.Entry().Infoln("Upload was successfully finished!")
 	return err
