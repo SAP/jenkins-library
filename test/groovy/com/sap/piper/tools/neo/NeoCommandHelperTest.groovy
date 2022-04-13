@@ -28,7 +28,7 @@ class NeoCommandHelperTest extends BasePiperTest {
             runtime       : 'neо-javaee6-wp',
             runtimeVersion: '2',
             size          : 'lite',
-            propertiesFile: 'file.properties'
+            propertiesFile: 'file.properties',
             azDistribution: '2'
         ]
 
