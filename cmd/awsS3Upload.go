@@ -129,8 +129,15 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 		return errors.New("File Path Parameter is empty. Please specify a file or directory to Upload to AWS!")
 	}
 
+	log.Entry().Infof("Start walk through FilePath '%v'", configOptions.FilePath)
+
 	//iterate through directories
 	err := filepath.Walk(configOptions.FilePath, func(currentFilePath string, f os.FileInfo, err error) error {
+		// Handle Failure to prevent panic (e.g. in case of an invalid filepath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Prevent panic by handling failure accessing a path '%v'", currentFilePath)
+			return err
+		}
 		//skip directories, only upload files
 		if !f.IsDir() {
 			log.Entry().Infof("Current target path is: '%v'", currentFilePath)
@@ -164,11 +171,11 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 			log.Entry().Infof("Upload of file '%v' was successful!", currentFilePath)
 			return e
 		}
-		return err
+		return nil
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Upload failed: ")
+		return errors.Wrapf(err, "Upload failed")
 	}
 	log.Entry().Infoln("Upload was successfully finished!")
 	return err

@@ -60,6 +60,20 @@ func TestRunAwsS3Upload(t *testing.T) {
 		assert.EqualError(t, err, "File Path Parameter is empty. Please specify a file or directory to Upload to AWS!")
 	})
 
+	t.Run("error Path", func(t *testing.T) {
+		t.Parallel()
+		// initialization
+		config := awsS3UploadOptions{
+			FilePath: "nonExistingFilepath",
+		}
+		client := mockS3Client
+		utils := newAwsS3UploadTestsUtils()
+		// test
+		err := runAwsS3Upload(&config, nil, utils, client(t), "fooBucket")
+		// assert
+		assert.EqualError(t, err, "Upload failed: CreateFile nonExistingFilepath: The system cannot find the file specified.")
+	})
+
 	t.Run("error bucket", func(t *testing.T) {
 		t.Parallel()
 		// initialization
@@ -71,7 +85,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 		// test
 		err := runAwsS3Upload(&config, nil, utils, client(t), "errorBucket")
 		// assert
-		assert.EqualError(t, err, "Upload failed: : expect fooBucket, got errorBucket")
+		assert.EqualError(t, err, "Upload failed: expect fooBucket, got errorBucket")
 	})
 }
 
