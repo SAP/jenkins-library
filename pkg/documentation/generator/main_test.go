@@ -115,12 +115,12 @@ func TestGetStepConditionDetails(t *testing.T) {
 	}{
 		{name: "noCondition", step: config.Step{Conditions: []config.StepCondition{}}, expected: "**active** by default - deactivate explicitly"},
 		{name: "config", step: config.Step{Conditions: []config.StepCondition{{Config: map[string][]interface{}{"configKey1": {"keyVal1", "keyVal2"}}}}}, expected: "<i>config:</i><ul><li>`configKey1`: `keyVal1`</li><li>`configKey1`: `keyVal2`</li></ul>"},
-		{name: "configKey", step: config.Step{Conditions: []config.StepCondition{{ConfigKey: "configKey"}}}, expected: "<i>config key:</i><ul><li>`configKey`</li></ul>"},
-		{name: "filePattern", step: config.Step{Conditions: []config.StepCondition{{FilePattern: "testPattern"}}}, expected: "<i>file pattern:</i><ul><li>`testPattern`</li></ul>"},
-		{name: "filePatternFromConfig", step: config.Step{Conditions: []config.StepCondition{{FilePatternFromConfig: "patternConfigKey"}}}, expected: "<i>file pattern from config:</i><ul><li>`patternConfigKey`</li></ul>"},
+		{name: "configKey", step: config.Step{Conditions: []config.StepCondition{{ConfigKey: "configKey"}}}, expected: "<i>config key:</i>&nbsp;`configKey`<br />"},
+		{name: "filePattern", step: config.Step{Conditions: []config.StepCondition{{FilePattern: "testPattern"}}}, expected: "<i>file pattern:</i>&nbsp;`testPattern`<br />"},
+		{name: "filePatternFromConfig", step: config.Step{Conditions: []config.StepCondition{{FilePatternFromConfig: "patternConfigKey"}}}, expected: "<i>file pattern from config:</i>&nbsp;`patternConfigKey`<br />"},
 		{name: "inactive", step: config.Step{Conditions: []config.StepCondition{{Inactive: true}}}, expected: "**inactive** by default - activate explicitly"},
-		{name: "npmScript", step: config.Step{Conditions: []config.StepCondition{{NpmScript: "testScript"}}}, expected: "<i>npm script:</i><ul><li>`testScript`</li></ul>"},
-		{name: "multiple conditions", step: config.Step{Conditions: []config.StepCondition{{ConfigKey: "configKey"}, {FilePattern: "testPattern"}}}, expected: "<i>config key:</i><ul><li>`configKey`</li></ul><i>file pattern:</i><ul><li>`testPattern`</li></ul>"},
+		{name: "npmScript", step: config.Step{Conditions: []config.StepCondition{{NpmScript: "testScript"}}}, expected: "<i>npm script:</i>&nbsp;`testScript`<br />"},
+		{name: "multiple conditions", step: config.Step{Conditions: []config.StepCondition{{ConfigKey: "configKey"}, {FilePattern: "testPattern"}}}, expected: "<i>config key:</i>&nbsp;`configKey`<br /><i>file pattern:</i>&nbsp;`testPattern`<br />"},
 	}
 
 	for _, test := range tt {

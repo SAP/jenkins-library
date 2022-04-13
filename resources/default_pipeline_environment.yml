@@ -19,7 +19,7 @@ general:
       format: '%b'
     solman:
       docker:
-        image: 'ppiper/cm-client'
+        image: 'ppiper/cm-client:2.0.1.0'
         options: []
         envVars: {}
         pullImage: true
@@ -37,7 +37,7 @@ general:
         envVars: {}
         pullImage: true
       docker:
-        image: 'ppiper/cm-client'
+        image: 'ppiper/cm-client:2.0.1.0'
         options: []
         envVars: {}
         pullImage: true
@@ -548,5 +548,5 @@ steps:
       whitesource: 'whitesourceExecuteScan'
     labelPrefix: pr_
   cnbBuild:
-    stashExcludes:
-      stashBack: '**/*'
+    stashIncludes:
+      stashBack: '**/target/*.exec, **/*.jtl, **/target/**/*.xml'

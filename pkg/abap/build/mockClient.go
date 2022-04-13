@@ -143,6 +143,90 @@ func GetBuildMockClient() MockClient {
 	mc.AddData(buildGetTask11Result)
 	mc.AddData(buildGetTask12Result)
 	mc.AddData(buildGetTask11ResultMedia)
+	mc.AddData(buildGetValues)
+
+	return mc
+}
+
+// GetBuildMockClientToRun2Times : Constructs a Mock Client with example build Requests/Responses, this can run two times
+func GetBuildMockClientToRun2Times() MockClient {
+	mc := NewMockClient()
+
+	mc.AddData(buildHead)
+	mc.AddData(buildHead)
+
+	mc.AddData(buildPost)
+	mc.AddData(buildPost)
+
+	mc.AddData(buildGet1)
+	mc.AddData(buildGet2)
+	mc.AddData(buildGet1)
+	mc.AddData(buildGet2)
+
+	mc.AddData(buildGetTasks)
+	mc.AddData(buildGetTasks)
+
+	mc.AddData(buildGetTask0Logs)
+	mc.AddData(buildGetTask1Logs)
+	mc.AddData(buildGetTask2Logs)
+	mc.AddData(buildGetTask3Logs)
+	mc.AddData(buildGetTask4Logs)
+	mc.AddData(buildGetTask5Logs)
+	mc.AddData(buildGetTask6Logs)
+	mc.AddData(buildGetTask7Logs)
+	mc.AddData(buildGetTask8Logs)
+	mc.AddData(buildGetTask9Logs)
+	mc.AddData(buildGetTask10Logs)
+	mc.AddData(buildGetTask11Logs)
+	mc.AddData(buildGetTask12Logs)
+
+	mc.AddData(buildGetTask0Logs)
+	mc.AddData(buildGetTask1Logs)
+	mc.AddData(buildGetTask2Logs)
+	mc.AddData(buildGetTask3Logs)
+	mc.AddData(buildGetTask4Logs)
+	mc.AddData(buildGetTask5Logs)
+	mc.AddData(buildGetTask6Logs)
+	mc.AddData(buildGetTask7Logs)
+	mc.AddData(buildGetTask8Logs)
+	mc.AddData(buildGetTask9Logs)
+	mc.AddData(buildGetTask10Logs)
+	mc.AddData(buildGetTask11Logs)
+	mc.AddData(buildGetTask12Logs)
+
+	mc.AddData(buildGetTask0Result)
+	mc.AddData(buildGetTask1Result)
+	mc.AddData(buildGetTask2Result)
+	mc.AddData(buildGetTask3Result)
+	mc.AddData(buildGetTask4Result)
+	mc.AddData(buildGetTask5Result)
+	mc.AddData(buildGetTask6Result)
+	mc.AddData(buildGetTask7Result)
+	mc.AddData(buildGetTask8Result)
+	mc.AddData(buildGetTask9Result)
+	mc.AddData(buildGetTask10Result)
+	mc.AddData(buildGetTask11Result)
+	mc.AddData(buildGetTask12Result)
+
+	mc.AddData(buildGetTask0Result)
+	mc.AddData(buildGetTask1Result)
+	mc.AddData(buildGetTask2Result)
+	mc.AddData(buildGetTask3Result)
+	mc.AddData(buildGetTask4Result)
+	mc.AddData(buildGetTask5Result)
+	mc.AddData(buildGetTask6Result)
+	mc.AddData(buildGetTask7Result)
+	mc.AddData(buildGetTask8Result)
+	mc.AddData(buildGetTask9Result)
+	mc.AddData(buildGetTask10Result)
+	mc.AddData(buildGetTask11Result)
+	mc.AddData(buildGetTask12Result)
+
+	mc.AddData(buildGetTask11ResultMedia)
+	mc.AddData(buildGetTask11ResultMedia)
+
+	mc.AddData(buildGetValues)
+	mc.AddData(buildGetValues)
 
 	return mc
 }
@@ -233,6 +317,39 @@ var buildGet2 = MockData{
 		},
 		"build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
 		"run_state" : "FINISHED",
+		"result_state" : "SUCCESSFUL",
+		"phase" : "BUILD_AOI",
+		"entitytype" : "C",
+		"startedby" : "CC0000000001",
+		"started_at" : "\/Date(1614108520862+0000)\/",
+		"finished_at" : "\/Date(1614108535350+0000)\/",
+		"tasks" : {
+			"__deferred" : {
+				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks"
+			}
+		},
+		"values" : {
+			"__deferred" : {
+				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/values"
+			}
+		}
+	}
+}`,
+	StatusCode: 200,
+}
+
+var buildGetRunStateFailed = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')`,
+	Body: `{
+	"d" : {
+		"__metadata" : {
+			"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
+			"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
+			"type" : "BUILD.CORE_SRV.xBUILDxVIEW_BUILDSType"
+		},
+		"build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+		"run_state" : "FAILED",
 		"result_state" : "SUCCESSFUL",
 		"phase" : "BUILD_AOI",
 		"entitytype" : "C",
@@ -1510,6 +1627,43 @@ var buildGetTask11ResultMedia = MockData{
 	Method:     `GET`,
 	Url:        `/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=11,name='SAR_XML')/$value`,
 	Body:       ``,
+	StatusCode: 200,
+}
+
+var buildGetValues = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/values`,
+	Body: `{
+		"d": {
+			"results": [
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "PHASE",
+					"value": "AUNIT"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "PACKAGES",
+					"value": "/BUILD/AUNIT_DUMMY_TESTS"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "MyId1",
+					"value": "AunitValue1"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "MyId2",
+					"value": "AunitValue2"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "BUILD_FRAMEWORK_MODE",
+					"value": "P"
+				}
+			]
+		}
+	}`,
 	StatusCode: 200,
 }
 

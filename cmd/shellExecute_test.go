@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -14,6 +15,11 @@ type shellExecuteMockUtils struct {
 	config *shellExecuteOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*mock.HttpClientMock
+	downloadError error
+	filename      string
+	header        http.Header
+	url           string
 }
 
 type shellExecuteFileMock struct {
@@ -33,12 +39,22 @@ func (f *shellExecuteFileMock) FileExists(path string) (bool, error) {
 	return strings.EqualFold(path, "path/to/script/script.sh"), nil
 }
 
-func newShellExecuteTestsUtils() shellExecuteMockUtils {
+func (f *shellExecuteMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if f.downloadError != nil {
+		return f.downloadError
+	}
+	f.url = url
+	f.filename = filename
+	f.header = header
+	return nil
+}
+
+func newShellExecuteTestsUtils() *shellExecuteMockUtils {
 	utils := shellExecuteMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utils
+	return &utils
 }
 
 func (v *shellExecuteMockUtils) GetConfig() *shellExecuteOptions {
@@ -52,33 +68,36 @@ func TestRunShellExecute(t *testing.T) {
 			Sources: []string{"path/to/script.sh"},
 		}
 		u := newShellExecuteTestsUtils()
-		fm := &shellExecuteFileMock{}
 
-		err := runShellExecute(c, nil, u, fm)
-		assert.EqualError(t, err, "the specified script could not be found")
+		err := runShellExecute(c, nil, u)
+		assert.EqualError(t, err, "the script 'path/to/script.sh' could not be found")
 	})
 
 	t.Run("success case - script is present", func(t *testing.T) {
 		o := &shellExecuteOptions{}
 		u := newShellExecuteTestsUtils()
-		m := &shellExecuteFileMock{
-			fileReadContent: map[string]string{"path/to/script/script.sh": ``},
-		}
 
-		err := runShellExecute(o, nil, u, m)
+		err := runShellExecute(o, nil, u)
 		assert.NoError(t, err)
 	})
 
 	t.Run("success case - script run successfully", func(t *testing.T) {
 		o := &shellExecuteOptions{}
 		u := newShellExecuteTestsUtils()
-		m := &shellExecuteFileMock{
-			fileReadContent: map[string]string{"path/to/script/script.sh": `#!/usr/bin/env sh
-print 'test'`},
-		}
 
-		err := runShellExecute(o, nil, u, m)
+		err := runShellExecute(o, nil, u)
 		assert.NoError(t, err)
 	})
 
+	t.Run("success case - download script header", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:     []string{"https://myScriptLocation/myScript.sh"},
+			GithubToken: "dummy@12345",
+		}
+		u := newShellExecuteTestsUtils()
+
+		runShellExecute(o, nil, u)
+
+		assert.Equal(t, http.Header{"Accept": []string{"application/vnd.github.v3.raw"}, "Authorization": []string{"Token dummy@12345"}}, u.header)
+	})
 }

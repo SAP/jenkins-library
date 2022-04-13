@@ -295,9 +295,97 @@ spec:
           - STEPS
       - name: customEnvironmentVariables
         description:
-          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan."
+          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
+          Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0)
+          This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using detect6, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value
+          defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus)"
         type: "[]string"
         scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
+      - name: createResultIssue
+        type: bool
+        description: Activate creation of a result issue in GitHub.
+        longDescription: |
+          Whether the step creates a GitHub issue containing the scan results in the originating repo.
+          Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: githubApiUrl
+        description: "Set the GitHub API URL."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: "https://api.github.com"
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: "Set the GitHub organization."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: "Set the GitHub repository."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
+        mandatory: false
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -322,6 +410,23 @@ spec:
                 type: int
               - name: policy_violations
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/*BlackDuck_RiskReport.pdf"
+            type: blackduck-ip
+          - filePattern: "blackduck-ip.json"
+            type: blackduck-ip
+          - filePattern: "**/toolrun_detectExecute_*.json"
+            type: blackduck-ip
+          - filePattern: "**/piper_detect_vulnerability_report.html"
+            type: blackduck-ip
+          - filePattern: "**/detectExecuteScan_oss_*.json"
+            type: blackduck-ip
+          - filePattern: "**/piper_detect_policy_violation_report.html"
+            type: blackduck-ip
+          - filePattern: "**/detectExecuteScan_policy_*.json"
+            type: blackduck-ip
   containers:
     - name: openjdk
       image: openjdk:11

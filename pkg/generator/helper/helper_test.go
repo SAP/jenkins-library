@@ -25,6 +25,13 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
 spec:
   outputs:
     resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "test-report_*.json"
+            subFolder: "sonarExecuteScan"
+          - filePattern: "report1"
+            type: general
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
@@ -69,6 +76,7 @@ spec:
         - value1
         - value2
         - value3
+        deprecationMessage: use param3 instead
       - name: param2
         type: string
         description: param2 description
@@ -289,7 +297,7 @@ func TestGolangNameTitle(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		assert.Equal(t, v.expected, golangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
+		assert.Equal(t, v.expected, GolangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
 	}
 }
 

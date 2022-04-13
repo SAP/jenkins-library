@@ -16,9 +16,8 @@ import (
 )
 
 type shellExecuteOptions struct {
-	VaultServerURL string   `json:"vaultServerUrl,omitempty"`
-	VaultNamespace string   `json:"vaultNamespace,omitempty"`
-	Sources        []string `json:"sources,omitempty"`
+	Sources     []string `json:"sources,omitempty"`
+	GithubToken string   `json:"githubToken,omitempty"`
 }
 
 // ShellExecuteCommand Step executes defined script
@@ -35,7 +34,7 @@ func ShellExecuteCommand() *cobra.Command {
 	var createShellExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Step executes defined script",
-		Long:  `Step executes defined script with Vault credentials, or created them on this step`,
+		Long:  `Step executes defined script provided in the 'sources' parameter`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -52,6 +51,7 @@ func ShellExecuteCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.GithubToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -110,9 +110,8 @@ func ShellExecuteCommand() *cobra.Command {
 }
 
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
-	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The vault namespace that should be used (optional)")
-	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts names for execution or links to scripts")
+	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts paths that must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the 'githubToken' param. Make sure the script has the necessary execute permissions.")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 
 }
 
@@ -126,25 +125,10 @@ func shellExecuteMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins credentials ID containing the github token.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
-					{
-						Name:        "vaultServerUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultServerUrl"),
-					},
-					{
-						Name:        "vaultNamespace",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultNamespace"),
-					},
 					{
 						Name:        "sources",
 						ResourceRef: []config.ResourceReference{},
@@ -154,7 +138,30 @@ func shellExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name: "githubToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "access_token"}},
+						Default:   os.Getenv("PIPER_githubToken"),
+					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "shell", Image: "node:lts-stretch", WorkingDir: "/home/node"},
 			},
 		},
 	}

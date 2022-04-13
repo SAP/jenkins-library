@@ -17,6 +17,7 @@ import (
 
 type abapEnvironmentRunATCCheckOptions struct {
 	AtcConfig          string `json:"atcConfig,omitempty"`
+	Repositories       string `json:"repositories,omitempty"`
 	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
 	CfOrg              string `json:"cfOrg,omitempty"`
 	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
@@ -128,6 +129,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 
 func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunATCCheckOptions) {
 	cmd.Flags().StringVar(&stepConfig.AtcConfig, "atcConfig", os.Getenv("PIPER_atcConfig"), "Path to a YAML configuration file for Packages and/or Software Components to be checked during ATC run")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
@@ -139,7 +141,6 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 
-	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
@@ -163,9 +164,18 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_atcConfig"),
+					},
+					{
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repositories"),
 					},
 					{
 						Name:        "cfApiEndpoint",
@@ -263,7 +273,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 					{
 						Name:        "generateHTML",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

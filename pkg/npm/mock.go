@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package npm
@@ -122,6 +123,6 @@ func (n *NpmExecutorMock) CreateBOM(packageJSONFiles []string) error {
 }
 
 // CreateBOM mock implementation
-func (n *NpmExecutorMock) PublishAllPackages(packageJSONFiles []string, registry, username, password string) error {
+func (n *NpmExecutorMock) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error {
 	return nil
 }

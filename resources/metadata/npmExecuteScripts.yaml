@@ -5,6 +5,21 @@ metadata:
   description: Execute npm run scripts on all npm packages in a project
   longDescription: |
     Execute npm run scripts in all package json files, if they implement the scripts.
+
+    ### build with depedencies from a private repository
+    if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
+    repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
+
+    ```
+    @privateScope:registry=https://private.repository.com/
+    //private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER}
+    //private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64}
+    //private.repository.com/:always-auth=true
+    registry=https://registry.npmjs.org
+    ```
+    `PIPER_VAULTCREDENTIAL_USER` and `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` (Base64 encoded password) are the username and password for the private repository
+    and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
+    [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
 spec:
   inputs:
     resources:
@@ -91,6 +106,8 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/npmRepositoryURL
+          - name: commonPipelineEnvironment
             param: custom/repositoryUrl
       - name: repositoryPassword
         type: string
@@ -102,6 +119,8 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/npmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: repositoryUsername
@@ -115,6 +134,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/npmRepositoryUsername
+          - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: buildSettingsInfo
         type: string
@@ -126,12 +147,31 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: packBeforePublish
+        type: bool
+        default: false
+        description: used for executing npm pack first, followed by npm publish. This two step maybe required when you are building a scoped packages and have npm dependencies from the same scope
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom.xml"
+            type: sbom
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
+          - filePattern: "**/e2e/*.json"
+            type: cucumber
   containers:
     - name: node
       image: node:lts-stretch

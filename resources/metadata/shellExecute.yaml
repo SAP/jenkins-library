@@ -1,30 +1,42 @@
 metadata:
   name: shellExecute
   description: Step executes defined script
-  longDescription: Step executes defined script with Vault credentials, or created them on this step
+  longDescription: Step executes defined script provided in the 'sources' parameter
 spec:
   inputs:
+    secrets:
+      - name: githubTokenCredentialsId
+        description: Jenkins credentials ID containing the github token.
+        type: jenkins
     params:
-      - name: vaultServerUrl
-        type: string
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        description: The URL for the Vault server to use
-      - name: vaultNamespace
-        type: string
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        description: The vault namespace that should be used (optional)
       - name: sources
         type: "[]string"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        description: Scripts names for execution or links to scripts
+        description: Scripts paths that must be present in the current workspace or https links to scripts.
+            Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script}
+            Authentication for the download is only supported via the 'githubToken' param. Make sure the script has the necessary execute permissions.
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
+  containers:
+    - name: shell
+      image: node:lts-stretch
+      workingDir: /home/node

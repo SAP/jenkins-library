@@ -46,7 +46,7 @@ func NewClient(config *Config, token string) (Client, error) {
 	}
 
 	client.SetToken(token)
-	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, config.Namespace)
+	log.Entry().Debugf("Login to Vault %s in namespace %s successfull", config.Address, config.Namespace)
 	return Client{client.Logical(), config}, nil
 }
 
@@ -69,7 +69,7 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 		client.SetNamespace(config.Namespace)
 	}
 
-	log.Entry().Debug("Using approle login")
+	log.Entry().Debug("Using AppRole login")
 	result, err := client.Logical().Write(path.Join(config.AppRoleMountPoint, "/login"), map[string]interface{}{
 		"role_id":   roleID,
 		"secret_id": secretID,

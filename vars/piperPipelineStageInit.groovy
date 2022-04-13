@@ -65,7 +65,13 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'verbose'
 ]
-@Field STAGE_STEP_KEYS = []
+@Field STAGE_STEP_KEYS = [
+    /**
+     * Sets the build version.
+     * @possibleValues `true`, `false`
+     */
+    'artifactPrepareVersion'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -171,12 +177,15 @@ void call(Map parameters = [:]) {
             checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
-        String buildTool = checkBuildTool(config)
+        String buildTool = config.buildTool
+        String buildToolDesc = inferBuildToolDesc(script, config.buildTool)
+
+        checkBuildTool(buildTool, buildToolDesc)
 
         script.commonPipelineEnvironment.projectName = config.projectName
 
         if (!script.commonPipelineEnvironment.projectName && config.inferProjectName) {
-            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool)
+            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool, buildToolDesc)
         }
 
         if (Boolean.valueOf(env.ON_K8S) && config.containerMapResource) {
@@ -217,9 +226,17 @@ void call(Map parameters = [:]) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
+
+            config.artifactPrepareVersion = true
+        }
+
+        if (config.artifactPrepareVersion) {
             Map prepareVersionParams = [script: script]
             if (config.inferBuildTool) {
                 prepareVersionParams.buildTool = buildTool
+            }
+            if(buildToolDesc) {
+                prepareVersionParams.filePath = buildToolDesc
             }
             if (env.ON_K8S && !config.runArtifactVersioningOnPod) {
                 // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
@@ -235,41 +252,50 @@ void call(Map parameters = [:]) {
     }
 }
 
-private String inferProjectName(Script script, String buildTool) {
+// Infer build tool descriptor (maven, npm, mta)
+private static String inferBuildToolDesc(script, buildTool) {
+
+    String buildToolDesc = null
+
     switch (buildTool) {
         case 'maven':
-            def pom = script.readMavenPom file: 'pom.xml'
+            Map configBuild = script.commonPipelineEnvironment.getStepConfiguration('mavenBuild', 'Build')
+            buildToolDesc = configBuild.pomPath? configBuild.pomPath : 'pom.xml'
+            break
+        case 'npm': // no parameter for the descriptor path
+            buildToolDesc = 'package.json'
+            break
+        case 'mta':
+            Map configBuild = script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', 'Build')
+            buildToolDesc = configBuild.source? configBuild.source + '/mta.yaml' : 'mta.yaml'
+            break
+        default:
+            break;
+    }
+
+    return buildToolDesc
+}
+
+private String inferProjectName(Script script, String buildTool, String buildToolDesc) {
+    switch (buildTool) {
+        case 'maven':
+            def pom = script.readMavenPom file: buildToolDesc
             return "${pom.groupId}-${pom.artifactId}"
         case 'npm':
-            Map packageJson = script.readJSON file: 'package.json'
+            Map packageJson = script.readJSON file: buildToolDesc
             return packageJson.name
         case 'mta':
-            Map mta = script.readYaml file: 'mta.yaml'
+            Map mta = script.readYaml file: buildToolDesc
             return mta.ID
     }
 
     script.error "Cannot infer projectName. Project buildTool was none of the expected ones 'mta', 'maven', or 'npm'."
 }
 
-private String checkBuildTool(config) {
-    def buildDescriptorPattern = ''
-    String buildTool = config.buildTool
-
-    switch (buildTool) {
-        case 'maven':
-            buildDescriptorPattern = 'pom.xml'
-            break
-        case 'npm':
-            buildDescriptorPattern = 'package.json'
-            break
-        case 'mta':
-            buildDescriptorPattern = 'mta.yaml'
-            break
-    }
+private checkBuildTool(String buildTool, String buildDescriptorPattern) {
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
+        error "[${STEP_NAME}] buildTool configuration '${buildTool}' does not fit to your project (buildDescriptorPattern: '${buildDescriptorPattern}'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
-    return buildTool
 }
 
 private void initStashConfiguration (script, stashSettings, customStashSettings, verbose) {

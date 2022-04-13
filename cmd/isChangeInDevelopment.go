@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"strings"
 )
 
 type isChangeInDevelopmentUtils interface {
@@ -92,7 +93,6 @@ func perform(config *isChangeInDevelopmentOptions, utils isChangeInDevelopmentUt
 		"--endpoint", config.Endpoint,
 		"--user", config.Username,
 		"--password", config.Password,
-		"--backend-type", "SOLMAN",
 		"is-change-in-development",
 		"--change-id", config.ChangeDocumentID,
 		"--return-code")

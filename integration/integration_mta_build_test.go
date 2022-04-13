@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // can be execute with go test -tags=integration ./integration/...
 
 package main
@@ -59,7 +61,7 @@ func TestNPMProject(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t, "INFO the MTA archive generated at: test-mta-js.mtar")
+	container.assertHasOutput(t, "INFO the MTA archive generated at: /project/test-mta-js.mtar")
 }
 
 func TestNPMProjectInstallsDevDependencies(t *testing.T) {

@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"net/url"
+	"fmt"
+	"net/http"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -13,24 +14,25 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/vault"
 )
 
 type shellExecuteUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
+	piperutils.FileUtils
+	piperhttp.Downloader
 }
 
 type shellExecuteUtilsBundle struct {
-	*vault.Client
 	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
 func newShellExecuteUtils() shellExecuteUtils {
 	utils := shellExecuteUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -39,83 +41,42 @@ func newShellExecuteUtils() shellExecuteUtils {
 
 func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomData) {
 	utils := newShellExecuteUtils()
-	fileUtils := &piperutils.Files{}
 
-	err := runShellExecute(&config, telemetryData, utils, fileUtils)
+	err := runShellExecute(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils, fileUtils piperutils.FileUtils) error {
-	// create vault client
-	// try to retrieve existing credentials
-	// if it's impossible - will add it
-	vaultConfig := &vault.Config{
-		Config: &api.Config{
-			Address: config.VaultServerURL,
-		},
-		Namespace: config.VaultNamespace,
-	}
-	_, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
-	if err != nil {
-		log.Entry().Info("could not create vault client:", err)
-	}
-
-	// piper http client for downloading scripts
-	httpClient := piperhttp.Client{}
-
-	// scripts for running locally
-	var e []string
-
+func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
 	// check input data
 	// example for script: sources: ["./script.sh"]
 	for _, source := range config.Sources {
-		// check it's a local script or remote
-		_, err := url.ParseRequestURI(source)
-		if err != nil {
-			// err means that it's not a remote script
-			// check if the script is physically present (for local scripts)
-			exists, err := fileUtils.FileExists(source)
+
+		if strings.Contains(source, "https") {
+			scriptLocation, err := downloadScript(config, utils, source)
 			if err != nil {
-				log.Entry().WithError(err).Error("failed to check for defined script")
-				return errors.Wrap(err, "failed to check for defined script")
+				return errors.Wrapf(err, "script download error")
 			}
-			if !exists {
-				log.Entry().WithError(err).Error("the specified script could not be found")
-				return errors.New("the specified script could not be found")
-			}
-			e = append(e, source)
-		} else {
-			// this block means that it's a remote script
-			// so, need to download it before
-			// get script name at first
-			path := strings.Split(source, "/")
-			err = httpClient.DownloadFile(source, path[len(path)-1], nil, nil)
-			if err != nil {
-				log.Entry().WithError(err).Errorf("the specified script could not be downloaded")
-			}
-			// make script executable
-			exec.Command("/bin/sh", "chmod +x "+path[len(path)-1])
-
-			e = append(e, path[len(path)-1])
-
+			source = scriptLocation
 		}
-	}
-
-	// if all ok - try to run them one by one
-	for _, script := range e {
-		log.Entry().Info("starting running script:", script)
-		err = utils.RunExecutable(script)
+		// check if the script is physically present
+		exists, err := utils.FileExists(source)
 		if err != nil {
-			log.Entry().Errorln("starting running script:", script)
+			log.Entry().WithError(err).Error("failed to check for defined script")
+			return fmt.Errorf("failed to check for defined script: %w", err)
 		}
+		if !exists {
+			log.Entry().WithError(err).Errorf("the script '%v' could not be found: %v", source, err)
+			return fmt.Errorf("the script '%v' could not be found", source)
+		}
+		log.Entry().Info("starting running script:", source)
 
-		// if it's an exit error, then check the exit code
-		// according to the requirements
-		// 0 - success
-		// 1 - fails the build (or > 2)
-		// 2 - build unstable - unsupported now
+		err = utils.RunExecutable(source)
+		if err != nil {
+			log.Entry().Errorln("starting running script:", source)
+		}
+		// handle exit code
 		if ee, ok := err.(*exec.ExitError); ok {
 			switch ee.ExitCode() {
 			case 0:
@@ -133,4 +94,26 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	}
 
 	return nil
+}
+
+func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
+	header := http.Header{}
+	if len(config.GithubToken) > 0 {
+		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
+		header.Set("Accept", "application/vnd.github.v3.raw")
+	}
+
+	log.Entry().Infof("downloading script : %v", url)
+	fileNameParts := strings.Split(url, "/")
+	fileName := fileNameParts[len(fileNameParts)-1]
+	err := utils.DownloadFile(url, filepath.Join(".pipeline", fileName), header, []*http.Cookie{})
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to download script from %v", url)
+	}
+	log.Entry().Infof("downloaded script %v successfully", url)
+	err = fileUtils.Chmod(filepath.Join(".pipeline", fileName), 0555)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to change script permission for %v", filepath.Join(".pipeline", fileName))
+	}
+	return filepath.Join(".pipeline", fileName), nil
 }

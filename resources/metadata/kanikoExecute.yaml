@@ -1,7 +1,72 @@
 metadata:
   name: kanikoExecute
   description: Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
-  longDescription: Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
+  longDescription: |
+    Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
+
+    ### Building multiple container images
+
+    The step allows you to build multiple container images with one run.
+    This is suitable in case you need to create multiple images for one microservice, e.g. for testing.
+
+    All images will get the same "root" name and the same versioning.<br />
+    **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
+    or implement a custom logic and for example execute this `kanikoExecute` step multiple times in your custom pipeline.
+
+    You can activate multiple builds using the parameter [containerMultiImageBuild](#containermultiimagebuild)
+
+    Behavior can be adapted using:
+
+    * [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes
+    * [containerMultiImageBuildTrimDir](#containermultiimagebuildtrimdir) for removing parent directory part from image name
+
+    Examples:
+
+    #### Multiple containers in sub directories
+
+    Configuration as follows:
+
+    ```
+    general:
+      containerImageName: myImage
+    steps:
+      kanikoExecute:
+        containerMultiImageBuild: true
+    ```
+
+    Following Dockerfiles are available in the repository:
+
+    * sub1/Dockerfile
+    * sub2/Dockerfile
+
+    Following final image names will be built:
+
+    * `myImage-sub1`
+    * `myImage-sub2`
+
+    #### Multiple containers in sub directories while trimming a directory part
+
+    Configuration as follows:
+
+    ```
+    general:
+      containerImageName: myImage
+    steps:
+      kanikoExecute:
+        containerMultiImageBuild: true
+        containerMultiImageBuildTrimDir: .ci
+    ```
+
+    Following Dockerfiles are available in the repository:
+
+    * .ci/sub1/Dockerfile
+    * .ci/sub2/Dockerfile
+
+    Following final image names will be built:
+
+    * `myImage-sub1`
+    * `myImage-sub2`
+
 spec:
   inputs:
     secrets:
@@ -18,6 +83,20 @@ spec:
           - STEPS
         default:
           - --skip-tls-verify-pull
+          # fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
+          # as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536
+          - --ignore-path=/workspace
+          - --ignore-path=/busybox
+      - name: buildSettingsInfo
+        type: string
+        description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
       - name: containerBuildOptions
         type: string
         description: Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.
@@ -58,6 +137,29 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: containerMultiImageBuild
+        type: bool
+        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildExcludes
+        type: '[]string'
+        description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildTrimDir
+        type: 'string'
+        description: Defines a trailing directory part which should not be considered in the final image name.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: containerPreparationCommand
         type: string
         description: Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.
@@ -112,6 +214,22 @@ spec:
           - STAGES
           - STEPS
         default: Dockerfile
+      - name: targetArchitectures
+        type: "[]string"
+        description: Defines the target architectures for which the build should run using OS and architecture separated by a comma. (EXPERIMENTAL)
+        default: []
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: readImageDigest
+        type: bool
+        default: false
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -119,6 +237,13 @@ spec:
         params:
           - name: container/registryUrl
           - name: container/imageNameTag
+          - name: container/imageDigest
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
+            type: "[]string"
           - name: custom/buildSettingsInfo
   containers:
     - image: gcr.io/kaniko-project/executor:debug
@@ -129,4 +254,7 @@ spec:
         - name: -u
           value: "0"
         - name: --entrypoint
-          value: ''
+          value: ""
+      env:
+        - name: container
+          value: docker

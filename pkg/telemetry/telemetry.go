@@ -2,8 +2,10 @@ package telemetry
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"strconv"
 	"time"
 
 	"net/http"
@@ -86,13 +88,13 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobUrl := t.provider.GetJobUrl()
-	return t.toSha1OrNA(jobUrl)
+	jobURL := t.provider.GetJobURL()
+	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildUrl := t.provider.GetBuildUrl()
-	return t.toSha1OrNA(buildUrl)
+	buildURL := t.provider.GetBuildURL()
+	return t.toSha1OrNA(buildURL)
 }
 
 func (t *Telemetry) toSha1OrNA(input string) string {
@@ -118,6 +120,9 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
+	// always log step telemetry data to logfile used for internal use-case
+	t.logStepTelemetryData()
+
 	// skip if telemetry is disabled
 	if t.disabled {
 		return
@@ -128,4 +133,43 @@ func (t *Telemetry) Send() {
 	request.RawQuery = t.data.toPayloadString()
 	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
 	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
+}
+
+func (t *Telemetry) logStepTelemetryData() {
+
+	var fatalError map[string]interface{}
+	if t.data.CustomData.ErrorCode != "0" && log.GetFatalErrorDetail() != nil {
+		// retrieve the error information from the logCollector
+		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)
+		if err != nil {
+			log.Entry().WithError(err).Warn("could not unmarshal fatal error struct")
+		}
+	}
+
+	// Subtracts the duration from now to estimate the step start time
+	i, err := strconv.ParseInt(t.data.CustomData.Duration, 10, 64)
+	duration := time.Millisecond * time.Duration(i)
+	starTime := time.Now().UTC().Add(-duration)
+
+	stepTelemetryData := StepTelemetryData{
+		StepStartTime:   starTime.String(),
+		PipelineURLHash: t.data.PipelineURLHash,
+		BuildURLHash:    t.data.BuildURLHash,
+		StageName:       t.data.StageName,
+		StepName:        t.data.BaseData.StepName,
+		ErrorCode:       t.data.CustomData.ErrorCode,
+		StepDuration:    t.data.CustomData.Duration,
+		ErrorCategory:   t.data.CustomData.ErrorCategory,
+		ErrorDetail:     fatalError,
+		CorrelationID:   t.provider.GetBuildURL(),
+		PiperCommitHash: t.data.CustomData.PiperCommitHash,
+	}
+	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
+	if err != nil {
+		log.Entry().Error("could not marshal step telemetry data")
+		log.Entry().Infof("Step telemetry data: {n/a}")
+	} else {
+		// log step telemetry data, changes here need to change the regex in the internal piper lib
+		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
+	}
 }

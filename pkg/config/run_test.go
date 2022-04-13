@@ -60,7 +60,7 @@ func TestInitRunConfigV1(t *testing.T) {
 		stageConfig := ioutil.NopCloser(strings.NewReader(test.stageConfig))
 		runConfig := RunConfig{StageConfigFile: stageConfig}
 		runConfigV1 := RunConfigV1{RunConfig: runConfig}
-		err := runConfigV1.InitRunConfigV1(&test.config, nil, nil, nil, nil, &filesMock)
+		err := runConfigV1.InitRunConfigV1(&test.config, nil, nil, nil, nil, &filesMock, ".pipeline")
 		if len(test.errorContains) > 0 {
 			assert.Contains(t, fmt.Sprint(err), test.errorContains)
 		} else {
@@ -188,7 +188,7 @@ stages:
 			filter := StepFilters{All: []string{}, General: []string{}, Stages: []string{}, Steps: []string{}, Env: []string{}}
 			projectConfig := Config{}
 			_, err := projectConfig.GetStepConfig(map[string]interface{}{}, "", tt.customConfig,
-				[]io.ReadCloser{}, false, filter, nil, nil, nil, "", "", []Alias{})
+				[]io.ReadCloser{}, false, filter, StepData{}, nil, "", "")
 			assert.NoError(t, err)
 			err = runConfig.InitRunConfig(&projectConfig, nil, nil, nil, nil, initRunConfigGlobMock, nil)
 			if tt.wantErr {

@@ -126,6 +126,11 @@ func (pc *Protecode) SetOptions(options Options) {
 	pc.client.SetOptions(httpOptions)
 }
 
+//SetHttpClient setter function to set the http client
+func (pc *Protecode) SetHttpClient(client piperHttp.Uploader) {
+	pc.client = client
+}
+
 func (pc *Protecode) createURL(path string, pValue string, fParam string) string {
 
 	protecodeURL, err := url.Parse(pc.serverURL)
@@ -144,9 +149,9 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 
 	// Prepare Query Parameters
 	if len(fParam) > 0 {
-		encodedFParam := url.QueryEscape(fParam)
+		// encodedFParam := url.QueryEscape(fParam)
 		params := url.Values{}
-		params.Add("q", fmt.Sprintf("file:%v", encodedFParam))
+		params.Add("q", fmt.Sprintf("file:%v", fParam))
 
 		// Add Query Parameters to the URL
 		protecodeURL.RawQuery = params.Encode() // Escape Query Parameters
@@ -311,16 +316,24 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 }
 
 // UploadScanFile upload the scan file to the protecode server
-func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, version string, productID int, replaceBinary bool) *ResultData {
 	log.Entry().Debugf("[DEBUG] ===> UploadScanFile started.....")
 
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
 
-	if replaceBinary {
-		headers = map[string][]string{"Group": {group}, "Replace": {fmt.Sprintf("%v", productID)}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
+	if (replaceBinary) && (version != "") {
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary && version != empty ")
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}}
+	} else if replaceBinary {
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary")
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}}
+	} else if version != "" {
+		log.Entry().Debugf("[DEBUG] ===> version != empty ")
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}}
 	} else {
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary is false and version == empty")
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
 	}
 
@@ -331,7 +344,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil, "binary")
 	if err != nil {
 		//TODO: bubble up error
-		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
+		pc.logger.WithError(err).Fatalf("Error during upload request %v", uploadURL)
 	} else {
 		pc.logger.Info("Upload successful")
 	}
@@ -358,14 +371,22 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL, version string, productID int, replaceBinary bool) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
 
-	if replaceBinary {
-		headers = map[string][]string{"Group": {group}, "Replace": {fmt.Sprintf("%v", productID)}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	if (replaceBinary) && (version != "") {
+		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary && version != empty ")
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	} else if replaceBinary {
+		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary")
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	} else if version != "" {
+		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> version != empty ")
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 	} else {
+		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary is false and version == empty")
 		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 	}
 

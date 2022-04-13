@@ -343,3 +343,44 @@ var responseGetValues = `{
 		]
 	}
 }`
+
+func GetMockBuildTestDownloadPublish() Build {
+	conn := new(Connector)
+	conn.DownloadClient = &DownloadClientMock{}
+
+	results0 := []Result{
+		{
+			connector: *conn,
+			Name:      dummyResultName,
+		},
+	}
+	results1 := []Result{
+		{
+			connector: *conn,
+			Name:      "File1",
+		},
+		{
+			connector: *conn,
+			Name:      "File2",
+		},
+		{
+			connector: *conn,
+			Name:      "File3",
+		},
+	}
+
+	build := Build{
+		BuildID: "123",
+		Tasks: []task{
+			{
+				TaskID:  0,
+				Results: results0,
+			},
+			{
+				TaskID:  1,
+				Results: results1,
+			},
+		},
+	}
+	return build
+}

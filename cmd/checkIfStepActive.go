@@ -32,7 +32,7 @@ func CheckStepActiveCommand() *cobra.Command {
 	var checkStepActiveCmd = &cobra.Command{
 		Use:   "checkIfStepActive",
 		Short: "Checks if a step is active in a defined stage.",
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRun: func(cmd *cobra.Command, _ []string) {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -54,6 +54,13 @@ func CheckStepActiveCommand() *cobra.Command {
 }
 
 func checkIfStepActive(utils piperutils.FileUtils) error {
+	// make the stageName the leading parameter
+	if len(checkStepActiveOptions.stageName) == 0 && GeneralConfig.StageName != "" {
+		checkStepActiveOptions.stageName = GeneralConfig.StageName
+	}
+	if checkStepActiveOptions.stageName == "" {
+		return errors.New("stage name must not be empty")
+	}
 	var pConfig config.Config
 
 	// load project config and defaults
@@ -75,7 +82,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	if checkStepActiveOptions.v1Active {
 		runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
 		runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
-		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils)
+		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
@@ -140,7 +147,6 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
 	cmd.MarkFlagRequired("step")
-	cmd.MarkFlagRequired("stage")
 }
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {
@@ -163,7 +169,6 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		}
 	}
 	var flags map[string]interface{}
-	stepAliase := []config.Alias{}
 	filter := config.StepFilters{
 		All:     []string{},
 		General: []string{},
@@ -172,8 +177,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		Env:     []string{},
 	}
 
-	_, err = pConfig.GetStepConfig(flags, "", customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filter, nil, nil, nil, "", "",
-		stepAliase)
+	_, err = pConfig.GetStepConfig(flags, "", customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filter, config.StepData{}, nil, "", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "getting step config failed")
 	}

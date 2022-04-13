@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -32,8 +33,11 @@ func TestPullStep(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1"},
 		}
 
+		logResultSuccess := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				logResultSuccess,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -48,7 +52,7 @@ func TestPullStep(t *testing.T) {
 	})
 
 	t.Run("Run Step Failure", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
+		expectedErrorMessage := "Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -167,8 +171,11 @@ repositories:
 			Repositories:      "filename.yaml",
 		}
 
+		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				logResultError,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -179,7 +186,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -225,9 +232,11 @@ repositories:
 			Repositories:      "filename.yaml",
 			IgnoreCommit:      true,
 		}
-
+		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				logResultError,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -238,12 +247,12 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
 	})
 
 	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
+		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -291,7 +300,7 @@ repositories:
 	})
 
 	t.Run("Failure case: pull repos from wrong file config", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Could not unmarshal repositoriesTest.yml"
+		expectedErrorMessage := "Could not unmarshal repositoriesTest.yml"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -349,7 +358,7 @@ func TestTriggerPull(t *testing.T) {
 	t.Run("Test trigger pull: success case", func(t *testing.T) {
 
 		receivedURI := "example.com/Entity"
-		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
+		uriExpected := receivedURI
 		tokenExpected := "myToken"
 
 		client := &abaputils.ClientMock{

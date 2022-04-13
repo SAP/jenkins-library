@@ -23,7 +23,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "SonarCloud"
       - name: serverUrl
         aliases:
           - name: host
@@ -42,7 +41,7 @@ spec:
         secret: true
         resourceRef:
           - type: vaultSecret
-            name: sonarSecretName
+            name: sonarVaultSecretName
             default: sonar
           - name: sonarTokenCredentialsId
             type: secret
@@ -269,6 +268,13 @@ spec:
 
   outputs:
     resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/sonarscan.json"
+            type: sonarqube
+          - filePattern: "**/sonarscan-result.json"
+            type: sonarqube
       - name: influx
         type: influx
         params:
