@@ -153,6 +153,7 @@ func (r *RunConfig) loadConditions() error {
 	return nil
 }
 
+// LoadConditionsV1 loads stage conditions into PipelineConfig
 func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
 	content, err := ioutil.ReadAll(r.StageConfigFile)
