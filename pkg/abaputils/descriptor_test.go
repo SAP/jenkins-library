@@ -26,6 +26,7 @@ func TestAddonDescriptorNew(t *testing.T) {
 		assert.Equal(t, "JEK8S273S", addonDescriptor.Repositories[1].CommitID)
 		assert.Equal(t, "FR", addonDescriptor.Repositories[1].Languages[2])
 		assert.Equal(t, `ISO-DEENFR`, addonDescriptor.Repositories[1].GetAakAasLanguageVector())
+		assert.Equal(t, true, addonDescriptor.Repositories[1].UseClassicCTS)
 	})
 
 	t.Run("getRepositoriesInBuildScope", func(t *testing.T) {
@@ -59,7 +60,8 @@ repositories:
      languages:
         - DE
         - EN
-        - FR`
+        - FR
+     useClassicCTS: true`
 
 func TestReadAddonDescriptor(t *testing.T) {
 	t.Run("Test: success case", func(t *testing.T) {
