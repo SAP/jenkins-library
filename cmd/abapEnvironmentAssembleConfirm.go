@@ -44,6 +44,7 @@ func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOpt
 	connConfig.Password = config.Password
 	connConfig.AddonDescriptor = config.AddonDescriptor
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+	connConfig.CertificateNames = config.CertificateNames
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
