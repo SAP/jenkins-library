@@ -21,7 +21,7 @@ spec:
     params:
       - name: atcConfig
         type: string
-        description: Path to a YAML configuration file for the object set to be checked during ATC run
+        description: Path to a YAML configuration file for the object set to be checked during the ATC run
         scope:
           - PARAMETERS
           - STAGES
