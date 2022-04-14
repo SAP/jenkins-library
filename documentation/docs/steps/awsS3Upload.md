@@ -27,7 +27,9 @@ If the JSON string contains additional information, this is not a problem. These
 
 ## About Files/Directories to Upload
 
-With the step awsS3Upload you can upload single files as well as whole directories into your S3 bucket. File formats do not matter and directory structures are preserved. 
+With the step awsS3Upload you can upload single files as well as whole directories into your S3 bucket. File formats do not matter and directory structures are preserved.
+
+**Note:** File paths must be specified in UNIX format. So the used path separator must be "/".
 
 ## ${docGenParameters}
 
