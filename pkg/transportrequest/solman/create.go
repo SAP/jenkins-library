@@ -83,7 +83,6 @@ func (a *CreateAction) Perform(command Exec) (string, error) {
 			"--endpoint", a.Connection.Endpoint,
 			"--user", a.Connection.User,
 			"--password", a.Connection.Password,
-			"--backend-type", "SOLMAN",
 			"create-transport",
 			"-cID", a.ChangeDocumentID,
 			"-dID", a.DevelopmentSystemID,

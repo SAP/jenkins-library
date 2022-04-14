@@ -79,6 +79,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+          - GENERAL
       - name: username
         type: string
         description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
@@ -126,6 +127,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: certificateNames
+        type: "[]string"
+        description: certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   outputs:
     resources:
       - name: commonPipelineEnvironment

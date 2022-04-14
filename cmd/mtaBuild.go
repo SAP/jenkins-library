@@ -288,7 +288,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
 
-				data, err := os.Open(mtarName)
+				data, err := os.Open(getMtarFilePath(config, mtarName))
 				if err != nil {
 					return errors.Wrap(err, "failed to open mtar archive for upload")
 				}

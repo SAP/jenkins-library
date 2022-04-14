@@ -36,15 +36,63 @@
 # directory in the root of your repository.
 #/docs/ @doctocat
 
-##### Jenkins #####
-/pkg/jenkins/ @CCFenner
 
-##### Sonar #####
-/pkg/sonar/ @CCFenner
-/resources/metadata/sonarExecuteScan.yaml @CCFenner
-/vars/sonarExecuteScan.groovy @CCFenner
-/cmd/sonarExecuteScan.go @CCFenner
-/cmd/sonarExecuteScan_test.go @CCFenner
 
-##### Orchestrator #####
-pkg/orchestrator/ @inf2381
+#####################
+# Default           #
+#####################
+
+*                                               @SAP/jenkins-library-core
+
+
+#####################
+# Steps             #
+#####################
+
+cnbBuild*                                       @SAP/jenkins-library-cnb
+CnbBuild*                                       @SAP/jenkins-library-cnb
+
+sonarExecuteScan*                               @CCFenner
+SonarExecuteScan*                               @CCFenner
+
+abapAddonAssemblyKit*                           @SAP/jenkins-library-abap
+AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
+abapEnvironmentAssemble*                        @SAP/jenkins-library-abap
+AbapEnvironmentAssemble*                        @SAP/jenkins-library-abap
+abapEnvironmentBuild*                           @SAP/jenkins-library-abap
+AbapEnvironmentBuild*                           @SAP/jenkins-library-abap
+
+#####################
+# Integration tests #
+#####################
+
+integration/integration_cnb_test.go             @SAP/jenkins-library-cnb
+integration/testdata/TestCnbIntegration/        @SAP/jenkins-library-cnb
+
+
+####################
+# Go packages      #
+####################
+
+/pkg/cnbutils/                                  @SAP/jenkins-library-cnb
+
+/pkg/sonar/                                     @CCFenner
+
+/pkg/jenkins/                                   @CCFenner
+
+/pkg/orchestrator/                              @inf2381
+
+/pkg/abap/                                      @SAP/jenkins-library-abap
+
+####################
+# Misc             #
+####################
+
+.github/CODEOWNERS                              @phil9909 @SAP/jenkins-library-admin
+
+
+####################
+# Generated        #
+####################
+
+*_generated.go

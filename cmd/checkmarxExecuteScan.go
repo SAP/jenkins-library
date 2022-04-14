@@ -322,6 +322,20 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 
+	// generate sarif report
+	if config.ConvertToSarif {
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := checkmarx.ConvertCxxmlToSarif(xmlReportName)
+		if err != nil {
+			return fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := checkmarx.WriteSarif(sarif)
+		if err != nil {
+			return fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
+
 	// create toolrecord
 	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
 	if err != nil {

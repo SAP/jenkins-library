@@ -69,9 +69,6 @@ func (g *Gradle) initGetArtifact() error {
 		g.execRunner.Stdout(gradlePropsBuffer)
 		var p []string
 		p = append(p, "properties", "--no-daemon", "--console=plain", "-q")
-		if g.path != "" {
-			p = append(p, "-p", g.path)
-		}
 		err := g.execRunner.RunExecutable("gradle", p...)
 		if err != nil {
 			return err
@@ -91,10 +88,10 @@ func (g *Gradle) VersioningScheme() string {
 func (g *Gradle) GetCoordinates() (Coordinates, error) {
 	result := Coordinates{}
 	var err error
-	// result.GroupID, err = g.GetGroupID()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	result.GroupID, err = g.GetGroupID()
+	if err != nil {
+		return result, err
+	}
 	result.ArtifactID, err = g.GetArtifactID()
 	if err != nil {
 		return result, err
@@ -122,15 +119,18 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 // }
 
 // GetGroupID returns the current ID of the Group
-// func (g *Gradle) GetGroupID() (string, error) {
-// 	g.init()
+func (g *Gradle) GetGroupID() (string, error) {
+	err := g.initGetArtifact()
+	if err != nil {
+		return "", err
+	}
 
-// 	groupID, err := g.runner.Evaluate(&g.options, "project.groupId", g.execRunner)
-// 	if err != nil {
-// 		return "", errors.Wrap(err, "Gradle - getting groupId failed")
-// 	}
-// 	return groupID, nil
-// }
+	regex := regexp.MustCompile(`(?m:^group: (.*))`)
+	match := string(regex.Find(g.gradlePropsOut))
+	groupID := strings.Split(match, ` `)[1]
+
+	return groupID, nil
+}
 
 // GetArtifactID returns the current ID of the artifact
 func (g *Gradle) GetArtifactID() (string, error) {

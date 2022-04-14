@@ -56,8 +56,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        mandatory: true
-        description: Defines the chart path for helm.
+        description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
           - PARAMETERS
           - STAGES
@@ -76,10 +75,7 @@ spec:
             param: custom/repositoryUrl
       - name: targetRepositoryName
         type: string
-        description: set the chart repository
-        mandatoryIf:
-          - name: helmCommand
-            value: install
+        description: set the chart repository. The value is required for install/upgrade/uninstall commands.
         scope:
           - GENERAL
           - PARAMETERS
@@ -277,6 +273,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: version
+        type: string
+        description: Defines the artifact version to use from helm package/publish commands.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config

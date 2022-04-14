@@ -111,6 +111,9 @@ func (p *Package) GetPackageAndNamespace() error {
 	}
 	p.Status = jPck.Package.Status
 	p.Namespace = jPck.Package.Namespace
+	if p.Namespace == "//" {
+		p.Namespace = ""
+	}
 	return nil
 }
 
