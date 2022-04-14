@@ -49,3 +49,8 @@ func (utils *HttpClientMock) UploadRequest(method, url, file, fieldName string, 
 func (utils *HttpClientMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	return utils.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
 }
+
+// DownloadFile mock
+func (utils *HttpClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
+}
