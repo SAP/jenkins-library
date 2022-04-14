@@ -15,8 +15,8 @@ To make your AWS credentials available to the jenkins library, store them as Jen
 For Example:
 
 ```JSON
-{ 
-  "access_key_id": "FJNAKNCLAVLRNBLAVVBK",  
+{
+  "access_key_id": "FJNAKNCLAVLRNBLAVVBK",
   "bucket": "vro-artloarj-ltnl-nnbv-ibnh-lbnlsnblltbn",
   "secret_access_key": "123467895896646438486316436kmdlcvreanvjk",
   "region": "eu-central-1"

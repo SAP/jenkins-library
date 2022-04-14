@@ -181,7 +181,7 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Upload failed")
+		return err
 	}
 	log.Entry().Infoln("Upload was successfully finished!")
 	return err

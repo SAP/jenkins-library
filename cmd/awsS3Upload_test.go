@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"testing"
 
@@ -30,6 +31,8 @@ type mockPutObjectAPI func(ctx context.Context, params *s3.PutObjectInput, optFn
 func (m mockPutObjectAPI) PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
 	return m(ctx, params, optFns...)
 }
+
+type PathError = fs.PathError
 
 func TestRunAwsS3Upload(t *testing.T) {
 	t.Parallel()
@@ -71,7 +74,8 @@ func TestRunAwsS3Upload(t *testing.T) {
 		// test
 		err := runAwsS3Upload(&config, nil, utils, client(t), "fooBucket")
 		// assert
-		assert.EqualError(t, err, "Upload failed: CreateFile nonExistingFilepath: The system cannot find the file specified.")
+		_, ok := err.(*fs.PathError)
+		assert.True(t, ok)
 	})
 
 	t.Run("error bucket", func(t *testing.T) {
@@ -85,7 +89,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 		// test
 		err := runAwsS3Upload(&config, nil, utils, client(t), "errorBucket")
 		// assert
-		assert.EqualError(t, err, "Upload failed: expect fooBucket, got errorBucket")
+		assert.EqualError(t, err, "expect fooBucket, got errorBucket")
 	})
 }
 

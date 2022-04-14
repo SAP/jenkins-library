@@ -214,6 +214,7 @@ public class CommonStepsTest extends BasePiperTest{
         'shellExecute', //implementing new golang pattern without fields
         'apiKeyValueMapUpload', //implementing new golang pattern without fields
         'pythonBuild', //implementing new golang pattern without fields
+        'awsS3Upload'
     ]
 
     @Test
