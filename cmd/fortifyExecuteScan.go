@@ -253,12 +253,12 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		log.Entry().Info("Calling conversion to SARIF function.")
 		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath, filterSet)
 		if err != nil {
-			return reports, fmt.Errorf("failed to generate SARIF")
+			log.Entry().WithError(err).Error("failed to generate SARIF")
 		}
 		log.Entry().Debug("Writing sarif file to disk.")
 		paths, err := fortify.WriteSarif(sarif)
 		if err != nil {
-			return reports, fmt.Errorf("failed to write sarif")
+			log.Entry().WithError(err).Error("failed to write sarif")
 		}
 		reports = append(reports, paths...)
 	}
