@@ -49,7 +49,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	installFlags := []string{"-m", "pip", "install", "--upgrade"}
 
-	err := buildExecute(config, utils, installFlags)
+	err := runVirtualEnv(utils)
+	if err != nil {
+		return fmt.Errorf("Creation and activating veirtual environments failed wuth error: %w", err)
+	}
+
+	err = buildExecute(config, utils, installFlags)
 	if err != nil {
 		return fmt.Errorf("Python build failed with error: %w", err)
 	}
@@ -83,6 +88,19 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		if err := publishWithTwine(config, utils, installFlags); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func runVirtualEnv(utils pythonBuildUtils) error {
+	err := utils.RunExecutable("python3", "-m", "venv", "env")
+	if err != nil {
+		return err
+	}
+	err = utils.RunExecutable("source", "env/bin/activate")
+	if err != nil {
+		return err
 	}
 
 	return nil
