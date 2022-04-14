@@ -28,7 +28,8 @@ class NeoCommandHelperTest extends BasePiperTest {
             runtime       : 'neо-javaee6-wp',
             runtimeVersion: '2',
             size          : 'lite',
-            propertiesFile: 'file.properties'
+            propertiesFile: 'file.properties',
+            azDistribution: '2'
         ]
 
         String source = (deployMode == DeployMode.MTA) ? 'file.mta' : 'file.war'
@@ -75,6 +76,7 @@ class NeoCommandHelperTest extends BasePiperTest {
         Assert.assertTrue(actual.contains('--runtime \'neо-javaee6-wp\''))
         Assert.assertTrue(actual.contains(' --runtime-version \'2\''))
         Assert.assertTrue(actual.contains(' --size \'lite\''))
+        Assert.assertTrue(actual.contains(' --az-distribution \'2\''))
     }
 
     @Test
@@ -96,6 +98,7 @@ class NeoCommandHelperTest extends BasePiperTest {
         Assert.assertTrue(actual.contains(' --runtime \'neо-javaee6-wp\''))
         Assert.assertTrue(actual.contains(' --runtime-version \'2\''))
         Assert.assertTrue(actual.contains(' --size \'lite\''))
+        Assert.assertTrue(actual.contains(' --az-distribution \'2\''))
     }
 
     @Test
