@@ -1,9 +1,9 @@
 metadata:
   name: awsS3Upload
-  description: "Uploads a specified file into a given AWS S3 Bucket"
+  description: "Uploads a specified file or directory into a given AWS S3 Bucket"
   longDescription: |
-    Uploads a specified file as a S3 Object into a given AWS S3 Bucket.
-    If the Bucket already contains a file with the same name, it will be overidden.
+    Uploads a specified file or directory as S3 Objects into a given AWS S3 Bucket.
+    In case a file is uploaded that is already contained in the S3 bucket, it will be overwritten with the latest version.
 spec:
   inputs:
     secrets:

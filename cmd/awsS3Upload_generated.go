@@ -20,7 +20,7 @@ type awsS3UploadOptions struct {
 	FilePath           string `json:"filePath,omitempty"`
 }
 
-// AwsS3UploadCommand Uploads a specified file into a given AWS S3 Bucket
+// AwsS3UploadCommand Uploads a specified file or directory into a given AWS S3 Bucket
 func AwsS3UploadCommand() *cobra.Command {
 	const STEP_NAME = "awsS3Upload"
 
@@ -33,9 +33,9 @@ func AwsS3UploadCommand() *cobra.Command {
 
 	var createAwsS3UploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads a specified file into a given AWS S3 Bucket",
-		Long: `Uploads a specified file as a S3 Object into a given AWS S3 Bucket.
-If the Bucket already contains a file with the same name, it will be overidden.`,
+		Short: "Uploads a specified file or directory into a given AWS S3 Bucket",
+		Long: `Uploads a specified file or directory as S3 Objects into a given AWS S3 Bucket.
+In case a file is uploaded that is already contained in the S3 bucket, it will be overwritten with the latest version.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -124,7 +124,7 @@ func awsS3UploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "awsS3Upload",
 			Aliases:     []config.Alias{},
-			Description: "Uploads a specified file into a given AWS S3 Bucket",
+			Description: "Uploads a specified file or directory into a given AWS S3 Bucket",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
