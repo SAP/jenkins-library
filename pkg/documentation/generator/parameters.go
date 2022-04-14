@@ -221,7 +221,12 @@ func formatDefault(param config.StepParameters, stepParameterNames []string) str
 		defaults := []string{}
 		for _, condDef := range v {
 			//ToDo: add type-specific handling of default
-			defaults = append(defaults, fmt.Sprintf("%v=`%v`: `%v`", condDef.key, condDef.value, condDef.def))
+			if len(condDef.key) > 0 && len(condDef.value) > 0 {
+				defaults = append(defaults, fmt.Sprintf("%v=`%v`: `%v`", condDef.key, condDef.value, condDef.def))
+			} else {
+				// containers with no condition will only hold def
+				defaults = append(defaults, fmt.Sprintf("`%v`", condDef.def))
+			}
 		}
 		return strings.Join(defaults, "<br />")
 	case []interface{}:
