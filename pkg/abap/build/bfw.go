@@ -177,7 +177,7 @@ func (b *Build) Start(phase string, inputValues Values) error {
 
 	body, err := b.Connector.Post("/builds", importBody)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Start of build failed: "+string(body))
 	}
 
 	var jBuild jsonBuild
