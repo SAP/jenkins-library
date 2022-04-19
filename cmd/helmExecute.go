@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
@@ -28,17 +29,27 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		TargetRepositoryPassword:  config.TargetRepositoryPassword,
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
+		// ArtifactVersion:           config.Version,
+		Version: config.Version,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
 
-	helmChart := config.ChartPath + "Chart.yaml"
-	nameChart, packageVersion, err := kubernetes.GetChartInfo(helmChart, utils)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("failed to get version in Chart.yaml: %v", err)
+	artifactOpts := versioning.Options{
+		VersioningScheme: "library",
 	}
-	helmConfig.DeploymentName = nameChart
-	helmConfig.PackageVersion = packageVersion
+
+	artifact, err := versioning.GetArtifact("helm", "", &artifactOpts, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("getting artifact information failed: %v", err)
+	}
+	artifactInfo, err := artifact.GetCoordinates()
+
+	helmConfig.DeploymentName = artifactInfo.ArtifactID
+
+	if len(config.Version) == 0 {
+		helmConfig.Version = artifactInfo.Version
+	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
