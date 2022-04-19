@@ -9,8 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/mocks"
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type ghRCMock struct {
@@ -405,6 +407,55 @@ func TestUploadReleaseAsset(t *testing.T) {
 
 		err := uploadReleaseAsset(ctx, releaseID, &myGithubPublishReleaseOptions, &ghRepoClient)
 		assert.Equal(t, "Failed to get list of release assets.: List Asset Error", fmt.Sprint(err), "Wrong error received")
+	})
+}
+
+func TestUploadReleaseAssetList(t *testing.T) {
+	ctx := context.Background()
+	owner := "OWNER"
+	repository := "REPOSITORY"
+	var releaseID int64 = 1
+
+	t.Run("Success - multiple asset", func(t *testing.T) {
+		// init
+		assetURL := mock.Anything
+		asset1 := filepath.Join("testdata", t.Name()+"_1_test.txt")
+		asset2 := filepath.Join("testdata", t.Name()+"_2_test.txt")
+		assetName1 := filepath.Base(asset1)
+		assetName2 := filepath.Base(asset2)
+		var assetID1 int64 = 11
+		var assetID2 int64 = 12
+		stepConfig := githubPublishReleaseOptions{
+			Owner:         owner,
+			Repository:    repository,
+			AssetPathList: []string{asset1, asset2},
+		}
+		// mocking
+		ghClient := &mocks.GithubRepoClient{}
+		ghClient.Test(t)
+		ghClient.
+			On("ListReleaseAssets", ctx, owner, repository, releaseID, mock.AnythingOfType("*github.ListOptions")).Return(
+			[]*github.ReleaseAsset{
+				{Name: &assetName1, ID: &assetID1, URL: &assetURL},
+				{Name: &assetName2, ID: &assetID2, URL: &assetURL},
+			},
+			nil,
+			nil,
+		).
+			On("DeleteReleaseAsset", ctx, owner, repository, mock.AnythingOfType("int64")).Return(
+			&github.Response{Response: &http.Response{StatusCode: 200}},
+			nil,
+		).
+			On("UploadReleaseAsset", ctx, owner, repository, releaseID, mock.AnythingOfType("*github.UploadOptions"), mock.AnythingOfType("*os.File")).Return(
+			&github.ReleaseAsset{URL: &assetURL},
+			&github.Response{Response: &http.Response{StatusCode: 200}},
+			nil,
+		)
+		// test
+		err := uploadReleaseAssetList(ctx, releaseID, &stepConfig, ghClient)
+		// asserts
+		assert.NoError(t, err)
+		ghClient.AssertExpectations(t)
 	})
 }
 

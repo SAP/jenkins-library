@@ -2,9 +2,9 @@
 
 ## ${docGenDescription}
 
-!!! caution "This step has been deprecated."
-Please use the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) instead.
-Don´t worry, if you´re already using the step. You can continue to use it. It will call the functions of the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) step.
+!!! caution "This step is deprecated."
+    Please use the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) instead.
+    Don´t worry, if you´re already using the step. You can continue to use it. It will call the functions of the [gctsExecuteABAPQualityChecks](https://www.project-piper.io/steps/gctsExecuteABAPQualityChecks/) step.
 
 ## Prerequisites
 
