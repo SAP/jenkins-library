@@ -81,7 +81,7 @@ func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFil
 	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
 
 	if len(r.PipelineConfig.Spec.Stages) == 0 {
-		if err := r.loadConditionsV1(); err != nil {
+		if err := r.LoadConditionsV1(); err != nil {
 			return fmt.Errorf("failed to load pipeline run conditions: %w", err)
 		}
 	}
@@ -153,7 +153,8 @@ func (r *RunConfig) loadConditions() error {
 	return nil
 }
 
-func (r *RunConfigV1) loadConditionsV1() error {
+// LoadConditionsV1 loads stage conditions (in CRD-style) into PipelineConfig
+func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
 	content, err := ioutil.ReadAll(r.StageConfigFile)
 	if err != nil {
