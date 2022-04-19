@@ -32,8 +32,6 @@ func (m mockPutObjectAPI) PutObject(ctx context.Context, params *s3.PutObjectInp
 	return m(ctx, params, optFns...)
 }
 
-type PathError = fs.PathError
-
 func TestRunAwsS3Upload(t *testing.T) {
 	t.Parallel()
 
