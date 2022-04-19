@@ -147,6 +147,10 @@ class NeoCommandHelper {
         if (deploymentConfiguration.containsKey('vmArguments')) {
             args += " --vm-arguments ${BashUtils.quoteAndEscape(deploymentConfiguration.vmArguments)}"
         }
+        
+        if (deploymentConfiguration.containsKey('azDistribution')) {
+            args += " --az-distribution ${BashUtils.quoteAndEscape(deploymentConfiguration.azDistribution)}"
+        }
 
         return args
     }

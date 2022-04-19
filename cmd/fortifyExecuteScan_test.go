@@ -278,6 +278,12 @@ func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTem
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+func (f *fortifyMock) GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error) {
+	exploitable := "Exploitable"
+	friority := "High"
+	hascomments := true
+	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}, {ID: 1112, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
+}
 func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	exploitable := "Exploitable"
 	friority := "High"
