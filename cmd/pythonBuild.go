@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -89,16 +90,33 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
+	err := createVirtualEnvironment(utils)
+	if err != nil {
+		return err
+	}
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
 	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
 
 	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable("python3", flags...)
+	err = utils.RunExecutable("python3", flags...)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func createVirtualEnvironment(utils pythonBuildUtils) error {
+	virtualEnvironmentFlags := []string{"-m", "venv", "piperBuild-env"}
+	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
+	if err != nil {
+		return err
+	}
+	err = utils.RunExecutable("source", filepath.Join("piperBuild-env", "bin", "activate"))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
