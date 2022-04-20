@@ -13,6 +13,7 @@ import (
 
 const (
 	PyBomFilename = "bom.xml"
+	stepName      = "pythonBuild"
 )
 
 type pythonBuildUtils interface {
@@ -48,21 +49,21 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
 
-	installFlags := []string{"install", "--upgrade"}
-
-	err := buildExecute(config, utils, installFlags)
+	pipInstallFlags := []string{"install", "--upgrade"}
+	virutalEnvironmentPathMap := make(map[string]string)
+	err := buildExecute(config, utils, pipInstallFlags, virutalEnvironmentPathMap)
 	if err != nil {
 		return fmt.Errorf("Python build failed with error: %w", err)
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreationForPy(utils, installFlags); err != nil {
+		if err := runBOMCreationForPy(utils, pipInstallFlags, virutalEnvironmentPathMap, config); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
 
 	log.Entry().Debugf("creating build settings information...")
-	stepName := "pythonBuild"
+
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
-		if err := publishWithTwine(config, utils, installFlags); err != nil {
+		if err := publishWithTwine(config, utils, pipInstallFlags, virutalEnvironmentPathMap); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
@@ -89,8 +90,9 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
-func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
-	err := createVirtualEnvironment(utils)
+func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+
+	err := createVirtualEnvironment(utils, config, virutalEnvironmentPathMap)
 	if err != nil {
 		return err
 	}
@@ -107,36 +109,40 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFla
 	return nil
 }
 
-func createVirtualEnvironment(utils pythonBuildUtils) error {
-	virtualEnvironmentFlags := []string{"-m", "venv", "piperBuild-env"}
+func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
+	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
 	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
 	if err != nil {
 		return err
 	}
-	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join("piperBuild-env", "bin", "activate"))
+	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate"))
 	if err != nil {
 		return err
 	}
+	virutalEnvironmentPathMap["pip"] = filepath.Join("piperBuild-env", "bin", "pip")
 	return nil
 }
 
-func runBOMCreationForPy(utils pythonBuildUtils, installFlags []string) error {
-	installFlags = append(installFlags, "cyclonedx-bom")
-	if err := utils.RunExecutable(filepath.Join("piperBuild-env", "bin", "pip"), installFlags...); err != nil {
+func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
+	pipInstallFlags = append(pipInstallFlags, "cyclonedx-bom")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
 	}
-	if err := utils.RunExecutable("cyclonedx-bom", "--e", "--output", PyBomFilename); err != nil {
+	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")
+
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename); err != nil {
 		return err
 	}
 	return nil
 }
 
-func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
-	installFlags = append(installFlags, "twine")
-	if err := utils.RunExecutable(filepath.Join("piperBuild-env", "bin", "pip"), installFlags...); err != nil {
+func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+	pipInstallFlags = append(pipInstallFlags, "twine")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
 	}
-	if err := utils.RunExecutable("twine", "upload", "--username", config.TargetRepositoryUser,
+	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["twine"], "upload", "--username", config.TargetRepositoryUser,
 		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
 		"dist/*"); err != nil {
 		return err
