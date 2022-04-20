@@ -33,7 +33,10 @@ func (m mockPutObjectAPI) PutObject(ctx context.Context, params *s3.PutObjectInp
 }
 
 func TestRunAwsS3Upload(t *testing.T) {
+	t.Parallel()
+
 	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
 		// initialization
 		config := awsS3UploadOptions{
 			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),
@@ -47,6 +50,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 	})
 
 	t.Run("no Path", func(t *testing.T) {
+		t.Parallel()
 		// initialization
 		config := awsS3UploadOptions{}
 		client := mockS3Client
@@ -58,6 +62,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 	})
 
 	t.Run("error Path", func(t *testing.T) {
+		t.Parallel()
 		// initialization
 		config := awsS3UploadOptions{
 			FilePath: "nonExistingFilepath",
@@ -72,6 +77,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 	})
 
 	t.Run("error bucket", func(t *testing.T) {
+		t.Parallel()
 		// initialization
 		config := awsS3UploadOptions{
 			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),

@@ -147,12 +147,14 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 		//skip directories, only upload files
 		if !f.IsDir() {
 			log.Entry().Infof("Current target path is: '%v'", currentFilePath)
+
 			//Open File
 			currentFile, e := os.Open(filepath.ToSlash(currentFilePath))
 			if e != nil {
 				log.Entry().WithError(e).Warnf("Could not open the file '%s'", currentFilePath)
 				return e
 			}
+			defer currentFile.Close()
 
 			//AWS SDK needs UNIX Filepaths
 			key := filepath.ToSlash(currentFilePath)
@@ -164,16 +166,14 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, telemetryData *telemetry.
 				Body:   currentFile,
 			}
 
-			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
 			//Upload File
+			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
 			_, e = PutFile(context.TODO(), client, inputObject)
 			if e != nil {
 				log.Entry().WithError(e).Warnf("There was an error during the upload of file '%v'", currentFilePath)
 				return e
 			}
 
-			//Close File
-			currentFile.Close()
 			log.Entry().Infof("Upload of file '%v' was successful!", currentFilePath)
 			return e
 		}
