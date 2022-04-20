@@ -113,7 +113,7 @@ func createVirtualEnvironment(utils pythonBuildUtils) error {
 	if err != nil {
 		return err
 	}
-	err = utils.RunExecutable("/bin/bash -c source", filepath.Join("piperBuild-env", "bin", "activate"))
+	err = utils.RunExecutable("bash", "-c", "source", filepath.Join("piperBuild-env", "bin", "activate"))
 	if err != nil {
 		return err
 	}
