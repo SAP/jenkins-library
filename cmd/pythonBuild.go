@@ -122,7 +122,7 @@ func createVirtualEnvironment(utils pythonBuildUtils) error {
 
 func runBOMCreationForPy(utils pythonBuildUtils, installFlags []string) error {
 	installFlags = append(installFlags, "cyclonedx-bom")
-	if err := utils.RunExecutable("pip", installFlags...); err != nil {
+	if err := utils.RunExecutable(filepath.Join("piperBuild-env", "bin", "pip"), installFlags...); err != nil {
 		return err
 	}
 	if err := utils.RunExecutable("cyclonedx-bom", "--e", "--output", PyBomFilename); err != nil {
@@ -133,7 +133,7 @@ func runBOMCreationForPy(utils pythonBuildUtils, installFlags []string) error {
 
 func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
 	installFlags = append(installFlags, "twine")
-	if err := utils.RunExecutable("pip", installFlags...); err != nil {
+	if err := utils.RunExecutable(filepath.Join("piperBuild-env", "bin", "pip"), installFlags...); err != nil {
 		return err
 	}
 	if err := utils.RunExecutable("twine", "upload", "--username", config.TargetRepositoryUser,
