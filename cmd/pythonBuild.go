@@ -106,6 +106,10 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 		return err
 	}
 
+	err = removeVirtualEnvironment(utils, config)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -120,6 +124,15 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 		return err
 	}
 	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+	return nil
+}
+
+func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions) error {
+	err := utils.RemoveAll(config.VirutalEnvironmentName)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
