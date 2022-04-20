@@ -255,7 +255,7 @@ func pythonBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3.9", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "python", Image: "python:3.9"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
