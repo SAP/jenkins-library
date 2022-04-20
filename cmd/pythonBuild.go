@@ -119,7 +119,7 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 	if err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["pip"] = filepath.Join("piperBuild-env", "bin", "pip")
+	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
 	return nil
 }
 
