@@ -138,7 +138,7 @@ func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 
 func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
 	pipInstallFlags = append(pipInstallFlags, "cyclonedx-bom")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
+	if err := utils.RunExecutable(filepath.Join(config.VirutalEnvironmentName, "bin", "pip"), pipInstallFlags...); err != nil {
 		return err
 	}
 	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")
