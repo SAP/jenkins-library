@@ -108,7 +108,7 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
 
 	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable("python3", flags...)
+	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
 	if err != nil {
 		return err
 	}
@@ -126,12 +126,10 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 		return err
 	}
 	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
-	virutalEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
+	// venv will create symlinks to python3 inside the container
+	virutalEnvironmentPathMap["python"] = "python"
 	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
-	err = utils.RunExecutable("which", "python")
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
