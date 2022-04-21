@@ -10,7 +10,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry.CustomData) {
@@ -33,7 +35,7 @@ func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry
 func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
 	apimData := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: httpClient}
-	error := apim.APIMCommonUtils.NewAPIM(apimData)
+	error := apim.APIMCommonUtils.NewAPIM(&apimData)
 	if error != nil {
 		return error
 	}
@@ -47,6 +49,12 @@ func createApiProvider(config *apiProviderUploadOptions, apim apim.APIMBundle, r
 	header := make(http.Header)
 	header.Add("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
+
+	exists, _ := piperutils.FileExists(config.FilePath)
+	if !exists {
+		return errors.New("Missing API Provider input file")
+	}
+
 	payload, err := readFile(config.FilePath)
 	if err != nil {
 		return err
