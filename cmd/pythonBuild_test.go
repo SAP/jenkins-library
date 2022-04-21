@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -48,14 +49,14 @@ func TestRunPythonBuild(t *testing.T) {
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
-		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, "python", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("failure - build failure", func(t *testing.T) {
 		config := pythonBuildOptions{}
 		utils := newPythonBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"python3 setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
+		utils.ShouldFailOnCommand = map[string]error{"python setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
@@ -68,20 +69,21 @@ func TestRunPythonBuild(t *testing.T) {
 			TargetRepositoryURL:      "https://my.target.repository.local",
 			TargetRepositoryUser:     "user",
 			TargetRepositoryPassword: "password",
+			VirutalEnvironmentName:   "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
-		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
-		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "twine", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, "python", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "twine"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
 			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
-			"dist/*"}, utils.ExecMockRunner.Calls[2].Params)
+			"dist/*"}, utils.ExecMockRunner.Calls[3].Params)
 	})
 
 	t.Run("success - create BOM", func(t *testing.T) {
@@ -93,12 +95,12 @@ func TestRunPythonBuild(t *testing.T) {
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
-		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
-		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"-m", "pip", "install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "cyclonedx-bom", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, "python", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-bom"), utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[3].Params)
 	})
 
 	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
@@ -106,7 +108,7 @@ func TestRunPythonBuild(t *testing.T) {
 			CreateBOM: true,
 		}
 		utils := newPythonBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"python3 -m pip install --upgrade cyclonedx-bom": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{filepath.Join("dummy", "bin", "pip") + " install --upgrade cyclonedx-bom": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
@@ -118,7 +120,7 @@ func TestRunPythonBuild(t *testing.T) {
 			Publish: true,
 		}
 		utils := newPythonBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"python3 -m pip install --upgrade twine": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{filepath.Join("dummy", "bin", "pip") + " --upgrade twine": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
