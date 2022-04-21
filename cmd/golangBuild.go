@@ -281,6 +281,11 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			if !(response.StatusCode == 200 || response.StatusCode == 201) {
 				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 			}
+			// Publish list of binaries to cpe
+			if len(binaries) > 0 {
+				log.Entry().Infof("List of binaries %v\n", binaries)
+				commonPipelineEnvironment.custom.golangBinaries = binaries
+			}
 		}
 	}
 
