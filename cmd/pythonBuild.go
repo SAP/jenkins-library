@@ -87,6 +87,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	err = removeVirtualEnvironment(utils, config)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -102,11 +107,6 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 
 	log.Entry().Info("starting building python project:")
 	err = utils.RunExecutable("python3", flags...)
-	if err != nil {
-		return err
-	}
-
-	err = removeVirtualEnvironment(utils, config)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 
 func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
 	pipInstallFlags = append(pipInstallFlags, "cyclonedx-bom")
-	if err := utils.RunExecutable(filepath.Join(config.VirutalEnvironmentName, "bin", "pip"), pipInstallFlags...); err != nil {
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
 	}
 	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")

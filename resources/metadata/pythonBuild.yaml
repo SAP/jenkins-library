@@ -87,6 +87,4 @@ spec:
   containers:
     - name: python
       image: python:3.9
-      options:
-        - name: -u
-          value: "0"
+
