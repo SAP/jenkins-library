@@ -51,7 +51,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	pipInstallFlags := []string{"install", "--upgrade"}
 	virutalEnvironmentPathMap := make(map[string]string)
-	err := buildExecute(config, utils, pipInstallFlags, virutalEnvironmentPathMap)
+
+	err := createVirtualEnvironment(utils, config, virutalEnvironmentPathMap)
+	if err != nil {
+		return err
+	}
+
+	err = buildExecute(config, utils, pipInstallFlags, virutalEnvironmentPathMap)
 	if err != nil {
 		return fmt.Errorf("Python build failed with error: %w", err)
 	}
@@ -97,16 +103,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
 
-	err := createVirtualEnvironment(utils, config, virutalEnvironmentPathMap)
-	if err != nil {
-		return err
-	}
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
 	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
 
 	log.Entry().Info("starting building python project:")
-	err = utils.RunExecutable("python3", flags...)
+	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
 	if err != nil {
 		return err
 	}
@@ -124,6 +126,7 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 		return err
 	}
 	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	virutalEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
 	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
 	return nil
 }
