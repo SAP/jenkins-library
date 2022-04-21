@@ -93,10 +93,10 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	err = removeVirtualEnvironment(utils, config)
-	if err != nil {
-		return err
-	}
+	// err = removeVirtualEnvironment(utils, config)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -108,7 +108,7 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
 
 	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
+	err := utils.RunExecutable("python3", flags...)
 	if err != nil {
 		return err
 	}
