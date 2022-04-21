@@ -49,8 +49,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
 	})
@@ -76,8 +75,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.Equal(t, "python", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
