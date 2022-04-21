@@ -107,7 +107,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 	if config.Verbose {
 		cOptions = append(cOptions, []ConfigOption{
 			{Name: "log.level", Value: "trace"},
-			{Name: "log.files.level", Value: "debug"},
+			{Name: "log.files.level", Value: "trace"},
 		}...)
 	}
 
