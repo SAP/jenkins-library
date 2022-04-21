@@ -93,10 +93,10 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	// err = removeVirtualEnvironment(utils, config)
-	// if err != nil {
-	// 	return err
-	// }
+	err = removeVirtualEnvironment(utils, config)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -128,6 +128,10 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
 	virutalEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
 	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+	err = utils.RunExecutable("which", "python")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
