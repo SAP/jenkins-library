@@ -43,14 +43,16 @@ func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 func TestRunPythonBuild(t *testing.T) {
 	cpe := pythonBuildCommonPipelineEnvironment{}
 	t.Run("success - build", func(t *testing.T) {
-		config := pythonBuildOptions{}
+		config := pythonBuildOptions{
+			VirutalEnvironmentName: "dummy",
+		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
-		assert.Equal(t, "python", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("failure - build failure", func(t *testing.T) {

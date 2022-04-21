@@ -87,4 +87,3 @@ spec:
   containers:
     - name: python
       image: python:3.9
-
