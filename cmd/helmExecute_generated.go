@@ -257,6 +257,11 @@ func helmExecuteMetadata() config.StepData {
 							},
 
 							{
+								Name: "targetRepositoryCredentialsId",
+								Type: "vaultSecret",
+							},
+
+							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/helmRepositoryUsername",
 							},
@@ -279,6 +284,11 @@ func helmExecuteMetadata() config.StepData {
 								Name:  "targetRepositoryCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name: "targetRepositoryCredentialsId",
+								Type: "vaultSecret",
 							},
 
 							{
