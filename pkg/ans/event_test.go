@@ -67,7 +67,7 @@ func TestEvent_MergeWithJSON(t *testing.T) {
 	}
 }
 
-func TestTranslateLogrusLogLevel(t *testing.T) {
+func TestEvent_SetLogLevel(t *testing.T) {
 	tests := []struct {
 		name         string
 		level        logrus.Level
@@ -113,9 +113,10 @@ func TestTranslateLogrusLogLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSeverity, gotCategory := TranslateLogrusLogLevel(tt.level)
-			assert.Equal(t, tt.wantSeverity, gotSeverity, "Got wrong severity")
-			assert.Equal(t, tt.wantCategory, gotCategory, "Got wrong category")
+			event := &Event{}
+			event.SetLogLevel(tt.level)
+			assert.Equal(t, tt.wantSeverity, event.Severity, "Got wrong severity")
+			assert.Equal(t, tt.wantCategory, event.Category, "Got wrong category")
 		})
 	}
 }

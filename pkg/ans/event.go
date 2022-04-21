@@ -51,29 +51,26 @@ func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
 	return
 }
 
-// TranslateLogrusLogLevel takes the logrus log level and translates it to an ANS severity ans category string
-func TranslateLogrusLogLevel(level logrus.Level) (severity, category string) {
-	severity = infoSeverity
-	category = notificationCategory
+// SetLogLevel takes the logrus log level and translates it to an ANS severity ans category string
+func (event *Event) SetLogLevel(level logrus.Level) {
 	switch level {
 	case logrus.InfoLevel:
-		severity = infoSeverity
-		category = notificationCategory
+		event.Severity = infoSeverity
+		event.Category = notificationCategory
 	case logrus.DebugLevel:
-		severity = infoSeverity
-		category = notificationCategory
+		event.Severity = infoSeverity
+		event.Category = notificationCategory
 	case logrus.WarnLevel:
-		severity = warningSeverity
-		category = alertCategory
+		event.Severity = warningSeverity
+		event.Category = alertCategory
 	case logrus.ErrorLevel:
-		severity = errorSeverity
-		category = exceptionCategory
+		event.Severity = errorSeverity
+		event.Category = exceptionCategory
 	case logrus.FatalLevel:
-		severity = fatalSeverity
-		category = exceptionCategory
+		event.Severity = fatalSeverity
+		event.Category = exceptionCategory
 	case logrus.PanicLevel:
-		severity = fatalSeverity
-		category = exceptionCategory
+		event.Severity = fatalSeverity
+		event.Category = exceptionCategory
 	}
-	return
 }
