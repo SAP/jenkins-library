@@ -89,7 +89,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 		}
 		event.Tags[k] = v
 	}
-	event.Severity, event.Category = ans.TranslateLogrusLogLevel(logLevel)
+	event.SetLogLevel(logLevel)
 	event.Tags["logLevel"] = logLevel.String()
 
 	err = ansHook.client.Send(event)
