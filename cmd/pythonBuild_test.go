@@ -76,31 +76,38 @@ func TestRunPythonBuild(t *testing.T) {
 		telemetryData := telemetry.CustomData{}
 
 		runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "venv", config.VirutalEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "python", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[2].Params)
-		assert.Equal(t, filepath.Join("dummy", "bin", "twine"), utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, "python", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "twine"}, utils.ExecMockRunner.Calls[3].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "twine"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
 			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
-			"dist/*"}, utils.ExecMockRunner.Calls[3].Params)
+			"dist/*"}, utils.ExecMockRunner.Calls[4].Params)
 	})
 
 	t.Run("success - create BOM", func(t *testing.T) {
 		config := pythonBuildOptions{
 			CreateBOM: true,
+			Publish:   false,
 		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
-		assert.Equal(t, "python", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[2].Params)
+		runPythonBuild(&config, &telemetryData, utils, &cpe)
+		// assert.NoError(t, err)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "venv", config.VirutalEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "python", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-bom"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[3].Params)
 	})
