@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/body"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -71,7 +71,7 @@ func (ans ANS) Send(event Event) error {
 	if response.StatusCode != http.StatusAccepted {
 		statusCodeError := fmt.Errorf("ANS http request to '%s' failed. Did not get expected status code %d; instead got %d",
 			entireUrl, http.StatusAccepted, response.StatusCode)
-		responseBody, err := body.ReadResponseBody(response)
+		responseBody, err := readResponseBody(response)
 		if err != nil {
 			err = errors.Wrapf(err, "%s; reading response body failed", statusCodeError.Error())
 		} else {
@@ -81,4 +81,18 @@ func (ans ANS) Send(event Event) error {
 	}
 
 	return nil
+}
+
+func readResponseBody(response *http.Response) ([]byte, error) {
+	if response == nil {
+		return nil, errors.Errorf("did not retrieve an HTTP response")
+	}
+	if response.Body != nil {
+		defer response.Body.Close()
+	}
+	bodyText, readErr := ioutil.ReadAll(response.Body)
+	if readErr != nil {
+		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
+	}
+	return bodyText, nil
 }

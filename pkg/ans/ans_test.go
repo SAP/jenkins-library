@@ -3,6 +3,7 @@ package ans
 import (
 	"encoding/json"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -137,6 +138,37 @@ func TestUnmarshallServiceKey(t *testing.T) {
 				return
 			}
 			assert.Equal(t, tt.wantAnsServiceKey, gotAnsServiceKey, "Got the wrong ans serviceKey")
+		})
+	}
+}
+
+func Test_readResponseBody(t *testing.T) {
+	tests := []struct {
+		name        string
+		response    *http.Response
+		want        []byte
+		wantErrText string
+	}{
+		{
+			name:     "Straight forward",
+			response: httpmock.NewStringResponse(200, "test string"),
+			want:     []byte("test string"),
+		},
+		{
+			name:        "No response error",
+			wantErrText: "did not retrieve an HTTP response",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := readResponseBody(tt.response)
+			if tt.wantErrText != "" {
+				require.Error(t, err, "Error expected")
+				assert.EqualError(t, err, tt.wantErrText, "Error is not equal")
+				return
+			}
+			require.NoError(t, err, "No error expected")
+			assert.Equal(t, tt.want, got, "Did not receive expected body")
 		})
 	}
 }

@@ -2,6 +2,7 @@ package xsuaa
 
 import (
 	"encoding/base64"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -167,6 +168,37 @@ func TestXSUAA_GetBearerToken(t *testing.T) {
 			assert.Equal(t, wantUrlPath, requestedUrlPath)
 			wantAuth := tt.fields.ClientID + ":" + tt.fields.ClientSecret
 			assert.Equal(t, "Basic "+base64.StdEncoding.EncodeToString([]byte(wantAuth)), requestedAuthHeader)
+		})
+	}
+}
+
+func Test_readResponseBody(t *testing.T) {
+	tests := []struct {
+		name        string
+		response    *http.Response
+		want        []byte
+		wantErrText string
+	}{
+		{
+			name:     "Straight forward",
+			response: httpmock.NewStringResponse(200, "test string"),
+			want:     []byte("test string"),
+		},
+		{
+			name:        "No response error",
+			wantErrText: "did not retrieve an HTTP response",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := readResponseBody(tt.response)
+			if tt.wantErrText != "" {
+				require.Error(t, err, "Error expected")
+				assert.EqualError(t, err, tt.wantErrText, "Error is not equal")
+				return
+			}
+			require.NoError(t, err, "No error expected")
+			assert.Equal(t, tt.want, got, "Did not receive expected body")
 		})
 	}
 }
