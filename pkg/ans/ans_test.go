@@ -1,7 +1,7 @@
 package ans
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,85 +11,93 @@ import (
 	"testing"
 )
 
+type Examinee struct {
+	xsuaa     *xsuaa.XSUAA
+	server    *httptest.Server
+	ans       *ANS
+	onRequest func(rw http.ResponseWriter, req *http.Request)
+}
+
+func (e *Examinee) request(rw http.ResponseWriter, req *http.Request) {
+	e.onRequest(rw, req)
+}
+
+func (e *Examinee) finish() {
+	if e.server != nil {
+		e.server.Close()
+		e.server = nil
+	}
+}
+
+func (e *Examinee) init() {
+	if e.xsuaa == nil {
+		e.xsuaa = &xsuaa.XSUAA{
+			OAuthURL:     "https://my.test.oauth.provider",
+			ClientID:     "myTestClientID",
+			ClientSecret: "super secret",
+			CachedAuthToken: xsuaa.AuthToken{
+				TokenType:   "bearer",
+				AccessToken: "1234",
+				ExpiresIn:   12345,
+			},
+		}
+	}
+	if e.server == nil {
+		e.server = httptest.NewServer(http.HandlerFunc(e.request))
+	}
+	if e.ans == nil {
+		e.ans = &ANS{XSUAA: *e.xsuaa, URL: e.server.URL}
+	}
+}
+
+func (e *Examinee) execute(event Event, onRequest func(rw http.ResponseWriter, req *http.Request)) error {
+	e.init()
+	e.onRequest = onRequest
+	return e.ans.Send(event)
+}
+
 func TestANS_Send(t *testing.T) {
-	testXSUAA := xsuaa.XSUAA{
-		OAuthURL:     "https://my.test.oauth.provider",
-		ClientID:     "myTestClientID",
-		ClientSecret: "super secret",
-		CachedAuthToken: xsuaa.AuthToken{
-			TokenType:   "bearer",
-			AccessToken: "1234",
-			ExpiresIn:   12345,
-		},
-	}
-	type request struct {
-		path       string
-		authHeader string
-		event      string
-	}
-	tests := []struct {
-		name        string
-		event       Event
-		wantErrf    string
-		wantRequest request
-	}{
-		{
-			name: "Successfully send event",
-			event: Event{
-				EventType:      "my event",
-				EventTimestamp: 1647526655,
-			},
-			wantRequest: request{
-				path:       "/cf/producer/v1/resource-events",
-				authHeader: "bearer 1234",
-				event:      `{"eventType":"my event","eventTimestamp":1647526655}`,
-			},
-		},
-		{
-			name: "Wrong status code in response error",
-			wantErrf: "ANS http request to '%s/cf/producer/v1/resource-events' failed. Did not get expected status code 202; " +
-				"instead got 200; response body: an error occurred",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var requestedUrlPath string
-			var requestedMethod string
-			var requestedAuthHeader string
-			var requestedContentTypeHeader string
-			var requestedBody string
-			// Start a local HTTP server
-			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				requestedUrlPath = req.URL.String()
-				requestedMethod = req.Method
-				if tt.wantErrf == "" {
-					rw.WriteHeader(http.StatusAccepted)
-				} else {
-					rw.Write([]byte("an error occurred"))
-				}
-				requestedAuthHeader = req.Header.Get(authHeaderKey)
-				requestedContentTypeHeader = req.Header.Get("Content-Type")
-				requestedBodyBytes, err := ioutil.ReadAll(req.Body)
-				require.NoError(t, err)
-				requestedBody = string(requestedBodyBytes)
-			}))
-			ans := ANS{
-				XSUAA: testXSUAA,
-				URL:   server.URL,
-			}
-			err := ans.Send(tt.event)
-			if len(tt.wantErrf) > 0 {
-				require.EqualError(t, err, fmt.Sprintf(tt.wantErrf, server.URL), "An error was expected.")
-			} else {
-				require.NoError(t, err, "No error expected.")
-				assert.Equal(t, tt.wantRequest.path, requestedUrlPath, "Mismatch in requested path")
-				assert.Equal(t, http.MethodPost, requestedMethod, "Mismatch in requested method")
-				assert.Equal(t, tt.wantRequest.authHeader, requestedAuthHeader, "Mismatch in requested auth header")
-				assert.Equal(t, "application/json", requestedContentTypeHeader, "Mismatch in requested content type header")
-				assert.Equal(t, tt.wantRequest.event, requestedBody, "Mismatch in requested body")
-			}
+	examinee := Examinee{}
+	defer examinee.finish()
+	examinee.init()
+
+	eventDefault := Event{EventType: "my event", EventTimestamp: 1647526655}
+
+	t.Run("good", func(t *testing.T) {
+		t.Run("pass request attributes", func(t *testing.T) {
+			examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, http.MethodPost, req.Method, "Mismatch in requested method")
+				assert.Equal(t, "/cf/producer/v1/resource-events", req.URL.Path, "Mismatch in requested path")
+				assert.Equal(t, "bearer 1234", req.Header.Get(authHeaderKey), "Mismatch in requested auth header")
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"), "Mismatch in requested content type header")
+			})
 		})
-	}
+		t.Run("pass request attribute event", func(t *testing.T) {
+			examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+				eventBody, _ := ioutil.ReadAll(req.Body)
+				event := &Event{}
+				json.Unmarshal(eventBody, event)
+				assert.Equal(t, eventDefault, *event, "Mismatch in requested event body")
+			})
+		})
+		t.Run("on status 202", func(t *testing.T) {
+			err := examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+				rw.WriteHeader(http.StatusAccepted)
+			})
+			require.NoError(t, err, "No error expected.")
+		})
+	})
+
+	t.Run("bad", func(t *testing.T) {
+		t.Run("on status 400", func(t *testing.T) {
+			err := examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+				rw.WriteHeader(http.StatusBadRequest)
+				rw.Write([]byte("an error occurred"))
+			})
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "Did not get expected status code 202")
+		})
+	})
 }
 
 func TestUnmarshallServiceKey(t *testing.T) {
