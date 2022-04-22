@@ -1,10 +1,14 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -44,13 +48,25 @@ func newAzureBlobUploadUtils() azureBlobUploadUtils {
 	return &utils
 }
 
-type BlobUploadAPI interface {
-	//Upload(ctx context.Context, body io.ReadSeekCloser, options *BlockBlobUploadOptions) (BlockBlobUploadResponse, error)
+//interface used to mock Azure containerClients in unit tests
+type AzureContainerAPI interface {
+	NewBlockBlobClient(blobName string) (*azblob.BlockBlobClient, error)
 }
 
-//func UploadFile(ctx context.Context, api BlobUploadAPI, body io.ReadSeekCloser) (BlockBlobUploadResponse, error) {
-// return api.Upload(ctx, body)
-//}
+func NewBlockBlobClient(blobName string, api AzureContainerAPI) (*azblob.BlockBlobClient, error) {
+	return api.NewBlockBlobClient(blobName)
+}
+
+func UploadFile(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
+	return api.UploadFile(ctx, file, o)
+}
+
+type AzureCredentials struct {
+	SAS_Token    string `json:"sas_token"`
+	Account_Name string `json:"account_name"`
+	Container    string `json:"container_name"`
+	Azure_Region string `json:"region"`
+}
 
 func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
@@ -61,22 +77,55 @@ func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.Cus
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
 
+	//Prepare Credentials
+	if config.JSONCredentialsAzure == "" {
+		log.Entry().Fatal("Azure Credentials were not set!")
+	}
+
+	log.Entry().Infoln("Start reading Azure Credentials")
+	var obj AzureCredentials
+
+	err := json.Unmarshal([]byte(config.JSONCredentialsAzure), &obj)
+	if err != nil {
+		log.Entry().
+			WithError(err).
+			Fatal("Could not read JSONCredentialsAzure")
+	}
+
+	//Initialize Azure Service Client
+	sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/?%s", obj.Account_Name, obj.SAS_Token)
+	serviceClient, err := azblob.NewServiceClientWithNoCredential(sasURL, nil)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Could not instantiate Azure Service Client!")
+	}
+
+	//Get a containerClient from ServiceClient
+	containerClient, err := serviceClient.NewContainerClient(obj.Container)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Could not instantiate Azure Container Client from Azure Service Client!")
+	}
+
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runAzureBlobUpload(&config, telemetryData, utils)
+	err = runAzureBlobUpload(&config, telemetryData, utils, containerClient, UploadFile)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAzureBlobUpload(config *azureBlobUploadOptions, telemetryData *telemetry.CustomData, utils azureBlobUploadUtils) error {
+func runAzureBlobUpload(config *azureBlobUploadOptions, telemetryData *telemetry.CustomData, utils azureBlobUploadUtils, containerClient AzureContainerAPI,
+	UploadMock func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
+
 	if config.FilePath == "" {
-		return errors.New("File Path Parameter is empty. Please specify a file or directory to Upload to AWS!")
+		return errors.New("File Path Parameter is empty. Please specify a file or directory to Upload to Azure!")
 	}
 
 	// Use UNIX Filepaths
 	filePath := filepath.ToSlash(config.FilePath)
 	log.Entry().Infof("Start walk through FilePath '%v'", filePath)
+
+	// All Blob Operations operate with context.Context, in our case the clients do not expire
+	ctx := context.Background()
 
 	//iterate through directories
 	err := filepath.Walk(filePath, func(currentFilePath string, f os.FileInfo, err error) error {
@@ -90,14 +139,33 @@ func runAzureBlobUpload(config *azureBlobUploadOptions, telemetryData *telemetry
 			log.Entry().Infof("Current target path is: '%v'", currentFilePath)
 
 			//Read Data from File
-			_, e := ioutil.ReadFile("testdata/hello")
-			if err != nil {
+			data, e := os.Open(filepath.ToSlash(currentFilePath))
+			if e != nil {
 				log.Entry().WithError(e).Warnf("Could not read the file '%s'", currentFilePath)
+				return e
+			}
+			defer data.Close()
+
+			key := filepath.ToSlash(currentFilePath)
+
+			//Get a blockBlobClient from containerClient
+			blockBlobClient, e := NewBlockBlobClient(key, containerClient)
+			if e != nil {
+				log.Entry().WithError(e).Warnf("Could not instantiate Azure blockBlobClient from Azure Container Client!")
+				return e
+			}
+
+			//Upload File
+			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
+			var blockOptions azblob.UploadOption
+			_, e = UploadMock(ctx, blockBlobClient, data, blockOptions)
+			if e != nil {
+				log.Entry().WithError(e).Warnf("There was an error during the upload of file '%v'", currentFilePath)
 				return e
 			}
 
 			log.Entry().Infof("Upload of file '%v' was successful!", currentFilePath)
-			return nil
+			return e
 		}
 		return nil
 	})
