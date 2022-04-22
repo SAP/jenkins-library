@@ -28,6 +28,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        default: false
       - name: targetRepositoryPassword
         description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
         type: string
