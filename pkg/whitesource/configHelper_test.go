@@ -149,9 +149,9 @@ func TestAddGeneralDefaults(t *testing.T) {
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "log.level", testConfig[2].Name)
-		assert.Equal(t, "debug", testConfig[2].Value)
+		assert.Equal(t, "trace", testConfig[2].Value)
 		assert.Equal(t, "log.files.level", testConfig[3].Name)
-		assert.Equal(t, "debug", testConfig[3].Value)
+		assert.Equal(t, "trace", testConfig[3].Value)
 	})
 
 	t.Run("includes and excludes", func(t *testing.T) {
