@@ -92,8 +92,9 @@ func TestRunPythonBuild(t *testing.T) {
 
 	t.Run("success - create BOM", func(t *testing.T) {
 		config := pythonBuildOptions{
-			CreateBOM: true,
-			Publish:   false,
+			CreateBOM:              true,
+			Publish:                false,
+			VirutalEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
@@ -110,29 +111,5 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-bom"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[3].Params)
-	})
-
-	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
-		config := pythonBuildOptions{
-			CreateBOM: true,
-		}
-		utils := newPythonBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{filepath.Join("dummy", "bin", "pip") + " install --upgrade cyclonedx-bom": fmt.Errorf("install failure")}
-		telemetryData := telemetry.CustomData{}
-
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.EqualError(t, err, "BOM creation failed: install failure")
-	})
-
-	t.Run("failure - install pre-requisites for Twine upload", func(t *testing.T) {
-		config := pythonBuildOptions{
-			Publish: true,
-		}
-		utils := newPythonBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{filepath.Join("dummy", "bin", "pip") + " --upgrade twine": fmt.Errorf("install failure")}
-		telemetryData := telemetry.CustomData{}
-
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.EqualError(t, err, "failed to publish: install failure")
 	})
 }
