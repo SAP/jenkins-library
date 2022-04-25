@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -19,6 +20,7 @@ type DeployUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	piperutils.FileUtils
 	piperhttp.Uploader
@@ -94,4 +96,8 @@ func GetChartInfo(chartYamlFile string, utils DeployUtils) (string, string, erro
 	}
 
 	return name, version, nil
+}
+
+func (d *deployUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
 }
