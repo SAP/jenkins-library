@@ -199,6 +199,21 @@ spec:
           - type: vaultSecret
             name: protecodeVaultSecretName
             default: protecode
+      - name: userApiKey
+        type: string
+        description: User API key which is used for API calls. Replacement for username and password / basic authentication.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: protecodeCredentialsId
+            type: secret
+            param: userApiKey
+          - type: vaultSecret
+            name: protecodeVaultSecretName
+            default: protecode
       - name: version
         aliases:
           - name: artifactVersion
