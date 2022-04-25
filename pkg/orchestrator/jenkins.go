@@ -2,12 +2,13 @@ package orchestrator
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"time"
+
 	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"time"
 )
 
 type JenkinsConfigProvider struct {
@@ -194,6 +195,15 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 // GetBranch returns the branch name, only works with the git plugin enabled
 func (j *JenkinsConfigProvider) GetBranch() string {
 	return getEnv("BRANCH_NAME", "n/a")
+}
+
+// GetReference returns the git reference, only works with the git plugin enabled
+func (j *JenkinsConfigProvider) GetReference() string {
+	ref := getEnv("BRANCH_NAME", "n/a")
+	if ref != "n/a" {
+		ref = "refs/heads/" + ref
+	}
+	return ref
 }
 
 // GetBuildURL returns the build url, e.g. https://jaas.url/job/foo/job/bar/job/main/1234/

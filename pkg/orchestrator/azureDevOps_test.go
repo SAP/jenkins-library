@@ -2,13 +2,14 @@ package orchestrator
 
 import (
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/jarcoal/httpmock"
+	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +19,7 @@ func TestAzure(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")
-		os.Setenv("BUILD_SOURCEBRANCH", "feat/test-azure")
+		os.Setenv("BUILD_SOURCEBRANCH", "refs/heads/feat/test-azure")
 		os.Setenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", "https://pogo.sap/")
 		os.Setenv("SYSTEM_TEAMPROJECT", "foo")
 		os.Setenv("BUILD_BUILDID", "42")
@@ -30,6 +31,7 @@ func TestAzure(t *testing.T) {
 
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "feat/test-azure", p.GetBranch())
+		assert.Equal(t, "refs/heads/feat/test-azure", p.GetReference())
 		assert.Equal(t, "https://pogo.sap/foo/bar/_build/results?buildId=42", p.GetBuildURL())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())

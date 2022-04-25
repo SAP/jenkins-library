@@ -3,15 +3,17 @@ package orchestrator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"net/http"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"net/http"
 )
 
 func TestJenkins(t *testing.T) {
@@ -20,7 +22,7 @@ func TestJenkins(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("JENKINS_URL", "FOO BAR BAZ")
 		os.Setenv("BUILD_URL", "https://jaas.url/job/foo/job/bar/job/main/1234/")
-		os.Setenv("BRANCH_NAME", "main")
+		os.Setenv("BRANCH_NAME", "refs/heads/main")
 		os.Setenv("GIT_COMMIT", "abcdef42713")
 		os.Setenv("GIT_URL", "github.com/foo/bar")
 
@@ -29,6 +31,7 @@ func TestJenkins(t *testing.T) {
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.GetBuildURL())
 		assert.Equal(t, "main", p.GetBranch())
+		assert.Equal(t, "refs/heads/main", p.GetReference())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
 		assert.Equal(t, "Jenkins", p.OrchestratorType())
