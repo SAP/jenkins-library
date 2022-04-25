@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -22,6 +24,10 @@ func (f gradleExecuteBuildMockUtils) FileExists(filePath string) (bool, error) {
 	return strings.EqualFold(filePath, "path/to/build.gradle"), nil
 }
 
+func (f gradleExecuteBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
+}
+
 func newGradleExecuteBuildTestsUtils() gradleExecuteBuildMockUtils {
 	utils := gradleExecuteBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
@@ -36,7 +42,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		options := &gradleExecuteBuildOptions{
 			Path: "path/to/project/",
 		}
-		u := newShellExecuteTestsUtils()
+		u := newGradleExecuteBuildTestsUtils()
 
 		err := runGradleExecuteBuild(options, nil, u)
 		assert.EqualError(t, err, "the specified gradle build script could not be found")
