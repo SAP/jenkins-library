@@ -95,6 +95,12 @@ func (h *HelmExecute) runHelmAdd() error {
 	if len(h.config.TargetRepositoryName) == 0 {
 		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
 	}
+	if len(h.config.TargetRepositoryUser) != 0 {
+		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
+	}
+	if len(h.config.TargetRepositoryPassword) != 0 {
+		helmParams = append(helmParams, "--password", h.config.TargetRepositoryPassword)
+	}
 	helmParams = append(helmParams, h.config.TargetRepositoryName)
 	helmParams = append(helmParams, h.config.TargetRepositoryURL)
 	if h.verbose {
