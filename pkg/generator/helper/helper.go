@@ -155,8 +155,12 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
 				log.RegisterSecret({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey)
-				ansHook := log.NewANSHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
-				log.RegisterHook(&ansHook)
+				ansHook, err := log.NewANSHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
+				if err != nil {
+					log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+				} else {
+					log.RegisterHook(&ansHook)
+				}
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
