@@ -483,8 +483,9 @@ func golangBuildMetadata() config.StepData {
 						Name: "privateModulesGitToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "golangPrivateModulesGitTokenCredentialsId",
-								Type: "secret",
+								Name:  "golangPrivateModulesGitTokenCredentialsId",
+								Param: "password",
+								Type:  "secret",
 							},
 
 							{
