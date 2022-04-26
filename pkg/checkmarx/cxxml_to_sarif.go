@@ -115,6 +115,7 @@ type Line struct {
 // ConvertCxxmlToSarif is the entrypoint for the Parse function
 func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
 	var sarif format.SARIF
+	log.Entry().Debug("Reading audit file.")
 	data, err := ioutil.ReadFile(xmlReportName)
 	if err != nil {
 		return sarif, err
@@ -155,6 +156,7 @@ func Parse(data []byte) (format.SARIF, error) {
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
+	log.Entry().Debug("[SARIF] Now handling results.")
 	for i := 0; i < len(cxxml.Query); i++ {
 		//add cweid to array
 		cweIdsForTaxonomies[cxxml.Query[i].CweID] = cweCounter
@@ -263,6 +265,7 @@ func Parse(data []byte) (format.SARIF, error) {
 	}
 
 	// Handle driver object
+	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "Checkmarx SCA"
