@@ -64,7 +64,7 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 	s.splunkDsn = dsn
 	s.splunkIndex = index
 	s.correlationID = correlationID
-	s.postMessagesBatchSize = 5000
+	s.postMessagesBatchSize = 6000
 	s.sendLogs = sendLogs
 
 	return nil

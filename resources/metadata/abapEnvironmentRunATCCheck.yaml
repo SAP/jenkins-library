@@ -9,7 +9,7 @@ metadata:
     * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
-    Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.
+    Regardless of the option you chose, please make sure to provide the object set (e.g. with Software Components and Packages) that you want to be checked analog to the examples listed on this page.
 spec:
   inputs:
     secrets:
@@ -21,7 +21,7 @@ spec:
     params:
       - name: atcConfig
         type: string
-        description: Path to a YAML configuration file for Packages and/or Software Components to be checked during ATC run
+        description: Path to a YAML configuration file for the object set to be checked during the ATC run
         scope:
           - PARAMETERS
           - STAGES

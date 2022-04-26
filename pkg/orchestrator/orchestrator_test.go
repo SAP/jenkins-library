@@ -55,36 +55,3 @@ func TestOrchestrator(t *testing.T) {
 		assert.False(t, tmp)
 	})
 }
-
-func Test_getEnv(t *testing.T) {
-	type args struct {
-		key      string
-		fallback string
-	}
-	tests := []struct {
-		name   string
-		args   args
-		want   string
-		envVar string
-	}{
-		{
-			name:   "environment variable found",
-			args:   args{key: "debug", fallback: "fallback"},
-			want:   "found",
-			envVar: "debug",
-		},
-		{
-			name: "fallback variable",
-			args: args{key: "debug", fallback: "fallback"},
-			want: "fallback",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			defer resetEnv(os.Environ())
-			os.Clearenv()
-			os.Setenv(tt.envVar, "found")
-			assert.Equalf(t, tt.want, getEnv(tt.args.key, tt.args.fallback), "getEnv(%v, %v)", tt.args.key, tt.args.fallback)
-		})
-	}
-}

@@ -46,3 +46,13 @@ ATCResults.xml
 AUnitResults.xml
 ATCResults.html
 AUnitResults.html
+
+/cmd/temp-*
+/cmd/toolruns
+/cmd/checkmarx
+/cmd/.pipeline
+/cmd/fortify
+/cmd/protecode
+/cmd/dockerimagename_latest.tar
+/cmd/atcSystemConfig.json
+__debug_bin.exe
