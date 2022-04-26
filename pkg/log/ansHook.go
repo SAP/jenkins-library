@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"strings"
@@ -17,10 +18,11 @@ type ANSHook struct {
 }
 
 // NewANSHook creates a new ANS hook for logrus
-func NewANSHook(config ans.Configuration, correlationID string) ANSHook {
+func NewANSHook(config ans.Configuration, correlationID string) (hook ANSHook, err error) {
 	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(config.ServiceKey)
 	if err != nil {
-		Entry().WithField("stepName", "ANS").Warnf("cannot initialize ans due to faulty serviceKey json: %v", err)
+		err = errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
+		return
 	}
 	event := ans.Event{
 		EventType: "Piper",
@@ -33,18 +35,18 @@ func NewANSHook(config ans.Configuration, correlationID string) ANSHook {
 	if len(config.EventTemplateFilePath) > 0 {
 		eventTemplateString, err := ioutil.ReadFile(config.EventTemplateFilePath)
 		if err != nil {
-			Entry().WithField("stepName", "ANS").Warnf("provided ANS event template file with path '%s' could not be read: %v", config.EventTemplateFilePath, err)
+			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template file with path '%s' could not be read: %v", config.EventTemplateFilePath, err)
 		} else {
 			err = event.MergeWithJSON(eventTemplateString)
 			if err != nil {
-				Entry().WithField("stepName", "ANS").Warnf("provided ANS event template '%s' could not be unmarshalled: %v", eventTemplateString, err)
+				Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", eventTemplateString, err)
 			}
 		}
 	}
 	if len(config.EventTemplate) > 0 {
 		err = event.MergeWithJSON([]byte(config.EventTemplate))
 		if err != nil {
-			Entry().WithField("stepName", "ANS").Warnf("provided ANS event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
+			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
 		}
 	}
 	x := xsuaa.XSUAA{
@@ -56,12 +58,16 @@ func NewANSHook(config ans.Configuration, correlationID string) ANSHook {
 		client: ans.ANS{XSUAA: x, URL: ansServiceKey.Url},
 		event:  event,
 	}
-	return h
+	err = h.client.CheckCorrectSetup()
+	if err != nil {
+		return
+	}
+	return h, nil
 }
 
 // Levels returns the supported log level of the hook.
 func (ansHook *ANSHook) Levels() []logrus.Level {
-	return []logrus.Level{logrus.InfoLevel, logrus.DebugLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}
+	return []logrus.Level{logrus.InfoLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}
 }
 
 // Fire creates a new event from the logrus and sends an event to the ANS backend
@@ -69,26 +75,31 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	if len(strings.TrimSpace(entry.Message)) == 0 {
 		return nil
 	}
-	logLevel := entry.Level
 	event, err := copyEvent(ansHook.event)
 	if err != nil {
 		return err
 	}
 
-	event.EventTimestamp = entry.Time.Unix()
-	if event.Subject == "" {
-		event.Subject = fmt.Sprint(entry.Data["stepName"])
-	}
+	logLevel := entry.Level
 	if strings.HasPrefix(entry.Message, "fatal error") {
 		logLevel = logrus.FatalLevel
 	}
-	event.Body = entry.Message
 	for k, v := range entry.Data {
 		if k == "error" {
 			logLevel = logrus.ErrorLevel
 		}
 		event.Tags[k] = v
 	}
+	// Only warnings and higher are sent to the ANS backend
+	if logLevel > 3 {
+		return nil
+	}
+
+	event.EventTimestamp = entry.Time.Unix()
+	if event.Subject == "" {
+		event.Subject = fmt.Sprint(entry.Data["stepName"])
+	}
+	event.Body = entry.Message
 	event.SetLogLevel(logLevel)
 	event.Tags["logLevel"] = logLevel.String()
 
