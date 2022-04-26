@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/pkg/errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -20,6 +21,7 @@ type ANS struct {
 // Client to send the event to the SAP Alert Notification Service
 type Client interface {
 	Send(event Event) error
+	CheckCorrectSetup() error
 }
 
 // ServiceKey holds the information about the SAP Alert Notification Service to send the events to
@@ -40,47 +42,35 @@ func UnmarshallServiceKeyJSON(serviceKeyJSON string) (ansServiceKey ServiceKey, 
 	return
 }
 
+// CheckCorrectSetup of the SAP Alert Notification Service
+func (ans ANS) CheckCorrectSetup() error {
+	const testPath = "/cf/consumer/v1/matched-events"
+	entireUrl := ans.URL + testPath
+
+	response, err := ans.sendRequest(http.MethodGet, entireUrl, nil)
+	if err != nil {
+		return err
+	}
+
+	return handleStatusCode(entireUrl, http.StatusOK, response)
+}
+
 // Send an event to the SAP Alert Notification Service
 func (ans ANS) Send(event Event) error {
 	const eventPath = "/cf/producer/v1/resource-events"
+	entireUrl := ans.URL + eventPath
 
 	requestBody, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
-	header := make(http.Header)
-	err = ans.XSUAA.SetAuthHeaderIfNotPresent(&header)
+	response, err := ans.sendRequest(http.MethodPost, entireUrl, bytes.NewBuffer(requestBody))
 	if err != nil {
 		return err
 	}
 
-	entireUrl := ans.URL + eventPath
-
-	httpClient := http.Client{}
-	request, err := http.NewRequest(http.MethodPost, entireUrl, bytes.NewBuffer(requestBody))
-	if err != nil {
-		return err
-	}
-	request.Header.Add(authHeaderKey, header.Get(authHeaderKey))
-	request.Header.Add("Content-Type", "application/json")
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return err
-	}
-	if response.StatusCode != http.StatusAccepted {
-		statusCodeError := fmt.Errorf("ANS http request to '%s' failed. Did not get expected status code %d; instead got %d",
-			entireUrl, http.StatusAccepted, response.StatusCode)
-		responseBody, err := readResponseBody(response)
-		if err != nil {
-			err = errors.Wrapf(err, "%s; reading response body failed", statusCodeError.Error())
-		} else {
-			err = fmt.Errorf("%s; response body: %s", statusCodeError.Error(), responseBody)
-		}
-		return err
-	}
-
-	return nil
+	return handleStatusCode(entireUrl, http.StatusAccepted, response)
 }
 
 func readResponseBody(response *http.Response) ([]byte, error) {
@@ -95,4 +85,46 @@ func readResponseBody(response *http.Response) ([]byte, error) {
 		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
 	}
 	return bodyText, nil
+}
+
+func (ans ANS) sendRequest(method, url string, body io.Reader) (response *http.Response, err error) {
+	request, err := ans.newRequest(method, url, body)
+	if err != nil {
+		return
+	}
+
+	httpClient := http.Client{}
+	return httpClient.Do(request)
+}
+
+func (ans ANS) newRequest(method, url string, body io.Reader) (request *http.Request, err error) {
+	header := make(http.Header)
+	err = ans.XSUAA.SetAuthHeaderIfNotPresent(&header)
+	if err != nil {
+		return
+	}
+
+	request, err = http.NewRequest(method, url, body)
+	if err != nil {
+		return
+	}
+	request.Header.Add(authHeaderKey, header.Get(authHeaderKey))
+	request.Header.Add("Content-Type", "application/json")
+
+	return
+}
+
+func handleStatusCode(requestedUrl string, expectedStatus int, response *http.Response) error {
+	if response.StatusCode != expectedStatus {
+		statusCodeError := fmt.Errorf("ANS http request to '%s' failed. Did not get expected status code %d; instead got %d",
+			requestedUrl, expectedStatus, response.StatusCode)
+		responseBody, err := readResponseBody(response)
+		if err != nil {
+			err = errors.Wrapf(err, "%s; reading response body failed", statusCodeError.Error())
+		} else {
+			err = fmt.Errorf("%s; response body: %s", statusCodeError.Error(), responseBody)
+		}
+		return err
+	}
+	return nil
 }

@@ -51,10 +51,16 @@ func (e *Examinee) init() {
 	}
 }
 
-func (e *Examinee) execute(event Event, onRequest func(rw http.ResponseWriter, req *http.Request)) error {
+func (e *Examinee) doSend(event Event, onRequest func(rw http.ResponseWriter, req *http.Request)) error {
 	e.init()
 	e.onRequest = onRequest
 	return e.ans.Send(event)
+}
+
+func (e *Examinee) doCheckCorrectSetup(onRequest func(rw http.ResponseWriter, req *http.Request)) error {
+	e.init()
+	e.onRequest = onRequest
+	return e.ans.CheckCorrectSetup()
 }
 
 func TestANS_Send(t *testing.T) {
@@ -66,7 +72,7 @@ func TestANS_Send(t *testing.T) {
 
 	t.Run("good", func(t *testing.T) {
 		t.Run("pass request attributes", func(t *testing.T) {
-			examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method, "Mismatch in requested method")
 				assert.Equal(t, "/cf/producer/v1/resource-events", req.URL.Path, "Mismatch in requested path")
 				assert.Equal(t, "bearer 1234", req.Header.Get(authHeaderKey), "Mismatch in requested auth header")
@@ -74,7 +80,7 @@ func TestANS_Send(t *testing.T) {
 			})
 		})
 		t.Run("pass request attribute event", func(t *testing.T) {
-			examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
 				eventBody, _ := ioutil.ReadAll(req.Body)
 				event := &Event{}
 				json.Unmarshal(eventBody, event)
@@ -82,7 +88,7 @@ func TestANS_Send(t *testing.T) {
 			})
 		})
 		t.Run("on status 202", func(t *testing.T) {
-			err := examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			err := examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusAccepted)
 			})
 			require.NoError(t, err, "No error expected.")
@@ -91,12 +97,46 @@ func TestANS_Send(t *testing.T) {
 
 	t.Run("bad", func(t *testing.T) {
 		t.Run("on status 400", func(t *testing.T) {
-			err := examinee.execute(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			err := examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusBadRequest)
 				rw.Write([]byte("an error occurred"))
 			})
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "Did not get expected status code 202")
+		})
+	})
+}
+
+func TestANS_CheckCorrectSetup(t *testing.T) {
+	examinee := Examinee{}
+	defer examinee.finish()
+	examinee.init()
+
+	t.Run("good", func(t *testing.T) {
+		t.Run("pass request attributes", func(t *testing.T) {
+			examinee.doCheckCorrectSetup(func(rw http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, http.MethodGet, req.Method, "Mismatch in requested method")
+				assert.Equal(t, "/cf/consumer/v1/matched-events", req.URL.Path, "Mismatch in requested path")
+				assert.Equal(t, "bearer 1234", req.Header.Get(authHeaderKey), "Mismatch in requested auth header")
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"), "Mismatch in requested content type header")
+			})
+		})
+		t.Run("on status 200", func(t *testing.T) {
+			err := examinee.doCheckCorrectSetup(func(rw http.ResponseWriter, req *http.Request) {
+				rw.WriteHeader(http.StatusOK)
+			})
+			require.NoError(t, err, "No error expected.")
+		})
+	})
+
+	t.Run("bad", func(t *testing.T) {
+		t.Run("on status 400", func(t *testing.T) {
+			err := examinee.doCheckCorrectSetup(func(rw http.ResponseWriter, req *http.Request) {
+				rw.WriteHeader(http.StatusBadRequest)
+				rw.Write([]byte("an error occurred"))
+			})
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "Did not get expected status code 200")
 		})
 	})
 }
