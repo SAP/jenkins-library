@@ -173,8 +173,12 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			}
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
 				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
-				ansHook := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)
-				log.RegisterHook(&ansHook)
+				ansHook, err := log.NewANSHook(GeneralConfig.HookConfig.ANSConfig, GeneralConfig.CorrelationID)
+				if err != nil {
+					log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+				} else {
+					log.RegisterHook(&ansHook)
+				}
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
