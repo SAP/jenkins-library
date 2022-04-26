@@ -4,6 +4,8 @@ import groovy.transform.Field
 @Field String METADATA_FILE = "metadata/golangBuild.yaml"
 
 void call(Map parameters = [:]) {
-    List credentials = []
+    List credentials = [
+        [type: 'usernamePassword', id: 'golangPrivateModulesGitTokenCredentialsId', env: ['PIPER_privateModulesGitUsername', 'PIPER_privateModulesGitToken']]
+    ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
