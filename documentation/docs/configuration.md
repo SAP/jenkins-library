@@ -155,6 +155,10 @@ certain event details. There are two ways to do this:
     export PIPER_ansEventTemplate='{"priority": 999}'
     ```
 
+If both event templates are defined they are merged together. Meaning that any
+fields already defined by the JSON file will be overwritten by the
+environment JSON string.
+
 ## Collecting telemetry and logging data for Splunk
 
 Splunk gives the ability to analyze any kind of logging information and to visualize the retrieved information in dashboards.
