@@ -562,7 +562,9 @@ func (vs Values) String() string {
 	for _, value := range vs.Values {
 		returnString = returnString + value.String() + ",\n"
 	}
-	returnString = returnString[:len(returnString)-2] //removes last ,
+	if len(returnString) > 0 {
+		returnString = returnString[:len(returnString)-2] //removes last ,
+	}
 	return returnString
 }
 
