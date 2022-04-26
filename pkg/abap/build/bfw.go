@@ -557,6 +557,29 @@ func (logging *logStruct) print() {
 	}
 }
 
+// ******** parsing ********
+func (v Value) String() string {
+	return fmt.Sprintf(
+		`{ "value_id": "%s", "value": "%s" }`,
+		v.ValueID,
+		v.Value)
+}
+
+func (vs Values) String() string {
+	returnString := ""
+	for _, value := range vs.Values {
+		returnString = returnString + value.String() + ",\n"
+	}
+	if len(returnString) > 0 {
+		returnString = returnString[:len(returnString)-2] //removes last ,
+	}
+	return returnString
+}
+
+func (in inputForPost) String() string {
+	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
+}
+
 // ******** unmarshal function  ************
 func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 
