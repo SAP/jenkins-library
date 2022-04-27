@@ -52,6 +52,24 @@ spec:
         type: string
         default: https://github.com
         mandatory: true
+      - name: forcePush
+        type: bool
+        description: Force push to serverUrl
+        longDescription: |
+          To bypass branch-protections the git push command can be forced.
+
+          Example:
+          ```yaml
+          steps:
+            gitopsUpdateDeployment:
+              forcePush: true
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
       - name: username
         type: string
         description: User name for git authentication

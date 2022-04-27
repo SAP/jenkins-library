@@ -54,6 +54,13 @@ spec:
           - STAGES
           - STEPS
         type: string
+      - name: assetPathList
+        description: List of paths to a release asset which should be uploaded to the list of release assets.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
       - name: commitish
         description: "Target git commitish for the release"
         scope:

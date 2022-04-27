@@ -46,7 +46,7 @@ func TestPushChangesToRepository(t *testing.T) {
 	t.Parallel()
 	t.Run("successful push", func(t *testing.T) {
 		t.Parallel()
-		err := pushChangesToRepository("user", "password", RepositoryMock{
+		err := pushChangesToRepository("user", "password", nil, RepositoryMock{
 			test: t,
 		})
 		assert.NoError(t, err)
@@ -54,7 +54,7 @@ func TestPushChangesToRepository(t *testing.T) {
 
 	t.Run("error pushing", func(t *testing.T) {
 		t.Parallel()
-		err := pushChangesToRepository("user", "password", RepositoryMockError{})
+		err := pushChangesToRepository("user", "password", nil, RepositoryMockError{})
 		assert.EqualError(t, err, "failed to push commit: error on push commits")
 	})
 }

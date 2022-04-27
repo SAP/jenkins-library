@@ -219,6 +219,7 @@ spec:
         resourceRef:
           - name: golangPrivateModulesGitTokenCredentialsId
             type: secret
+            param: password
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang

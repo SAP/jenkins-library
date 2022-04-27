@@ -96,7 +96,13 @@ import static com.sap.piper.Prerequisites.checkScript
      * Site ID of the SAP Fiori Launchpad containing the SAP Fiori app. If not set, the cache of the default site, as defined in the Portal service, is invalidated.
      * @parentConfigKey neo
      */
-    'siteId'
+    'siteId',
+    /**
+     * Availability zone of BTP NEO into which the application is deployed.
+     * @possibleValues 1, 2
+     * @parentConfigKey neo
+     */
+    'azDistribution'
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
