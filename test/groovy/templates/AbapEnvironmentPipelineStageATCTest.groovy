@@ -39,7 +39,8 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
 
     @Test
     void testAbapEnvironmentRunTests() {
-
+        
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript)
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck','cloudFoundryCreateServiceKey'))
@@ -49,6 +50,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
     @Test
     void testAbapEnvironmentRunTestsWithATCSystemConfig() {
 
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, atcSystemConfigFilePath: 'atcSystemConfig.json' )
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck','abapEnvironmentPushATCSystemConfig','cloudFoundryCreateServiceKey'))
@@ -56,7 +58,8 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
 
     @Test
     void testAbapEnvironmentRunTestsWithHost() {
-        
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript,  host: 'abc.com')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
@@ -65,7 +68,8 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
 
     @Test
     void testAbapEnvironmentRunTestsWithATCSystemConfigWithHost() {
-        
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, host: 'abc.com', atcSystemConfigFilePath: 'atcSystemConfig.json' )
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck','abapEnvironmentPushATCSystemConfig'))
