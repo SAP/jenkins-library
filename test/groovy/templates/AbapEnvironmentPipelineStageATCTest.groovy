@@ -39,7 +39,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
 
     @Test
     void testAbapEnvironmentRunTests() {
-        
+
         nullScript.commonPipelineEnvironment.configuration.runStage = []
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript)
 
@@ -64,16 +64,6 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentPushATCSystemConfig','cloudFoundryCreateServiceKey')))
-    }
-
-    @Test
-    void testAbapEnvironmentRunTestsWithATCSystemConfigWithHost() {
-
-        nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, host: 'abc.com', atcSystemConfigFilePath: 'atcSystemConfig.json' )
-
-        assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck','abapEnvironmentPushATCSystemConfig'))
-        assertThat(stepsCalled, not(hasItems('cloudFoundryCreateServiceKey')))
     }
 
 }
