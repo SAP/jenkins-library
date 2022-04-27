@@ -25,6 +25,7 @@ type pythonBuildOptions struct {
 	TargetRepositoryUser     string   `json:"targetRepositoryUser,omitempty"`
 	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
+	VirutalEnvironmentName   string   `json:"virutalEnvironmentName,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
@@ -155,6 +156,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
+	cmd.Flags().StringVar(&stepConfig.VirutalEnvironmentName, "virutalEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 
 }
 
@@ -252,10 +254,19 @@ func pythonBuildMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
+					{
+						Name:        "virutalEnvironmentName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `piperBuild-env`,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3.9", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "python", Image: "python:3.9"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

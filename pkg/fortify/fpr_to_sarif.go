@@ -519,6 +519,7 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 		return sarif, err
 	}
 
+	log.Entry().Debug("Reading audit file.")
 	data, err := ioutil.ReadFile(filepath.Join(tmpFolder, "audit.fvdl"))
 	if err != nil {
 		return sarif, err
@@ -572,6 +573,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs = append(sarif.Runs, fortifyRun)
 
 	// Handle results/vulnerabilities
+	log.Entry().Debug("[SARIF] Now handling results.")
 	for i := 0; i < len(fvdl.Vulnerabilities.Vulnerability); i++ {
 		result := *new(format.Results)
 		result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
@@ -748,6 +750,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	}
 
 	//handle the tool object
+	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "MicroFocus Fortify SCA"
@@ -884,6 +887,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs[0].Tool = tool
 
 	//handle invocations object
+	log.Entry().Debug("[SARIF] Now handling invocation.")
 	invocation := *new(format.Invocations)
 	for i := 0; i < len(fvdl.EngineData.Properties); i++ { //i selects the properties type
 		if fvdl.EngineData.Properties[i].PropertiesType == "Fortify" { // This is the correct type, now iterate on props
@@ -917,6 +921,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs[0].OriginalUriBaseIds = oubi
 
 	//handle artifacts
+	log.Entry().Debug("[SARIF] Now handling artifacts.")
 	for i := 0; i < len(fvdl.Build.SourceFiles); i++ { //i iterates on source files
 		artifact := *new(format.Artifact)
 		artifact.Location.Uri = fvdl.Build.SourceFiles[i].Name
@@ -938,6 +943,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sarif.Runs[0].AutomationDetails.Id = fvdl.Build.BuildID
 
 	//handle threadFlowLocations
+	log.Entry().Debug("[SARIF] Now handling threadFlowLocations.")
 	threadFlowLocationsObject := []format.Locations{}
 	//prepare a check object
 	for i := 0; i < len(fvdl.UnifiedNodePool.Node); i++ {
@@ -1073,7 +1079,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
 		//log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
-		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+		return errors.New("not exactly 1 issue found for instance ID " + issueInstanceID + ", found " + fmt.Sprint(len(data)))
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
