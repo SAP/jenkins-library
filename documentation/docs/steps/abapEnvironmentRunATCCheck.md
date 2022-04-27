@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP BTP, ABAP Environment - Software Component Test Integration (SAP_COM_0510)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0510", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
+* A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP Cloud Platform ABAP Environment - Software Component Test Integration (SAP_COM_0901)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0901", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
 * You can either provide the ABAP endpoint configuration to directly trigger an ATC run on the ABAP system or optionally provide the Cloud Foundry parameters with your credentials to read a Service Key of a SAP BTP, ABAP environment system in Cloud Foundry that contains all the details of the ABAP endpoint to trigger an ATC run.
 * Regardless if you chose an ABAP endpoint directly or reading a Cloud Foundry Service Key, you have to provide the configuration of the packages and software components you want to be checked in an ATC run in a .yml or .yaml file. This file must be stored in the same folder as the Jenkinsfile defining the pipeline.
 * The software components and/or packages you want to be checked must be present in the configured system in order to run the check. Please make sure that you have created or pulled the respective software components and/or Packages in the SAP BTP, ABAP environment system.
@@ -96,44 +96,93 @@ Additionally, if you don't specify a dedicated ATC check variant to be used, the
 See below example for an `atcconfig.yml` file with both packages and software components to be checked:
 
 ```yaml
-atcobjects:
-  package:
-    - name: "TestPackage"
-      includesubpackage: false
-    - name: "TestPackage2"
-      includesubpackage: true
-  softwarecomponent:
-    - name: "TestComponent"
-    - name: "TestComponent2"
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    softwarecomponents:
+      - name: TestComponent
+      - name: TestComponent2  
+    packages:
+      - name: TestPackage
+    packagetrees:
+      - name: TestPackageWithSubpackages    
 ```
 
 The following example of an `atcconfig.yml` file that only contains packages to be checked:
 
 ```yaml
-atcobjects:
-  package:
-    - name: "TestPackage"
-      includesubpackage: false
-    - name: "TestPackage2"
-      includesubpackage: true
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    packages:
+      - name: TestPackage
+    packagetrees:
+      - name: TestPackageWithSubpackages    
 ```
 
 The following example of an `atcconfig.yml` file that only contains software components to be checked:
 
 ```yaml
-atcobjects:
-  softwarecomponent:
-    - name: "TestComponent"
-    - name: "TestComponent2"
+objectset:
+  softwarecomponents:
+    - name: TestComponent
+    - name: TestComponent2
 ```
 
-The following is an example of an `atcconfig.yml` file that supports the check variant and configuration ATC options:
+The following is an example of an `atcconfig.yml` file that supports the check variant and configuration ATC options and containing the software components `TestComponent` and `TestComponent2` as Objectset.
 
 ```yaml
 checkvariant: "TestCheckVariant"
 configuration: "TestConfiguration"
-atcobjects:
-  softwarecomponent:
-    - name: "TestComponent"
-    - name: "TestComponent2"
+objectset:
+  softwarecomponents:
+    - name: TestComponent
+    - name: TestComponent2
+```
+
+The following example of an `atcconfig.yml` file contains all possible properties of the Multi Property Set that can be used. Please take note that this is not the reccommended approach. If you want to check packages or software components please use the two above examples. The usage of the Multi Property Set is only reccommended for ATC runs that require these rules for the test execution. There is no official documentation on the usage of the Multi Property Set.
+
+```yaml
+title: My AUnit run
+context: My unit tests
+options:
+  measurements: none
+  scope:
+    ownTests: true
+    foreignTests: true
+  riskLevel:
+    harmless: true
+    dangerous: true
+    critical: true
+  duration:
+    short: true
+    medium: true
+    long: true
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    owners:
+      - name: demoOwner
+    softwarecomponents:
+      - name: demoSoftwareComponent
+    versions:
+      - value: ACTIVE
+    packages:
+      - name: demoPackage
+    objectnamepatterns:
+      - value: 'ZCL_*'
+    languages:
+      - value: EN
+    sourcesystems:
+      - name: H01
+    objecttypes:
+      - name: CLAS
+    objecttypegroups:
+      - name: CLAS
+    releasestates:
+      - value: RELEASED
+    applicationcomponents:
+      - name: demoApplicationComponent
+    transportlayers:
+      - name: H01
 ```
