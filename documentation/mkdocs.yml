@@ -112,6 +112,7 @@ nav:
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
+        - helmExecute: steps/helmExecute.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
