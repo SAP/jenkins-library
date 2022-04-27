@@ -28,6 +28,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        default: false
       - name: targetRepositoryPassword
         description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
         type: string
@@ -70,6 +71,14 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: virutalEnvironmentName
+        type: string
+        description: name of the virtual environment that will be used for the build
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: piperBuild-env
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -79,7 +88,3 @@ spec:
   containers:
     - name: python
       image: python:3.9
-      # workingDir: /home/node
-      options:
-        - name: -u
-          value: "0"
