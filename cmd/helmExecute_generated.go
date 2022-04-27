@@ -257,8 +257,9 @@ func helmExecuteMetadata() config.StepData {
 							},
 
 							{
-								Name: "targetRepositoryCredentialsId",
-								Type: "vaultSecret",
+								Name:    "targetRepositoryUserSecretName",
+								Type:    "vaultSecret",
+								Default: "publishing",
 							},
 
 							{
@@ -274,7 +275,7 @@ func helmExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "helmRepositoryUsername"}},
 						Default:   os.Getenv("PIPER_targetRepositoryUser"),
 					},
 					{
@@ -287,8 +288,9 @@ func helmExecuteMetadata() config.StepData {
 							},
 
 							{
-								Name: "targetRepositoryCredentialsId",
-								Type: "vaultSecret",
+								Name:    "targetRepositoryPasswordSecret",
+								Type:    "vaultSecret",
+								Default: "publishing",
 							},
 
 							{
@@ -304,7 +306,7 @@ func helmExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "helmRepositoryPassword"}},
 						Default:   os.Getenv("PIPER_targetRepositoryPassword"),
 					},
 					{

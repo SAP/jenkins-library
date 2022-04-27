@@ -82,6 +82,8 @@ spec:
           - STAGES
           - STEPS
       - name: targetRepositoryUser
+        aliases:
+          - name: helmRepositoryUsername
         description: "Username for the chart repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
@@ -94,12 +96,15 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            name: targetRepositoryCredentialsId
+            name: targetRepositoryUserSecretName
+            default: publishing
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: targetRepositoryPassword
+        aliases:
+          - name: helmRepositoryPassword
         description: "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
@@ -112,7 +117,8 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            name: targetRepositoryCredentialsId
+            name: targetRepositoryPasswordSecret
+            default: publishing
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
