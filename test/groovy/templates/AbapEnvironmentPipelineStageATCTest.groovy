@@ -64,7 +64,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
     }
 
     @Test
-    void testAbapEnvironmentRunTestsWithATCSystemConfigWithHost()() {
+    void testAbapEnvironmentRunTestsWithATCSystemConfigWithHost() {
         
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript, host: 'abc.com', atcSystemConfigFilePath: 'atcSystemConfig.json' )
 
