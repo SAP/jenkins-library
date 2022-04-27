@@ -1,0 +1,30 @@
+metadata:
+  name: ansSendEvent
+  description: Send Event to the SAP Alert Notification Service
+  longDescription: |
+    With this step one can send an Event to the SAP Alert Notification Service.
+
+spec:
+  inputs:
+    secrets:
+      - name: ansServiceKeyCredentialsId
+        description: Jenkins secret text credential ID containing the service key to access the SAP Alert Notification Service
+        type: jenkins
+    params:
+      - name: ansServiceKey
+        type: string
+        description: Service key JSON string to access the SAP Alert Notification Service
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: ansServiceKeyCredentialsId
+            type: secret
+            param: ansServiceKey
+      - name: eventJSON
+        type: string
+        description: Event specification in JSON format
+        scope:
+          - PARAMETERS
+        mandatory: true
