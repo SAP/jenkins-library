@@ -105,7 +105,7 @@ objectset:
     packages:
       - name: TestPackage
     packagetrees:
-      - name: TestPackageWithSubpackages    
+      - name: TestPackageWithSubpackages
 ```
 
 The following example of an `atcconfig.yml` file that only contains packages to be checked:
@@ -117,7 +117,7 @@ objectset:
     packages:
       - name: TestPackage
     packagetrees:
-      - name: TestPackageWithSubpackages    
+      - name: TesTestPackageWithSubpackages
 ```
 
 The following example of an `atcconfig.yml` file that only contains software components to be checked:
