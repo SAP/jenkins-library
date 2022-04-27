@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
-	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -19,11 +18,17 @@ type ANSHook struct {
 
 // NewANSHook creates a new ANS hook for logrus
 func NewANSHook(config ans.Configuration, correlationID string) (hook ANSHook, err error) {
+	return newANSHook(config, correlationID, &ans.ANS{})
+}
+
+func newANSHook(config ans.Configuration, correlationID string, client ans.Client) (hook ANSHook, err error) {
 	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(config.ServiceKey)
 	if err != nil {
 		err = errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
 		return
 	}
+	client.SetOptions(ansServiceKey)
+
 	event := ans.Event{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
@@ -49,13 +54,8 @@ func NewANSHook(config ans.Configuration, correlationID string) (hook ANSHook, e
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
 		}
 	}
-	x := xsuaa.XSUAA{
-		OAuthURL:     ansServiceKey.OauthUrl,
-		ClientID:     ansServiceKey.ClientId,
-		ClientSecret: ansServiceKey.ClientSecret,
-	}
 	h := ANSHook{
-		client: ans.ANS{XSUAA: x, URL: ansServiceKey.Url},
+		client: client,
 		event:  event,
 	}
 	err = h.client.CheckCorrectSetup()

@@ -2,14 +2,11 @@ package log
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -18,29 +15,26 @@ import (
 const testCorrelationID = "1234"
 
 func TestANSHook_Levels(t *testing.T) {
-	hook, _ := NewANSHook(ans.Configuration{}, "")
+	hook, _ := newANSHook(ans.Configuration{}, "", &ansMock{})
 	assert.Equal(t, []logrus.Level{logrus.InfoLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
 		hook.Levels())
 }
 
-func TestNewANSHook(t *testing.T) {
-	mockServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte(`{"access_token":"1234"}`))
-	}))
-	defer mockServer.Close()
-	testClient := ans.ANS{
+func Test_newANSHook(t *testing.T) {
+	t.Parallel()
+	testClient := &ans.ANS{
 		XSUAA: xsuaa.XSUAA{
-			OAuthURL:     mockServer.URL,
+			OAuthURL:     "https://my.test.oauth.provider",
 			ClientID:     "myTestClientID",
 			ClientSecret: "super secret",
 		},
-		URL: mockServer.URL,
+		URL: "https://my.test.backend",
 	}
 	testServiceKeyJSON := `{
-					"url": "` + mockServer.URL + `",
+					"url": "https://my.test.backend",
 					"client_id": "myTestClientID",
 					"client_secret": "super secret",
-					"oauth_url": "` + mockServer.URL + `"
+					"oauth_url": "https://my.test.oauth.provider"
 				}`
 	type args struct {
 		serviceKey    string
@@ -112,6 +106,7 @@ func TestNewANSHook(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var testEventTemplateFilePath string
 			if len(tt.eventTemplateFileContent) > 0 {
 				var err error
@@ -130,22 +125,25 @@ func TestNewANSHook(t *testing.T) {
 				EventTemplateFilePath: testEventTemplateFilePath,
 				EventTemplate:         tt.args.eventTemplate,
 			}
-			got, err := NewANSHook(ansConfig, tt.args.correlationID)
+			clientMock := &ansMock{}
+			defer clientMock.cleanup()
+			got, err := newANSHook(ansConfig, tt.args.correlationID, clientMock)
+
 			if tt.wantErr {
 				assert.Error(t, err, "An error was expected here")
 			} else {
 				require.NoError(t, err, "No error was expected here")
-				assert.Equal(t, tt.wantHook, got, "new ANSHook not as expected")
+				assert.Equal(t, tt.wantHook.client, clientMock.testANS, "new ANSHook not as expected")
+				assert.Equal(t, tt.wantHook.event, got.event, "new ANSHook not as expected")
 			}
 		})
 	}
 }
 
 func TestANSHook_Fire(t *testing.T) {
-	testClient := ansMock{}
+	t.Parallel()
 	type fields struct {
 		correlationID string
-		client        ansMock
 		levels        []logrus.Level
 		event         ans.Event
 	}
@@ -159,7 +157,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "Straight forward test",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event:         defaultEvent(),
 			},
 			entryArgs: []*logrus.Entry{
@@ -188,7 +185,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "If error key set in data, severity should be error",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event:         defaultEvent(),
 			},
 			entryArgs: []*logrus.Entry{
@@ -217,7 +213,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "If message is fatal error, severity should be fatal",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event:         defaultEvent(),
 			},
 			entryArgs: []*logrus.Entry{
@@ -246,7 +241,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "Event already set",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event: mergeEvents(t, defaultEvent(), ans.Event{
 					EventType: "My event type",
 					Subject:   "My subject line",
@@ -279,7 +273,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "Log entries should not affect each other",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event:         defaultEvent(),
 			},
 			entryArgs: []*logrus.Entry{
@@ -314,7 +307,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "White space messages should not send",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event:         defaultEvent(),
 			},
 			entryArgs: []*logrus.Entry{
@@ -330,7 +322,6 @@ func TestANSHook_Fire(t *testing.T) {
 			name: "INFO severity should not be sent",
 			fields: fields{
 				correlationID: testCorrelationID,
-				client:        testClient,
 				event:         defaultEvent(),
 			},
 			entryArgs: []*logrus.Entry{
@@ -345,17 +336,19 @@ func TestANSHook_Fire(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			clientMock := ansMock{}
 			ansHook := &ANSHook{
-				client: tt.fields.client,
+				client: &clientMock,
 				event:  tt.fields.event,
 			}
-			defer func() { testEvent = ans.Event{} }()
+			defer clientMock.cleanup()
 			for _, entryArg := range tt.entryArgs {
 				originalLogLevel := entryArg.Level
 				ansHook.Fire(entryArg)
 				assert.Equal(t, originalLogLevel.String(), entryArg.Level.String(), "Entry error level has been altered")
 			}
-			assert.Equal(t, tt.wantEvent, testEvent, "Event is not as expected.")
+			assert.Equal(t, tt.wantEvent, clientMock.testEvent, "Event is not as expected.")
 		})
 	}
 }
@@ -379,15 +372,26 @@ func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
 	return event1
 }
 
-type ansMock struct{}
+type ansMock struct {
+	testANS   *ans.ANS
+	testEvent ans.Event
+}
 
-var testEvent ans.Event
-
-func (ans ansMock) Send(event ans.Event) error {
-	testEvent = event
+func (am *ansMock) Send(event ans.Event) error {
+	am.testEvent = event
 	return nil
 }
 
-func (ans ansMock) CheckCorrectSetup() error {
-	return fmt.Errorf("not implemented")
+func (am *ansMock) CheckCorrectSetup() error {
+	return nil
+}
+
+func (am *ansMock) SetOptions(serviceKey ans.ServiceKey) {
+	a := &ans.ANS{}
+	a.SetOptions(serviceKey)
+	am.testANS = a
+}
+
+func (am *ansMock) cleanup() {
+	am.testANS = &ans.ANS{}
 }
