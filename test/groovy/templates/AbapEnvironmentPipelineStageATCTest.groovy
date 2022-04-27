@@ -34,6 +34,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('abapEnvironmentRunATCCheck', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunATCCheck')})
         helper.registerAllowedMethod('abapEnvironmentPushATCSystemConfig', [Map.class], {m -> stepsCalled.add('abapEnvironmentPushATCSystemConfig')})
+        helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
     }
 
     @Test
@@ -55,4 +56,26 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
         assertThat(stepsCalled, hasItems('abapEnvironmentPushATCSystemConfig'))
     }
+
+    @Test
+    void testAbapEnvironmentRunTestsWithoutHost() {
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'ATC': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageATC(script: nullScript)
+
+        assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck','cloudFoundryCreateServiceKey'))
+    }
+
+    @Test
+    void testAbapEnvironmentRunTestsWithHost() {
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'ATC': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageATC(script: nullScript,  host: 'abc.com')
+
+        assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
+        assertThat(stepsCalled, not(hasItems('cloudFoundryCreateServiceKey')))
+    }
+
 }
