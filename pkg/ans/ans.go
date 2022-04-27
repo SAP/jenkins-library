@@ -22,6 +22,7 @@ type ANS struct {
 type Client interface {
 	Send(event Event) error
 	CheckCorrectSetup() error
+	SetOptions(serviceKey ServiceKey)
 }
 
 // ServiceKey holds the information about the SAP Alert Notification Service to send the events to
@@ -40,6 +41,15 @@ func UnmarshallServiceKeyJSON(serviceKeyJSON string) (ansServiceKey ServiceKey, 
 		return
 	}
 	return
+}
+
+func (ans *ANS) SetOptions(serviceKey ServiceKey) {
+	ans.XSUAA = xsuaa.XSUAA{
+		OAuthURL:     serviceKey.OauthUrl,
+		ClientID:     serviceKey.ClientId,
+		ClientSecret: serviceKey.ClientSecret,
+	}
+	ans.URL = serviceKey.Url
 }
 
 // CheckCorrectSetup of the SAP Alert Notification Service
