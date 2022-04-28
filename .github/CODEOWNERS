@@ -57,8 +57,8 @@ SonarExecuteScan*                               @CCFenner
 
 abapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
-abapEnvironment*                        @SAP/jenkins-library-abap
-AbapEnvironment*                        @SAP/jenkins-library-abap
+abapEnvironment*                                @SAP/jenkins-library-abap
+AbapEnvironment*                                @SAP/jenkins-library-abap
 
 
 #####################
@@ -82,7 +82,7 @@ integration/testdata/TestCnbIntegration/        @SAP/jenkins-library-cnb
 /pkg/orchestrator/                              @inf2381
 
 /pkg/abap/                                      @SAP/jenkins-library-abap
-/pkg/abaputils/                                      @SAP/jenkins-library-abap
+/pkg/abaputils/                                 @SAP/jenkins-library-abap
 
 ####################
 # Misc             #
