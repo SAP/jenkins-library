@@ -25,7 +25,6 @@ consumer-test/**/workspace
 debug.test
 /cache/protecode
 
-
 # build artifacts
 /piper
 /piper.exe
