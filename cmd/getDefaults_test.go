@@ -11,6 +11,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var stageConditionsExample string = `#Piper general purpose pipeline stage configuration including conditions
+apiVersion: project-piper.io/v1
+kind: PipelineDefinition
+metadata:
+  name: sap-piper.general.purpose.pipeline
+  displayName: Piper general purpose pipeline
+  description: |-
+    This is a multiline
+    test description
+spec:
+  stages:
+# Init stage
+  - name: init
+    displayName: Init
+    description: |-
+      Test description
+    steps:
+    - name: getConfig
+      description: Read pipeline stage configuration.`
+
+var stageConditionsExpected string = `"apiVersion: project-piper.io/v1\nkind: PipelineDefinition\nmetadata:\n  description: |-\n    This is a multiline\n    test description\n  displayName: Piper general purpose pipeline\n  name: sap-piper.general.purpose.pipeline\nspec:\n` +
+	`  stages:\n  - description: Test description\n    displayName: Init\n    name: init\n    steps:\n    - description: Read pipeline stage configuration.\n      name: getConfig\n"`
+
 func defaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
 	switch name {
@@ -18,6 +41,8 @@ func defaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser,
 		r = "default1"
 	case "TestAddCustomDefaults_default2":
 		r = "default3"
+	case "stage_conditions.yaml":
+		r = stageConditionsExample
 	default:
 		r = ""
 	}
@@ -45,7 +70,7 @@ func TestDefaultsCommand(t *testing.T) {
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"output", "outputFile"}
+		exp := []string{"output", "outputFile", "useV1"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
@@ -62,6 +87,7 @@ func TestGenerateDefaults(t *testing.T) {
 	testParams := []struct {
 		name          string
 		defaultsFiles []string
+		useV1         bool
 		expected      string
 	}{
 		{
@@ -75,6 +101,19 @@ func TestGenerateDefaults(t *testing.T) {
 			expected: `[{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test1"},` +
 				`{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test2"}]`,
 		},
+		{
+			name:          "Single file + useV1",
+			defaultsFiles: []string{"stage_conditions.yaml"},
+			useV1:         true,
+			expected:      `{"content":` + stageConditionsExpected + `,"filepath":"stage_conditions.yaml"}`,
+		},
+		{
+			name:          "Multiple files + useV1",
+			defaultsFiles: []string{"stage_conditions.yaml", "stage_conditions.yaml"},
+			useV1:         true,
+			expected: `[{"content":` + stageConditionsExpected + `,"filepath":"stage_conditions.yaml"},` +
+				`{"content":` + stageConditionsExpected + `,"filepath":"stage_conditions.yaml"}]`,
+		},
 	}
 
 	utils := newGetDefaultsUtilsUtils()
@@ -83,6 +122,7 @@ func TestGenerateDefaults(t *testing.T) {
 	for _, test := range testParams {
 		t.Run(test.name, func(t *testing.T) {
 			defaultsOptions.defaultsFiles = test.defaultsFiles
+			defaultsOptions.useV1 = test.useV1
 			result, _ := generateDefaults(utils)
 			assert.Equal(t, test.expected, string(result))
 		})
