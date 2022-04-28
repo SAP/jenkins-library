@@ -57,10 +57,9 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesClone() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'Clone',  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'Clone')
 
-        assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
-        assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo', 'cloudFoundryCreateServiceKey'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch')))
     }
 
@@ -68,32 +67,29 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesCheckoutPull() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'CheckoutPull',  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'CheckoutPull')
 
-        assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
-        assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo', 'cloudFoundryCreateServiceKey'))
     }
 
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesPullCheckoutPull() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'AddonBuild',  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'AddonBuild')
 
-        assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch')))
-        assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo', 'cloudFoundryCreateServiceKey'))
     }
 
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesNoStrategy() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript,  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, host: 'abc.com')
 
-        assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo'))
-        assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo', 'abapEnvironmentCheckoutBranch')))
+        assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo', 'abapEnvironmentCheckoutBranch', 'cloudFoundryCreateServiceKey')))
     }
 }
