@@ -65,7 +65,6 @@ type AzureCredentials struct {
 	SAS_Token    string `json:"sas_token"`
 	Account_Name string `json:"account_name"`
 	Container    string `json:"container_name"`
-	Azure_Region string `json:"region"`
 }
 
 func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.CustomData) {
