@@ -50,7 +50,7 @@ repositories:
 - name: '/DMO/GIT_REPO_COMMIT'
   branch: 'feature'
   commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
-  - name: '/DMO/GIT_REPO_TAG'
+- name: '/DMO/GIT_REPO_TAG'
   branch: 'realease'
   tag: 'myTag'
 ```
