@@ -154,6 +154,7 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	bufEncoder.SetIndent("", "  ")
 	//encode to buffer
 	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
