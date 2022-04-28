@@ -46,3 +46,19 @@ ATCResults.xml
 AUnitResults.xml
 ATCResults.html
 AUnitResults.html
+
+<<<<<<< HEAD
+/cmd/*
+=======
+/cmd/temp-*
+/cmd/toolruns
+/cmd/checkmarx
+/cmd/.pipeline
+/cmd/fortify
+/cmd/protecode
+cmd/dockerimagename_latest.tar
+<<<<<<< HEAD
+>>>>>>> 06e5ca29 (OSL - AUnit & ATC usage)
+=======
+cmd/atcSystemConfig.json
+>>>>>>> b126ba70 (Unittest ATC: packagetree --> package incl. subpackages)

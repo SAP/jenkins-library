@@ -491,7 +491,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
 		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, false)
-		assert.Error(t, err, "not exactly 1 issue found, found 0")
+		assert.Error(t, err, "not exactly 1 issue found for instance ID 11037, found 0")
 	})
 
 	t.Run("Successful lookup in oneRequestPerInstance mode", func(t *testing.T) {
