@@ -90,7 +90,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesNoStrategy() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = []
-        jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript,  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript,  host: 'abc.com')
 
         assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo'))
