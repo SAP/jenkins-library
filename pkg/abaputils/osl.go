@@ -10,6 +10,7 @@ import (
 type ObjectSet struct {
 	PackageNames       []Package            `json:"packages,omitempty"`
 	SoftwareComponents []SoftwareComponents `json:"softwarecomponents,omitempty"`
+	PackageTrees       []PackageTree        `json:"packagetrees,omitempty"`
 	Type               string               `json:"type,omitempty"`
 	MultiPropertySet   MultiPropertySet     `json:"multipropertyset,omitempty"`
 	Set                []Set                `json:"set,omitempty"`
