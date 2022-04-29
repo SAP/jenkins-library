@@ -106,8 +106,8 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 
 	if config.Verbose {
 		cOptions = append(cOptions, []ConfigOption{
-			{Name: "log.level", Value: "debug"},
-			{Name: "log.files.level", Value: "debug"},
+			{Name: "log.level", Value: "trace"},
+			{Name: "log.files.level", Value: "trace"},
 		}...)
 	}
 
@@ -173,7 +173,15 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		},
 		"gradle": {
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
-			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
+			{Name: "gradle.resolveDependencies", Value: true, Force: true},
+			{Name: "gradle.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "gradle.aggregateModules", Value: false, Force: true},
+			{Name: "gradle.runAssembleCommand", Value: true},
+			{Name: "gradle.runPreStep", Value: true},
+			{Name: "gradle.preferredEnvironment", Value: "wrapper"},
+			{Name: "resolveAllDependencies", Value: false},
+			{Name: "includes", Value: "**/*.jar"},
+			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 		"maven": {
 			{Name: "ignoreSourceFiles", Value: true, Force: true},

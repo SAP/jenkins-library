@@ -55,9 +55,88 @@ type Alert struct {
 	Status           string        `json:"status,omitempty"`
 }
 
+// Title returns the issue title representation of the contents
+func (a Alert) Title() string {
+	return fmt.Sprintf("%v/%v/%v/%v", a.Type, consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Vulnerability.Name, a.Library.ArtifactID)
+}
+
+func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
+	switch cvss3severity {
+	case "low":
+		return "LOW"
+	case "medium":
+		return "MEDIUM"
+	case "high":
+		if cvss3score >= 9 {
+			return "CRITICAL"
+		}
+		return "HIGH"
+	}
+	switch cvss2severity {
+	case "low":
+		return "LOW"
+	case "medium":
+		return "MEDIUM"
+	case "high":
+		if cvss2score >= 9 {
+			return "CRITICAL"
+		}
+		return "HIGH"
+	}
+	return "none"
+}
+
 // ToMarkdown returns the markdown representation of the contents
-func (a *Alert) ToMarkdown() string {
-	return fmt.Sprintf("**Vulnerability %v**\n| Severity | Package | Installed Version | Fix Resolution | Link |\n| --- | --- | --- | --- | --- |\n|%v|%v|%v|%v|[%v](%v)|\n", a.Vulnerability.Name, a.Vulnerability.Severity, a.Library.ArtifactID, a.Library.Version, a.Vulnerability.TopFix.FixResolution, a.Vulnerability.Name, a.Vulnerability.URL)
+func (a Alert) ToMarkdown() ([]byte, error) {
+	score := a.Vulnerability.CVSS3Score
+	if score == 0 {
+		score = a.Vulnerability.Score
+	}
+	return []byte(fmt.Sprintf(
+		`**Vulnerability %v**
+| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
+`,
+		a.Vulnerability.Name,
+		a.Vulnerability.Severity,
+		score,
+		score,
+		a.Library.ArtifactID,
+		a.Library.Version,
+		a.Vulnerability.Description,
+		a.Vulnerability.TopFix.FixResolution,
+		a.Vulnerability.Name,
+		a.Vulnerability.URL,
+	)), nil
+}
+
+// ToTxt returns the textual representation of the contents
+func (a Alert) ToTxt() string {
+	score := a.Vulnerability.CVSS3Score
+	if score == 0 {
+		score = a.Vulnerability.Score
+	}
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Base (NVD) Score: %v
+Temporal Score: %v
+Package: %v
+Installed Version: %v
+Description: %v
+Fix Resolution: %v
+Link: [%v](%v)`,
+		a.Vulnerability.Name,
+		a.Vulnerability.Severity,
+		score,
+		score,
+		a.Library.ArtifactID,
+		a.Library.Version,
+		a.Vulnerability.Description,
+		a.Vulnerability.TopFix.FixResolution,
+		a.Vulnerability.Name,
+		a.Vulnerability.URL,
+	)
 }
 
 // Library

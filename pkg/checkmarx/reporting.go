@@ -1,6 +1,7 @@
 package checkmarx
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -41,7 +43,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
-		Title: "Checkmarx SAST Report",
+		ReportTitle: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
 			{Description: "Project ID", Details: fmt.Sprint(data["ProjectID"])},
@@ -178,6 +180,36 @@ func WriteJSONReport(jsonReport CheckmarxReportData) ([]piperutils.Path, error) 
 		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx JSON compliance report")
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx JSON Compliance Report", Target: jsonComplianceReportPath})
+
+	return reportPaths, nil
+}
+
+// WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
+func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
+	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx SARIF report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx SARIF Report", Target: sarifReportPath})
 
 	return reportPaths, nil
 }

@@ -19,6 +19,7 @@ type gitopsUpdateDeploymentOptions struct {
 	BranchName            string   `json:"branchName,omitempty"`
 	CommitMessage         string   `json:"commitMessage,omitempty"`
 	ServerURL             string   `json:"serverUrl,omitempty"`
+	ForcePush             bool     `json:"forcePush,omitempty"`
 	Username              string   `json:"username,omitempty"`
 	Password              string   `json:"password,omitempty"`
 	FilePath              string   `json:"filePath,omitempty"`
@@ -133,6 +134,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", `master`, "The name of the branch where the changes should get pushed into.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
+	cmd.Flags().BoolVar(&stepConfig.ForcePush, "forcePush", false, "Force push to serverUrl")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:\n\n * `kubectl` - path to the `deployment.yaml` that should be patched. Supports globbing.\n * `helm` - path where the helm chart will be generated into. Here no globbing is supported.\n * `kustomize` - path to the `kustomization.yaml`. Supports globbing.\n")
@@ -199,12 +201,27 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Default:     `https://github.com`,
 					},
 					{
+						Name:        "forcePush",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
 						Name: "username",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "gitHttpsCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -220,6 +237,12 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 								Name:  "gitHttpsCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -313,8 +336,8 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.3.4", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
+				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
+				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
 				{Image: "nekottyo/kustomize-kubeval:kustomizev4", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kustomize"}}}}},
 			},
 		},

@@ -48,6 +48,7 @@ nav:
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System': scenarios/upload-to-transportrequest/Readme.md
         - 'Build and Publish Add-on Products on SAP BTP, ABAP Environment': scenarios/abapEnvironmentAddons.md
         - 'Continuous Testing on SAP BTP, ABAP Environment': scenarios/abapEnvironmentTest.md
+        - 'Set up a Pipeline-Based ABAP Development and Testing Process Using Git-Enabled Change and Transport System': scenarios/gCTS_Scenario.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
@@ -64,10 +65,13 @@ nav:
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
+        - abapEnvironmentPushATCSystemConfig: steps/abapEnvironmentPushATCSystemConfig.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - abapEnvironmentRunAUnitTest: steps/abapEnvironmentRunAUnitTest.md
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
+        - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
+        - apiProviderDownload: steps/apiProviderDownload.md
         - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
@@ -108,6 +112,7 @@ nav:
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
+        - helmExecute: steps/helmExecute.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
@@ -145,6 +150,7 @@ nav:
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
+        - pythonBuild: steps/pythonBuild.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - shellExecute: steps/shellExecute.md

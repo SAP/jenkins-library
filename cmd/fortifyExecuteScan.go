@@ -251,10 +251,11 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath)
+		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath, filterSet)
 		if err != nil {
 			return reports, fmt.Errorf("failed to generate SARIF")
 		}
+		log.Entry().Debug("Writing sarif file to disk.")
 		paths, err := fortify.WriteSarif(sarif)
 		if err != nil {
 			return reports, fmt.Errorf("failed to write sarif")
@@ -328,7 +329,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 	log.Entry().Debugf("%v, %v, %v, %v, %v, %v", config.CreateResultIssue, numberOfViolations > 0, len(config.GithubToken) > 0, len(config.GithubAPIURL) > 0, len(config.Owner) > 0, len(config.Repository) > 0)
 	if config.CreateResultIssue && numberOfViolations > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debug("Creating/updating GitHub issue with scan results")
-		err = reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Fortify SAST Results", config.Assignees, utils)
+		err = reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
 		}

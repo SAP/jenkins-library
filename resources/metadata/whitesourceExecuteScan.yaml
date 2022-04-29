@@ -126,6 +126,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: containerRegistryUser
         description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
@@ -136,6 +138,8 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: createProductFromPipeline
@@ -257,6 +261,9 @@ spec:
         resourceRef:
           - name: orgAdminUserTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            name: whitesourceVaultSecret
+            default: whitesource
       - name: productName
         aliases:
           - name: whitesourceProductName
@@ -346,14 +353,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: scanImageIncludeLayers
-        type: bool
-        description: "For `buildTool: docker`: Defines if layers should be included."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
@@ -511,12 +510,15 @@ spec:
             name: githubVaultSecretName
       - name: createResultIssue
         type: bool
-        description: "Whether the step creates a GitHub issue containing the scan results in the originating repo.
-        Since optimized pipelines are headless the creation is implicitly activated for scheduled runs."
+        description: Activate creation of a result issue in GitHub.
+        longDescription: |
+          Whether the step creates a GitHub issue containing the scan results in the originating repo.
+          Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/optimizedAndScheduled
+            param: custom/isOptimizedAndScheduled
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -538,6 +540,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -550,6 +553,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -639,11 +643,22 @@ spec:
     - image: golang:1
       workingDir: /go
       env: []
+      options:
+        - name: -u
+          value: "0"
       conditions:
         - conditionRef: strings-equal
           params:
             - name: buildTool
               value: golang
+    - image: gradle
+      workingDir: /home/gradle
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: gradle
     - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
       workingDir: /tmp
       env: []

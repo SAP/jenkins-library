@@ -365,6 +365,11 @@ func mavenBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/mavenRepositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
 
@@ -390,6 +395,11 @@ func mavenBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/mavenRepositoryUsername",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
 							},
 						},
@@ -402,6 +412,11 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name: "altDeploymentRepositoryUrl",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/mavenRepositoryURL",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",

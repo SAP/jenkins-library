@@ -60,31 +60,33 @@ type Stage struct {
 }
 
 type Step struct {
-	Name          string          `json:"name,omitempty"`
-	Description   string          `json:"description,omitempty"`
-	Conditions    []StepCondition `json:"conditions,omitempty"`
-	Orchestrators []string        `json:"orchestrators,omitempty"`
+	Name                string          `json:"name,omitempty"`
+	Description         string          `json:"description,omitempty"`
+	Conditions          []StepCondition `json:"conditions,omitempty"`
+	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty"`
+	Orchestrators       []string        `json:"orchestrators,omitempty"`
 }
 
 type StepCondition struct {
-	Config                map[string][]interface{} `json:"config,omitempty"`
-	ConfigKey             string                   `json:"configKey,omitempty"`
-	FilePattern           string                   `json:"filePattern,omitempty"`
-	FilePatternFromConfig string                   `json:"filePatternFromConfig,omitempty"`
-	Inactive              bool                     `json:"inactive,omitempty"`
-	NpmScript             string                   `json:"npmScript,omitempty"`
+	Config                    map[string][]interface{} `json:"config,omitempty"`
+	ConfigKey                 string                   `json:"configKey,omitempty"`
+	FilePattern               string                   `json:"filePattern,omitempty"`
+	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty"`
+	Inactive                  bool                     `json:"inactive,omitempty"`
+	NpmScript                 string                   `json:"npmScript,omitempty"`
+	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils) error {
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
 
 	if len(r.PipelineConfig.Spec.Stages) == 0 {
-		if err := r.loadConditionsV1(); err != nil {
+		if err := r.LoadConditionsV1(); err != nil {
 			return fmt.Errorf("failed to load pipeline run conditions: %w", err)
 		}
 	}
 
-	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils)
+	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils, envRootPath)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate step conditions: %w", err)
 	}
@@ -151,7 +153,8 @@ func (r *RunConfig) loadConditions() error {
 	return nil
 }
 
-func (r *RunConfigV1) loadConditionsV1() error {
+// LoadConditionsV1 loads stage conditions (in CRD-style) into PipelineConfig
+func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
 	content, err := ioutil.ReadAll(r.StageConfigFile)
 	if err != nil {

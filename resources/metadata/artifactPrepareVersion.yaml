@@ -82,6 +82,53 @@ spec:
           - name: gitCredentialsId
             deprecated: true
     params:
+      - name: additionalTargetTools
+        type: "[]string"
+        description: Additional buildTool targets where descriptors need to be updated besides the main `buildTool`.
+        longDescription: |
+          **Only for versioning types `cloud` and `cloud_noTag`.** This parameter allows you to propagate the version to other build-tool specific descriptors.
+          If the parameter [`additionalTargetDescriptors`](#additionaltargetdescriptors) is not defined the default build descriptors are used.
+
+          One example is to propagate the version into a helm chart.
+          This can be achieved like
+
+          ```
+          steps:
+            artifactPrepareVersion:
+              additionalTargetTools:
+                - helm
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - custom
+          - docker
+          - dub
+          - golang
+          - gradle
+          - helm
+          - maven
+          - mta
+          - npm
+          - pip
+          - sbt
+          - yarn
+      - name: additionalTargetDescriptors
+        type: "[]string"
+        description: Defines patterns for build descriptors which should be used for option [`additionalTargetTools`](additionaltargettools).
+        longDescription: |
+          **Only for versioning types `cloud` and `cloud_noTag`.** In case default build descriptors cannot be used for [`additionalTargetTools`](additionaltargettools) this parameter allows to define a dedicated search pattern per build tool.
+          For each entry in [`additionalTargetTools`](additionaltargettools) a dedicated entry has to be maintained.
+
+          You can use either a file name or a glob pattern like `**/package.json`.
+
+          For `helm` the default value is `**/Chart.yaml`, thus typically no adaptions are required.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: buildTool
         type: string
         description: Defines the tool which is used for building the artifact.
@@ -97,6 +144,7 @@ spec:
           - dub
           - golang
           - gradle
+          - helm
           - maven
           - mta
           - npm
@@ -179,6 +227,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: isOptimizedAndScheduled
+        type: bool
+        description: Whether the pipeline runs in optimized mode and the current execution is a scheduled one
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - PARAMETERS
       - name: m2Path
         aliases:
           - name: maven/m2Path
@@ -262,10 +318,16 @@ spec:
           - STEPS
       - name: versioningType
         type: string
-        description:
-          "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no
-          tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor,
-          but not generate a new version)"
+        description: Defines the type of versioning
+        longDescription: |
+          Defines the type of versioning:
+
+          * `cloud`: fully automatic while also commiting a tag into the git repository containing the updated build descriptors
+          * `cloud_noTag`: fully automatic but no tag created
+          * `library`: manual, i.e. the pipeline will pick up the version from the build descriptor, but not generate a new version
+
+          **Please note:** Type `cloud` will automatically fall back to `cloud_noTag` in case a pull request is being built or in case the pipeline runs
+          in optimized and scheduled mode (in this mode no build is being performed and thus no version tag is required to persist the build input)
         scope:
           - PARAMETERS
           - STAGES

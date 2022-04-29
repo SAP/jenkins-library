@@ -36,9 +36,11 @@ type cnbBuildOptions struct {
 type cnbBuildCommonPipelineEnvironment struct {
 	container struct {
 		registryURL   string
+		imageDigest   string
 		imageNameTag  string
 		imageNames    []string
 		imageNameTags []string
+		imageDigests  []string
 	}
 }
 
@@ -49,9 +51,11 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		value    interface{}
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
+		{category: "container", name: "imageDigest", value: p.container.imageDigest},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
 		{category: "container", name: "imageNames", value: p.container.imageNames},
 		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
+		{category: "container", name: "imageDigests", value: p.container.imageDigests},
 	}
 
 	errCount := 0
@@ -160,12 +164,12 @@ func CnbBuildCommand() *cobra.Command {
 }
 
 func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built\n`cnbBuild` step will try to identify a containerImageName using the following precedence:\n  1. `containerImageName` parameter.\n  2. `project.id` field of a `project.toml` file.\n  3. `git/repository` parameter of the `commonPipelineEnvironment`.\nIf none of the above was found - an error will be raised.\n")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built\n`cnbBuild` step will try to identify a containerImageName using the following precedence:\n  1. `containerImageName` parameter.\n  2. `project.id` field of a `project.toml` file.\n  3. `git/repository` parameter of the `commonPipelineEnvironment`.\n  4. `github/repository` parameter of the `commonPipelineEnvironment`.\nIf none of the above was found - an error will be raised.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.")
 
-	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.\nThis property determines the input to the buildpack.\n")
+	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Glob that should either point to a directory with your sources or one artifact in zip format.\nThis property determines the input to the buildpack.\n")
 	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Relative path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\n*Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.\n\n*Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
@@ -206,6 +210,11 @@ func cnbBuildMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "artifactVersion",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "git/commitId",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -339,7 +348,7 @@ func cnbBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "paketobuildpacks/builder:full"},
+				{Image: "paketobuildpacks/builder:base"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -348,9 +357,11 @@ func cnbBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "container/registryUrl"},
+							{"name": "container/imageDigest"},
 							{"name": "container/imageNameTag"},
 							{"name": "container/imageNames", "type": "[]string"},
 							{"name": "container/imageNameTags", "type": "[]string"},
+							{"name": "container/imageDigests", "type": "[]string"},
 						},
 					},
 				},

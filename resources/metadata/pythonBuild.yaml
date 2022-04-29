@@ -1,0 +1,90 @@
+metadata:
+  name: pythonBuild
+  description: Step build a python project
+  longDescription: Step build python project with using test Vault credentials
+spec:
+  inputs:
+    params:
+      - name: buildFlags
+        type: "[]string"
+        description: Defines list of build flags to be used.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: publish
+        type: bool
+        description: Configures the build to publish artifacts to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: targetRepositoryPassword
+        description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: targetRepositoryUser
+        description: "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: targetRepositoryURL
+        description: "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+      - name: virutalEnvironmentName
+        type: string
+        description: name of the virtual environment that will be used for the build
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: piperBuild-env
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
+  containers:
+    - name: python
+      image: python:3.9

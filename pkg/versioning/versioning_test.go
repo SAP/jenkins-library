@@ -1,10 +1,30 @@
 package versioning
 
 import (
+	"net/http"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
+
+type versioningMockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func newVersioningMockUtils() *versioningMockUtils {
+	utils := versioningMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return &utils
+}
+
+func (v *versioningMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	// so far no dedicated logic required for testing
+	return nil
+}
 
 func TestGetArtifact(t *testing.T) {
 	t.Run("custom", func(t *testing.T) {
@@ -45,8 +65,13 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", dub.VersioningScheme())
 	})
 
-	t.Run("golang", func(t *testing.T) {
-		fileExists = func(string) (bool, error) { return true, nil }
+	t.Run("golang - version file", func(t *testing.T) {
+		fileExists = func(s string) (bool, error) {
+			if s == "go.mod" {
+				return false, nil
+			}
+			return true, nil
+		}
 		golang, err := GetArtifact("golang", "", &Options{}, nil)
 
 		assert.NoError(t, err)
@@ -57,11 +82,28 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", golang.VersioningScheme())
 	})
 
+	t.Run("golang - gomod", func(t *testing.T) {
+		fileExists = func(s string) (bool, error) {
+			if s == "go.mod" {
+				return true, nil
+			}
+			return false, nil
+		}
+		golang, err := GetArtifact("golang", "", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := golang.(*GoMod)
+		assert.True(t, ok)
+		assert.Equal(t, "go.mod", theType.path)
+		assert.Equal(t, "semver2", golang.VersioningScheme())
+	})
+
 	t.Run("golang - error", func(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("golang", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [go.mod VERSION version.txt]")
 	})
 
 	t.Run("gradle", func(t *testing.T) {
@@ -74,6 +116,17 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "gradle.properties", theType.path)
 		assert.Equal(t, "theversion", theType.versionField)
 		assert.Equal(t, "semver2", gradle.VersioningScheme())
+	})
+
+	t.Run("helm", func(t *testing.T) {
+		helm, err := GetArtifact("helm", "testchart/Chart.yaml", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := helm.(*HelmChart)
+		assert.True(t, ok)
+		assert.Equal(t, "testchart/Chart.yaml", theType.path)
+		assert.Equal(t, "semver2", helm.VersioningScheme())
 	})
 
 	t.Run("maven", func(t *testing.T) {

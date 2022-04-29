@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -10,12 +13,17 @@ import (
 
 type gradleExecuteBuildUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
+	piperutils.FileUtils
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type gradleExecuteBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+}
+
+func (g *gradleExecuteBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return fmt.Errorf("not implemented")
 }
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
@@ -30,19 +38,28 @@ func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 
 func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemetry.CustomData) {
 	utils := newGradleExecuteBuildUtils()
-	fileUtils := &piperutils.Files{}
-	err := runGradleExecuteBuild(&config, telemetryData, utils, fileUtils)
+	err := runGradleExecuteBuild(&config, telemetryData, utils)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed: %w", err)
+		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils, fileUtils piperutils.FileUtils) error {
-	opt := &gradle.ExecuteOptions{BuildGradlePath: config.Path, Task: config.Task}
+func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
+	opt := &gradle.ExecuteOptions{
+		BuildGradlePath:    config.Path,
+		Task:               config.Task,
+		CreateBOM:          config.CreateBOM,
+		Publish:            config.Publish,
+		RepositoryURL:      config.RepositoryURL,
+		RepositoryPassword: config.RepositoryPassword,
+		RepositoryUsername: config.RepositoryUsername,
+		ArtifactVersion:    config.ArtifactVersion,
+		ArtifactGroupID:    config.ArtifactGroupID,
+		ArtifactID:         config.ArtifactID,
+	}
 
-	_, err := gradle.Execute(opt, utils, fileUtils)
-	if err != nil {
-		log.Entry().WithError(err).Errorln("build.gradle execution was failed: %w", err)
+	if err := gradle.Execute(opt, utils); err != nil {
+		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
 		return err
 	}
 

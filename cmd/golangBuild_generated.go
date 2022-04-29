@@ -364,6 +364,11 @@ func golangBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/rawRepositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
 						},
@@ -378,6 +383,11 @@ func golangBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "custom/rawRepositoryUsername",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
 							},
 						},
@@ -390,6 +400,11 @@ func golangBuildMetadata() config.StepData {
 					{
 						Name: "targetRepositoryURL",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/rawRepositoryURL",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
@@ -468,8 +483,9 @@ func golangBuildMetadata() config.StepData {
 						Name: "privateModulesGitToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "golangPrivateModulesGitTokenCredentialsId",
-								Type: "secret",
+								Name:  "golangPrivateModulesGitTokenCredentialsId",
+								Param: "password",
+								Type:  "secret",
 							},
 
 							{

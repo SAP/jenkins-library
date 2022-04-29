@@ -10,7 +10,7 @@ spec:
           - name: buildGradlePath
             deprecated: false
         type: string
-        description: Path to the folder with gradle.build file which should be executed.
+        description: Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.
         scope:
           - PARAMETERS
           - STAGES
@@ -25,6 +25,95 @@ spec:
           - STEPS
         mandatory: false
         default: build
+      - name: publish
+        type: bool
+        description: Configures gradle to publish the artifact to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: repositoryUrl
+        type: string
+        description: Url to the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: repositoryPassword
+        type: string
+        description: Password for the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: repositoryUsername
+        type: string
+        description: Username for the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: artifactVersion
+        type: string
+        description: Version of the artifact to be built.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: artifactGroupId
+        type: string
+        description: The group of the artifact.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: groupId
+      - name: artifactId
+        type: string
+        description: The name of the artifact.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactId
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom.xml"
+            type: sbom
   containers:
     - name: gradle
       image: gradle:6-jdk11-alpine
