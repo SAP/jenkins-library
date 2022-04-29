@@ -141,21 +141,8 @@ objectset:
 The following example of an `atcconfig.yml` file contains all possible properties of the Multi Property Set that can be used. Please take note that this is not the reccommended approach. If you want to check packages or software components please use the two above examples. The usage of the Multi Property Set is only reccommended for ATC runs that require these rules for the test execution. There is no official documentation on the usage of the Multi Property Set.
 
 ```yaml
-title: My AUnit run
-context: My unit tests
-options:
-  measurements: none
-  scope:
-    ownTests: true
-    foreignTests: true
-  riskLevel:
-    harmless: true
-    dangerous: true
-    critical: true
-  duration:
-    short: true
-    medium: true
-    long: true
+checkvariant: "TestCheckVariant"
+configuration: "TestConfiguration"
 objectset:
   type: multiPropertySet
   multipropertyset:
