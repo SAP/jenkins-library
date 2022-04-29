@@ -13,6 +13,9 @@ spec:
       - name: protecodeCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.
         type: jenkins
+      - name: protecodeApiKeyCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing API Key/token to authenticate to BDBA server.
+        type: jenkins
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).
         type: jenkins
@@ -208,11 +211,11 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: protecodeCredentialsId
+          - name: protecodeApiKeyCredentialsId
             type: secret
             param: userApiKey
           - type: vaultSecret
-            name: protecodeVaultSecretName
+            name: protecodeApiKeyVaultSecretName
             default: protecode
       - name: version
         aliases:
