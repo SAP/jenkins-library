@@ -276,6 +276,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
+					{Name: "protecodeApiKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing API Key/token to authenticate to BDBA server.", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
 				},
 				Parameters: []config.StepParameters{
@@ -477,13 +478,13 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name: "userApiKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "protecodeCredentialsId",
+								Name:  "protecodeApiKeyCredentialsId",
 								Param: "userApiKey",
 								Type:  "secret",
 							},
 
 							{
-								Name:    "protecodeVaultSecretName",
+								Name:    "protecodeApiKeyVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "protecode",
 							},
