@@ -609,39 +609,39 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				//the default node dictates the interesting threadflow (location, and so on)
 				//this will populate both threadFlowLocation AND the parent location object (result.Locations[0])
 				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault == "true" {
-					//initalize threadFlowLocation.Location
-					threadFlowLocation.Location = new(format.Location)
+					//initalize the current location object, it will be added to threadFlowLocation.Location
+					tfloc := new(format.Location)
 					//get artifact location
 					for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
 						if fvdl.Build.SourceFiles[j].Name == fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path {
-							threadFlowLocation.Location.PhysicalLocation.ArtifactLocation.Index = j + 1
-							threadFlowLocation.Location.PhysicalLocation.ArtifactLocation.URI = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path
-							threadFlowLocation.Location.PhysicalLocation.ArtifactLocation.URIBaseId = "%SRCROOT%"
+							tfloc.PhysicalLocation.ArtifactLocation.Index = j + 1
+							tfloc.PhysicalLocation.ArtifactLocation.URI = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path
+							tfloc.PhysicalLocation.ArtifactLocation.URIBaseId = "%SRCROOT%"
 							break
 						}
 					}
 					//get region & context region
-					threadFlowLocation.Location.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Line
-					threadFlowLocation.Location.PhysicalLocation.Region.EndLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.LineEnd
-					threadFlowLocation.Location.PhysicalLocation.Region.StartColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
-					threadFlowLocation.Location.PhysicalLocation.Region.EndColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColEnd
+					tfloc.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Line
+					tfloc.PhysicalLocation.Region.EndLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.LineEnd
+					tfloc.PhysicalLocation.Region.StartColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
+					tfloc.PhysicalLocation.Region.EndColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColEnd
 					//Snippet is handled last
 					//threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = "foobar"
 					targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Snippet
 					for j := 0; j < len(fvdl.Snippets); j++ {
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
+							tfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
+							tfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 							snippetSarif := new(format.SnippetSarif)
 							snippetSarif.Text = fvdl.Snippets[j].Text
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet = snippetSarif
+							tfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 							break
 						}
 					}
 					//check for existance of action object, and if yes, save message
 					if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.isEmpty() {
-						threadFlowLocation.Location.Message = new(format.Message)
-						threadFlowLocation.Location.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+						tfloc.Message = new(format.Message)
+						tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						// Handle snippet
 						snippetTarget := ""
 						switch fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type {
@@ -670,8 +670,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						default:
 							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						}
-						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
-							physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+						if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+							physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 							snippetText := ""
 							for j := 0; j < len(physLocationSnippetLines); j++ {
 								if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
@@ -683,19 +683,20 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 							if snippetText != "" {
 								snippetSarif.Text = snippetText
 							} else {
-								snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
 							}
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+							tfloc.PhysicalLocation.Region.Snippet = snippetSarif
 						}
 					} else {
-						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
+						if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
 							snippetSarif := new(format.SnippetSarif)
-							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+							snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
+							tfloc.PhysicalLocation.Region.Snippet = snippetSarif
 						}
 					}
-					location = *threadFlowLocation.Location
+					location = *tfloc
 					//set Kinds
+					threadFlowLocation.Location = tfloc
 					threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "review") //TODO
 					threadFlowLocation.Index = 0                                          // to be safe?
 				} else { //is not a main threadflow: just register NodeRef index in threadFlowLocation
@@ -703,7 +704,6 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					// Each index i serves to reference the i-th object in run.threadFlowLocations
 					threadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId + 1
 				}
-				//add the threadflowlocation to the list of locations
 				threadFlow.Locations = append(threadFlow.Locations, threadFlowLocation)
 			}
 			codeFlow.ThreadFlows = append(codeFlow.ThreadFlows, threadFlow)
