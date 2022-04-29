@@ -69,16 +69,16 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
+			ObjectSet: abaputils.ObjectSet{
 
 				Type: "testSet",
-				Set: []Set{
+				Set: []abaputils.Set{
 					{
 						Type: "testSet",
-						Set: []Set{
+						Set: []abaputils.Set{
 							{
 								Type: "testAUnitFlatObjectSet",
-								FlatObjectSet: []AUnitFlatObjectSet{
+								FlatObjectSet: []abaputils.FlatObjectSet{
 									{
 										Name: "TestCLAS",
 										Type: "CLAS",
@@ -90,7 +90,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 							},
 							{
 								Type: "testAUnitObjectTypeSet",
-								ObjectTypeSet: []AUnitObjectTypeSet{
+								ObjectTypeSet: []abaputils.ObjectTypeSet{
 									{
 										Name: "TestObjectType",
 									}},
@@ -99,7 +99,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -132,10 +132,10 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
+			ObjectSet: abaputils.ObjectSet{
 				Type: "multiPropertySet",
-				MultiPropertySet: MultiPropertySet{
-					SoftwareComponents: []SoftwareComponents{
+				MultiPropertySet: abaputils.MultiPropertySet{
+					SoftwareComponents: []abaputils.SoftwareComponents{
 						{
 							Name: "testComponent1",
 						},
@@ -147,7 +147,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -180,10 +180,10 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
+			ObjectSet: abaputils.ObjectSet{
 				Type: "",
-				MultiPropertySet: MultiPropertySet{
-					SoftwareComponents: []SoftwareComponents{
+				MultiPropertySet: abaputils.MultiPropertySet{
+					SoftwareComponents: []abaputils.SoftwareComponents{
 						{
 							Name: "testComponent1",
 						},
@@ -195,7 +195,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -228,13 +228,13 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
-				PackageNames: []AUnitPackage{{
+			ObjectSet: abaputils.ObjectSet{
+				PackageNames: []abaputils.Package{{
 					Name: "testPackage1",
 				}, {
 					Name: "testPackage2",
 				}},
-				SoftwareComponents: []SoftwareComponents{{
+				SoftwareComponents: []abaputils.SoftwareComponents{{
 					Name: "testComponent1",
 				}, {
 					Name: "testComponent2",
@@ -242,7 +242,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -254,11 +254,11 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="true" foreignTests="true"/><aunit:riskLevel harmless="true" dangerous="true" critical="true"/><aunit:duration short="true" medium="true" long="true"/></aunit:options>`
 		config := AUnitConfig{Title: "Test", Context: "Test",
-			ObjectSet: ObjectSet{
-				PackageNames: []AUnitPackage{{
+			ObjectSet: abaputils.ObjectSet{
+				PackageNames: []abaputils.Package{{
 					Name: "testPackage1",
 				}},
-				SoftwareComponents: []SoftwareComponents{{
+				SoftwareComponents: []abaputils.SoftwareComponents{{
 					Name: "testComponent1",
 				}},
 			}}
