@@ -775,7 +775,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		for j := 0; j < len(fvdl.Vulnerabilities.Vulnerability); j++ { //j iterates on vulns to find the name
 			if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.ClassID == fvdl.EngineData.RuleInfo[i].RuleID {
 				var nameArray []string
+				var idArray []string
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
+					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom, " ")
 					for index, element := range words { // These are required to ensure that titlecase is respected in titles, part of sarif "friendly name" rules
 						words[index] = strings.Title(strings.ToLower(element))
@@ -783,6 +785,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					nameArray = append(nameArray, words...)
 				}
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type != "" {
+					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type, " ")
 					for index, element := range words {
 						words[index] = strings.Title(strings.ToLower(element))
@@ -790,120 +793,133 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					nameArray = append(nameArray, words...)
 				}
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype != "" {
+					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype, " ")
 					for index, element := range words {
 						words[index] = strings.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
+				sarifRule.ID = strings.Join(idArray, "/")
 				sarifRule.Name = strings.Join(nameArray, "")
 				defaultConfig := new(format.DefaultConfiguration)
 				defaultConfig.Level = "warning" // Default value
 				defaultConfig.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
 				sarifRule.DefaultConfiguration = defaultConfig
-				break
-			}
-		}
-		//Descriptions
-		for j := 0; j < len(fvdl.Description); j++ {
-			if fvdl.Description[j].ClassID == sarifRule.ID {
-				rawAbstract := fvdl.Description[j].Abstract.Text
-				rawExplanation := fvdl.Description[j].Explanation.Text
-				// Replacement defintions in abstract/explanation
-				for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability); k++ { // Iterate on vulns to find the correct one (where ReplacementDefinitions are)
-					if fvdl.Vulnerabilities.Vulnerability[k].ClassInfo.ClassID == fvdl.Description[j].ClassID {
-						for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def); l++ {
-							rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
-							rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+
+				//Descriptions
+				for j := 0; j < len(fvdl.Description); j++ {
+					if fvdl.Description[j].ClassID == sarifRule.GUID {
+						rawAbstract := fvdl.Description[j].Abstract.Text
+						rawExplanation := fvdl.Description[j].Explanation.Text
+						// Post-treat them to change the XML escaping
+						rawAbstract = strings.ReplaceAll(rawAbstract, "&lt;", "<")
+						rawAbstract = strings.ReplaceAll(rawAbstract, "&gt;", ">")
+						rawAbstract = strings.ReplaceAll(rawAbstract, "&amp;", "&")
+						rawAbstract = strings.ReplaceAll(rawAbstract, "&apos;", "'")
+						rawAbstract = strings.ReplaceAll(rawAbstract, "&quot;", "\"")
+
+						rawExplanation = strings.ReplaceAll(rawExplanation, "&lt;", "<")
+						rawExplanation = strings.ReplaceAll(rawExplanation, "&gt;", ">")
+						rawExplanation = strings.ReplaceAll(rawExplanation, "&amp;", "&")
+						rawExplanation = strings.ReplaceAll(rawExplanation, "&apos;", "'")
+						rawExplanation = strings.ReplaceAll(rawExplanation, "&quot;", "\"")
+
+						// Replacement defintions in abstract/explanation
+						for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability); k++ { // Iterate on vulns to find the correct one (where ReplacementDefinitions are)
+							if fvdl.Vulnerabilities.Vulnerability[k].ClassInfo.ClassID == fvdl.Description[j].ClassID {
+								for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def); l++ {
+									rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+									rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+								}
+								// Replacement locationdef in explanation
+								for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
+									rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
+								}
+								// If Description has a CustomDescription, add it for good measure
+								if fvdl.Description[j].CustomDescription.RuleID != "" {
+									rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
+								}
+								sd := new(format.Message)
+								sd.Text = rawAbstract
+								sarifRule.ShortDescription = sd
+								fd := new(format.Message)
+								fd.Text = rawExplanation
+								sarifRule.FullDescription = fd
+								break
+							}
 						}
-						// Replacement locationdef in explanation
-						for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
-							rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
-						}
-						// If Description has a CustomDescription, add it for good measure
-						if fvdl.Description[j].CustomDescription.RuleID != "" {
-							rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
-						}
-						sd := new(format.Message)
-						sd.Text = rawAbstract
-						sarifRule.ShortDescription = sd
-						fd := new(format.Message)
-						fd.Text = rawExplanation
-						sarifRule.FullDescription = fd
 						break
 					}
 				}
+
+				//properties
+				//Prepare a CWE id object as an in-case
+				cweIds := []string{}
+				//scan for the properties we want:
+				var propArray [][]string
+				for j := 0; j < len(fvdl.EngineData.RuleInfo[i].MetaInfoGroup); j++ {
+					if (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Accuracy") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Impact") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Probability") {
+						propArray = append(propArray, []string{fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name, fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data})
+					} else if fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "altcategoryCWE" {
+						//Get all CWE IDs. First, split on ", "
+						rawCweIds := strings.Split(fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data, ", ")
+						//If not "None", split each string on " " and add its 2nd index
+						if rawCweIds[0] != "None" {
+							for k := 0; k < len(rawCweIds); k++ {
+								cweId := strings.Split(rawCweIds[k], " ")[2]
+								//Fill the cweIdsForTaxonomies map if not already in
+								if _, isIn := cweIdsForTaxonomies[cweId]; !isIn {
+									cweIdsForTaxonomies[cweId] = cweId
+								}
+								cweIds = append(cweIds, cweId)
+							}
+						} else {
+							cweIds = append(cweIds, rawCweIds[0])
+						}
+					}
+				}
+				var ruleProp *format.SarifRuleProperties
+				if len(propArray) != 0 {
+					ruleProp = new(format.SarifRuleProperties)
+					for j := 0; j < len(propArray); j++ {
+						if propArray[j][0] == "Accuracy" {
+							ruleProp.Accuracy = propArray[j][1]
+						} else if propArray[j][0] == "Impact" {
+							ruleProp.Impact = propArray[j][1]
+						} else if propArray[j][0] == "Probability" {
+							ruleProp.Probability = propArray[j][1]
+						}
+					}
+				}
+				sarifRule.Properties = ruleProp
+
+				//relationships: will most likely require some expansion
+				//One relationship per CWE id
+				for j := 0; j < len(cweIds); j++ {
+					sarifRule.Properties.Tags = append(sarifRule.Properties.Tags, "external/cwe/cwe-"+cweIds[j])
+
+					rls := *new(format.Relationships)
+					rls.Target.Id = cweIds[j]
+					rls.Target.ToolComponent.Name = "CWE"
+					rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+					rls.Kinds = append(rls.Kinds, "relevant")
+					sarifRule.Relationships = append(sarifRule.Relationships, rls)
+				}
+
+				// Respect Sarif properties by adding a helpURI (dummy at the moment) and filling in a name if it is missing.
+				if sarifRule.Name == "" {
+					sarifRule.Name = "UnknownRule"
+				}
+				sarifRule.HelpURI = "https://vulncat.fortify.com/en/weakness" //FIXIT
+
+				//Finalize: append the rule
+				tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+
+				// A rule vuln has been found for this rule, no need to keep iterating
 				break
 			}
 		}
-		// Avoid empty descriptions to respect standard
-		//if sarifRule.ShortDescription.Text == "" {
-		//	sarifRule.ShortDescription.Text = "None."
-		//}
-		//if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-		//	sarifRule.FullDescription.Text = "None."
-		//}
-
-		//properties
-		//Prepare a CWE id object as an in-case
-		cweIds := []string{}
-		//scan for the properties we want:
-		var propArray [][]string
-		for j := 0; j < len(fvdl.EngineData.RuleInfo[i].MetaInfoGroup); j++ {
-			if (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Accuracy") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Impact") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Probability") {
-				propArray = append(propArray, []string{fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name, fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data})
-			} else if fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "altcategoryCWE" {
-				//Get all CWE IDs. First, split on ", "
-				rawCweIds := strings.Split(fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data, ", ")
-				//If not "None", split each string on " " and add its 2nd index
-				if rawCweIds[0] != "None" {
-					for k := 0; k < len(rawCweIds); k++ {
-						cweId := strings.Split(rawCweIds[k], " ")[2]
-						//Fill the cweIdsForTaxonomies map if not already in
-						if _, isIn := cweIdsForTaxonomies[cweId]; !isIn {
-							cweIdsForTaxonomies[cweId] = cweId
-						}
-						cweIds = append(cweIds, cweId)
-					}
-				} else {
-					cweIds = append(cweIds, rawCweIds[0])
-				}
-			}
-		}
-		var ruleProp *format.SarifRuleProperties
-		if len(propArray) != 0 {
-			ruleProp = new(format.SarifRuleProperties)
-			for j := 0; j < len(propArray); j++ {
-				if propArray[j][0] == "Accuracy" {
-					ruleProp.Accuracy = propArray[j][1]
-				} else if propArray[j][0] == "Impact" {
-					ruleProp.Impact = propArray[j][1]
-				} else if propArray[j][0] == "Probability" {
-					ruleProp.Probability = propArray[j][1]
-				}
-			}
-		}
-		sarifRule.Properties = ruleProp
-
-		//relationships: will most likely require some expansion
-		//One relationship per CWE id
-		for j := 0; j < len(cweIds); j++ {
-			rls := *new(format.Relationships)
-			rls.Target.Id = cweIds[j]
-			rls.Target.ToolComponent.Name = "CWE"
-			rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
-			rls.Kinds = append(rls.Kinds, "relevant")
-			sarifRule.Relationships = append(sarifRule.Relationships, rls)
-		}
-
-		// Respect Sarif properties by adding a helpURI (dummy at the moment) and filling in a name if it is missing.
-		if sarifRule.Name == "" {
-			sarifRule.Name = "UnknownRule"
-		}
-		sarifRule.HelpURI = "https://fortify-stage.tools.sap/ssc/html/ssc/" //FIXIT
-
-		//Finalize: append the rule
-		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 	}
 	//supportedTaxonomies
 	sTax := *new(format.SupportedTaxonomies) //This object seems fixed, but it will have to be checked
