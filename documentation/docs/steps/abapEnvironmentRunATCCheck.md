@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-* A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP Cloud Platform ABAP Environment - Software Component Test Integration (SAP_COM_0901)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0901", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
+* A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP Cloud Platform ABAP Environment - Software Component Test Integration (SAP_COM_0510)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0510", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
 * You can either provide the ABAP endpoint configuration to directly trigger an ATC run on the ABAP system or optionally provide the Cloud Foundry parameters with your credentials to read a Service Key of a SAP BTP, ABAP environment system in Cloud Foundry that contains all the details of the ABAP endpoint to trigger an ATC run.
 * Regardless if you chose an ABAP endpoint directly or reading a Cloud Foundry Service Key, you have to provide the configuration of the packages and software components you want to be checked in an ATC run in a .yml or .yaml file. This file must be stored in the same folder as the Jenkinsfile defining the pipeline.
 * The software components and/or packages you want to be checked must be present in the configured system in order to run the check. Please make sure that you have created or pulled the respective software components and/or Packages in the SAP BTP, ABAP environment system.
@@ -90,7 +90,7 @@ The following section contains an example of an `atcconfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
 You can specify a list of packages and/or software components to be checked. This must be in the same format as below example for a `atcconfig.yml` file.
-For each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
+In case subpackages shall be included in the checks you can use packagetrees.
 Please note that if you chose to provide both packages and software components to be checked with the `atcconfig.yml` file, the set of packages and the set of software components will be combinend by the API using a logical AND operation.
 Therefore, we advise to specify either the software components or packages.
 Additionally, if you don't specify a dedicated ATC check variant to be used, the `ABAP_CLOUD_DEVELOPMENT_DEFAULT` variant will be used as default. For more information on how to configure a check variant for an ATC run please check the last example on this page.
@@ -99,27 +99,23 @@ See below example for an `atcconfig.yml` file with both packages and software co
 
 ```yaml
 objectset:
-  type: multiPropertySet
-  multipropertyset:
-    softwarecomponents:
-      - name: TestComponent
-      - name: TestComponent2  
-    packages:
-      - name: TestPackage
-    packagetrees:
-      - name: TestPackageWithSubpackages
+  softwarecomponents:
+    - name: TestComponent
+    - name: TestComponent2  
+  packages:
+    - name: TestPackage
+  packagetrees:
+    - name: TestPackageWithSubpackages
 ```
 
-The following example of an `atcconfig.yml` file that only contains packages to be checked:
+The following example of an `atcconfig.yml` file that only contains packages and packagetrees to be checked:
 
 ```yaml
 objectset:
-  type: multiPropertySet
-  multipropertyset:
-    packages:
-      - name: TestPackage
-    packagetrees:
-      - name: TesTestPackageWithSubpackages
+  packages:
+    - name: TestPackage
+  packagetrees:
+    - name: TestPackageWithSubpackages
 ```
 
 The following example of an `atcconfig.yml` file that only contains software components to be checked:
@@ -171,6 +167,8 @@ objectset:
       - value: ACTIVE
     packages:
       - name: demoPackage
+    packagetrees:
+      - name: TestPackageWithSubpackages
     objectnamepatterns:
       - value: 'ZCL_*'
     languages:
