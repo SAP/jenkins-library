@@ -50,4 +50,6 @@ stages:
 repositories:
   - name: '/DMO/SWC'
     branch: 'main'
+    commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8' #optional
+    tag: 'myTag' #optional
 ```
