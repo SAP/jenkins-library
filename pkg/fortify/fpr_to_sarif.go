@@ -734,15 +734,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		prop.InstanceSeverity = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
-		//Use a query to get the audit data
+		//Get the audit data
 		// B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885 is "custom rules": handle differently?
-		if result.RuleID == "B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885" {
+		/*if result.RuleID == "B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885" {
 			// Custom Rules has no audit value: it's notificaiton in the FVDL only.
 			prop.Audited = true
 			prop.ToolAuditMessage = "Custom Rules: not a vuln"
 			prop.ToolState = "Not an Issue"
 			prop.ToolStateIndex = 1
-		} else if sys != nil {
+		} else */if sys != nil {
 			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
@@ -801,7 +801,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					nameArray = append(nameArray, words...)
 				}
 				sarifRule.ID = strings.Join(idArray, "/")
-				sarifRule.Name = strings.Join(nameArray, "")
+				sarifRule.Name = "fortify-" + strings.Join(nameArray, "")
 				defaultConfig := new(format.DefaultConfiguration)
 				defaultConfig.Level = "warning" // Default value
 				defaultConfig.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
@@ -983,21 +983,10 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//handle threadFlowLocations
 	log.Entry().Debug("[SARIF] Now handling threadFlowLocations.")
 	threadFlowLocationsObject := []format.Locations{}
+	//to ensure an exact replacement in case a threadFlowLocation object refers to another, we prepare a map
+	threadFlowIndexMap := make(map[int]([]int)) // This  will store indexes, we will work with it only to reduce item copies to a minimum
 	for i := 0; i < len(fvdl.UnifiedNodePool.Node); i++ {
-		//prepare a check object
-		unique := true
-		//Uniqueness Check
-		for check := 0; check < i; check++ {
-			if fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet == fvdl.UnifiedNodePool.Node[check].SourceLocation.Snippet &&
-				fvdl.UnifiedNodePool.Node[i].Action.ActionData == fvdl.UnifiedNodePool.Node[check].Action.ActionData {
-				unique = false
-			}
-		}
-		if !unique {
-			continue
-		}
-		locations := *new(format.Locations)
-		locations.Index = fvdl.UnifiedNodePool.Node[i].ID + 1 // match the one in result.threadflowlocations
+		threadFlowIndexMap[i+1] = append(threadFlowIndexMap[i+1], i+1)
 		loc := new(format.Location)
 		//get artifact location
 		for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
@@ -1072,21 +1061,43 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			}
 			loc.PhysicalLocation.Region.Snippet = snippetSarif
 		}
-		locations.Location = loc
-		locations.Kinds = append(locations.Kinds, "unknown")
-		threadFlowLocationsObject = append(threadFlowLocationsObject, locations)
+		log.Entry().Debug("Call observe")
+		threadFlowIndexMap[i+1] = computeLocationPath(fvdl, i+1) // Recursively traverse array
+		locs := format.Locations{Location: loc}
+		threadFlowLocationsObject = append(threadFlowLocationsObject, locs)
 	}
 
 	sarif.Runs[0].ThreadFlowLocations = threadFlowLocationsObject
 
 	// Now, iterate on threadflows in each result, and replace eventual indexes...
 	for i := 0; i < len(sarif.Runs[0].Results); i++ {
-		for j := 0; j < len(sarif.Runs[0].Results[i].CodeFlows[0].ThreadFlows[0].Locations); j++ {
-			if sarif.Runs[0].Results[i].CodeFlows[0].ThreadFlows[0].Locations[j].Index != 0 { // Causes panic
-				sarif.Runs[0].Results[i].CodeFlows[0].ThreadFlows[0].Locations[j].Location = sarif.Runs[0].ThreadFlowLocations[sarif.Runs[0].Results[i].CodeFlows[0].ThreadFlows[0].Locations[j].Index-1].Location
+		for cf := 0; cf < len(sarif.Runs[0].Results[i].CodeFlows); cf++ {
+			for tf := 0; tf < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows); tf++ {
+				newLocations := *new([]format.Locations)
+				for j := 0; j < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations); j++ {
+					if sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index != 0 {
+						/* old version
+						//Replace that threadflow
+						sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Location = sarif.Runs[0].ThreadFlowLocations[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index-1].Location
+						// Then void index
+						sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index = 0
+						*/
+						indexes := threadFlowIndexMap[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index]
+						for rep := 0; rep < len(indexes); rep++ {
+							newLocations = append(newLocations, sarif.Runs[0].ThreadFlowLocations[indexes[rep]-1])
+							newLocations[rep].Index = 0 // void index
+						}
+					} else {
+						newLocations = append(newLocations, sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j])
+					}
+				}
+				sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations = newLocations
 			}
 		}
 	}
+
+	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
+	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
@@ -1131,8 +1142,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		}
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-		//log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
-		return errors.New("not exactly 1 issue found for instance ID " + issueInstanceID + ", found " + fmt.Sprint(len(data)))
+		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
@@ -1190,11 +1200,30 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 
 func unescapeXML(input string) string {
 	raw := input
-	// Post-treat them to change the XML escaping
+	// Post-treat string to change the XML escaping
 	raw = strings.ReplaceAll(raw, "&lt;", "<")
 	raw = strings.ReplaceAll(raw, "&gt;", ">")
 	raw = strings.ReplaceAll(raw, "&amp;", "&")
 	raw = strings.ReplaceAll(raw, "&apos;", "'")
 	raw = strings.ReplaceAll(raw, "&quot;", "\"")
 	return raw
+}
+
+func computeLocationPath(fvdl FVDL, input int) []int {
+	log.Entry().Debug("Computing for ID ", input)
+	// Find the successors of input
+	var subnodes []int
+	var result []int
+	for j := 0; j < len(fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry); j++ {
+		if fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry[j].NodeRef.RefId != 0 && fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry[j].NodeRef.RefId != (input-1) {
+			subnodes = append(subnodes, fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry[j].NodeRef.RefId+1)
+		}
+	}
+	result = append(result, input)
+	log.Entry().Debug("Successors: ", subnodes)
+	for j := 0; j < len(subnodes); j++ {
+		result = append(result, computeLocationPath(fvdl, subnodes[j])...)
+	}
+	log.Entry().Debug("Finishing computing for ID ", input)
+	return result
 }
