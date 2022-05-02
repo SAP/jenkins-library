@@ -583,10 +583,10 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		for j := 0; j < len(fvdl.Description); j++ {
 			if fvdl.Description[j].ClassID == result.RuleID {
 				result.RuleIndex = j //Seems very abstract
-				rawMessage := fvdl.Description[j].Abstract.Text
+				rawMessage := unescapeXML(fvdl.Description[j].Abstract.Text)
 				// Replacement defintions in message
 				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
-					rawMessage = strings.ReplaceAll(rawMessage, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+					rawMessage = strings.ReplaceAll(rawMessage, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
 				}
 				msg := new(format.Message)
 				msg.Text = rawMessage
@@ -810,27 +810,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				//Descriptions
 				for j := 0; j < len(fvdl.Description); j++ {
 					if fvdl.Description[j].ClassID == sarifRule.GUID {
-						rawAbstract := fvdl.Description[j].Abstract.Text
-						rawExplanation := fvdl.Description[j].Explanation.Text
-						// Post-treat them to change the XML escaping
-						rawAbstract = strings.ReplaceAll(rawAbstract, "&lt;", "<")
-						rawAbstract = strings.ReplaceAll(rawAbstract, "&gt;", ">")
-						rawAbstract = strings.ReplaceAll(rawAbstract, "&amp;", "&")
-						rawAbstract = strings.ReplaceAll(rawAbstract, "&apos;", "'")
-						rawAbstract = strings.ReplaceAll(rawAbstract, "&quot;", "\"")
-
-						rawExplanation = strings.ReplaceAll(rawExplanation, "&lt;", "<")
-						rawExplanation = strings.ReplaceAll(rawExplanation, "&gt;", ">")
-						rawExplanation = strings.ReplaceAll(rawExplanation, "&amp;", "&")
-						rawExplanation = strings.ReplaceAll(rawExplanation, "&apos;", "'")
-						rawExplanation = strings.ReplaceAll(rawExplanation, "&quot;", "\"")
+						rawAbstract := unescapeXML(fvdl.Description[j].Abstract.Text)
+						rawExplanation := unescapeXML(fvdl.Description[j].Explanation.Text)
 
 						// Replacement defintions in abstract/explanation
 						for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability); k++ { // Iterate on vulns to find the correct one (where ReplacementDefinitions are)
 							if fvdl.Vulnerabilities.Vulnerability[k].ClassInfo.ClassID == fvdl.Description[j].ClassID {
 								for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def); l++ {
-									rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
-									rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+									rawAbstract = strings.ReplaceAll(rawAbstract, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+									rawExplanation = strings.ReplaceAll(rawExplanation, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
 								}
 								// Replacement locationdef in explanation
 								for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
@@ -911,7 +899,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				if sarifRule.Name == "" {
 					sarifRule.Name = "UnknownRule"
 				}
-				sarifRule.HelpURI = "https://vulncat.fortify.com/en/weakness" //FIXIT
+				sarifRule.HelpURI = "https://vulncat.fortify.com/en/weakness"
 
 				//Finalize: append the rule
 				tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
@@ -1184,7 +1172,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		if err != nil {
 			return err
 		}
-		ruleProp.ToolAuditMessage = *commentData[0].Comment
+		ruleProp.ToolAuditMessage = unescapeXML(*commentData[0].Comment)
 	}
 	if filterSet != nil {
 		for i := 0; i < len(filterSet.Folders); i++ {
@@ -1198,4 +1186,15 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		return err
 	}
 	return nil
+}
+
+func unescapeXML(input string) string {
+	raw := input
+	// Post-treat them to change the XML escaping
+	raw = strings.ReplaceAll(raw, "&lt;", "<")
+	raw = strings.ReplaceAll(raw, "&gt;", ">")
+	raw = strings.ReplaceAll(raw, "&amp;", "&")
+	raw = strings.ReplaceAll(raw, "&apos;", "'")
+	raw = strings.ReplaceAll(raw, "&quot;", "\"")
+	return raw
 }
