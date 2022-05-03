@@ -606,9 +606,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			//We now iterate on Entries in the trace/primary
 			for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry); l++ { // l iterates on entries
 				threadFlowLocation := *new(format.Locations) //One is created regardless
-				//the default node dictates the interesting threadflow (location, and so on)
+				//the default node dictates the starting threadflow, but for the complete trace, we need to create all of them
 				//this will populate both threadFlowLocation AND the parent location object (result.Locations[0])
-				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault == "true" {
+				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId == 0 {
 					//initalize the current location object, it will be added to threadFlowLocation.Location
 					tfloc := new(format.Location)
 					//get artifact location
@@ -1061,7 +1061,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			}
 			loc.PhysicalLocation.Region.Snippet = snippetSarif
 		}
-		log.Entry().Debug("Call observe")
+		log.Entry().Debug("Compute eventual sub-nodes")
 		threadFlowIndexMap[i+1] = computeLocationPath(fvdl, i+1) // Recursively traverse array
 		locs := format.Locations{Location: loc}
 		threadFlowLocationsObject = append(threadFlowLocationsObject, locs)
@@ -1076,12 +1076,6 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				newLocations := *new([]format.Locations)
 				for j := 0; j < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations); j++ {
 					if sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index != 0 {
-						/* old version
-						//Replace that threadflow
-						sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Location = sarif.Runs[0].ThreadFlowLocations[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index-1].Location
-						// Then void index
-						sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index = 0
-						*/
 						indexes := threadFlowIndexMap[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index]
 						for rep := 0; rep < len(indexes); rep++ {
 							newLocations = append(newLocations, sarif.Runs[0].ThreadFlowLocations[indexes[rep]-1])
