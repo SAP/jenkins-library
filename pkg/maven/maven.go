@@ -183,32 +183,24 @@ func FindArtifacts(options *EvaluateOptions, utils Utils) (piperenv.Artifacts, e
 			continue
 		}
 
-		jarFileName := jarFile(dir, finalName)
-		warFileName := warFile(dir, finalName)
-		classesJarFileName := classesJarFile(dir, finalName)
+		var artifactPath string
+		packaging, err := Evaluate(options, "project.packaging", utils)
+		if err != nil {
+			return nil, err
+		}
+		if packaging == "jar" {
+			artifactPath = jarFile(dir, finalName)
+		} else if packaging == "war" {
+			artifactPath = warFile(dir, finalName)
+		} else {
+			log.Entry().Warnf("project.packaging is not 'jar' or 'war' for the project '%s', can not write artifacts to common pipeline environment", pomFile)
+			continue
+		}
 
-		jarExists, _ := utils.FileExists(jarFileName)
-		warExists, _ := utils.FileExists(warFileName)
-		classesJarExists, _ := utils.FileExists(classesJarFileName)
-
-		if jarExists {
-			artifacts = append(artifacts, piperenv.Artifact{
-				Kind: "java:jar",
-				Path: jarFileName,
-			})
-		}
-		if warExists {
-			artifacts = append(artifacts, piperenv.Artifact{
-				Kind: "java:war",
-				Path: warFileName,
-			})
-		}
-		if classesJarExists {
-			artifacts = append(artifacts, piperenv.Artifact{
-				Kind: "java:classes-jar",
-				Path: classesJarFileName,
-			})
-		}
+		artifacts = append(artifacts, piperenv.Artifact{
+			Path: artifactPath,
+			Name: filepath.Base(artifactPath),
+		})
 	}
 
 	return artifacts, nil
