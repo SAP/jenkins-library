@@ -64,8 +64,8 @@ stages:
 #### atcConfig.yml
 
 ```yaml
-atcobjects:
-  softwarecomponent:
+objectSet:
+  softwarecomponents:
     - name: "/DMO/SWC"
 ```
 
