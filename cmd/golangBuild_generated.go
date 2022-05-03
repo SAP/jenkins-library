@@ -48,9 +48,9 @@ type golangBuildOptions struct {
 }
 
 type golangBuildCommonPipelineEnvironment struct {
-	custom struct {
+	artifacts piperenv.Artifacts
+	custom    struct {
 		buildSettingsInfo string
-		golangBinaries    []string
 	}
 }
 
@@ -61,7 +61,7 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
-		{category: "custom", name: "golangBinaries", value: p.custom.golangBinaries},
+		{category: "", name: "artifacts", value: p.artifacts},
 	}
 
 	errCount := 0
@@ -528,7 +528,7 @@ func golangBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
-							{"name": "custom/golangBinaries", "type": "[]string"},
+							{"name": "artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
 					{

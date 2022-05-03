@@ -240,8 +240,8 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
-          - name: custom/golangBinaries
-            type: "[]string"
+          - name: artifacts
+            type: "piperenv.Artifacts"
       - name: reports
         type: reports
         params:

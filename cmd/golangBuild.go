@@ -259,7 +259,9 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 		utils.SetOptions(repoClientOptions)
 
+		var binaryArtifacts piperenv.Artifacts
 		for _, binary := range binaries {
+
 			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
 
 			separator := "/"
@@ -281,12 +283,13 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			if !(response.StatusCode == 200 || response.StatusCode == 201) {
 				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 			}
-			// Publish list of binaries to cpe
-			if len(binaries) > 0 {
-				log.Entry().Infof("List of binaries %v\n", binaries)
-				commonPipelineEnvironment.custom.golangBinaries = binaries
-			}
+
+			binaryArtifacts = append(binaryArtifacts, piperenv.Artifact{
+				Name: binary,
+			})
 		}
+		commonPipelineEnvironment.artifacts = binaryArtifacts
+
 	}
 
 	return nil
