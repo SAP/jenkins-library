@@ -11,12 +11,16 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
+    /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
+    'cloudFoundryCreateServiceKey',
     /** Starts an ATC check run on the ABAP Environment instance */
     'abapEnvironmentRunATCCheck',
     /** Creates/Updates ATC System Configuration */
     'abapEnvironmentPushATCSystemConfig',
     /** Parameter for ATC System Configuration json */
-    'atcSystemConfigFilePath'
+    'atcSystemConfigFilePath',
+    /** Parameter for host config */
+    'host'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
