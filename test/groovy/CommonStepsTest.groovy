@@ -171,6 +171,7 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsExecuteABAPQualityChecks', //implementing new golang pattern without fields
         'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
         'gctsCloneRepository', //implementing new golang pattern without fields
+        'codeqlExecuteScan', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields

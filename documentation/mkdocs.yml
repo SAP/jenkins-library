@@ -94,6 +94,7 @@ nav:
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
         - fortifyExecuteScan: steps/fortifyExecuteScan.md
+        - codeqlExecuteScan: steps/codeqlExecuteScan.md
         - gatlingExecuteTests: steps/gatlingExecuteTests.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - gctsCloneRepository: steps/gctsCloneRepository.md
