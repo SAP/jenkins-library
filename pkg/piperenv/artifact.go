@@ -1,8 +1,7 @@
 package piperenv
 
 type Artifact struct {
-	LocalPath string `json:"localPath,omitempty"`
-	Name      string `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 type Artifacts []Artifact

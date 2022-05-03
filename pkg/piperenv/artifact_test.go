@@ -9,8 +9,7 @@ import (
 
 func Test_Artifacts_FindByName(t *testing.T) {
 	artifacts := Artifacts([]Artifact{{
-		LocalPath: "target/a.jar",
-		Name:      "a.jar",
+		Name: "a.jar",
 	}})
 
 	assert.Len(t, artifacts.FindByName("garbage"), 0)
