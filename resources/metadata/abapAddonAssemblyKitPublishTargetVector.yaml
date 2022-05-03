@@ -58,7 +58,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        default: 5
+        default: 16
       - name: pollingIntervalInSeconds
         type: int
         description: Wait time in seconds between polling calls
@@ -67,7 +67,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        default: 30
+        default: 60
       - name: addonDescriptor
         type: string
         description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions

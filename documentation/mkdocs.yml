@@ -113,6 +113,7 @@ nav:
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
+        - helmExecute: steps/helmExecute.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
@@ -150,6 +151,7 @@ nav:
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
+        - pythonBuild: steps/pythonBuild.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - shellExecute: steps/shellExecute.md
@@ -159,9 +161,7 @@ nav:
         - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
-        - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
-        - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
         - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
@@ -175,6 +175,8 @@ nav:
         - artifactSetVersion: steps/artifactSetVersion.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - npmExecute: steps/npmExecute.md
+        - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
     - 'Command line tool': cli/index.md

@@ -43,6 +43,7 @@ type Repository struct {
 	CommitID            string `json:"commitID"`
 	VersionYAML         string `json:"version"`
 	Version             string `json:"versionAAK"`
+	AdditionalPiecelist string `json:"additionalPiecelist"`
 	PackageName         string
 	PackageType         string
 	SpLevel             string

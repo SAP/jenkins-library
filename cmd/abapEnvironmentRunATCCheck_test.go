@@ -297,15 +297,15 @@ func TestParseATCResult(t *testing.T) {
 }
 
 func TestBuildATCCheckBody(t *testing.T) {
-	t.Run("Test build body with no software component and package", func(t *testing.T) {
-		expectedObjectSet := ""
+	t.Run("Test build body with no ATC Object set - no software component and package", func(t *testing.T) {
+		expectedObjectSet := "<obj:objectSet></obj:objectSet>"
 
 		var config ATCConfiguration
 
 		objectSet, err := getATCObjectSet(config)
 
 		assert.Equal(t, expectedObjectSet, objectSet)
-		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
 
@@ -324,6 +324,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testSoftwareComponent2"},
 				},
 			},
+			abaputils.ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
@@ -336,9 +337,8 @@ func TestBuildATCCheckBody(t *testing.T) {
 		expectedObjectSet := `<obj:objectSet><obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages></obj:objectSet>`
 
 		var err error
-		var config ATCConfiguration
 
-		config = ATCConfiguration{
+		config := ATCConfiguration{
 			"",
 			"",
 			ATCObjects{
@@ -347,13 +347,13 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
+			abaputils.ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
 
 		assert.Equal(t, expectedObjectSet, objectSet)
 		assert.Equal(t, nil, err)
-
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
 
@@ -368,6 +368,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 					{Name: "testSoftwareComponent2"},
 				},
 			},
+			abaputils.ObjectSet{},
 		}
 
 		objectSet, err := getATCObjectSet(config)
@@ -407,9 +408,9 @@ func TestGenerateHTMLDocument(t *testing.T) {
 
 func TestResolveConfiguration(t *testing.T) {
 
-	t.Run("resolve atcConfig-yml", func(t *testing.T) {
+	t.Run("resolve atcConfig-yml with ATC Set", func(t *testing.T) {
 
-		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents><obj:packages><obj:package value=\"Z_TEST\" includeSubpackages=\"false\"/></obj:packages></obj:objectSet></atc:runparameters>"
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents><obj:packages><obj:package value=\"Z_TEST\" includeSubpackages=\"false\"/><obj:package value=\"Z_TEST_TREE\" includeSubpackages=\"true\"/></obj:packages></obj:objectSet></atc:runparameters>"
 		config := abapEnvironmentRunATCCheckOptions{
 			AtcConfig: "atc.yml",
 		}
@@ -431,6 +432,8 @@ configuration: MY_CONFIG
 atcobjects:
   package:
     - name: Z_TEST
+    - name: Z_TEST_TREE
+      includesubpackage: true
   softwarecomponent:
     - name: Z_TEST
     - name: /DMO/SWC
@@ -443,6 +446,47 @@ atcobjects:
 			assert.Equal(t, expectedBodyString, bodyString)
 		}
 
+	})
+
+	t.Run("resolve atcConfig-yml with OSL", func(t *testing.T) {
+
+		config := abapEnvironmentRunATCCheckOptions{
+			AtcConfig: "atc.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "atcDir")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		yamlBody := `checkvariant: MY_TEST
+configuration: MY_CONFIG
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    packages:
+      - name: Z_TEST
+    packagetrees:
+      - name: Z_TEST_TREE
+    softwarecomponents:
+      - name: Z_TEST
+      - name: /DMO/SWC
+`
+		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:package name=\"Z_TEST_TREE\" includeSubpackages=\"true\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></atc:runparameters>"
+
+		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
+		if assert.Equal(t, err, nil) {
+			bodyString, err := buildATCRequestBody(config)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, expectedBodyString, bodyString)
+		}
 	})
 
 	t.Run("resolve repo-yml", func(t *testing.T) {
