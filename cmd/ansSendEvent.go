@@ -41,7 +41,6 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 		return err
 	}
 
-
 	err = c.Send(event)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
