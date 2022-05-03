@@ -38,6 +38,9 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+        if (!config.host) {
+            cloudFoundryCreateServiceKey script: parameters.script
+        }
         if (config.atcSystemConfigFilePath) {
           abapEnvironmentPushATCSystemConfig script: parameters.script
         }
