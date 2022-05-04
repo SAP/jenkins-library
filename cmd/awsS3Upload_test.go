@@ -7,24 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
-
-type awsS3UploadMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAwsS3UploadTestsUtils() awsS3UploadMockUtils {
-	utils := awsS3UploadMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 type mockPutObjectAPI func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 
@@ -42,23 +28,10 @@ func TestRunAwsS3Upload(t *testing.T) {
 			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),
 		}
 		client := mockS3Client
-		utils := newAwsS3UploadTestsUtils()
 		// test
-		err := runAwsS3Upload(&config, nil, utils, client(t), "fooBucket")
+		err := runAwsS3Upload(&config, client(t), "fooBucket")
 		// assert
 		assert.NoError(t, err)
-	})
-
-	t.Run("no Path", func(t *testing.T) {
-		t.Parallel()
-		// initialization
-		config := awsS3UploadOptions{}
-		client := mockS3Client
-		utils := newAwsS3UploadTestsUtils()
-		// test
-		err := runAwsS3Upload(&config, nil, utils, client(t), "fooBucket")
-		// assert
-		assert.EqualError(t, err, "File Path Parameter is empty. Please specify a file or directory to Upload to AWS!")
 	})
 
 	t.Run("error Path", func(t *testing.T) {
@@ -68,9 +41,8 @@ func TestRunAwsS3Upload(t *testing.T) {
 			FilePath: "nonExistingFilepath",
 		}
 		client := mockS3Client
-		utils := newAwsS3UploadTestsUtils()
 		// test
-		err := runAwsS3Upload(&config, nil, utils, client(t), "fooBucket")
+		err := runAwsS3Upload(&config, client(t), "fooBucket")
 		// assert
 		_, ok := err.(*fs.PathError)
 		assert.True(t, ok)
@@ -83,9 +55,8 @@ func TestRunAwsS3Upload(t *testing.T) {
 			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),
 		}
 		client := mockS3Client
-		utils := newAwsS3UploadTestsUtils()
 		// test
-		err := runAwsS3Upload(&config, nil, utils, client(t), "errorBucket")
+		err := runAwsS3Upload(&config, client(t), "errorBucket")
 		// assert
 		assert.EqualError(t, err, "expect fooBucket, got errorBucket")
 	})
