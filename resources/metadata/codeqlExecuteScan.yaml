@@ -42,7 +42,7 @@ spec:
         default: "mvn clean install"
       - name: language
         type: string
-        description: "Command to build the project"
+        description: "The programming language used to analyze."
         scope:
           - PARAMETERS
           - STAGES
@@ -58,7 +58,7 @@ spec:
         default: "./"
       - name: codeqlQuery
         type: string
-        description: "The name of a CodeQL query pack If omitted, the default query suite for the language of the database being analyzed will be used."
+        description: "The name of a CodeQL query pack. If omitted, the default query suite for the language of the database being analyzed will be used."
         scope:
           - PARAMETERS
           - STAGES
@@ -66,7 +66,7 @@ spec:
         default: "java-security-extended.qls"
       - name: uploadResults
         type: bool
-        description: "Allows you to upload codeql sarif results to your github project. You will need to set githubToken for this."
+        description: "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this."
         scope:
           - PARAMETERS
           - STAGES
