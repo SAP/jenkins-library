@@ -204,7 +204,7 @@ func (j *JenkinsConfigProvider) GetReference() string {
 	if ref == "n/a" {
 		return ref
 	} else if strings.Contains(ref, "PR") {
-		return "refs/pulls/" + strings.Split(ref, "-")[1] + "/head"
+		return "refs/pull/" + strings.Split(ref, "-")[1] + "/head"
 	} else {
 		return "refs/heads/" + ref
 	}

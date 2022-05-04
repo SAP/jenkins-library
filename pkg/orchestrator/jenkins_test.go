@@ -49,7 +49,7 @@ func TestJenkins(t *testing.T) {
 		c := p.GetPullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
-		assert.Equal(t, "refs/pulls/42/head", p.GetReference())
+		assert.Equal(t, "refs/pull/42/head", p.GetReference())
 		assert.Equal(t, "feat/test-jenkins", c.Branch)
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
