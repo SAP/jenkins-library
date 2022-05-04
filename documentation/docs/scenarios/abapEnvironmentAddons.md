@@ -213,8 +213,7 @@ If the `version` of a software component is increased but not the `addonVersion`
 
 If the add-on product consists of multiple software component versions, but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package will be created. If, at the same time, the `addonVersion` is increased a new [target vector](#target-vector) will be created.
 
-`branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
-The `commitID` should only be changed while also adjusting the `version` number of a software component.
+The `commitID` identifies a specific state of a software component and should only be changed while also adjusting the `version` number of a software component.
 
 ##### Versioning Rules
 
@@ -275,9 +274,6 @@ In case of an error during execution of the pipeline steps:
           <br>New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.
           * __e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`__
           <br>New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.
-      * Step: [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)
-          * __e.g. `Commit 7137bcb08c675dea9e08252ea269ebba1ca83226 not found`__
-          <br>New Patch Level of software component, and branch is changed in add-on descriptor: A `commitID`of previously created patch version is not available in another branch.
 * Stage: [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)
       * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
           * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
