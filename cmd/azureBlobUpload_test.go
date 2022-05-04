@@ -10,22 +10,8 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type azureBlobUploadMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAzureBlobUploadTestsUtils() azureBlobUploadMockUtils {
-	utils := azureBlobUploadMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 type mockAzureContainerAPI func(blobName string) (*azblob.BlockBlobClient, error)
 
@@ -43,24 +29,12 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		config := azureBlobUploadOptions{
 			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),
 		}
-		utils := newAzureBlobUploadTestsUtils()
 		container := mockAzureContainerClient
 
 		// test
-		err := runAzureBlobUpload(&config, nil, utils, container(t), UploadMock)
+		err := runAzureBlobUpload(&config, container(t), UploadMock)
 		// assert
 		assert.NoError(t, err)
-	})
-
-	t.Run("no path", func(t *testing.T) {
-		t.Parallel()
-		//init
-		config := azureBlobUploadOptions{}
-		utils := newAzureBlobUploadTestsUtils()
-		container := mockAzureContainerClient
-
-		err := runAzureBlobUpload(&config, nil, utils, container(t), UploadMock)
-		assert.EqualError(t, err, "File Path Parameter is empty. Please specify a file or directory to Upload to Azure!")
 	})
 
 	t.Run("error path", func(t *testing.T) {
@@ -70,9 +44,8 @@ func TestRunAzureBlobUpload(t *testing.T) {
 			FilePath: "nonExistingFilepath",
 		}
 		container := mockAzureContainerClient
-		utils := newAzureBlobUploadTestsUtils()
 		// test
-		err := runAzureBlobUpload(&config, nil, utils, container(t), UploadMock)
+		err := runAzureBlobUpload(&config, container(t), UploadMock)
 		// assert
 		_, ok := err.(*fs.PathError)
 		assert.True(t, ok)
@@ -85,9 +58,8 @@ func TestRunAzureBlobUpload(t *testing.T) {
 			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),
 		}
 		container := mockAzureContainerClient
-		utils := newAzureBlobUploadTestsUtils()
 		// test
-		err := runAzureBlobUpload(&config, nil, utils, container(t), UploadMock)
+		err := runAzureBlobUpload(&config, container(t), UploadMock)
 		// assert
 		assert.EqualError(t, err, "invalid blobName")
 	})
