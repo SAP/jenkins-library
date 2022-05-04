@@ -10,7 +10,7 @@ import (
 )
 
 //APIMCommonUtils for apim
-type APIMCommonUtils interface {
+type APIMUtils interface {
 	NewAPIM() error
 }
 
@@ -20,7 +20,7 @@ type APIMBundle struct {
 	Client              piperhttp.Sender
 }
 
-func (apim APIMBundle) NewAPIM() error {
+func (apim *APIMBundle) NewAPIM() error {
 	serviceKey, err := cpi.ReadCpiServiceKey(apim.APIServiceKey)
 	if err != nil {
 		return err

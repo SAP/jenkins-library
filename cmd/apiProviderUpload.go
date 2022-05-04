@@ -35,7 +35,7 @@ func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry
 func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
 	apimData := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: httpClient}
-	error := apim.APIMCommonUtils.NewAPIM(&apimData)
+	error := apim.APIMUtils.NewAPIM(&apimData)
 	if error != nil {
 		return error
 	}
