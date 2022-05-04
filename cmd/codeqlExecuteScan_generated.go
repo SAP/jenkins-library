@@ -165,10 +165,10 @@ and Java plus Maven.`,
 func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", `mvn clean install`, "Command to build the project")
-	cmd.Flags().StringVar(&stepConfig.Language, "language", `java`, "Command to build the project")
+	cmd.Flags().StringVar(&stepConfig.Language, "language", `java`, "The programming language used to analyze.")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
-	cmd.Flags().StringVar(&stepConfig.CodeqlQuery, "codeqlQuery", `java-security-extended.qls`, "The name of a CodeQL query pack If omitted, the default query suite for the language of the database being analyzed will be used.")
-	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql sarif results to your github project. You will need to set githubToken for this.")
+	cmd.Flags().StringVar(&stepConfig.CodeqlQuery, "codeqlQuery", `java-security-extended.qls`, "The name of a CodeQL query pack. If omitted, the default query suite for the language of the database being analyzed will be used.")
+	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed. If this ref is a pull request merge commit, then use refs/pulls/1234/merge or refs/pulls/1234/head (depending on whether or not this commit corresponds to the HEAD or MERGE commit of the PR). Otherwise, this should be a branch: refs/heads/branch-name. If omitted, the CLI will attempt to automatically populate this from the current branch of the checkout path, if this exists.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
