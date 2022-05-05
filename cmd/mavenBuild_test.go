@@ -43,13 +43,10 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.ElementsMatch(t, cpe.artifacts, []piperenv.Artifact{{
-			Kind: "java:jar",
 			Path: "target/artifacts-test.jar",
 		}, {
-			Kind: "java:war",
 			Path: "target/artifacts-test.war",
 		}, {
-			Kind: "java:classes-jar",
 			Path: "target/artifacts-test-classes.jar",
 		}})
 	})
