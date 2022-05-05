@@ -494,16 +494,6 @@ type Attribute struct {
 	Value   string   `xml:"value"`
 }
 
-// Utils
-
-func (n Node) isEmpty() bool {
-	return n.IsDefault == ""
-}
-
-func (a Action) isEmpty() bool {
-	return a.ActionData == ""
-}
-
 // ConvertFprToSarif converts the FPR file contents into SARIF format
 func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
@@ -582,7 +572,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		//get message
 		for j := 0; j < len(fvdl.Description); j++ {
 			if fvdl.Description[j].ClassID == result.RuleID {
-				result.RuleIndex = j //Seems very abstract
+				result.RuleIndex = j
 				rawMessage := unescapeXML(fvdl.Description[j].Abstract.Text)
 				// Replacement defintions in message
 				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
@@ -605,10 +595,11 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			threadFlow := *new(format.ThreadFlow)
 			//We now iterate on Entries in the trace/primary
 			for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry); l++ { // l iterates on entries
-				threadFlowLocation := *new(format.Locations) //One is created regardless
-				//the default node dictates the starting threadflow, but for the complete trace, we need to create all of them
+				tfla := *new([]format.Locations)             //threadflowlocationarray. Useful for the node-in-node edge case
+				threadFlowLocation := *new(format.Locations) //One is created regardless of the path taken afterwards
 				//this will populate both threadFlowLocation AND the parent location object (result.Locations[0])
-				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId == 0 {
+				// We check if a noderef is present: if no (index of ref is the default 0), this is a "real" node. As a measure of safety (in case a node refers to nodeid 0), we add another check: the node must have a label or a isdefault value
+				if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId == 0 && (fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.NodeLabel != "" || fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault != "") {
 					//initalize the current location object, it will be added to threadFlowLocation.Location
 					tfloc := new(format.Location)
 					//get artifact location
@@ -626,7 +617,6 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					tfloc.PhysicalLocation.Region.StartColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
 					tfloc.PhysicalLocation.Region.EndColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColEnd
 					//Snippet is handled last
-					//threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = "foobar"
 					targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Snippet
 					for j := 0; j < len(fvdl.Snippets); j++ {
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
@@ -638,60 +628,42 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 							break
 						}
 					}
-					//check for existance of action object, and if yes, save message
-					if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.isEmpty() {
+					// if a label is passed, put it as message
+					if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.NodeLabel != "" {
 						tfloc.Message = new(format.Message)
-						tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-						// Handle snippet
-						snippetTarget := ""
-						switch fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type {
-						case "Assign":
-							snippetWords := strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, " ")
-							if snippetWords[0] == "Assignment" {
-								snippetTarget = snippetWords[2]
-							} else {
-								snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-							}
-						case "InCall":
-							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
-						case "OutCall":
-							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
-						case "InOutCall":
-							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
-						case "Return":
-							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-						case "Read":
-							snippetWords := strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, " ")
-							if len(snippetWords) > 1 {
-								snippetTarget = " " + snippetWords[1]
-							} else {
-								snippetTarget = snippetWords[0]
-							}
-						default:
-							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-						}
-						if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
-							physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-							snippetText := ""
-							for j := 0; j < len(physLocationSnippetLines); j++ {
-								if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-									snippetText = physLocationSnippetLines[j]
-									break
-								}
-							}
-							snippetSarif := new(format.SnippetSarif)
-							if snippetText != "" {
-								snippetSarif.Text = snippetText
-							} else {
-								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
-							}
-							tfloc.PhysicalLocation.Region.Snippet = snippetSarif
-						}
+						tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.NodeLabel
 					} else {
-						if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
-							snippetSarif := new(format.SnippetSarif)
-							snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
-							tfloc.PhysicalLocation.Region.Snippet = snippetSarif
+						// otherwise check for existance of action object, and if yes, save message
+						if !(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData == "") {
+							tfloc.Message = new(format.Message)
+							tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+
+							// Handle snippet
+							snippetTarget := handleSnippet(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData)
+
+							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+								physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+								snippetText := ""
+								for j := 0; j < len(physLocationSnippetLines); j++ {
+									if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+										snippetText = physLocationSnippetLines[j]
+										break
+									}
+								}
+								snippetSarif := new(format.SnippetSarif)
+								if snippetText != "" {
+									snippetSarif.Text = snippetText
+								} else {
+									snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
+								}
+								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
+							}
+						} else {
+							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+								snippetSarif := new(format.SnippetSarif)
+								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
+								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
+							}
 						}
 					}
 					location = *tfloc
@@ -699,12 +671,66 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					threadFlowLocation.Location = tfloc
 					threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "review") //TODO
 					threadFlowLocation.Index = 0                                          // to be safe?
+					tfla = append(tfla, threadFlowLocation)
+
+					// "Node-in-node" edge case! in some cases the "Reason" object will contain a "Trace>Primary>Entry>Node" object
+					// Check for it at depth 1 only, as an in-case
+					if len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry) > 0 {
+						ninThreadFlowLocation := *new(format.Locations)
+						if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].NodeRef.RefId != 0 {
+							// As usual, only the index for a ref
+							ninThreadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].NodeRef.RefId + 1
+						} else {
+							// Build a new "node-in-node" tfloc, it will be appended to tfla
+							nintfloc := new(format.Location)
+
+							// artifactlocation
+							for j := 0; j < len(fvdl.Build.SourceFiles); j++ {
+								if fvdl.Build.SourceFiles[j].Name == fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Path {
+									nintfloc.PhysicalLocation.ArtifactLocation.Index = j + 1
+									nintfloc.PhysicalLocation.ArtifactLocation.URI = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Path
+									nintfloc.PhysicalLocation.ArtifactLocation.URIBaseId = "%SRCROOT%"
+									break
+								}
+							}
+
+							// region & context region
+							nintfloc.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Line
+							nintfloc.PhysicalLocation.Region.EndLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.LineEnd
+							nintfloc.PhysicalLocation.Region.StartColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.ColStart
+							nintfloc.PhysicalLocation.Region.EndColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.ColEnd
+							// snippet
+							targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Snippet
+							for j := 0; j < len(fvdl.Snippets); j++ {
+								if fvdl.Snippets[j].SnippetId == targetSnippetId {
+									nintfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
+									nintfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
+									snippetSarif := new(format.SnippetSarif)
+									snippetSarif.Text = fvdl.Snippets[j].Text
+									nintfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
+									break
+								}
+							}
+							// label as message
+							if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.NodeLabel != "" {
+								nintfloc.Message = new(format.Message)
+								nintfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.NodeLabel
+							}
+
+							ninThreadFlowLocation.Location = nintfloc
+							ninThreadFlowLocation.Index = 0 // Safety
+						}
+						tfla = append(tfla, ninThreadFlowLocation)
+					}
+					// END edge case
+
 				} else { //is not a main threadflow: just register NodeRef index in threadFlowLocation
 					// Sarif does not provision 0 as a valid array index, so we increment the node ref id
 					// Each index i serves to reference the i-th object in run.threadFlowLocations
 					threadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId + 1
+					tfla = append(tfla, threadFlowLocation)
 				}
-				threadFlow.Locations = append(threadFlow.Locations, threadFlowLocation)
+				threadFlow.Locations = append(threadFlow.Locations, tfla...)
 			}
 			codeFlow.ThreadFlows = append(codeFlow.ThreadFlows, threadFlow)
 			result.CodeFlows = append(result.CodeFlows, codeFlow)
@@ -735,14 +761,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
 		//Get the audit data
-		// B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885 is "custom rules": handle differently?
-		/*if result.RuleID == "B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885" {
-			// Custom Rules has no audit value: it's notificaiton in the FVDL only.
-			prop.Audited = true
-			prop.ToolAuditMessage = "Custom Rules: not a vuln"
-			prop.ToolState = "Not an Issue"
-			prop.ToolStateIndex = 1
-		} else */if sys != nil {
+		if sys != nil {
 			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
 				log.Entry().Debug(err)
 				prop.Audited = false
@@ -800,8 +819,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					}
 					nameArray = append(nameArray, words...)
 				}
-				sarifRule.ID = strings.Join(idArray, "/")
-				sarifRule.Name = "fortify-" + strings.Join(nameArray, "")
+				sarifRule.ID = "fortify-" + strings.Join(idArray, "/")
+				sarifRule.Name = strings.Join(nameArray, "")
 				defaultConfig := new(format.DefaultConfiguration)
 				defaultConfig.Level = "warning" // Default value
 				defaultConfig.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
@@ -895,10 +914,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					sarifRule.Relationships = append(sarifRule.Relationships, rls)
 				}
 
-				// Respect Sarif properties by adding a helpURI (dummy at the moment) and filling in a name if it is missing.
-				if sarifRule.Name == "" {
-					sarifRule.Name = "UnknownRule"
-				}
+				// Add a helpURI as some processors require it
 				sarifRule.HelpURI = "https://vulncat.fortify.com/en/weakness"
 
 				//Finalize: append the rule
@@ -1002,7 +1018,6 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		loc.PhysicalLocation.Region.EndLine = fvdl.UnifiedNodePool.Node[i].SourceLocation.LineEnd
 		loc.PhysicalLocation.Region.StartColumn = fvdl.UnifiedNodePool.Node[i].SourceLocation.ColStart
 		loc.PhysicalLocation.Region.EndColumn = fvdl.UnifiedNodePool.Node[i].SourceLocation.ColEnd
-		//loc.PhysicalLocation.Region.Snippet.Text = "foobar" //TODO
 		targetSnippetId := fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet
 		for j := 0; j < len(fvdl.Snippets); j++ {
 			if fvdl.Snippets[j].SnippetId == targetSnippetId {
@@ -1016,34 +1031,10 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 		loc.Message = new(format.Message)
 		loc.Message.Text = fvdl.UnifiedNodePool.Node[i].Action.ActionData
+
 		// Handle snippet
-		snippetTarget := ""
-		switch fvdl.UnifiedNodePool.Node[i].Action.Type {
-		case "Assign":
-			snippetWords := strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, " ")
-			if snippetWords[0] == "Assignment" {
-				snippetTarget = snippetWords[2]
-			} else {
-				snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
-			}
-		case "InCall":
-			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
-		case "OutCall":
-			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
-		case "InOutCall":
-			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
-		case "Return":
-			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
-		case "Read":
-			snippetWords := strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, " ")
-			if len(snippetWords) > 1 {
-				snippetTarget = " " + snippetWords[1]
-			} else {
-				snippetTarget = snippetWords[0]
-			}
-		default:
-			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
-		}
+		snippetTarget := handleSnippet(fvdl.UnifiedNodePool.Node[i].Action.Type, fvdl.UnifiedNodePool.Node[i].Action.ActionData)
+
 		if loc.PhysicalLocation.ContextRegion.Snippet != nil {
 			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 			snippetText := ""
@@ -1073,10 +1064,12 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	for i := 0; i < len(sarif.Runs[0].Results); i++ {
 		for cf := 0; cf < len(sarif.Runs[0].Results[i].CodeFlows); cf++ {
 			for tf := 0; tf < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows); tf++ {
+				log.Entry().Debug("Handling tf: ", tf, "from instance ", sarif.Runs[0].Results[i].PartialFingerprints.FortifyInstanceID)
 				newLocations := *new([]format.Locations)
 				for j := 0; j < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations); j++ {
 					if sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index != 0 {
 						indexes := threadFlowIndexMap[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index]
+						log.Entry().Debug("Indexes found: ", indexes)
 						for rep := 0; rep < len(indexes); rep++ {
 							newLocations = append(newLocations, sarif.Runs[0].ThreadFlowLocations[indexes[rep]-1])
 							newLocations[rep].Index = 0 // void index
@@ -1192,9 +1185,41 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	return nil
 }
 
+// Factorizes some code used to obtain the relevant value for a snippet based on the type given by Fortify
+func handleSnippet(snippetType string, snippet string) string {
+	snippetTarget := ""
+	switch snippetType {
+	case "Assign":
+		snippetWords := strings.Split(snippet, " ")
+		if snippetWords[0] == "Assignment" {
+			snippetTarget = snippetWords[2]
+		} else {
+			snippetTarget = snippet
+		}
+	case "InCall":
+		snippetTarget = strings.Split(snippet, "(")[0]
+	case "OutCall":
+		snippetTarget = strings.Split(snippet, "(")[0]
+	case "InOutCall":
+		snippetTarget = strings.Split(snippet, "(")[0]
+	case "Return":
+		snippetTarget = snippet
+	case "Read":
+		snippetWords := strings.Split(snippet, " ")
+		if len(snippetWords) > 1 {
+			snippetTarget = " " + snippetWords[1]
+		} else {
+			snippetTarget = snippetWords[0]
+		}
+	default:
+		snippetTarget = snippet
+	}
+	return snippetTarget
+}
+
 func unescapeXML(input string) string {
 	raw := input
-	// Post-treat string to change the XML escaping
+	// Post-treat string to change the XML escaping generated by Unmarshal
 	raw = strings.ReplaceAll(raw, "&lt;", "<")
 	raw = strings.ReplaceAll(raw, "&gt;", ">")
 	raw = strings.ReplaceAll(raw, "&amp;", "&")
@@ -1203,6 +1228,7 @@ func unescapeXML(input string) string {
 	return raw
 }
 
+// Used to build a reference array of index for the successors of each node in the UnifiedNodePool
 func computeLocationPath(fvdl FVDL, input int) []int {
 	log.Entry().Debug("Computing for ID ", input)
 	// Find the successors of input
