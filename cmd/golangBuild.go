@@ -288,7 +288,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 				Name: binary,
 			})
 		}
-		commonPipelineEnvironment.artifacts = binaryArtifacts
+		commonPipelineEnvironment.custom.artifacts = binaryArtifacts
 
 	}
 
