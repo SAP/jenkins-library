@@ -171,9 +171,11 @@ func Parse(data []byte) (format.SARIF, error) {
 			msg := new(format.Message)
 			msg.Text = cxxml.Query[i].Categories
 			result.Message = msg
-			analysisTarget := new(format.ArtifactLocation)
-			analysisTarget.URI = cxxml.Query[i].Result[j].FileName
-			result.AnalysisTarget = analysisTarget
+			//analysisTarget := new(format.ArtifactLocation)
+			//analysisTarget.URI = cxxml.Query[i].Result[j].FileName
+			//analysisTarget.Index = index
+
+			//result.AnalysisTarget = analysisTarget
 			if cxxml.Query[i].Name != "" {
 				msg := new(format.Message)
 				msg.Text = cxxml.Query[i].Name
@@ -181,14 +183,32 @@ func Parse(data []byte) (format.SARIF, error) {
 			//Locations
 			for k := 0; k < len(cxxml.Query[i].Result[j].Path.PathNode); k++ {
 				loc := *new(format.Location)
+				/*index := 0
+				//Check if that artifact has been added
+				added := false
+				for file := 0; file < len(sarif.Runs[0].Artifacts); file++ {
+					if sarif.Runs[0].Artifacts[file].Location.Uri == cxxml.Query[i].Result[j].FileName {
+						added = true
+						index = file
+						break
+					}
+				}
+				if !added {
+					artifact := format.Artifact{Location: format.SarifLocation{Uri: cxxml.Query[i].Result[j].FileName}}
+					sarif.Runs[0].Artifacts = append(sarif.Runs[0].Artifacts, artifact)
+					index = len(sarif.Runs[0].Artifacts) - 1
+				}
+				loc.PhysicalLocation.ArtifactLocation.Index = index */
 				loc.PhysicalLocation.ArtifactLocation.URI = cxxml.Query[i].Result[j].FileName
 				loc.PhysicalLocation.Region.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				loc.PhysicalLocation.Region.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				loc.PhysicalLocation.Region.StartColumn = cxxml.Query[i].Result[j].Path.PathNode[k].Column
 				snip := new(format.SnippetSarif)
 				snip.Text = cxxml.Query[i].Result[j].Path.PathNode[k].Snippet.Line.Code
 				loc.PhysicalLocation.Region.Snippet = snip
-				loc.PhysicalLocation.ContextRegion.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				loc.PhysicalLocation.ContextRegion.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				loc.PhysicalLocation.ContextRegion.Snippet = snip
+				//loc.PhysicalLocation.ContextRegion.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				//loc.PhysicalLocation.ContextRegion.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				//loc.PhysicalLocation.ContextRegion.Snippet = snip
 				result.Locations = append(result.Locations, loc)
 
 				//Related Locations
@@ -202,6 +222,9 @@ func Parse(data []byte) (format.SARIF, error) {
 				result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
 			}
+
+			result.PartialFingerprints.CheckmarxSimilarityID = cxxml.Query[i].Result[j].Path.SimilarityID
+			result.PartialFingerprints.PrimaryLocationLineHash = cxxml.Query[i].Result[j].Path.SimilarityID
 
 			//Properties
 			props := new(format.SarifProperties)
@@ -259,7 +282,11 @@ func Parse(data []byte) (format.SARIF, error) {
 		//handle the rules array
 		rule := *new(format.SarifRule)
 		rule.ID = cxxml.Query[i].ID
-		rule.Name = cxxml.Query[i].Name
+		words := strings.Split(cxxml.Query[i].Name, "_")
+		for w := 0; w < len(words); w++ {
+			words[w] = strings.Title(strings.ToLower(words[w]))
+		}
+		rule.Name = strings.Join(words, "")
 		rule.HelpURI = baseURL + "queryID=" + cxxml.Query[i].ID + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
 		rulesArray = append(rulesArray, rule)
 	}
@@ -269,7 +296,8 @@ func Parse(data []byte) (format.SARIF, error) {
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "Checkmarx SCA"
-	tool.Driver.Version = cxxml.CheckmarxVersion
+	tool.Driver.Version = strings.Split(cxxml.CheckmarxVersion, "V ")[1] //Bad idea all things considered
+	tool.Driver.InformationUri = "https://checkmarx.atlassian.net/wiki/spaces/KC/pages/1170245301/Navigating+Scan+Results+v9.0.0+to+v9.2.0"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
 
