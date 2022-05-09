@@ -40,6 +40,9 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 		tarfilePath = filenameFromContainer(rootPath, config.ContainerImage)
 	} else {
 		tarfilePath = filepath.Join(rootPath, tarfilePath)
+		if fileExtension := filepath.Ext(tarfilePath); fileExtension != ".tar" {
+			tarfilePath = fmt.Sprintf("%s.tar", tarfilePath)
+		}
 	}
 
 	log.Entry().Infof("Downloading '%s' to '%s'", config.ContainerImage, tarfilePath)
