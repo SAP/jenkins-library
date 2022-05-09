@@ -20,7 +20,7 @@ type Bundle struct {
 	Client              piperhttp.Sender
 }
 
-//NewAPIM() fumnction initialize APIM bearer token for API access
+//InitAPIM() fumnction initialize APIM bearer token for API access
 func (apim *Bundle) InitAPIM() error {
 	serviceKey, err := cpi.ReadCpiServiceKey(apim.APIServiceKey)
 	if err != nil {
