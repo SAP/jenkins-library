@@ -40,6 +40,7 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 		tarfilePath = filenameFromContainer(rootPath, config.ContainerImage)
 	} else {
 		tarfilePath = filepath.Join(rootPath, tarfilePath)
+		// targetPath is passed as project name that will not consist of the .tar extension
 		if fileExtension := filepath.Ext(tarfilePath); fileExtension != ".tar" {
 			tarfilePath = fmt.Sprintf("%s.tar", tarfilePath)
 		}
