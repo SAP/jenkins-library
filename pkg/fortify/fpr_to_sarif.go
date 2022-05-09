@@ -567,11 +567,24 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	log.Entry().Debug("[SARIF] Now handling results.")
 	for i := 0; i < len(fvdl.Vulnerabilities.Vulnerability); i++ {
 		result := *new(format.Results)
-		result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
+		//result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
+		// Handle ruleID the same way than in Rule
+		idArray := []string{}
+		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom != "" {
+			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom)
+		}
+		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Type != "" {
+			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Type)
+		}
+		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Subtype != "" {
+			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Subtype)
+		}
+		result.RuleID = "fortify-" + strings.Join(idArray, "/")
+		// end handle result
 		result.Level = "none" //TODO
 		//get message
 		for j := 0; j < len(fvdl.Description); j++ {
-			if fvdl.Description[j].ClassID == result.RuleID {
+			if fvdl.Description[j].ClassID == fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID {
 				result.RuleIndex = j
 				rawMessage := unescapeXML(fvdl.Description[j].Abstract.Text)
 				// Replacement defintions in message
