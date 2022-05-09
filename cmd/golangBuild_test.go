@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 type golangBuildMockUtils struct {
@@ -72,7 +73,7 @@ func newGolangBuildTestsUtils() *golangBuildMockUtils {
 	utils := golangBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
-		// clientOptions:  []piperhttp.ClientOptions{},
+		//clientOptions:  []piperhttp.ClientOptions{},
 		fileUploads: map[string]string{},
 	}
 	return &utils
@@ -613,8 +614,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Greater(t, len(utils.Env), 3)
 		assert.Contains(t, utils.Env, "CGO_ENABLED=0")
@@ -622,7 +624,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, utils.Env, "GOARCH=amd64")
 		assert.Equal(t, utils.Calls[0].Exec, "go")
 		assert.Equal(t, utils.Calls[0].Params[0], "build")
-		assert.Empty(t, binaryName)
+		assert.Equal(t, "testBinary", binaryName)
 	})
 
 	t.Run("success - custom params", func(t *testing.T) {
@@ -631,16 +633,16 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		ldflags := "-X test=test"
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-linux.amd64")
 		assert.Contains(t, utils.Calls[0].Params, "./test/..")
 		assert.Contains(t, utils.Calls[0].Params, "-ldflags")
 		assert.Contains(t, utils.Calls[0].Params, "-X test=test")
-		assert.Len(t, binaryNames, 1)
-		assert.Contains(t, binaryNames, "testBin-linux.amd64")
+		assert.Equal(t, "testBin-linux.amd64", binaryName)
 	})
 
 	t.Run("success - windows", func(t *testing.T) {
@@ -649,81 +651,13 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-windows.amd64.exe")
-		assert.Len(t, binaryNames, 1)
-		assert.Contains(t, binaryNames, "testBin-windows.amd64.exe")
-	})
-
-	t.Run("success - multiple main packages (linux)", func(t *testing.T) {
-		t.Parallel()
-		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
-		utils := newGolangBuildTestsUtils()
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} package/foo": "main",
-			"go list -f {{ .Name }} package/bar": "main",
-		}
-		ldflags := ""
-		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
-
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
-		assert.NoError(t, err)
-		assert.Contains(t, utils.Calls[0].Params, "list")
-		assert.Contains(t, utils.Calls[0].Params, "package/foo")
-		assert.Contains(t, utils.Calls[1].Params, "list")
-		assert.Contains(t, utils.Calls[1].Params, "package/bar")
-
-		assert.Len(t, binaryNames, 2)
-		assert.Contains(t, binaryNames, "test-linux-amd64/foo")
-		assert.Contains(t, binaryNames, "test-linux-amd64/bar")
-	})
-
-	t.Run("success - multiple main packages (windows)", func(t *testing.T) {
-		t.Parallel()
-		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
-		utils := newGolangBuildTestsUtils()
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} package/foo": "main",
-			"go list -f {{ .Name }} package/bar": "main",
-		}
-		ldflags := ""
-		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
-
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
-		assert.NoError(t, err)
-		assert.Contains(t, utils.Calls[0].Params, "list")
-		assert.Contains(t, utils.Calls[0].Params, "package/foo")
-		assert.Contains(t, utils.Calls[1].Params, "list")
-		assert.Contains(t, utils.Calls[1].Params, "package/bar")
-
-		assert.Len(t, binaryNames, 2)
-		assert.Contains(t, binaryNames, "test-windows-amd64/foo.exe")
-		assert.Contains(t, binaryNames, "test-windows-amd64/bar.exe")
-	})
-
-	t.Run("success - multiple mixed packages", func(t *testing.T) {
-		t.Parallel()
-		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
-		utils := newGolangBuildTestsUtils()
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} package/foo": "main",
-			"go list -f {{ .Name }} package/bar": "bar",
-		}
-		ldflags := ""
-		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
-
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
-		assert.NoError(t, err)
-		assert.Contains(t, utils.Calls[0].Params, "list")
-		assert.Contains(t, utils.Calls[0].Params, "package/foo")
-		assert.Contains(t, utils.Calls[1].Params, "list")
-		assert.Contains(t, utils.Calls[1].Params, "package/bar")
-
-		assert.Len(t, binaryNames, 1)
-		assert.Contains(t, binaryNames, "test-linux-amd64/foo")
+		assert.Equal(t, "testBin-windows.amd64.exe", binaryName)
 	})
 
 	t.Run("execution error", func(t *testing.T) {
@@ -733,8 +667,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("execution error")}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		_, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
 
