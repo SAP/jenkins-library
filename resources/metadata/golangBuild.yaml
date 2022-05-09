@@ -240,7 +240,7 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
-          - name: artifacts
+          - name: custom/artifacts
             type: "piperenv.Artifacts"
       - name: reports
         type: reports
