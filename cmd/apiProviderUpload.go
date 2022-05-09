@@ -16,16 +16,7 @@ import (
 )
 
 func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry.CustomData) {
-	// Utils can be used wherever the command.ExecRunner interface is expected.
-	// It can also be used for example as a mavenExecRunner.
 	httpClient := &piperhttp.Client{}
-
-	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runApiProviderUpload(&config, telemetryData, httpClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -34,15 +25,15 @@ func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry
 
 func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
-	apimData := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: httpClient}
-	error := apim.APIMUtils.NewAPIM(&apimData)
-	if error != nil {
-		return error
+	apimData := apim.Bundle{APIServiceKey: config.APIServiceKey, Client: httpClient}
+	err := apim.Utils.InitAPIM(&apimData)
+	if err != nil {
+		return err
 	}
 	return createApiProvider(config, apimData, ioutil.ReadFile)
 }
 
-func createApiProvider(config *apiProviderUploadOptions, apim apim.APIMBundle, readFile func(string) ([]byte, error)) error {
+func createApiProvider(config *apiProviderUploadOptions, apim apim.Bundle, readFile func(string) ([]byte, error)) error {
 	httpClient := apim.Client
 	httpMethod := http.MethodPost
 	uploadApiProviderStatusURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProviders", apim.Host)

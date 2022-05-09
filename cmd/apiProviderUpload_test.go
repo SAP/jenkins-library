@@ -29,7 +29,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 		config := getDefaultOptionsForApiProvider()
 		config.FilePath = file.Name()
 		httpClientMock := httpMockAPIM{StatusCode: 201, ResponseBody: ``}
-		apim := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: &httpClientMock}
+		apim := apim.Bundle{APIServiceKey: config.APIServiceKey, Client: &httpClientMock}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert
@@ -58,7 +58,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 		config := getDefaultOptionsForApiProvider()
 		config.FilePath = file.Name()
 		httpClientMock := httpMockAPIM{StatusCode: 400, ResponseBody: ``}
-		apim := apim.APIMBundle{APIServiceKey: config.APIServiceKey, Client: &httpClientMock}
+		apim := apim.Bundle{APIServiceKey: config.APIServiceKey, Client: &httpClientMock}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert

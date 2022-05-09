@@ -9,18 +9,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-//APIMCommonUtils for apim
-type APIMUtils interface {
-	NewAPIM() error
+//Utils for apim
+type Utils interface {
+	InitAPIM() error
 }
 
-//APIMBundle struct
-type APIMBundle struct {
+//Bundle struct
+type Bundle struct {
 	APIServiceKey, Host string
 	Client              piperhttp.Sender
 }
 
-func (apim *APIMBundle) NewAPIM() error {
+//NewAPIM() fumnction initialize APIM bearer token for API access
+func (apim *Bundle) InitAPIM() error {
 	serviceKey, err := cpi.ReadCpiServiceKey(apim.APIServiceKey)
 	if err != nil {
 		return err
