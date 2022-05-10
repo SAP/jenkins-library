@@ -34,6 +34,7 @@ func TestMavenBuild(t *testing.T) {
 
 		mockedUtils.StdoutReturn = map[string]string{
 			"mvn .*project.build.finalName": "artifacts-test",
+			"mvn .*project.packaging":       "jar",
 		}
 
 		config := mavenBuildOptions{}
@@ -43,11 +44,8 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.ElementsMatch(t, cpe.custom.artifacts, []piperenv.Artifact{{
+			Name: "artifacts-test.jar",
 			Path: "target/artifacts-test.jar",
-		}, {
-			Path: "target/artifacts-test.war",
-		}, {
-			Path: "target/artifacts-test-classes.jar",
 		}})
 	})
 
