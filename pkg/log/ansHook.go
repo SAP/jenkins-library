@@ -67,7 +67,7 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 
 // Levels returns the supported log level of the hook.
 func (ansHook *ANSHook) Levels() []logrus.Level {
-	return []logrus.Level{logrus.InfoLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}
+	return []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}
 }
 
 // Fire creates a new event from the logrus and sends an event to the ANS backend
@@ -81,18 +81,12 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	}
 
 	logLevel := entry.Level
-	if strings.HasPrefix(entry.Message, "fatal error") {
-		logLevel = logrus.FatalLevel
-	}
 	for k, v := range entry.Data {
-		if k == "error" {
-			logLevel = logrus.ErrorLevel
-		}
 		event.Tags[k] = v
 	}
-	// Only warnings and higher are sent to the ANS backend
-	if logLevel > 3 {
-		return nil
+	errorCategory := GetErrorCategory().String()
+	if errorCategory != "undefined" {
+		event.Tags["errorCategory"] = errorCategory
 	}
 
 	event.EventTimestamp = entry.Time.Unix()

@@ -16,7 +16,7 @@ const testCorrelationID = "1234"
 
 func TestANSHook_Levels(t *testing.T) {
 	hook, _ := newANSHook(ans.Configuration{}, "", &ansMock{})
-	assert.Equal(t, []logrus.Level{logrus.InfoLevel, logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
+	assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
 		hook.Levels())
 }
 
@@ -178,63 +178,8 @@ func TestANSHook_Fire(t *testing.T) {
 					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
-			},
-		},
-		{
-			name: "If error key set in data, severity should be error",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-			},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.InfoLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "my log message",
-					Data:    map[string]interface{}{"stepName": "testStep", "error": "an error occurred!"},
-				},
-			},
-			wantEvent: ans.Event{
-				EventType:      "Piper",
-				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC).Unix(),
-				Severity:       "ERROR",
-				Category:       "EXCEPTION",
-				Subject:        "testStep",
-				Body:           "my log message",
-				Resource: &ans.Resource{
-					ResourceType: "Pipeline",
-					ResourceName: "Pipeline",
-				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "error": "an error occurred!", "logLevel": "error"},
-			},
-		},
-		{
-			name: "If message is fatal error, severity should be fatal",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-			},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.InfoLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "fatal error: an error occurred",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
-			},
-			wantEvent: ans.Event{
-				EventType:      "Piper",
-				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC).Unix(),
-				Severity:       "FATAL",
-				Category:       "EXCEPTION",
-				Subject:        "testStep",
-				Body:           "fatal error: an error occurred",
-				Resource: &ans.Resource{
-					ResourceType: "Pipeline",
-					ResourceName: "Pipeline",
-				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "fatal"},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234",
+					"stepName": "testStep", "logLevel": "warning", "errorCategory": "compliance"},
 			},
 		},
 		{
@@ -266,7 +211,9 @@ func TestANSHook_Fire(t *testing.T) {
 					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning", "Some": 1.0, "Additional": "a string", "Tags": true},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234",
+					"stepName": "testStep", "logLevel": "warning", "errorCategory": "compliance",
+					"Some": 1.0, "Additional": "a string", "Tags": true},
 			},
 		},
 		{
@@ -300,7 +247,8 @@ func TestANSHook_Fire(t *testing.T) {
 					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234",
+					"stepName": "testStep", "logLevel": "warning", "errorCategory": "compliance"},
 			},
 		},
 		{
@@ -318,23 +266,9 @@ func TestANSHook_Fire(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "INFO severity should not be sent",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-			},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.InfoLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "this is not an error",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			clientMock := ansMock{}
