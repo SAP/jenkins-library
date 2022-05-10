@@ -42,7 +42,7 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 	} else {
 		tarfilePath = filepath.Join(rootPath, tarfilePath)
 		tarfilePath = strings.ReplaceAll(tarfilePath, " ", "_")
-		// tarfilePath is passed as project name that will not consist of the .tar extension
+		// tarfilePath is passed as project name that will not consist of the .tar extension hence adding the extension and replacing spaces with _
 		if fileExtension := filepath.Ext(tarfilePath); fileExtension != ".tar" {
 			tarfilePath = fmt.Sprintf("%s.tar", tarfilePath)
 		}
