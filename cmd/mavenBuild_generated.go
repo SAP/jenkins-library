@@ -42,9 +42,9 @@ type mavenBuildOptions struct {
 }
 
 type mavenBuildCommonPipelineEnvironment struct {
-	artifacts piperenv.Artifacts
-	custom    struct {
+	custom struct {
 		buildSettingsInfo string
+		artifacts         piperenv.Artifacts
 	}
 }
 
@@ -55,7 +55,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
-		{category: "", name: "artifacts", value: p.artifacts},
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 	}
 
 	errCount := 0
@@ -497,7 +497,7 @@ func mavenBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
-							{"name": "artifacts", "type": "piperenv.Artifacts"},
+							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
 					{

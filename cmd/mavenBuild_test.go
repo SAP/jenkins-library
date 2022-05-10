@@ -42,7 +42,7 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-		assert.ElementsMatch(t, cpe.artifacts, []piperenv.Artifact{{
+		assert.ElementsMatch(t, cpe.custom.artifacts, []piperenv.Artifact{{
 			Path: "target/artifacts-test.jar",
 		}, {
 			Path: "target/artifacts-test.war",
