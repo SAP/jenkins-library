@@ -22,6 +22,7 @@ type containerSaveImageOptions struct {
 	ContainerRegistryUser     string `json:"containerRegistryUser,omitempty"`
 	FilePath                  string `json:"filePath,omitempty"`
 	DockerConfigJSON          string `json:"dockerConfigJSON,omitempty"`
+	ImageFormat               string `json:"imageFormat,omitempty" validate:"possible-values=tarball oci legacy"`
 }
 
 // ContainerSaveImageCommand Saves a container image as a tar file
@@ -124,6 +125,7 @@ func addContainerSaveImageFlags(cmd *cobra.Command, stepConfig *containerSaveIma
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file to which the image should be saved.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
+	cmd.Flags().StringVar(&stepConfig.ImageFormat, "imageFormat", `tarball`, "Format of the image when saving the image locally.")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("containerImage")
@@ -242,6 +244,15 @@ func containerSaveImageMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerConfigJSON"),
+					},
+					{
+						Name:        "imageFormat",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `tarball`,
 					},
 				},
 			},

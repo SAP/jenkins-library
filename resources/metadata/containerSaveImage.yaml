@@ -93,3 +93,15 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: imageFormat
+        type: string
+        description: Format of the image when saving the image locally.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: tarball
+        possibleValues:
+          - tarball
+          - oci
+          - legacy

@@ -20,7 +20,7 @@ func containerSaveImage(config containerSaveImageOptions, telemetryData *telemet
 
 	fileUtils := piperutils.Files{}
 
-	dClientOptions := piperDocker.ClientOptions{ImageName: config.ContainerImage, RegistryURL: config.ContainerRegistryURL, LocalPath: config.FilePath}
+	dClientOptions := piperDocker.ClientOptions{ImageName: config.ContainerImage, RegistryURL: config.ContainerRegistryURL, LocalPath: config.FilePath, ImageFormat: config.ImageFormat}
 	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
 
