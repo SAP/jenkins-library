@@ -100,7 +100,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: tarball
+        default: legacy
         possibleValues:
           - tarball
           - oci
