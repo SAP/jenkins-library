@@ -21,14 +21,15 @@ type S3PutObjectAPI interface {
 		optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 }
 
-// Uploads a to an AWS S3 bucket
-// Needs a context (including the AWS Region) and a PutObjectInput for the service call
-// Returns a PutObjectOutput with the result of the upload
+// PutFile uploads a file to an AWS S3 bucket
+// The function needs a context (including the AWS Region) and a PutObjectInput for the service call
+// The return value is a PutObjectOutput with the result of the upload
 func PutFile(c context.Context, api S3PutObjectAPI, input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
 	return api.PutObject(c, input)
 }
 
-type AWSCredentials struct {
+// Struct to store the AWS credentials from a specified JSON string
+type awsCredentials struct {
 	AwsAccessKeyID     string `json:"access_key_id"`
 	Bucket             string `json:"bucket"`
 	AwsSecretAccessKey string `json:"secret_access_key"`
@@ -36,9 +37,9 @@ type AWSCredentials struct {
 }
 
 func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.CustomData) {
-	//Prepare Credentials
+	// Prepare Credentials
 	log.Entry().Infoln("Start reading AWS Credentials")
-	var obj AWSCredentials
+	var obj awsCredentials
 
 	err := json.Unmarshal([]byte(configOptions.JSONCredentialsAWS), &obj)
 	if err != nil {
@@ -47,7 +48,7 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 			Fatal("Could not read JSONCredentialsAWS")
 	}
 
-	//Set environment variables which are needed to initialize S3 Client
+	// Set environment variables which are needed to initialize S3 Client
 	log.Entry().Infoln("Successfully read AWS Credentials. Setting up environment variables")
 	awsRegionSet := setenvIfEmpty("AWS_REGION", obj.AwsRegion)
 	awsAccessKeyIDSet := setenvIfEmpty("AWS_ACCESS_KEY_ID", obj.AwsAccessKeyID)
@@ -57,7 +58,7 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	defer removeEnvIfPreviouslySet("AWS_ACCESS_KEY_ID", awsAccessKeyIDSet)
 	defer removeEnvIfPreviouslySet("AWS_SECRET_ACCESS_KEY", awsSecretAccessKeySet)
 
-	//Initialize S3 Client
+	// Initialize S3 Client
 	log.Entry().Infoln("Loading Configuration for S3 Client")
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -67,8 +68,6 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 	}
 	client := s3.NewFromConfig(cfg)
 
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err = runAwsS3Upload(&configOptions, client, obj.Bucket)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Step execution failed")
@@ -76,18 +75,18 @@ func awsS3Upload(configOptions awsS3UploadOptions, telemetryData *telemetry.Cust
 }
 
 func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bucket string) error {
-	//iterate through directories
+	// Iterate through directories
 	err := filepath.Walk(configOptions.FilePath, func(currentFilePath string, f os.FileInfo, err error) error {
 		// Handle Failure to prevent panic (e.g. in case of an invalid filepath)
 		if err != nil {
 			log.Entry().WithError(err).Warnf("Failed to access path: '%v'", currentFilePath)
 			return err
 		}
-		//skip directories, only upload files
+		// Skip directories, only upload files
 		if !f.IsDir() {
 			log.Entry().Infof("Current target path is: '%v'", currentFilePath)
 
-			//Open File
+			// Open File
 			currentFile, e := os.Open(currentFilePath)
 			if e != nil {
 				log.Entry().WithError(e).Warnf("Could not open the file '%s'", currentFilePath)
@@ -95,17 +94,17 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bu
 			}
 			defer currentFile.Close()
 
-			//AWS SDK needs UNIX file paths to automatically create directories
+			// AWS SDK needs UNIX file paths to automatically create directories
 			key := filepath.ToSlash(currentFilePath)
 
-			//Intitialize S3 PutObjectInput
+			// Intitialize S3 PutObjectInput
 			inputObject := &s3.PutObjectInput{
 				Bucket: &bucket,
 				Key:    &key,
 				Body:   currentFile,
 			}
 
-			//Upload File
+			// Upload File
 			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
 			_, e = PutFile(context.TODO(), client, inputObject)
 			if e != nil {
@@ -126,7 +125,7 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bu
 	return err
 }
 
-//Function to set environment variables if they are not already set
+// Function to set environment variables if they are not already set
 func setenvIfEmpty(env, val string) bool {
 	if len(os.Getenv(env)) == 0 {
 		os.Setenv(env, val)
@@ -135,7 +134,7 @@ func setenvIfEmpty(env, val string) bool {
 	return false
 }
 
-//Function to remove environment variables if they are set
+// Function to remove environment variables if they are set
 func removeEnvIfPreviouslySet(env string, previouslySet bool) {
 	if previouslySet {
 		os.Setenv(env, "")
