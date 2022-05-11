@@ -41,8 +41,8 @@ With the step azureBlobUpload you can upload single files as well as whole direc
 
 ```groovy
 azureBlobUpload(
-    script:this,
-    azureCredentialsId:"Azure_Credentials",
-    filePath:"test.txt"
+    script: this,
+    azureCredentialsId: "Azure_Credentials",
+    filePath: "test.txt"
 )
 ```

@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -23,15 +23,26 @@ func TestRunAzureBlobUpload(t *testing.T) {
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
-		// initialization
 
+		// create temporary file
+		f, err := os.CreateTemp("", "tmpfile-")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		defer os.Remove(f.Name())
+		data := []byte("test test test")
+		if _, err := f.Write(data); err != nil {
+			log.Fatal(err)
+		}
+
+		// initialization
 		config := azureBlobUploadOptions{
-			FilePath: filepath.Join("testdata", t.Name()+"_test.txt"),
+			FilePath: f.Name(),
 		}
 		container := mockAzureContainerClient
-
 		// test
-		err := runAzureBlobUpload(&config, container(t), UploadMock)
+		err = runAzureBlobUpload(&config, container(t), UploadMock)
 		// assert
 		assert.NoError(t, err)
 	})
