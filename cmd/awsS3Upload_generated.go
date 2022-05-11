@@ -154,7 +154,7 @@ func awsS3UploadMetadata() config.StepData {
 								Param: "mtarFilePath",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
