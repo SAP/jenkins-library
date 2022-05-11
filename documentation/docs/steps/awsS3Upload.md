@@ -41,8 +41,8 @@ With the step awsS3Upload you can upload single files as well as whole directori
 
 ```groovy
 awsS3Upload(
-    script:this,
-    awsCredentialsId:"AWS_Credentials",
-    filePath:"test.txt"
+    script: this,
+    awsCredentialsId: "AWS_Credentials",
+    filePath: "test.txt"
 )
 ```
