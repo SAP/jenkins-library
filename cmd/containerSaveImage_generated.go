@@ -125,7 +125,7 @@ func addContainerSaveImageFlags(cmd *cobra.Command, stepConfig *containerSaveIma
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file to which the image should be saved.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
-	cmd.Flags().StringVar(&stepConfig.ImageFormat, "imageFormat", `tarball`, "Format of the image when saving the image locally.")
+	cmd.Flags().StringVar(&stepConfig.ImageFormat, "imageFormat", `tarball`, "Format of the image when saving the docker image locally.")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("containerImage")

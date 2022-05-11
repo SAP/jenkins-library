@@ -247,7 +247,7 @@ spec:
           - STEPS
       - name: imageFormat
         type: string
-        description: Format of the image when saving the image locally.
+        description: Format of the image when saving the docker image locally.
         scope:
           - PARAMETERS
           - STAGES
