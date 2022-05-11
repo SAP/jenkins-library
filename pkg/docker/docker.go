@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -194,14 +195,15 @@ func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
 
 func (c *Client) getImageRef(image string) (name.Reference, error) {
 	opts := []name.Option{}
+	registry := ""
 
 	if len(c.registryURL) > 0 {
 		re := regexp.MustCompile(`(?i)^https?://`)
-		registry := re.ReplaceAllString(c.registryURL, "")
+		registry = re.ReplaceAllString(c.registryURL, "")
 		opts = append(opts, name.WithDefaultRegistry(registry))
 	}
 
-	return name.ParseReference(image, opts...)
+	return name.ParseReference(path.Join(registry, image), opts...)
 }
 
 // ImageListWithFilePath compiles container image names based on all Dockerfiles found, considering excludes
