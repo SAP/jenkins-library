@@ -58,12 +58,12 @@ func TestRunApiProviderUpload(t *testing.T) {
 		filesMock.AddFile(file.Name(), []byte(apimhttp.GetServiceKey()))
 		config := getDefaultOptionsForApiProvider()
 		config.FilePath = file.Name()
-		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 400, ResponseBody: `Bad Request`}
+		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 400, ResponseBody: ``}
 		apim := apim.Bundle{APIServiceKey: config.APIServiceKey, Client: httpClientMock}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)
 		// assert
-		assert.EqualError(t, err, "HTTP POST request to /apiportal/api/1.0/Management.svc/APIProviders failed with error: Bad Request")
+		assert.EqualError(t, err, "HTTP POST request to /apiportal/api/1.0/Management.svc/APIProviders failed with error: : Bad Request")
 	})
 
 }
