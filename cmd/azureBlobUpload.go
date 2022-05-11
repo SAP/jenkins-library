@@ -15,15 +15,15 @@ import (
 
 //interface used to mock Azure containerClients in unit tests
 type AzureContainerAPI interface {
-	NewBlockBlobClient(blobName string) (*azblob.BlockBlobClient, error)
+	NewBlockBlobClient(blobName string) azblob.BlockBlobClient
 }
 
-func NewBlockBlobClient(blobName string, api AzureContainerAPI) (*azblob.BlockBlobClient, error) {
+func NewBlockBlobClient(blobName string, api AzureContainerAPI) azblob.BlockBlobClient {
 	return api.NewBlockBlobClient(blobName)
 }
 
-func UploadFile(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
-	return api.UploadFile(ctx, file, o)
+func UploadFile(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.HighLevelUploadToBlockBlobOption) (*http.Response, error) {
+	return api.UploadFileToBlockBlob(ctx, file, o)
 }
 
 type AzureCredentials struct {
@@ -52,20 +52,15 @@ func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.Cus
 	}
 
 	//Get a containerClient from ServiceClient
-	containerClient, err := serviceClient.NewContainerClient(obj.Container)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Could not instantiate Azure Container Client from Azure Service Client!")
-	}
+	containerClient := serviceClient.NewContainerClient(obj.Container)
 
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err = runAzureBlobUpload(&config, containerClient, UploadFile)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAzureBlobUpload(config *azureBlobUploadOptions, containerClient AzureContainerAPI, Upload func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
+func runAzureBlobUpload(config *azureBlobUploadOptions, containerClient AzureContainerAPI, Upload func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.HighLevelUploadToBlockBlobOption) (*http.Response, error)) error {
 
 	log.Entry().Infof("Start walk through FilePath '%v'", config.FilePath)
 
@@ -95,16 +90,12 @@ func runAzureBlobUpload(config *azureBlobUploadOptions, containerClient AzureCon
 			key := filepath.ToSlash(currentFilePath)
 
 			//Get a blockBlobClient from containerClient
-			blockBlobClient, e := NewBlockBlobClient(key, containerClient)
-			if e != nil {
-				log.Entry().WithError(e).Warnf("Could not instantiate Azure blockBlobClient from Azure Container Client!")
-				return e
-			}
+			blockBlobClient := NewBlockBlobClient(key, containerClient)
 
 			//Upload File
 			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
-			var blockOptions azblob.UploadOption
-			_, e = Upload(ctx, blockBlobClient, data, blockOptions)
+			var blockOptions azblob.HighLevelUploadToBlockBlobOption
+			_, e = Upload(ctx, &blockBlobClient, data, blockOptions)
 			if e != nil {
 				log.Entry().WithError(e).Warnf("There was an error during the upload of file '%v'", currentFilePath)
 				return e
