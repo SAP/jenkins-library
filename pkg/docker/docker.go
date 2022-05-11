@@ -170,7 +170,7 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	craneCmd := cranecmd.NewCmdPull(&noOpts)
 	craneCmd.SetOut(log.Writer())
 	craneCmd.SetErr(log.Writer())
-	craneCmd.SetArgs([]string{imageRef.Name(), tmpFile.Name(), "--format=", c.imageFormat})
+	craneCmd.SetArgs([]string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat})
 
 	if err := craneCmd.Execute(); err != nil {
 		defer os.Remove(tmpFile.Name())
