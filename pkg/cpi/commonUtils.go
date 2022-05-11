@@ -186,7 +186,7 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody))
+		return errors.Errorf("HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody))
 	}
 	return errors.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
 }

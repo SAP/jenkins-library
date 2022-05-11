@@ -1,6 +1,7 @@
 package apim
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -12,6 +13,10 @@ import (
 //Utils for apim
 type Utils interface {
 	InitAPIM() error
+}
+
+type JSONUtils interface {
+	IsJSON() string
 }
 
 //Bundle struct
@@ -42,4 +47,10 @@ func (apim *Bundle) InitAPIM() error {
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token.AccessToken)
 	httpClient.SetOptions(clientOptions)
 	return nil
+}
+
+//IsJSON checks given string is valid json or not
+func IsJSON(str string) bool {
+	var js json.RawMessage
+	return json.Unmarshal([]byte(str), &js) == nil
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -50,6 +51,10 @@ func createApiProvider(config *apiProviderUploadOptions, apim apim.Bundle, readF
 	if err != nil {
 		return err
 	}
+	if !IsJSON(string(payload)) {
+		return errors.New("invalid JSON content in the input file")
+	}
+
 	apiProviderUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiProviderStatusURL, bytes.NewBuffer(payload), header, nil)
 	failureMessage := "Failed to create API provider artefact"
 	successMessage := "Successfully created api provider artefact in API Portal"
@@ -62,4 +67,9 @@ func createApiProvider(config *apiProviderUploadOptions, apim apim.Bundle, readF
 		HTTPErr:        httpErr,
 		SuccessMessage: successMessage}
 	return cpi.HTTPUploadUtils.HandleHTTPFileUploadResponse(httpFileUploadRequestParameters)
+}
+
+func IsJSON(str string) bool {
+	var js json.RawMessage
+	return json.Unmarshal([]byte(str), &js) == nil
 }
