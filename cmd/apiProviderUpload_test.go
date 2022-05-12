@@ -66,6 +66,32 @@ func TestRunApiProviderUpload(t *testing.T) {
 		assert.EqualError(t, err, "HTTP POST request to /apiportal/api/1.0/Management.svc/APIProviders failed with error: : Bad Request")
 	})
 
+	t.Run("valid json file test", func(t *testing.T) {
+		properServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+				}
+			}`
+		apimData := apim.Bundle{Payload: properServiceKey}
+		assert.Equal(t, apimData.IsJSON(), true)
+	})
+
+	t.Run("invalid json file test", func(t *testing.T) {
+		properServiceKey := `{
+			"oauth": {
+				"url" "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+				}
+			}`
+		apimData := apim.Bundle{Payload: properServiceKey}
+		assert.Equal(t, apimData.IsJSON(), false)
+	})
+
 }
 
 func getDefaultOptionsForApiProvider() apiProviderUploadOptions {
