@@ -58,7 +58,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 		filesMock.AddFile(file.Name(), []byte(apimhttp.GetServiceKey()))
 		config := getDefaultOptionsForApiProvider()
 		config.FilePath = file.Name()
-		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 400, ResponseBody: ``}
+		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 400}
 		apim := apim.Bundle{APIServiceKey: config.APIServiceKey, Client: httpClientMock}
 		// test
 		err := createApiProvider(&config, apim, filesMock.FileRead)

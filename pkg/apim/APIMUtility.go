@@ -13,16 +13,13 @@ import (
 //Utils for apim
 type Utils interface {
 	InitAPIM() error
-}
-
-type JSONUtils interface {
-	IsJSON() string
+	IsJSON() bool
 }
 
 //Bundle struct
 type Bundle struct {
-	APIServiceKey, Host string
-	Client              piperhttp.Sender
+	APIServiceKey, Host, Payload string
+	Client                       piperhttp.Sender
 }
 
 //InitAPIM() fumnction initialize APIM bearer token for API access
@@ -50,7 +47,7 @@ func (apim *Bundle) InitAPIM() error {
 }
 
 //IsJSON checks given string is valid json or not
-func IsJSON(str string) bool {
+func (apim *Bundle) IsJSON() bool {
 	var js json.RawMessage
-	return json.Unmarshal([]byte(str), &js) == nil
+	return json.Unmarshal([]byte(apim.Payload), &js) == nil
 }
