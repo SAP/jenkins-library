@@ -49,8 +49,7 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 		}
 	}
 	if len(config.EventTemplate) > 0 {
-		err = event.MergeWithJSON([]byte(config.EventTemplate))
-		if err != nil {
+		if err = event.MergeWithJSON([]byte(config.EventTemplate)); err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
 		}
 	}
@@ -84,8 +83,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	for k, v := range entry.Data {
 		event.Tags[k] = v
 	}
-	errorCategory := GetErrorCategory().String()
-	if errorCategory != "undefined" {
+	if errorCategory := GetErrorCategory().String(); errorCategory != "undefined" {
 		event.Tags["errorCategory"] = errorCategory
 	}
 
