@@ -96,6 +96,11 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 		artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
 		artifactID := artifactSplit[len(artifactSplit)-1]
 		result.ArtifactID = artifactID
+
+		goModPath := parsed.Module.Mod.Path
+		lastIndex := strings.LastIndex(goModPath, "/")
+		groupID := goModPath[0:lastIndex]
+		result.GroupID = groupID
 	}
 	result.Version = parsed.Module.Mod.Version
 	if result.Version == "" {

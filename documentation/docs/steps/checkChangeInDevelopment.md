@@ -26,7 +26,7 @@ general:
 # new naming convention
 steps:
   isChangeInDevelopment:
-    dockerImage: 'ppiper/cm-client'
+    dockerImage: 'ppiper/cm-client:3.0.0.0'
 ```
 
 **Note:** The new step does not comprise the retrieval of the change document ID from the Git repository anymore. Use the step [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) instead.

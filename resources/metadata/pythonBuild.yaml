@@ -28,6 +28,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        default: false
       - name: targetRepositoryPassword
         description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
         type: string
@@ -60,7 +61,30 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+      - name: virutalEnvironmentName
+        type: string
+        description: name of the virtual environment that will be used for the build
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: piperBuild-env
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
   containers:
     - name: python
       image: python:3.9
-      workingDir: /home/node
