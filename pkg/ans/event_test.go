@@ -25,32 +25,32 @@ func TestEvent_MergeWithJSON(t *testing.T) {
 		},
 		{
 			name:      "Merging events includes all parts",
-			eventJSON: `{"eventType": "my event", "eventTimestamp": 1647526655, "tags": {"we": "were", "here": "first"}, "resource": {"resourceInstance": "blarp", "resourceName": "was changed"}}`,
+			eventJSON: `{"eventType": "my event", "eventTimestamp": 1647526655, "tags": {"we": "were", "here": "first"}, "resource": {"resourceInstance": "myResourceInstance", "resourceName": "was changed"}}`,
 			existingEvent: Event{
-				EventType: "Bleep",
-				Subject:   "Bloop",
+				EventType: "test",
+				Subject:   "test",
 				Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
 				Resource: &Resource{
-					ResourceType: "blurp",
-					ResourceName: "blorp",
+					ResourceType: "myResourceType",
+					ResourceName: "myResourceName",
 				},
 			},
 			wantEvent: Event{
 				EventType:      "my event",
 				EventTimestamp: 1647526655,
-				Subject:        "Bloop",
+				Subject:        "test",
 				Tags:           map[string]interface{}{"we": "were", "here": "first", "Some": 1.0, "Additional": "a string", "Tags": true},
 				Resource: &Resource{
-					ResourceType:     "blurp",
+					ResourceType:     "myResourceType",
 					ResourceName:     "was changed",
-					ResourceInstance: "blarp",
+					ResourceInstance: "myResourceInstance",
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name:      "Faulty JSON yields error",
-			eventJSON: `bli-da-blup`,
+			eventJSON: `faulty json`,
 			wantErr:   true,
 		},
 	}
@@ -114,7 +114,7 @@ func TestEvent_SetLogLevel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			event := &Event{}
-			event.SetLogLevel(tt.level)
+			event.SetSeverityAndCategory(tt.level)
 			assert.Equal(t, tt.wantSeverity, event.Severity, "Got wrong severity")
 			assert.Equal(t, tt.wantCategory, event.Category, "Got wrong category")
 		})

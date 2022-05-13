@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // ANS holds the setup for the xsuaa service to retrieve a bearer token for authorization and
@@ -35,10 +36,8 @@ type ServiceKey struct {
 
 // UnmarshallServiceKeyJSON unmarshalls the given json service key string.
 func UnmarshallServiceKeyJSON(serviceKeyJSON string) (ansServiceKey ServiceKey, err error) {
-	err = json.Unmarshal([]byte(serviceKeyJSON), &ansServiceKey)
-	if err != nil {
+	if err = json.Unmarshal([]byte(serviceKeyJSON), &ansServiceKey); err != nil {
 		err = errors.Wrap(err, "error unmarshalling ANS serviceKey")
-		return
 	}
 	return
 }
@@ -53,9 +52,9 @@ func (ans *ANS) SetOptions(serviceKey ServiceKey) {
 }
 
 // CheckCorrectSetup of the SAP Alert Notification Service
-func (ans ANS) CheckCorrectSetup() error {
+func (ans *ANS) CheckCorrectSetup() error {
 	const testPath = "/cf/consumer/v1/matched-events"
-	entireUrl := ans.URL + testPath
+	entireUrl := strings.TrimRight(ans.URL, "/") + testPath
 
 	response, err := ans.sendRequest(http.MethodGet, entireUrl, nil)
 	if err != nil {
@@ -66,9 +65,9 @@ func (ans ANS) CheckCorrectSetup() error {
 }
 
 // Send an event to the SAP Alert Notification Service
-func (ans ANS) Send(event Event) error {
+func (ans *ANS) Send(event Event) error {
 	const eventPath = "/cf/producer/v1/resource-events"
-	entireUrl := ans.URL + eventPath
+	entireUrl := strings.TrimRight(ans.URL, "/") + eventPath
 
 	requestBody, err := json.Marshal(event)
 	if err != nil {
@@ -83,21 +82,7 @@ func (ans ANS) Send(event Event) error {
 	return handleStatusCode(entireUrl, http.StatusAccepted, response)
 }
 
-func readResponseBody(response *http.Response) ([]byte, error) {
-	if response == nil {
-		return nil, errors.Errorf("did not retrieve an HTTP response")
-	}
-	if response.Body != nil {
-		defer response.Body.Close()
-	}
-	bodyText, readErr := ioutil.ReadAll(response.Body)
-	if readErr != nil {
-		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
-	}
-	return bodyText, nil
-}
-
-func (ans ANS) sendRequest(method, url string, body io.Reader) (response *http.Response, err error) {
+func (ans *ANS) sendRequest(method, url string, body io.Reader) (response *http.Response, err error) {
 	request, err := ans.newRequest(method, url, body)
 	if err != nil {
 		return
@@ -107,10 +92,9 @@ func (ans ANS) sendRequest(method, url string, body io.Reader) (response *http.R
 	return httpClient.Do(request)
 }
 
-func (ans ANS) newRequest(method, url string, body io.Reader) (request *http.Request, err error) {
+func (ans *ANS) newRequest(method, url string, body io.Reader) (request *http.Request, err error) {
 	header := make(http.Header)
-	err = ans.XSUAA.SetAuthHeaderIfNotPresent(&header)
-	if err != nil {
+	if err = ans.XSUAA.SetAuthHeaderIfNotPresent(&header); err != nil {
 		return
 	}
 
@@ -137,4 +121,16 @@ func handleStatusCode(requestedUrl string, expectedStatus int, response *http.Re
 		return err
 	}
 	return nil
+}
+
+func readResponseBody(response *http.Response) ([]byte, error) {
+	if response == nil {
+		return nil, errors.Errorf("did not retrieve an HTTP response")
+	}
+	defer response.Body.Close()
+	bodyText, readErr := ioutil.ReadAll(response.Body)
+	if readErr != nil {
+		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
+	}
+	return bodyText, nil
 }

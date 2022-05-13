@@ -51,56 +51,52 @@ func (e *Examinee) init() {
 	}
 }
 
-func (e *Examinee) doSend(event Event, onRequest func(rw http.ResponseWriter, req *http.Request)) error {
+func (e *Examinee) initRun(onRequest func(rw http.ResponseWriter, req *http.Request)) {
 	e.init()
 	e.onRequest = onRequest
-	return e.ans.Send(event)
-}
-
-func (e *Examinee) doCheckCorrectSetup(onRequest func(rw http.ResponseWriter, req *http.Request)) error {
-	e.init()
-	e.onRequest = onRequest
-	return e.ans.CheckCorrectSetup()
 }
 
 func TestANS_Send(t *testing.T) {
 	examinee := Examinee{}
 	defer examinee.finish()
-	examinee.init()
 
 	eventDefault := Event{EventType: "my event", EventTimestamp: 1647526655}
 
 	t.Run("good", func(t *testing.T) {
 		t.Run("pass request attributes", func(t *testing.T) {
-			examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodPost, req.Method, "Mismatch in requested method")
 				assert.Equal(t, "/cf/producer/v1/resource-events", req.URL.Path, "Mismatch in requested path")
 				assert.Equal(t, "bearer 1234", req.Header.Get(authHeaderKey), "Mismatch in requested auth header")
 				assert.Equal(t, "application/json", req.Header.Get("Content-Type"), "Mismatch in requested content type header")
 			})
+			examinee.ans.Send(eventDefault)
 		})
 		t.Run("pass request attribute event", func(t *testing.T) {
-			examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				eventBody, _ := ioutil.ReadAll(req.Body)
 				event := &Event{}
 				json.Unmarshal(eventBody, event)
 				assert.Equal(t, eventDefault, *event, "Mismatch in requested event body")
 			})
+			examinee.ans.Send(eventDefault)
 		})
 		t.Run("on status 202", func(t *testing.T) {
-			err := examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusAccepted)
 			})
+			err := examinee.ans.Send(eventDefault)
 			require.NoError(t, err, "No error expected.")
 		})
 	})
 
 	t.Run("bad", func(t *testing.T) {
 		t.Run("on status 400", func(t *testing.T) {
-			err := examinee.doSend(eventDefault, func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusBadRequest)
 				rw.Write([]byte("an error occurred"))
 			})
+			err := examinee.ans.Send(eventDefault)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "Did not get expected status code 202")
 		})
@@ -110,79 +106,64 @@ func TestANS_Send(t *testing.T) {
 func TestANS_CheckCorrectSetup(t *testing.T) {
 	examinee := Examinee{}
 	defer examinee.finish()
-	examinee.init()
 
 	t.Run("good", func(t *testing.T) {
 		t.Run("pass request attributes", func(t *testing.T) {
-			examinee.doCheckCorrectSetup(func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, http.MethodGet, req.Method, "Mismatch in requested method")
 				assert.Equal(t, "/cf/consumer/v1/matched-events", req.URL.Path, "Mismatch in requested path")
 				assert.Equal(t, "bearer 1234", req.Header.Get(authHeaderKey), "Mismatch in requested auth header")
 				assert.Equal(t, "application/json", req.Header.Get("Content-Type"), "Mismatch in requested content type header")
 			})
+			examinee.ans.CheckCorrectSetup()
 		})
 		t.Run("on status 200", func(t *testing.T) {
-			err := examinee.doCheckCorrectSetup(func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 			})
+			err := examinee.ans.CheckCorrectSetup()
 			require.NoError(t, err, "No error expected.")
 		})
 	})
 
 	t.Run("bad", func(t *testing.T) {
 		t.Run("on status 400", func(t *testing.T) {
-			err := examinee.doCheckCorrectSetup(func(rw http.ResponseWriter, req *http.Request) {
+			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusBadRequest)
 				rw.Write([]byte("an error occurred"))
 			})
+			err := examinee.ans.CheckCorrectSetup()
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "Did not get expected status code 200")
 		})
 	})
 }
 
-func TestUnmarshallServiceKey(t *testing.T) {
-	tests := []struct {
-		name              string
-		serviceKeyJSON    string
-		wantAnsServiceKey ServiceKey
-		wantErr           bool
-	}{
-		{
-			name: "Proper event JSON yields correct event",
-			serviceKeyJSON: `{
-						"url": "https://my.test.backend",
-						"client_id": "myTestClientID",
-						"client_secret": "super secret",
-						"oauth_url": "https://my.test.oauth.provider"
-					}`,
-			wantAnsServiceKey: ServiceKey{
-				Url:          "https://my.test.backend",
-				ClientId:     "myTestClientID",
-				ClientSecret: "super secret",
-				OauthUrl:     "https://my.test.oauth.provider",
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Faulty JSON yields error",
-			serviceKeyJSON: `bli-da-blup`,
-			wantErr:        true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotAnsServiceKey, err := UnmarshallServiceKeyJSON(tt.serviceKeyJSON)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("UnmarshallServiceKeyJSON() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			assert.Equal(t, tt.wantAnsServiceKey, gotAnsServiceKey, "Got the wrong ans serviceKey")
+func TestANS_UnmarshallServiceKey(t *testing.T) {
+	t.Parallel()
+
+	serviceKeyJSONDefault := `{"url": "https://my.test.backend", "client_id": "myTestClientID", "client_secret": "super secret", "oauth_url": "https://my.test.oauth.provider"}`
+	serviceKeyDefault := ServiceKey{Url: "https://my.test.backend", ClientId: "myTestClientID", ClientSecret: "super secret", OauthUrl: "https://my.test.oauth.provider"}
+
+	t.Run("good", func(t *testing.T) {
+		t.Run("Proper event JSON yields correct event", func(t *testing.T) {
+			serviceKey, err := UnmarshallServiceKeyJSON(serviceKeyJSONDefault)
+			require.NoError(t, err, "No error expected.")
+			assert.Equal(t, serviceKeyDefault, serviceKey, "Got the wrong ans serviceKey")
 		})
-	}
+	})
+
+	t.Run("bad", func(t *testing.T) {
+		t.Run("JSON key data is an invalid string", func(t *testing.T) {
+			serviceKeyDesc := `invalid descriptor`
+			_, err := UnmarshallServiceKeyJSON(serviceKeyDesc)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "error unmarshalling ANS serviceKey")
+		})
+	})
 }
 
-func Test_readResponseBody(t *testing.T) {
+func TestANS_readResponseBody(t *testing.T) {
 	tests := []struct {
 		name        string
 		response    *http.Response
@@ -205,10 +186,10 @@ func Test_readResponseBody(t *testing.T) {
 			if tt.wantErrText != "" {
 				require.Error(t, err, "Error expected")
 				assert.EqualError(t, err, tt.wantErrText, "Error is not equal")
-				return
+			} else {
+				require.NoError(t, err, "No error expected")
+				assert.Equal(t, tt.want, got, "Did not receive expected body")
 			}
-			require.NoError(t, err, "No error expected")
-			assert.Equal(t, tt.want, got, "Did not receive expected body")
 		})
 	}
 }
@@ -216,12 +197,7 @@ func Test_readResponseBody(t *testing.T) {
 func TestANS_SetOptions(t *testing.T) {
 	t.Run("ServiceKey sets ANS fields", func(t *testing.T) {
 		gotANS := &ANS{}
-		serviceKey := ServiceKey{
-			Url:          "https://my.test.backend",
-			ClientId:     "myTestClientID",
-			ClientSecret: "super secret",
-			OauthUrl:     "https://my.test.oauth.provider",
-		}
+		serviceKey := ServiceKey{Url: "https://my.test.backend", ClientId: "myTestClientID", ClientSecret: "super secret", OauthUrl: "https://my.test.oauth.provider"}
 		gotANS.SetOptions(serviceKey)
 		wantANS := &ANS{
 			XSUAA: xsuaa.XSUAA{

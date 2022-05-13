@@ -43,16 +43,14 @@ type Resource struct {
 
 // MergeWithJSON unmarshalls an ANS Event JSON string and merges it with the existing receiver Event
 func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
-	err = json.Unmarshal(eventJSON, &event)
-	if err != nil {
+	if err = json.Unmarshal(eventJSON, &event); err != nil {
 		err = errors.Wrapf(err, "error unmarshalling ANS event from JSON string %q", eventJSON)
-		return
 	}
 	return
 }
 
-// SetLogLevel takes the logrus log level and translates it to an ANS severity ans category string
-func (event *Event) SetLogLevel(level logrus.Level) {
+// SetSeverityAndCategory takes the logrus log level and sets the corresponding ANS severity and category string
+func (event *Event) SetSeverityAndCategory(level logrus.Level) {
 	switch level {
 	case logrus.InfoLevel:
 		event.Severity = infoSeverity
