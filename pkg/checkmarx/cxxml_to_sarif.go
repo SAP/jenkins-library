@@ -168,11 +168,9 @@ func Parse(data []byte) (format.SARIF, error) {
 			result.RuleID = cxxml.Query[i].ID
 			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
-			if cxxml.Query[i].Categories != "" {
-				msg := new(format.Message)
-				msg.Text = cxxml.Query[i].Categories
-				result.Message = msg
-			}
+			msg := new(format.Message)
+			msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
+			result.Message = msg
 			//analysisTarget := new(format.ArtifactLocation)
 			//analysisTarget.URI = cxxml.Query[i].Result[j].FileName
 			//analysisTarget.Index = index
