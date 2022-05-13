@@ -94,7 +94,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 		event.Subject = fmt.Sprint(entry.Data["stepName"])
 	}
 	event.Body = entry.Message
-	event.SetLogLevel(logLevel)
+	event.SetSeverityAndCategory(logLevel)
 	event.Tags["logLevel"] = logLevel.String()
 
 	err = ansHook.client.Send(event)
