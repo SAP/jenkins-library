@@ -245,18 +245,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: imageFormat
-        type: string
-        description: Format of the image when saving the docker image locally.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: legacy
-        possibleValues:
-          - tarball
-          - oci
-          - legacy
   outputs:
     resources:
       - name: influx
