@@ -13,7 +13,7 @@ import (
 //Utils for apim
 type Utils interface {
 	InitAPIM() error
-	IsJSON() bool
+	IsPayloadJSON() bool
 }
 
 //Bundle struct
@@ -47,7 +47,7 @@ func (apim *Bundle) InitAPIM() error {
 }
 
 //IsJSON checks given string is valid json or not
-func (apim *Bundle) IsJSON() bool {
+func (apim *Bundle) IsPayloadJSON() bool {
 	var js json.RawMessage
 	return json.Unmarshal([]byte(apim.Payload), &js) == nil
 }

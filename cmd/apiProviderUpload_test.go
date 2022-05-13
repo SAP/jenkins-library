@@ -76,13 +76,13 @@ func TestRunApiProviderUpload(t *testing.T) {
 				}
 			}`
 		apimData := apim.Bundle{Payload: apiProviderPayload}
-		assert.Equal(t, apimData.IsJSON(), true)
+		assert.Equal(t, apimData.IsPayloadJSON(), true)
 	})
 
 	t.Run("invalid api provider payload test", func(t *testing.T) {
 		apiProviderPayload := `this is not json`
 		apimData := apim.Bundle{Payload: apiProviderPayload}
-		assert.Equal(t, apimData.IsJSON(), false)
+		assert.Equal(t, apimData.IsPayloadJSON(), false)
 	})
 
 }

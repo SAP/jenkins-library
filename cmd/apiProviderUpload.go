@@ -52,7 +52,7 @@ func createApiProvider(config *apiProviderUploadOptions, apim apim.Bundle, readF
 	}
 	apim.Payload = string(payload)
 
-	if !apim.IsJSON() {
+	if !apim.IsPayloadJSON() {
 		return errors.New("invalid JSON content in the input file")
 	}
 
