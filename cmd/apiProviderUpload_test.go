@@ -80,14 +80,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 	})
 
 	t.Run("invalid api provider payload test", func(t *testing.T) {
-		apiProviderPayload := `{
-			"oauth": {
-				"url" "https://demo",
-				"clientid": "demouser",
-				"clientsecret": "******",
-				"tokenurl": "https://demo/oauth/token"
-				}
-			}`
+		apiProviderPayload := `this is not json`
 		apimData := apim.Bundle{Payload: apiProviderPayload}
 		assert.Equal(t, apimData.IsJSON(), false)
 	})
