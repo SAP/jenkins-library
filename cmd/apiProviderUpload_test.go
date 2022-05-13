@@ -8,7 +8,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/apim"
 	apimhttp "github.com/SAP/jenkins-library/pkg/apim"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,13 +31,6 @@ func TestRunApiProviderUpload(t *testing.T) {
 
 		// assert
 		if assert.NoError(t, err) {
-			t.Run("check file", func(t *testing.T) {
-				fileUtils = &piperutils.Files{}
-				fExists, err := fileUtils.FileExists(file.Name())
-				assert.NoError(t, err)
-				assert.Equal(t, fExists, true)
-			})
-
 			t.Run("check url", func(t *testing.T) {
 				assert.Equal(t, "/apiportal/api/1.0/Management.svc/APIProviders", httpClientMock.URL)
 			})

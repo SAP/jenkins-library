@@ -41,7 +41,8 @@ func createApiProvider(config *apiProviderUploadOptions, apim apim.Bundle, readF
 	header.Add("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
 
-	exists, _ := piperutils.FileExists(config.FilePath); !exists {
+	exists, _ := piperutils.FileExists(config.FilePath)
+	if !exists {
 		return errors.New("Missing API Provider input file")
 	}
 
