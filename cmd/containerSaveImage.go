@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -41,7 +40,6 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 		tarfilePath = filenameFromContainer(rootPath, config.ContainerImage)
 	} else {
 		tarfilePath = filepath.Join(rootPath, tarfilePath)
-		tarfilePath = strings.ReplaceAll(tarfilePath, " ", "_")
 		// tarfilePath is passed as project name that will not consist of the .tar extension hence adding the extension and replacing spaces with _
 		if fileExtension := filepath.Ext(tarfilePath); fileExtension != ".tar" {
 			tarfilePath = fmt.Sprintf("%s.tar", tarfilePath)
