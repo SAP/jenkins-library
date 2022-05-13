@@ -1,9 +1,9 @@
 metadata:
   name: apiProviderUpload
-  description: this steps creates an API provider artifact in the API Portal
+  description: this steps creates an API provider artifact in the API Portal.
   longDescription: |
     This steps creates an API provider artifact in the API Portal using the OData API.
-    Learn more about the SAP API Management API for creating an API provider artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
+    Learn more about API Management api for creating an API provider artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
 
 spec:
   inputs:

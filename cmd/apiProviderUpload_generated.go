@@ -20,7 +20,7 @@ type apiProviderUploadOptions struct {
 	FilePath      string `json:"filePath,omitempty"`
 }
 
-// ApiProviderUploadCommand this steps creates an API provider artifact in the API Portal
+// ApiProviderUploadCommand this steps creates an API provider artifact in the API Portal.
 func ApiProviderUploadCommand() *cobra.Command {
 	const STEP_NAME = "apiProviderUpload"
 
@@ -33,9 +33,9 @@ func ApiProviderUploadCommand() *cobra.Command {
 
 	var createApiProviderUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "this steps creates an API provider artifact in the API Portal",
+		Short: "this steps creates an API provider artifact in the API Portal.",
 		Long: `This steps creates an API provider artifact in the API Portal using the OData API.
-Learn more about the SAP API Management API for creating an API provider artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
+Learn more about API Management api for creating an API provider artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -124,7 +124,7 @@ func apiProviderUploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "apiProviderUpload",
 			Aliases:     []config.Alias{},
-			Description: "this steps creates an API provider artifact in the API Portal",
+			Description: "this steps creates an API provider artifact in the API Portal.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
