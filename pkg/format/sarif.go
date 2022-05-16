@@ -27,7 +27,6 @@ type Results struct {
 	Level               string              `json:"level,omitempty"`
 	Message             *Message            `json:"message,omitempty"`
 	AnalysisTarget      *ArtifactLocation   `json:"analysisTarget,omitempty"`
-	Help                *Help               `json:"help,omitempty"`
 	Locations           []Location          `json:"locations,omitempty"`
 	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
 	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
