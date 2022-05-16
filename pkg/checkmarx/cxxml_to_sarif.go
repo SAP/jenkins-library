@@ -165,11 +165,12 @@ func Parse(data []byte) (format.SARIF, error) {
 			result := *new(format.Results)
 
 			//General
-			result.RuleID = cxxml.Query[i].ID
+			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
 			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
 			msg := new(format.Message)
-			msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
+			//msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
+			msg.Text = cxxml.Query[i].Name
 			result.Message = msg
 			//analysisTarget := new(format.ArtifactLocation)
 			//analysisTarget.URI = cxxml.Query[i].Result[j].FileName
@@ -281,13 +282,19 @@ func Parse(data []byte) (format.SARIF, error) {
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-		rule.ID = cxxml.Query[i].ID
+		rule.ID = "checkmarx-" + cxxml.Query[i].ID
 		words := strings.Split(cxxml.Query[i].Name, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = strings.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")
 		rule.HelpURI = baseURL + "queryID=" + cxxml.Query[i].ID + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
+		rule.ShortDescription = new(format.Message)
+		rule.ShortDescription.Text = cxxml.Query[i].Name
+		if cxxml.Query[i].Categories != "" {
+			rule.FullDescription = new(format.Message)
+			rule.FullDescription.Text = cxxml.Query[i].Categories
+		}
 		rulesArray = append(rulesArray, rule)
 	}
 
