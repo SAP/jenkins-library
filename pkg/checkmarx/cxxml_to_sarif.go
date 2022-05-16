@@ -149,7 +149,7 @@ func Parse(data []byte) (format.SARIF, error) {
 	checkmarxRun.ColumnKind = "utf16CodeUnits"
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
-	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "CxWebClient/ScanQueryDescription.aspx?"
+	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "/CxWebClient/ScanQueryDescription.aspx?"
 	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
 	cweCounter := 0
 
@@ -289,6 +289,8 @@ func Parse(data []byte) (format.SARIF, error) {
 		}
 		rule.Name = strings.Join(words, "")
 		rule.HelpURI = baseURL + "queryID=" + cxxml.Query[i].ID + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
+		rule.Help = new(format.Help)
+		rule.Help.Text = rule.HelpURI
 		rule.ShortDescription = new(format.Message)
 		rule.ShortDescription.Text = cxxml.Query[i].Name
 		if cxxml.Query[i].Categories != "" {
