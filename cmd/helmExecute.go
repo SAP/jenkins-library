@@ -48,7 +48,9 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 	helmConfig.DeploymentName = artifactInfo.ArtifactID
 
 	if len(config.Version) == 0 {
-		helmConfig.Version = artifactInfo.Version
+		helmConfig.PublishVersion = artifactInfo.Version
+	} else {
+		helmConfig.PublishVersion = config.Version
 	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
