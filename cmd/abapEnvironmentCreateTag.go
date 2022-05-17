@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http/cookiejar"
 	"time"
 
@@ -95,6 +96,7 @@ func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.Cus
 func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
 
 	requestBodyStruct := CreateTagBody{RepositoryName: item.repositoryName, CommitID: item.commitID, Tag: item.tags[index].tagName, Description: item.tags[index].tagDescription}
+	errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
 	requestBodyJson, err := json.Marshal(&requestBodyStruct)
 	if err != nil {
 		return err
@@ -103,14 +105,52 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	log.Entry().Debugf("Request body: %s", requestBodyJson)
 	resp, err := abaputils.GetHTTPResponse("POST", con, requestBodyJson, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not create tag "+requestBodyStruct.Tag+" for repository "+requestBodyStruct.RepositoryName+" with commitID "+requestBodyStruct.CommitID, con)
+		err = abaputils.HandleHTTPError(resp, err, errorMessage, con)
 		return err
 	}
 	defer resp.Body.Close()
 
-	log.Entry().Info("Created tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
+	// Parse response
+	var body CreateTagResponse
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	json.Unmarshal(bodyText, &abapResp)
+	json.Unmarshal(*abapResp["d"], &body)
+
+	con.URL = con.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(guid'" + body.UUID + "')"
+	err = checkStatus(con, client)
+
+	if err != nil {
+		log.Entry().Info("Created tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
+	} else {
+		log.Entry().Error("NOT created: Tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
+	}
 
 	return err
+}
+
+func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+	status := "R"
+	pollIntervall := 3 * time.Second
+	count := 0
+	for {
+		count += 1
+		_, status, err = abaputils.GetStatus("Could not create Tag", con, client)
+		if err != nil {
+			return err
+		}
+		if status != "R" {
+			if status == "E" {
+				err = errors.New("Could not create Tag")
+			}
+			return err
+		}
+		if count >= 200 {
+			return errors.New("Could not create Tag (Timeout)")
+		}
+		time.Sleep(pollIntervall)
+	}
 }
 
 func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTagBacklog, err error) {
@@ -185,4 +225,8 @@ type CreateTagBody struct {
 	CommitID       string `json:"commit_id"`
 	Tag            string `json:"tag_name"`
 	Description    string `json:"tag_description"`
+}
+
+type CreateTagResponse struct {
+	UUID string `json:"uuid"`
 }

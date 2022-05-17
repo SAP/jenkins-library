@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const failureMessageClonePull = "Could not pull the Repository / Software Component "
+
 // PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
 func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
@@ -20,7 +22,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	var status string = "R"
 
 	for {
-		pullEntity, responseStatus, err := GetPullStatus(repositoryName, connectionDetails, client)
+		pullEntity, responseStatus, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 		if err != nil {
 			return status, err
 		}
@@ -77,7 +79,7 @@ func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, clie
 
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
-	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 	if err != nil {
 		return
 	}
@@ -144,7 +146,7 @@ func printLog(logEntry LogResultsV2) {
 func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) {
 
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
-	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 	if err != nil {
 		return
 	}
@@ -194,11 +196,11 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 
 }
 
-func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
+func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
+		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
 		return body, resp.Status, err
 	}
 	defer resp.Body.Close()
@@ -211,7 +213,7 @@ func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTT
 	json.Unmarshal(*abapResp["d"], &body)
 
 	if reflect.DeepEqual(PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).Error(failureMessage)
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		var err = errors.New("Request to ABAP System not successful")
 		return body, resp.Status, err
