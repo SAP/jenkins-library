@@ -52,6 +52,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdUnit    string   `json:"vulnerabilityThresholdUnit,omitempty"`
 	IsOptimizedAndScheduled       bool     `json:"isOptimizedAndScheduled,omitempty"`
 	CreateResultIssue             bool     `json:"createResultIssue,omitempty"`
+	ConvertToSarif                bool     `json:"convertToSarif,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -355,7 +356,8 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", `FAILURE`, "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
-	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for schedules runs.")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
+	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", false, "[BETA] Convert the Checkmarx XML (Cxxml) scan results to the open SARIF standard. Uploaded through Cumulus later on.")
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
@@ -696,14 +698,23 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/optimizedAndScheduled",
+								Param: "custom/isOptimizedAndScheduled",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   false,
+					},
+					{
+						Name:        "convertToSarif",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

@@ -25,7 +25,6 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	if len(token) == 0 {
 		t.Fatal("No GitHub token maintained")
 	}
-
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
 		owner = "OliverNocon"
@@ -34,7 +33,6 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
-
 	dir, err := ioutil.TempDir("", "")
 	defer os.RemoveAll(dir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
@@ -42,29 +40,60 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	testAsset := filepath.Join(dir, "test.txt")
 	err = ioutil.WriteFile(testAsset, []byte("Test"), 0644)
 	assert.NoError(t, err, "Error when writing temporary file")
+	test2Asset := filepath.Join(dir, "test2.txt")
+	err = ioutil.WriteFile(test2Asset, []byte("Test"), 0644)
+	assert.NoError(t, err, "Error when writing temporary file")
 
-	//prepare pipeline environment
-	now := time.Now()
-	piperenv.SetResourceParameter(filepath.Join(dir, ".pipeline"), "commonPipelineEnvironment", "artifactVersion", now.Format("20060102150405"))
+	t.Run("test single asset - success", func(t *testing.T) {
+		//prepare pipeline environment
+		now := time.Now()
+		piperenv.SetResourceParameter(filepath.Join(dir, ".pipeline"), "commonPipelineEnvironment", "artifactVersion", now.Format("20060102150405"))
 
-	cmd := command.Command{}
-	cmd.SetDir(dir)
+		cmd := command.Command{}
+		cmd.SetDir(dir)
 
-	piperOptions := []string{
-		"githubPublishRelease",
-		"--owner",
-		owner,
-		"--repository",
-		repository,
-		"--token",
-		token,
-		"--assetPath",
-		testAsset,
-		"--noTelemetry",
-	}
+		piperOptions := []string{
+			"githubPublishRelease",
+			"--owner",
+			owner,
+			"--repository",
+			repository,
+			"--token",
+			token,
+			"--assetPath",
+			testAsset,
+			"--noTelemetry",
+		}
 
-	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
-	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+		err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+		assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+	})
+	t.Run("test multiple assets - success", func(t *testing.T) {
+		//prepare pipeline environment
+		now := time.Now()
+		piperenv.SetResourceParameter(filepath.Join(dir, ".pipeline"), "commonPipelineEnvironment", "artifactVersion", now.Format("20060102150405"))
+
+		cmd := command.Command{}
+		cmd.SetDir(dir)
+
+		piperOptions := []string{
+			"githubPublishRelease",
+			"--owner",
+			owner,
+			"--repository",
+			repository,
+			"--token",
+			token,
+			"--assetPathList",
+			testAsset,
+			"--assetPathList",
+			test2Asset,
+			"--noTelemetry",
+		}
+
+		err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+		assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+	})
 }
 
 func TestGithubFetchCommitStatistics(t *testing.T) {

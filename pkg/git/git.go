@@ -53,13 +53,16 @@ func commitSingleFile(filePath, commitMessage, author string, worktree utilsWork
 }
 
 // PushChangesToRepository Pushes all committed changes in the repository to the remote repository
-func PushChangesToRepository(username, password string, repository *git.Repository) error {
-	return pushChangesToRepository(username, password, repository)
+func PushChangesToRepository(username, password string, force *bool, repository *git.Repository) error {
+	return pushChangesToRepository(username, password, force, repository)
 }
 
-func pushChangesToRepository(username, password string, repository utilsRepository) error {
+func pushChangesToRepository(username, password string, force *bool, repository utilsRepository) error {
 	pushOptions := &git.PushOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
+	}
+	if force != nil {
+		pushOptions.Force = *force
 	}
 	err := repository.Push(pushOptions)
 	if err != nil {

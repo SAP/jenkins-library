@@ -22,15 +22,16 @@ type Runs struct {
 
 // Results these structs are relevant to the Results object
 type Results struct {
-	RuleID           string            `json:"ruleId"`
-	RuleIndex        int               `json:"ruleIndex"`
-	Level            string            `json:"level,omitempty"`
-	Message          *Message          `json:"message,omitempty"`
-	AnalysisTarget   *ArtifactLocation `json:"analysisTarget,omitempty"`
-	Locations        []Location        `json:"locations,omitempty"`
-	CodeFlows        []CodeFlow        `json:"codeFlows,omitempty"`
-	RelatedLocations []RelatedLocation `json:"relatedLocations,omitempty"`
-	Properties       *SarifProperties  `json:"properties"`
+	RuleID              string              `json:"ruleId"`
+	RuleIndex           int                 `json:"ruleIndex"`
+	Level               string              `json:"level,omitempty"`
+	Message             *Message            `json:"message,omitempty"`
+	AnalysisTarget      *ArtifactLocation   `json:"analysisTarget,omitempty"`
+	Locations           []Location          `json:"locations,omitempty"`
+	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
+	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
+	PartialFingerprints PartialFingerprints `json:"partialFingerprints"`
+	Properties          *SarifProperties    `json:"properties"`
 }
 
 // Message to detail the finding
@@ -54,8 +55,9 @@ type PhysicalLocation struct {
 
 // ArtifactLocation describing the path of the artifact
 type ArtifactLocation struct {
-	URI   string `json:"uri"`
-	Index int    `json:"index"`
+	URI       string `json:"uri"`
+	URIBaseId string `json:"uriBaseId"`
+	Index     int    `json:"index"`
 }
 
 // Region where the finding was detected
@@ -74,19 +76,27 @@ type LogicalLocation struct {
 	FullyQualifiedName string `json:"fullyQualifiedName"`
 }
 
+// PartialFingerprints
+type PartialFingerprints struct {
+	FortifyInstanceID       string `json:"fortifyInstanceID,omitempty"`
+	CheckmarxSimilarityID   string `json:"checkmarxSimilarityID,omitempty"`
+	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
+}
+
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
-	InstanceID        string `json:"instanceID,omitempty"`
-	InstanceSeverity  string `json:"instanceSeverity,omitempty"`
-	Confidence        string `json:"confidence,omitempty"`
-	FortifyCategory   string `json:"fortifyCategory,omitempty"`
-	Audited           bool   `json:"audited"`
-	ToolSeverity      string `json:"toolSeverity"`
-	ToolSeverityIndex int    `json:"toolSeverityIndex"`
-	ToolState         string `json:"toolState"`
-	ToolStateIndex    int    `json:"toolStateIndex"`
-	ToolAuditMessage  string `json:"toolAuditMessage"`
-	UnifiedAuditState string `json:"unifiedAuditState"`
+	InstanceID            string `json:"instanceID,omitempty"`
+	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
+	Confidence            string `json:"confidence,omitempty"`
+	FortifyCategory       string `json:"fortifyCategory,omitempty"`
+	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
+	Audited               bool   `json:"audited"`
+	ToolSeverity          string `json:"toolSeverity"`
+	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
+	ToolState             string `json:"toolState"`
+	ToolStateIndex        int    `json:"toolStateIndex"`
+	ToolAuditMessage      string `json:"toolAuditMessage"`
+	UnifiedAuditState     string `json:"unifiedAuditState"`
 }
 
 // Tool these structs are relevant to the Tool object
@@ -166,7 +176,7 @@ type RelatedPhysicalLocation struct {
 
 // RelatedRegion
 type RelatedRegion struct {
-	StartLine   int `json:"startLine"`
+	StartLine   int `json:"startLine,omitempty"`
 	StartColumn int `json:"startColumn,omitempty"`
 }
 
@@ -275,7 +285,7 @@ type AutomationDetails struct {
 
 // Taxonomies These structs are relevant to the taxonomies object
 type Taxonomies struct {
-	Guid             string  `json:"guid"`
+	GUID             string  `json:"guid,omitempty"`
 	Name             string  `json:"name"`
 	Organization     string  `json:"organization"`
 	ShortDescription Message `json:"shortDescription"`

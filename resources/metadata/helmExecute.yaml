@@ -11,15 +11,15 @@ metadata:
     * [Helm Charts] (https://artifacthub.io/)
     ```
     Available Commands:
-      install     install a chart
-      lint        examine a chart for possible issues
-      package     package a chart directory into a chart archive
-      repo        add, list, remove, update, and index chart repositories
-      test        run tests for a release
-      uninstall   uninstall a release
-      upgrade     upgrade a release
-      verify      verify that a chart at the given path has been signed and is valid
-      push        upload a chart to a registry
+    `upgrade`, `lint`, `install`, `test`, `uninstall`, `dependency`, `publish`
+
+      upgrade       upgrade a release
+      lint          examine a chart for possible issues
+      install       install a chart
+      test          run tests for a release
+      uninstall     uninstall a release
+      dependency     package a chart directory into a chart archive
+      publish       package and puslish a release
 
     ```
 
@@ -49,8 +49,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        mandatory: true
-        description: Defines the chart path for helm.
+        description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
           - PARAMETERS
           - STAGES
@@ -69,10 +68,7 @@ spec:
             param: custom/repositoryUrl
       - name: targetRepositoryName
         type: string
-        description: set the chart repository
-        mandatoryIf:
-          - name: helmCommand
-            value: install
+        description: set the chart repository. The value is required for install/upgrade/uninstall commands.
         scope:
           - GENERAL
           - PARAMETERS
@@ -189,18 +185,18 @@ spec:
             default: docker-config
       - name: helmCommand
         type: string
-        description: "Helm: defines the command `install`, `lint`, `package`, `test`, `upgrade` and etc."
+        description: "Helm: defines the command `upgrade`, `lint`, `install`, `test`, `uninstall`, `dependency`, `publish`."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         possibleValues:
           - upgrade
-          - install
           - lint
+          - install
           - test
           - uninstall
-          - package
+          - dependency
           - publish
       - name: appVersion
         type: string
@@ -210,9 +206,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: dependencyUpdate
+      - name: dependency
+        type: string
+        description: "manage a chart's dependencies"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - build
+          - list
+          - update
+      - name: packageDependencyUpdate
         type: bool
-        description: set the appVersion on the chart to this version
+        description: update dependencies from "Chart.yaml" to dir "charts/" before packaging
         default: false
         scope:
           - GENERAL
@@ -253,6 +260,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: version
+        type: string
+        description: Defines the artifact version to use from helm package/publish commands.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config

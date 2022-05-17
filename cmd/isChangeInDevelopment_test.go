@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type isChangeInDevelopmentMockUtils struct {
@@ -37,7 +38,6 @@ func TestRunIsChangeInDevelopment(t *testing.T) {
 			"--endpoint", "https://example.org/cm",
 			"--user", "me",
 			"--password", "****",
-			"--backend-type", "SOLMAN",
 			"is-change-in-development",
 			"--change-id", "12345678",
 			"--return-code",

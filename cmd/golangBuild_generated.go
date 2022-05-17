@@ -50,6 +50,7 @@ type golangBuildOptions struct {
 type golangBuildCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		artifacts         piperenv.Artifacts
 	}
 }
 
@@ -60,6 +61,7 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 	}
 
 	errCount := 0
@@ -483,8 +485,9 @@ func golangBuildMetadata() config.StepData {
 						Name: "privateModulesGitToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "golangPrivateModulesGitTokenCredentialsId",
-								Type: "secret",
+								Name:  "golangPrivateModulesGitTokenCredentialsId",
+								Param: "password",
+								Type:  "secret",
 							},
 
 							{
@@ -525,6 +528,7 @@ func golangBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
 					{
