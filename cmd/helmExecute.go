@@ -30,7 +30,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
 		// ArtifactVersion:           config.Version,
-		Version: config.Version,
+		Version:        config.Version,
+		PublishVersion: config.Version,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
@@ -49,8 +50,6 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 
 	if len(config.Version) == 0 {
 		helmConfig.PublishVersion = artifactInfo.Version
-	} else {
-		helmConfig.PublishVersion = config.Version
 	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
