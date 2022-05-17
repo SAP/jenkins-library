@@ -305,7 +305,12 @@ func Parse(data []byte) (format.SARIF, error) {
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "Checkmarx SCA"
-	tool.Driver.Version = strings.Split(cxxml.CheckmarxVersion, "V ")[1] //Bad idea all things considered
+	versionData := strings.Split(cxxml.CheckmarxVersion, "V ")
+	if len(versionData) > 1 { // Safety check
+		tool.Driver.Version = strings.Split(cxxml.CheckmarxVersion, "V ")[1]
+	} else {
+		tool.Driver.Version = cxxml.CheckmarxVersion // Safe case
+	}
 	tool.Driver.InformationUri = "https://checkmarx.atlassian.net/wiki/spaces/KC/pages/1170245301/Navigating+Scan+Results+v9.0.0+to+v9.2.0"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
