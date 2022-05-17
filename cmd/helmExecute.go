@@ -48,7 +48,7 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 
 	helmConfig.DeploymentName = artifactInfo.ArtifactID
 
-	if len(config.Version) == 0 {
+	if len(helmConfig.PublishVersion) == 0 {
 		helmConfig.PublishVersion = artifactInfo.Version
 	}
 
