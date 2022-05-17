@@ -29,9 +29,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		TargetRepositoryPassword:  config.TargetRepositoryPassword,
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
-		// ArtifactVersion:           config.Version,
-		Version:        config.Version,
-		PublishVersion: config.Version,
+		Version:                   config.Version,
+		PublishVersion:            config.Version,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
