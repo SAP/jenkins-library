@@ -858,7 +858,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 								}
 								// If Description has a CustomDescription, add it for good measure
 								if fvdl.Description[j].CustomDescription.RuleID != "" {
-									rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
+									rawExplanation = rawExplanation + " \n; " + unescapeXML(fvdl.Description[j].CustomDescription.Explanation.Text)
 								}
 								sd := new(format.Message)
 								sd.Text = rawAbstract
@@ -912,11 +912,26 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						}
 					}
 				}
+
+				// Add each part of the "name" in the tags
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+				}
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
+				}
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
+				}
+
 				sarifRule.Properties = ruleProp
 
 				//relationships: will most likely require some expansion
 				//One relationship per CWE id
 				for j := 0; j < len(cweIds); j++ {
+					if cweIds[j] == "None" {
+						continue
+					}
 					sarifRule.Properties.Tags = append(sarifRule.Properties.Tags, "external/cwe/cwe-"+cweIds[j])
 
 					rls := *new(format.Relationships)
@@ -944,6 +959,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sTax.Index = 1
 	sTax.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
 	tool.Driver.SupportedTaxonomies = append(tool.Driver.SupportedTaxonomies, sTax)
+
+	//Add additional rulepacks
+	for pack := 0; pack < len(fvdl.EngineData.RulePacks); pack++ {
+		extension := *new(format.Driver)
+		extension.Name = fvdl.EngineData.RulePacks[pack].Name
+		extension.Version = fvdl.EngineData.RulePacks[pack].Version
+		extension.GUID = fvdl.EngineData.RulePacks[pack].RulePackID
+		tool.Extensions = append(tool.Extensions, extension)
+	}
 
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool

@@ -101,15 +101,17 @@ type SarifProperties struct {
 
 // Tool these structs are relevant to the Tool object
 type Tool struct {
-	Driver Driver `json:"driver"`
+	Driver     Driver   `json:"driver"`
+	Extensions []Driver `json:"extensions"`
 }
 
 // Driver meta information for the scan and tool context
 type Driver struct {
 	Name                string                `json:"name"`
 	Version             string                `json:"version"`
+	GUID                string                `json:"guid,omitempty"`
 	InformationUri      string                `json:"informationUri,omitempty"`
-	Rules               []SarifRule           `json:"rules"`
+	Rules               []SarifRule           `json:"rules,omitempty"`
 	SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies,omitempty"`
 }
 
