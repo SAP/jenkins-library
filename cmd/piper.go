@@ -185,6 +185,7 @@ func Execute() {
 	rootCmd.AddCommand(ApiKeyValueMapUploadCommand())
 	rootCmd.AddCommand(PythonBuildCommand())
 	rootCmd.AddCommand(AzureBlobUploadCommand())
+	rootCmd.AddCommand(AwsS3UploadCommand())
 
 	addRootFlags(rootCmd)
 
