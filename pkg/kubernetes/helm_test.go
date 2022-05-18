@@ -443,7 +443,7 @@ func TestRunHelm(t *testing.T) {
 			TargetRepositoryURL:      "https://my.target.repository.local/",
 			TargetRepositoryUser:     "testUser",
 			TargetRepositoryPassword: "testPWD",
-			Version:                  "1.2.3",
+			PublishVersion:           "1.2.3",
 			DeploymentName:           "test_helm_chart",
 			ChartPath:                ".",
 		}
