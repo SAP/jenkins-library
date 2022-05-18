@@ -172,8 +172,9 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 	if response == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
+	responseCode := response.StatusCode
 
-	if response.StatusCode == http.StatusOK {
+	if (responseCode == http.StatusOK) || (responseCode == http.StatusCreated) {
 		log.Entry().
 			WithField("Created Artifact", httpFileUploadRequestParameters.FilePath).
 			Info(httpFileUploadRequestParameters.SuccessMessage)
