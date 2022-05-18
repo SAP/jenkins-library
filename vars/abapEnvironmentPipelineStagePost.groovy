@@ -4,8 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     /** Deletes a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
     /** If set to true, a confirmation is required to delete the system in case the pipeline was not successful */
@@ -13,7 +12,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** If set to true, the system is never deleted */
     'debug'
 ]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set STAGE_STEP_KEYS = GENERAL_CONFIG_KEYS
+@Field Set STEP_CONFIG_KEYS = STAGE_STEP_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * This stage cleans up the ABAP Environment Pipeline run

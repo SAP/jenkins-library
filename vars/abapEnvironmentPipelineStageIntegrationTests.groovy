@@ -5,8 +5,7 @@ import com.sap.piper.ConfigurationHelper
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     /** Creates a SAP Cloud Platform ABAP Environment system via the cloud foundry command line interface */
     'abapEnvironmentCreateSystem',
     /** Deletes a SAP Cloud Platform ABAP Environment system via the cloud foundry command line interface */
@@ -16,7 +15,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** If set to true, the system is never deleted */
     'debug'
 ]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set STAGE_STEP_KEYS = GENERAL_CONFIG_KEYS
+@Field Set STEP_CONFIG_KEYS = STAGE_STEP_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * This stage creates a system for Integration Tests. The (custom) tests themselves can be added via a stage extension.
