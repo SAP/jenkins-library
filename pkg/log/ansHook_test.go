@@ -178,8 +178,7 @@ func TestANSHook_Fire(t *testing.T) {
 					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234",
-					"stepName": "testStep", "logLevel": "warning", "errorCategory": "compliance"},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
 			},
 		},
 		{
@@ -211,9 +210,7 @@ func TestANSHook_Fire(t *testing.T) {
 					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234",
-					"stepName": "testStep", "logLevel": "warning", "errorCategory": "compliance",
-					"Some": 1.0, "Additional": "a string", "Tags": true},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning", "Some": 1.0, "Additional": "a string", "Tags": true},
 			},
 		},
 		{
@@ -247,8 +244,7 @@ func TestANSHook_Fire(t *testing.T) {
 					ResourceType: "Pipeline",
 					ResourceName: "Pipeline",
 				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234",
-					"stepName": "testStep", "logLevel": "warning", "errorCategory": "compliance"},
+				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
 			},
 		},
 		{
