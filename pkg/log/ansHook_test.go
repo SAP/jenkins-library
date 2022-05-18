@@ -20,7 +20,7 @@ func TestANSHook_Levels(t *testing.T) {
 		hook.Levels())
 }
 
-func Test_newANSHook(t *testing.T) {
+func TestANSHook_newANSHook(t *testing.T) {
 	t.Parallel()
 	testClient := &ans.ANS{
 		XSUAA: xsuaa.XSUAA{
