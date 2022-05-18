@@ -1,0 +1,34 @@
+metadata:
+  name: awsS3Upload
+  description: "Uploads a specified file or directory into a given AWS S3 Bucket"
+  longDescription: |
+    Uploads a specified file or directory as S3 Objects into a given AWS S3 Bucket.
+    In case a file is uploaded that is already contained in the S3 bucket, it will be overwritten with the latest version.
+spec:
+  inputs:
+    secrets:
+      - name: awsCredentialsId
+        description: Jenkins 'Secret Text' credentials ID containing the JSON file to authenticate to the AWS S3 Bucket
+        type: jenkins
+    params:
+      - name: jsonCredentialsAWS
+        description: JSON String Credentials to access AWS S3 Bucket
+        type: string
+        mandatory: true
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - name: awsCredentialsId
+            type: secret
+      - name: filePath
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
+        type: string
+        mandatory: true
+        description: "Name/Path of the file which should be uploaded"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
