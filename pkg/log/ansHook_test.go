@@ -146,6 +146,7 @@ func TestANSHook_Fire(t *testing.T) {
 		correlationID string
 		levels        []logrus.Level
 		event         ans.Event
+		firing        bool
 	}
 	tests := []struct {
 		name      string
@@ -262,6 +263,22 @@ func TestANSHook_Fire(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Should not fire twice",
+			fields: fields{
+				correlationID: testCorrelationID,
+				event:         defaultEvent(),
+				firing:        true,
+			},
+			entryArgs: []*logrus.Entry{
+				{
+					Level:   logrus.ErrorLevel,
+					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
+					Message: "   ",
+					Data:    map[string]interface{}{"stepName": "testStep"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -271,6 +288,7 @@ func TestANSHook_Fire(t *testing.T) {
 			ansHook := &ANSHook{
 				client: &clientMock,
 				event:  tt.fields.event,
+				firing: tt.fields.firing,
 			}
 			defer clientMock.cleanup()
 			for _, entryArg := range tt.entryArgs {

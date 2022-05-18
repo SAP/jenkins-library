@@ -14,6 +14,7 @@ import (
 type ANSHook struct {
 	client ans.Client
 	event  ans.Event
+	firing bool
 }
 
 // NewANSHook creates a new ANS hook for logrus
@@ -71,6 +72,12 @@ func (ansHook *ANSHook) Levels() []logrus.Level {
 
 // Fire creates a new event from the logrus and sends an event to the ANS backend
 func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
+	if ansHook.firing {
+		return fmt.Errorf("ANS hook has already been fired")
+	}
+	ansHook.firing = true
+	defer func() { ansHook.firing = false }()
+
 	if len(strings.TrimSpace(entry.Message)) == 0 {
 		return nil
 	}
