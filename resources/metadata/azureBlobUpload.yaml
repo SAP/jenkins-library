@@ -3,7 +3,7 @@ metadata:
   description: "Uploads a specified file or directory into a given Azure Blob Storage."
   longDescription: |
     Uploads a specified file or directory into a given Azure Blob Storage.
-    In case a file is uploaded that is already contained in the S3 bucket, it will be overwritten with the latest version.
+    In case a file is uploaded that is already contained in the storage, it will be overwritten with the latest version.
 spec:
   inputs:
     secrets:

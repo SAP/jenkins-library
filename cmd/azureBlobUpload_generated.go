@@ -35,7 +35,7 @@ func AzureBlobUploadCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Uploads a specified file or directory into a given Azure Blob Storage.",
 		Long: `Uploads a specified file or directory into a given Azure Blob Storage.
-In case a file is uploaded that is already contained in the S3 bucket, it will be overwritten with the latest version.`,
+In case a file is uploaded that is already contained in the storage, it will be overwritten with the latest version.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

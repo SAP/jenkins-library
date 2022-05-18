@@ -40,9 +40,9 @@ type azureCredentials struct {
 func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.CustomData) {
 	// Prepare Credentials
 	log.Entry().Infoln("Start reading Azure Credentials")
-	var obj azureCredentials
+	var creds azureCredentials
 
-	err := json.Unmarshal([]byte(config.JSONCredentialsAzure), &obj)
+	err := json.Unmarshal([]byte(config.JSONCredentialsAzure), &creds)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -50,14 +50,14 @@ func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.Cus
 	}
 
 	// Initialize Azure Service Client
-	sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/?%s", obj.AccountName, obj.SASToken)
+	sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/?%s", creds.AccountName, creds.SASToken)
 	serviceClient, err := azblob.NewServiceClientWithNoCredential(sasURL, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Could not instantiate Azure Service Client!")
 	}
 
 	// Get a containerClient from ServiceClient
-	containerClient := serviceClient.NewContainerClient(obj.Container)
+	containerClient := serviceClient.NewContainerClient(creds.Container)
 
 	err = runAzureBlobUpload(&config, containerClient, UploadFile)
 	if err != nil {
@@ -112,9 +112,8 @@ func runAzureBlobUpload(config *azureBlobUploadOptions, containerClient AzureCon
 		return nil
 	})
 
-	if err != nil {
-		return err
+	if err == nil {
+		log.Entry().Infoln("Upload has successfully finished!")
 	}
-	log.Entry().Infoln("Upload has successfully finished!")
-	return nil
+	return err
 }
