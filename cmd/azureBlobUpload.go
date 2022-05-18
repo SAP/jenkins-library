@@ -116,5 +116,5 @@ func runAzureBlobUpload(config *azureBlobUploadOptions, containerClient AzureCon
 		return err
 	}
 	log.Entry().Infoln("Upload has successfully finished!")
-	return err
+	return nil
 }
