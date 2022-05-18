@@ -72,6 +72,7 @@ nav:
         - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
         - apiProviderDownload: steps/apiProviderDownload.md
+        - apiProviderUpload: steps/apiProviderUpload.md
         - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - awsS3Upload: steps/awsS3Upload.md
