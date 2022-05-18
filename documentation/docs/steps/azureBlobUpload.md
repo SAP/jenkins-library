@@ -27,7 +27,7 @@ If the JSON string contains additional information, this is not a problem. These
 
 ## About Files/Directories to Upload
 
-With the step azureBlobUpload you can upload single files as well as whole directories into your Azure Storage. File formats do not matter and directory structures are preserved.
+With this step you can upload single files as well as whole directories into your Azure Storage. File formats do not matter and directory structures are preserved.
 
 **Note:** File paths must be specified in UNIX format. So the used path separator must be "/".
 
