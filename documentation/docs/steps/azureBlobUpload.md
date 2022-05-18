@@ -6,7 +6,7 @@
 
 * Before you can access Azure Storage, you will need an Azure subscription. If you do not have a subscription, create an [account](https://azure.microsoft.com/en-us/).
 * The step azureBlobUpload currently supports only authentication via Shared Access Signature.
-* You can generate a SAS token from the Azure Portal under [Shared access signature](https://docs.microsoft.com/en-us/rest/api/storageservices/create-service-sas).
+* You can generate a SAS token from the Azure Portal under [Create a service SAS](https://docs.microsoft.com/en-us/rest/api/storageservices/create-service-sas).
 * The SAS token must allow the actions "Write" and "Create" for the specified Azure Blob Storage.
 
 ## Set up the Azure Credentials
