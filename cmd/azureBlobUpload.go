@@ -67,7 +67,7 @@ func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.Cus
 
 func runAzureBlobUpload(config *azureBlobUploadOptions, containerClient AzureContainerAPI, Upload func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.HighLevelUploadToBlockBlobOption) (*http.Response, error)) error {
 
-	log.Entry().Infof("Start walk through FilePath '%v'", config.FilePath)
+	log.Entry().Infof("Starting walk through file path '%v'", config.FilePath)
 
 	// All Blob Operations operate with context.Context, in our case the clients do not expire
 	ctx := context.Background()
