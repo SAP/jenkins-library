@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"reflect"
 	"sort"
-	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -93,28 +92,15 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
 	})
 
-	// Get Lengths
-	phaseLength := 22 // minimum default length
-	for _, logEntry := range entity.ToLogOverview.Results {
-		if l := len(logEntry.Name); l > phaseLength {
-			phaseLength = l
-		}
-	}
-	statusLength := 10
-	timestampLength := 29
-
-	// Dashed Line Length
-	lineLength := 10 + phaseLength + statusLength + timestampLength
-
 	// Print Overview
 	log.Entry().Infof("\n")
-	dashedLine(lineLength)
-	log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", "Phase", "Status", "Timestamp")
-	dashedLine(lineLength)
+	log.Entry().Infof("-----------------------------------------------------------------------")
+	log.Entry().Infof("| %-22s | %10s | %-29s |", "Phase", "Status", "Timestamp")
+	log.Entry().Infof("-----------------------------------------------------------------------")
 	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("| %-22s | %10s | %-29s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
 	}
-	dashedLine(lineLength)
+	log.Entry().Infof("-----------------------------------------------------------------------")
 
 	// Print Details
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
@@ -123,10 +109,6 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	log.Entry().Infof("-------------------------")
 
 	return
-}
-
-func dashedLine(i int) {
-	log.Entry().Infof(strings.Repeat("-", i))
 }
 
 func printLog(logEntry LogResultsV2) {
