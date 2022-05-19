@@ -297,6 +297,10 @@ func Parse(data []byte) (format.SARIF, error) {
 			rule.FullDescription = new(format.Message)
 			rule.FullDescription.Text = cxxml.Query[i].Categories
 		}
+		rule.Properties = new(format.SarifRuleProperties)
+		if cxxml.Query[i].CweID != "" {
+			rule.Properties.Tags = append(rule.Properties.Tags, "external/cwe/cwe-"+cxxml.Query[i].CweID)
+		}
 		rulesArray = append(rulesArray, rule)
 	}
 
