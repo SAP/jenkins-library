@@ -16,6 +16,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -284,9 +285,15 @@ func runMtaBuild(config mtaBuildOptions,
 
 				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
-				commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
-
-				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
+				//commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
+				//successfully published
+				var mtarArtifacts piperenv.Artifacts
+				mtarArtifacts = append(mtarArtifacts, piperenv.Artifact{
+					Name:         mtarArtifactName,
+					PublishedUrl: config.MtaDeploymentRepositoryURL,
+				})
+				commonPipelineEnvironment.custom.artifacts = mtarArtifacts
+				log.Entry().Infof("pushing mtar artifact to repository actual : %s, received %s", config.MtaDeploymentRepositoryURL, mtarArtifacts)
 
 				data, err := os.Open(getMtarFilePath(config, mtarName))
 				if err != nil {
@@ -299,9 +306,7 @@ func runMtaBuild(config mtaBuildOptions,
 				}
 			} else {
 				return errors.New("mtarGroup, version not found and must be present")
-
 			}
-
 		} else {
 			return errors.New("mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found , must be present")
 		}

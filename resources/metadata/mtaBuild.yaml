@@ -234,7 +234,8 @@ spec:
         params:
           - name: mtarFilePath
           - name: custom/mtaBuildToolDesc
-          - name: custom/mtarPublishedUrl
+          - name: custom/artifacts
+            type: 'piperenv.Artifacts'
           - name: custom/buildSettingsInfo
       - name: reports
         type: reports

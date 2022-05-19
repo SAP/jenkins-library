@@ -48,7 +48,7 @@ type mtaBuildCommonPipelineEnvironment struct {
 	mtarFilePath string
 	custom       struct {
 		mtaBuildToolDesc  string
-		mtarPublishedURL  string
+		artifacts         piperenv.Artifacts
 		buildSettingsInfo string
 	}
 }
@@ -61,7 +61,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
 		{category: "custom", name: "mtaBuildToolDesc", value: p.custom.mtaBuildToolDesc},
-		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
@@ -491,7 +491,7 @@ func mtaBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "mtarFilePath"},
 							{"name": "custom/mtaBuildToolDesc"},
-							{"name": "custom/mtarPublishedUrl"},
+							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 							{"name": "custom/buildSettingsInfo"},
 						},
 					},
