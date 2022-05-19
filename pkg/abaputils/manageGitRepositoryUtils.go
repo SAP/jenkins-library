@@ -94,7 +94,7 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	})
 
 	// Get Lengths
-	phaseLength := 22
+	phaseLength := 22 // minimum default length
 	for _, logEntry := range entity.ToLogOverview.Results {
 		if l := len(logEntry.Name); l > phaseLength {
 			phaseLength = l
