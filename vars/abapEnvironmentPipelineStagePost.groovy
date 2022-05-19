@@ -24,8 +24,6 @@ void call(Map parameters = [:]) {
     stageName = stageName.replace('Declarative: ', '')
     stageName = stageName.replace(' Actions', '')
 
-    echo "STEP CONFIG KEYS: ${STEP_CONFIG_KEYS}"
-
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
@@ -37,7 +35,6 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if(parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
-            echo "confirm deletion value: ${config.confirmDeletion}"
             if (config.confirmDeletion && script.currentBuild.result != 'SUCCESS') {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
