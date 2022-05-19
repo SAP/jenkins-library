@@ -60,9 +60,9 @@ func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, teleme
 		return fmt.Errorf("Something failed during the tag creation: %w", errorPrepare)
 	}
 
-	createTags(backlog, telemetryData, connectionDetails, client, com)
+	err := createTags(backlog, telemetryData, connectionDetails, client, com)
 
-	return nil
+	return err
 }
 
 func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
@@ -80,10 +80,21 @@ func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData,
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", connection.URL).Debug("Authentication on the ABAP system successful")
 	connection.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 
+	errorOccurred := false
 	for _, item := range backlog {
 		err = createTagsForSingleItem(item, telemetryData, connection, client, com)
+		if err != nil {
+			errorOccurred = true
+		}
 	}
-	return err
+
+	if errorOccurred {
+		message := "At least one tag has not been created"
+		log.Entry().Errorf(message)
+		return errors.New(message)
+	}
+	return nil
+
 }
 
 func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {

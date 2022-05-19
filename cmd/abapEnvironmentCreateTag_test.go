@@ -33,7 +33,6 @@ func TestRunAbapEnvironmentCreateTag(t *testing.T) {
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
-		// autils.ReturnedConnectionDetailsHTTP.Host = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
@@ -89,10 +88,11 @@ repositories:
 		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 3, len(hook.Entries))
-		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message)
-		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message)
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message)
+		assert.Equal(t, 3, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
+		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message, "Expected a different message")
+		hook.Reset()
 	})
 
 	t.Run("backend error", func(t *testing.T) {
@@ -101,7 +101,6 @@ repositories:
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
-		// autils.ReturnedConnectionDetailsHTTP.Host = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
@@ -156,11 +155,13 @@ repositories:
 
 		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
 
-		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 3, len(hook.Entries))
-		assert.Equal(t, `NOT created: Tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message)
-		assert.Equal(t, `NOT created: Tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message)
-		assert.Equal(t, `NOT created: Tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message)
+		assert.Error(t, err, "Did expect error")
+		assert.Equal(t, 4, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `NOT created: Tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
+		assert.Equal(t, `NOT created: Tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
+		assert.Equal(t, `NOT created: Tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message, "Expected a different message")
+		assert.Equal(t, `At least one tag has not been created`, hook.AllEntries()[3].Message, "Expected a different message")
+		hook.Reset()
 
 	})
 }
