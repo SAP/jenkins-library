@@ -121,7 +121,7 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	con.URL = con.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(guid'" + body.UUID + "')"
 	err = checkStatus(con, client)
 
-	if err != nil {
+	if err == nil {
 		log.Entry().Info("Created tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
 	} else {
 		log.Entry().Error("NOT created: Tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
@@ -136,10 +136,11 @@ func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (
 	count := 0
 	for {
 		count += 1
-		_, status, err = abaputils.GetStatus("Could not create Tag", con, client)
+		entity, _, err := abaputils.GetStatus("Could not create Tag", con, client)
 		if err != nil {
 			return err
 		}
+		status = entity.Status
 		if status != "R" {
 			if status == "E" {
 				err = errors.New("Could not create Tag")
