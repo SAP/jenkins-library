@@ -20,86 +20,42 @@ func TestANSHook_Levels(t *testing.T) {
 
 func TestANSHook_newANSHook(t *testing.T) {
 	t.Parallel()
-	testClient := &ans.ANS{
-		XSUAA: xsuaa.XSUAA{
-			OAuthURL:     "https://my.test.oauth.provider",
-			ClientID:     "myTestClientID",
-			ClientSecret: "super secret",
-		},
-		URL: "https://my.test.backend",
-	}
-	testServiceKeyJSON := `{
-					"url": "https://my.test.backend",
-					"client_id": "myTestClientID",
-					"client_secret": "super secret",
-					"oauth_url": "https://my.test.oauth.provider"
-				}`
 	type args struct {
 		serviceKey    string
-		correlationID string
 		eventTemplate string
 	}
 	tests := []struct {
 		name                     string
 		args                     args
 		eventTemplateFileContent string
-		wantHook                 ANSHook
+		wantEvent                ans.Event
 		wantErr                  bool
 	}{
 		{
-			name: "Straight forward test",
-			args: args{
-				serviceKey:    testServiceKeyJSON,
-				correlationID: testCorrelationID,
-			},
-			wantHook: ANSHook{
-				client: testClient,
-				event:  defaultEvent(),
-			},
+			name:      "Straight forward test",
+			args:      args{serviceKey: defaultServiceKeyJSON},
+			wantEvent: defaultEvent(),
 		},
 		{
-			name: "No service key yields error",
-			args: args{
-				correlationID: testCorrelationID,
-			},
+			name:    "No service key yields error",
 			wantErr: true,
 		},
 		{
-			name: "With event template as file",
-			args: args{
-				serviceKey:    testServiceKeyJSON,
-				correlationID: testCorrelationID,
-			},
+			name:                     "With event template as file",
+			args:                     args{serviceKey: defaultServiceKeyJSON},
 			eventTemplateFileContent: `{"priority":123}`,
-			wantHook: ANSHook{
-				client: testClient,
-				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
-			},
+			wantEvent:                mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
 		},
 		{
-			name: "With event template as string",
-			args: args{
-				serviceKey:    testServiceKeyJSON,
-				correlationID: testCorrelationID,
-				eventTemplate: `{"priority":123}`,
-			},
-			wantHook: ANSHook{
-				client: testClient,
-				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
-			},
+			name:      "With event template as string",
+			args:      args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":123}`},
+			wantEvent: mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
 		},
 		{
-			name: "With event template from two sources, string overwrites file",
-			args: args{
-				serviceKey:    testServiceKeyJSON,
-				correlationID: testCorrelationID,
-				eventTemplate: `{"priority":789}`,
-			},
+			name:                     "With event template from two sources, string overwrites file",
+			args:                     args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":789}`},
 			eventTemplateFileContent: `{"priority":123}`,
-			wantHook: ANSHook{
-				client: testClient,
-				event:  mergeEvents(t, defaultEvent(), ans.Event{Priority: 789}),
-			},
+			wantEvent:                mergeEvents(t, defaultEvent(), ans.Event{Priority: 789}),
 		},
 	}
 	for _, tt := range tests {
@@ -107,15 +63,8 @@ func TestANSHook_newANSHook(t *testing.T) {
 			t.Parallel()
 			var testEventTemplateFilePath string
 			if len(tt.eventTemplateFileContent) > 0 {
-				var err error
-				testEventTemplateFile, err := os.CreateTemp("", "event_template_*.json")
-				require.NoError(t, err, "File creation failed!")
-				defer testEventTemplateFile.Close()
-				defer os.Remove(testEventTemplateFile.Name())
-				data := []byte(tt.eventTemplateFileContent)
-				_, err = testEventTemplateFile.Write(data)
-				require.NoError(t, err, "Could not write test data to test file!")
-				testEventTemplateFilePath = testEventTemplateFile.Name()
+				testEventTemplateFilePath = writeTempFile(t, tt.eventTemplateFileContent)
+				defer os.Remove(testEventTemplateFilePath)
 			}
 
 			ansConfig := ans.Configuration{
@@ -125,14 +74,12 @@ func TestANSHook_newANSHook(t *testing.T) {
 			}
 			clientMock := &ansMock{}
 			defer clientMock.cleanup()
-			got, err := newANSHook(ansConfig, tt.args.correlationID, clientMock)
-
-			if tt.wantErr {
+			if got, err := newANSHook(ansConfig, testCorrelationID, clientMock); tt.wantErr {
 				assert.Error(t, err, "An error was expected here")
 			} else {
 				require.NoError(t, err, "No error was expected here")
-				assert.Equal(t, tt.wantHook.client, clientMock.testANS, "new ANSHook not as expected")
-				assert.Equal(t, tt.wantHook.event, got.event, "new ANSHook not as expected")
+				assert.Equal(t, defaultANSClient(), clientMock.testANS, "new ANSHook not as expected")
+				assert.Equal(t, tt.wantEvent, got.event, "new ANSHook not as expected")
 			}
 		})
 	}
@@ -231,6 +178,7 @@ func TestANSHook_Fire(t *testing.T) {
 }
 
 const testCorrelationID = "1234"
+const defaultServiceKeyJSON = `{"url": "https://my.test.backend", "client_id": "myTestClientID", "client_secret": "super secret", "oauth_url": "https://my.test.oauth.provider"}`
 
 var defaultTime = time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC)
 
@@ -267,6 +215,28 @@ func defaultLogrusEntry() *logrus.Entry {
 		Message: "my log message",
 		Data:    map[string]interface{}{"stepName": "testStep"},
 	}
+}
+
+func defaultANSClient() *ans.ANS {
+	return &ans.ANS{
+		XSUAA: xsuaa.XSUAA{
+			OAuthURL:     "https://my.test.oauth.provider",
+			ClientID:     "myTestClientID",
+			ClientSecret: "super secret",
+		},
+		URL: "https://my.test.backend",
+	}
+}
+
+func writeTempFile(t *testing.T, fileContent string) (fileName string) {
+	var err error
+	testEventTemplateFile, err := os.CreateTemp("", "event_template_*.json")
+	require.NoError(t, err, "File creation failed!")
+	defer testEventTemplateFile.Close()
+	data := []byte(fileContent)
+	_, err = testEventTemplateFile.Write(data)
+	require.NoError(t, err, "Could not write test data to test file!")
+	return testEventTemplateFile.Name()
 }
 
 func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
