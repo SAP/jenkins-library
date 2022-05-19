@@ -92,10 +92,18 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
 	})
 
+	// Get Max Length
+	maxLength := 30
+	for _, logEntry := range entity.ToLogOverview.Results {
+		if l := len(logEntry.Name); l > maxLength {
+			maxLength = l
+		}
+	}
+
 	// Print Overview
 	log.Entry().Infof("\n")
 	log.Entry().Infof("-----------------------------------------------------------------------")
-	log.Entry().Infof("| %-22s | %10s | %-29s |", "Phase", "Status", "Timestamp")
+	log.Entry().Infof("| %-"+fmt.Sprint(maxLength)+"s | %10s | %-29s |", "Phase", "Status", "Timestamp")
 	log.Entry().Infof("-----------------------------------------------------------------------")
 	for _, logEntry := range entity.ToLogOverview.Results {
 		log.Entry().Infof("| %-22s | %10s | %-29s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
