@@ -146,10 +146,11 @@ func TestANSHook_Fire(t *testing.T) {
 		firing bool
 	}
 	tests := []struct {
-		name      string
-		fields    fields
-		entryArgs []*logrus.Entry
-		wantEvent ans.Event
+		name       string
+		fields     fields
+		entryArgs  []*logrus.Entry
+		wantEvent  ans.Event
+		wantErrMsg string
 	}{
 		{
 			name:      "Straight forward test",
@@ -200,9 +201,10 @@ func TestANSHook_Fire(t *testing.T) {
 			},
 		},
 		{
-			name:      "Should not fire twice",
-			fields:    fields{firing: true, event: defaultEvent()},
-			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
+			name:       "Should not fire twice",
+			fields:     fields{firing: true, event: defaultEvent()},
+			entryArgs:  []*logrus.Entry{defaultLogrusEntry()},
+			wantErrMsg: "ANS hook has already been fired",
 		},
 	}
 	for _, tt := range tests {
@@ -218,7 +220,9 @@ func TestANSHook_Fire(t *testing.T) {
 			defer clientMock.cleanup()
 			for _, entryArg := range tt.entryArgs {
 				originalLogLevel := entryArg.Level
-				ansHook.Fire(entryArg)
+				if err := ansHook.Fire(entryArg); err != nil {
+					assert.EqualError(t, err, tt.wantErrMsg)
+				}
 				assert.Equal(t, originalLogLevel.String(), entryArg.Level.String(), "Entry error level has been altered")
 			}
 			assert.Equal(t, tt.wantEvent, clientMock.testEvent, "Event is not as expected.")
