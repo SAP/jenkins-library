@@ -60,12 +60,12 @@ func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, teleme
 		return fmt.Errorf("Something failed during the tag creation: %w", errorPrepare)
 	}
 
-	createTags(backlog, telemetryData, connectionDetails, client)
+	createTags(backlog, telemetryData, connectionDetails, client, com)
 
 	return nil
 }
 
-func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
 
 	connection := con
 	connection.XCsrfToken = "fetch"
@@ -81,20 +81,20 @@ func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData,
 	connection.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 
 	for _, item := range backlog {
-		err = createTagsForSingleItem(item, telemetryData, connection, client)
+		err = createTagsForSingleItem(item, telemetryData, connection, client, com)
 	}
 	return err
 }
 
-func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
 
 	for index := range item.tags {
-		err = createSingleTag(item, index, telemetryData, con, client)
+		err = createSingleTag(item, index, telemetryData, con, client, com)
 	}
 	return err
 }
 
-func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
 
 	requestBodyStruct := CreateTagBody{RepositoryName: item.repositoryName, CommitID: item.commitID, Tag: item.tags[index].tagName, Description: item.tags[index].tagDescription}
 	errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
@@ -120,7 +120,7 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	json.Unmarshal(*abapResp["d"], &body)
 
 	con.URL = con.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(guid'" + body.UUID + "')"
-	err = checkStatus(con, client)
+	err = checkStatus(con, client, com)
 
 	if err == nil {
 		log.Entry().Info("Created tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
@@ -131,9 +131,9 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	return err
 }
 
-func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (err error) {
+func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
 	status := "R"
-	pollIntervall := 3 * time.Second
+	pollIntervall := com.GetPollIntervall()
 	count := 0
 	for {
 		count += 1
