@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const testCorrelationID = "1234"
-
 func TestANSHook_Levels(t *testing.T) {
 	hook, _ := newANSHook(ans.Configuration{}, "", &ansMock{})
 	assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
@@ -143,10 +141,9 @@ func TestANSHook_newANSHook(t *testing.T) {
 func TestANSHook_Fire(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		correlationID string
-		levels        []logrus.Level
-		event         ans.Event
-		firing        bool
+		levels []logrus.Level
+		event  ans.Event
+		firing bool
 	}
 	tests := []struct {
 		name      string
@@ -155,129 +152,57 @@ func TestANSHook_Fire(t *testing.T) {
 		wantEvent ans.Event
 	}{
 		{
-			name: "Straight forward test",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-			},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.WarnLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "my log message",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
-			},
-			wantEvent: ans.Event{
-				EventType:      "Piper",
-				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC).Unix(),
-				Severity:       "WARNING",
-				Category:       "ALERT",
-				Subject:        "testStep",
-				Body:           "my log message",
-				Resource: &ans.Resource{
-					ResourceType: "Pipeline",
-					ResourceName: "Pipeline",
-				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
-			},
+			name:      "Straight forward test",
+			fields:    fields{event: defaultEvent()},
+			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
+			wantEvent: defaultResultingEvent(),
 		},
 		{
 			name: "Event already set",
 			fields: fields{
-				correlationID: testCorrelationID,
 				event: mergeEvents(t, defaultEvent(), ans.Event{
 					EventType: "My event type",
 					Subject:   "My subject line",
 					Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
 				}),
 			},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.WarnLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "my log message",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
-			},
-			wantEvent: ans.Event{
-				EventType:      "My event type",
-				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC).Unix(),
-				Severity:       "WARNING",
-				Category:       "ALERT",
-				Subject:        "My subject line",
-				Body:           "my log message",
-				Resource: &ans.Resource{
-					ResourceType: "Pipeline",
-					ResourceName: "Pipeline",
-				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning", "Some": 1.0, "Additional": "a string", "Tags": true},
-			},
+			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
+			wantEvent: mergeEvents(t, defaultResultingEvent(), ans.Event{
+				EventType: "My event type",
+				Subject:   "My subject line",
+				Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
+			}),
 		},
 		{
-			name: "Log entries should not affect each other",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-			},
+			name:   "Log entries should not affect each other",
+			fields: fields{event: defaultEvent()},
 			entryArgs: []*logrus.Entry{
 				{
-					Level:   logrus.InfoLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "my log message",
+					Level:   logrus.ErrorLevel,
+					Time:    defaultTime.Add(1234),
+					Message: "first log message",
 					Data:    map[string]interface{}{"stepName": "testStep", "this entry": "should only be part of this event"},
 				},
-				{
-					Level:   logrus.WarnLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 8, time.UTC),
-					Message: "another message",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
+				defaultLogrusEntry(),
 			},
-			wantEvent: ans.Event{
-				EventType:      "Piper",
-				EventTimestamp: time.Date(2001, 2, 3, 4, 5, 6, 8, time.UTC).Unix(),
-				Severity:       "WARNING",
-				Category:       "ALERT",
-				Subject:        "testStep",
-				Body:           "another message",
-				Resource: &ans.Resource{
-					ResourceType: "Pipeline",
-					ResourceName: "Pipeline",
-				},
-				Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
-			},
+			wantEvent: defaultResultingEvent(),
 		},
 		{
-			name: "White space messages should not send",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-			},
+			name:   "White space messages should not send",
+			fields: fields{event: defaultEvent()},
 			entryArgs: []*logrus.Entry{
 				{
 					Level:   logrus.ErrorLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
+					Time:    defaultTime,
 					Message: "   ",
 					Data:    map[string]interface{}{"stepName": "testStep"},
 				},
 			},
 		},
 		{
-			name: "Should not fire twice",
-			fields: fields{
-				correlationID: testCorrelationID,
-				event:         defaultEvent(),
-				firing:        true,
-			},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.ErrorLevel,
-					Time:    time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC),
-					Message: "   ",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
-			},
+			name:      "Should not fire twice",
+			fields:    fields{firing: true, event: defaultEvent()},
+			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
 		},
 	}
 	for _, tt := range tests {
@@ -301,6 +226,10 @@ func TestANSHook_Fire(t *testing.T) {
 	}
 }
 
+const testCorrelationID = "1234"
+
+var defaultTime = time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC)
+
 func defaultEvent() ans.Event {
 	return ans.Event{
 		EventType: "Piper",
@@ -309,6 +238,30 @@ func defaultEvent() ans.Event {
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
+	}
+}
+func defaultResultingEvent() ans.Event {
+	return ans.Event{
+		EventType:      "Piper",
+		EventTimestamp: defaultTime.Unix(),
+		Severity:       "WARNING",
+		Category:       "ALERT",
+		Subject:        "testStep",
+		Body:           "my log message",
+		Resource: &ans.Resource{
+			ResourceType: "Pipeline",
+			ResourceName: "Pipeline",
+		},
+		Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
+	}
+}
+
+func defaultLogrusEntry() *logrus.Entry {
+	return &logrus.Entry{
+		Level:   logrus.WarnLevel,
+		Time:    defaultTime,
+		Message: "my log message",
+		Data:    map[string]interface{}{"stepName": "testStep"},
 	}
 }
 
