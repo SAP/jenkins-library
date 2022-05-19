@@ -56,8 +56,8 @@ type PhysicalLocation struct {
 // ArtifactLocation describing the path of the artifact
 type ArtifactLocation struct {
 	URI       string `json:"uri"`
-	URIBaseId string `json:"uriBaseId"`
-	Index     int    `json:"index"`
+	URIBaseId string `json:"uriBaseId,omitempty"`
+	Index     int    `json:"index,omitempty"`
 }
 
 // Region where the finding was detected
@@ -265,9 +265,9 @@ type SrcRoot struct {
 // Artifact These structs are relevant to the artifacts object
 type Artifact struct {
 	Location SarifLocation `json:"location"`
-	Length   int           `json:"length"`
-	MimeType string        `json:"mimeType"`
-	Encoding string        `json:"encoding"`
+	Length   int           `json:"length,omitempty"`
+	MimeType string        `json:"mimeType,omitempty"`
+	Encoding string        `json:"encoding,omitempty"`
 }
 
 // SarifLocation
