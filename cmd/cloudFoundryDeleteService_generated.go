@@ -236,7 +236,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli:7", WorkingDir: "/home/piper"},
+				{Name: "cf", Image: "ppiper/cf-cli:latest", WorkingDir: "/home/piper"},
 			},
 		},
 	}
