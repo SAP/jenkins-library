@@ -19,7 +19,7 @@ func containerSaveImage(config containerSaveImageOptions, telemetryData *telemet
 
 	fileUtils := piperutils.Files{}
 
-	dClientOptions := piperDocker.ClientOptions{ImageName: config.ContainerImage, RegistryURL: config.ContainerRegistryURL, LocalPath: config.FilePath}
+	dClientOptions := piperDocker.ClientOptions{ImageName: config.ContainerImage, RegistryURL: config.ContainerRegistryURL, LocalPath: config.FilePath, ImageFormat: config.ImageFormat}
 	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
 
@@ -40,6 +40,10 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 		tarfilePath = filenameFromContainer(rootPath, config.ContainerImage)
 	} else {
 		tarfilePath = filepath.Join(rootPath, tarfilePath)
+		// tarfilePath is passed as project name that will not consist of the .tar extension hence adding the extension and replacing spaces with _
+		if fileExtension := filepath.Ext(tarfilePath); fileExtension != ".tar" {
+			tarfilePath = fmt.Sprintf("%s.tar", tarfilePath)
+		}
 	}
 
 	log.Entry().Infof("Downloading '%s' to '%s'", config.ContainerImage, tarfilePath)
