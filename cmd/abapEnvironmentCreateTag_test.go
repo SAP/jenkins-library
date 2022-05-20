@@ -207,8 +207,9 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 1, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
+		assert.Equal(t, 2, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Not all required values are provided to create an addon product version tag`, hook.AllEntries()[0].Message, "Expected a different message")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
 		hook.Reset()
 	})
 
@@ -274,18 +275,10 @@ repositories:
 			StatusCode: 200,
 		}
 
-		_, hook := test.NewNullLogger()
-		log.RegisterHook(hook)
-
 		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
 
-		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 4, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
-		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message, "Expected a different message")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC2 with commitID 1234abcde`, hook.AllEntries()[3].Message, "Expected a different message")
-		hook.Reset()
+		assert.Error(t, err, "Did expect error")
+		assert.Equal(t, "Something failed during the tag creation: Configuring the parameter repositories and the parameter repositoryName at the same time is not allowed", err.Error(), "Expected different error message")
 
 	})
 
@@ -326,8 +319,6 @@ repositories:
 			Password:                            "dummy",
 			Host:                                "https://test.com",
 			Repositories:                        "repo.yml",
-			RepositoryName:                      "/DMO/SWC2",
-			CommitID:                            "1234abcde",
 			TagName:                             "tag",
 			TagDescription:                      "desc",
 			GenerateTagForAddonProductVersion:   false,
@@ -351,9 +342,8 @@ repositories:
 		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 2, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, 1, len(hook.Entries), "Expected a different number of entries")
 		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC2 with commitID 1234abcde`, hook.AllEntries()[1].Message, "Expected a different message")
 		hook.Reset()
 
 	})

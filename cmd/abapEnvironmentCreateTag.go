@@ -176,6 +176,10 @@ func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, c
 
 func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTagBacklog, err error) {
 
+	if config.Repositories != "" && config.RepositoryName != "" {
+		return nil, errors.New("Configuring the parameter repositories and the parameter repositoryName at the same time is not allowed")
+	}
+
 	descriptor := abaputils.AddonDescriptor{}
 	repos := []abaputils.Repository{}
 	if config.Repositories != "" {
