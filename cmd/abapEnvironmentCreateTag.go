@@ -72,8 +72,7 @@ func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData,
 	connection.URL = con.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Tags"
 	resp, err := abaputils.GetHTTPResponse("HEAD", connection, nil, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", con)
-		return err
+		return abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", con)
 	}
 	defer resp.Body.Close()
 
