@@ -95,7 +95,8 @@ func TestANSHook_newANSHook(t *testing.T) {
 }
 
 func TestANSHook_Fire(t *testing.T) {
-	t.Parallel()
+	SetErrorCategory(ErrorTest)
+	defer SetErrorCategory(ErrorUndefined)
 	type fields struct {
 		levels       []logrus.Level
 		defaultEvent ans.Event
@@ -164,16 +165,14 @@ func TestANSHook_Fire(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			clientMock := ansMock{}
+			defer clientMock.cleanup()
 			ansHook := &ANSHook{
 				client:       &clientMock,
 				defaultEvent: tt.fields.defaultEvent,
 				firing:       tt.fields.firing,
 			}
-			defer clientMock.cleanup()
 			for _, entryArg := range tt.entryArgs {
 				originalLogLevel := entryArg.Level
 				if err := ansHook.Fire(entryArg); err != nil {
@@ -213,7 +212,7 @@ func defaultResultingEvent() ans.Event {
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
-		Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning"},
+		Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning", "errorCategory": "test"},
 	}
 }
 
