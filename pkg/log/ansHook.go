@@ -23,15 +23,14 @@ func NewANSHook(config ans.Configuration, correlationID string) (hook ANSHook, e
 }
 
 func newANSHook(config ans.Configuration, correlationID string, client ans.Client) (hook ANSHook, err error) {
-	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(config.ServiceKey)
-	if err != nil {
+	var ansServiceKey ans.ServiceKey
+	ansServiceKey, err = ans.UnmarshallServiceKeyJSON(config.ServiceKey); if err != nil {
 		err = errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
 		return
 	}
 	client.SetOptions(ansServiceKey)
 
-	err = client.CheckCorrectSetup()
-	if err != nil {
+	err = client.CheckCorrectSetup(); if err != nil {
 		err = errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
 		return
 	}
@@ -45,12 +44,10 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 		},
 	}
 	if len(config.EventTemplateFilePath) > 0 {
-		eventTemplateString, err := ioutil.ReadFile(config.EventTemplateFilePath)
-		if err != nil {
+		eventTemplateString, err := ioutil.ReadFile(config.EventTemplateFilePath); if err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template file with path '%s' could not be read: %v", config.EventTemplateFilePath, err)
 		} else {
-			err = event.MergeWithJSON(eventTemplateString)
-			if err != nil {
+			err = event.MergeWithJSON(eventTemplateString); if err != nil {
 				Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", eventTemplateString, err)
 			}
 		}
@@ -73,7 +70,7 @@ func (ansHook *ANSHook) Levels() []logrus.Level {
 }
 
 // Fire creates a new event from the logrus and sends an event to the ANS backend
-func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
+func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	if ansHook.firing {
 		return fmt.Errorf("ANS hook has already been fired")
 	}
@@ -81,11 +78,11 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	defer func() { ansHook.firing = false }()
 
 	if len(strings.TrimSpace(entry.Message)) == 0 {
-		return nil
+		return
 	}
-	event, err := copyEvent(ansHook.defaultEvent)
-	if err != nil {
-		return err
+	var event ans.Event
+	event, err = copyEvent(ansHook.defaultEvent); if err != nil {
+		return
 	}
 
 	logLevel := entry.Level
@@ -104,16 +101,12 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) error {
 	event.SetSeverityAndCategory(logLevel)
 	event.Tags["logLevel"] = logLevel.String()
 
-	err = ansHook.client.Send(event)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ansHook.client.Send(event)
 }
 
 func copyEvent(source ans.Event) (destination ans.Event, err error) {
-	sourceJSON, err := json.Marshal(source)
-	if err != nil {
+	var sourceJSON []byte
+	sourceJSON, err = json.Marshal(source); if err != nil {
 		return
 	}
 	err = destination.MergeWithJSON(sourceJSON)
