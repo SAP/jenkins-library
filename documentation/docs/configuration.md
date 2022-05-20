@@ -118,23 +118,41 @@ Alert Notification service:
 For more information and an example of the structure of an alert
 notification service event, see
 [SAP Alert Notification Service Events](https://help.sap.com/viewer/5967a369d4b74f7a9c2b91f5df8e6ab6/Cloud/en-US/eaaa37e6ff62486ebb849507dc33abc6.html)
-on SAP Help Portal.
+in the SAP Help Portal.
 
 ### SAP Alert Notification service configuration
 
+There are two options that can be configured: the mandatory service-key and
+the optional event template.
+
+#### Service-Key
+
 The SAP Alert Notification service service-key needs to be present in the
-environment, where the "Piper" binary is run. The environment variable used
-is: `PIPER_ansServiceKey`
+environment, where the "Piper" binary is run. See the
+[Credential Management guide](https://help.sap.com/docs/ALERT_NOTIFICATION/5967a369d4b74f7a9c2b91f5df8e6ab6/80fe24f86bde4e3aac2903ac05511835.html?locale=en-US)
+in the SAP Help Portal on how to retrieve an alert notification service
+service-key. The environment variable used is: `PIPER_ansHookServiceKey`,
+or, if that is not present: `PIPER_ansServiceKey`.
 
 If Jenkins is used to run "Piper", you can use the Jenkins credential store
 to store the alert notification service service-key as a "Secret Text"
-credential. Provide the credential id in the configuration file as follows:
+credential. Provide the credential id in the configuration file in the `hooks`
+section as follows:
 
 ```yaml
 hooks:
   ans:
     serviceKeyCredentialsId: 'my_ANS_Service_Key'
 ```
+
+Or alternatively in the `general` section as follows:
+
+```yaml
+general:
+    ansServiceKeyCredentialsId: 'my_ANS_Service_Key'
+```
+
+#### Event template
 
 You can also create an event template in JSON format to overwrite or add
 certain event details. There are two ways to do this:
