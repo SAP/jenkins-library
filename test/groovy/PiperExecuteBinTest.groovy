@@ -155,11 +155,35 @@ class PiperExecuteBinTest extends BasePiperTest {
     }
 
     @Test
-    void testPiperExecuteBinANSCredentials() {
+    void testPiperExecuteBinANSCredentialsFromHooksSection() {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
 
         def newScript = nullScript
         newScript.commonPipelineEnvironment.configuration.hooks = [ans: [serviceKeyCredentialsId: "ansServiceKeyID"]]
+
+        List stepCredentials = []
+        stepRule.step.piperExecuteBin(
+                [
+                        juStabUtils: utils,
+                        jenkinsUtilsStub: jenkinsUtils,
+                        testParam: "This is test content",
+                        script: newScript
+                ],
+                'testStep',
+                'metadata/test.yaml',
+                stepCredentials
+        )
+        // asserts
+        assertThat(credentials.size(), is(1))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'ansServiceKeyID'), hasEntry('variable', 'PIPER_ansHookServiceKey')))
+    }
+
+    @Test
+    void testPiperExecuteBinANSCredentialsFromGeneralSection() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
+
+        def newScript = nullScript
+        newScript.commonPipelineEnvironment.configuration.general = [ansServiceKeyCredentialsId: "ansServiceKeyID"]
 
         List stepCredentials = []
         stepRule.step.piperExecuteBin(
