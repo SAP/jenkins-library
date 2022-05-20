@@ -2,6 +2,7 @@ package log
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/sirupsen/logrus"
@@ -28,8 +29,9 @@ func TestANSHook_newANSHook(t *testing.T) {
 		name                     string
 		args                     args
 		eventTemplateFileContent string
+		checkErr                 error
 		wantEvent                ans.Event
-		wantErr                  bool
+		wantErrMsg               string
 	}{
 		{
 			name:      "Straight forward test",
@@ -37,8 +39,14 @@ func TestANSHook_newANSHook(t *testing.T) {
 			wantEvent: defaultEvent(),
 		},
 		{
-			name:    "No service key yields error",
-			wantErr: true,
+			name:       "No service key yields error",
+			wantErrMsg: "cannot initialize SAP Alert Notification Service due to faulty serviceKey json: error unmarshalling ANS serviceKey: unexpected end of JSON input",
+		},
+		{
+			name:       "Fails on check error",
+			args:       args{serviceKey: defaultServiceKeyJSON},
+			wantErrMsg: "check http request to SAP Alert Notification Service failed; not setting up the ANS hook: check failed",
+			checkErr:   fmt.Errorf("check failed"),
 		},
 		{
 			name:                     "With event template as file",
@@ -59,6 +67,7 @@ func TestANSHook_newANSHook(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			var testEventTemplateFilePath string
@@ -72,12 +81,12 @@ func TestANSHook_newANSHook(t *testing.T) {
 				EventTemplateFilePath: testEventTemplateFilePath,
 				EventTemplate:         tt.args.eventTemplate,
 			}
-			clientMock := &ansMock{}
+			clientMock := &ansMock{checkErr: tt.checkErr}
 			defer clientMock.cleanup()
-			if got, err := newANSHook(ansConfig, testCorrelationID, clientMock); tt.wantErr {
-				assert.Error(t, err, "An error was expected here")
+			if got, err := newANSHook(ansConfig, testCorrelationID, clientMock); err != nil {
+				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
 			} else {
-				require.NoError(t, err, "No error was expected here")
+				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
 				assert.Equal(t, defaultANSClient(), clientMock.testANS, "new ANSHook not as expected")
 				assert.Equal(t, tt.wantEvent, got.event, "new ANSHook not as expected")
 			}
@@ -250,6 +259,7 @@ func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
 type ansMock struct {
 	testANS   *ans.ANS
 	testEvent ans.Event
+	checkErr  error
 }
 
 func (am *ansMock) Send(event ans.Event) error {
@@ -258,7 +268,7 @@ func (am *ansMock) Send(event ans.Event) error {
 }
 
 func (am *ansMock) CheckCorrectSetup() error {
-	return nil
+	return am.checkErr
 }
 
 func (am *ansMock) SetOptions(serviceKey ans.ServiceKey) {
@@ -268,5 +278,5 @@ func (am *ansMock) SetOptions(serviceKey ans.ServiceKey) {
 }
 
 func (am *ansMock) cleanup() {
-	am.testANS = &ans.ANS{}
+	am = &ansMock{}
 }

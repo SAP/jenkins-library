@@ -30,6 +30,12 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 	}
 	client.SetOptions(ansServiceKey)
 
+	err = client.CheckCorrectSetup()
+	if err != nil {
+		err = errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
+		return
+	}
+
 	event := ans.Event{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
@@ -54,15 +60,11 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
 		}
 	}
-	h := ANSHook{
+	hook = ANSHook{
 		client: client,
 		event:  event,
 	}
-	err = h.client.CheckCorrectSetup()
-	if err != nil {
-		return
-	}
-	return h, nil
+	return
 }
 
 // Levels returns the supported log level of the hook.
