@@ -99,8 +99,16 @@ func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData,
 
 func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
 
+	errorOccurred := false
 	for index := range item.tags {
 		err = createSingleTag(item, index, telemetryData, con, client, com)
+		if err != nil {
+			errorOccurred = true
+		}
+	}
+	if errorOccurred {
+		message := "At least one tag has not been created"
+		err = errors.New(message)
 	}
 	return err
 }
