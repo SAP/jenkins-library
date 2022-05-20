@@ -69,7 +69,8 @@ certain delivery channels, for example, e-mail or triggering of HTTP
 requests, to receive notifications from pipeline events. If the alert
 notification service service-key is properly configured in "Piper", any "Piper"
 step implemented in golang will send log data to the alert notification
-service backend.
+service backend for log levels higher than warnings, i.e. warnings, error,
+fatal and panic.
 
 The SAP Alert Notification service event properties are defined depending on the
 log entry content as follows:
