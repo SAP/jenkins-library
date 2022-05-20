@@ -202,7 +202,7 @@ spec:
           - type: vaultSecret
             name: protecodeVaultSecretName
             default: protecode
-      - name: userApiKey
+      - name: userAPIKey
         type: string
         description: User API key which is used for API calls. Replacement for username and password / basic authentication.
         scope:
@@ -213,7 +213,7 @@ spec:
         resourceRef:
           - name: protecodeApiKeyCredentialsId
             type: secret
-            param: userApiKey
+            param: userAPIKey
           - type: vaultSecret
             name: protecodeApiKeyVaultSecretName
             default: protecode

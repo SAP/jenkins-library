@@ -306,7 +306,7 @@ func createProtecodeClient(config *protecodeExecuteScanOptions) protecode.Protec
 		Duration:   duration,
 		Username:   config.Username,
 		Password:   config.Password,
-		UserApiKey: config.UserAPIKey,
+		UserAPIKey: config.UserAPIKey,
 	}
 
 	pc.SetOptions(protecodeOptions)

@@ -38,7 +38,7 @@ type protecodeExecuteScanOptions struct {
 	ReplaceProductID            int    `json:"replaceProductId,omitempty"`
 	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
-	UserAPIKey                  string `json:"userApiKey,omitempty"`
+	UserAPIKey                  string `json:"userAPIKey,omitempty"`
 	Version                     string `json:"version,omitempty"`
 	CustomScanVersion           string `json:"customScanVersion,omitempty"`
 	VersioningModel             string `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
@@ -252,7 +252,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().IntVar(&stepConfig.ReplaceProductID, "replaceProductId", 0, "Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds. If product id is not specified, then Piper starts auto detection mechanism, more precisely it searches a product id with scanned product name in that specified group, if there are several scans have been done with the same product name then the latest scan id will be fetched from BDBA backend. After obtaining product id, Piper re-uploads / replaces new binary without affecting already existing product id.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
-	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userApiKey", os.Getenv("PIPER_userApiKey"), "User API key which is used for API calls. Replacement for username and password / basic authentication.")
+	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userAPIKey", os.Getenv("PIPER_userAPIKey"), "User API key which is used for API calls. Replacement for username and password / basic authentication.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
@@ -475,11 +475,11 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name: "userApiKey",
+						Name: "userAPIKey",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "protecodeApiKeyCredentialsId",
-								Param: "userApiKey",
+								Param: "userAPIKey",
 								Type:  "secret",
 							},
 
@@ -493,7 +493,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_userApiKey"),
+						Default:   os.Getenv("PIPER_userAPIKey"),
 					},
 					{
 						Name: "version",

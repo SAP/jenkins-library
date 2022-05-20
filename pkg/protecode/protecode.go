@@ -80,7 +80,7 @@ type Triage struct {
 type User struct {
 	ID        int    `json:"id,omitempty"`
 	Email     string `json:"email,omitempty"`
-	Girstname string `json:"firstname,omitempty"`
+	Firstname string `json:"firstname,omitempty"`
 	Lastname  string `json:"lastname,omitempty"`
 	Username  string `json:"username,omitempty"`
 }
@@ -107,7 +107,7 @@ type Options struct {
 	Duration   time.Duration
 	Username   string
 	Password   string
-	UserApiKey string
+	UserAPIKey string
 	Logger     *logrus.Entry
 }
 
@@ -125,9 +125,9 @@ func (pc *Protecode) SetOptions(options Options) {
 
 	httpOptions := piperHttp.ClientOptions{MaxRequestDuration: options.Duration, Logger: options.Logger}
 
-	// If userApiKey is not empty then we will use it for user authentication, instead of username & password
-	if options.UserApiKey != "" {
-		httpOptions.Token = "Bearer " + options.UserApiKey
+	// If userAPIKey is not empty then we will use it for user authentication, instead of username & password
+	if options.UserAPIKey != "" {
+		httpOptions.Token = "Bearer " + options.UserAPIKey
 	} else {
 		httpOptions.Username = options.Username
 		httpOptions.Password = options.Password
