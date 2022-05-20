@@ -60,9 +60,7 @@ func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, teleme
 		return fmt.Errorf("Something failed during the tag creation: %w", errorPrepare)
 	}
 
-	err := createTags(backlog, telemetryData, connectionDetails, client, com)
-
-	return err
+	return createTags(backlog, telemetryData, connectionDetails, client, com)
 }
 
 func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
