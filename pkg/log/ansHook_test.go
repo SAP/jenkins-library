@@ -88,7 +88,7 @@ func TestANSHook_newANSHook(t *testing.T) {
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
 				assert.Equal(t, defaultANSClient(), clientMock.testANS, "new ANSHook not as expected")
-				assert.Equal(t, tt.wantEvent, got.event, "new ANSHook not as expected")
+				assert.Equal(t, tt.wantEvent, got.defaultEvent, "new ANSHook not as expected")
 			}
 		})
 	}
@@ -97,9 +97,9 @@ func TestANSHook_newANSHook(t *testing.T) {
 func TestANSHook_Fire(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		levels []logrus.Level
-		event  ans.Event
-		firing bool
+		levels       []logrus.Level
+		defaultEvent ans.Event
+		firing       bool
 	}
 	tests := []struct {
 		name       string
@@ -110,14 +110,14 @@ func TestANSHook_Fire(t *testing.T) {
 	}{
 		{
 			name:      "Straight forward test",
-			fields:    fields{event: defaultEvent()},
+			fields:    fields{defaultEvent: defaultEvent()},
 			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
 			wantEvent: defaultResultingEvent(),
 		},
 		{
 			name: "Event already set",
 			fields: fields{
-				event: mergeEvents(t, defaultEvent(), ans.Event{
+				defaultEvent: mergeEvents(t, defaultEvent(), ans.Event{
 					EventType: "My event type",
 					Subject:   "My subject line",
 					Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
@@ -132,7 +132,7 @@ func TestANSHook_Fire(t *testing.T) {
 		},
 		{
 			name:   "Log entries should not affect each other",
-			fields: fields{event: defaultEvent()},
+			fields: fields{defaultEvent: defaultEvent()},
 			entryArgs: []*logrus.Entry{
 				{
 					Level:   logrus.ErrorLevel,
@@ -146,7 +146,7 @@ func TestANSHook_Fire(t *testing.T) {
 		},
 		{
 			name:   "White space messages should not send",
-			fields: fields{event: defaultEvent()},
+			fields: fields{defaultEvent: defaultEvent()},
 			entryArgs: []*logrus.Entry{
 				{
 					Level:   logrus.ErrorLevel,
@@ -158,7 +158,7 @@ func TestANSHook_Fire(t *testing.T) {
 		},
 		{
 			name:       "Should not fire twice",
-			fields:     fields{firing: true, event: defaultEvent()},
+			fields:     fields{firing: true, defaultEvent: defaultEvent()},
 			entryArgs:  []*logrus.Entry{defaultLogrusEntry()},
 			wantErrMsg: "ANS hook has already been fired",
 		},
@@ -169,9 +169,9 @@ func TestANSHook_Fire(t *testing.T) {
 			t.Parallel()
 			clientMock := ansMock{}
 			ansHook := &ANSHook{
-				client: &clientMock,
-				event:  tt.fields.event,
-				firing: tt.fields.firing,
+				client:       &clientMock,
+				defaultEvent: tt.fields.defaultEvent,
+				firing:       tt.fields.firing,
 			}
 			defer clientMock.cleanup()
 			for _, entryArg := range tt.entryArgs {
