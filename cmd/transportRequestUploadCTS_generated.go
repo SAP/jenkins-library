@@ -108,7 +108,12 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 			}
 
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
-				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
+				// Try ANS hook specific service key
+				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
+				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+					// Try ANS service key from step implementation
+					GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
+				}
 			}
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
 				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
