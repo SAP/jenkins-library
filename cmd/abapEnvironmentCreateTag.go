@@ -29,8 +29,7 @@ func abapEnvironmentCreateTag(config abapEnvironmentCreateTagOptions, telemetryD
 
 	client := piperhttp.Client{}
 
-	err := runAbapEnvironmentCreateTag(&config, telemetryData, &autils, &client)
-	if err != nil {
+	if err := runAbapEnvironmentCreateTag(&config, telemetryData, &autils, &client); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
@@ -116,7 +115,6 @@ func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.Cus
 func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
 
 	requestBodyStruct := CreateTagBody{RepositoryName: item.repositoryName, CommitID: item.commitID, Tag: item.tags[index].tagName, Description: item.tags[index].tagDescription}
-	errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
 	requestBodyJson, err := json.Marshal(&requestBodyStruct)
 	if err != nil {
 		return err
@@ -125,6 +123,7 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	log.Entry().Debugf("Request body: %s", requestBodyJson)
 	resp, err := abaputils.GetHTTPResponse("POST", con, requestBodyJson, client)
 	if err != nil {
+		errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
 		err = abaputils.HandleHTTPError(resp, err, errorMessage, con)
 		return err
 	}
@@ -135,8 +134,12 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	var abapResp map[string]*json.RawMessage
 	bodyText, _ := ioutil.ReadAll(resp.Body)
 
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	if err = json.Unmarshal(bodyText, &abapResp); err != nil {
+		return err
+	}
+	if err = json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return err
+	}
 
 	con.URL = con.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(guid'" + body.UUID + "')"
 	err = checkStatus(con, client, com)
