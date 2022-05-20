@@ -194,11 +194,11 @@ func TestANS_readResponseBody(t *testing.T) {
 	}
 }
 
-func TestANS_SetOptions(t *testing.T) {
+func TestANS_SetServiceKey(t *testing.T) {
 	t.Run("ServiceKey sets ANS fields", func(t *testing.T) {
 		gotANS := &ANS{}
 		serviceKey := ServiceKey{Url: "https://my.test.backend", ClientId: "myTestClientID", ClientSecret: "super secret", OauthUrl: "https://my.test.oauth.provider"}
-		gotANS.SetOptions(serviceKey)
+		gotANS.SetServiceKey(serviceKey)
 		wantANS := &ANS{
 			XSUAA: xsuaa.XSUAA{
 				OAuthURL:     "https://my.test.oauth.provider",
