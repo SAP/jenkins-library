@@ -168,11 +168,15 @@ func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, c
 
 func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTagBacklog, err error) {
 
-	descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
-	if err != nil {
-		return
+	descriptor := abaputils.AddonDescriptor{}
+	repos := []abaputils.Repository{}
+	if config.Repositories != "" {
+		descriptor, err = abaputils.ReadAddonDescriptor(config.Repositories)
+		if err != nil {
+			return nil, err
+		}
+		repos = descriptor.Repositories
 	}
-	repos := descriptor.Repositories
 
 	for _, repo := range repos {
 
