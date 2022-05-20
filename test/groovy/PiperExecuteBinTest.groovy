@@ -161,8 +161,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         def newScript = nullScript
         newScript.commonPipelineEnvironment.configuration.hooks = [ans: [serviceKeyCredentialsId: "ansServiceKeyID"]]
 
-        List stepCredentials = [
-        ]
+        List stepCredentials = []
         stepRule.step.piperExecuteBin(
                 [
                         juStabUtils: utils,
@@ -176,7 +175,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         )
         // asserts
         assertThat(credentials.size(), is(1))
-        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'ansServiceKeyID'), hasEntry('variable', 'PIPER_ansServiceKey')))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'ansServiceKeyID'), hasEntry('variable', 'PIPER_ansHookServiceKey')))
     }
 
     @Test
