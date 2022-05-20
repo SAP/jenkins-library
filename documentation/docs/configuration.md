@@ -178,6 +178,9 @@ If both event templates are defined they are merged together. Meaning that any
 fields already defined by the JSON file will be overwritten by the
 environment JSON string.
 
+The event body, timestamp, severity and category cannot be set via the
+template. They are always set from the log entry.
+
 ## Collecting telemetry and logging data for Splunk
 
 Splunk gives the ability to analyze any kind of logging information and to visualize the retrieved information in dashboards.
