@@ -2,6 +2,8 @@
 
 ## ${docGenDescription}
 
+!!! Currently the Object Set configuration is limited to the usage of Multi Property Sets. Please note that other sets besides the Multi Property Set will not be included in the ATC runs. You can see an example of the Multi Property Sets with all configurable properties. However, we strongly reccommend to only specify packages and software components like in the first two examples of the section `ATC config file example`.
+
 ## Prerequisites
 
 * A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP BTP, ABAP Environment - Software Component Test Integration (SAP_COM_0510)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0510", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
@@ -88,7 +90,7 @@ The following section contains an example of an `atcconfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
 You can specify a list of packages and/or software components to be checked. This must be in the same format as below example for a `atcconfig.yml` file.
-For each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
+In case subpackages shall be included in the checks you can use packagetrees.
 Please note that if you chose to provide both packages and software components to be checked with the `atcconfig.yml` file, the set of packages and the set of software components will be combinend by the API using a logical AND operation.
 Therefore, we advise to specify either the software components or packages.
 Additionally, if you don't specify a dedicated ATC check variant to be used, the `ABAP_CLOUD_DEVELOPMENT_DEFAULT` variant will be used as default. For more information on how to configure a check variant for an ATC run please check the last example on this page.
@@ -96,44 +98,78 @@ Additionally, if you don't specify a dedicated ATC check variant to be used, the
 See below example for an `atcconfig.yml` file with both packages and software components to be checked:
 
 ```yaml
-atcobjects:
-  package:
-    - name: "TestPackage"
-      includesubpackage: false
-    - name: "TestPackage2"
-      includesubpackage: true
-  softwarecomponent:
-    - name: "TestComponent"
-    - name: "TestComponent2"
+objectset:
+  softwarecomponents:
+    - name: TestComponent
+    - name: TestComponent2  
+  packages:
+    - name: TestPackage
+  packagetrees:
+    - name: TestPackageWithSubpackages
 ```
 
-The following example of an `atcconfig.yml` file that only contains packages to be checked:
+The following example of an `atcconfig.yml` file that only contains packages and packagetrees to be checked:
 
 ```yaml
-atcobjects:
-  package:
-    - name: "TestPackage"
-      includesubpackage: false
-    - name: "TestPackage2"
-      includesubpackage: true
+objectset:
+  packages:
+    - name: TestPackage
+  packagetrees:
+    - name: TestPackageWithSubpackages
 ```
 
 The following example of an `atcconfig.yml` file that only contains software components to be checked:
 
 ```yaml
-atcobjects:
-  softwarecomponent:
-    - name: "TestComponent"
-    - name: "TestComponent2"
+objectset:
+  softwarecomponents:
+    - name: TestComponent
+    - name: TestComponent2
 ```
 
-The following is an example of an `atcconfig.yml` file that supports the check variant and configuration ATC options:
+The following is an example of an `atcconfig.yml` file that supports the check variant and configuration ATC options and containing the software components `TestComponent` and `TestComponent2` as Objectset.
 
 ```yaml
 checkvariant: "TestCheckVariant"
 configuration: "TestConfiguration"
-atcobjects:
-  softwarecomponent:
-    - name: "TestComponent"
-    - name: "TestComponent2"
+objectset:
+  softwarecomponents:
+    - name: TestComponent
+    - name: TestComponent2
+```
+
+The following example of an `atcconfig.yml` file contains all possible properties of the Multi Property Set that can be used. Please take note that this is not the reccommended approach. If you want to check packages or software components please use the two above examples. The usage of the Multi Property Set is only reccommended for ATC runs that require these rules for the test execution. There is no official documentation on the usage of the Multi Property Set.
+
+```yaml
+checkvariant: "TestCheckVariant"
+configuration: "TestConfiguration"
+objectset:
+  type: multiPropertySet
+  multipropertyset:
+    owners:
+      - name: demoOwner
+    softwarecomponents:
+      - name: demoSoftwareComponent
+    versions:
+      - value: ACTIVE
+    packages:
+      - name: demoPackage
+    packagetrees:
+      - name: TestPackageWithSubpackages
+    objectnamepatterns:
+      - value: 'ZCL_*'
+    languages:
+      - value: EN
+    sourcesystems:
+      - name: H01
+    objecttypes:
+      - name: CLAS
+    objecttypegroups:
+      - name: CLAS
+    releasestates:
+      - value: RELEASED
+    applicationcomponents:
+      - name: demoApplicationComponent
+    transportlayers:
+      - name: H01
 ```
