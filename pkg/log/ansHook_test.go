@@ -270,9 +270,9 @@ func (am *ansMock) CheckCorrectSetup() error {
 	return am.checkErr
 }
 
-func (am *ansMock) SetOptions(serviceKey ans.ServiceKey) {
+func (am *ansMock) SetServiceKey(serviceKey ans.ServiceKey) {
 	a := &ans.ANS{}
-	a.SetOptions(serviceKey)
+	a.SetServiceKey(serviceKey)
 	am.testANS = a
 }
 

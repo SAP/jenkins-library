@@ -28,7 +28,7 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 		err = errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
 		return
 	}
-	client.SetOptions(ansServiceKey)
+	client.SetServiceKey(ansServiceKey)
 
 	err = client.CheckCorrectSetup(); if err != nil {
 		err = errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
