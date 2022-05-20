@@ -49,7 +49,10 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             }
 
             //Add ANS credential information to the config
-            config += ["ansServiceKeyCredentialsId": script.commonPipelineEnvironment.configuration.hooks?.ans?.serviceKeyCredentialsId]
+            ansHookServiceKeyCredentialsId =
+                script.commonPipelineEnvironment.configuration.hooks?.ans?.serviceKeyCredentialsId ?:
+                    script.commonPipelineEnvironment.configuration.general?.ansServiceKeyCredentialsId
+            config += ["ansHookServiceKeyCredentialsId": ansHookServiceKeyCredentialsId]
 
             // prepare stashes
             // first eliminate empty stashes
@@ -260,8 +263,8 @@ List handleVaultCredentials(config, List credentialInfo) {
 }
 
 List handleANSCredentials(config, List credentialInfo){
-    if (config.containsKey('ansServiceKeyCredentialsId')) {
-        credentialInfo += [[type: 'token', id: 'ansServiceKeyCredentialsId', env: ['PIPER_ansServiceKey']]]
+    if (config.containsKey('ansHookServiceKeyCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'ansHookServiceKeyCredentialsId', env: ['PIPER_ansHookServiceKey']]]
     }
 
     return credentialInfo
