@@ -27,7 +27,7 @@ const toolKustomize = "kustomize"
 
 type iGitopsUpdateDeploymentGitUtils interface {
 	CommitFiles(filePaths []string, commitMessage, author string) (plumbing.Hash, error)
-	PushChangesToRepository(username, password string) error
+	PushChangesToRepository(username, password string, force *bool) error
 	PlainClone(username, password, serverURL, directory string) error
 	ChangeBranch(branchName string) error
 }
@@ -71,15 +71,15 @@ func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitM
 	return commit, nil
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string) error {
-	return gitUtil.PushChangesToRepository(username, password, g.repository)
+func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string, force *bool) error {
+	return gitUtil.PushChangesToRepository(username, password, force, g.repository)
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverURL, directory string) error {
 	var err error
 	g.repository, err = gitUtil.PlainClone(username, password, serverURL, directory)
 	if err != nil {
-		return errors.Wrap(err, "plain clone failed")
+		return errors.Wrapf(err, "plain clone failed '%s'", serverURL)
 	}
 	g.worktree, err = g.repository.Worktree()
 	return errors.Wrap(err, "failed to retrieve worktree")
@@ -390,18 +390,19 @@ func runHelmCommand(command gitopsUpdateDeploymentExecRunner, config *gitopsUpda
 func runKustomizeCommand(command gitopsUpdateDeploymentExecRunner, config *gitopsUpdateDeploymentOptions, filePath string) ([]byte, error) {
 	var kustomizeOutput = bytes.Buffer{}
 	command.Stdout(&kustomizeOutput)
+	registryImage, imageTag, err := buildRegistryPlusImageAndTagSeparately(config)
 
 	kustomizeParams := []string{
 		"edit",
 		"set",
 		"image",
-		config.DeploymentName + "=" + config.ContainerImageNameTag,
+		config.DeploymentName + "=" + registryImage + ":" + imageTag,
 	}
 
 	command.SetDir(filepath.Dir(filePath))
 
 	log.Entry().Infof("[kustomize] updating '%s'", filePath)
-	err := command.RunExecutable(toolKustomize, kustomizeParams...)
+	err = command.RunExecutable(toolKustomize, kustomizeParams...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute kustomize command")
 	}
@@ -459,7 +460,7 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 		return [20]byte{}, errors.Wrap(err, "committing changes failed")
 	}
 
-	err = gitUtils.PushChangesToRepository(config.Username, config.Password)
+	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush)
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "pushing changes failed")
 	}

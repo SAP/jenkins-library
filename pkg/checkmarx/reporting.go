@@ -1,12 +1,16 @@
 package checkmarx
 
 import (
+	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -14,11 +18,32 @@ import (
 	"github.com/pkg/errors"
 )
 
+type CheckmarxReportData struct {
+	ToolName           string `json:"toolName"`
+	ProjectName        string `json:"projectName"`
+	ProjectID          int64  `json:"projectID"`
+	ScanID             int64  `json:"scanID"`
+	TeamName           string `json:"teamName"`
+	TeamPath           string `json:"teamPath"`
+	DeepLink           string `json:"deepLink"`
+	Preset             string `json:"preset"`
+	CheckmarxVersion   string `json:"checkmarxVersion"`
+	ScanType           string `json:"scanType"`
+	HighTotal          int    `json:"highTotal"`
+	HighAudited        int    `json:"highAudited"`
+	MediumTotal        int    `json:"mediumTotal"`
+	MediumAudited      int    `json:"mediumAudited"`
+	LowTotal           int    `json:"lowTotal"`
+	LowAudited         int    `json:"lowAudited"`
+	InformationTotal   int    `json:"informationTotal"`
+	InformationAudited int    `json:"informationAudited"`
+}
+
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
-		Title: "Checkmarx SAST Report",
+		ReportTitle: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
 			{Description: "Project ID", Details: fmt.Sprint(data["ProjectID"])},
@@ -101,6 +126,92 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	scanReport.DetailTable = detailTable
 
 	return scanReport
+}
+
+func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
+	checkmarxReportData := CheckmarxReportData{
+		ToolName:         `checkmarx`,
+		ProjectName:      fmt.Sprint(data["ProjectName"]),
+		TeamName:         fmt.Sprint(data["Team"]),
+		TeamPath:         fmt.Sprint(data["TeamFullPathOnReportDate"]),
+		DeepLink:         fmt.Sprint(data["DeepLink"]),
+		Preset:           fmt.Sprint(data["Preset"]),
+		CheckmarxVersion: fmt.Sprint(data["CheckmarxVersion"]),
+		ScanType:         fmt.Sprint(data["ScanType"]),
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["ProjectId"]), 10, 64); err == nil {
+		checkmarxReportData.ProjectID = s
+	}
+
+	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanId"]), 10, 64); err == nil {
+		checkmarxReportData.ScanID = s
+	}
+
+	checkmarxReportData.HighAudited = data["High"].(map[string]int)["Issues"] - data["High"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.HighTotal = data["High"].(map[string]int)["Issues"]
+
+	checkmarxReportData.MediumAudited = data["Medium"].(map[string]int)["Issues"] - data["Medium"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.MediumTotal = data["Medium"].(map[string]int)["Issues"]
+
+	checkmarxReportData.LowAudited = data["Low"].(map[string]int)["Issues"] - data["Low"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.LowTotal = data["Low"].(map[string]int)["Issues"]
+
+	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Issues"] - data["Information"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.InformationTotal = data["Information"].(map[string]int)["Issues"]
+
+	return checkmarxReportData
+}
+
+func WriteJSONReport(jsonReport CheckmarxReportData) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	// Standard JSON Report
+	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_checkmarx_report.json")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	file, _ := json.Marshal(jsonReport)
+	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx JSON compliance report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx JSON Compliance Report", Target: jsonComplianceReportPath})
+
+	return reportPaths, nil
+}
+
+// WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
+func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
+	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx SARIF report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx SARIF Report", Target: sarifReportPath})
+
+	return reportPaths, nil
 }
 
 func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID string) ([]piperutils.Path, error) {

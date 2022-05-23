@@ -52,7 +52,6 @@ type whitesourceExecuteScanOptions struct {
 	ProjectToken                         string   `json:"projectToken,omitempty"`
 	Reporting                            bool     `json:"reporting,omitempty"`
 	ScanImage                            string   `json:"scanImage,omitempty"`
-	ScanImageIncludeLayers               bool     `json:"scanImageIncludeLayers,omitempty"`
 	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty"`
 	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
 	ServiceURL                           string   `json:"serviceUrl,omitempty"`
@@ -331,7 +330,6 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`. Used for project aggregation when scanning with the Unified Agent and can be provided as an alternative to `projectName`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
-	cmd.Flags().BoolVar(&stepConfig.ScanImageIncludeLayers, "scanImageIncludeLayers", true, "For `buildTool: docker`: Defines if layers should be included.")
 	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
@@ -346,7 +344,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
@@ -471,6 +469,11 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
 						},
@@ -483,6 +486,11 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{
 						Name: "containerRegistryUser",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
@@ -616,6 +624,12 @@ func whitesourceExecuteScanMetadata() config.StepData {
 								Name: "orgAdminUserTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:    "whitesourceVaultSecret",
+								Type:    "vaultSecret",
+								Default: "whitesource",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -695,15 +709,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_scanImage"),
-					},
-					{
-						Name:        "scanImageIncludeLayers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
 					},
 					{
 						Name: "scanImageRegistryUrl",
@@ -863,10 +868,10 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/optimizedAndScheduled",
+								Param: "custom/isOptimizedAndScheduled",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -889,7 +894,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 								Param: "github/owner",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
@@ -903,7 +908,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 								Param: "github/repository",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
@@ -932,7 +937,8 @@ func whitesourceExecuteScanMetadata() config.StepData {
 			Containers: []config.Container{
 				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "dub"}, {Name: "buildTool", Value: "docker"}}}}},
 				{Image: "devxci/mbtci-java11-node14", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "mta"}}}}},
-				{Image: "golang:1", WorkingDir: "/go", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "golang"}}}}},
+				{Image: "golang:1", WorkingDir: "/go", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "golang"}}}}},
+				{Image: "gradle", WorkingDir: "/home/gradle", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
 				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},

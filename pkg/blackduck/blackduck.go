@@ -14,6 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ReportsDirectory defines the subfolder for the Blackduck reports which are generated
+const ReportsDirectory = "blackduck"
+
 const (
 	HEADER_PROJECT_DETAILS_V4 = "application/vnd.blackducksoftware.project-detail-4+json"
 	HEADER_USER_V4            = "application/vnd.blackducksoftware.user-4+json"
@@ -86,6 +89,56 @@ type VulnerabilityWithRemediation struct {
 	RemediationStatus string  `json:"remediationStatus,omitempty"`
 	Description       string  `json:"description,omitempty"`
 	OverallScore      float32 `json:"overallScore,omitempty"`
+}
+
+// Title returns the issue title representation of the contents
+func (v Vulnerability) Title() string {
+	return fmt.Sprintf("%v/%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityWithRemediation.Severity, v.VulnerabilityName, v.Name, v.Version)
+}
+
+// ToMarkdown returns the markdown representation of the contents
+func (v Vulnerability) ToMarkdown() ([]byte, error) {
+	return []byte(fmt.Sprintf(
+		`**Vulnerability %v**
+| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
+`,
+		v.VulnerabilityWithRemediation.VulnerabilityName,
+		v.VulnerabilityWithRemediation.Severity,
+		v.VulnerabilityWithRemediation.BaseScore,
+		v.VulnerabilityWithRemediation.OverallScore,
+		v.Name,
+		v.Version,
+		v.Description,
+		"",
+		"",
+		"",
+	)), nil
+}
+
+// ToTxt returns the textual representation of the contents
+func (v Vulnerability) ToTxt() string {
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Base (NVD) Score: %v
+Temporal Score: %v
+Package: %v
+Installed Version: %v
+Description: %v
+Fix Resolution: %v
+Link: [%v](%v)`,
+		v.VulnerabilityName,
+		v.Severity,
+		v.VulnerabilityWithRemediation.BaseScore,
+		v.VulnerabilityWithRemediation.OverallScore,
+		v.Name,
+		v.Version,
+		v.Description,
+		"",
+		"",
+		"",
+	)
 }
 
 type PolicyStatus struct {
@@ -172,7 +225,9 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 		}
 	}
 
-	respBody, err := b.sendRequest("GET", versionPath, map[string]string{}, nil, headers)
+	//While sending a request to 'versions', get all 100 versions from that project by setting limit=100
+	//More than 100 project versions is currently not supported/recommended by Blackduck
+	respBody, err := b.sendRequest("GET", versionPath, map[string]string{"offset": "0", "limit": "100"}, nil, headers)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project version '%v:%v'", projectName, projectVersion)
 	}

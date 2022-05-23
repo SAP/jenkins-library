@@ -36,7 +36,6 @@ func TestSolmanCreateTransportRequest(t *testing.T) {
 					"--endpoint", "https://example.org/solman",
 					"--user", "me",
 					"--password", "******",
-					"--backend-type", "SOLMAN",
 					"create-transport",
 					"-cID", "123",
 					"-dID", "XXX~EXT_SRV",

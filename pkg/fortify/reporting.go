@@ -1,6 +1,7 @@
 package fortify
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 type FortifyReportData struct {
 	ToolName                            string                  `json:"toolName"`
 	ToolInstance                        string                  `json:"toolInstance"`
+	ProjectID                           int64                   `json:"projectID"`
 	ProjectName                         string                  `json:"projectName"`
 	ProjectVersion                      string                  `json:"projectVersion"`
 	ProjectVersionID                    int64                   `json:"projectVersionID"`
@@ -49,7 +51,7 @@ type SpotChecksAuditCount struct {
 func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVersionIssueGroup) reporting.ScanReport {
 
 	scanReport := reporting.ScanReport{
-		Title: "Fortify SAST Report",
+		ReportTitle: "Fortify SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Fortify project name", Details: data.ProjectName},
 			{Description: "Fortify project version", Details: data.ProjectVersion},
@@ -140,8 +142,21 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
 	}
 
-	file, _ := json.MarshalIndent(sarif, "", "  ")
-	if err := utils.FileWrite(sarifReportPath, file, 0666); err != nil {
+	// This solution did not allow for special HTML characters. If this causes any issue, revert l148-l157 with these two
+	/*file, _ := json.MarshalIndent(sarif, "", "  ")
+	if err := utils.FileWrite(sarifReportPath, file, 0666); err != nil {*/
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
+	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
 	}

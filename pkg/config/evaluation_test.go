@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -130,7 +132,103 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 3": false,
 	}
 
-	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock)
+	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock, ".pipeline")
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSteps, runConfig.RunSteps)
+	assert.Equal(t, expectedStages, runConfig.RunStages)
+
+}
+
+func TestNotActiveEvaluateConditionsV1(t *testing.T) {
+	filesMock := mock.FilesMock{}
+
+	runConfig := RunConfigV1{
+		PipelineConfig: PipelineDefinitionV1{
+			Spec: Spec{
+				Stages: []Stage{
+					{
+						Name:        "stage1",
+						DisplayName: "Test Stage 1",
+						Steps: []Step{
+							{
+								Name:          "step1_1",
+								Conditions:    []StepCondition{},
+								Orchestrators: []string{"Jenkins"},
+							},
+							{
+								Name: "step1_2",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKey"},
+								},
+								NotActiveConditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+								},
+							},
+							{
+								Name:       "step1_3",
+								Conditions: []StepCondition{},
+								NotActiveConditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
+							},
+						},
+					},
+					{
+						Name:        "stage2",
+						DisplayName: "Test Stage 2",
+						Steps: []Step{
+							{
+								Name: "step2_1",
+								Conditions: []StepCondition{
+									{ConfigKey: "testKeyNotExisting"},
+									{ConfigKey: "testKey"},
+								},
+							},
+						},
+					},
+					{
+						Name:        "stage3",
+						DisplayName: "Test Stage 3",
+						Steps: []Step{
+							{
+								Name: "step3_1",
+								NotActiveConditions: []StepCondition{
+									{ConfigKey: "testKey"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	config := Config{Stages: map[string]map[string]interface{}{
+		"Test Stage 1": {"testKey": "testVal"},
+		"Test Stage 2": {"testKey": "testVal"},
+		"Test Stage 3": {"testKey": "testVal"},
+	}}
+
+	expectedSteps := map[string]map[string]bool{
+		"Test Stage 1": {
+			"step1_2": true,
+			"step1_3": false,
+		},
+		"Test Stage 2": {
+			"step2_1": true,
+		},
+		"Test Stage 3": {
+			"step3_1": false,
+		},
+	}
+
+	expectedStages := map[string]bool{
+		"Test Stage 1": true,
+		"Test Stage 2": true,
+		"Test Stage 3": false,
+	}
+
+	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock, ".pipeline")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSteps, runConfig.RunSteps)
 	assert.Equal(t, expectedStages, runConfig.RunStages)
@@ -252,6 +350,18 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      true,
 		},
 		{
+			name:          "CommonPipelineEnvironment - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{CommonPipelineEnvironment: map[string]interface{}{"myCpeTrueFile": "myTrueValue"}},
+			expected:      true,
+		},
+		{
+			name:          "CommonPipelineEnvironment - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{CommonPipelineEnvironment: map[string]interface{}{"myCpeTrueFile": "notMyTrueValue"}},
+			expected:      false,
+		},
+		{
 			name:     "No condition - true",
 			config:   StepConfig{Config: map[string]interface{}{}},
 			expected: true,
@@ -269,9 +379,23 @@ func TestEvaluateV1(t *testing.T) {
 	filesMock.AddFile("my.postman_collection.json", []byte("{}"))
 	filesMock.AddFile("package.json", []byte(packageJson))
 
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal("Failed to create temporary directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(dir)
+
+	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
+	err = os.MkdirAll(cpeDir, 0700)
+	if err != nil {
+		t.Fatal("Failed to create sub directory")
+	}
+	ioutil.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0700)
+
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
-			active, err := test.stepCondition.evaluateV1(test.config, &filesMock)
+			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", dir)
 			if test.expectedError == nil {
 				assert.NoError(t, err)
 			} else {

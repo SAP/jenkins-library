@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 
@@ -57,7 +58,7 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 		responseBodyForURL: map[string]string{
 			"https://my.blackduck.system/api/tokens/authenticate":                                                                               authContent,
 			"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                   projectContent,
-			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions":                                            projectVersionContent,
+			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                         projectVersionContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?limit=999&offset=0":                                 componentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components?limit=999&offset=0":                  vulnerabilitiesContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?filter=policyCategory%3Alicense&limit=999&offset=0": componentsContent,
@@ -180,6 +181,10 @@ func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header
 		c.downloadedFiles = make(map[string]string)
 	}
 	c.downloadedFiles[url] = filename
+	return nil
+}
+
+func (w *detectTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
 	return nil
 }
 

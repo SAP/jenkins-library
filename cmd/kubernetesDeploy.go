@@ -9,17 +9,22 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
+	"helm.sh/helm/v3/pkg/cli/values"
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	utils := kubernetes.NewDeployUtilsBundle()
+	customTLSCertificateLinks := []string{}
+	utils := kubernetes.NewDeployUtilsBundle(customTLSCertificateLinks)
 
 	// error situations stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runKubernetesDeploy(config, telemetryData, utils, log.Writer())
@@ -51,21 +56,12 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
-	//support either image or containerImageName and containerImageTag
-	containerImageName := ""
-	containerImageTag := ""
 
-	if len(config.Image) > 0 {
-		containerImageName, containerImageTag, err = splitFullImageName(config.Image)
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
-		}
-	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		containerImageName = config.ContainerImageName
-		containerImageTag = config.ContainerImageTag
-	} else {
-		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+	helmValues, err := defineDeploymentValues(config, containerRegistry)
+	if err != nil {
+		return errors.Wrap(err, "failed to process deployment values")
 	}
+
 	helmLogFields := map[string]interface{}{}
 	helmLogFields["Chart Path"] = config.ChartPath
 	helmLogFields["Namespace"] = config.Namespace
@@ -89,11 +85,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		}
 	}
 
-	var secretsData string
 	if len(config.ContainerRegistryUser) == 0 && len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
-			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+			helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
@@ -121,10 +116,12 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		// make sure that secret is hidden in log output
 		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
-		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
+		log.Entry().Debugf("Secret created: %v", dockerRegistrySecret.String())
 
 		// pass secret in helm default template way and in Piper backward compatible way
-		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
+		helmValues.add("secret.name", config.ContainerRegistrySecret)
+		helmValues.add("secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
+		helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 	}
 
 	// Deprecated functionality
@@ -133,9 +130,8 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	// Due to the way helm is implemented it is currently not possible to overwrite a part of a list:
 	// see: https://github.com/helm/helm/issues/5711#issuecomment-636177594
 	// Recommended way is to use a custom values file which contains the appropriate data
-	ingressHosts := ""
 	for i, h := range config.IngressHosts {
-		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
+		helmValues.add(fmt.Sprintf("ingress.hosts[%v]", i), h)
 	}
 
 	upgradeParams := []string{
@@ -148,12 +144,16 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		upgradeParams = append(upgradeParams, "--values", v)
 	}
 
+	err = helmValues.mapValues()
+	if err != nil {
+		return errors.Wrap(err, "failed to map values using 'valuesMapping' configuration")
+	}
+
 	upgradeParams = append(
 		upgradeParams,
 		"--install",
 		"--namespace", config.Namespace,
-		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
+		"--set", strings.Join(helmValues.marshal(), ","),
 	)
 
 	if config.ForceUpdates {
@@ -259,7 +259,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		}
 
 		// write the json output to a file
-		tmpFolder := getTempDirForKubeCtlJson()
+		tmpFolder := getTempDirForKubeCtlJSON()
 		defer os.RemoveAll(tmpFolder) // clean up
 		jsonData, _ := json.Marshal(dockerRegistrySecretData)
 		ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777)
@@ -276,28 +276,45 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
 	}
 
-	//support either image or containerImageName and containerImageTag
-	fullImage := ""
-
-	if len(config.Image) > 0 {
-		fullImage = config.Image
-	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		fullImage = config.ContainerImageName + ":" + config.ContainerImageTag
-	} else {
-		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+	values, err := defineDeploymentValues(config, containerRegistry)
+	if err != nil {
+		return errors.Wrap(err, "failed to process deployment values")
+	}
+	err = values.mapValues()
+	if err != nil {
+		return errors.Wrap(err, "failed to map values using 'valuesMapping' configuration")
 	}
 
-	// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
-	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, fullImage)))
+	placeholderFound := re.Match(appTemplate)
 
-	err = utils.FileWrite(config.AppTemplate, appTemplate, 0700)
+	if placeholderFound {
+		log.Entry().Warn("image placeholder '<image-name>' is deprecated and does not support multi-image replacement, please use Helm-like template syntax '{{ .Values.image.[image-name].reposotory }}:{{ .Values.image.[image-name].tag }}")
+		if values.singleImage {
+			// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
+			appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %s:%s", values.get("image.repository"), values.get("image.tag"))))
+		} else {
+			return fmt.Errorf("multi-image replacement not supported for single image placeholder")
+		}
+	}
+
+	buf := bytes.NewBufferString("")
+	tpl, err := template.New("appTemplate").Parse(string(appTemplate))
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", config.AppTemplate)
+		return errors.Wrap(err, "failed to parse app-template file")
+	}
+	err = tpl.Execute(buf, values.asHelmValues())
+	if err != nil {
+		return errors.Wrap(err, "failed to render app-template file")
+	}
+
+	err = utils.FileWrite(config.AppTemplate, buf.Bytes(), 0700)
+	if err != nil {
+		return errors.Wrapf(err, "Error when updating appTemplate '%v'", config.AppTemplate)
 	}
 
 	kubeParams = append(kubeParams, config.DeployCommand, "--filename", config.AppTemplate)
-	if config.ForceUpdates == true && config.DeployCommand == "replace" {
+	if config.ForceUpdates && config.DeployCommand == "replace" {
 		kubeParams = append(kubeParams, "--force")
 	}
 
@@ -311,7 +328,86 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	return nil
 }
 
-func getTempDirForKubeCtlJson() string {
+type deploymentValues struct {
+	mapping     map[string]interface{}
+	singleImage bool
+	values      []struct {
+		key, value string
+	}
+}
+
+func (dv *deploymentValues) add(key, value string) {
+	dv.values = append(dv.values, struct {
+		key   string
+		value string
+	}{
+		key:   key,
+		value: value,
+	})
+}
+
+func (dv deploymentValues) get(key string) string {
+	for _, item := range dv.values {
+		if item.key == key {
+			return item.value
+		}
+	}
+
+	return ""
+}
+
+func (dv *deploymentValues) mapValues() error {
+	var keys []string
+	for k := range dv.mapping {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, dst := range keys {
+		srcString, ok := dv.mapping[dst].(string)
+		if !ok {
+			return fmt.Errorf("invalid path '%#v' is used for valuesMapping, only strings are supported", dv.mapping[dst])
+		}
+		if val := dv.get(srcString); val != "" {
+			dv.add(dst, val)
+		} else {
+			log.Entry().Warnf("can not map '%s: %s', %s is not set", dst, dv.mapping[dst], dv.mapping[dst])
+		}
+	}
+
+	return nil
+}
+
+func (dv deploymentValues) marshal() []string {
+	var result []string
+	for _, item := range dv.values {
+		result = append(result, fmt.Sprintf("%s=%s", item.key, item.value))
+	}
+	return result
+}
+
+func (dv *deploymentValues) asHelmValues() map[string]interface{} {
+	valuesOpts := values.Options{
+		Values: dv.marshal(),
+	}
+	mergedValues, err := valuesOpts.MergeValues(nil)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("failed to process deployment values")
+	}
+	return map[string]interface{}{
+		"Values": mergedValues,
+	}
+}
+
+func joinKey(parts ...string) string {
+	escapedParts := make([]string, 0, len(parts))
+	replacer := strings.NewReplacer(".", "_", "-", "_")
+	for _, part := range parts {
+		escapedParts = append(escapedParts, replacer.Replace(part))
+	}
+	return strings.Join(escapedParts, ".")
+}
+
+func getTempDirForKubeCtlJSON() string {
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("creating temp directory failed")
@@ -370,4 +466,69 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		"--dry-run=client",
 		"--output=json",
 	}
+}
+
+func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry string) (*deploymentValues, error) {
+	var err error
+	var useDigests bool
+	dv := &deploymentValues{
+		mapping: config.ValuesMapping,
+	}
+	if len(config.ImageNames) > 0 {
+		if len(config.ImageNames) != len(config.ImageNameTags) {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return nil, fmt.Errorf("number of imageNames and imageNameTags must be equal")
+		}
+		if len(config.ImageDigests) > 0 {
+			if len(config.ImageDigests) != len(config.ImageNameTags) {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return nil, fmt.Errorf("number of imageDigests and imageNameTags must be equal")
+			}
+
+			useDigests = true
+		}
+		for i, key := range config.ImageNames {
+			name, tag, err := splitFullImageName(config.ImageNameTags[i])
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[i])
+			}
+
+			if useDigests {
+				tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
+			}
+
+			dv.add(joinKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(joinKey("image", key, "tag"), tag)
+
+			if len(config.ImageNames) == 1 {
+				dv.singleImage = true
+				dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, name))
+				dv.add("image.tag", tag)
+			}
+		}
+	} else {
+		// support either image or containerImageName and containerImageTag
+		containerImageName := ""
+		containerImageTag := ""
+		dv.singleImage = true
+
+		if len(config.Image) > 0 {
+			containerImageName, containerImageTag, err = splitFullImageName(config.Image)
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
+			}
+		} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+			containerImageName = config.ContainerImageName
+			containerImageTag = config.ContainerImageTag
+		} else {
+			return nil, fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
+		}
+		dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		dv.add("image.tag", containerImageTag)
+
+		dv.add(joinKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		dv.add(joinKey("image", containerImageName, "tag"), containerImageTag)
+	}
+
+	return dv, nil
 }

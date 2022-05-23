@@ -128,14 +128,7 @@ Later, during the pipeline configuration, you will specify the service plan, whi
 
 #### Register Add-on Product for a Global Account
 
-The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global accounts. Therefore, the add-on product name and global accounts need to be registered with SAP:
-
-Create an incident using component BC-CP-ABA, and provide the following information:
-
-- Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
-- Global production account ID = *Account ID* in section *Global Account Info* on the overview page of your global account, e.g. `151b5fdc-58c1-4a55-95e1-467df2134c5f` (Feature Set A) or *Global Account Info* on the *Usage Analytics* page of your global account (Feature Set B).
-
-This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in systems provisioned in the global account.
+The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems in your global accounts for development and production. Therefore, the product needs to be created and global accounts need to be registered with SAP using Landscape Portal. See [Register Product](https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b/dc15fb4ebab5453fa4641b98190b1f85.html).
 
 ### Configuration
 
@@ -213,9 +206,7 @@ If the `version` of a software component is increased but not the `addonVersion`
 
 If the add-on product consists of multiple software component versions, but only for one of them the `version` is increased (together with a new `commitID`), only for this software component version a new package will be created. If, at the same time, the `addonVersion` is increased a new [target vector](#target-vector) will be created.
 
-`branch` and `commitID` identify a specific state of a software component. Branches of a software component can include different lists of commits.
-The `commitID` should only be changed while also adjusting the `version` number of a software component.
-While adjusting the patch version or support package version of a software component, the `branch` should only be changed if the previous branch also includes the `commitID` of the previous software component version.
+The `commitID` identifies a specific state of a software component and should only be changed while also adjusting the `version` number of a software component.
 
 ##### Versioning Rules
 
@@ -276,9 +267,6 @@ In case of an error during execution of the pipeline steps:
           <br>New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.
           * __e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`__
           <br>New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.
-      * Step: [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)
-          * __e.g. `Commit 7137bcb08c675dea9e08252ea269ebba1ca83226 not found`__
-          <br>New Patch Level of software component, and branch is changed in add-on descriptor: A `commitID`of previously created patch version is not available in another branch.
 * Stage: [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)
       * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
           * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__

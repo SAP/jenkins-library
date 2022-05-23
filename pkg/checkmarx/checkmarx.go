@@ -111,6 +111,31 @@ type Project struct {
 	Link               Link               `json:"link"`
 }
 
+// ScanSettings - scan settings at project level
+type ScanSettings struct {
+	Project             ProjectLink             `json:"project"`
+	Preset              PresetLink              `json:"preset"`
+	EngineConfiguration EngineConfigurationLink `json:"engineConfiguration" `
+}
+
+// ProjectLink - project link found in ScanSettings response
+type ProjectLink struct {
+	ProjectID int  `json:"id"`
+	Link      Link `json:"link"`
+}
+
+// PresetLink - preset link found in ScanSettings response
+type PresetLink struct {
+	PresetID int  `json:"id"`
+	Link     Link `json:"link"`
+}
+
+// EngineConfigurationLink - engine configuration link found in ScanSettings response
+type EngineConfigurationLink struct {
+	EngineConfigurationID int  `json:"id"`
+	Link                  Link `json:"link"`
+}
+
 // Team - Team Structure
 type Team struct {
 	ID       json.RawMessage `json:"id"`
@@ -188,7 +213,7 @@ type System interface {
 	FilterPresetByName(presets []Preset, presetName string) Preset
 	FilterPresetByID(presets []Preset, presetID int) Preset
 	FilterProjectByName(projects []Project, projectName string) Project
-	FilterTeamByName(teams []Team, teamName string) Team
+	FilterTeamByName(teams []Team, teamName string) (Team, error)
 	FilterTeamByID(teams []Team, teamID json.RawMessage) Team
 	DownloadReport(reportID int) ([]byte, error)
 	GetReportStatus(reportID int) (ReportStatusResponse, error)
@@ -476,6 +501,23 @@ func (sys *SystemInstance) GetPresets() []Preset {
 // UpdateProjectConfiguration updates the configuration of the project addressed by projectID
 func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
 	engineConfigID, _ := strconv.Atoi(engineConfigurationID)
+
+	var projectScanSettings ScanSettings
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scanSettings/%v", projectID), nil, header)
+	if err != nil {
+		// if an error happens, try to update the config anyway
+		sys.logger.Warnf("Failed to fetch scan settings of project %v: %s", projectID, err)
+	} else {
+		// Check if the current project config needs to be updated
+		json.Unmarshal(data, &projectScanSettings)
+		if projectScanSettings.Preset.PresetID == presetID && projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID {
+			sys.logger.Debugf("Project configuration does not need to be updated")
+			return nil
+		}
+	}
+
 	jsonData := map[string]interface{}{
 		"projectId":             projectID,
 		"presetId":              presetID,
@@ -487,12 +529,11 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 		return errors.Wrapf(err, "error marshalling project data")
 	}
 
-	header := http.Header{}
-	header.Set("Content-Type", "application/json")
 	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		return errors.Wrapf(err, "request to checkmarx system failed")
 	}
+	sys.logger.Debugf("Project configuration updated")
 
 	return nil
 }
@@ -623,13 +664,13 @@ func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 }
 
 // FilterTeamByName filters a team by its name
-func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team {
+func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) (Team, error) {
 	for _, team := range teams {
 		if team.FullName == teamName || team.FullName == strings.ReplaceAll(teamName, `\`, `/`) {
-			return team
+			return team, nil
 		}
 	}
-	return Team{}
+	return Team{}, errors.New("Failed to find team with name " + teamName)
 }
 
 // FilterTeamByID filters a team by its ID

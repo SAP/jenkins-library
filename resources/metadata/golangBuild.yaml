@@ -119,6 +119,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/rawRepositoryPassword
+          - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: targetRepositoryUser
         description: "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
@@ -130,6 +132,8 @@ spec:
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
+            param: custom/rawRepositoryUsername
+          - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: targetRepositoryURL
         description: "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
@@ -139,6 +143,8 @@ spec:
           - STAGES
           - STEPS
         resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/rawRepositoryURL
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
       - name: reportCoverage
@@ -213,6 +219,7 @@ spec:
         resourceRef:
           - name: golangPrivateModulesGitTokenCredentialsId
             type: secret
+            param: password
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
@@ -233,6 +240,8 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/artifacts
+            type: "piperenv.Artifacts"
       - name: reports
         type: reports
         params:

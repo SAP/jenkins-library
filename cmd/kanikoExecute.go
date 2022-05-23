@@ -89,7 +89,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	log.Entry().Debugf("preparing build settings information...")
 	stepName := "kanikoExecute"
 	// ToDo: better testability required. So far retrieval of config is rather non deterministic
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve dockerImage configuration: %w", err)
 	}
@@ -122,7 +122,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 			if config.ContainerMultiImageBuild {
 				log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
-				imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, fileUtils)
+				imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, config.ContainerMultiImageBuildTrimDir, fileUtils)
 				if err != nil {
 					return fmt.Errorf("failed to identify image list for multi image build: %w", err)
 				}
@@ -134,7 +134,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
 					buildOpts := append(config.BuildOptions, dest...)
-					err = runKaniko(file, buildOpts, execRunner, fileUtils, commonPipelineEnvironment)
+					err = runKaniko(file, buildOpts, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment)
 					if err != nil {
 						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 					}
@@ -206,14 +206,17 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	// no support for building multiple containers
-	return runKaniko(config.DockerfilePath, config.BuildOptions, execRunner, fileUtils, commonPipelineEnvironment)
+	return runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment)
 }
 
-func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
+
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd}
+	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
 	if err != nil {
@@ -222,8 +225,9 @@ func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.
 
 	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
 
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd, "--reproducible", "--digest-file", digestFilePath}
-	kanikoOpts = append(kanikoOpts, buildOptions...)
+	if readDigest {
+		kanikoOpts = append(kanikoOpts, "--digest-file", digestFilePath)
+	}
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
@@ -244,8 +248,6 @@ func runKaniko(dockerFilepath string, buildOptions []string, execRunner command.
 
 		commonPipelineEnvironment.container.imageDigest = string(digestStr)
 		commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digestStr)
-	} else {
-		log.Entry().Warn("couldn't resolve image digest")
 	}
 
 	return nil

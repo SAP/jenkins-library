@@ -53,6 +53,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                      ]
                                  ]
         Utils.metaClass.echo = { def m -> }
+        helper.registerAllowedMethod('addBadge', [Map], {return})
+        helper.registerAllowedMethod('createSummary', [Map], {return})
     }
 
     @After
@@ -262,7 +264,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         assert receivedParameters == [
                     docker: [
-                        image:'ppiper/cm-client',
+                        image:'ppiper/cm-client:2.0.1.0',
                         options:[],
                         envVars:[:],
                         pullImage:true,
@@ -412,7 +414,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         assert receivedParams == [
                                   docker: [
-                                      image: 'ppiper/cm-client',
+                                      image: 'ppiper/cm-client:2.0.1.0',
                                       pullImage: true,
                                       envVars: [:],
                                       options: [],

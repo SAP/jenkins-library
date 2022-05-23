@@ -91,6 +91,7 @@ type fortifyExecuteScanInflux struct {
 	}
 	fortify_data struct {
 		fields struct {
+			projectID         int64
 			projectName       string
 			projectVersion    string
 			projectVersionID  int64
@@ -119,6 +120,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
+		{valType: config.InfluxField, measurement: "fortify_data", name: "projectID", value: i.fortify_data.fields.projectID},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersionId", value: i.fortify_data.fields.projectVersionID},
@@ -208,7 +210,7 @@ func FortifyExecuteScanCommand() *cobra.Command {
 		Long: `This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
 The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
-and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+and Java plus Maven / Gradle or alternatively Python installed into it for being able to perform any scans.
 !!! hint "Scanning MTA projects"
     Build type ` + "`" + `maven` + "`" + ` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. ` + "`" + `java/**/src/main/java/**/*` + "`" + `.
 
@@ -345,15 +347,16 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version")
 	cmd.Flags().StringVar(&stepConfig.PullRequestMessageRegex, "pullRequestMessageRegex", `.*Merge pull request #(\\d+) from.*`, "Regex used to identify the PR-XXX reference within the merge commit message")
-	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'`")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'` or `'gradle'`")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
-	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Whether the step creates a GitHub issue containing the scan results in the originating repo. Since optimized pipelines are headless the creation is implicitly activated for schedules runs.")
+	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 
 	cmd.MarkFlagRequired("authToken")
+	cmd.Flags().MarkDeprecated("pythonAdditionalPath", "this is deprecated")
 	cmd.MarkFlagRequired("serverUrl")
 }
 
@@ -571,6 +574,16 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}},
 					},
 					{
+						Name:        "buildDescriptorFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `./build.gradle`,
+						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}},
+					},
+					{
 						Name: "commitId",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -726,13 +739,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Default:     `PDF`,
 					},
 					{
-						Name:        "pythonAdditionalPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{`./lib`, `.`},
+						Name:               "pythonAdditionalPath",
+						ResourceRef:        []config.ResourceReference{},
+						Scope:              []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:               "[]string",
+						Mandatory:          false,
+						Aliases:            []config.Alias{},
+						Default:            []string{`./lib`, `.`},
+						DeprecationMessage: "this is deprecated",
 					},
 					{
 						Name:        "artifactUrl",
@@ -946,10 +960,10 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/optimizedAndScheduled",
+								Param: "custom/isOptimizedAndScheduled",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -967,7 +981,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "fortify"}}},
-							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectID"}, {"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 					{

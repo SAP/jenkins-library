@@ -105,6 +105,9 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 			return err
 		}
 	} else {
+		if len(teamID) == 0 {
+			return errors.Wrap(err, "TeamName or TeamID is required to create a new project")
+		}
 		project, err = createNewProject(config, sys, projectName, teamID)
 		if err != nil {
 			return err
@@ -161,10 +164,15 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
+	var err error
 	if len(teams) > 0 && len(teamName) > 0 {
-		return sys.FilterTeamByName(teams, teamName), nil
+		team, err = sys.FilterTeamByName(teams, teamName)
 	}
-	return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	if err != nil {
+		return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
+	} else {
+		return team, nil
+	}
 }
 
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
@@ -198,7 +206,19 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		if len(projects) == 0 {
 			return checkmarx.Project{}, projectName, nil
 		}
-		project = projects[0]
+		if len(projects) == 1 {
+			project = projects[0]
+		} else {
+			for _, current_project := range projects {
+				if projectName == current_project.Name {
+					project = current_project
+					break
+				}
+			}
+			if len(project.Name) == 0 {
+				return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the teamName parameter if you want a new project to be created.")
+			}
+		}
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
 	}
 	return project, projectName, nil
@@ -206,7 +226,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 
 func zipWorkspaceFiles(filterPattern string, utils checkmarxExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
-	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
+	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
@@ -302,6 +322,20 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 
+	// generate sarif report
+	if config.ConvertToSarif {
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := checkmarx.ConvertCxxmlToSarif(xmlReportName)
+		if err != nil {
+			return fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := checkmarx.WriteSarif(sarif)
+		if err != nil {
+			return fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
+
 	// create toolrecord
 	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
 	if err != nil {
@@ -309,6 +343,16 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
 	} else {
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
+	}
+
+	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	jsonReport := checkmarx.CreateJSONReport(results)
+	paths, err := checkmarx.WriteJSONReport(jsonReport)
+	if err != nil {
+		log.Entry().Warning("failed to write JSON report...", err)
+	} else {
+		// add JSON report to archiving list
+		reports = append(reports, paths...)
 	}
 
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
@@ -325,9 +369,9 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
 
-		if insecure && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
-			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, "Checkmarx SAST Results", config.Assignees, utils)
+			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, utils)
 			if err != nil {
 				return fmt.Errorf("failed to upload scan results into GitHub: %w", err)
 			}
@@ -364,19 +408,19 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	status := "Scan phase: New"
 	pastStatus := status
 	log.Entry().Info(status)
+	stepDetail := "..."
+	stageDetail := "..."
 	for true {
-		stepDetail := "..."
-		stageDetail := "..."
 		var detail checkmarx.ScanStatusDetail
 		status, detail = sys.GetScanStatusAndDetail(scan.ID)
-		if status == "Finished" || status == "Canceled" || status == "Failed" {
-			break
-		}
 		if len(detail.Stage) > 0 {
 			stageDetail = detail.Stage
 		}
 		if len(detail.Step) > 0 {
 			stepDetail = detail.Step
+		}
+		if status == "Finished" || status == "Canceled" || status == "Failed" {
+			break
 		}
 
 		status = fmt.Sprintf("Scan phase: %v (%v / %v)", status, stageDetail, stepDetail)
@@ -392,7 +436,10 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 		return fmt.Errorf("scan canceled via web interface")
 	}
 	if status == "Failed" {
-		return fmt.Errorf("scan failed, please check the Checkmarx UI for details")
+		if strings.Contains(stageDetail, "<ErrorCode>17033</ErrorCode>") { // Translate a cryptic XML error into a human-readable message
+			stageDetail = "Failed to start scanning due to one of following reasons: source folder is empty, all source files are of an unsupported language or file format"
+		}
+		return fmt.Errorf("Checkmarx scan failed with the following error: %v", stageDetail)
 	}
 	return nil
 }
@@ -606,7 +653,6 @@ func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, pro
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}
-	log.Entry().Debugf("Configuration of project %v updated", projectName)
 	return nil
 }
 

@@ -177,7 +177,7 @@ func (b *Build) Start(phase string, inputValues Values) error {
 
 	body, err := b.Connector.Post("/builds", importBody)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Start of build failed: "+string(body))
 	}
 
 	var jBuild jsonBuild
@@ -562,7 +562,9 @@ func (vs Values) String() string {
 	for _, value := range vs.Values {
 		returnString = returnString + value.String() + ",\n"
 	}
-	returnString = returnString[:len(returnString)-2] //removes last ,
+	if len(returnString) > 0 {
+		returnString = returnString[:len(returnString)-2] //removes last ,
+	}
 	return returnString
 }
 

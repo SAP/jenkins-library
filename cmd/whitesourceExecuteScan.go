@@ -10,6 +10,7 @@ import (
 	"time"
 
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
@@ -50,6 +51,8 @@ type whitesourceUtils interface {
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
+	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
+
 	Now() time.Time
 }
 
@@ -58,6 +61,11 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
+}
+
+// CreateIssue supplies capability for GitHub issue creation
+func (w *whitesourceUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
 func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (ws.File, error) {
@@ -160,21 +168,22 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
-	correctWhitesourceDockerConfigEnvVar(config, utils)
-
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
 		saveImageOptions := containerSaveImageOptions{
-			ContainerImage:       config.ScanImage,
-			ContainerRegistryURL: config.ScanImageRegistryURL,
-			IncludeLayers:        config.ScanImageIncludeLayers,
-			FilePath:             config.ProjectName,
+			ContainerImage:            config.ScanImage,
+			ContainerRegistryURL:      config.ScanImageRegistryURL,
+			ContainerRegistryUser:     config.ContainerRegistryUser,
+			ContainerRegistryPassword: config.ContainerRegistryPassword,
+			DockerConfigJSON:          config.DockerConfigJSON,
+			FilePath:                  config.ProjectName,
+			ImageFormat:               "legacy", // keep the image format legacy or whitesource is not able to read layers
 		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
-		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
 			if strings.Contains(fmt.Sprint(err), "no image found") {
 				log.SetErrorCategory(log.ErrorConfiguration)
 			}
@@ -210,26 +219,6 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}
 	return nil
-}
-
-func correctWhitesourceDockerConfigEnvVar(config *ScanOptions, utils whitesourceUtils) {
-	path := config.DockerConfigJSON
-	if len(path) > 0 {
-		log.Entry().Infof("Docker credentials configuration: %v", path)
-		if len(config.ScanImageRegistryURL) > 0 && len(config.ContainerRegistryUser) > 0 && len(config.ContainerRegistryPassword) > 0 {
-			var err error
-			path, err = piperDocker.CreateDockerConfigJSON(config.ScanImageRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
-			if err != nil {
-				log.Entry().Warningf("failed to update Docker config.json: %v", err)
-			}
-		}
-		path, _ := utils.Abs(path)
-		// use parent directory
-		path = filepath.Dir(path)
-		os.Setenv("DOCKER_CONFIG", path)
-	} else {
-		log.Entry().Info("Docker credentials configuration: NONE")
-	}
 }
 
 func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
@@ -511,7 +500,7 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 
 	// create a json report to be used later, e.g. issue creation in GitHub
 	ipReport := reporting.ScanReport{
-		Title: "WhiteSource IP Report",
+		ReportTitle: "WhiteSource IP Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "WhiteSource product name", Details: config.ProductName},
 			{Description: "Filtered project names", Details: strings.Join(scan.ScannedProjectNames(), ", ")},
@@ -582,7 +571,9 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 
 		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
-			err = ws.CreateGithubResultIssues(scan, &allAlerts, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks)
+			issueDetails := make([]reporting.IssueDetail, len(allAlerts))
+			piperutils.CopyAtoB(allAlerts, issueDetails)
+			err = reporting.UploadMultipleReportsToGithub(&issueDetails, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, config.CustomTLSCertificateLinks, utils)
 			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}

@@ -27,14 +27,15 @@ type Artifact interface {
 
 // Options define build tool specific settings in order to properly retrieve e.g. the version / coordinates of an artifact
 type Options struct {
-	ProjectSettingsFile string
-	DockerImage         string
-	GlobalSettingsFile  string
-	M2Path              string
-	VersionSource       string
-	VersionSection      string
-	VersionField        string
-	VersioningScheme    string
+	ProjectSettingsFile  string
+	DockerImage          string
+	GlobalSettingsFile   string
+	M2Path               string
+	VersionSource        string
+	VersionSection       string
+	VersionField         string
+	VersioningScheme     string
+	HelmUpdateAppVersion bool
 }
 
 // Utils defines the versioning operations for various build tools
@@ -93,7 +94,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt", "go.mod"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"go.mod", "VERSION", "version.txt"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
@@ -105,6 +106,12 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			break
 		default:
 			artifact = &Versionfile{path: buildDescriptorFilePath}
+		}
+	case "helm":
+		artifact = &HelmChart{
+			path:             buildDescriptorFilePath,
+			utils:            utils,
+			updateAppVersion: opts.HelmUpdateAppVersion,
 		}
 	case "maven":
 		if len(buildDescriptorFilePath) == 0 {

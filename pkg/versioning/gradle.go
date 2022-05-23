@@ -40,7 +40,18 @@ func (g *Gradle) init() error {
 			versionField:     g.versionField,
 			writeFile:        g.writeFile,
 		}
-		err := g.propertiesFile.init()
+		f, err := os.Open(g.path)
+		if err != nil {
+			return err
+		}
+		fi, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			g.propertiesFile.path += "build.gradle"
+		}
+		err = g.propertiesFile.init()
 		if err != nil {
 			return err
 		}
@@ -56,7 +67,9 @@ func (g *Gradle) initGetArtifact() error {
 	if g.gradlePropsOut == nil {
 		gradlePropsBuffer := &bytes.Buffer{}
 		g.execRunner.Stdout(gradlePropsBuffer)
-		err := g.execRunner.RunExecutable("gradle", "properties", "--no-daemon", "--console=plain", "-q")
+		var p []string
+		p = append(p, "properties", "--no-daemon", "--console=plain", "-q")
+		err := g.execRunner.RunExecutable("gradle", p...)
 		if err != nil {
 			return err
 		}
@@ -75,10 +88,10 @@ func (g *Gradle) VersioningScheme() string {
 func (g *Gradle) GetCoordinates() (Coordinates, error) {
 	result := Coordinates{}
 	var err error
-	// result.GroupID, err = g.GetGroupID()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	result.GroupID, err = g.GetGroupID()
+	if err != nil {
+		return result, err
+	}
 	result.ArtifactID, err = g.GetArtifactID()
 	if err != nil {
 		return result, err
@@ -106,15 +119,18 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 // }
 
 // GetGroupID returns the current ID of the Group
-// func (g *Gradle) GetGroupID() (string, error) {
-// 	g.init()
+func (g *Gradle) GetGroupID() (string, error) {
+	err := g.initGetArtifact()
+	if err != nil {
+		return "", err
+	}
 
-// 	groupID, err := g.runner.Evaluate(&g.options, "project.groupId", g.execRunner)
-// 	if err != nil {
-// 		return "", errors.Wrap(err, "Gradle - getting groupId failed")
-// 	}
-// 	return groupID, nil
-// }
+	regex := regexp.MustCompile(`(?m:^group: (.*))`)
+	match := string(regex.Find(g.gradlePropsOut))
+	groupID := strings.Split(match, ` `)[1]
+
+	return groupID, nil
+}
 
 // GetArtifactID returns the current ID of the artifact
 func (g *Gradle) GetArtifactID() (string, error) {

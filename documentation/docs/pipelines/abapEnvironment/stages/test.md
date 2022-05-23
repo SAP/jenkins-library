@@ -41,7 +41,6 @@ general:
   cfSpace: 'mySpace'
   cfCredentialsId: 'cfAuthentification'
   cfServiceInstance: 'abap_system'
-  cfServiceKeyName: 'JENKINS_SAP_COM_0510'
 stages:
   ATC:
     atcConfig: 'atcConfig.yml'
@@ -56,7 +55,6 @@ general:
   cfSpace: 'mySpace'
   cfCredentialsId: 'cfAuthentification'
   cfServiceInstance: 'abap_system'
-  cfServiceKeyName: 'JENKINS_SAP_COM_0510'
 stages:
   ATC:
     atcConfig: 'atcConfig.yml'
@@ -66,8 +64,8 @@ stages:
 #### atcConfig.yml
 
 ```yaml
-atcobjects:
-  softwarecomponent:
+objectSet:
+  softwarecomponents:
     - name: "/DMO/SWC"
 ```
 
@@ -135,10 +133,9 @@ general:
   cfSpace: 'mySpace'
   cfCredentialsId: 'cfAuthentification'
   cfServiceInstance: 'abap_system'
-  cfServiceKeyName: 'JENKINS_SAP_COM_0510'
 stages:
   AUnit:
-    aunitConfig: 'aunitConfig.yml'
+    aUnitConfig: 'aUnitConfig.yml'
 ```
 
 #### aunitConfig.yml

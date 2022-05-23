@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
@@ -61,12 +62,18 @@ type artifactPrepareVersionUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRead(path string) ([]byte, error)
+
+	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
+}
+
+func (a *artifactPrepareVersionUtilsBundle) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
+	return orchestrator.NewOrchestratorSpecificConfigProvider()
 }
 
 func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
@@ -124,11 +131,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		}
 	}
 
-	versioningType := config.VersioningType
-
 	// support former groovy versioning template and translate into new options
 	if len(config.VersioningTemplate) > 0 {
-		versioningType, _, config.IncludeCommitID = templateCompatibility(config.VersioningTemplate)
+		config.VersioningType, _, config.IncludeCommitID = templateCompatibility(config.VersioningTemplate)
 	}
 
 	version, err := artifact.GetVersion()
@@ -147,19 +152,22 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
+	now := time.Now()
 
-	if versioningType == "cloud" || versioningType == "cloud_noTag" {
-		versioningTempl, err := versioningTemplate(artifact.VersioningScheme())
+	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
+		// make sure that versioning does not create tags (when set to "cloud")
+		// for PR pipelines, optimized pipelines (= no build)
+		provider, err := utils.NewOrchestratorSpecificConfigProvider()
 		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to get versioning template for scheme '%v'", artifact.VersioningScheme())
+			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		}
+		if provider.IsPullRequest() || config.IsOptimizedAndScheduled {
+			config.VersioningType = "cloud_noTag"
 		}
 
-		now := time.Now()
-
-		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, config.ShortCommitID, config.UnixTimestamp, now)
+		newVersion, err = calculateCloudVersion(artifact, config, version, gitCommitID, now)
 		if err != nil {
-			return errors.Wrap(err, "failed to calculate new version")
+			return err
 		}
 
 		worktree, err := getWorktree(repository)
@@ -185,9 +193,15 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			}
 		}
 
-		//ToDo: what about closure in current Groovy step. Discard the possibility or provide extension mechanism?
+		// propagate version information to additional descriptors
+		if len(config.AdditionalTargetTools) > 0 {
+			err = propagateVersion(config, utils, &artifactOpts, version, gitCommitID, now)
+			if err != nil {
+				return err
+			}
+		}
 
-		if versioningType == "cloud" {
+		if config.VersioningType == "cloud" {
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
 			if err != nil {
@@ -195,6 +209,14 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 					log.SetErrorCategory(log.ErrorCustom)
 				}
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
+			}
+		}
+	} else {
+		// propagate version information to additional descriptors
+		if len(config.AdditionalTargetTools) > 0 {
+			err = propagateVersion(config, utils, &artifactOpts, version, gitCommitID, now)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -449,4 +471,72 @@ func templateCompatibility(groovyTemplate string) (versioningType string, useTim
 	}
 
 	return
+}
+
+func calculateCloudVersion(artifact versioning.Artifact, config *artifactPrepareVersionOptions, version, gitCommitID string, timestamp time.Time) (string, error) {
+	versioningTempl, err := versioningTemplate(artifact.VersioningScheme())
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", errors.Wrapf(err, "failed to get versioning template for scheme '%v'", artifact.VersioningScheme())
+	}
+
+	newVersion, err := calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, config.ShortCommitID, config.UnixTimestamp, timestamp)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to calculate new version")
+	}
+	return newVersion, nil
+}
+
+func propagateVersion(config *artifactPrepareVersionOptions, utils artifactPrepareVersionUtils, artifactOpts *versioning.Options, version, gitCommitID string, now time.Time) error {
+	var err error
+
+	if len(config.AdditionalTargetDescriptors) > 0 && len(config.AdditionalTargetTools) != len(config.AdditionalTargetDescriptors) {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("additionalTargetDescriptors cannot have a different number of entries than additionalTargetTools")
+	}
+
+	for i, targetTool := range config.AdditionalTargetTools {
+		if targetTool == config.BuildTool {
+			// ignore configured build tool
+			continue
+		}
+
+		var buildDescriptors []string
+		if len(config.AdditionalTargetDescriptors) > 0 {
+			buildDescriptors, err = utils.Glob(config.AdditionalTargetDescriptors[i])
+			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return fmt.Errorf("failed to retrieve build descriptors: %w", err)
+			}
+		}
+
+		if len(buildDescriptors) == 0 {
+			buildDescriptors = append(buildDescriptors, "")
+		}
+
+		// in case of helm, make sure that app version is adapted as well
+		artifactOpts.HelmUpdateAppVersion = true
+
+		for _, buildDescriptor := range buildDescriptors {
+			targetArtifact, err := versioning.GetArtifact(targetTool, buildDescriptor, artifactOpts, utils)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return fmt.Errorf("failed to retrieve artifact: %w", err)
+			}
+
+			// Make sure that version type fits to target artifact
+			descriptorVersion := version
+			if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
+				descriptorVersion, err = calculateCloudVersion(targetArtifact, config, version, gitCommitID, now)
+				if err != nil {
+					return err
+				}
+			}
+			err = targetArtifact.SetVersion(descriptorVersion)
+			if err != nil {
+				return fmt.Errorf("failed to set additional target version for '%v': %w", targetTool, err)
+			}
+		}
+	}
+	return nil
 }

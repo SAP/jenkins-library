@@ -18,25 +18,28 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool              string `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle maven mta npm pip sbt yarn"`
-	CommitUserName         string `json:"commitUserName,omitempty"`
-	CustomVersionField     string `json:"customVersionField,omitempty"`
-	CustomVersionSection   string `json:"customVersionSection,omitempty"`
-	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"possible-values=docker maven pep440 semver2"`
-	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
-	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
-	FilePath               string `json:"filePath,omitempty"`
-	GlobalSettingsFile     string `json:"globalSettingsFile,omitempty"`
-	IncludeCommitID        bool   `json:"includeCommitId,omitempty"`
-	M2Path                 string `json:"m2Path,omitempty"`
-	Password               string `json:"password,omitempty"`
-	ProjectSettingsFile    string `json:"projectSettingsFile,omitempty"`
-	ShortCommitID          bool   `json:"shortCommitId,omitempty"`
-	TagPrefix              string `json:"tagPrefix,omitempty"`
-	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
-	Username               string `json:"username,omitempty"`
-	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
-	VersioningType         string `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
+	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
+	AdditionalTargetDescriptors []string `json:"additionalTargetDescriptors,omitempty"`
+	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
+	CommitUserName              string   `json:"commitUserName,omitempty"`
+	CustomVersionField          string   `json:"customVersionField,omitempty"`
+	CustomVersionSection        string   `json:"customVersionSection,omitempty"`
+	CustomVersioningScheme      string   `json:"customVersioningScheme,omitempty" validate:"possible-values=docker maven pep440 semver2"`
+	DockerVersionSource         string   `json:"dockerVersionSource,omitempty"`
+	FetchCoordinates            bool     `json:"fetchCoordinates,omitempty"`
+	FilePath                    string   `json:"filePath,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	IncludeCommitID             bool     `json:"includeCommitId,omitempty"`
+	IsOptimizedAndScheduled     bool     `json:"isOptimizedAndScheduled,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	Password                    string   `json:"password,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	ShortCommitID               bool     `json:"shortCommitId,omitempty"`
+	TagPrefix                   string   `json:"tagPrefix,omitempty"`
+	UnixTimestamp               bool     `json:"unixTimestamp,omitempty"`
+	Username                    string   `json:"username,omitempty"`
+	VersioningTemplate          string   `json:"versioningTemplate,omitempty"`
+	VersioningType              string   `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -236,6 +239,8 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 }
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTargetTools, "additionalTargetTools", []string{}, "Additional buildTool targets where descriptors need to be updated besides the main `buildTool`.")
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTargetDescriptors, "additionalTargetDescriptors", []string{}, "Defines patterns for build descriptors which should be used for option [`additionalTargetTools`](additionaltargettools).")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", `Project Piper`, "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionField, "customVersionField", os.Getenv("PIPER_customVersionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
@@ -246,6 +251,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
+	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
@@ -254,7 +260,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().BoolVar(&stepConfig.UnixTimestamp, "unixTimestamp", false, "Defines if the Unix timestamp number should be used as build number instead of the standard date format.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
-	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor, but not generate a new version)")
+	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -274,6 +280,24 @@ func artifactPrepareVersionMetadata() config.StepData {
 					{Name: "gitSshKeyCredentialsId", Description: "Jenkins 'SSH Username with private key' credentials ID ssh key for accessing your git repository. You can find details about how to generate an ssh key in the [GitHub documentation](https://docs.github.com/en/enterprise/2.15/user/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).", Type: "jenkins", Aliases: []config.Alias{{Name: "gitCredentialsId", Deprecated: true}}},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "additionalTargetTools",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "additionalTargetDescriptors",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
 					{
 						Name:        "buildTool",
 						ResourceRef: []config.ResourceReference{},
@@ -365,6 +389,20 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Default:     true,
 					},
 					{
+						Name: "isOptimizedAndScheduled",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/isOptimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
+					},
+					{
 						Name:        "m2Path",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
@@ -391,7 +429,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{

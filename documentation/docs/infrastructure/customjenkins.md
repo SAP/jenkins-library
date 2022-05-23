@@ -1,9 +1,5 @@
 # Custom Jenkins Setup
 
-Although we recommend using the Cx Server, you can also run project "Piper" on your own Jenkins installation. In this case, however, you have to care for some settings the Cx Server gives you for free. Also, the support of non-Cx Server installations is challenging.
-
-This section describes the adjustments that might be necessary.
-
 ## Requirements
 
 * You have installed Java Runtime Environment 8.

@@ -1,7 +1,6 @@
 package orchestrator
 
 import (
-	"fmt"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
@@ -12,19 +11,74 @@ import (
 )
 
 type AzureDevOpsConfigProvider struct {
-	client  piperHttp.Client
-	options piperHttp.ClientOptions
+	client         piperHttp.Client
+	options        piperHttp.ClientOptions
+	apiInformation map[string]interface{}
 }
 
-//InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
+// InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
 func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	a.client = piperHttp.Client{}
 	a.options = piperHttp.ClientOptions{
-		Username: "",
-		Password: settings.AzureToken,
+		Username:         "",
+		Password:         settings.AzureToken,
+		MaxRetries:       3,
+		TransportTimeout: time.Second * 10,
 	}
 	a.client.SetOptions(a.options)
 	log.Entry().Debug("Successfully initialized Azure config provider")
+}
+
+// fetchAPIInformation fetches Azure API information of current build
+func (a *AzureDevOpsConfigProvider) fetchAPIInformation() {
+	// if apiInformation is empty fill it otherwise do nothing
+	if len(a.apiInformation) == 0 {
+		log.Entry().Debugf("apiInformation is empty, getting infos from API")
+		URL := a.getSystemCollectionURI() + a.getTeamProjectID() + "/_apis/build/builds/" + a.getAzureBuildID() + "/"
+		log.Entry().Debugf("API URL: %s", URL)
+		response, err := a.client.GetRequest(URL, nil, nil)
+		if err != nil {
+			log.Entry().Error("failed to get HTTP response, returning empty API information", err)
+			a.apiInformation = map[string]interface{}{}
+			return
+		} else if response.StatusCode != 200 { //http.StatusNoContent
+			log.Entry().Errorf("response code is %v, could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
+			a.apiInformation = map[string]interface{}{}
+			return
+		}
+
+		err = piperHttp.ParseHTTPResponseBodyJSON(response, &a.apiInformation)
+		if err != nil {
+			log.Entry().Error("failed to parse HTTP response, returning with empty interface", err)
+			a.apiInformation = map[string]interface{}{}
+			return
+		}
+		log.Entry().Debugf("successfully retrieved apiInformation")
+	} else {
+		log.Entry().Debugf("apiInformation already set")
+	}
+}
+
+// getSystemCollectionURI returns the URI of the TFS collection or Azure DevOps organization e.g. https://dev.azure.com/fabrikamfiber/
+func (a *AzureDevOpsConfigProvider) getSystemCollectionURI() string {
+	return getEnv("SYSTEM_COLLECTIONURI", "n/a")
+}
+
+// getTeamProjectID is the name of the project that contains this build e.g. 123a4567-ab1c-12a1-1234-123456ab7890
+func (a *AzureDevOpsConfigProvider) getTeamProjectID() string {
+	return getEnv("SYSTEM_TEAMPROJECTID", "n/a")
+}
+
+// getAzureBuildID returns the id of the build, e.g. 1234
+func (a *AzureDevOpsConfigProvider) getAzureBuildID() string {
+	// INFO: Private function only used for API requests, buildId for e.g. reporting
+	// is GetBuildNumber to align with the UI of ADO
+	return getEnv("BUILD_BUILDID", "n/a")
+}
+
+// GetJobName returns the pipeline job name, currently org/repo
+func (a *AzureDevOpsConfigProvider) GetJobName() string {
+	return getEnv("BUILD_REPOSITORY_NAME", "n/a")
 }
 
 // OrchestratorVersion returns the agent version on ADO
@@ -37,145 +91,135 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 	return "Azure"
 }
 
+//GetBuildStatus returns status of the build. Return variables are aligned with Jenkins build statuses.
 func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
-	responseInterface := a.getAPIInformation()
-	if _, ok := responseInterface["result"]; ok {
-		// cases in Jenkins: SUCCESS, FAILURE, NOT_BUILD, ABORTED
-		switch result := responseInterface["result"]; result {
-		case "SUCCESS":
-			return "SUCCESS"
-		case "ABORTED":
-			return "ABORTED"
-		default:
-			// FAILURE, NOT_BUILT
-			return "FAILURE"
-		}
+	// cases to align with Jenkins: SUCCESS, FAILURE, NOT_BUILD, ABORTED
+	switch buildStatus := getEnv("AGENT_JOBSTATUS", "FAILURE"); buildStatus {
+	case "Succeeded":
+		return "SUCCESS"
+	case "Canceled":
+		return "ABORTED"
+	default:
+		// Failed, SucceededWithIssues
+		return "FAILURE"
 	}
-	return "FAILURE"
 }
 
-func (a *AzureDevOpsConfigProvider) getAPIInformation() map[string]interface{} {
-	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/"
-	response, err := a.client.GetRequest(URL, nil, nil)
-	if err != nil {
-		log.Entry().Error("failed to get http response, using default values", err)
-		return map[string]interface{}{}
-	}
-
-	if response.StatusCode != 200 { //http.StatusNoContent
-		log.Entry().Errorf("Response-Code is %v . \n Could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
-		return map[string]interface{}{}
-	}
-	var responseInterface map[string]interface{}
-	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
-	if err != nil {
-		log.Entry().Error("failed to parse http response, returning with empty interface", err)
-		return map[string]interface{}{}
-	}
-	return responseInterface
-}
-
-// GetJobName returns the pipeline job name
-func (a *AzureDevOpsConfigProvider) GetJobName() string {
-	responseInterface := a.getAPIInformation()
-	if val, ok := responseInterface["repository"]; ok {
-		return val.(map[string]interface{})["id"].(string)
-	}
-	return "n/a"
-}
-
-// GetLog returns the logfile of the pipeline run so far
+// GetLog returns the whole logfile for the current pipeline run
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
-	// ToDo: How to get step specific logs, not only whole log?
-	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
+	URL := a.getSystemCollectionURI() + a.getTeamProjectID() + "/_apis/build/builds/" + a.getAzureBuildID() + "/logs"
 
 	response, err := a.client.GetRequest(URL, nil, nil)
-	logs := []byte{}
+
 	if err != nil {
-		log.Entry().Error("failed to get http response", err)
-		return logs, nil
+		log.Entry().Error("failed to get HTTP response: ", err)
+		return []byte{}, err
 	}
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().Errorf("Response-Code is %v . \n Could not get log information from AzureDevOps. Returning with empty log.", response.StatusCode)
-		return logs, nil
+		log.Entry().Errorf("response-Code is %v, could not get log information from AzureDevOps, returning with empty log.", response.StatusCode)
+		return []byte{}, nil
 	}
 	var responseInterface map[string]interface{}
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
 	if err != nil {
-		log.Entry().Error("failed to parse http response", err)
-		return logs, nil
+		log.Entry().Error("failed to parse http response: ", err)
+		return []byte{}, err
 	}
 	// check if response interface is empty or non-existent
-	logCount := int(responseInterface["count"].(float64))
-
+	var logCount int
+	if val, ok := responseInterface["count"]; ok {
+		logCount = int(val.(float64))
+	} else {
+		log.Entry().Error("log count variable not found, returning empty log")
+		return []byte{}, err
+	}
+	var logs []byte
 	for i := 1; i <= logCount; i++ {
 		counter := strconv.Itoa(i)
 		logURL := URL + "/" + counter
-		fmt.Println("logURL: ", logURL)
 		log.Entry().Debugf("Getting log no.: %d  from %v", i, logURL)
 		response, err := a.client.GetRequest(logURL, nil, nil)
 		if err != nil {
-			fmt.Println(err)
+			log.Entry().Error("failed to get log", err)
+			return []byte{}, err
+		}
+		if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
+			log.Entry().Errorf("response code is %v, could not get log information from AzureDevOps ", response.StatusCode)
+			return []byte{}, err
 		}
 		content, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			log.Entry().Error("failed to parse http response", err)
+			return []byte{}, err
+		}
 		logs = append(logs, content...)
 	}
 
 	return logs, nil
 }
 
-// GetPipelineStartTime returns the pipeline start time
+// GetPipelineStartTime returns the pipeline start time in UTC
 func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
-	// "2021-10-11 13:49:09+00:00"
-	timestamp := getEnv("SYSTEM_PIPELINESTARTTIME", "n/a")
-	replaced := strings.Replace(timestamp, " ", "T", 1)
-	parsed, err := time.Parse(time.RFC3339, replaced)
-	if err != nil {
-		log.Entry().Errorf("Could not parse timestamp. %v", err)
-		// Return 1970 in case parsing goes wrong
-		parsed = time.Date(1970, time.January, 01, 0, 0, 0, 0, time.UTC)
+	//"2022-03-18T07:30:31.1915758Z"
+	a.fetchAPIInformation()
+	if val, ok := a.apiInformation["startTime"]; ok {
+		parsed, err := time.Parse(time.RFC3339, val.(string))
+		if err != nil {
+			log.Entry().Errorf("could not parse timestamp, %v", err)
+			parsed = time.Time{}
+		}
+		return parsed.UTC()
 	}
-	return parsed
+	return time.Time{}.UTC()
 }
 
-func (a *AzureDevOpsConfigProvider) GetSystemCollectionURI() string {
-	return getEnv("SYSTEM_COLLECTIONURI", "n/a")
+// GetBuildID returns the BuildNumber displayed in the ADO UI
+func (a *AzureDevOpsConfigProvider) GetBuildID() string {
+	// INFO: ADO has BUILD_ID and buildNumber, as buildNumber is used in the UI we return this value
+	// for the buildID used only for API requests we have a private method getAzureBuildID
+	// example: buildNumber: 20220318.16 buildId: 76443
+	return getEnv("BUILD_BUILDNUMBER", "n/a")
 }
 
-func (a *AzureDevOpsConfigProvider) GetTeamProjectId() string {
-	return getEnv("SYSTEM_TEAMPROJECTID", "n/a")
-}
-
-func (a *AzureDevOpsConfigProvider) GetBuildId() string {
-	return getEnv("BUILD_BUILDID", "n/a")
-}
-
+// GetStageName returns the human-readable name given to a stage. e.g. "Promote" or "Init"
 func (a *AzureDevOpsConfigProvider) GetStageName() string {
 	return getEnv("SYSTEM_STAGEDISPLAYNAME", "n/a")
 }
 
+// GetBranch returns the source branch name, e.g. main
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
 	return strings.TrimPrefix(tmp, "refs/heads/")
 }
 
-func (a *AzureDevOpsConfigProvider) GetBuildUrl() string {
-	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + os.Getenv("BUILD_BUILDID")
+// GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build/results?buildId=1234
+func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
+	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build/results?buildId=" + a.getAzureBuildID()
 }
 
-func (a *AzureDevOpsConfigProvider) GetJobUrl() string {
-	// TODO: Check if thi is the correct URL
-	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT")
+// GetJobURL returns tje current job url e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build?definitionId=1234
+func (a *AzureDevOpsConfigProvider) GetJobURL() string {
+	// TODO: Check if this is the correct URL
+	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build?definitionId=" + os.Getenv("SYSTEM_DEFINITIONID")
 }
 
+// GetCommit returns commit SHA of current build
 func (a *AzureDevOpsConfigProvider) GetCommit() string {
 	return getEnv("BUILD_SOURCEVERSION", "n/a")
 }
 
-func (a *AzureDevOpsConfigProvider) GetRepoUrl() string {
+// GetRepoURL returns current repo URL e.g. https://github.com/SAP/jenkins-library
+func (a *AzureDevOpsConfigProvider) GetRepoURL() string {
 	return getEnv("BUILD_REPOSITORY_URI", "n/a")
 }
 
+// GetBuildReason returns the build reason
+func (a *AzureDevOpsConfigProvider) GetBuildReason() string {
+	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
+	return getEnv("BUILD_REASON", "n/a")
+}
+
+// GetPullRequestConfig returns pull request configuration
 func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	prKey := getEnv("SYSTEM_PULLREQUEST_PULLREQUESTID", "n/a")
 
@@ -194,6 +238,7 @@ func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	}
 }
 
+// IsPullRequest indicates whether the current build is a PR
 func (a *AzureDevOpsConfigProvider) IsPullRequest() bool {
 	return getEnv("BUILD_REASON", "n/a") == "PullRequest"
 }

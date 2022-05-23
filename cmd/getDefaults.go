@@ -17,6 +17,7 @@ type defaultsCommandOptions struct {
 	output        string //output format of default configs, currently only YAML
 	outputFile    string //if set: path to file where the output should be written to
 	defaultsFiles []string
+	useV1         bool
 	openFile      func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
@@ -43,7 +44,6 @@ func newGetDefaultsUtilsUtils() getDefaultsUtils {
 func DefaultsCommand() *cobra.Command {
 
 	defaultsOptions.openFile = config.OpenPiperFile
-	log.Entry().Info(defaultsOptions)
 	var createDefaultsCmd = &cobra.Command{
 		Use:   "getDefaults",
 		Short: "Retrieves multiple default configurations and outputs them embedded into a JSON object.",
@@ -78,15 +78,28 @@ func getDefaults() ([]map[string]string, error) {
 			return yamlDefaults, errors.Wrapf(err, "defaults: retrieving defaults file failed: '%v'", f)
 		}
 		if err == nil {
-			var c config.Config
-			c.ReadConfig(fc)
+			var yamlContent string
 
-			yaml, err := config.GetYAML(c)
-			if err != nil {
-				return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
+			if !defaultsOptions.useV1 {
+				var c config.Config
+				c.ReadConfig(fc)
+
+				yamlContent, err = config.GetYAML(c)
+				if err != nil {
+					return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
+				}
+			} else {
+				var rc config.RunConfigV1
+				rc.StageConfigFile = fc
+				rc.LoadConditionsV1()
+
+				yamlContent, err = config.GetYAML(rc.PipelineConfig)
+				if err != nil {
+					return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
+				}
 			}
 
-			yamlDefaults = append(yamlDefaults, map[string]string{"content": yaml, "filepath": f})
+			yamlDefaults = append(yamlDefaults, map[string]string{"content": yamlContent, "filepath": f})
 		}
 	}
 
@@ -129,6 +142,6 @@ func addDefaultsFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&defaultsOptions.output, "output", "yaml", "Defines the format of the configs embedded into a JSON object")
 	cmd.Flags().StringVar(&defaultsOptions.outputFile, "outputFile", "", "Defines the output filename")
 	cmd.Flags().StringArrayVar(&defaultsOptions.defaultsFiles, "defaultsFile", []string{}, "Defines the input defaults file(s)")
-
+	cmd.Flags().BoolVar(&defaultsOptions.useV1, "useV1", false, "Input files are CRD-style stage configuration")
 	cmd.MarkFlagRequired("defaultsFile")
 }
