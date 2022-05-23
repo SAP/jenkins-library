@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+
 	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
