@@ -16,7 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/format"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // FVDL This struct encapsulates everyting in the FVDL document
@@ -506,7 +506,7 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 		return sarif, err
 	}
 
-	_, err = FileUtils.Unzip(resultFilePath, tmpFolder)
+	_, err = piperutils.Unzip(resultFilePath, tmpFolder)
 	if err != nil {
 		return sarif, err
 	}
@@ -823,7 +823,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom, " ")
 					for index, element := range words { // These are required to ensure that titlecase is respected in titles, part of sarif "friendly name" rules
-						words[index] = strings.Title(strings.ToLower(element))
+						words[index] = piperutils.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
@@ -831,7 +831,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type, " ")
 					for index, element := range words {
-						words[index] = strings.Title(strings.ToLower(element))
+						words[index] = piperutils.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
@@ -839,7 +839,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype, " ")
 					for index, element := range words {
-						words[index] = strings.Title(strings.ToLower(element))
+						words[index] = piperutils.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
