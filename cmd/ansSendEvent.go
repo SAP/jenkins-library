@@ -35,17 +35,11 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 		Body:           fmt.Sprintf("Call from Piper step: %s", log.Entry().Data["stepName"]),
 	}
 	event.SetSeverityAndCategory(logrus.InfoLevel)
-	err = event.MergeWithJSON([]byte(config.EventJSON))
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return err
-	}
 
-	err = c.Send(event)
-	if err != nil {
+	if err = event.MergeWithJSON([]byte(config.EventJSON)); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+	} else if err = c.Send(event); err != nil {
 		log.SetErrorCategory(log.ErrorService)
 	}
-
-	return nil
+	return err
 }
-
