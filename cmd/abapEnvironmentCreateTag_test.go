@@ -207,9 +207,8 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 2, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Not all required values are provided to create an addon product version tag`, hook.AllEntries()[0].Message, "Expected a different message")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
+		assert.Equal(t, 1, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
 		hook.Reset()
 	})
 
