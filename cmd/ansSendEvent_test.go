@@ -126,8 +126,8 @@ func (am ansMock) CheckCorrectSetup() error {
 	return fmt.Errorf("not implemented")
 }
 
-func (am *ansMock) SetOptions(serviceKey ans.ServiceKey) {
-	am.testANS.SetOptions(serviceKey)
+func (am *ansMock) SetServiceKey(serviceKey ans.ServiceKey) {
+	am.testANS.SetServiceKey(serviceKey)
 }
 
 func (am *ansMock) cleanup() {
