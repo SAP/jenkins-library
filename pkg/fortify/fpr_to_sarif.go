@@ -914,8 +914,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					}
 				}
 				var ruleProp *format.SarifRuleProperties
+				ruleProp = new(format.SarifRuleProperties)
 				if len(propArray) != 0 {
-					ruleProp = new(format.SarifRuleProperties)
 					for j := 0; j < len(propArray); j++ {
 						if propArray[j][0] == "Accuracy" {
 							ruleProp.Accuracy = propArray[j][1]
