@@ -209,7 +209,7 @@ func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTa
 	if config.TagName != "" {
 		backlog = addTagToList(backlog, config.TagName, config.TagDescription)
 	}
-	return
+	return backlog, nil
 }
 
 func addTagToList(backlog []CreateTagBacklog, tag string, description string) []CreateTagBacklog {
