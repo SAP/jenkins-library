@@ -30,7 +30,6 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
-		EventTimestamp: time.Now().Unix(),
 		Subject:        fmt.Sprint(log.Entry().Data["stepName"]),
 		Body:           fmt.Sprintf("Call from Piper step: %s", log.Entry().Data["stepName"]),
 	}
@@ -38,7 +37,11 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 
 	if err = event.MergeWithJSON([]byte(config.EventJSON)); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-	} else if err = c.Send(event); err != nil {
+		return err
+	}
+	// We set the time
+	event.EventTimestamp = time.Now().Unix()
+	if err = c.Send(event); err != nil {
 		log.SetErrorCategory(log.ErrorService)
 	}
 	return err

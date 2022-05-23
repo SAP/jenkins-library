@@ -9,18 +9,20 @@ import (
 	"testing"
 )
 
+const testTimestamp = 1651585103
+
 func TestRunAnsSendEvent(t *testing.T) {
 	t.Parallel()
 
 	defaultEvent := ans.Event{
-		EventType: "Piper",
+		EventType: "myEvent",
 		Resource: &ans.Resource{
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
 		Subject:        fmt.Sprint("testStep"),
 		Body:           fmt.Sprintf("Call from Piper step: %s", "testStep"),
-		EventTimestamp: 1651585103,
+		EventTimestamp: testTimestamp,
 		Severity:       "INFO",
 		Category:       "NOTIFICATION",
 	}
@@ -33,12 +35,12 @@ func TestRunAnsSendEvent(t *testing.T) {
 
 	log.Entry().Data["stepName"] = "testStep"
 
-	t.Run("happy path - overwriting timestamp of event", func(t *testing.T) {
+	t.Run("happy path - overwriting EventType", func(t *testing.T) {
 		t.Parallel()
 		// init
 		config := ansSendEventOptions{
 			AnsServiceKey: goodServiceKey,
-			EventJSON:     `{"eventTimestamp": 1651585103}`,
+			EventJSON:     `{"eventType": "myEvent"}`,
 		}
 		am := ansMock{}
 		defer am.cleanup()
@@ -80,14 +82,14 @@ func TestRunAnsSendEvent(t *testing.T) {
 		// init
 		config := ansSendEventOptions{
 			AnsServiceKey: goodServiceKey,
-			EventJSON:     `{"eventTimestamp": 1651585103`,
+			EventJSON:     `faulty JSON`,
 		}
 
 		// test
 		err := runAnsSendEvent(&config, &ansMock{})
 
 		// assert
-		assert.EqualError(t, err, "error unmarshalling ANS event from JSON string \"{\\\"eventTimestamp\\\": 1651585103\": unexpected end of JSON input")
+		assert.EqualError(t, err, "error unmarshalling ANS event from JSON string \"faulty JSON\": invalid character 'u' in literal false (expecting 'l')")
 	})
 
 	t.Run("error - fail to send", func(t *testing.T) {
@@ -95,7 +97,7 @@ func TestRunAnsSendEvent(t *testing.T) {
 		// init
 		config := ansSendEventOptions{
 			AnsServiceKey: goodServiceKey,
-			EventJSON:     `{"eventTimestamp": 1651585103}`,
+			EventJSON:     `{"eventType": "myEvent"}`,
 		}
 		am := ansMock{failToSend: true}
 		defer am.cleanup()
@@ -118,6 +120,7 @@ func (am *ansMock) Send(event ans.Event) error {
 	if am.failToSend {
 		return fmt.Errorf("failed to send")
 	}
+	event.EventTimestamp = testTimestamp
 	am.testEvent = event
 	return nil
 }
