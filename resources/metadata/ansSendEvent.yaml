@@ -24,7 +24,7 @@ spec:
             param: ansServiceKey
       - name: eventJSON
         type: string
-        description: Event specification in JSON format
+        description: Event data in JSON format
         scope:
           - PARAMETERS
         mandatory: true

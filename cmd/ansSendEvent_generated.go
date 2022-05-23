@@ -111,7 +111,7 @@ func AnsSendEventCommand() *cobra.Command {
 
 func addAnsSendEventFlags(cmd *cobra.Command, stepConfig *ansSendEventOptions) {
 	cmd.Flags().StringVar(&stepConfig.AnsServiceKey, "ansServiceKey", os.Getenv("PIPER_ansServiceKey"), "Service key JSON string to access the SAP Alert Notification Service")
-	cmd.Flags().StringVar(&stepConfig.EventJSON, "eventJSON", os.Getenv("PIPER_eventJSON"), "Event specification in JSON format")
+	cmd.Flags().StringVar(&stepConfig.EventJSON, "eventJSON", os.Getenv("PIPER_eventJSON"), "Event data in JSON format")
 
 	cmd.MarkFlagRequired("ansServiceKey")
 	cmd.MarkFlagRequired("eventJSON")
