@@ -185,7 +185,7 @@ func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTa
 	}
 
 	if config.Repositories != "" {
-		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
+		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories) //config.Repositories should contain a file name
 		if err != nil {
 			return nil, err
 		}
