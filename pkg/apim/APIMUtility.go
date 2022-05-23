@@ -3,6 +3,9 @@ package apim
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"reflect"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -14,6 +17,18 @@ import (
 type Utils interface {
 	InitAPIM() error
 	IsPayloadJSON() bool
+}
+
+//OdataUtils for apim
+type OdataUtils interface {
+	InitOdataQuery() (string, error)
+}
+
+//OdataParameters struct
+type OdataParameters struct {
+	Filter, Search          string
+	Top, Skip               int
+	Orderby, Select, Expand []string
 }
 
 //Bundle struct
@@ -50,4 +65,22 @@ func (apim *Bundle) InitAPIM() error {
 func (apim *Bundle) IsPayloadJSON() bool {
 	var js json.RawMessage
 	return json.Unmarshal([]byte(apim.Payload), &js) == nil
+}
+
+func (odataFilters *OdataParameters) InitOdataQuery() (string, error) {
+
+	v := reflect.ValueOf(odataFilters).Elem()
+	typeOfS := v.Type()
+	urlParam := url.Values{}
+	for i := 0; i < v.NumField(); i++ {
+		structVal := fmt.Sprintf("%v", v.Field(i).Interface())
+		structVal = strings.Replace(structVal, "[", "", 1)
+		structVal = strings.Replace(structVal, "]", "", 1)
+		if structVal != "" {
+			urlParam.Set(strings.ToLower(typeOfS.Field(i).Name), structVal)
+		}
+	}
+	resultQuery := "?" + urlParam.Encode()
+	resultQuery = strings.ReplaceAll(resultQuery, "&", "&$")
+	return resultQuery, nil
 }
