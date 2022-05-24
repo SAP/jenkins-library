@@ -199,7 +199,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = nil
 	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%vtarget/codeqlReport.sarif", config.ModulePath), "db")
-	cmd = codeqlQuery(cmd, config.CodeqlQuery)
+	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database analyze for sarif generation")
@@ -210,7 +210,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = nil
 	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%vtarget/codeqlReport.csv", config.ModulePath), "db")
-	cmd = codeqlQuery(cmd, config.CodeqlQuery)
+	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database analyze for csv generation")
