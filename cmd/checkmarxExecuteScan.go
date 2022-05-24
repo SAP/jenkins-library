@@ -653,7 +653,6 @@ func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, pro
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}
-	log.Entry().Debugf("Configuration of project %v updated", projectName)
 	return nil
 }
 

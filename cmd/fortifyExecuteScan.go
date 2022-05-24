@@ -312,6 +312,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 
 	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatus)
 
+	influx.fortify_data.fields.projectID = project.ID
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
 	influx.fortify_data.fields.projectVersionID = projectVersion.ID
@@ -352,6 +353,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportData {
 	input := influx.fortify_data.fields
 	output := fortify.FortifyReportData{}
+	output.ProjectID = input.projectID
 	output.ProjectName = input.projectName
 	output.ProjectVersion = input.projectVersion
 	output.AuditAllAudited = input.auditAllAudited

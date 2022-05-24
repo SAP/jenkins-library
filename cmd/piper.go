@@ -108,6 +108,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
+	rootCmd.AddCommand(AbapEnvironmentCreateTagCommand())
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
@@ -185,6 +186,7 @@ func Execute() {
 	rootCmd.AddCommand(GradleExecuteBuildCommand())
 	rootCmd.AddCommand(ApiKeyValueMapUploadCommand())
 	rootCmd.AddCommand(PythonBuildCommand())
+	rootCmd.AddCommand(AwsS3UploadCommand())
 
 	addRootFlags(rootCmd)
 

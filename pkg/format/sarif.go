@@ -22,15 +22,16 @@ type Runs struct {
 
 // Results these structs are relevant to the Results object
 type Results struct {
-	RuleID           string            `json:"ruleId"`
-	RuleIndex        int               `json:"ruleIndex"`
-	Level            string            `json:"level,omitempty"`
-	Message          *Message          `json:"message,omitempty"`
-	AnalysisTarget   *ArtifactLocation `json:"analysisTarget,omitempty"`
-	Locations        []Location        `json:"locations,omitempty"`
-	CodeFlows        []CodeFlow        `json:"codeFlows,omitempty"`
-	RelatedLocations []RelatedLocation `json:"relatedLocations,omitempty"`
-	Properties       *SarifProperties  `json:"properties"`
+	RuleID              string              `json:"ruleId"`
+	RuleIndex           int                 `json:"ruleIndex"`
+	Level               string              `json:"level,omitempty"`
+	Message             *Message            `json:"message,omitempty"`
+	AnalysisTarget      *ArtifactLocation   `json:"analysisTarget,omitempty"`
+	Locations           []Location          `json:"locations,omitempty"`
+	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
+	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
+	PartialFingerprints PartialFingerprints `json:"partialFingerprints"`
+	Properties          *SarifProperties    `json:"properties"`
 }
 
 // Message to detail the finding
@@ -54,8 +55,9 @@ type PhysicalLocation struct {
 
 // ArtifactLocation describing the path of the artifact
 type ArtifactLocation struct {
-	URI   string `json:"uri"`
-	Index int    `json:"index"`
+	URI       string `json:"uri"`
+	URIBaseId string `json:"uriBaseId,omitempty"`
+	Index     int    `json:"index,omitempty"`
 }
 
 // Region where the finding was detected
@@ -72,6 +74,13 @@ type Region struct {
 // LogicalLocation of the finding
 type LogicalLocation struct {
 	FullyQualifiedName string `json:"fullyQualifiedName"`
+}
+
+// PartialFingerprints
+type PartialFingerprints struct {
+	FortifyInstanceID       string `json:"fortifyInstanceID,omitempty"`
+	CheckmarxSimilarityID   string `json:"checkmarxSimilarityID,omitempty"`
+	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
 }
 
 // SarifProperties adding additional information/context to the finding
@@ -167,7 +176,7 @@ type RelatedPhysicalLocation struct {
 
 // RelatedRegion
 type RelatedRegion struct {
-	StartLine   int `json:"startLine"`
+	StartLine   int `json:"startLine,omitempty"`
 	StartColumn int `json:"startColumn,omitempty"`
 }
 
@@ -256,9 +265,9 @@ type SrcRoot struct {
 // Artifact These structs are relevant to the artifacts object
 type Artifact struct {
 	Location SarifLocation `json:"location"`
-	Length   int           `json:"length"`
-	MimeType string        `json:"mimeType"`
-	Encoding string        `json:"encoding"`
+	Length   int           `json:"length,omitempty"`
+	MimeType string        `json:"mimeType,omitempty"`
+	Encoding string        `json:"encoding,omitempty"`
 }
 
 // SarifLocation

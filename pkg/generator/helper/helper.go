@@ -640,13 +640,13 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 
 	return stepInfo{
 			StepName:         stepData.Metadata.Name,
-			CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepData.Metadata.Name)),
-			CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepData.Metadata.Name)),
+			CobraCmdFuncName: fmt.Sprintf("%vCommand", piperutils.Title(stepData.Metadata.Name)),
+			CreateCmdVar:     fmt.Sprintf("create%vCmd", piperutils.Title(stepData.Metadata.Name)),
 			Short:            stepData.Metadata.Description,
 			Long:             stepData.Metadata.LongDescription,
 			StepParameters:   stepData.Spec.Inputs.Parameters,
 			StepAliases:      stepData.Metadata.Aliases,
-			FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
+			FlagsFunc:        fmt.Sprintf("add%vFlags", piperutils.Title(stepData.Metadata.Name)),
 			OSImport:         osImport,
 			OutputResources:  oRes,
 			ExportPrefix:     exportPrefix,
@@ -787,7 +787,7 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
 	funcMap["golangName"] = GolangNameTitle
-	funcMap["title"] = strings.Title
+	funcMap["title"] = piperutils.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
 	funcMap["isCLIParam"] = isCLIParam
@@ -797,7 +797,7 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 
 func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
-	funcMap["title"] = strings.Title
+	funcMap["title"] = piperutils.Title
 	funcMap["uniqueName"] = mustUniqName
 
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
@@ -841,7 +841,7 @@ func golangName(name string) string {
 
 // GolangNameTitle returns name in title case with abbriviations in capital (API, URL, ID, JSON, TLS)
 func GolangNameTitle(name string) string {
-	return strings.Title(golangName(name))
+	return piperutils.Title(golangName(name))
 }
 
 func flagType(paramType string) string {
