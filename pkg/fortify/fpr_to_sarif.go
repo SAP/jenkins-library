@@ -1158,6 +1158,14 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 }
 
 func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool) error {
+	// Set default values
+	ruleProp.Audited = false
+	ruleProp.FortifyCategory = "Unknown"
+	ruleProp.ToolSeverity = "Unknown"
+	ruleProp.ToolState = "Unreviewed"
+	ruleProp.ToolSeverityIndex = 0
+	ruleProp.ToolStateIndex = 0
+	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
 	if sys == nil {
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
@@ -1184,6 +1192,17 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+	}
+	if filterSet != nil {
+		for i := 0; i < len(filterSet.Folders); i++ {
+			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
+				ruleProp.FortifyCategory = filterSet.Folders[i].Name
+				break
+			}
+		}
+	} else {
+		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
+		return err
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
@@ -1224,17 +1243,6 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 			return err
 		}
 		ruleProp.ToolAuditMessage = unescapeXML(*commentData[0].Comment)
-	}
-	if filterSet != nil {
-		for i := 0; i < len(filterSet.Folders); i++ {
-			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
-				ruleProp.FortifyCategory = filterSet.Folders[i].Name
-				break
-			}
-		}
-	} else {
-		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
-		return err
 	}
 	return nil
 }
