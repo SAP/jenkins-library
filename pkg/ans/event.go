@@ -1,6 +1,7 @@
 package ans
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -43,10 +44,16 @@ type Resource struct {
 
 // MergeWithJSON unmarshalls an ANS Event JSON string and merges it with the existing receiver Event
 func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
-	if err = json.Unmarshal(eventJSON, &event); err != nil {
+	if err = strictUnmarshal(eventJSON, &event); err != nil {
 		err = errors.Wrapf(err, "error unmarshalling ANS event from JSON string %q", eventJSON)
 	}
 	return
+}
+
+func strictUnmarshal(data []byte, v interface{}) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	return dec.Decode(v)
 }
 
 // SetSeverityAndCategory takes the logrus log level and sets the corresponding ANS severity and category string
