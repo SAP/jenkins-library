@@ -67,6 +67,23 @@ func execute(utils codeqlExecuteScanUtils, cmd []string, isVerbose bool) error {
 	return utils.RunExecutable("codeql", cmd...)
 }
 
+func getLangFromBuildTool(buildTool string) string {
+	switch buildTool {
+	case "maven":
+		return "java"
+	case "pip":
+		return "python"
+	case "npm":
+		return "javascript"
+	case "yarn":
+		return "javascript"
+	case "golang":
+		return "go"
+	default:
+		return ""
+	}
+}
+
 func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 	if repoUri == "" {
 		return errors.New("repository param is not set or it cannot be auto populated")
@@ -150,7 +167,28 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) error {
 	var reports []piperutils.Path
-	cmd := []string{"database", "create", "db", "--overwrite", "--language=" + config.Language, "--command=" + config.BuildCommand, "--source-root", config.ModulePath}
+	cmd := []string{"database", "create", "db", "--overwrite", "--source-root", config.ModulePath}
+
+	language := getLangFromBuildTool(config.BuildTool)
+
+	if len(language) == 0 && len(config.Language) == 0 {
+		if config.BuildTool == "custom" {
+			return fmt.Errorf("as the buildTool is custom. please atleast specify the language parameter")
+		} else {
+			return fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
+		}
+	}
+
+	cmd = append(cmd, "--language="+language)
+	if len(config.Language) > 0 {
+		cmd = append(cmd, "--language="+config.Language)
+	}
+
+	//codeql has an autobuilder which tries to build the project based on specified programming language
+	if len(config.BuildCommand) > 0 {
+		cmd = append(cmd, "--command="+config.BuildCommand)
+	}
+
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database create")

@@ -4,7 +4,7 @@ metadata:
   longDescription: |-
     This step executes a codeql scan on the specified project to perform static code analysis and check the source code for security flaws.
 
-    The codeql step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with codeql
+    The codeql step triggers a scan locally on your orchestrator (e.g. Jenkins) within a docker container so finally you have to supply a docker image with codeql
     and Java plus Maven.
 
 spec:
@@ -32,6 +32,26 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: buildTool
+        type: string
+        description: Defines the build tool which is used for building the project.
+        longDescription: |-
+          Based on the build tool the step will try to auto build the project. The step will try to auto select
+          the language and the build command. You can override the language and the build command by specifiying it seperatly.
+        mandatory: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - custom
+          - maven
+          - golang
+          - npm
+          - pip
+          - yarn
+        default: "maven"
       - name: buildCommand
         type: string
         description: "Command to build the project"
@@ -39,7 +59,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "mvn clean install"
       - name: language
         type: string
         description: "The programming language used to analyze."
@@ -47,7 +66,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "java"
       - name: modulePath
         type: string
         description: "Allows providing the path for the module to scan"
@@ -63,7 +81,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "java-security-extended.qls"
       - name: uploadResults
         type: bool
         description: "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this."
@@ -74,9 +91,10 @@ spec:
         default: false
       - name: analyzedRef
         type: string
-        description: "Name of the ref that was analyzed.
+        description: "Name of the ref that was analyzed."
+        longDescription: |-
           If this ref is a pull request merge commit, then use refs/pulls/1234/merge or refs/pulls/1234/head (depending on whether or not this commit corresponds to the HEAD or MERGE commit of the PR).
-          Otherwise, this should be a branch: refs/heads/branch-name. If omitted, the CLI will attempt to automatically populate this from the current branch of the checkout path, if this exists."
+          Otherwise, this should be a branch: refs/heads/branch-name. If omitted, the CLI will attempt to automatically populate this from the current branch of the checkout path, if this exists.
         scope:
           - PARAMETERS
           - STAGES

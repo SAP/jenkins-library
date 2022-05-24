@@ -23,17 +23,37 @@ func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 func TestRunCodeqlExecuteScan(t *testing.T) {
 
 	t.Run("Valid CodeqlExecuteScan", func(t *testing.T) {
-		config := codeqlExecuteScanOptions{}
+		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./"}
 		assert.Equal(t, nil, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
 	})
 
 	t.Run("No auth token passed on upload results", func(t *testing.T) {
-		config := codeqlExecuteScanOptions{UploadResults: true}
+		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./"}
 		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
 	})
 
-	t.Run("upload results with token", func(t *testing.T) {
-		config := codeqlExecuteScanOptions{UploadResults: true, GithubToken: "test"}
+	t.Run("Upload results with token", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./", UploadResults: true, GithubToken: "test"}
+		assert.Equal(t, nil, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
+	})
+
+	t.Run("Custom buildtool", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "custom", Language: "javascript", ModulePath: "./", GithubToken: "test"}
+		assert.Equal(t, nil, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
+	})
+
+	t.Run("Custom buildtool but no language specified", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "custom", ModulePath: "./", GithubToken: "test"}
+		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
+	})
+
+	t.Run("Invalid buildtool and no language specified", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "test", ModulePath: "./", GithubToken: "test"}
+		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
+	})
+
+	t.Run("Invalid buildtool but language specified", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "test", Language: "javascript", ModulePath: "./", GithubToken: "test"}
 		assert.Equal(t, nil, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
 	})
 }

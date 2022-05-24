@@ -84,6 +84,7 @@ nav:
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - cnbBuild: steps/cnbBuild.md
+        - codeqlExecuteScan: steps/codeqlExecuteScan.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
@@ -94,7 +95,6 @@ nav:
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
         - fortifyExecuteScan: steps/fortifyExecuteScan.md
-        - codeqlExecuteScan: steps/codeqlExecuteScan.md
         - gatlingExecuteTests: steps/gatlingExecuteTests.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - gctsCloneRepository: steps/gctsCloneRepository.md

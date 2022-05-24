@@ -21,6 +21,7 @@ import (
 
 type codeqlExecuteScanOptions struct {
 	GithubToken   string `json:"githubToken,omitempty"`
+	BuildTool     string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
 	BuildCommand  string `json:"buildCommand,omitempty"`
 	Language      string `json:"language,omitempty"`
 	ModulePath    string `json:"modulePath,omitempty"`
@@ -85,7 +86,7 @@ func CodeqlExecuteScanCommand() *cobra.Command {
 		Short: "This step executes a codeql scan on the specified project to perform static code analysis and check the source code for security flaws.",
 		Long: `This step executes a codeql scan on the specified project to perform static code analysis and check the source code for security flaws.
 
-The codeql step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with codeql
+The codeql step triggers a scan locally on your orchestrator (e.g. Jenkins) within a docker container so finally you have to supply a docker image with codeql
 and Java plus Maven.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -164,15 +165,17 @@ and Java plus Maven.`,
 
 func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", `mvn clean install`, "Command to build the project")
-	cmd.Flags().StringVar(&stepConfig.Language, "language", `java`, "The programming language used to analyze.")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Defines the build tool which is used for building the project.")
+	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", os.Getenv("PIPER_buildCommand"), "Command to build the project")
+	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze.")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
-	cmd.Flags().StringVar(&stepConfig.CodeqlQuery, "codeqlQuery", `java-security-extended.qls`, "The name of a CodeQL query pack. If omitted, the default query suite for the language of the database being analyzed will be used.")
+	cmd.Flags().StringVar(&stepConfig.CodeqlQuery, "codeqlQuery", os.Getenv("PIPER_codeqlQuery"), "The name of a CodeQL query pack. If omitted, the default query suite for the language of the database being analyzed will be used.")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
-	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed. If this ref is a pull request merge commit, then use refs/pulls/1234/merge or refs/pulls/1234/head (depending on whether or not this commit corresponds to the HEAD or MERGE commit of the PR). Otherwise, this should be a branch: refs/heads/branch-name. If omitted, the CLI will attempt to automatically populate this from the current branch of the checkout path, if this exists.")
+	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
 
+	cmd.MarkFlagRequired("buildTool")
 }
 
 // retrieve step metadata
@@ -210,13 +213,22 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
+						Name:        "buildTool",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     `maven`,
+					},
+					{
 						Name:        "buildCommand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `mvn clean install`,
+						Default:     os.Getenv("PIPER_buildCommand"),
 					},
 					{
 						Name:        "language",
@@ -225,7 +237,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `java`,
+						Default:     os.Getenv("PIPER_language"),
 					},
 					{
 						Name:        "modulePath",
@@ -243,7 +255,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `java-security-extended.qls`,
+						Default:     os.Getenv("PIPER_codeqlQuery"),
 					},
 					{
 						Name:        "uploadResults",
