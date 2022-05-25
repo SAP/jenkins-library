@@ -56,6 +56,17 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.18.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-format
+            ${{ runner.os }}-golang-
       - name: checkout
         uses: actions/checkout@v2
         with:
@@ -64,6 +75,7 @@ jobs:
         uses: dominikh/staticcheck-action@v1.2.0
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
+          install-go: false
   generate:
     runs-on: ubuntu-latest
     steps:
