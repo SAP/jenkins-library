@@ -60,12 +60,6 @@ func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
 	return
 }
 
-func strictUnmarshal(data []byte, v interface{}) error {
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.DisallowUnknownFields()
-	return dec.Decode(v)
-}
-
 func (event *Event) Validate() (err error) {
 	validate = validator.New()
 
@@ -78,16 +72,6 @@ func (event *Event) Validate() (err error) {
 		}
 	}
 	return
-}
-
-func newTranslator(validate *validator.Validate) ut.Translator {
-	eng := en.New()
-	uni = ut.New(eng, eng)
-
-	translator, _ := uni.GetTranslator("en")
-	en_translations.RegisterDefaultTranslations(validate, translator)
-
-	return translator
 }
 
 // SetSeverityAndCategory takes the logrus log level and sets the corresponding ANS severity and category string
@@ -112,4 +96,20 @@ func (event *Event) SetSeverityAndCategory(level logrus.Level) {
 		event.Severity = fatalSeverity
 		event.Category = exceptionCategory
 	}
+}
+
+func strictUnmarshal(data []byte, v interface{}) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	return dec.Decode(v)
+}
+
+func newTranslator(validate *validator.Validate) ut.Translator {
+	eng := en.New()
+	uni = ut.New(eng, eng)
+
+	translator, _ := uni.GetTranslator("en")
+	en_translations.RegisterDefaultTranslations(validate, translator)
+
+	return translator
 }
