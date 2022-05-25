@@ -395,7 +395,7 @@ spec:
             name: cloudfoundryVaultSecretName
   containers:
     - name: cfDeploy
-      image: ppiper/cf-cli:6
+      image: ppiper/cf-cli:latest
   outputs:
     resources:
       - name: influx

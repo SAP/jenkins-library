@@ -22,15 +22,17 @@ type Runs struct {
 
 // Results these structs are relevant to the Results object
 type Results struct {
-	RuleID           string            `json:"ruleId"`
-	RuleIndex        int               `json:"ruleIndex"`
-	Level            string            `json:"level,omitempty"`
-	Message          *Message          `json:"message,omitempty"`
-	AnalysisTarget   *ArtifactLocation `json:"analysisTarget,omitempty"`
-	Locations        []Location        `json:"locations,omitempty"`
-	CodeFlows        []CodeFlow        `json:"codeFlows,omitempty"`
-	RelatedLocations []RelatedLocation `json:"relatedLocations,omitempty"`
-	Properties       *SarifProperties  `json:"properties"`
+	RuleID              string              `json:"ruleId"`
+	RuleIndex           int                 `json:"ruleIndex"`
+	Kind                string              `json:"kind,omitempty"`
+	Level               string              `json:"level,omitempty"`
+	Message             *Message            `json:"message,omitempty"`
+	AnalysisTarget      *ArtifactLocation   `json:"analysisTarget,omitempty"`
+	Locations           []Location          `json:"locations,omitempty"`
+	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
+	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
+	PartialFingerprints PartialFingerprints `json:"partialFingerprints"`
+	Properties          *SarifProperties    `json:"properties"`
 }
 
 // Message to detail the finding
@@ -54,8 +56,9 @@ type PhysicalLocation struct {
 
 // ArtifactLocation describing the path of the artifact
 type ArtifactLocation struct {
-	URI   string `json:"uri"`
-	Index int    `json:"index"`
+	URI       string `json:"uri"`
+	URIBaseId string `json:"uriBaseId,omitempty"`
+	Index     int    `json:"index,omitempty"`
 }
 
 // Region where the finding was detected
@@ -72,6 +75,13 @@ type Region struct {
 // LogicalLocation of the finding
 type LogicalLocation struct {
 	FullyQualifiedName string `json:"fullyQualifiedName"`
+}
+
+// PartialFingerprints
+type PartialFingerprints struct {
+	FortifyInstanceID       string `json:"fortifyInstanceID,omitempty"`
+	CheckmarxSimilarityID   string `json:"checkmarxSimilarityID,omitempty"`
+	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
 }
 
 // SarifProperties adding additional information/context to the finding
@@ -92,15 +102,17 @@ type SarifProperties struct {
 
 // Tool these structs are relevant to the Tool object
 type Tool struct {
-	Driver Driver `json:"driver"`
+	Driver     Driver   `json:"driver"`
+	Extensions []Driver `json:"extensions"`
 }
 
 // Driver meta information for the scan and tool context
 type Driver struct {
 	Name                string                `json:"name"`
 	Version             string                `json:"version"`
+	GUID                string                `json:"guid,omitempty"`
 	InformationUri      string                `json:"informationUri,omitempty"`
-	Rules               []SarifRule           `json:"rules"`
+	Rules               []SarifRule           `json:"rules,omitempty"`
 	SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies,omitempty"`
 }
 
@@ -167,7 +179,7 @@ type RelatedPhysicalLocation struct {
 
 // RelatedRegion
 type RelatedRegion struct {
-	StartLine   int `json:"startLine"`
+	StartLine   int `json:"startLine,omitempty"`
 	StartColumn int `json:"startColumn,omitempty"`
 }
 
@@ -182,6 +194,8 @@ type SupportedTaxonomies struct {
 type DefaultConfiguration struct {
 	Properties DefaultProperties `json:"properties,omitempty"`
 	Level      string            `json:"level,omitempty"` //This exists in the template, but not sure how it is populated. TODO.
+	Enabled    bool              `json:"enabled,omitempty"`
+	Rank       float64           `json:"rank,omitempty"`
 }
 
 // DefaultProperties
@@ -209,11 +223,12 @@ type ToolComponent struct {
 
 //SarifRuleProperties
 type SarifRuleProperties struct {
-	Accuracy    string   `json:"accuracy,omitempty"`
-	Impact      string   `json:"impact,omitempty"`
-	Probability string   `json:"probability,omitempty"`
-	Tags        []string `json:"tags,omitempty"`
-	Precision   string   `json:"precision,omitempty"`
+	Accuracy         string   `json:"accuracy,omitempty"`
+	Impact           string   `json:"impact,omitempty"`
+	Probability      string   `json:"probability,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
+	Precision        string   `json:"precision,omitempty"`
+	SecuritySeverity string   `json:"security-severity,omitempty"` //used by GHAS to defined the tag (low,medium,high)
 }
 
 // Invocations These structs are relevant to the Invocations object
@@ -256,9 +271,9 @@ type SrcRoot struct {
 // Artifact These structs are relevant to the artifacts object
 type Artifact struct {
 	Location SarifLocation `json:"location"`
-	Length   int           `json:"length"`
-	MimeType string        `json:"mimeType"`
-	Encoding string        `json:"encoding"`
+	Length   int           `json:"length,omitempty"`
+	MimeType string        `json:"mimeType,omitempty"`
+	Encoding string        `json:"encoding,omitempty"`
 }
 
 // SarifLocation

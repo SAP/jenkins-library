@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -131,16 +132,28 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 		runParameters += ` configuration="` + atcConfig.Configuration + `"`
 	}
 
-	objectSet, err := getATCObjectSet(atcConfig)
+	var objectSetString string
+	//check if OSL Objectset is present
+	if !reflect.DeepEqual(abaputils.ObjectSet{}, atcConfig.ObjectSet) {
+		objectSetString = abaputils.BuildOSLString(atcConfig.ObjectSet)
+	}
+	//if initial - check if ATC Object set is present
+	if objectSetString == "" && (len(atcConfig.Objects.Package) != 0 || len(atcConfig.Objects.SoftwareComponent) != 0) {
+		objectSetString, err = getATCObjectSet(atcConfig)
+	}
 
-	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSet + `</atc:runparameters>`
+	if objectSetString == "" {
+		return objectSetString, fmt.Errorf("Error while parsing ATC test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+	}
+
+	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSetString + `</atc:runparameters>`
 	return bodyString, err
 }
 
 func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfig ATCConfiguration, err error) {
 
 	if config.AtcConfig != "" {
-		// Configuration defaults to AUnitConfig
+		// Configuration defaults to ATC Config
 		log.Entry().Infof("ATC Configuration: %s", config.AtcConfig)
 		atcConfigFile, err := abaputils.ReadConfigFile(config.AtcConfig)
 		if err != nil {
@@ -167,11 +180,6 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 }
 
 func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
-	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
-	}
-
 	objectSet += `<obj:objectSet>`
 
 	//Build SC XML body
@@ -240,6 +248,7 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	return nil
+
 }
 
 func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -292,6 +301,7 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
+
 }
 
 func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -398,9 +408,10 @@ func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
 
 //ATCConfiguration object for parsing yaml config of software components and packages
 type ATCConfiguration struct {
-	CheckVariant  string     `json:"checkvariant,omitempty"`
-	Configuration string     `json:"configuration,omitempty"`
-	Objects       ATCObjects `json:"atcobjects"`
+	CheckVariant  string              `json:"checkvariant,omitempty"`
+	Configuration string              `json:"configuration,omitempty"`
+	Objects       ATCObjects          `json:"atcobjects"`
+	ObjectSet     abaputils.ObjectSet `json:"objectset,omitempty"`
 }
 
 //ATCObjects in form of packages and software components to be checked

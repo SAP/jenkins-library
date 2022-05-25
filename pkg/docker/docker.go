@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -84,6 +85,7 @@ type Client struct {
 	registryURL   string
 	localPath     string
 	includeLayers bool
+	imageFormat   string
 }
 
 // ClientOptions defines the options to be set on the client
@@ -91,6 +93,7 @@ type ClientOptions struct {
 	ImageName   string
 	RegistryURL string
 	LocalPath   string
+	ImageFormat string
 }
 
 //Download interface for download an image to a local path
@@ -105,6 +108,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.imageName = options.ImageName
 	c.registryURL = options.RegistryURL
 	c.localPath = options.LocalPath
+	c.imageFormat = options.ImageFormat
 }
 
 //DownloadImageContent downloads the image content into the given targetDir. Returns with an error if the targetDir doesnt exist
@@ -167,7 +171,7 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	craneCmd := cranecmd.NewCmdPull(&noOpts)
 	craneCmd.SetOut(log.Writer())
 	craneCmd.SetErr(log.Writer())
-	craneCmd.SetArgs([]string{imageRef.Name(), tmpFile.Name(), "--format=tarball"})
+	craneCmd.SetArgs([]string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat})
 
 	if err := craneCmd.Execute(); err != nil {
 		defer os.Remove(tmpFile.Name())
@@ -194,14 +198,15 @@ func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
 
 func (c *Client) getImageRef(image string) (name.Reference, error) {
 	opts := []name.Option{}
+	registry := ""
 
 	if len(c.registryURL) > 0 {
 		re := regexp.MustCompile(`(?i)^https?://`)
-		registry := re.ReplaceAllString(c.registryURL, "")
+		registry = re.ReplaceAllString(c.registryURL, "")
 		opts = append(opts, name.WithDefaultRegistry(registry))
 	}
 
-	return name.ParseReference(image, opts...)
+	return name.ParseReference(path.Join(registry, image), opts...)
 }
 
 // ImageListWithFilePath compiles container image names based on all Dockerfiles found, considering excludes
