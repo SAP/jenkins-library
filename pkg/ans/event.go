@@ -75,20 +75,6 @@ func (event *Event) Validate() (err error) {
 	return
 }
 
-func (event Event) Validate() (err error) {
-	validate = validator.New()
-
-	if err = validate.Struct(event); err != nil {
-		translator := newTranslator(validate)
-		errs := err.(validator.ValidationErrors)
-		err = fmt.Errorf("event JSON failed the validation")
-		for _, fieldError := range errs.Translate(translator) {
-			err = errors.Wrap(err, fieldError)
-		}
-	}
-	return
-}
-
 func (event *Event) Copy() (destination Event, err error) {
 	var sourceJSON []byte
 	sourceJSON, err = json.Marshal(event); if err != nil {
@@ -96,16 +82,6 @@ func (event *Event) Copy() (destination Event, err error) {
 	}
 	err = destination.MergeWithJSON(sourceJSON)
 	return
-}
-
-func newTranslator(validate *validator.Validate) ut.Translator {
-	eng := en.New()
-	uni = ut.New(eng, eng)
-
-	translator, _ := uni.GetTranslator("en")
-	en_translations.RegisterDefaultTranslations(validate, translator)
-
-	return translator
 }
 
 // SetSeverityAndCategory takes the logrus log level and sets the corresponding ANS severity and category string
