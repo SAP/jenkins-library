@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -12,10 +13,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockAzureContainerAPI func(blobName string) azblob.BlockBlobClient
+type mockAzureContainerAPI func(blobName string) (*azblob.BlockBlobClient, error)
 
-func (m mockAzureContainerAPI) NewBlockBlobClient(blobName string) azblob.BlockBlobClient {
+func (m mockAzureContainerAPI) NewBlockBlobClient(blobName string) (*azblob.BlockBlobClient, error) {
 	return m(blobName)
+}
+
+func mockAzureContainerClient(t *testing.T, fail bool) AzureContainerAPI {
+	return mockAzureContainerAPI(func(blobName string) (*azblob.BlockBlobClient, error) {
+		t.Helper()
+		if fail {
+			return nil, fmt.Errorf("invalid blobName")
+		}
+		return &azblob.BlockBlobClient{}, nil
+	})
+}
+
+func UploadMock(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
+	return &http.Response{}, nil
 }
 
 func TestRunAzureBlobUpload(t *testing.T) {
@@ -23,7 +38,6 @@ func TestRunAzureBlobUpload(t *testing.T) {
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
-
 		// create temporary file
 		f, err := os.CreateTemp("", "tmpfile-")
 		if err != nil {
@@ -35,14 +49,13 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		if _, err := f.Write(data); err != nil {
 			log.Fatal(err)
 		}
-
 		// initialization
 		config := azureBlobUploadOptions{
 			FilePath: f.Name(),
 		}
 		container := mockAzureContainerClient
 		// test
-		err = runAzureBlobUpload(&config, container(t), UploadMock)
+		err = runAzureBlobUpload(&config, container(t, false), UploadMock)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -55,20 +68,32 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		}
 		container := mockAzureContainerClient
 		// test
-		err := runAzureBlobUpload(&config, container(t), UploadMock)
+		err := runAzureBlobUpload(&config, container(t, false), UploadMock)
 		// assert
-		_, ok := err.(*fs.PathError)
-		assert.True(t, ok)
+		assert.IsType(t, &fs.PathError{}, err)
 	})
-}
 
-func mockAzureContainerClient(t *testing.T) AzureContainerAPI {
-	return mockAzureContainerAPI(func(blobName string) azblob.BlockBlobClient {
-		t.Helper()
-		return azblob.BlockBlobClient{}
+	t.Run("error blobName", func(t *testing.T) {
+		t.Parallel()
+		// create temporary file
+		f, err := os.CreateTemp("", "tmpfile-")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		defer os.Remove(f.Name())
+		data := []byte("test test test")
+		if _, err := f.Write(data); err != nil {
+			log.Fatal(err)
+		}
+		// initialization
+		config := azureBlobUploadOptions{
+			FilePath: f.Name(),
+		}
+		container := mockAzureContainerClient
+		// test
+		err = runAzureBlobUpload(&config, container(t, true), UploadMock)
+		// assert
+		assert.EqualError(t, err, "invalid blobName")
 	})
-}
-
-func UploadMock(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.HighLevelUploadToBlockBlobOption) (*http.Response, error) {
-	return &http.Response{}, nil
 }
