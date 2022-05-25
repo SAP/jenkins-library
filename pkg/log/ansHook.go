@@ -12,9 +12,9 @@ import (
 
 // ANSHook is used to set the hook features for the logrus hook
 type ANSHook struct {
-	client       ans.Client
-	defaultEvent ans.Event
-	firing       bool
+	client        ans.Client
+	eventTemplate ans.Event
+	firing        bool
 }
 
 // NewANSHook creates a new ANS hook for logrus
@@ -70,8 +70,8 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 		return
 	}
 	hook = ANSHook{
-		client:       client,
-		defaultEvent: event,
+		client:        client,
+		eventTemplate: event,
 	}
 	return
 }
@@ -93,7 +93,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 		return
 	}
 	var event ans.Event
-	event, err = copyEvent(ansHook.defaultEvent); if err != nil {
+	event, err = copyEvent(ansHook.eventTemplate); if err != nil {
 		return
 	}
 

@@ -93,7 +93,7 @@ func TestANSHook_newANSHook(t *testing.T) {
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
 				assert.Equal(t, defaultANSClient(), clientMock.testANS, "new ANSHook not as expected")
-				assert.Equal(t, tt.wantEvent, got.defaultEvent, "new ANSHook not as expected")
+				assert.Equal(t, tt.wantEvent, got.eventTemplate, "new ANSHook not as expected")
 			}
 		})
 	}
@@ -174,9 +174,9 @@ func TestANSHook_Fire(t *testing.T) {
 			clientMock := ansMock{}
 			defer clientMock.cleanup()
 			ansHook := &ANSHook{
-				client:       &clientMock,
-				defaultEvent: tt.fields.defaultEvent,
-				firing:       tt.fields.firing,
+				client:        &clientMock,
+				eventTemplate: tt.fields.defaultEvent,
+				firing:        tt.fields.firing,
 			}
 			for _, entryArg := range tt.entryArgs {
 				originalLogLevel := entryArg.Level
