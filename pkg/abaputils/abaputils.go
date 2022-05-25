@@ -323,11 +323,12 @@ type AbapBinding struct {
 
 // ClientMock contains information about the client mock
 type ClientMock struct {
-	Token      string
-	Body       string
-	BodyList   []string
-	StatusCode int
-	Error      error
+	Token       string
+	Body        string
+	BodyList    []string
+	StatusCode  int
+	Error       error
+	NilResponse bool
 }
 
 // SetOptions sets clientOptions for a client mock
@@ -335,6 +336,10 @@ func (c *ClientMock) SetOptions(opts piperhttp.ClientOptions) {}
 
 // SendRequest sets a HTTP response for a client mock
 func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	if c.NilResponse {
+		return nil, c.Error
+	}
 
 	var body []byte
 	if c.Body != "" {
