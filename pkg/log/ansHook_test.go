@@ -65,6 +65,11 @@ func TestANSHook_newANSHook(t *testing.T) {
 			eventTemplateFileContent: `{"priority":123}`,
 			wantEvent:                mergeEvents(t, defaultEvent(), ans.Event{Priority: 789}),
 		},
+		{
+			name:       "Fails on validation error",
+			args:      args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":-1}`},
+			wantErrMsg: "did not initialize SAP Alert Notification Service due to faulty event template json: Priority must be 1 or greater: event JSON failed the validation",
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

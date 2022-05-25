@@ -57,6 +57,18 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
 		}
 	}
+	if len(event.Severity) > 0 {
+		Entry().WithField("stepName", "ANS").Warnf("event severity set to '%s' will be overwritten according to the log level", event.Severity)
+		event.Severity = ""
+	}
+	if len(event.Category) > 0 {
+		Entry().WithField("stepName", "ANS").Warnf("event category set to '%s' will be overwritten according to the log level", event.Category)
+		event.Category = ""
+	}
+	if err = event.Validate(); err != nil {
+		err = errors.Wrap(err, "did not initialize SAP Alert Notification Service due to faulty event template json")
+		return
+	}
 	hook = ANSHook{
 		client:       client,
 		defaultEvent: event,
