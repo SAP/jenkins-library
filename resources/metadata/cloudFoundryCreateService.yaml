@@ -192,4 +192,4 @@ spec:
           - name: cfManifestVariablesFiles
   containers:
     - name: cf
-      image: ppiper/cf-cli:7
+      image: ppiper/cf-cli:latest

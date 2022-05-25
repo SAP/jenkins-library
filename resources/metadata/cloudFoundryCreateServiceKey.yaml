@@ -111,4 +111,4 @@ spec:
           - name: cloudFoundry/serviceKeyConfig
   containers:
     - name: cf
-      image: ppiper/cf-cli:7
+      image: ppiper/cf-cli:latest

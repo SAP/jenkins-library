@@ -359,7 +359,7 @@ func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageT
 }
 
 func getBadge(orchestrator string) string {
-	orchestratorOnly := strings.Title(strings.ToLower(orchestrator)) + " only"
+	orchestratorOnly := piperutils.Title(strings.ToLower(orchestrator)) + " only"
 	urlPath := &url.URL{Path: orchestratorOnly}
 	orchestratorOnlyString := urlPath.String()
 

@@ -196,7 +196,7 @@ func TestRunHelmUninstall(t *testing.T) {
 	}
 }
 
-func TestRunHelmPackage(t *testing.T) {
+func TestRunHelmDependency(t *testing.T) {
 	t.Parallel()
 
 	testTable := []struct {
@@ -206,23 +206,23 @@ func TestRunHelmPackage(t *testing.T) {
 	}{
 		{
 			config: helmExecuteOptions{
-				HelmCommand: "package",
+				HelmCommand: "dependency",
 			},
 			methodError: nil,
 		},
 		{
 			config: helmExecuteOptions{
-				HelmCommand: "package",
+				HelmCommand: "dependency",
 			},
 			methodError:    errors.New("some error"),
-			expectedErrStr: "failed to execute helm package: some error",
+			expectedErrStr: "failed to execute helm dependency: some error",
 		},
 	}
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmPackage").Return(testCase.methodError)
+			helmExecute.On("RunHelmDependency").Return(testCase.methodError)
 
 			err := runHelmExecute(testCase.config, helmExecute)
 			if err != nil {
@@ -300,7 +300,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 				HelmCommand: "",
 			},
 			methodPackageError: errors.New("some error"),
-			expectedErrStr:     "failed to execute helm package: some error",
+			expectedErrStr:     "failed to execute helm dependency: some error",
 		},
 		{
 			config: helmExecuteOptions{
@@ -315,7 +315,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmLint").Return(testCase.methodLintError)
-			helmExecute.On("RunHelmPackage").Return(testCase.methodPackageError)
+			helmExecute.On("RunHelmDependency").Return(testCase.methodPackageError)
 			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
 
 			err := runHelmExecute(testCase.config, helmExecute)

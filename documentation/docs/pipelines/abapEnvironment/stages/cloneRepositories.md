@@ -1,11 +1,12 @@
 # Clone Repositories
 
-This stage creates pulls/clones the specified software components (repositories) to the SAP BTP, ABAP environment system.
+This stage creates pulls/clones the specified software components (repositories) to the SAP BTP, ABAP environment system. As a prerequisite, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP BTP, ABAP Environment - Software Component Test Integration) is created using the step `cloudFoundryCreateServiceKey`. With the creation of the Communication Arrangement, a User and Password is created on the SAP BTP, ABAP environment system for the APIs that are used in this stage, as well as in the ATC stage.
 
 ## Steps
 
 The following steps can be executed in this stage:
 
+- [cloudFoundryCreateServiceKey](../../../steps/cloudFoundryCreateServiceKey.md)
 - [abapEnvironmentPullGitRepo](../../../steps/abapEnvironmentPullGitRepo.md)
 - [abapEnvironmentCloneGitRepo](../../../steps/abapEnvironmentCloneGitRepo.md)
 - [abapEnvironmentCheckoutBranch](../../../steps/abapEnvironmentCheckoutBranch.md)
@@ -37,7 +38,6 @@ general:
   cfSpace: 'mySpace'
   cfCredentialsId: 'cfAuthentification'
   cfServiceInstance: 'abap_system'
-  cfServiceKeyName: 'JENKINS_SAP_COM_0510'
 stages:
   Clone Repositories:
     repositories: 'repositories.yml'
@@ -50,4 +50,6 @@ stages:
 repositories:
   - name: '/DMO/SWC'
     branch: 'main'
+    commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8' #optional
+    tag: 'myTag' #optional
 ```

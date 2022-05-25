@@ -9,4 +9,6 @@ steps:
     - path: project
     - containerImageName: go-app
       containerImageTag: v1.0.0
-      path: zip/go.zip
+      path: "**/go.zip"
+    - path: project
+      containerImageName: my-app2
