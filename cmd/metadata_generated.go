@@ -20,6 +20,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"abapEnvironmentCheckoutBranch":             abapEnvironmentCheckoutBranchMetadata(),
 		"abapEnvironmentCloneGitRepo":               abapEnvironmentCloneGitRepoMetadata(),
 		"abapEnvironmentCreateSystem":               abapEnvironmentCreateSystemMetadata(),
+		"abapEnvironmentCreateTag":                  abapEnvironmentCreateTagMetadata(),
 		"abapEnvironmentPullGitRepo":                abapEnvironmentPullGitRepoMetadata(),
 		"abapEnvironmentPushATCSystemConfig":        abapEnvironmentPushATCSystemConfigMetadata(),
 		"abapEnvironmentRunATCCheck":                abapEnvironmentRunATCCheckMetadata(),
