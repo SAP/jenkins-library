@@ -103,11 +103,10 @@ The following section contains an example of an `atcSystemConfig.json` file.
 
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
-See below an example for an `atcSystemConfig.json` file for creating/updating an ATC System Configuration with the name myATCSystemConfigurationName including a change of one priority and providing information about last_changed date (not mandatory).
+See below an example for an `atcSystemConfig.json` file for creating/updating an ATC System Configuration with the name myATCSystemConfigurationName including a change of one priority.
 
 ```json
 {
-  "last_changed_at": "2022-01-27T22:46:02.132169Z",
   "conf_name": "myATCSystemConfigurationName",
   "checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
   "block_findings": "0",
@@ -136,5 +135,3 @@ See below an example for an `atcSystemConfig.json` file for creating/updating an
   "is_proxy_variant": false
 }
 ```
-
-In case of creating an ATC System Configuration the default priorities will be created as well. In case the field/attribute last_changed_at is provided in the file and filled with a valid date and the configuration already exists with the given name in the respective ABAP system and should be patched (configuration parameter patchIfExisting set to true), the step will only attempt an update, in case the date from the file is younger than the date from the system!
