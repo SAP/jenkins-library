@@ -31,31 +31,36 @@ type HelmExecute struct {
 
 // HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
-	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
-	ChartPath                 string   `json:"chartPath,omitempty"`
-	DeploymentName            string   `json:"deploymentName,omitempty"`
-	ForceUpdates              bool     `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                []string `json:"helmValues,omitempty"`
-	Image                     string   `json:"image,omitempty"`
-	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                string   `json:"kubeConfig,omitempty"`
-	KubeContext               string   `json:"kubeContext,omitempty"`
-	Namespace                 string   `json:"namespace,omitempty"`
-	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	Version                   string   `json:"version,omitempty"`
-	AppVersion                string   `json:"appVersion,omitempty"`
-	PublishVersion            string   `json:"publishVersion,omitempty"`
-	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
-	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
-	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
-	FilterTest                string   `json:"filterTest,omitempty"`
-	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
-	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
-	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
-	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
-	HelmCommand               string   `json:"helmCommand,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalParameters      []string               `json:"additionalParameters,omitempty"`
+	ChartPath                 string                 `json:"chartPath,omitempty"`
+	DeploymentName            string                 `json:"deploymentName,omitempty"`
+	ForceUpdates              bool                   `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds     int                    `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                []string               `json:"helmValues,omitempty"`
+	Image                     string                 `json:"image,omitempty"`
+	KeepFailedDeployments     bool                   `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                string                 `json:"kubeConfig,omitempty"`
+	KubeContext               string                 `json:"kubeContext,omitempty"`
+	Namespace                 string                 `json:"namespace,omitempty"`
+	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
+	Version                   string                 `json:"version,omitempty"`
+	AppVersion                string                 `json:"appVersion,omitempty"`
+	PublishVersion            string                 `json:"publishVersion,omitempty"`
+	Dependency                string                 `json:"dependency,omitempty" validate:"possible-values=build list update"`
+	PackageDependencyUpdate   bool                   `json:"packageDependencyUpdate,omitempty"`
+	DumpLogs                  bool                   `json:"dumpLogs,omitempty"`
+	FilterTest                string                 `json:"filterTest,omitempty"`
+	TargetRepositoryURL       string                 `json:"targetRepositoryURL,omitempty"`
+	TargetRepositoryName      string                 `json:"targetRepositoryName,omitempty"`
+	TargetRepositoryUser      string                 `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryPassword  string                 `json:"targetRepositoryPassword,omitempty"`
+	HelmCommand               string                 `json:"helmCommand,omitempty"`
+	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
+	ValuesMapping             map[string]interface{} `json:"valuesMapping,omitempty"`
+	ImageNames                []string               `json:"imageNames,omitempty"`
+	ImageNameTags             []string               `json:"imageNameTags,omitempty"`
+	ImageDigests              []string               `json:"imageDigests,omitempty"`
+	AppTemplate               string                 `json:"appTemplate,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance

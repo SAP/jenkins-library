@@ -16,29 +16,34 @@ import (
 )
 
 type helmExecuteOptions struct {
-	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
-	ChartPath                 string   `json:"chartPath,omitempty"`
-	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
-	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
-	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
-	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
-	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                []string `json:"helmValues,omitempty"`
-	Image                     string   `json:"image,omitempty"`
-	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                string   `json:"kubeConfig,omitempty"`
-	KubeContext               string   `json:"kubeContext,omitempty"`
-	Namespace                 string   `json:"namespace,omitempty"`
-	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	HelmCommand               string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall dependency publish"`
-	AppVersion                string   `json:"appVersion,omitempty"`
-	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
-	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
-	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
-	FilterTest                string   `json:"filterTest,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
-	Publish                   bool     `json:"publish,omitempty"`
-	Version                   string   `json:"version,omitempty"`
+	AdditionalParameters      []string               `json:"additionalParameters,omitempty"`
+	ChartPath                 string                 `json:"chartPath,omitempty"`
+	TargetRepositoryURL       string                 `json:"targetRepositoryURL,omitempty"`
+	TargetRepositoryName      string                 `json:"targetRepositoryName,omitempty"`
+	TargetRepositoryUser      string                 `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryPassword  string                 `json:"targetRepositoryPassword,omitempty"`
+	HelmDeployWaitSeconds     int                    `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                []string               `json:"helmValues,omitempty"`
+	Image                     string                 `json:"image,omitempty"`
+	KeepFailedDeployments     bool                   `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                string                 `json:"kubeConfig,omitempty"`
+	KubeContext               string                 `json:"kubeContext,omitempty"`
+	Namespace                 string                 `json:"namespace,omitempty"`
+	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
+	HelmCommand               string                 `json:"helmCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall dependency publish"`
+	AppVersion                string                 `json:"appVersion,omitempty"`
+	Dependency                string                 `json:"dependency,omitempty" validate:"possible-values=build list update"`
+	PackageDependencyUpdate   bool                   `json:"packageDependencyUpdate,omitempty"`
+	DumpLogs                  bool                   `json:"dumpLogs,omitempty"`
+	FilterTest                string                 `json:"filterTest,omitempty"`
+	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
+	Publish                   bool                   `json:"publish,omitempty"`
+	Version                   string                 `json:"version,omitempty"`
+	ValuesMapping             map[string]interface{} `json:"valuesMapping,omitempty"`
+	ImageNames                []string               `json:"imageNames,omitempty"`
+	ImageNameTags             []string               `json:"imageNameTags,omitempty"`
+	ImageDigests              []string               `json:"imageDigests,omitempty"`
+	AppTemplate               string                 `json:"appTemplate,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -178,6 +183,11 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures helm to run the deploy command to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the artifact version to use from helm package/publish commands.")
+
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNames, "imageNames", []string{}, "List of names of the images to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageDigests, "imageDigests", []string{}, "List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`")
+	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -463,6 +473,65 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_version"),
+					},
+					{
+						Name:        "valuesMapping",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name: "imageNames",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNames",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "imageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "imageDigests",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageDigests",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name:        "appTemplate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "k8sAppTemplate"}},
+						Default:     os.Getenv("PIPER_appTemplate"),
 					},
 				},
 			},
