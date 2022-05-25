@@ -55,7 +55,7 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		}
 		container := mockAzureContainerClient
 		// test
-		err = runAzureBlobUpload(&config, container(t, false), UploadMock)
+		err = executeUpload(&config, container(t, false), UploadMock)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -68,7 +68,7 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		}
 		container := mockAzureContainerClient
 		// test
-		err := runAzureBlobUpload(&config, container(t, false), UploadMock)
+		err := executeUpload(&config, container(t, false), UploadMock)
 		// assert
 		assert.IsType(t, &fs.PathError{}, err)
 	})
@@ -92,7 +92,7 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		}
 		container := mockAzureContainerClient
 		// test
-		err = runAzureBlobUpload(&config, container(t, true), UploadMock)
+		err = executeUpload(&config, container(t, true), UploadMock)
 		// assert
 		assert.EqualError(t, err, "invalid blobName")
 	})
