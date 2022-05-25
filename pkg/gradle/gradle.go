@@ -2,86 +2,24 @@ package gradle
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 const (
-	exec                  = "gradle"
-	bomTaskName           = "cyclonedxBom"
+	gradleExecutable  = "gradle"
+	gradlewExecutable = "./gradlew"
+
 	groovyBuildScriptName = "build.gradle"
 	kotlinBuildScriptName = "build.gradle.kts"
-	createBOMScriptName   = "cyclonedx.gradle"
-	publishInitScriptName = "maven-publish.gradle"
+	initScriptName        = "initScript.gradle.tmp"
 )
-
-const publishInitScriptContentTemplate = `
-rootProject {
-    apply plugin: 'maven-publish'
-    apply plugin: 'java'
-
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                versionMapping {
-                    usage('java-api') {
-                        fromResolutionOf('runtimeClasspath')
-                    }
-                    usage('java-runtime') {
-                        fromResolutionResult()
-                    }
-                }
-				{{- if .ArtifactGroupID}}
-				groupId = '{{.ArtifactGroupID}}'
-				{{- end }}
-				{{- if .ArtifactID}}
-				artifactId = '{{.ArtifactID}}'
-				{{- end }}
-				{{- if .ArtifactVersion}}
-				version = '{{.ArtifactVersion}}'
-				{{- end }}
-                from components.java
-            }
-        }
-        repositories {
-            maven {
-                credentials {
-                    username = "{{.RepositoryUsername}}"
-                    password = "{{.RepositoryPassword}}"
-                }
-                url = "{{.RepositoryURL}}"
-            }
-        }
-    }
-}
-`
-
-const bomInitScriptContent = `
-initscript {
-  repositories {
-    mavenCentral()
-    maven {
-      url "https://plugins.gradle.org/m2/"
-    }
-  }
-  dependencies {
-    classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
-  }
-}
-
-rootProject {
-    apply plugin: 'java'
-    apply plugin: 'maven'
-    apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
-}
-`
 
 type Utils interface {
 	Stdout(out io.Writer)
@@ -100,35 +38,46 @@ type Utils interface {
 
 // ExecuteOptions are used by Execute() to construct the Gradle command line.
 type ExecuteOptions struct {
-	BuildGradlePath    string `json:"path,omitempty"`
-	Task               string `json:"task,omitempty"`
-	CreateBOM          bool   `json:"createBOM,omitempty"`
-	ReturnStdout       bool   `json:"returnStdout,omitempty"`
-	Publish            bool   `json:"publish,omitempty"`
-	ArtifactVersion    string `json:"artifactVersion,omitempty"`
-	ArtifactGroupID    string `json:"artifactGroupId,omitempty"`
-	ArtifactID         string `json:"artifactId,omitempty"`
-	RepositoryURL      string `json:"repositoryUrl,omitempty"`
-	RepositoryPassword string `json:"repositoryPassword,omitempty"`
-	RepositoryUsername string `json:"repositoryUsername,omitempty"`
+	BuildGradlePath   string `json:"path,omitempty"`
+	Task              string `json:"task,omitempty"`
+	InitScriptContent string `json:"initScriptContent,omitempty"`
+	UseWrapper        bool   `json:"useWrapper,omitempty"`
+	ReturnStdout      bool   `json:"returnStdout,omitempty"`
 }
 
 func Execute(options *ExecuteOptions, utils Utils) error {
-	groovyBuildScriptExists, err := utils.FileExists(filepath.Join(options.BuildGradlePath, groovyBuildScriptName))
+	stdOutBuf, stdOut := evaluateStdOut(options)
+	utils.Stdout(stdOut)
+	utils.Stderr(log.Writer())
+
+	_, err := searchBuildScript([]string{groovyBuildScriptName, kotlinBuildScriptName}, utils.FileExists)
 	if err != nil {
-		return fmt.Errorf("failed to check if file exists: %v", err)
-	}
-	kotlinBuildScriptExists, err := utils.FileExists(filepath.Join(options.BuildGradlePath, kotlinBuildScriptName))
-	if err != nil {
-		return fmt.Errorf("failed to check if file exists: %v", err)
-	}
-	if !groovyBuildScriptExists && !kotlinBuildScriptExists {
-		return fmt.Errorf("the specified gradle build script could not be found")
+		return err
 	}
 
-	if options.CreateBOM {
-		if err := createBOM(options, utils); err != nil {
-			return fmt.Errorf("failed to create BOM: %v", err)
+	exec := gradleExecutable
+	if options.UseWrapper {
+		wrapperExists, err := utils.FileExists(gradlewExecutable)
+		if err != nil {
+			return err
+		}
+		if !wrapperExists {
+			return errors.New("gradle wrapper not found")
+		}
+		exec = gradlewExecutable
+	}
+	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
+
+	if options.InitScriptContent != "" {
+		if err := utils.RunExecutable(exec, "tasks"); err != nil {
+			return fmt.Errorf("failed list gradle tasks: %v", err)
+		}
+		if !strings.Contains(stdOutBuf.String(), options.Task) {
+			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
+			if err != nil {
+				return fmt.Errorf("failed create init script: %v", err)
+			}
+			defer utils.FileRemove(initScriptName)
 		}
 	}
 
@@ -140,13 +89,6 @@ func Execute(options *ExecuteOptions, utils Utils) error {
 		commandLine := append([]string{exec}, parameters...)
 		return fmt.Errorf("failed to run executable, command: '%s', error: %v", commandLine, err)
 	}
-
-	if options.Publish {
-		if err := publish(options, utils); err != nil {
-			return fmt.Errorf("failed to publish artifacts to staging repository: %v", err)
-		}
-	}
-
 	return nil
 }
 
@@ -161,82 +103,37 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 		parameters = append(parameters, "-p", options.BuildGradlePath)
 	}
 
+	if options.InitScriptContent != "" {
+		parameters = append(parameters, "--init-script", initScriptName)
+	}
+
 	return parameters
 }
 
-func publish(options *ExecuteOptions, utils Utils) error {
-	log.Entry().Info("Publishing artifact to staging repository...")
-	if len(options.RepositoryURL) == 0 {
-		return fmt.Errorf("there's no target repository for binary publishing configured")
-	}
-	publishInitScriptContent, err := getPublishInitScriptContent(options)
-	if err != nil {
-		return fmt.Errorf("failed to get init script content: %v", err)
-	}
-	err = utils.FileWrite(filepath.Join(options.BuildGradlePath, publishInitScriptName), []byte(publishInitScriptContent), 0644)
-	if err != nil {
-		return fmt.Errorf("failed create init script: %v", err)
-	}
-	defer utils.FileRemove(filepath.Join(options.BuildGradlePath, publishInitScriptName))
-
-	parameters := []string{"--init-script", filepath.Join(options.BuildGradlePath, publishInitScriptName), "--info", "publish"}
-	if options.BuildGradlePath != "" {
-		parameters = append(parameters, "-p", options.BuildGradlePath)
-	}
-	if err := utils.RunExecutable(exec, parameters...); err != nil {
-		return fmt.Errorf("publishing failed: %v", err)
-	}
-	return nil
-}
-
-func getPublishInitScriptContent(options *ExecuteOptions) (string, error) {
-	tmpl, err := template.New("resources").Parse(publishInitScriptContentTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, options)
-	if err != nil {
-		return "", err
-	}
-
-	return string(generatedCode.Bytes()), nil
-}
-
-// CreateBOM generates BOM file using CycloneDX
-func createBOM(options *ExecuteOptions, utils Utils) error {
-	log.Entry().Info("BOM creation...")
-	// check if gradle task cyclonedxBom exists
-	stdOutBuf := new(bytes.Buffer)
-	stdOut := log.Writer()
-	stdOut = io.MultiWriter(stdOut, stdOutBuf)
-	utils.Stdout(stdOut)
-	parameters := []string{"tasks"}
-	if options.BuildGradlePath != "" {
-		parameters = append(parameters, "-p", options.BuildGradlePath)
-	}
-	if err := utils.RunExecutable(exec, parameters...); err != nil {
-		return fmt.Errorf("failed list gradle tasks: %v", err)
-	}
-	if strings.Contains(stdOutBuf.String(), bomTaskName) {
-		if err := utils.RunExecutable(exec, bomTaskName); err != nil {
-			return fmt.Errorf("BOM creation failed: %v", err)
-		}
-	} else {
-		err := utils.FileWrite(filepath.Join(options.BuildGradlePath, createBOMScriptName), []byte(bomInitScriptContent), 0644)
+func searchBuildScript(supported []string, existsFunc func(string) (bool, error)) (string, error) {
+	var descriptor string
+	for _, f := range supported {
+		exists, err := existsFunc(f)
 		if err != nil {
-			return fmt.Errorf("failed create init script: %v", err)
+			return "", err
 		}
-		defer utils.FileRemove(filepath.Join(options.BuildGradlePath, createBOMScriptName))
-		parameters := []string{"--init-script", filepath.Join(options.BuildGradlePath, createBOMScriptName), bomTaskName}
-		if options.BuildGradlePath != "" {
-			parameters = append(parameters, "-p", options.BuildGradlePath)
-		}
-		if err := utils.RunExecutable(exec, parameters...); err != nil {
-			return fmt.Errorf("BOM creation failed: %v", err)
+		if exists {
+			descriptor = f
+			break
 		}
 	}
+	if len(descriptor) == 0 {
+		return "", fmt.Errorf("no build script available, supported: %v", supported)
+	}
+	return descriptor, nil
+}
 
-	return nil
+func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
+	var stdOutBuf *bytes.Buffer
+	stdOut := log.Writer()
+	if options.ReturnStdout {
+		stdOutBuf = new(bytes.Buffer)
+		stdOut = io.MultiWriter(stdOut, stdOutBuf)
+	}
+	return stdOutBuf, stdOut
 }
