@@ -3,8 +3,18 @@ package ans
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	uni      *ut.UniversalTranslator
+	validate *validator.Validate
 )
 
 const (
@@ -24,12 +34,12 @@ const (
 // Event structure of the SAP Alert Notification Service
 type Event struct {
 	EventType      string                 `json:"eventType,omitempty"`
-	EventTimestamp int64                  `json:"eventTimestamp,omitempty"`
-	Severity       string                 `json:"severity,omitempty"`
-	Category       string                 `json:"category,omitempty"`
+	EventTimestamp int64                  `json:"eventTimestamp,omitempty" validate:"omitempty,min=0"`
+	Severity       string                 `json:"severity,omitempty" validate:"omitempty,oneof=INFO NOTICE WARNING ERROR FATAL"`
+	Category       string                 `json:"category,omitempty" validate:"omitempty,oneof=EXCEPTION ALERT NOTIFICATION"`
 	Subject        string                 `json:"subject,omitempty"`
 	Body           string                 `json:"body,omitempty"`
-	Priority       int                    `json:"priority,omitempty"`
+	Priority       int                    `json:"priority,omitempty" validate:"omitempty,min=1,max=1000"`
 	Tags           map[string]interface{} `json:"tags,omitempty"`
 	Resource       *Resource              `json:"resource,omitempty"`
 }
@@ -45,7 +55,7 @@ type Resource struct {
 // MergeWithJSON unmarshalls an ANS Event JSON string and merges it with the existing receiver Event
 func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
 	if err = strictUnmarshal(eventJSON, &event); err != nil {
-		err = errors.Wrapf(err, "error unmarshalling ANS event from JSON string %q", eventJSON)
+		return errors.Wrapf(err, "error unmarshalling ANS event from JSON string %q", eventJSON)
 	}
 	return
 }
@@ -54,6 +64,30 @@ func strictUnmarshal(data []byte, v interface{}) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	return dec.Decode(v)
+}
+
+func (event *Event) Validate() (err error) {
+	validate = validator.New()
+
+	if err = validate.Struct(event); err != nil {
+		translator := newTranslator(validate)
+		errs := err.(validator.ValidationErrors)
+		err = fmt.Errorf("event JSON failed the validation")
+		for _, fieldError := range errs.Translate(translator) {
+			err = errors.Wrap(err, fieldError)
+		}
+	}
+	return
+}
+
+func newTranslator(validate *validator.Validate) ut.Translator {
+	eng := en.New()
+	uni = ut.New(eng, eng)
+
+	translator, _ := uni.GetTranslator("en")
+	en_translations.RegisterDefaultTranslations(validate, translator)
+
+	return translator
 }
 
 // SetSeverityAndCategory takes the logrus log level and sets the corresponding ANS severity and category string
