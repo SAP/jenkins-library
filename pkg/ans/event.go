@@ -89,6 +89,15 @@ func (event Event) Validate() (err error) {
 	return
 }
 
+func (event *Event) Copy() (destination Event, err error) {
+	var sourceJSON []byte
+	sourceJSON, err = json.Marshal(event); if err != nil {
+		return
+	}
+	err = destination.MergeWithJSON(sourceJSON)
+	return
+}
+
 func newTranslator(validate *validator.Validate) ut.Translator {
 	eng := en.New()
 	uni = ut.New(eng, eng)

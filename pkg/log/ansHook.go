@@ -93,7 +93,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 		return
 	}
 	var event ans.Event
-	event, err = copyEvent(ansHook.eventTemplate); if err != nil {
+	event, err = ansHook.eventTemplate.Copy(); if err != nil {
 		return
 	}
 
