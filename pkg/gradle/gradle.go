@@ -93,9 +93,6 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 		return "", fmt.Errorf("failed to run executable, command: '%s', error: %v", commandLine, err)
 	}
 
-	if stdOutBuf == nil {
-		return "", nil
-	}
 	return string(stdOutBuf.Bytes()), nil
 }
 
