@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"net/http"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -82,16 +81,11 @@ rootProject {
 type gradleExecuteBuildUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type gradleExecuteBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-}
-
-func (g *gradleExecuteBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
 }
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
@@ -126,7 +120,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		Task:            config.Task,
 		UseWrapper:      config.UseWrapper,
 	}
-	if err := gradle.Execute(gradleOptions, utils); err != nil {
+	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
 		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
 		return err
 	}
@@ -148,7 +142,7 @@ func createBOM(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils)
 		UseWrapper:        config.UseWrapper,
 		InitScriptContent: bomInitScriptContent,
 	}
-	if err := gradle.Execute(gradleOptions, utils); err != nil {
+	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
 		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
 		return err
 	}
@@ -166,7 +160,7 @@ func publishArtifacts(config *gradleExecuteBuildOptions, utils gradleExecuteBuil
 		UseWrapper:        config.UseWrapper,
 		InitScriptContent: publishInitScriptContent,
 	}
-	if err := gradle.Execute(gradleOptions, utils); err != nil {
+	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
 		log.Entry().WithError(err).Errorf("failed to publish artifacts: %v", err)
 		return err
 	}

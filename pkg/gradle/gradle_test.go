@@ -2,8 +2,6 @@ package gradle
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -40,33 +38,118 @@ func (m *MockUtils) FileRemove(path string) error {
 	return nil
 }
 
-func (m *MockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
-}
-
 func TestExecute(t *testing.T) {
-	t.Run("success - gradle build", func(t *testing.T) {
+	t.Run("success - run command use gradle tool", func(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock:      &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{},
 			existingFiles:  []string{"path/to/build.gradle"},
 		}
 		opts := ExecuteOptions{
-			BuildGradlePath: "path/to",
-			Task:            "build",
-			CreateBOM:       false,
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "",
+			UseWrapper:        false,
 		}
 
-		err := Execute(&opts, utils)
+		_, err := Execute(&opts, utils)
 		assert.NoError(t, err)
-
 		assert.Equal(t, 1, len(utils.Calls))
 		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
 		assert.Equal(t, []string(nil), utils.writtenFiles)
 		assert.Equal(t, []string(nil), utils.removedFiles)
 	})
 
-	t.Run("failed - gradle build", func(t *testing.T) {
+	t.Run("success - run command use gradlew tool", func(t *testing.T) {
+		utils := &MockUtils{
+			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{},
+			existingFiles:  []string{"path/to/build.gradle", "gradlew"},
+		}
+		opts := ExecuteOptions{
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "",
+			UseWrapper:        true,
+		}
+
+		_, err := Execute(&opts, utils)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "./gradlew", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, []string(nil), utils.writtenFiles)
+		assert.Equal(t, []string(nil), utils.removedFiles)
+	})
+
+	t.Run("use init script to apply plugin", func(t *testing.T) {
+		utils := &MockUtils{
+			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{},
+			existingFiles:  []string{"path/to/build.gradle.kts"},
+		}
+		opts := ExecuteOptions{
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "some content",
+			UseWrapper:        false,
+		}
+
+		_, err := Execute(&opts, utils)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 2, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.writtenFiles)
+		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.removedFiles)
+	})
+
+	t.Run("failed - use init script to apply plugin", func(t *testing.T) {
+		utils := &MockUtils{
+			FilesMock: &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{
+				ShouldFailOnCommand: map[string]error{"gradle tasks -p path/to": errors.New("failed to get tasks")},
+			},
+			existingFiles: []string{"path/to/build.gradle.kts"},
+		}
+		opts := ExecuteOptions{
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "some content",
+			UseWrapper:        false,
+		}
+
+		_, err := Execute(&opts, utils)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get tasks")
+	})
+
+	t.Run("use init script to apply an existing plugin", func(t *testing.T) {
+		utils := &MockUtils{
+			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{},
+			existingFiles:  []string{"path/to/build.gradle.kts"},
+		}
+		utils.StdoutReturn = map[string]string{"gradle tasks -p path/to": "createBom"}
+		opts := ExecuteOptions{
+			BuildGradlePath:   "path/to",
+			Task:              "createBom",
+			InitScriptContent: "some content",
+			UseWrapper:        false,
+		}
+
+		_, err := Execute(&opts, utils)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 2, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"createBom", "-p", "path/to"}}, utils.Calls[1])
+		assert.Equal(t, []string(nil), utils.writtenFiles)
+		assert.Equal(t, []string(nil), utils.removedFiles)
+	})
+
+	t.Run("failed - run command", func(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock: &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{
@@ -75,97 +158,53 @@ func TestExecute(t *testing.T) {
 			existingFiles: []string{"path/to/build.gradle"},
 		}
 		opts := ExecuteOptions{
-			BuildGradlePath: "path/to",
-			Task:            "build",
-			CreateBOM:       false,
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "",
+			UseWrapper:        false,
 		}
 
-		err := Execute(&opts, utils)
+		_, err := Execute(&opts, utils)
+		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to build")
 	})
 
-	t.Run("success - bom creation", func(t *testing.T) {
+	t.Run("failed - missing gradle build script", func(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock:      &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{},
-			existingFiles:  []string{"build.gradle"},
+			existingFiles:  []string{},
 		}
 		opts := ExecuteOptions{
-			Task:      "build",
-			CreateBOM: true,
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "",
+			UseWrapper:        false,
 		}
 
-		err := Execute(&opts, utils)
-		assert.NoError(t, err)
-
-		assert.Equal(t, 3, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"--init-script", "cyclonedx.gradle", "cyclonedxBom"}}, utils.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build"}}, utils.Calls[2])
-		assert.Equal(t, []string{"cyclonedx.gradle"}, utils.writtenFiles)
-		assert.Equal(t, []string{"cyclonedx.gradle"}, utils.removedFiles)
+		_, err := Execute(&opts, utils)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "the specified gradle build script could not be found")
 	})
 
-	t.Run("failed - bom creation", func(t *testing.T) {
-		utils := &MockUtils{
-			FilesMock: &mock.FilesMock{},
-			ExecMockRunner: &mock.ExecMockRunner{
-				ShouldFailOnCommand: map[string]error{"gradle --init-script cyclonedx.gradle cyclonedxBom": errors.New("failed to create BOM")},
-			},
-			existingFiles: []string{"build.gradle"},
-		}
-		opts := ExecuteOptions{
-			Task:      "build",
-			CreateBOM: true,
-		}
-
-		err := Execute(&opts, utils)
-		assert.Contains(t, err.Error(), "failed to create BOM")
-	})
-
-	t.Run("success - publish to staging repository", func(t *testing.T) {
+	t.Run("success - should return stdOut", func(t *testing.T) {
+		expectedOutput := "mocked output"
 		utils := &MockUtils{
 			FilesMock:      &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{},
-			existingFiles:  []string{"build.gradle"},
+			existingFiles:  []string{"path/to/build.gradle"},
 		}
+		utils.StdoutReturn = map[string]string{"gradle build -p path/to": expectedOutput}
 		opts := ExecuteOptions{
-			Task:               "build",
-			Publish:            true,
-			RepositoryURL:      "url",
-			RepositoryPassword: "password",
-			RepositoryUsername: "username",
-			ArtifactVersion:    "1.1.0",
+			BuildGradlePath:   "path/to",
+			Task:              "build",
+			InitScriptContent: "",
+			UseWrapper:        false,
 		}
 
-		err := Execute(&opts, utils)
+		actualOutput, err := Execute(&opts, utils)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"--init-script", "maven-publish.gradle", "--info", "publish"}}, utils.Calls[1])
-		assert.Equal(t, []string{"maven-publish.gradle"}, utils.writtenFiles)
-		assert.Equal(t, []string{"maven-publish.gradle"}, utils.removedFiles)
-	})
-
-	t.Run("failed - publish to staging repository", func(t *testing.T) {
-		utils := &MockUtils{
-			FilesMock: &mock.FilesMock{},
-			ExecMockRunner: &mock.ExecMockRunner{
-				ShouldFailOnCommand: map[string]error{"gradle --init-script maven-publish.gradle --info publish": errors.New("failed to publish artifacts")},
-			},
-			existingFiles: []string{"build.gradle"},
-		}
-		opts := ExecuteOptions{
-			Task:               "build",
-			Publish:            true,
-			RepositoryURL:      "url",
-			RepositoryPassword: "password",
-			RepositoryUsername: "username",
-			ArtifactVersion:    "1.1.0",
-		}
-
-		err := Execute(&opts, utils)
-		assert.Contains(t, err.Error(), "failed to publish artifacts")
+		assert.Equal(t, expectedOutput, actualOutput)
 	})
 }

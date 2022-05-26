@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -26,13 +26,8 @@ type Utils interface {
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
 
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-	Glob(pattern string) (matches []string, err error)
 	FileExists(filename string) (bool, error)
-	Copy(src, dest string) (int64, error)
-	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
-	FileRead(path string) ([]byte, error)
 	FileRemove(path string) error
 }
 
@@ -42,42 +37,50 @@ type ExecuteOptions struct {
 	Task              string `json:"task,omitempty"`
 	InitScriptContent string `json:"initScriptContent,omitempty"`
 	UseWrapper        bool   `json:"useWrapper,omitempty"`
-	ReturnStdout      bool   `json:"returnStdout,omitempty"`
+	setInitScript     bool
 }
 
-func Execute(options *ExecuteOptions, utils Utils) error {
-	stdOutBuf, stdOut := evaluateStdOut(options)
-	utils.Stdout(stdOut)
+func Execute(options *ExecuteOptions, utils Utils) (string, error) {
+	stdOutBuf := new(bytes.Buffer)
+	utils.Stdout(io.MultiWriter(log.Writer(), stdOutBuf))
 	utils.Stderr(log.Writer())
 
-	_, err := searchBuildScript([]string{groovyBuildScriptName, kotlinBuildScriptName}, utils.FileExists)
+	_, err := searchBuildScript([]string{
+		filepath.Join(options.BuildGradlePath, groovyBuildScriptName),
+		filepath.Join(options.BuildGradlePath, kotlinBuildScriptName),
+	}, utils.FileExists)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("the specified gradle build script could not be found: %v", err)
 	}
 
 	exec := gradleExecutable
 	if options.UseWrapper {
-		wrapperExists, err := utils.FileExists(gradlewExecutable)
+		wrapperExists, err := utils.FileExists("gradlew")
 		if err != nil {
-			return err
+			return "", err
 		}
 		if !wrapperExists {
-			return errors.New("gradle wrapper not found")
+			return "", errors.New("gradle wrapper not found")
 		}
 		exec = gradlewExecutable
 	}
 	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
 
 	if options.InitScriptContent != "" {
-		if err := utils.RunExecutable(exec, "tasks"); err != nil {
-			return fmt.Errorf("failed list gradle tasks: %v", err)
+		parameters := []string{"tasks"}
+		if options.BuildGradlePath != "" {
+			parameters = append(parameters, "-p", options.BuildGradlePath)
+		}
+		if err := utils.RunExecutable(exec, parameters...); err != nil {
+			return "", fmt.Errorf("failed list gradle tasks: %v", err)
 		}
 		if !strings.Contains(stdOutBuf.String(), options.Task) {
 			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
 			if err != nil {
-				return fmt.Errorf("failed create init script: %v", err)
+				return "", fmt.Errorf("failed create init script: %v", err)
 			}
 			defer utils.FileRemove(initScriptName)
+			options.setInitScript = true
 		}
 	}
 
@@ -87,9 +90,13 @@ func Execute(options *ExecuteOptions, utils Utils) error {
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		commandLine := append([]string{exec}, parameters...)
-		return fmt.Errorf("failed to run executable, command: '%s', error: %v", commandLine, err)
+		return "", fmt.Errorf("failed to run executable, command: '%s', error: %v", commandLine, err)
 	}
-	return nil
+
+	if stdOutBuf == nil {
+		return "", nil
+	}
+	return string(stdOutBuf.Bytes()), nil
 }
 
 func getParametersFromOptions(options *ExecuteOptions) []string {
@@ -103,7 +110,7 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 		parameters = append(parameters, "-p", options.BuildGradlePath)
 	}
 
-	if options.InitScriptContent != "" {
+	if options.setInitScript {
 		parameters = append(parameters, "--init-script", initScriptName)
 	}
 
@@ -126,14 +133,4 @@ func searchBuildScript(supported []string, existsFunc func(string) (bool, error)
 		return "", fmt.Errorf("no build script available, supported: %v", supported)
 	}
 	return descriptor, nil
-}
-
-func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
-	var stdOutBuf *bytes.Buffer
-	stdOut := log.Writer()
-	if options.ReturnStdout {
-		stdOutBuf = new(bytes.Buffer)
-		stdOut = io.MultiWriter(stdOut, stdOutBuf)
-	}
-	return stdOutBuf, stdOut
 }
