@@ -219,7 +219,10 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
-		return body, resp.Status, err
+		if resp != nil {
+			status = resp.Status
+		}
+		return body, status, err
 	}
 	defer resp.Body.Close()
 
