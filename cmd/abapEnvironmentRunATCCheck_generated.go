@@ -85,7 +85,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 				// Try ANS hook specific service key
 				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 					// Try ANS service key from step implementation
 					GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
 				}

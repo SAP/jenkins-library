@@ -109,7 +109,7 @@ The application ID specifies how the file needs to be handled on server side.`,
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 				// Try ANS hook specific service key
 				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 					// Try ANS service key from step implementation
 					GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
 				}

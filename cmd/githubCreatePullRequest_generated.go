@@ -78,7 +78,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 				// Try ANS hook specific service key
 				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 					// Try ANS service key from step implementation
 					GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
 				}
