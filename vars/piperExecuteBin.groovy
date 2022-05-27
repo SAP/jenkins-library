@@ -50,6 +50,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
 
             //Add ANS credential information to the config
             ansHookServiceKeyCredentialsId =
+                // Allow the user to set the ANS credential ID both in the hooks and the general section
                 script.commonPipelineEnvironment.configuration.hooks?.ans?.serviceKeyCredentialsId ?:
                     script.commonPipelineEnvironment.configuration.general?.ansServiceKeyCredentialsId
             config += ["ansHookServiceKeyCredentialsId": ansHookServiceKeyCredentialsId]
