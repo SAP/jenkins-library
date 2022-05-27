@@ -92,6 +92,21 @@ func TestRunAnsSendEvent(t *testing.T) {
 		assert.EqualError(t, err, "error unmarshalling ANS event from JSON string \"faulty JSON\": invalid character 'u' in literal false (expecting 'l')")
 	})
 
+	t.Run("error - invalid event json", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := ansSendEventOptions{
+			AnsServiceKey: goodServiceKey,
+			EventJSON:     `{"severity": "WRONG_SEVERITY"}`,
+		}
+
+		// test
+		err := runAnsSendEvent(&config, &ansMock{})
+
+		// assert
+		assert.EqualError(t, err, "Severity must be one of [INFO NOTICE WARNING ERROR FATAL]: event JSON failed the validation")
+	})
+
 	t.Run("error - fail to send", func(t *testing.T) {
 		t.Parallel()
 		// init

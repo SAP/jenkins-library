@@ -30,12 +30,16 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
 		},
-		Subject:        fmt.Sprint(log.Entry().Data["stepName"]),
-		Body:           fmt.Sprintf("Call from Piper step: %s", log.Entry().Data["stepName"]),
+		Subject: fmt.Sprint(log.Entry().Data["stepName"]),
+		Body:    fmt.Sprintf("Call from Piper step: %s", log.Entry().Data["stepName"]),
 	}
 	event.SetSeverityAndCategory(logrus.InfoLevel)
 
 	if err = event.MergeWithJSON([]byte(config.EventJSON)); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return err
+	}
+	if err = event.Validate(); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
