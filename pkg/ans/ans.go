@@ -42,6 +42,7 @@ func UnmarshallServiceKeyJSON(serviceKeyJSON string) (ansServiceKey ServiceKey, 
 	return
 }
 
+// SetServiceKey sets the xsuaa service key
 func (ans *ANS) SetServiceKey(serviceKey ServiceKey) {
 	ans.XSUAA = xsuaa.XSUAA{
 		OAuthURL:     serviceKey.OauthUrl,

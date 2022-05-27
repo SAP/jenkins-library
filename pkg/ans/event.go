@@ -60,6 +60,7 @@ func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
 	return
 }
 
+// Validate will validate the Event according to the 'validate' tags in the struct
 func (event *Event) Validate() (err error) {
 	validate = validator.New()
 
