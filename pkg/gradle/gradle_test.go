@@ -50,12 +50,13 @@ func TestExecute(t *testing.T) {
 			Task:              "build",
 			InitScriptContent: "",
 			UseWrapper:        false,
+			ProjectProperties: map[string]string{"propName": "propValue"},
 		}
 
 		_, err := Execute(&opts, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to", "-PpropName=propValue"}}, utils.Calls[0])
 		assert.Equal(t, []string(nil), utils.writtenFiles)
 		assert.Equal(t, []string(nil), utils.removedFiles)
 	})

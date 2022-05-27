@@ -33,10 +33,11 @@ type Utils interface {
 
 // ExecuteOptions are used by Execute() to construct the Gradle command line.
 type ExecuteOptions struct {
-	BuildGradlePath   string `json:"path,omitempty"`
-	Task              string `json:"task,omitempty"`
-	InitScriptContent string `json:"initScriptContent,omitempty"`
-	UseWrapper        bool   `json:"useWrapper,omitempty"`
+	BuildGradlePath   string            `json:"path,omitempty"`
+	Task              string            `json:"task,omitempty"`
+	InitScriptContent string            `json:"initScriptContent,omitempty"`
+	UseWrapper        bool              `json:"useWrapper,omitempty"`
+	ProjectProperties map[string]string `json:"projectProperties,omitempty"`
 	setInitScript     bool
 }
 
@@ -105,6 +106,10 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 	// resolve path for build.gradle execution
 	if options.BuildGradlePath != "" {
 		parameters = append(parameters, "-p", options.BuildGradlePath)
+	}
+
+	for k, v := range options.ProjectProperties {
+		parameters = append(parameters, fmt.Sprintf("-P%s=%s", k, v))
 	}
 
 	if options.setInitScript {
