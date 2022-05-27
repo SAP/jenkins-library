@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -48,21 +47,23 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	customTLSCertificateLinks := []string{}
 	utils := kubernetes.NewDeployUtilsBundle(customTLSCertificateLinks)
 
+	kubernetesDeploy := kubernetes.NewKubernetesDeploy(kubernetesConfig, utils, GeneralConfig.Verbose, log.Writer())
+
 	// error situations stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runKubernetesDeploy(kubernetesConfig, telemetryData, utils, log.Writer())
+	err := runKubernetesDeploy(kubernetesConfig, telemetryData, kubernetesDeploy)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runKubernetesDeploy(config kubernetes.KubernetesOptions, telemetryData *telemetry.CustomData, utils kubernetes.DeployUtils, stdout io.Writer) error {
+func runKubernetesDeploy(config kubernetes.KubernetesOptions, telemetryData *telemetry.CustomData, kubernetesDeploy kubernetes.KubernetesDeploy) error {
 	telemetryData.Custom1Label = "deployTool"
 	telemetryData.Custom1 = config.DeployTool
 
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		return kubernetes.RunHelmDeploy(config, utils, stdout)
+		return kubernetesDeploy.RunHelmDeploy()
 	} else if config.DeployTool == "kubectl" {
-		return kubernetes.RunKubectlDeploy(config, utils, stdout)
+		return kubernetesDeploy.RunKubectlDeploy()
 	}
 	return fmt.Errorf("Failed to execute deployments")
 }
