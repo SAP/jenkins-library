@@ -153,7 +153,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 				// Try ANS hook specific service key
 				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
 					// Try ANS service key from step implementation
 					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
 				}
