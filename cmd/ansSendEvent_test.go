@@ -92,6 +92,21 @@ func TestRunAnsSendEvent(t *testing.T) {
 		assert.EqualError(t, err, "error unmarshalling ANS event from JSON string \"faulty JSON\": invalid character 'u' in literal false (expecting 'l')")
 	})
 
+	t.Run("error - unknown field in json", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := ansSendEventOptions{
+			AnsServiceKey: goodServiceKey,
+			EventJSON:     `{"unknown": "yields error"}`,
+		}
+
+		// test
+		err := runAnsSendEvent(&config, &ansMock{})
+
+		// assert
+		assert.EqualError(t, err, `error unmarshalling ANS event from JSON string "{\"unknown\": \"yields error\"}": json: unknown field "unknown"`)
+	})
+
 	t.Run("error - invalid event json", func(t *testing.T) {
 		t.Parallel()
 		// init
