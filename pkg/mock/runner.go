@@ -49,6 +49,7 @@ type ShellMockRunner struct {
 	stderr              io.Writer
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
+	Lookups             map[string]bool
 }
 
 func (m *ExecMockRunner) SetDir(d string) {
@@ -150,6 +151,14 @@ func (m *ShellMockRunner) RunShell(s string, c string) error {
 
 func (m *ShellMockRunner) GetExitCode() int {
 	return m.ExitCode
+}
+
+func (m *ShellMockRunner) LookPath(bin string) (string, error) {
+	if m.Lookups[bin] {
+		return bin, nil
+	} else {
+		return "", errors.New("not found")
+	}
 }
 
 func (e *Execution) Kill() error {
