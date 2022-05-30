@@ -76,6 +76,11 @@ func TestNPMProjectInstallsDevDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
+	err = container.runScriptInsideContainer("npm list > /tmp/test-log.txt")
+	if err != nil {
+		t.Fatalf("Unable to list package dependencies.")
+	}
 
-	container.assertHasOutput(t, "added 2 packages in")
+	container.assertHasOutput(t, "+-- is-number@")
+	container.assertHasOutput(t, "`-- uuid@")
 }
