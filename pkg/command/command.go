@@ -41,6 +41,7 @@ type runner interface {
 	Stderr(err io.Writer)
 	GetStdout() io.Writer
 	GetStderr() io.Writer
+	LookPath(bin string) (string, error)
 }
 
 // ExecRunner mock for intercepting calls to executables
@@ -98,6 +99,10 @@ func (c *Command) GetStdout() io.Writer {
 //GetStderr Retursn the writer for stderr
 func (c *Command) GetStderr() io.Writer {
 	return c.stderr
+}
+
+func (c *Command) LookPath(bin string) (string, error) {
+	return exec.LookPath(bin)
 }
 
 // ExecCommand defines how to execute os commands

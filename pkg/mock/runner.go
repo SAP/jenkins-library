@@ -4,6 +4,7 @@
 package mock
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -23,6 +24,7 @@ type ExecMockRunner struct {
 	Stub                func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
+	Lookups             map[string]bool
 }
 
 type ExecCall struct {
@@ -115,6 +117,14 @@ func (m *ExecMockRunner) handleCall(call string, stdoutReturn map[string]string,
 		return m.Stub(call, stdoutReturn, shouldFailOnCommand, stdout)
 	} else {
 		return handleCall(call, stdoutReturn, shouldFailOnCommand, stdout)
+	}
+}
+
+func (m *ExecMockRunner) LookPath(bin string) (string, error) {
+	if m.Lookups[bin] {
+		return bin, nil
+	} else {
+		return "", errors.New("not found")
 	}
 }
 

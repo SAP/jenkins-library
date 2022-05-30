@@ -54,6 +54,7 @@ type ExecRunner interface {
 	Stderr(out io.Writer)
 	RunExecutable(executable string, params ...string) error
 	RunExecutableInBackground(executable string, params ...string) (command.Execution, error)
+	LookPath(bin string) (string, error)
 }
 
 // Utils interface for mocking
@@ -363,6 +364,10 @@ func (exec *Execute) detectToolFromLockfile() (string, error) {
 		if err != nil {
 			return "", err
 		} else if yarnLockExists {
+			err := exec.autoInstallTool("yarn")
+			if err != nil {
+				return "npm", fmt.Errorf("fallback to 'npm'. %w", err)
+			}
 			return "yarn", nil
 		}
 
@@ -370,6 +375,10 @@ func (exec *Execute) detectToolFromLockfile() (string, error) {
 		if err != nil {
 			return "", err
 		} else if pnpmLockExists {
+			err := exec.autoInstallTool("pnpm")
+			if err != nil {
+				return "npm", fmt.Errorf("fallback to 'npm'. %w", err)
+			}
 			return "pnpm", nil
 		}
 
@@ -411,4 +420,17 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 		}
 	}
 	return nil
+}
+
+func (exec *Execute) autoInstallTool(toolName string) error {
+	_, err := exec.Utils.GetExecRunner().LookPath(toolName)
+	if err == nil {
+		return nil
+	} else {
+		err = exec.Utils.GetExecRunner().RunExecutable("npm", "install", "-g", toolName)
+		if err != nil {
+			return fmt.Errorf("failed to install required tool '%s': %w", toolName, err)
+		}
+		return nil
+	}
 }

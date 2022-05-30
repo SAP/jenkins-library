@@ -260,6 +260,28 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
+	t.Run("test auto-installer", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.execRunner.Lookups = map[string]bool{"pnpm": false}
+
+		options := ExecutorOptions{Tool: "auto"}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		toolName, err := exec.detectToolFromLockfile()
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "pnpm", toolName)
+			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "pnpm"}}, utils.execRunner.Calls[0])
+			}
+		}
+	})
+
 	t.Run("check Execute script", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
