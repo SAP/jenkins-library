@@ -47,10 +47,10 @@ piperPipeline script: this
     ```
 
     You find more details about the custom defaults in the [configuration section](../configuration.md)
-    
+
 !!! warning "using dedicated versions"
     It is possible to use a fixed version of the library using e.g.
-    
+
     ```
     @Library('piper-lib-os@v1.222.0') _
     ```
