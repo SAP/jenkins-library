@@ -177,10 +177,10 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			ContainerRegistryUser:     config.ContainerRegistryUser,
 			ContainerRegistryPassword: config.ContainerRegistryPassword,
 			DockerConfigJSON:          config.DockerConfigJSON,
-			IncludeLayers:             config.ScanImageIncludeLayers,
 			FilePath:                  config.ProjectName,
+			ImageFormat:               "legacy", // keep the image format legacy or whitesource is not able to read layers
 		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
 		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {

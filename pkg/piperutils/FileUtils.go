@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -38,6 +39,8 @@ type FileUtils interface {
 	Symlink(oldname string, newname string) error
 	SHA256(path string) (string, error)
 	CurrentTime(format string) string
+	Open(name string) (io.ReadWriteCloser, error)
+	Create(name string) (io.ReadWriteCloser, error)
 }
 
 // Files ...
@@ -112,6 +115,12 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	stats, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	os.Chmod(dst, stats.Mode())
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
@@ -230,20 +239,29 @@ func Unzip(src, dest string) ([]string, error) {
 
 func Untar(src string, dest string, stripComponentLevel int) error {
 	file, err := os.Open(src)
+	defer file.Close()
+
 	if err != nil {
-		fmt.Errorf("unable to open src: %v", err)
+		return fmt.Errorf("unable to open src: %v", err)
 	}
+
+	if b, err := isFileGzipped(src); err == nil && b {
+		zr, err := gzip.NewReader(file)
+
+		if err != nil {
+			return fmt.Errorf("requires gzip-compressed body: %v", err)
+		}
+
+		return untar(zr, dest, stripComponentLevel)
+	}
+
 	return untar(file, dest, stripComponentLevel)
 }
 
 func untar(r io.Reader, dir string, level int) (err error) {
 	madeDir := map[string]bool{}
 
-	zr, err := gzip.NewReader(r)
-	if err != nil {
-		return fmt.Errorf("requires gzip-compressed body: %v", err)
-	}
-	tr := tar.NewReader(zr)
+	tr := tar.NewReader(r)
 	for {
 		f, err := tr.Next()
 		if err == io.EOF {
@@ -252,7 +270,10 @@ func untar(r io.Reader, dir string, level int) (err error) {
 		if err != nil {
 			return fmt.Errorf("tar error: %v", err)
 		}
-		if !validRelPath(f.Name) {
+		if strings.HasPrefix(f.Name, "/") {
+			f.Name = fmt.Sprintf(".%s", f.Name)
+		}
+		if !validRelPath(f.Name) { // blocks path traversal attacks
 			return fmt.Errorf("tar contained invalid name error %q", f.Name)
 		}
 		rel := filepath.FromSlash(f.Name)
@@ -304,11 +325,34 @@ func untar(r io.Reader, dir string, level int) (err error) {
 				return err
 			}
 			madeDir[abs] = true
+		case mode&fs.ModeSymlink != 0:
+			if err := os.Symlink(f.Linkname, abs); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("tar file entry %s contained unsupported file type %v", f.Name, mode)
 		}
 	}
 	return nil
+}
+
+// isFileGzipped checks the first 3 bytes of the given file to determine if it is gzipped or not. Returns `true` if the file is gzipped.
+func isFileGzipped(file string) (bool, error) {
+	f, err := os.Open(file)
+	defer f.Close()
+
+	if err != nil {
+		return false, err
+	}
+
+	b := make([]byte, 3)
+	_, err = io.ReadFull(f, b)
+
+	if err != nil {
+		return false, err
+	}
+
+	return b[0] == 0x1f && b[1] == 0x8b && b[2] == 8, nil
 }
 
 func validRelPath(p string) bool {
@@ -441,4 +485,14 @@ func (f Files) CurrentTime(format string) string {
 		fString = "20060102-150405"
 	}
 	return fmt.Sprint(time.Now().Format(fString))
+}
+
+// Open is a wrapper for os.Open
+func (f Files) Open(name string) (io.ReadWriteCloser, error) {
+	return os.Open(name)
+}
+
+// Create is a wrapper for os.Create
+func (f Files) Create(name string) (io.ReadWriteCloser, error) {
+	return os.Create(name)
 }

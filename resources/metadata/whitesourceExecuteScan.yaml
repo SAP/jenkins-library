@@ -353,14 +353,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: scanImageIncludeLayers
-        type: bool
-        description: "For `buildTool: docker`: Defines if layers should be included."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
@@ -524,8 +516,9 @@ spec:
           Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/optimizedAndScheduled
+            param: custom/isOptimizedAndScheduled
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -547,6 +540,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -559,6 +553,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

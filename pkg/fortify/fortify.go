@@ -66,6 +66,7 @@ type System interface {
 	GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
 	GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error)
+	GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error)
 	GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error)
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
 	DownloadReportFile(endpoint string, reportID int64) ([]byte, error)
@@ -637,6 +638,19 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 func (sys *SystemInstance) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	qmStr := "issues"
 	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Q: &issueInstanceId, Qm: &qmStr}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetAllIssueDetails returns the details of all issues of the project with id projectVersionId
+func (sys *SystemInstance) GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error) {
+	var limit int32
+	limit = -1
+	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Limit: &limit}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
 	if err != nil {

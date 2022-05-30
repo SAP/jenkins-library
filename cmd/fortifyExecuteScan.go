@@ -247,7 +247,15 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
-	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	log.Entry().Infof("Ensuring latest FPR is processed for project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
+	// Ensure latest FPR is processed
+	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
+		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
+	if err != nil {
+		return reports, err
+	}
+
+	// SARIF conversion done after latest FPR is processed, but before the compliance is checked
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Info("Calling conversion to SARIF function.")
@@ -262,13 +270,8 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		}
 		reports = append(reports, paths...)
 	}
+
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	// Ensure latest FPR is processed
-	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
-		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
-	if err != nil {
-		return reports, err
-	}
 	err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
@@ -312,6 +315,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 
 	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatus)
 
+	influx.fortify_data.fields.projectID = project.ID
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
 	influx.fortify_data.fields.projectVersionID = projectVersion.ID
@@ -352,6 +356,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportData {
 	input := influx.fortify_data.fields
 	output := fortify.FortifyReportData{}
+	output.ProjectID = input.projectID
 	output.ProjectName = input.projectName
 	output.ProjectVersion = input.projectVersion
 	output.AuditAllAudited = input.auditAllAudited

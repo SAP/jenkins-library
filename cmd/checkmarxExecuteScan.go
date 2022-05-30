@@ -226,7 +226,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 
 func zipWorkspaceFiles(filterPattern string, utils checkmarxExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
-	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
+	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
@@ -322,6 +322,20 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 
+	// generate sarif report
+	if config.ConvertToSarif {
+		log.Entry().Info("Calling conversion to SARIF function.")
+		sarif, err := checkmarx.ConvertCxxmlToSarif(xmlReportName)
+		if err != nil {
+			return fmt.Errorf("failed to generate SARIF")
+		}
+		paths, err := checkmarx.WriteSarif(sarif)
+		if err != nil {
+			return fmt.Errorf("failed to write sarif")
+		}
+		reports = append(reports, paths...)
+	}
+
 	// create toolrecord
 	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
 	if err != nil {
@@ -394,19 +408,19 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	status := "Scan phase: New"
 	pastStatus := status
 	log.Entry().Info(status)
+	stepDetail := "..."
+	stageDetail := "..."
 	for true {
-		stepDetail := "..."
-		stageDetail := "..."
 		var detail checkmarx.ScanStatusDetail
 		status, detail = sys.GetScanStatusAndDetail(scan.ID)
-		if status == "Finished" || status == "Canceled" || status == "Failed" {
-			break
-		}
 		if len(detail.Stage) > 0 {
 			stageDetail = detail.Stage
 		}
 		if len(detail.Step) > 0 {
 			stepDetail = detail.Step
+		}
+		if status == "Finished" || status == "Canceled" || status == "Failed" {
+			break
 		}
 
 		status = fmt.Sprintf("Scan phase: %v (%v / %v)", status, stageDetail, stepDetail)
@@ -422,7 +436,10 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 		return fmt.Errorf("scan canceled via web interface")
 	}
 	if status == "Failed" {
-		return fmt.Errorf("scan failed, please check the Checkmarx UI for details")
+		if strings.Contains(stageDetail, "<ErrorCode>17033</ErrorCode>") { // Translate a cryptic XML error into a human-readable message
+			stageDetail = "Failed to start scanning due to one of following reasons: source folder is empty, all source files are of an unsupported language or file format"
+		}
+		return fmt.Errorf("Checkmarx scan failed with the following error: %v", stageDetail)
 	}
 	return nil
 }
@@ -636,7 +653,6 @@ func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, pro
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}
-	log.Entry().Debugf("Configuration of project %v updated", projectName)
 	return nil
 }
 

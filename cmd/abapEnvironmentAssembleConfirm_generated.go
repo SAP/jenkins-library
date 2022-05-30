@@ -18,16 +18,17 @@ import (
 )
 
 type abapEnvironmentAssembleConfirmOptions struct {
-	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
-	CfOrg               string `json:"cfOrg,omitempty"`
-	CfSpace             string `json:"cfSpace,omitempty"`
-	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName    string `json:"cfServiceKeyName,omitempty"`
-	Host                string `json:"host,omitempty"`
-	Username            string `json:"username,omitempty"`
-	Password            string `json:"password,omitempty"`
-	AddonDescriptor     string `json:"addonDescriptor,omitempty"`
-	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
+	CfAPIEndpoint       string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg               string   `json:"cfOrg,omitempty"`
+	CfSpace             string   `json:"cfSpace,omitempty"`
+	CfServiceInstance   string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName    string   `json:"cfServiceKeyName,omitempty"`
+	Host                string   `json:"host,omitempty"`
+	Username            string   `json:"username,omitempty"`
+	Password            string   `json:"password,omitempty"`
+	AddonDescriptor     string   `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes int      `json:"maxRuntimeInMinutes,omitempty"`
+	CertificateNames    []string `json:"certificateNames,omitempty"`
 }
 
 type abapEnvironmentAssembleConfirmCommonPipelineEnvironment struct {
@@ -161,6 +162,7 @@ func addAbapEnvironmentAssembleConfirmFlags(cmd *cobra.Command, stepConfig *abap
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -230,7 +232,7 @@ func abapEnvironmentAssembleConfirmMetadata() config.StepData {
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -276,6 +278,15 @@ func abapEnvironmentAssembleConfirmMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     360,
+					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

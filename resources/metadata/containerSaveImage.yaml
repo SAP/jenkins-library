@@ -19,7 +19,7 @@ spec:
         aliases:
           - name: dockerRegistryUrl
         type: string
-        description: The reference to the container registry where the image is located.
+        description: "For `buildTool: docker`: Url of the container registry - typically provided by the CI/CD environment."
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -72,14 +72,7 @@ spec:
             param: custom/repositoryUsername
       - name: filePath
         type: string
-        description: The path to the file to which the image should be saved. Defaults to `containerImage.tar`
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: includeLayers
-        type: bool
-        description: Flag if the docker layers should be included
+        description: The path to the file to which the image should be saved.
         scope:
           - PARAMETERS
           - STAGES
@@ -100,3 +93,15 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: imageFormat
+        type: string
+        description: Format of the image when saving the docker image locally.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: legacy
+        possibleValues:
+          - tarball
+          - oci
+          - legacy

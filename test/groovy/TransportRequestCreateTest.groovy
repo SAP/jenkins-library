@@ -61,6 +61,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
                                          ]
                                      ]
                                  ]
+        helper.registerAllowedMethod('addBadge', [Map], {return})
+        helper.registerAllowedMethod('createSummary', [Map], {return})
     }
 
     @After
@@ -150,7 +152,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '001'
         assert result == [
                          docker: [
-                             image: 'ppiper/cm-client',
+                             image: 'ppiper/cm-client:2.0.1.0',
                              pullImage: true,
                              options: [],
                              envVars: [:],
@@ -202,7 +204,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '001'
         assert result == [
                          docker: [
-                             image: 'ppiper/cm-client',
+                             image: 'ppiper/cm-client:2.0.1.0',
                              pullImage: true,
                              envVars: [:],
                              options: [],
