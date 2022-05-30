@@ -221,3 +221,59 @@ cd /test
 	assert.Contains(t, output, "info  npmExecuteScripts - https://example.com")
 	assert.Contains(t, output, "info  npmExecuteScripts - https://foo.bar")
 }
+
+func TestPnpm(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pwd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed.")
+	pwd = filepath.Dir(pwd)
+
+	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
+	tempDir, err := createTmpDir("")
+	defer os.RemoveAll(tempDir) // clean up
+	assert.NoError(t, err, "Error when creating temp dir")
+
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestNpmIntegration", "runPnpm"), tempDir)
+	if err != nil {
+		t.Fatal("Failed to copy test project.")
+	}
+
+	//workaround to use test script util it is possible to set workdir for Exec call
+	testScript := `#!/bin/sh
+cd /test
+/piperbin/piper npmExecuteScripts --install --runScripts=start --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
+`
+	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+
+	reqNode := testcontainers.ContainerRequest{
+		Image: "node:14-slim",
+		Cmd:   []string{"tail", "-f"},
+		BindMounts: map[string]string{
+			pwd:     "/piperbin",
+			tempDir: "/test",
+		},
+	}
+
+	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: reqNode,
+		Started:          true,
+	})
+
+	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
+
+	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	if err != nil {
+		t.Fatal("Could not read test-log.txt.", err)
+	}
+	output := string(content)
+	assert.Contains(t, output, "info  npmExecuteScripts - running command: npm install -g pnpm")
+	assert.Contains(t, output, "info  npmExecuteScripts - added 1 package in")
+	assert.Contains(t, output, "running command: pnpm config get registry")
+	assert.Contains(t, output, "info  npmExecuteScripts - running command: pnpm config set registry https://foo.bar")
+	assert.Contains(t, output, "info  npmExecuteScripts - running command: pnpm install")
+	assert.Contains(t, output, "info  npmExecuteScripts - running command: npm run start")
+}
