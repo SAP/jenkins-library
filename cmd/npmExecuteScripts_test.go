@@ -103,7 +103,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Test integration with npm pkg", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build"}}
 
-		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
+		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, Tool: "auto"}
 
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
