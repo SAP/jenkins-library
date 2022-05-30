@@ -148,6 +148,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("yarn.lock", []byte("{}"))
+		utils.execRunner.Lookups = map[string]bool{"yarn": true} // assume yarn is pre-installed
 
 		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
@@ -305,6 +306,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.execRunner.Lookups = map[string]bool{"pnpm": true} // assume pnpm is pre-installed
 
 		options := ExecutorOptions{Tool: "auto"}
 
