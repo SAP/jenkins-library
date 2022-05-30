@@ -35,6 +35,7 @@ type Executor interface {
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
 	ExecRunner         ExecRunner
+	Tool               string
 }
 
 // NewExecutor instantiates Execute struct and sets executeOptions
@@ -83,9 +84,18 @@ func (exec *Execute) SetNpmRegistries() error {
 	execRunner := exec.Utils.GetExecRunner()
 	const npmRegistry = "registry"
 
+	toolName, err := exec.detectToolFromLockfile()
+	if err != nil {
+		return err
+	}
+	if toolName == "" {
+		// at least for 'config get/set' this will always work
+		toolName = "npm"
+	}
+
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry)
+	err = execRunner.RunExecutable(toolName, "config", "get", npmRegistry)
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
@@ -98,7 +108,7 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry)
+		err = execRunner.RunExecutable(toolName, "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry)
 		if err != nil {
 			return err
 		}
@@ -180,6 +190,15 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 		return err
 	}
 
+	toolName, err := exec.detectToolFromLockfile()
+	if err != nil {
+		return err
+	}
+	if toolName == "" {
+		// at least for 'run something' this should work
+		toolName = "npm"
+	}
+
 	log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + script)
 
 	npmRunArgs := []string{"run", script}
@@ -192,7 +211,7 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 		npmRunArgs = append(npmRunArgs, scriptOptions...)
 	}
 
-	err = execRunner.RunExecutable("npm", npmRunArgs...)
+	err = execRunner.RunExecutable(toolName, npmRunArgs...)
 	if err != nil {
 		return fmt.Errorf("failed to run npm script %s: %w", script, err)
 	}
@@ -297,27 +316,32 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
+	toolName, err := exec.detectToolFromLockfile()
 	if err != nil {
 		return err
 	}
 
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
-	if packageLockExists {
-		err = execRunner.RunExecutable("npm", "ci")
+	if toolName == "npm" {
+		err = execRunner.RunExecutable(toolName, "ci")
 		if err != nil {
 			return err
 		}
-	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
+	} else if toolName == "yarn" {
+		err = execRunner.RunExecutable(toolName, "install", "--frozen-lockfile")
+		if err != nil {
+			return err
+		}
+	} else if toolName == "pnpm" {
+		err = execRunner.RunExecutable(toolName, "install")
 		if err != nil {
 			return err
 		}
 	} else {
 		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
+			"It is recommended to create a `package-lock.json` file by running `npm/yarn/pnpm install` locally." +
 			" Add this file to your version control. " +
-			"By doing so, the builds of your application become more reliable.")
+			"By doing so, the builds of your application become more reliable. Defaulting to 'Tool: npm'.")
 		err = execRunner.RunExecutable("npm", "install")
 		if err != nil {
 			return err
@@ -331,18 +355,35 @@ func (exec *Execute) install(packageJSON string) error {
 	return nil
 }
 
-// checkIfLockFilesExist checks if yarn/package lock fileUtils exist
-func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
-	packageLockExists, err := exec.Utils.FileExists("package-lock.json")
-	if err != nil {
-		return false, false, err
-	}
+// detectToolFromLockfile checks if yarn/npm/pnpm lock file exist and returns the name of the tool
+func (exec *Execute) detectToolFromLockfile() (string, error) {
+	if exec.Options.Tool == "auto" {
 
-	yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
-	if err != nil {
-		return false, false, err
+		yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
+		if err != nil {
+			return "", err
+		} else if yarnLockExists {
+			return "yarn", nil
+		}
+
+		pnpmLockExists, err := exec.Utils.FileExists("pnpm-lock.yaml")
+		if err != nil {
+			return "", err
+		} else if pnpmLockExists {
+			return "pnpm", nil
+		}
+
+		packageLockExists, err := exec.Utils.FileExists("package-lock.json")
+		if err != nil {
+			return "", err
+		} else if packageLockExists {
+			return "npm", nil
+		}
+		return "", nil
+
+	} else {
+		return exec.Options.Tool, nil
 	}
-	return packageLockExists, yarnLockExists, nil
 }
 
 // CreateBOM generates BOM file using CycloneDX from all package.json files

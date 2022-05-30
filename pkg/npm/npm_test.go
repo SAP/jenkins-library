@@ -110,8 +110,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("package-lock.json", []byte("{}"))
 
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -130,8 +129,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -151,8 +149,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("yarn.lock", []byte("{}"))
 
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -174,8 +171,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
 
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -191,41 +187,76 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("check if yarn.lock and package-lock exist", func(t *testing.T) {
+	t.Run("check if yarn.lock exist", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("yarn.lock", []byte("{}"))
 		utils.AddFile("package-lock.json", []byte("{}"))
 
-		options := ExecutorOptions{}
+		options := ExecutorOptions{Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
 		}
-		packageLock, yarnLock, err := exec.checkIfLockFilesExist()
+		toolName, err := exec.detectToolFromLockfile()
 
 		if assert.NoError(t, err) {
-			assert.True(t, packageLock)
-			assert.True(t, yarnLock)
+			assert.Equal(t, "yarn", toolName)
 		}
 	})
 
-	t.Run("check that yarn.lock and package-lock do not exist", func(t *testing.T) {
+	t.Run("for usage of npm", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("yarn.lock", []byte("{}"))
 
-		options := ExecutorOptions{}
+		options := ExecutorOptions{Tool: "npm"}
 
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
 		}
-		packageLock, yarnLock, err := exec.checkIfLockFilesExist()
+		toolName, err := exec.detectToolFromLockfile()
 
 		if assert.NoError(t, err) {
-			assert.False(t, packageLock)
-			assert.False(t, yarnLock)
+			assert.Equal(t, "npm", toolName)
+		}
+	})
+
+	t.Run("check if pnpm-lock.yaml exist", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.AddFile("package-lock.json", []byte("{}"))
+
+		options := ExecutorOptions{Tool: "auto"}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		toolName, err := exec.detectToolFromLockfile()
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "pnpm", toolName)
+		}
+	})
+
+	t.Run("check that yarn.lock and package-lock and pnpm-lock do not exist", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+
+		options := ExecutorOptions{Tool: "auto"}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		toolName, err := exec.detectToolFromLockfile()
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "", toolName)
 		}
 	})
 
@@ -233,7 +264,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{}
+		options := ExecutorOptions{Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -248,12 +279,32 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
+	t.Run("check Execute script with pnpm", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+		options := ExecutorOptions{Tool: "auto"}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "pnpm", Params: []string{"run", "ci-lint", "--silent", "--", "--tag", "tag1"}}, utils.execRunner.Calls[1])
+			}
+		}
+	})
+
 	t.Run("check Execute all scripts", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{}
+		options := ExecutorOptions{Tool: "auto"}
 		runScripts := []string{"ci-lint", "ci-build"}
 
 		exec := &Execute{
@@ -275,7 +326,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))                        // is filtered out
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }")) // should NOT be filtered out
 
-		options := ExecutorOptions{}
+		options := ExecutorOptions{Tool: "auto"}
 		runScripts := []string{"ci-lint", "ci-build"}
 		buildDescriptorList := []string{filepath.Join("src", "package.json")}
 
@@ -318,7 +369,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"foo\": \"\" } }"))
 
-		options := ExecutorOptions{}
+		options := ExecutorOptions{Tool: "auto"}
 
 		exec := &Execute{
 			Utils:   &utils,
