@@ -11,16 +11,23 @@ import (
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
 	helmConfig := kubernetes.HelmExecuteOptions{
-		ChartPath:                 config.ChartPath,
-		Image:                     config.Image,
-		Namespace:                 config.Namespace,
-		KubeContext:               config.KubeContext,
-		KubeConfig:                config.KubeConfig,
-		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
+		ExecOpts: kubernetes.ExecuteOptions{
+			ChartPath:             config.ChartPath,
+			Image:                 config.Image,
+			Namespace:             config.Namespace,
+			KubeContext:           config.KubeContext,
+			KubeConfig:            config.KubeConfig,
+			HelmDeployWaitSeconds: config.HelmDeployWaitSeconds,
+			HelmValues:            config.HelmValues,
+			ValuesMapping:         config.ValuesMapping,
+			ImageNames:            config.ImageNames,
+			ImageNameTags:         config.ImageNameTags,
+			ImageDigests:          config.ImageDigests,
+			AppTemplate:           config.AppTemplate,
+		},
 		AppVersion:                config.AppVersion,
 		Dependency:                config.Dependency,
 		PackageDependencyUpdate:   config.PackageDependencyUpdate,
-		HelmValues:                config.HelmValues,
 		FilterTest:                config.FilterTest,
 		DumpLogs:                  config.DumpLogs,
 		TargetRepositoryURL:       config.TargetRepositoryURL,
@@ -31,11 +38,6 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
 		Version:                   config.Version,
 		PublishVersion:            config.Version,
-		ValuesMapping:             config.ValuesMapping,
-		ImageNames:                config.ImageNames,
-		ImageNameTags:             config.ImageNameTags,
-		ImageDigests:              config.ImageDigests,
-		AppTemplate:               config.AppTemplate,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
@@ -50,7 +52,7 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 	}
 	artifactInfo, err := artifact.GetCoordinates()
 
-	helmConfig.DeploymentName = artifactInfo.ArtifactID
+	helmConfig.ExecOpts.DeploymentName = artifactInfo.ArtifactID
 
 	if len(helmConfig.PublishVersion) == 0 {
 		helmConfig.PublishVersion = artifactInfo.Version

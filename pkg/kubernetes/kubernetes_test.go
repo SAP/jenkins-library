@@ -35,21 +35,23 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool:   "helm",
+			IngressHosts: []string{"ingress.host1", "ingress.host2"},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -105,22 +107,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm - with containerImageName and containerImageTag instead of image", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
-			ContainerImageTag:         "latest",
-			ContainerImageName:        "path/to/Image",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				ContainerImageTag:         "latest",
+				ContainerImageName:        "path/to/Image",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool:   "helm",
+			IngressHosts: []string{"ingress.host1", "ingress.host2"},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -157,21 +161,23 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm - docker config.json path passed as parameter", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			DockerConfigJSON:          "/path/to/.docker/config.json",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				DockerConfigJSON:          "/path/to/.docker/config.json",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+			},
+			DeployTool:   "helm",
+			IngressHosts: []string{"ingress.host1", "ingress.host2"},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -228,22 +234,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm -- keep failed deployment", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			KeepFailedDeployments:     true,
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				KeepFailedDeployments:     true,
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool:   "helm",
+			IngressHosts: []string{"ingress.host1", "ingress.host2"},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -297,17 +305,19 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm - fails without image information", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "testSecret",
-			ChartPath:               "path/to/chart",
-			DeploymentName:          "deploymentName",
-			DeployTool:              "helm",
-			ForceUpdates:            true,
-			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{},
-			AdditionalParameters:    []string{"--testParam", "testValue"},
-			KubeContext:             "testCluster",
-			Namespace:               "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "testSecret",
+				ChartPath:               "path/to/chart",
+				DeploymentName:          "deploymentName",
+				ForceUpdates:            true,
+				HelmDeployWaitSeconds:   400,
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
+			DeployTool:   "helm",
+			IngressHosts: []string{},
 		}
 		mockUtils := newKubernetesDeployMockUtils()
 		var stdout bytes.Buffer
@@ -322,21 +332,23 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -402,22 +414,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - runs helm tests", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
-			RunHelmTests:              true,
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool:   "helm3",
+			RunHelmTests: true,
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -482,23 +496,25 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - runs helm tests with logs", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
-			RunHelmTests:              true,
-			ShowTestLogs:              true,
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool:   "helm3",
+			RunHelmTests: true,
+			ShowTestLogs: true,
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -564,23 +580,25 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - should not run helm tests", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
-			RunHelmTests:              false,
-			ShowTestLogs:              true,
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool:   "helm3",
+			RunHelmTests: false,
+			ShowTestLogs: true,
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -639,22 +657,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - with containerImageName and containerImageTag instead of image", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ContainerImageName:        "path/to/Image",
-			ContainerImageTag:         "latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				ContainerImageName:        "path/to/Image",
+				ContainerImageTag:         "latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -689,22 +709,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - with multiple images", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ImageNames:                []string{"myImage", "myImage.sub1", "myImage.sub2"},
-			ImageNameTags:             []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				ImageNames:                []string{"myImage", "myImage.sub1", "myImage.sub2"},
+				ImageNameTags:             []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -739,22 +761,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - with one image in  multiple images array", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ImageNames:                []string{"myImage"},
-			ImageNameTags:             []string{"myImage:myTag"},
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				ImageNames:                []string{"myImage"},
+				ImageNameTags:             []string{"myImage:myTag"},
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -789,22 +813,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - with multiple images - missing ImageNameTags", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ImageNames:                []string{"myImage", "myImage.sub1", "myImage.sub2"},
-			ImageNameTags:             []string{"myImage:myTag"},
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				ImageNames:                []string{"myImage", "myImage.sub1", "myImage.sub2"},
+				ImageNameTags:             []string{"myImage:myTag"},
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -824,26 +850,28 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - with multiple images and valuesMapping", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ValuesMapping: map[string]interface{}{
-				"subchart.image.registry": "image.myImage.repository",
-				"subchart.image.tag":      "image.myImage.tag",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				ValuesMapping: map[string]interface{}{
+					"subchart.image.registry": "image.myImage.repository",
+					"subchart.image.tag":      "image.myImage.tag",
+				},
+				ImageNames:           []string{"myImage", "myImage.sub1", "myImage.sub2"},
+				ImageNameTags:        []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+				AdditionalParameters: []string{"--testParam", "testValue"},
+				KubeContext:          "testCluster",
+				Namespace:            "deploymentNamespace",
+				DockerConfigJSON:     ".pipeline/docker/config.json",
 			},
-			ImageNames:           []string{"myImage", "myImage.sub1", "myImage.sub2"},
-			ImageNameTags:        []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
-			AdditionalParameters: []string{"--testParam", "testValue"},
-			KubeContext:          "testCluster",
-			Namespace:            "deploymentNamespace",
-			DockerConfigJSON:     ".pipeline/docker/config.json",
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -888,25 +916,27 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - with multiple images and incorrect valuesMapping", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ValuesMapping: map[string]interface{}{
-				"subchart.image.registry": false,
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				ValuesMapping: map[string]interface{}{
+					"subchart.image.registry": false,
+				},
+				ImageNames:           []string{"myImage", "myImage.sub1", "myImage.sub2"},
+				ImageNameTags:        []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+				AdditionalParameters: []string{"--testParam", "testValue"},
+				KubeContext:          "testCluster",
+				Namespace:            "deploymentNamespace",
+				DockerConfigJSON:     ".pipeline/docker/config.json",
 			},
-			ImageNames:           []string{"myImage", "myImage.sub1", "myImage.sub2"},
-			ImageNameTags:        []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
-			AdditionalParameters: []string{"--testParam", "testValue"},
-			KubeContext:          "testCluster",
-			Namespace:            "deploymentNamespace",
-			DockerConfigJSON:     ".pipeline/docker/config.json",
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -924,17 +954,19 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm3 - fails without image information", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "testSecret",
-			ChartPath:               "path/to/chart",
-			DeploymentName:          "deploymentName",
-			DeployTool:              "helm3",
-			ForceUpdates:            true,
-			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{},
-			AdditionalParameters:    []string{"--testParam", "testValue"},
-			KubeContext:             "testCluster",
-			Namespace:               "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "testSecret",
+				ChartPath:               "path/to/chart",
+				DeploymentName:          "deploymentName",
+				ForceUpdates:            true,
+				HelmDeployWaitSeconds:   400,
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
+			DeployTool:   "helm3",
+			IngressHosts: []string{},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -950,22 +982,24 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - keep failed deployments", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:      "https://my.registry:55555",
-			ContainerRegistryUser:     "registryUser",
-			ContainerRegistryPassword: "dummy",
-			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
-			DeploymentName:            "deploymentName",
-			DeployTool:                "helm3",
-			ForceUpdates:              true,
-			HelmDeployWaitSeconds:     400,
-			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			Image:                     "path/to/Image:latest",
-			AdditionalParameters:      []string{"--testParam", "testValue"},
-			KubeContext:               "testCluster",
-			Namespace:                 "deploymentNamespace",
-			KeepFailedDeployments:     true,
-			DockerConfigJSON:          ".pipeline/docker/config.json",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "testSecret",
+				ChartPath:                 "path/to/chart",
+				DeploymentName:            "deploymentName",
+				ForceUpdates:              true,
+				HelmDeployWaitSeconds:     400,
+				HelmValues:                []string{"values1.yaml", "values2.yaml"},
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				KeepFailedDeployments:     true,
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
+			DeployTool: "helm3",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1021,18 +1055,20 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - no container credentials", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ChartPath:               "path/to/chart",
-			ContainerRegistrySecret: "testSecret",
-			DeploymentName:          "deploymentName",
-			DeployTool:              "helm3",
-			ForceUpdates:            true,
-			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{},
-			Image:                   "path/to/Image:latest",
-			AdditionalParameters:    []string{"--testParam", "testValue"},
-			KubeContext:             "testCluster",
-			Namespace:               "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ChartPath:               "path/to/chart",
+				ContainerRegistrySecret: "testSecret",
+				DeploymentName:          "deploymentName",
+				ForceUpdates:            true,
+				HelmDeployWaitSeconds:   400,
+				Image:                   "path/to/Image:latest",
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
+			DeployTool:   "helm3",
+			IngressHosts: []string{},
 		}
 		mockUtils := newKubernetesDeployMockUtils()
 
@@ -1069,17 +1105,19 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "testSecret",
-			DeploymentName:          "deploymentName",
-			DeployTool:              "helm3",
-			ForceUpdates:            true,
-			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{},
-			Image:                   "path/to/Image:latest",
-			AdditionalParameters:    []string{"--testParam", "testValue"},
-			KubeContext:             "testCluster",
-			Namespace:               "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "testSecret",
+				DeploymentName:          "deploymentName",
+				ForceUpdates:            true,
+				HelmDeployWaitSeconds:   400,
+				Image:                   "path/to/Image:latest",
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
+			DeployTool:   "helm3",
+			IngressHosts: []string{},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1095,17 +1133,19 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - fails without deployment name", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "testSecret",
-			ChartPath:               "path/to/chart",
-			DeployTool:              "helm3",
-			ForceUpdates:            true,
-			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{},
-			Image:                   "path/to/Image:latest",
-			AdditionalParameters:    []string{"--testParam", "testValue"},
-			KubeContext:             "testCluster",
-			Namespace:               "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "testSecret",
+				ChartPath:               "path/to/chart",
+				ForceUpdates:            true,
+				HelmDeployWaitSeconds:   400,
+				Image:                   "path/to/Image:latest",
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
+			DeployTool:   "helm3",
+			IngressHosts: []string{},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1121,17 +1161,19 @@ func TestRunHelmDeploy(t *testing.T) {
 
 	t.Run("test helm v3 - no force", func(t *testing.T) {
 		opts := KubernetesOptions{
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ChartPath:               "path/to/chart",
-			ContainerRegistrySecret: "testSecret",
-			DeploymentName:          "deploymentName",
-			DeployTool:              "helm3",
-			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{},
-			Image:                   "path/to/Image:latest",
-			AdditionalParameters:    []string{"--testParam", "testValue"},
-			KubeContext:             "testCluster",
-			Namespace:               "deploymentNamespace",
+			ExecOpts: ExecuteOptions{
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ChartPath:               "path/to/chart",
+				ContainerRegistrySecret: "testSecret",
+				DeploymentName:          "deploymentName",
+				HelmDeployWaitSeconds:   400,
+				Image:                   "path/to/Image:latest",
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
+			DeployTool:   "helm3",
+			IngressHosts: []string{},
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1175,24 +1217,26 @@ func TestRunKubctlDeploy(t *testing.T) {
 
 	t.Run("test kubectl - create secret from docker config.json", func(t *testing.T) {
 		opts := KubernetesOptions{
-			AppTemplate:                "path/to/test.yaml",
-			ContainerRegistryURL:       "https://my.registry:55555",
-			ContainerRegistryUser:      "registryUser",
-			ContainerRegistryPassword:  "dummy",
-			ContainerRegistrySecret:    "regSecret",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:               "path/to/test.yaml",
+				ContainerRegistryURL:      "https://my.registry:55555",
+				ContainerRegistryUser:     "registryUser",
+				ContainerRegistryPassword: "dummy",
+				ContainerRegistrySecret:   "regSecret",
+				Image:                     "path/to/Image:latest",
+				AdditionalParameters:      []string{"--testParam", "testValue"},
+				KubeConfig:                "This is my kubeconfig",
+				KubeContext:               "testCluster",
+				Namespace:                 "deploymentNamespace",
+				DockerConfigJSON:          ".pipeline/docker/config.json",
+			},
 			CreateDockerRegistrySecret: true,
-			DeployTool:                 "kubectl",
-			Image:                      "path/to/Image:latest",
-			AdditionalParameters:       []string{"--testParam", "testValue"},
-			KubeConfig:                 "This is my kubeconfig",
-			KubeContext:                "testCluster",
-			Namespace:                  "deploymentNamespace",
 			DeployCommand:              "apply",
-			DockerConfigJSON:           ".pipeline/docker/config.json",
+			DeployTool:                 "kubectl",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
-		mockUtils.AddFile(opts.AppTemplate, []byte(kubeYaml))
+		mockUtils.AddFile(opts.ExecOpts.AppTemplate, []byte(kubeYaml))
 		mockUtils.StdoutReturn = map[string]string{
 			`kubectl create secret generic regSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster`: dockerConfigJSON,
 		}
@@ -1226,19 +1270,21 @@ func TestRunKubctlDeploy(t *testing.T) {
 
 	t.Run("test kubectl - token only", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "path/to/test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			Image:                   "path/to/Image:latest",
-			KubeToken:               "testToken",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "path/to/test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				Image:                   "path/to/Image:latest",
+				Namespace:               "deploymentNamespace",
+			},
+			APIServer:     "https://my.api.server",
+			DeployTool:    "kubectl",
+			KubeToken:     "testToken",
+			DeployCommand: "apply",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
-		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
+		mockUtils.AddFile(opts.ExecOpts.AppTemplate, []byte("testYaml"))
 		mockUtils.ShouldFailOnCommand = map[string]error{}
 
 		var stdout bytes.Buffer
@@ -1252,27 +1298,29 @@ func TestRunKubctlDeploy(t *testing.T) {
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
-			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--namespace=%v", opts.ExecOpts.Namespace),
 			fmt.Sprintf("--server=%v", opts.APIServer),
 			fmt.Sprintf("--token=%v", opts.KubeToken),
 			"apply",
 			"--filename",
-			opts.AppTemplate,
+			opts.ExecOpts.AppTemplate,
 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
 	})
 
 	t.Run("test kubectl - with containerImageName and containerImageTag instead of image", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			ContainerImageTag:       "latest",
-			ContainerImageName:      "path/to/Image",
-			KubeConfig:              "This is my kubeconfig",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				ContainerImageTag:       "latest",
+				ContainerImageName:      "path/to/Image",
+				KubeConfig:              "This is my kubeconfig",
+				Namespace:               "deploymentNamespace",
+			},
+			APIServer:     "https://my.api.server",
+			DeployTool:    "kubectl",
+			DeployCommand: "apply",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1287,23 +1335,25 @@ func TestRunKubctlDeploy(t *testing.T) {
 		kubernetesDeploy.RunKubectlDeploy()
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
-		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		appTemplateFileContents, err := mockUtils.FileRead(opts.ExecOpts.AppTemplate)
 		assert.NoError(t, err)
 		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
 	})
 
 	t.Run("test kubectl - with containerImageName and containerImageTag instead of image using go template", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			ContainerImageTag:       "latest",
-			ContainerImageName:      "path/to/Image",
-			KubeConfig:              "This is my kubeconfig",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				ContainerImageTag:       "latest",
+				ContainerImageName:      "path/to/Image",
+				KubeConfig:              "This is my kubeconfig",
+				Namespace:               "deploymentNamespace",
+			},
+			APIServer:     "https://my.api.server",
+			DeployTool:    "kubectl",
+			DeployCommand: "apply",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1318,27 +1368,29 @@ func TestRunKubctlDeploy(t *testing.T) {
 		kubernetesDeploy.RunKubectlDeploy()
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
-		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		appTemplateFileContents, err := mockUtils.FileRead(opts.ExecOpts.AppTemplate)
 		assert.NoError(t, err)
 		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
 	})
 
 	t.Run("test kubectl - with multiple images using go template", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			KubeConfig:              "This is my kubeconfig",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
-			ValuesMapping: map[string]interface{}{
-				"subchart.image.repository": "image.myImage.repository",
-				"subchart.image.tag":        "image.myImage.tag",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				KubeConfig:              "This is my kubeconfig",
+				Namespace:               "deploymentNamespace",
+				ValuesMapping: map[string]interface{}{
+					"subchart.image.repository": "image.myImage.repository",
+					"subchart.image.tag":        "image.myImage.tag",
+				},
+				ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
+				ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
 			},
-			ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
-			ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+			APIServer:     "https://my.api.server",
+			DeployCommand: "apply",
+			DeployTool:    "kubectl",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1355,28 +1407,30 @@ func TestRunKubctlDeploy(t *testing.T) {
 		kubernetesDeploy.RunKubectlDeploy()
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
-		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		appTemplateFileContents, err := mockUtils.FileRead(opts.ExecOpts.AppTemplate)
 		assert.NoError(t, err)
 		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/myImage:myTag\n\timage2: my.registry:55555/myImage:myTag\n\timage3: my.registry:55555/myImage-sub1:myTag", "kubectl parameters incorrect")
 	})
 
 	t.Run("test kubectl - with multiple images and digests", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			KubeConfig:              "This is my kubeconfig",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
-			ValuesMapping: map[string]interface{}{
-				"subchart.image.repository": "image.myImage.repository",
-				"subchart.image.tag":        "image.myImage.tag",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				KubeConfig:              "This is my kubeconfig",
+				Namespace:               "deploymentNamespace",
+				ValuesMapping: map[string]interface{}{
+					"subchart.image.repository": "image.myImage.repository",
+					"subchart.image.tag":        "image.myImage.tag",
+				},
+				ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
+				ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+				ImageDigests:  []string{"sha256:111", "sha256:222", "sha256:333"},
 			},
-			ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
-			ImageNameTags: []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
-			ImageDigests:  []string{"sha256:111", "sha256:222", "sha256:333"},
+			APIServer:     "https://my.api.server",
+			DeployCommand: "apply",
+			DeployTool:    "kubectl",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1394,7 +1448,7 @@ func TestRunKubctlDeploy(t *testing.T) {
 		kubernetesDeploy.RunKubectlDeploy()
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
-		appTemplateFileContents, err := mockUtils.FileRead(opts.AppTemplate)
+		appTemplateFileContents, err := mockUtils.FileRead(opts.ExecOpts.AppTemplate)
 		assert.NoError(t, err)
 		assert.Contains(t, string(appTemplateFileContents), `image: my.registry:55555/myImage:myTag@sha256:111
 	image2: my.registry:55555/myImage:myTag@sha256:111
@@ -1404,16 +1458,18 @@ func TestRunKubctlDeploy(t *testing.T) {
 
 	t.Run("test kubectl - fail with multiple images using placeholder", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			KubeConfig:              "This is my kubeconfig",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
-			ImageNames:              []string{"myImage", "myImage-sub1", "myImage-sub2"},
-			ImageNameTags:           []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				KubeConfig:              "This is my kubeconfig",
+				Namespace:               "deploymentNamespace",
+				ImageNames:              []string{"myImage", "myImage-sub1", "myImage-sub2"},
+				ImageNameTags:           []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+			},
+			APIServer:     "https://my.api.server",
+			DeployCommand: "apply",
+			DeployTool:    "kubectl",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1431,14 +1487,16 @@ func TestRunKubctlDeploy(t *testing.T) {
 
 	t.Run("test kubectl - fails without image information", func(t *testing.T) {
 		opts := KubernetesOptions{
-			APIServer:               "https://my.api.server",
-			AppTemplate:             "test.yaml",
-			ContainerRegistryURL:    "https://my.registry:55555",
-			ContainerRegistrySecret: "regSecret",
-			DeployTool:              "kubectl",
-			KubeConfig:              "This is my kubeconfig",
-			Namespace:               "deploymentNamespace",
-			DeployCommand:           "apply",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				KubeConfig:              "This is my kubeconfig",
+				Namespace:               "deploymentNamespace",
+			},
+			APIServer:     "https://my.api.server",
+			DeployCommand: "apply",
+			DeployTool:    "kubectl",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1456,16 +1514,18 @@ func TestRunKubctlDeploy(t *testing.T) {
 
 	t.Run("test kubectl - use replace deploy command", func(t *testing.T) {
 		opts := KubernetesOptions{
-			AppTemplate:                "test.yaml",
-			ContainerRegistryURL:       "https://my.registry:55555",
-			ContainerRegistrySecret:    "regSecret",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				Image:                   "path/to/Image:latest",
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeConfig:              "This is my kubeconfig",
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+			},
 			CreateDockerRegistrySecret: true,
 			DeployTool:                 "kubectl",
-			Image:                      "path/to/Image:latest",
-			AdditionalParameters:       []string{"--testParam", "testValue"},
-			KubeConfig:                 "This is my kubeconfig",
-			KubeContext:                "testCluster",
-			Namespace:                  "deploymentNamespace",
 			DeployCommand:              "replace",
 		}
 
@@ -1485,32 +1545,34 @@ func TestRunKubctlDeploy(t *testing.T) {
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong replace command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
-			fmt.Sprintf("--namespace=%v", opts.Namespace),
-			fmt.Sprintf("--context=%v", opts.KubeContext),
+			fmt.Sprintf("--namespace=%v", opts.ExecOpts.Namespace),
+			fmt.Sprintf("--context=%v", opts.ExecOpts.KubeContext),
 			"replace",
 			"--filename",
-			opts.AppTemplate,
+			opts.ExecOpts.AppTemplate,
 			"--testParam",
 			"testValue",
 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
-		appTemplate, err := mockUtils.FileRead(opts.AppTemplate)
+		appTemplate, err := mockUtils.FileRead(opts.ExecOpts.AppTemplate)
 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
 	})
 
 	t.Run("test kubectl - use replace --force deploy command", func(t *testing.T) {
 		opts := KubernetesOptions{
-			AppTemplate:                "test.yaml",
-			ContainerRegistryURL:       "https://my.registry:55555",
-			ContainerRegistrySecret:    "regSecret",
+			ExecOpts: ExecuteOptions{
+				AppTemplate:             "test.yaml",
+				ContainerRegistryURL:    "https://my.registry:55555",
+				ContainerRegistrySecret: "regSecret",
+				Image:                   "path/to/Image:latest",
+				AdditionalParameters:    []string{"--testParam", "testValue"},
+				KubeConfig:              "This is my kubeconfig",
+				KubeContext:             "testCluster",
+				Namespace:               "deploymentNamespace",
+				ForceUpdates:            true,
+			},
 			CreateDockerRegistrySecret: true,
-			DeployTool:                 "kubectl",
-			Image:                      "path/to/Image:latest",
-			AdditionalParameters:       []string{"--testParam", "testValue"},
-			KubeConfig:                 "This is my kubeconfig",
-			KubeContext:                "testCluster",
-			Namespace:                  "deploymentNamespace",
 			DeployCommand:              "replace",
-			ForceUpdates:               true,
+			DeployTool:                 "kubectl",
 		}
 
 		mockUtils := newKubernetesDeployMockUtils()
@@ -1529,16 +1591,16 @@ func TestRunKubctlDeploy(t *testing.T) {
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong replace command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
-			fmt.Sprintf("--namespace=%v", opts.Namespace),
-			fmt.Sprintf("--context=%v", opts.KubeContext),
+			fmt.Sprintf("--namespace=%v", opts.ExecOpts.Namespace),
+			fmt.Sprintf("--context=%v", opts.ExecOpts.KubeContext),
 			"replace",
 			"--filename",
-			opts.AppTemplate,
+			opts.ExecOpts.AppTemplate,
 			"--force",
 			"--testParam",
 			"testValue",
 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
-		appTemplate, err := mockUtils.FileRead(opts.AppTemplate)
+		appTemplate, err := mockUtils.FileRead(opts.ExecOpts.AppTemplate)
 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
 	})
 }

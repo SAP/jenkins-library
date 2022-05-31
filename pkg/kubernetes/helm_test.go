@@ -80,15 +80,17 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					DeploymentName:        "test_deployment",
-					ChartPath:             ".",
-					Namespace:             "test_namespace",
-					ForceUpdates:          true,
-					HelmDeployWaitSeconds: 3456,
-					AdditionalParameters:  []string{"additional parameter"},
-					Image:                 "dtzar/helm-kubectl:3.4.1",
-					TargetRepositoryName:  "test",
-					TargetRepositoryURL:   "https://charts.helm.sh/stable",
+					ExecOpts: ExecuteOptions{
+						DeploymentName:        "test_deployment",
+						ChartPath:             ".",
+						Namespace:             "test_namespace",
+						ForceUpdates:          true,
+						HelmDeployWaitSeconds: 3456,
+						AdditionalParameters:  []string{"additional parameter"},
+						Image:                 "dtzar/helm-kubectl:3.4.1",
+					},
+					TargetRepositoryName: "test",
+					TargetRepositoryURL:  "https://charts.helm.sh/stable",
 				},
 				generalVerbose:        true,
 				expectedAddConfig:     []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"},
@@ -119,7 +121,9 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath: ".",
+					ExecOpts: ExecuteOptions{
+						ChartPath: ".",
+					},
 				},
 				expectedConfig: []string{"lint", "."},
 			},
@@ -149,12 +153,14 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:             ".",
-					DeploymentName:        "testPackage",
-					Namespace:             "test-namespace",
-					HelmDeployWaitSeconds: 525,
-					TargetRepositoryURL:   "https://charts.helm.sh/stable",
-					TargetRepositoryName:  "test",
+					ExecOpts: ExecuteOptions{
+						ChartPath:             ".",
+						DeploymentName:        "testPackage",
+						Namespace:             "test-namespace",
+						HelmDeployWaitSeconds: 525,
+					},
+					TargetRepositoryURL:  "https://charts.helm.sh/stable",
+					TargetRepositoryName: "test",
 				},
 				generalVerbose:        false,
 				expectedConfigAdd:     []string{"repo", "add", "test", "https://charts.helm.sh/stable"},
@@ -162,14 +168,16 @@ func TestRunHelm(t *testing.T) {
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:             ".",
-					DeploymentName:        "testPackage",
-					Namespace:             "test-namespace",
-					HelmDeployWaitSeconds: 525,
-					KeepFailedDeployments: false,
-					AdditionalParameters:  []string{"--set-file my_script=dothings.sh"},
-					TargetRepositoryURL:   "https://charts.helm.sh/stable",
-					TargetRepositoryName:  "test",
+					ExecOpts: ExecuteOptions{
+						ChartPath:             ".",
+						DeploymentName:        "testPackage",
+						Namespace:             "test-namespace",
+						HelmDeployWaitSeconds: 525,
+						KeepFailedDeployments: false,
+						AdditionalParameters:  []string{"--set-file my_script=dothings.sh"},
+					},
+					TargetRepositoryURL:  "https://charts.helm.sh/stable",
+					TargetRepositoryName: "test",
 				},
 				generalVerbose:        true,
 				expectedConfigAdd:     []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"},
@@ -202,20 +210,24 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:            ".",
-					DeploymentName:       "testPackage",
-					Namespace:            "test-namespace",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+						Namespace:      "test-namespace",
+					},
 					TargetRepositoryName: "test",
 				},
 				expectedConfig: []string{"uninstall", "testPackage", "--namespace", "test-namespace"},
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:             ".",
-					DeploymentName:        "testPackage",
-					Namespace:             "test-namespace",
-					HelmDeployWaitSeconds: 524,
-					TargetRepositoryName:  "test",
+					ExecOpts: ExecuteOptions{
+						ChartPath:             ".",
+						DeploymentName:        "testPackage",
+						Namespace:             "test-namespace",
+						HelmDeployWaitSeconds: 524,
+					},
+					TargetRepositoryName: "test",
 				},
 				generalVerbose: true,
 				expectedConfig: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug", "--dry-run"},
@@ -245,15 +257,19 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:      ".",
-					DeploymentName: "testPackage",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+					},
 				},
 				expectedConfig: []string{"package", "."},
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:               ".",
-					DeploymentName:          "testPackage",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+					},
 					Version:                 "1.2.3",
 					PackageDependencyUpdate: true,
 					AppVersion:              "9.8.7",
@@ -285,17 +301,21 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:      ".",
-					DeploymentName: "testPackage",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+					},
 				},
 				expectedConfig: []string{"test", "."},
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:      ".",
-					DeploymentName: "testPackage",
-					FilterTest:     "name=test1,name=test2",
-					DumpLogs:       true,
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+					},
+					FilterTest: "name=test1,name=test2",
+					DumpLogs:   true,
 				},
 				expectedConfig: []string{"test", ".", "--filter", "name=test1,name=test2", "--logs"},
 			},
@@ -324,15 +344,19 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:      ".",
-					DeploymentName: "testPackage",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+					},
 				},
 				expectedError: errors.New("failed to execute deployments: there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments"),
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:            ".",
-					DeploymentName:       "testPackage",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						DeploymentName: "testPackage",
+					},
 					TargetRepositoryName: "test",
 				},
 				expectedError: errors.New("namespace has not been set, please configure namespace parameter"),
@@ -364,11 +388,13 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath:      ".",
-					Namespace:      "test-namespace",
-					DeploymentName: "testPackage",
-					KubeContext:    "kubeContext",
-					KubeConfig:     "kubeConfig",
+					ExecOpts: ExecuteOptions{
+						ChartPath:      ".",
+						Namespace:      "test-namespace",
+						DeploymentName: "testPackage",
+						KubeContext:    "kubeContext",
+						KubeConfig:     "kubeConfig",
+					},
 				},
 				expectedError: nil,
 			},
@@ -402,14 +428,18 @@ func TestRunHelm(t *testing.T) {
 		}{
 			{
 				config: HelmExecuteOptions{
-					ChartPath: ".",
+					ExecOpts: ExecuteOptions{
+						ChartPath: ".",
+					},
 				},
 				expectedError:  errors.New("there is no dependency value. Possible values are build, list, update"),
 				expectedResult: nil,
 			},
 			{
 				config: HelmExecuteOptions{
-					ChartPath:  ".",
+					ExecOpts: ExecuteOptions{
+						ChartPath: ".",
+					},
 					Dependency: "update",
 				},
 				expectedError:  nil,
@@ -440,12 +470,14 @@ func TestRunHelm(t *testing.T) {
 		utils := newHelmMockUtilsBundle()
 
 		config := HelmExecuteOptions{
+			ExecOpts: ExecuteOptions{
+				DeploymentName: "test_helm_chart",
+				ChartPath:      ".",
+			},
 			TargetRepositoryURL:      "https://my.target.repository.local/",
 			TargetRepositoryUser:     "testUser",
 			TargetRepositoryPassword: "testPWD",
 			PublishVersion:           "1.2.3",
-			DeploymentName:           "test_helm_chart",
-			ChartPath:                ".",
 		}
 		utils.ReturnFileUploadStatus = 200
 

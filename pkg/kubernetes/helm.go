@@ -31,36 +31,20 @@ type HelmExecute struct {
 
 // HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
-	AdditionalParameters      []string               `json:"additionalParameters,omitempty"`
-	ChartPath                 string                 `json:"chartPath,omitempty"`
-	DeploymentName            string                 `json:"deploymentName,omitempty"`
-	ForceUpdates              bool                   `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds     int                    `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                []string               `json:"helmValues,omitempty"`
-	Image                     string                 `json:"image,omitempty"`
-	KeepFailedDeployments     bool                   `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                string                 `json:"kubeConfig,omitempty"`
-	KubeContext               string                 `json:"kubeContext,omitempty"`
-	Namespace                 string                 `json:"namespace,omitempty"`
-	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
-	Version                   string                 `json:"version,omitempty"`
-	AppVersion                string                 `json:"appVersion,omitempty"`
-	PublishVersion            string                 `json:"publishVersion,omitempty"`
-	Dependency                string                 `json:"dependency,omitempty" validate:"possible-values=build list update"`
-	PackageDependencyUpdate   bool                   `json:"packageDependencyUpdate,omitempty"`
-	DumpLogs                  bool                   `json:"dumpLogs,omitempty"`
-	FilterTest                string                 `json:"filterTest,omitempty"`
-	TargetRepositoryURL       string                 `json:"targetRepositoryURL,omitempty"`
-	TargetRepositoryName      string                 `json:"targetRepositoryName,omitempty"`
-	TargetRepositoryUser      string                 `json:"targetRepositoryUser,omitempty"`
-	TargetRepositoryPassword  string                 `json:"targetRepositoryPassword,omitempty"`
-	HelmCommand               string                 `json:"helmCommand,omitempty"`
-	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
-	ValuesMapping             map[string]interface{} `json:"valuesMapping,omitempty"`
-	ImageNames                []string               `json:"imageNames,omitempty"`
-	ImageNameTags             []string               `json:"imageNameTags,omitempty"`
-	ImageDigests              []string               `json:"imageDigests,omitempty"`
-	AppTemplate               string                 `json:"appTemplate,omitempty"`
+	ExecOpts                  ExecuteOptions
+	AppVersion                string   `json:"appVersion,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
+	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
+	FilterTest                string   `json:"filterTest,omitempty"`
+	HelmCommand               string   `json:"helmCommand,omitempty"`
+	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
+	PublishVersion            string   `json:"publishVersion,omitempty"`
+	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
+	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
+	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
+	Version                   string   `json:"version,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -76,14 +60,14 @@ func NewHelmExecutor(config HelmExecuteOptions, utils DeployUtils, verbose bool,
 // runHelmInit is used to set up env for executing helm command
 func (h *HelmExecute) runHelmInit() error {
 	helmLogFields := map[string]interface{}{}
-	helmLogFields["Chart Path"] = h.config.ChartPath
-	helmLogFields["Namespace"] = h.config.Namespace
-	helmLogFields["Deployment Name"] = h.config.DeploymentName
-	helmLogFields["Context"] = h.config.KubeContext
-	helmLogFields["Kubeconfig"] = h.config.KubeConfig
+	helmLogFields["Chart Path"] = h.config.ExecOpts.ChartPath
+	helmLogFields["Namespace"] = h.config.ExecOpts.Namespace
+	helmLogFields["Deployment Name"] = h.config.ExecOpts.DeploymentName
+	helmLogFields["Context"] = h.config.ExecOpts.KubeContext
+	helmLogFields["Kubeconfig"] = h.config.ExecOpts.KubeConfig
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
-	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", h.config.KubeConfig)}
+	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", h.config.ExecOpts.KubeConfig)}
 
 	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
 	h.utils.SetEnv(helmEnv)
@@ -122,7 +106,7 @@ func (h *HelmExecute) runHelmAdd() error {
 
 // RunHelmUpgrade is used to upgrade a release
 func (h *HelmExecute) RunHelmUpgrade() error {
-	if len(h.config.ChartPath) == 0 {
+	if len(h.config.ExecOpts.ChartPath) == 0 {
 		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
 	}
 
@@ -137,36 +121,36 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 
 	helmParams := []string{
 		"upgrade",
-		h.config.DeploymentName,
-		h.config.ChartPath,
+		h.config.ExecOpts.DeploymentName,
+		h.config.ExecOpts.ChartPath,
 	}
 
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
 
-	for _, v := range h.config.HelmValues {
+	for _, v := range h.config.ExecOpts.HelmValues {
 		helmParams = append(helmParams, "--values", v)
 	}
 
 	helmParams = append(
 		helmParams,
 		"--install",
-		"--namespace", h.config.Namespace,
+		"--namespace", h.config.ExecOpts.Namespace,
 	)
 
-	if h.config.ForceUpdates {
+	if h.config.ExecOpts.ForceUpdates {
 		helmParams = append(helmParams, "--force")
 	}
 
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
+	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.ExecOpts.HelmDeployWaitSeconds))
 
-	if !h.config.KeepFailedDeployments {
+	if !h.config.ExecOpts.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
 
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+	if len(h.config.ExecOpts.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.ExecOpts.AdditionalParameters...)
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
@@ -185,7 +169,7 @@ func (h *HelmExecute) RunHelmLint() error {
 
 	helmParams := []string{
 		"lint",
-		h.config.ChartPath,
+		h.config.ExecOpts.ChartPath,
 	}
 
 	if h.verbose {
@@ -204,7 +188,7 @@ func (h *HelmExecute) RunHelmLint() error {
 
 // RunHelmInstall is used to install a chart
 func (h *HelmExecute) RunHelmInstall() error {
-	if len(h.config.ChartPath) == 0 {
+	if len(h.config.ExecOpts.ChartPath) == 0 {
 		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
 	}
 
@@ -218,20 +202,20 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 	helmParams := []string{
 		"install",
-		h.config.DeploymentName,
-		h.config.ChartPath,
+		h.config.ExecOpts.DeploymentName,
+		h.config.ExecOpts.ChartPath,
 	}
-	helmParams = append(helmParams, "--namespace", h.config.Namespace)
+	helmParams = append(helmParams, "--namespace", h.config.ExecOpts.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
-	if !h.config.KeepFailedDeployments {
+	if !h.config.ExecOpts.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
-	for _, v := range h.config.HelmValues {
+	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.ExecOpts.HelmDeployWaitSeconds))
+	for _, v := range h.config.ExecOpts.HelmValues {
 		helmParams = append(helmParams, "--values", v)
 	}
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+	if len(h.config.ExecOpts.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.ExecOpts.AdditionalParameters...)
 	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
@@ -265,14 +249,14 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 	helmParams := []string{
 		"uninstall",
-		h.config.DeploymentName,
+		h.config.ExecOpts.DeploymentName,
 	}
-	if len(h.config.Namespace) <= 0 {
+	if len(h.config.ExecOpts.Namespace) <= 0 {
 		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
 	}
-	helmParams = append(helmParams, "--namespace", h.config.Namespace)
-	if h.config.HelmDeployWaitSeconds > 0 {
-		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
+	helmParams = append(helmParams, "--namespace", h.config.ExecOpts.Namespace)
+	if h.config.ExecOpts.HelmDeployWaitSeconds > 0 {
+		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.ExecOpts.HelmDeployWaitSeconds))
 	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
@@ -295,7 +279,7 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 // RunHelmPackage is used to package a chart directory into a chart archive
 func (h *HelmExecute) runHelmPackage() error {
-	if len(h.config.ChartPath) == 0 {
+	if len(h.config.ExecOpts.ChartPath) == 0 {
 		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
 	}
 
@@ -306,7 +290,7 @@ func (h *HelmExecute) runHelmPackage() error {
 
 	helmParams := []string{
 		"package",
-		h.config.ChartPath,
+		h.config.ExecOpts.ChartPath,
 	}
 	if len(h.config.Version) > 0 {
 		helmParams = append(helmParams, "--version", h.config.Version)
@@ -337,7 +321,7 @@ func (h *HelmExecute) RunHelmTest() error {
 
 	helmParams := []string{
 		"test",
-		h.config.ChartPath,
+		h.config.ExecOpts.ChartPath,
 	}
 	if len(h.config.FilterTest) > 0 {
 		helmParams = append(helmParams, "--filter", h.config.FilterTest)
@@ -368,10 +352,10 @@ func (h *HelmExecute) RunHelmDependency() error {
 
 	helmParams = append(helmParams, h.config.Dependency)
 
-	helmParams = append(helmParams, h.config.ChartPath)
+	helmParams = append(helmParams, h.config.ExecOpts.ChartPath)
 
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+	if len(h.config.ExecOpts.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, h.config.ExecOpts.AdditionalParameters...)
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
@@ -405,9 +389,9 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PublishVersion+".tgz")
+	binary := fmt.Sprintf("%v", h.config.ExecOpts.DeploymentName+"-"+h.config.PublishVersion+".tgz")
 
-	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
+	targetPath := fmt.Sprintf("%v/%s", h.config.ExecOpts.DeploymentName, binary)
 
 	separator := "/"
 

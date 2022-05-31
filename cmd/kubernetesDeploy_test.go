@@ -14,7 +14,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 	config := kubernetes.KubernetesOptions{}
 	tt := []struct {
 		deployTool  string
-		methodName  string
+		method      string
 		expectedErr error
 	}{
 		{"helm", "RunHelmDeploy", fmt.Errorf("RunHelmDeploy method successfully finished")},
@@ -27,7 +27,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
 			config.DeployTool = test.deployTool
 			kubernetesDeploy := &mocks.KubernetesDeploy{}
-			kubernetesDeploy.On(test.methodName).Return(test.expectedErr)
+			kubernetesDeploy.On(test.method).Return(test.expectedErr)
 			err := runKubernetesDeploy(config, &telemetry.CustomData{}, kubernetesDeploy)
 			assert.Equal(t, test.expectedErr, err)
 		})
