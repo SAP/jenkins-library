@@ -243,7 +243,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	if options.MaxRetries < 0 {
 		c.maxRetries = 0
 	} else if options.MaxRetries == 0 {
-		c.maxRetries = 15
+		c.maxRetries = 3
 	} else {
 		c.maxRetries = options.MaxRetries
 	}
