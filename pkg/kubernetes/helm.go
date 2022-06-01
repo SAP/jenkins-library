@@ -1,10 +1,12 @@
 package kubernetes
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"text/template"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -304,6 +306,11 @@ func (h *HelmExecute) runHelmPackage() error {
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
+	if len(h.config.ExecOpts.AppTemplate) > 0 {
+		if err := h.runHelmGetValues(); err != nil {
+			return fmt.Errorf("failed to get values: %v", err)
+		}
+	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
 		log.Entry().WithError(err).Fatal("Helm package call failed")
@@ -423,6 +430,47 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
 		log.Entry().WithError(err).Fatalf("Helm %v call failed", h.config.HelmCommand)
 		return err
+	}
+
+	return nil
+}
+
+func (h *HelmExecute) runHelmGetValues() error {
+	contRegistry := "https://docker.io"
+	_, containerRegistry, err := splitRegistryURL(contRegistry)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", h.config.ExecOpts.ContainerRegistryURL)
+	}
+
+	helmValues, err := defineDeploymentValues(h.config.ExecOpts, containerRegistry)
+	if err != nil {
+		return fmt.Errorf("failed to process deployment values: %v", err)
+	}
+
+	err = helmValues.mapValues()
+	if err != nil {
+		return fmt.Errorf("failed to map values using 'valuesMapping' configuration: %v", err)
+	}
+
+	appTemplate, err := h.utils.FileRead(h.config.ExecOpts.AppTemplate)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", h.config.ExecOpts.AppTemplate)
+	}
+
+	buf := bytes.NewBufferString("")
+	tpl, err := template.New("appTemplate").Parse(string(appTemplate))
+	if err != nil {
+		return fmt.Errorf("failed to parse app-template file: %v", err)
+	}
+
+	err = tpl.Execute(buf, helmValues.asHelmValues())
+	if err != nil {
+		return fmt.Errorf("failed to render app-template file: %v", err)
+	}
+
+	err = h.utils.FileWrite(h.config.ExecOpts.AppTemplate, buf.Bytes(), 0700)
+	if err != nil {
+		return fmt.Errorf("Error when updating appTemplate '%v': %v", h.config.ExecOpts.AppTemplate, err)
 	}
 
 	return nil
