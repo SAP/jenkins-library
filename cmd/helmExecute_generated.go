@@ -44,6 +44,9 @@ type helmExecuteOptions struct {
 	ImageNameTags             []string               `json:"imageNameTags,omitempty"`
 	ImageDigests              []string               `json:"imageDigests,omitempty"`
 	AppTemplate               string                 `json:"appTemplate,omitempty"`
+	ContainerImageName        string                 `json:"containerImageName,omitempty"`
+	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
 }
 
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
@@ -188,8 +191,12 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageDigests, "imageDigests", []string{}, "List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`")
 	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
 
 	cmd.MarkFlagRequired("image")
+	cmd.MarkFlagRequired("containerRegistryUrl")
 }
 
 // retrieve step metadata
@@ -532,6 +539,43 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "k8sAppTemplate"}},
 						Default:     os.Getenv("PIPER_appTemplate"),
+					},
+					{
+						Name:        "containerImageName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Default:     os.Getenv("PIPER_containerImageName"),
+					},
+					{
+						Name: "containerImageTag",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_containerImageTag"),
+					},
+					{
+						Name: "containerRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 				},
 			},
