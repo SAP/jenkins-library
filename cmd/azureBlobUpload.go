@@ -11,6 +11,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/go-playground/validator/v10"
 )
 
 // AzureContainerAPI is used to mock Azure containerClients in unit tests
@@ -31,10 +32,10 @@ func UploadFile(ctx context.Context, api *azblob.BlockBlobClient, file *os.File,
 }
 
 // Struct to store Azure credentials from specified JSON string
-type azureCredentials struct {
-	SASToken    string `json:"sas_token"`
-	AccountName string `json:"account_name"`
-	Container   string `json:"container_name"`
+type AzureCredentials struct {
+	SASToken    string `json:"sas_token" validate:"required"`
+	AccountName string `json:"account_name" validate:"required"`
+	Container   string `json:"container_name" validate:"required"`
 }
 
 func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.CustomData) {
@@ -45,31 +46,53 @@ func azureBlobUpload(config azureBlobUploadOptions, telemetryData *telemetry.Cus
 }
 
 func runAzureBlobUpload(config *azureBlobUploadOptions) error {
-	// Prepare Credentials
+	containerClient, err := setup(config)
+	if err != nil {
+		return err
+	}
+	return executeUpload(config, containerClient, UploadFile)
+}
+
+func setup(config *azureBlobUploadOptions) (*azblob.ContainerClient, error) {
+	// Read credentials from JSON String
 	log.Entry().Infoln("Start reading Azure Credentials")
-	var creds azureCredentials
+	var creds AzureCredentials
 
 	err := json.Unmarshal([]byte(config.JSONCredentialsAzure), &creds)
 	if err != nil {
-		log.Entry().WithError(err).Warnf("Could not read JSONCredentialsAzure")
-		return err
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return nil, fmt.Errorf("Could not read JSONCredentialsAzure: %w", err)
+	}
+
+	// Validate credentials (check for nil values in struct)
+	if err = validate(&creds); err != nil {
+		return nil, fmt.Errorf("Azure credentials are not valid: %w", err)
 	}
 
 	// Initialize Azure Service Client
 	sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/?%s", creds.AccountName, creds.SASToken)
 	serviceClient, err := azblob.NewServiceClientWithNoCredential(sasURL, nil)
 	if err != nil {
-		log.Entry().WithError(err).Warnf("Could not instantiate Azure Service Client!")
-		return err
+		log.SetErrorCategory(log.ErrorService)
+		return nil, fmt.Errorf("Could not instantiate Azure Service Client: %w", err)
 	}
 
 	// Get a containerClient from ServiceClient
 	containerClient, err := serviceClient.NewContainerClient(creds.Container)
 	if err != nil {
-		log.Entry().WithError(err).Warnf("Could not instantiate Azure Container Client from Azure Service Client!")
+		log.SetErrorCategory(log.ErrorService)
+		return nil, fmt.Errorf("Could not instantiate Azure Container Client from Azure Service Client: %w", err)
+	}
+	return containerClient, nil
+}
+
+// Validate validates the Azure credentials (checks for empty fields in struct)
+func validate(creds *AzureCredentials) error {
+	validate := validator.New()
+	if err := validate.Struct(creds); err != nil {
 		return err
 	}
-	return executeUpload(config, containerClient, UploadFile)
+	return nil
 }
 
 func executeUpload(config *azureBlobUploadOptions, containerClient AzureContainerAPI, Upload func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
@@ -82,8 +105,8 @@ func executeUpload(config *azureBlobUploadOptions, containerClient AzureContaine
 	err := filepath.Walk(config.FilePath, func(currentFilePath string, f os.FileInfo, err error) error {
 		// Handle Failure to prevent panic (e.g. in case of an invalid filepath)
 		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to access path: '%v'", currentFilePath)
-			return err
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return fmt.Errorf("Failed to access path: %w", err)
 		}
 		// Skip directories, only upload files
 		if !f.IsDir() {
@@ -92,8 +115,8 @@ func executeUpload(config *azureBlobUploadOptions, containerClient AzureContaine
 			//Read Data from File
 			data, e := os.Open(currentFilePath)
 			if e != nil {
-				log.Entry().WithError(e).Warnf("Could not read the file '%s'", currentFilePath)
-				return e
+				log.SetErrorCategory(log.ErrorInfrastructure)
+				return fmt.Errorf("Could not read the file '%s': %w", currentFilePath, e)
 			}
 			defer data.Close()
 
@@ -103,8 +126,8 @@ func executeUpload(config *azureBlobUploadOptions, containerClient AzureContaine
 			// Get a blockBlobClient from containerClient
 			blockBlobClient, e := NewBlockBlobClient(key, containerClient)
 			if e != nil {
-				log.Entry().WithError(e).Warnf("Could not instantiate Azure blockBlobClient from Azure Container Client!")
-				return e
+				log.SetErrorCategory(log.ErrorService)
+				return fmt.Errorf("Could not instantiate Azure blockBlobClient from Azure Container Client: %w", e)
 			}
 
 			// Upload File
@@ -112,8 +135,8 @@ func executeUpload(config *azureBlobUploadOptions, containerClient AzureContaine
 			var blockOptions azblob.UploadOption
 			_, e = Upload(ctx, blockBlobClient, data, blockOptions)
 			if e != nil {
-				log.Entry().WithError(e).Warnf("There was an error during the upload of file '%v'", currentFilePath)
-				return e
+				log.SetErrorCategory(log.ErrorService)
+				return fmt.Errorf("There was an error during the upload of file '%v': %w", currentFilePath, e)
 			}
 
 			log.Entry().Infof("Upload of file '%v' was successful!", currentFilePath)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -70,7 +71,7 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		// test
 		err := executeUpload(&config, container(t, false), UploadMock)
 		// assert
-		assert.IsType(t, &fs.PathError{}, err)
+		assert.IsType(t, &fs.PathError{}, errors.Unwrap(err))
 	})
 
 	t.Run("error blobName", func(t *testing.T) {
@@ -94,6 +95,22 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		// test
 		err = executeUpload(&config, container(t, true), UploadMock)
 		// assert
-		assert.EqualError(t, err, "invalid blobName")
+		assert.EqualError(t, err, "Could not instantiate Azure blockBlobClient from Azure Container Client: invalid blobName")
+	})
+
+	t.Run("error credentials", func(t *testing.T) {
+		t.Parallel()
+		// initialization
+		config := azureBlobUploadOptions{
+			JSONCredentialsAzure: `{
+				"account_name": "name",
+				"container_name": "container"
+			  }`,
+			FilePath: "nonExistingFilepath",
+		}
+		// test
+		_, err := setup(&config)
+		// assert
+		assert.EqualError(t, err, "Azure credentials are not valid: Key: 'AzureCredentials.SASToken' Error:Field validation for 'SASToken' failed on the 'required' tag")
 	})
 }
