@@ -185,7 +185,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 					}
 				} else {
 					maxretries = maxretries - 1
-					log.Entry().Debug("request failed: no system instance, remaining retries %v", maxretries)
+					log.Entry().Debug("request failed: no system instance, remaining retries ", maxretries)
 				}
 			}
 
