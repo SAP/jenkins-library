@@ -177,6 +177,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 					apiShortDescription, err := sys.GetShortDescription(scanID, cxxml.Query[i].Result[j].Path.PathID)
 					if err != nil {
 						maxretries = maxretries - 1
+						log.Entry().Debug("request failed: remaining retries %v", maxretries)
 						log.Entry().Error(err)
 					} else {
 						descriptionFetched = true

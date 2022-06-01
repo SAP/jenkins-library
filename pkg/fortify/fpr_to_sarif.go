@@ -791,6 +791,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
 			log.Entry().Debug(err)
 			maxretries = maxretries - 1
+			log.Entry().Debug("request failed: remaining retries %v", maxretries)
 		}
 		result.Properties = prop
 
