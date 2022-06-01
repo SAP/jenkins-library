@@ -154,6 +154,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
 	cweCounter := 0
 	var apiDescription string
+	maxretries := 5
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
@@ -169,9 +170,13 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 
 			// For rules later, fetch description
 			if !descriptionFetched {
-				if sys != nil {
+				if maxretries <= 0 { // Don't spam logfile
+					log.Entry().Error("request failed: maximum number of retries reached, descriptions will no longer be fetched")
+					maxretries = maxretries - 1
+				} else if sys != nil {
 					apiShortDescription, err := sys.GetShortDescription(scanID, cxxml.Query[i].Result[j].Path.PathID)
 					if err != nil {
+						maxretries = maxretries - 1
 						log.Entry().Error(err)
 					} else {
 						descriptionFetched = true

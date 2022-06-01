@@ -515,7 +515,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
 		auditData, _ := sys.GetAllIssueDetails(11037)
 		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, filterSet, false, 0)
-		assert.Error(t, err, "maximum number of retries reached, placeholder values will be set from now on for audit data")
+		assert.Error(t, err, "request failed: maximum number of retries reached, placeholder values will be set from now on for audit data")
 	})
 
 	t.Run("Max retries set to -1: fail silently", func(t *testing.T) {

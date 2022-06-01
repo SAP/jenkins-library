@@ -1164,7 +1164,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
 	if maxretries == 0 {
 		// Max retries reached, we stop there to avoid a longer execution time
-		err := errors.New("maximum number of retries reached, placeholder values will be set from now on for audit data")
+		err := errors.New("request failed: maximum number of retries reached, placeholder values will be set from now on for audit data")
 		return err
 	} else if maxretries < 0 {
 		return nil // Avoid spamming logfile
