@@ -12,7 +12,6 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	kubernetesConfig := kubernetes.KubernetesOptions{
 		ExecOpts: kubernetes.ExecuteOptions{
 			AdditionalParameters:      config.AdditionalParameters,
-			AppTemplate:               config.AppTemplate,
 			ChartPath:                 config.ChartPath,
 			ContainerRegistryPassword: config.ContainerRegistryPassword,
 			ContainerImageName:        config.ContainerImageName,
@@ -36,6 +35,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 			DockerConfigJSON:          config.DockerConfigJSON,
 		},
 		APIServer:                  config.APIServer,
+		AppTemplate:                config.AppTemplate,
 		CreateDockerRegistrySecret: config.CreateDockerRegistrySecret,
 		DeployTool:                 config.DeployTool,
 		IngressHosts:               config.IngressHosts,

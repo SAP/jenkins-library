@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -34,6 +35,7 @@ type HelmExecute struct {
 // HelmExecuteOptions struct holds common parameters for functions RunHelm...
 type HelmExecuteOptions struct {
 	ExecOpts                  ExecuteOptions
+	AppTemplates              []string `json:"appTemplates,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
@@ -306,7 +308,7 @@ func (h *HelmExecute) runHelmPackage() error {
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
-	if len(h.config.ExecOpts.AppTemplate) > 0 {
+	if len(h.config.AppTemplates) > 0 {
 		if err := h.runHelmWrite(); err != nil {
 			return fmt.Errorf("failed to get values: %v", err)
 		}
@@ -447,30 +449,54 @@ func (h *HelmExecute) runHelmWrite() error {
 		return fmt.Errorf("failed to process deployment values: %v", err)
 	}
 
-	err = helmValues.mapValues()
+	for _, templateFile := range h.config.AppTemplates {
+		err := renderTemplate(templateFile, helmValues, h.utils)
+		if err != nil {
+			return fmt.Errorf("failed to render template: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func renderTemplate(file string, deploymentValues *deploymentValues, utils DeployUtils) error {
+	temp, err := utils.FileRead(file)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Error when reading template '%v'", file)
+	}
+
+	re := regexp.MustCompile(`image:[ ]*<image-name>`)
+	placeholderFound := re.Match(temp)
+
+	if placeholderFound {
+		log.Entry().Warn("image placeholder '<image-name>' is deprecated and does not support multi-image replacement, please use Helm-like template syntax '{{ .Values.image.[image-name].reposotory }}:{{ .Values.image.[image-name].tag }}")
+		if deploymentValues.singleImage {
+			// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
+			temp = []byte(re.ReplaceAllString(string(temp), fmt.Sprintf("image: %s:%s", deploymentValues.get("image.repository"), deploymentValues.get("image.tag"))))
+		} else {
+			return fmt.Errorf("multi-image replacement not supported for single image placeholder")
+		}
+	}
+
+	err = deploymentValues.mapValues()
 	if err != nil {
 		return fmt.Errorf("failed to map values using 'valuesMapping' configuration: %v", err)
 	}
 
-	appTemplate, err := h.utils.FileRead(h.config.ExecOpts.AppTemplate)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", h.config.ExecOpts.AppTemplate)
-	}
-
 	buf := bytes.NewBufferString("")
-	tpl, err := template.New("appTemplate").Parse(string(appTemplate))
+	tpl, err := template.New("appTemplate").Parse(string(temp))
 	if err != nil {
-		return fmt.Errorf("failed to parse app-template file: %v", err)
+		return fmt.Errorf("failed to parse template file: %v", err)
 	}
 
-	err = tpl.Execute(buf, helmValues.asHelmValues())
+	err = tpl.Execute(buf, deploymentValues.asHelmValues())
 	if err != nil {
-		return fmt.Errorf("failed to render app-template file: %v", err)
+		return fmt.Errorf("failed to render template file: %v", err)
 	}
 
-	err = h.utils.FileWrite(h.config.ExecOpts.AppTemplate, buf.Bytes(), 0700)
+	err = utils.FileWrite(file, buf.Bytes(), 0700)
 	if err != nil {
-		return fmt.Errorf("Error when updating appTemplate '%v': %v", h.config.ExecOpts.AppTemplate, err)
+		return fmt.Errorf("Error when updating template '%v': %v", file, err)
 	}
 
 	return nil

@@ -314,11 +314,11 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: appTemplate
+      - name: appTemplates
         aliases:
           - name: k8sAppTemplate
-        type: string
-        description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).
+        type: "[]string"
+        description: Defines the filename for the helm template values file.
         longDescription: |
           There are two supported ways for the template rendering:
 

@@ -8,11 +8,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -44,6 +42,7 @@ func NewKubernetesDeploy(config KubernetesOptions, utils DeployUtils, verbose bo
 type KubernetesOptions struct {
 	ExecOpts                   ExecuteOptions
 	APIServer                  string   `json:"apiServer,omitempty"`
+	AppTemplate                string   `json:"appTemplate,omitempty"`
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeployTool                 string   `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
 	IngressHosts               []string `json:"ingressHosts,omitempty"`
@@ -56,7 +55,6 @@ type KubernetesOptions struct {
 
 type ExecuteOptions struct {
 	AdditionalParameters      []string               `json:"additionalParameters,omitempty"`
-	AppTemplate               string                 `json:"appTemplate,omitempty"`
 	ChartPath                 string                 `json:"chartPath,omitempty"`
 	ContainerRegistryUser     string                 `json:"containerRegistryUser,omitempty"`
 	ContainerRegistryPassword string                 `json:"containerRegistryPassword,omitempty"`
@@ -303,52 +301,19 @@ func (k *KubernetesDeployBundle) RunKubectlDeploy() error {
 		if err := k.utils.RunExecutable("kubectl", kubeSecretApplyParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 		}
-
-	}
-
-	appTemplate, err := k.utils.FileRead(k.config.ExecOpts.AppTemplate)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", k.config.ExecOpts.AppTemplate)
 	}
 
 	values, err := defineDeploymentValues(k.config.ExecOpts, containerRegistry)
 	if err != nil {
 		return errors.Wrap(err, "failed to process deployment values")
 	}
-	err = values.mapValues()
+
+	err = renderTemplate(k.config.AppTemplate, values, k.utils)
 	if err != nil {
-		return errors.Wrap(err, "failed to map values using 'valuesMapping' configuration")
+		return fmt.Errorf("failed to render template: %v", err)
 	}
 
-	re := regexp.MustCompile(`image:[ ]*<image-name>`)
-	placeholderFound := re.Match(appTemplate)
-
-	if placeholderFound {
-		log.Entry().Warn("image placeholder '<image-name>' is deprecated and does not support multi-image replacement, please use Helm-like template syntax '{{ .Values.image.[image-name].reposotory }}:{{ .Values.image.[image-name].tag }}")
-		if values.singleImage {
-			// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
-			appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %s:%s", values.get("image.repository"), values.get("image.tag"))))
-		} else {
-			return fmt.Errorf("multi-image replacement not supported for single image placeholder")
-		}
-	}
-
-	buf := bytes.NewBufferString("")
-	tpl, err := template.New("appTemplate").Parse(string(appTemplate))
-	if err != nil {
-		return errors.Wrap(err, "failed to parse app-template file")
-	}
-	err = tpl.Execute(buf, values.asHelmValues())
-	if err != nil {
-		return errors.Wrap(err, "failed to render app-template file")
-	}
-
-	err = k.utils.FileWrite(k.config.ExecOpts.AppTemplate, buf.Bytes(), 0700)
-	if err != nil {
-		return errors.Wrapf(err, "Error when updating appTemplate '%v'", k.config.ExecOpts.AppTemplate)
-	}
-
-	kubeParams = append(kubeParams, k.config.DeployCommand, "--filename", k.config.ExecOpts.AppTemplate)
+	kubeParams = append(kubeParams, k.config.DeployCommand, "--filename", k.config.AppTemplate)
 	if k.config.ExecOpts.ForceUpdates && k.config.DeployCommand == "replace" {
 		kubeParams = append(kubeParams, "--force")
 	}
