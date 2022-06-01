@@ -307,7 +307,7 @@ func (h *HelmExecute) runHelmPackage() error {
 		helmParams = append(helmParams, "--debug")
 	}
 	if len(h.config.ExecOpts.AppTemplate) > 0 {
-		if err := h.runHelmGetValues(); err != nil {
+		if err := h.runHelmWrite(); err != nil {
 			return fmt.Errorf("failed to get values: %v", err)
 		}
 	}
@@ -435,7 +435,8 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 	return nil
 }
 
-func (h *HelmExecute) runHelmGetValues() error {
+// runHelmWrite is used to write helm values to values.yaml file
+func (h *HelmExecute) runHelmWrite() error {
 	_, containerRegistry, err := splitRegistryURL(h.config.ExecOpts.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", h.config.ExecOpts.ContainerRegistryURL)
