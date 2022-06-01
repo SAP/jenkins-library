@@ -542,17 +542,20 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	log.Entry().Debug("Querying Fortify SSC for batch audit data")
 	oneRequestPerIssueMode := false
 	var auditData []*models.ProjectVersionIssue
+	maxretries := 5 // Maximum number of requests allowed to fail before stopping them
 	if sys != nil {
 		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
 		if err != nil {
 			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
 			oneRequestPerIssueMode = true
+			// We do not lower maxretries here in case a "real" bug happened
 		} else {
 			log.Entry().Debug("Request successful, data frame size: ", len(auditData), " audits")
 		}
 	} else {
 		log.Entry().Error("no system instance found, lookup impossible")
 		oneRequestPerIssueMode = true
+		maxretries = 1 // Set to 1 if the sys instance isn't defined: chances are it couldn't be created, we'll live a chance if there was an unknown bug
 	}
 
 	//Now, we handle the sarif
@@ -785,17 +788,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
 		//Get the audit data
-		if sys != nil {
-			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
-				log.Entry().Debug(err)
-				prop.Audited = false
-				prop.ToolState = "Unknown"
-				prop.ToolAuditMessage = "Error fetching audit state"
-			}
-		} else {
-			prop.Audited = false
-			prop.ToolState = "Unknown"
-			prop.ToolAuditMessage = "Cannot fetch audit state"
+		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
+			log.Entry().Debug(err)
+			maxretries = maxretries - 1
 		}
 		result.Properties = prop
 
@@ -1157,16 +1152,25 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
 	// Set default values
 	ruleProp.Audited = false
 	ruleProp.FortifyCategory = "Unknown"
 	ruleProp.ToolSeverity = "Unknown"
-	ruleProp.ToolState = "Unreviewed"
+	ruleProp.ToolState = "Unknown"
+	ruleProp.ToolAuditMessage = "Error fetching audit state" // We set this as default for the error phase, then reset it to nothing
 	ruleProp.ToolSeverityIndex = 0
 	ruleProp.ToolStateIndex = 0
 	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
+	if maxretries == 0 {
+		// Max retries reached, we stop there to avoid a longer execution time
+		err := errors.New("maximum number of retries reached, placeholder values will be set from now on for audit data")
+		return err
+	} else if maxretries < 0 {
+		return nil // Avoid spamming logfile
+	}
 	if sys == nil {
+		ruleProp.ToolAuditMessage = "Cannot fetch audit state: no sys instance"
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
 	}
@@ -1174,6 +1178,8 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}
+	// Reset the audit message
+	ruleProp.ToolAuditMessage = ""
 	var data []*models.ProjectVersionIssue
 	var err error
 	if oneRequestPerIssue {
