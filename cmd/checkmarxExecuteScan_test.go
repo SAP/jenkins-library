@@ -144,6 +144,9 @@ func (sys *systemMock) CreateProject(string, string) (checkmarx.ProjectCreateRes
 func (sys *systemMock) CreateBranch(int, string) int {
 	return 18
 }
+func (sys *systemMock) GetShortDescription(int, int) (checkmarx.ShortDescription, error) {
+	return checkmarx.ShortDescription{Text: "dummyText"}, nil
+}
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
 	sys.getPresetsCalled = true
 	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}, {ID: 16, Name: "CX_Default", OwnerName: "16"}}
@@ -198,6 +201,9 @@ func (sys *systemMockForExistingProject) GetResults(int) checkmarx.ResultsStatis
 }
 func (sys *systemMockForExistingProject) GetScans(int) ([]checkmarx.ScanStatus, error) {
 	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
+}
+func (sys *systemMockForExistingProject) GetShortDescription(int, int) (checkmarx.ShortDescription, error) {
+	return checkmarx.ShortDescription{Text: "dummyText"}, nil
 }
 func (sys *systemMockForExistingProject) GetScanStatusAndDetail(int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}

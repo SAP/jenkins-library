@@ -114,7 +114,7 @@ type Line struct {
 }
 
 // ConvertCxxmlToSarif is the entrypoint for the Parse function
-func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
+func ConvertCxxmlToSarif(sys System, xmlReportName string, scanID int) (format.SARIF, error) {
 	var sarif format.SARIF
 	log.Entry().Debug("Reading audit file.")
 	data, err := ioutil.ReadFile(xmlReportName)
@@ -128,11 +128,11 @@ func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
 	}
 
 	log.Entry().Debug("Calling Parse.")
-	return Parse(data)
+	return Parse(sys, data, scanID)
 }
 
 // Parse function
-func Parse(data []byte) (format.SARIF, error) {
+func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
@@ -153,17 +153,32 @@ func Parse(data []byte) (format.SARIF, error) {
 	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "/CxWebClient/ScanQueryDescription.aspx?"
 	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
 	cweCounter := 0
+	var apiDescription string
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
 	log.Entry().Debug("[SARIF] Now handling results.")
 	for i := 0; i < len(cxxml.Query); i++ {
+		descriptionFetched := false
 		//add cweid to array
 		cweIdsForTaxonomies[cxxml.Query[i].CweID] = cweCounter
 		cweCounter = cweCounter + 1
 		for j := 0; j < len(cxxml.Query[i].Result); j++ {
 			result := *new(format.Results)
+
+			// For rules later, fetch description
+			if !descriptionFetched {
+				if sys != nil {
+					apiShortDescription, err := sys.GetShortDescription(scanID, cxxml.Query[i].Result[j].Path.PathID)
+					if err != nil {
+						log.Entry().Error(err)
+					} else {
+						descriptionFetched = true
+						apiDescription = apiShortDescription.Text
+					}
+				}
+			}
 
 			//General
 			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
@@ -294,7 +309,10 @@ func Parse(data []byte) (format.SARIF, error) {
 		rule.Help.Text = rule.HelpURI
 		rule.ShortDescription = new(format.Message)
 		rule.ShortDescription.Text = cxxml.Query[i].Name
-		if cxxml.Query[i].Categories != "" {
+		if apiDescription != "" {
+			rule.FullDescription = new(format.Message)
+			rule.FullDescription.Text = apiDescription
+		} else if cxxml.Query[i].Categories != "" {
 			rule.FullDescription = new(format.Message)
 			rule.FullDescription.Text = cxxml.Query[i].Categories
 		}
