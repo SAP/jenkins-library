@@ -436,8 +436,7 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 }
 
 func (h *HelmExecute) runHelmGetValues() error {
-	contRegistry := "https://docker.io"
-	_, containerRegistry, err := splitRegistryURL(contRegistry)
+	_, containerRegistry, err := splitRegistryURL(h.config.ExecOpts.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", h.config.ExecOpts.ContainerRegistryURL)
 	}
