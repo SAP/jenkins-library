@@ -543,7 +543,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	oneRequestPerIssueMode := false
 	var auditData []*models.ProjectVersionIssue
 	maxretries := 5 // Maximum number of requests allowed to fail before stopping them
-	if sys != nil {
+	if sys != nil || projectVersion != nil {
 		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
 		if err != nil || len(auditData) == 0 { // It's reasonable to admit that with a length of 0, something went wrong
 			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
