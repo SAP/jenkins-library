@@ -1482,7 +1482,7 @@ func TestRunKubctlDeploy(t *testing.T) {
 			stdout: &stdout,
 		}
 		err := kubernetesDeploy.RunKubectlDeploy()
-		assert.EqualError(t, err, "multi-image replacement not supported for single image placeholder")
+		assert.EqualError(t, err, "failed to render template: multi-image replacement not supported for single image placeholder")
 	})
 
 	t.Run("test kubectl - fails without image information", func(t *testing.T) {
