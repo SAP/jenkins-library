@@ -169,15 +169,15 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			result := *new(format.Results)
 
 			// For rules later, fetch description
-			if !descriptionFetched {
-				if maxretries <= 0 { // Don't spam logfile
+			if !descriptionFetched && !(maxretries < 0) {
+				if maxretries == 0 { // Don't spam logfile: only enter the loop if maxretries is positive, and only display the error if it hits 0
 					log.Entry().Error("request failed: maximum number of retries reached, descriptions will no longer be fetched")
 					maxretries = maxretries - 1
 				} else if sys != nil {
 					apiShortDescription, err := sys.GetShortDescription(scanID, cxxml.Query[i].Result[j].Path.PathID)
 					if err != nil {
 						maxretries = maxretries - 1
-						log.Entry().Debug("request failed: remaining retries %v", maxretries)
+						log.Entry().Debug("request failed: remaining retries ", maxretries)
 						log.Entry().Error(err)
 					} else {
 						descriptionFetched = true

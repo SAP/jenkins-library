@@ -545,7 +545,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	maxretries := 5 // Maximum number of requests allowed to fail before stopping them
 	if sys != nil {
 		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
-		if err != nil {
+		if err != nil || len(auditData) == 0 { // It's reasonable to admit that with a length of 0, something went wrong
 			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
 			oneRequestPerIssueMode = true
 			// We do not lower maxretries here in case a "real" bug happened
@@ -791,7 +791,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
 			log.Entry().Debug(err)
 			maxretries = maxretries - 1
-			log.Entry().Debug("request failed: remaining retries %v", maxretries)
+			log.Entry().Debug("request failed: remaining retries ", maxretries)
 		}
 		result.Properties = prop
 
