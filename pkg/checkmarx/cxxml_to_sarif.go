@@ -183,6 +183,9 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 						descriptionFetched = true
 						apiDescription = apiShortDescription.Text
 					}
+				} else {
+					maxretries = maxretries - 1
+					log.Entry().Debug("request failed: no system instance, remaining retries %v", maxretries)
 				}
 			}
 
