@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -300,7 +301,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 		rule.ID = "checkmarx-" + cxxml.Query[i].ID
 		words := strings.Split(cxxml.Query[i].Name, "_")
 		for w := 0; w < len(words); w++ {
-			words[w] = strings.Title(strings.ToLower(words[w]))
+			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")
 		rule.HelpURI = baseURL + "queryID=" + cxxml.Query[i].ID + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
