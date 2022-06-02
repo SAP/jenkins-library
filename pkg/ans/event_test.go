@@ -155,11 +155,8 @@ func TestEvent_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.errMsg, func(t *testing.T) {
 			event := defaultEvent()
-			err := event.MergeWithJSON([]byte(tt.eventJSON))
-			require.NoError(t, err)
-			err = event.Validate()
-			wantErrMsg := fmt.Sprintf("%s: %s", tt.errMsg, standardErrMsg)
-			assert.EqualError(t, err, wantErrMsg)
+			require.NoError(t, event.MergeWithJSON([]byte(tt.eventJSON)))
+			assert.EqualError(t, event.Validate(), fmt.Sprintf("%s: %s", tt.errMsg, standardErrMsg))
 		})
 	}
 }
