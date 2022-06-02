@@ -202,6 +202,8 @@ type Request struct {
 	ProductToken         string      `json:"productToken,omitempty"`
 	ProductName          string      `json:"productName,omitempty"`
 	ProjectToken         string      `json:"projectToken,omitempty"`
+	ProjectTagKey        string      `json:"tagKey,omitempty"`
+	ProjectTagValue      string      `json:"tagValue,omitempty"`
 	OrgToken             string      `json:"orgToken,omitempty"`
 	Format               string      `json:"format,omitempty"`
 	AlertType            string      `json:"alertType,omitempty"`
@@ -551,6 +553,27 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 	}
 
 	return wsResponse.Libraries, nil
+}
+
+// AddDefaultProjectTag
+func (s *System) AddDefaultProjectTag(userKey string, projectToken string) error {
+	projectTagKey := "scan_source"
+	projectTagValue := "piper.io"
+
+	req := Request{
+		RequestType:     "saveProjectTag",
+		UserKey:         userKey,
+		ProjectToken:    projectToken,
+		ProjectTagKey:   projectTagKey,
+		ProjectTagValue: projectTagValue,
+	}
+
+	_, err := s.sendRequest(req)
+	if err != nil {
+		return errors.Wrap(err, "WhiteSource addDefaultProjectTag request failed")
+	}
+
+	return nil
 }
 
 func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
