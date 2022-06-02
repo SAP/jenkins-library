@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -526,4 +527,60 @@ func TestRunHelm(t *testing.T) {
 
 	})
 
+	t.Run("Helm write", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+
+		testTable := []struct {
+			config      HelmExecuteOptions
+			template    string
+			expectedErr error
+		}{
+			{
+				config: HelmExecuteOptions{
+					ExecOpts: ExecuteOptions{
+						ContainerRegistryURL: "https://registry.io",
+						ContainerImageName:   "testImage",
+						ContainerImageTag:    "latest",
+					},
+					AppTemplates: []string{"values.yaml"},
+				},
+				template:    "image: {{ .Values.image.repository }}:{{ .Values.image.tag }}",
+				expectedErr: nil,
+			},
+			{
+				config: HelmExecuteOptions{
+					ExecOpts: ExecuteOptions{
+						ContainerRegistryURL: "https://registry.io",
+					},
+					AppTemplates: []string{"values.yaml"},
+				},
+				template:    "image: {{ .Values.image.repository }}:{{ .Values.image.tag }}",
+				expectedErr: fmt.Errorf("failed to process deployment values: image information not given - please either set image or containerImageName and containerImageTag"),
+			},
+			{
+				config: HelmExecuteOptions{
+					ExecOpts: ExecuteOptions{
+						ContainerRegistryURL: "https://registry.io",
+						ContainerImageName:   "testImage",
+						ContainerImageTag:    "latest",
+					},
+					AppTemplates: []string{"values.yaml"},
+				},
+				template:    "image: {{ ..Values.image.repository }}:{{ .Values.image.tag }}",
+				expectedErr: fmt.Errorf("failed to render template: failed to parse template file: template: appTemplate:1: unexpected . after term \".\""),
+			},
+		}
+
+		for _, testCase := range testTable {
+			helmExecute := HelmExecute{
+				utils:   utils,
+				config:  testCase.config,
+				verbose: false,
+				stdout:  log.Writer(),
+			}
+			utils.FileWrite("values.yaml", []byte(testCase.template), 0700)
+			err := helmExecute.runHelmWrite()
+			assert.Equal(t, testCase.expectedErr, err)
+		}
+	})
 }
