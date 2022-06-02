@@ -161,6 +161,10 @@ type SourceSettingsLink struct {
 	URI  string `json:"uri"`
 }
 
+type ShortDescription struct {
+	Text string `json:"shortDescription"`
+}
+
 //DetailedResult - DetailedResult Structure
 type DetailedResult struct {
 	XMLName                  xml.Name `xml:"CxXMLResults"`
@@ -231,6 +235,7 @@ type System interface {
 	GetProjectByID(projectID int) (Project, error)
 	GetProjectsByNameAndTeam(projectName, teamID string) ([]Project, error)
 	GetProjects() ([]Project, error)
+	GetShortDescription(scanID int, pathID int) (ShortDescription, error)
 	GetTeams() []Team
 }
 
@@ -650,6 +655,20 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 
 	json.Unmarshal(data, &response)
 	return response, nil
+}
+
+// GetShortDescription returns the short description for an issue with a scanID and pathID
+func (sys *SystemInstance) GetShortDescription(scanID int, pathID int) (ShortDescription, error) {
+	var shortDescription ShortDescription
+
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v/results/%v/shortDescription", scanID, pathID), nil, nil)
+	if err != nil {
+		sys.logger.Errorf("Failed to get short description for scanID %v and pathID %v: %s", scanID, pathID, err)
+		return shortDescription, err
+	}
+
+	json.Unmarshal(data, &shortDescription)
+	return shortDescription, nil
 }
 
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
