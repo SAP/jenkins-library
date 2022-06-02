@@ -556,6 +556,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		log.Entry().Error("no system instance or project version found, lookup impossible")
 		oneRequestPerIssueMode = true
 		maxretries = 1 // Set to 1 if the sys instance isn't defined: chances are it couldn't be created, we'll live a chance if there was an unknown bug
+		log.Entry().Debug("request failed: remaining retries ", maxretries)
 	}
 
 	//Now, we handle the sarif
@@ -791,7 +792,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
 			log.Entry().Debug(err)
 			maxretries = maxretries - 1
-			log.Entry().Debug("request failed: remaining retries ", maxretries)
+			if maxretries >= 0 {
+				log.Entry().Debug("request failed: remaining retries ", maxretries)
+			}
 		}
 		result.Properties = prop
 
