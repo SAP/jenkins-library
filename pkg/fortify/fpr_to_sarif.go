@@ -553,7 +553,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			log.Entry().Debug("Request successful, data frame size: ", len(auditData), " audits")
 		}
 	} else {
-		log.Entry().Error("no system instance found, lookup impossible")
+		log.Entry().Error("no system instance or project version found, lookup impossible")
 		oneRequestPerIssueMode = true
 		maxretries = 1 // Set to 1 if the sys instance isn't defined: chances are it couldn't be created, we'll live a chance if there was an unknown bug
 	}
