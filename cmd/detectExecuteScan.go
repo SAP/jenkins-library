@@ -718,5 +718,6 @@ func createToolRecordDetect(workspace string, config detectExecuteScanOptions, s
 	if err != nil {
 		return "", err
 	}
+	sys.Client.AddDefaultProjectTag(projectId)
 	return record.GetFileName(), nil
 }

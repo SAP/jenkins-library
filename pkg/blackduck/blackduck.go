@@ -1,6 +1,7 @@
 package blackduck
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -89,6 +90,11 @@ type VulnerabilityWithRemediation struct {
 	RemediationStatus string  `json:"remediationStatus,omitempty"`
 	Description       string  `json:"description,omitempty"`
 	OverallScore      float32 `json:"overallScore,omitempty"`
+}
+
+// ProjectTag defines a tag of a BlackDuck project
+type ProjectTag struct {
+	TagName string `json:"name"`
 }
 
 // Title returns the issue title representation of the contents
@@ -404,6 +410,26 @@ func (b *Client) GetPolicyStatus(projectName, versionName string) (*PolicyStatus
 	return &policyStatus, nil
 }
 
+func (b *Client) AddDefaultProjectTag(projectId string) error {
+	tagValue := "piper"
+	req := ProjectTag{
+		TagName: tagValue,
+	}
+	data, err := json.Marshal(req)
+	if err != nil {
+		return errors.Wrap(err, "addDefaultProjectTag to BlackDuck API failed")
+	}
+	reqBody := bytes.NewReader(data)
+	apiURL := fmt.Sprintf("/api/projects/%s/tags", projectId)
+	headers := http.Header{}
+	headers.Add("Content-Type", HEADER_PROJECT_DETAILS_V4)
+	_, err = b.sendRequest(http.MethodPost, apiURL, map[string]string{}, reqBody, headers)
+	if err != nil {
+		return errors.Wrap(err, "addDefaultProjectTag to BlackDuck API failed")
+	}
+	return nil
+}
+
 func (b *Client) authenticate() error {
 	headers := http.Header{}
 	headers.Add("Authorization", fmt.Sprintf("token %v", b.token))
@@ -438,7 +464,7 @@ func (b *Client) sendRequest(method, apiEndpoint string, params map[string]strin
 		header.Add("Authorization", fmt.Sprintf("Bearer %v", b.BearerToken))
 	}
 
-	response, err := b.httpClient.SendRequest(method, blackDuckAPIUrl.String(), nil, header, nil)
+	response, err := b.httpClient.SendRequest(method, blackDuckAPIUrl.String(), body, header, nil)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "request to BlackDuck API failed")
 	}
