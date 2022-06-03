@@ -75,6 +75,7 @@ func (event *Event) Validate() (err error) {
 	return
 }
 
+// Copy will copy an ANS Event
 func (event *Event) Copy() (destination Event, err error) {
 	var sourceJSON []byte
 	if sourceJSON, err = json.Marshal(event); err != nil {
