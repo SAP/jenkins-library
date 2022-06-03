@@ -1,7 +1,6 @@
 package log
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/pkg/errors"
@@ -114,13 +113,4 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	event.Tags["logLevel"] = logLevel.String()
 
 	return ansHook.client.Send(event)
-}
-
-func copyEvent(source ans.Event) (destination ans.Event, err error) {
-	var sourceJSON []byte
-	sourceJSON, err = json.Marshal(source); if err != nil {
-		return
-	}
-	err = destination.MergeWithJSON(sourceJSON)
-	return
 }
