@@ -53,7 +53,7 @@ type GeneralConfigOptions struct {
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
-	ANSConfig    ANSConfiguration   `json:"ans,omitempty"`
+	ANSConfig    ANSConfiguration    `json:"ans,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
