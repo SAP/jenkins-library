@@ -67,14 +67,13 @@ func TestANSHook_newANSHook(t *testing.T) {
 		},
 		{
 			name:       "Fails on validation error",
-			args:      args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":-1}`},
+			args:       args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":-1}`},
 			wantErrMsg: "did not initialize SAP Alert Notification Service due to faulty event template json: Priority must be 1 or greater: event JSON failed the validation",
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			var testEventTemplateFilePath string
 			if len(tt.eventTemplateFileContent) > 0 {
 				testEventTemplateFilePath = writeTempFile(t, tt.eventTemplateFileContent)
