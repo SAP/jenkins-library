@@ -90,7 +90,7 @@ func TestANSHook_newANSHook(t *testing.T) {
 				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
-				assert.Equal(t, defaultANSClient(), clientMock.testANS, "new ANSHook not as expected")
+				assert.Equal(t, defaultANSClient(), clientMock.a, "new ANSHook not as expected")
 				assert.Equal(t, tt.wantEvent, got.eventTemplate, "new ANSHook not as expected")
 			}
 		})
@@ -182,7 +182,7 @@ func TestANSHook_Fire(t *testing.T) {
 				}
 				assert.Equal(t, originalLogLevel.String(), entryArg.Level.String(), "Entry error level has been altered")
 			}
-			assert.Equal(t, tt.wantEvent, clientMock.testEvent, "Event is not as expected.")
+			assert.Equal(t, tt.wantEvent, clientMock.event, "Event is not as expected.")
 		})
 	}
 }
@@ -258,13 +258,13 @@ func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
 }
 
 type ansMock struct {
-	testANS   *ans.ANS
-	testEvent ans.Event
-	checkErr  error
+	a        *ans.ANS
+	event    ans.Event
+	checkErr error
 }
 
 func (am *ansMock) Send(event ans.Event) error {
-	am.testEvent = event
+	am.event = event
 	return nil
 }
 
@@ -275,5 +275,5 @@ func (am *ansMock) CheckCorrectSetup() error {
 func (am *ansMock) SetServiceKey(serviceKey ans.ServiceKey) {
 	a := &ans.ANS{}
 	a.SetServiceKey(serviceKey)
-	am.testANS = a
+	am.a = a
 }
