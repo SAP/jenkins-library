@@ -86,9 +86,8 @@ func TestANSHook_newANSHook(t *testing.T) {
 				EventTemplateFilePath: testEventTemplateFilePath,
 				EventTemplate:         tt.args.eventTemplate,
 			}
-			clientMock := &ansMock{checkErr: tt.checkErr}
-			defer clientMock.cleanup()
-			if got, err := newANSHook(ansConfig, testCorrelationID, clientMock); err != nil {
+			clientMock := ansMock{checkErr: tt.checkErr}
+			if got, err := newANSHook(ansConfig, testCorrelationID, &clientMock); err != nil {
 				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
@@ -172,7 +171,6 @@ func TestANSHook_Fire(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clientMock := ansMock{}
-			defer clientMock.cleanup()
 			ansHook := &ANSHook{
 				client:        &clientMock,
 				eventTemplate: tt.fields.defaultEvent,
@@ -279,8 +277,4 @@ func (am *ansMock) SetServiceKey(serviceKey ans.ServiceKey) {
 	a := &ans.ANS{}
 	a.SetServiceKey(serviceKey)
 	am.testANS = a
-}
-
-func (am *ansMock) cleanup() {
-	am = &ansMock{}
 }
