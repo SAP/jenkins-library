@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -81,6 +82,24 @@ Please provide either of the following options:
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
+				// Try ANS hook specific service key
+				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
+				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
+					// Try ANS service key from step implementation
+					GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
+				}
+			}
+			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
+				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
+				ansHook, err := log.NewANSHook(ans.Configuration(GeneralConfig.HookConfig.ANSConfig), GeneralConfig.CorrelationID)
+				if err != nil {
+					log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+				} else {
+					log.RegisterHook(&ansHook)
+				}
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
