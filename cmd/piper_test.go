@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/ans"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -532,4 +533,19 @@ func TestAccessTokensFromEnvJSON(t *testing.T) {
 	for _, test := range tt {
 		assert.Equal(t, test.expectedTokenList, AccessTokensFromEnvJSON(test.inputJSON), test.description)
 	}
+}
+
+func TestANSConfigurationTypeCasting(t *testing.T) {
+	ansConfig := ans.Configuration{
+		ServiceKey:            "one",
+		EventTemplateFilePath: "two",
+		EventTemplate:         "three",
+	}
+	hookConfig := ANSConfiguration{
+		ServiceKey:            "one",
+		EventTemplateFilePath: "two",
+		EventTemplate:         "three",
+	}
+	assert.Equal(t, hookConfig, ANSConfiguration(ansConfig), "Configuration needs to stay compatible")
+	assert.Equal(t, ansConfig, ans.Configuration(hookConfig), "Configuration needs to stay compatible")
 }
