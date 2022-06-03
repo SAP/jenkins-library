@@ -23,13 +23,13 @@ func NewANSHook(config ans.Configuration, correlationID string) (hook ANSHook, e
 
 func newANSHook(config ans.Configuration, correlationID string, client ans.Client) (hook ANSHook, err error) {
 	var ansServiceKey ans.ServiceKey
-	ansServiceKey, err = ans.UnmarshallServiceKeyJSON(config.ServiceKey); if err != nil {
+	if ansServiceKey, err = ans.UnmarshallServiceKeyJSON(config.ServiceKey); err != nil {
 		err = errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
 		return
 	}
 	client.SetServiceKey(ansServiceKey)
 
-	err = client.CheckCorrectSetup(); if err != nil {
+	if err = client.CheckCorrectSetup(); err != nil {
 		err = errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
 		return
 	}
@@ -43,10 +43,10 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 		},
 	}
 	if len(config.EventTemplateFilePath) > 0 {
-		eventTemplateString, err := ioutil.ReadFile(config.EventTemplateFilePath); if err != nil {
+		if eventTemplateString, err := ioutil.ReadFile(config.EventTemplateFilePath); err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template file with path '%s' could not be read: %v", config.EventTemplateFilePath, err)
 		} else {
-			err = event.MergeWithJSON(eventTemplateString); if err != nil {
+			if err = event.MergeWithJSON(eventTemplateString); err != nil {
 				Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", eventTemplateString, err)
 			}
 		}
@@ -92,7 +92,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 		return
 	}
 	var event ans.Event
-	event, err = ansHook.eventTemplate.Copy(); if err != nil {
+	if event, err = ansHook.eventTemplate.Copy(); err != nil {
 		return
 	}
 

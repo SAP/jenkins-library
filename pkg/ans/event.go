@@ -77,7 +77,7 @@ func (event *Event) Validate() (err error) {
 
 func (event *Event) Copy() (destination Event, err error) {
 	var sourceJSON []byte
-	sourceJSON, err = json.Marshal(event); if err != nil {
+	if sourceJSON, err = json.Marshal(event); err != nil {
 		return
 	}
 	err = destination.MergeWithJSON(sourceJSON)
