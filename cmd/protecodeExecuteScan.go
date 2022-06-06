@@ -191,6 +191,8 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
 
+	client.AddDefaultProductTag(productID)
+
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
 	result := client.PollForResult(productID, config.TimeoutMinutes)

@@ -578,3 +578,24 @@ func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]stri
 
 	return result
 }
+
+// AddDefaultProductTag adds default tag to custom_data
+func (pc *Protecode) AddDefaultProductTag(productID int) error {
+
+	customDataName := "META-SCAN-SOURCE"
+	customDataValue := "piper.io"
+
+	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/custom-data", productID), "")
+
+	headers := map[string][]string{
+		customDataName: {customDataValue},
+	}
+
+	_, _, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
+	if err != nil {
+		//TODO: bubble up error
+		pc.logger.WithError(err).Fatalf("Error during add default product tag: %v", protecodeURL)
+	}
+
+	return nil
+}
