@@ -923,21 +923,21 @@ func TestAutoresolveClasspath(t *testing.T) {
 func TestPopulateMavenTranslate(t *testing.T) {
 	t.Run("src without translate", func(t *testing.T) {
 		config := fortifyExecuteScanOptions{Src: []string{"./**/*"}}
-		translate, err := populateMavenTranslate(&config, "")
+		translate, err := populateMavenGradleTranslate(&config, "")
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"classpath":"","exclude":"**/src/test/**/*","src":"./**/*"}]`, translate)
 	})
 
 	t.Run("exclude without translate", func(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
-		translate, err := populateMavenTranslate(&config, "")
+		translate, err := populateMavenGradleTranslate(&config, "")
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {
 		config := fortifyExecuteScanOptions{Translate: `[{"classpath":""}]`, Src: []string{"./**/*"}, Exclude: []string{"./**/*"}}
-		translate, err := populateMavenTranslate(&config, "ignored/path")
+		translate, err := populateMavenGradleTranslate(&config, "ignored/path")
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"classpath":""}]`, translate)
 	})
