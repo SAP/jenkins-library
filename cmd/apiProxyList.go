@@ -48,23 +48,22 @@ func getApiProxyList(config *apiProxyListOptions, apistruct apim.Bundle, commonP
 	odataFilterInputs := apim.OdataParameters{Filter: config.Filter, Search: config.Search,
 		Top: config.Top, Skip: config.Skip, Orderby: config.Orderby,
 		Select: config.Select, Expand: config.Expand}
-	odataFilters, urlErr := apim.OdataUtils.InitOdataQuery(&odataFilterInputs)
+	odataFilters, urlErr := apim.OdataUtils.MakeOdataQuery(&odataFilterInputs)
 	if urlErr != nil {
 
 		return errors.New("failed to create odata filter")
 	}
-	getApiPrxyListURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProxies%s", apistruct.Host, odataFilters)
+	getApiProxyListURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProxies%s", apistruct.Host, odataFilters)
 	header := make(http.Header)
-	header.Add("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
-	apiProxyListResp, httpErr := httpClient.SendRequest(httpMethod, getApiPrxyListURL, nil, header, nil)
+	apiProxyListResp, httpErr := httpClient.SendRequest(httpMethod, getApiProxyListURL, nil, header, nil)
 	failureMessage := "Failed to create API provider artefact"
 	successMessage := "Successfully created api provider artefact in API Portal"
 	httpGetRequestParameters := cpi.HttpFileUploadRequestParameters{
 		ErrMessage:     failureMessage,
 		Response:       apiProxyListResp,
 		HTTPMethod:     httpMethod,
-		HTTPURL:        getApiPrxyListURL,
+		HTTPURL:        getApiProxyListURL,
 		HTTPErr:        httpErr,
 		SuccessMessage: successMessage}
 	resp, err := cpi.HTTPUploadUtils.HandleHTTPGetRequestResponse(httpGetRequestParameters)

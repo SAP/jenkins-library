@@ -55,6 +55,7 @@ func TestRunApiProxyList(t *testing.T) {
 		// assert
 		assert.EqualError(t, err, "HTTP GET request to /apiportal/api/1.0/Management.svc/APIProxies?filter=isCopy+eq+false&$orderby=name&$skip=1&$top=4 failed with error: : Bad Request")
 	})
+
 }
 
 func getDefaultOptionsForApiProxyList() apiProxyListOptions {
@@ -63,6 +64,6 @@ func getDefaultOptionsForApiProxyList() apiProxyListOptions {
 		Top:           4,
 		Skip:          1,
 		Filter:        "isCopy eq false",
-		Orderby:       []string{"name"},
+		Orderby:       "name,value",
 	}
 }

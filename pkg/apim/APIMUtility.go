@@ -21,14 +21,14 @@ type Utils interface {
 
 //OdataUtils for apim
 type OdataUtils interface {
-	InitOdataQuery() (string, error)
+	MakeOdataQuery() (string, error)
 }
 
 //OdataParameters struct
 type OdataParameters struct {
 	Filter, Search          string
 	Top, Skip               int
-	Orderby, Select, Expand []string
+	Orderby, Select, Expand string
 }
 
 //Bundle struct
@@ -67,15 +67,13 @@ func (apim *Bundle) IsPayloadJSON() bool {
 	return json.Unmarshal([]byte(apim.Payload), &js) == nil
 }
 
-func (odataFilters *OdataParameters) InitOdataQuery() (string, error) {
+func (odataFilters *OdataParameters) MakeOdataQuery() (string, error) {
 
-	v := reflect.ValueOf(odataFilters).Elem()
-	typeOfS := v.Type()
+	odataFiltersIt := reflect.ValueOf(odataFilters).Elem()
+	typeOfS := odataFiltersIt.Type()
 	urlParam := url.Values{}
-	for i := 0; i < v.NumField(); i++ {
-		structVal := fmt.Sprintf("%v", v.Field(i).Interface())
-		structVal = strings.Replace(structVal, "[", "", 1)
-		structVal = strings.Replace(structVal, "]", "", 1)
+	for i := 0; i < odataFiltersIt.NumField(); i++ {
+		structVal := fmt.Sprintf("%v", odataFiltersIt.Field(i).Interface())
 		if structVal != "" {
 			urlParam.Set(strings.ToLower(typeOfS.Field(i).Name), structVal)
 		}

@@ -63,7 +63,7 @@ spec:
           - STEPS
         mandatory: false
       - name: orderby
-        type: "[]string"
+        type: string
         description: Order by property values.
         scope:
           - PARAMETERS
@@ -71,7 +71,7 @@ spec:
           - STEPS
         mandatory: false
       - name: select
-        type: "[]string"
+        type: string
         description: Select properties to be returned.
         scope:
           - PARAMETERS
@@ -79,7 +79,7 @@ spec:
           - STEPS
         mandatory: false
       - name: expand
-        type: "[]string"
+        type: string
         description: Expand related entities.
         scope:
           - PARAMETERS

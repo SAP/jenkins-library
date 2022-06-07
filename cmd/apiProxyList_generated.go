@@ -18,15 +18,15 @@ import (
 )
 
 type apiProxyListOptions struct {
-	APIServiceKey string   `json:"apiServiceKey,omitempty"`
-	Top           int      `json:"top,omitempty"`
-	Skip          int      `json:"skip,omitempty"`
-	Filter        string   `json:"filter,omitempty"`
-	Count         bool     `json:"count,omitempty"`
-	Search        string   `json:"search,omitempty"`
-	Orderby       []string `json:"orderby,omitempty"`
-	Select        []string `json:"select,omitempty"`
-	Expand        []string `json:"expand,omitempty"`
+	APIServiceKey string `json:"apiServiceKey,omitempty"`
+	Top           int    `json:"top,omitempty"`
+	Skip          int    `json:"skip,omitempty"`
+	Filter        string `json:"filter,omitempty"`
+	Count         bool   `json:"count,omitempty"`
+	Search        string `json:"search,omitempty"`
+	Orderby       string `json:"orderby,omitempty"`
+	Select        string `json:"select,omitempty"`
+	Expand        string `json:"expand,omitempty"`
 }
 
 type apiProxyListCommonPipelineEnvironment struct {
@@ -155,9 +155,9 @@ func addApiProxyListFlags(cmd *cobra.Command, stepConfig *apiProxyListOptions) {
 	cmd.Flags().StringVar(&stepConfig.Filter, "filter", os.Getenv("PIPER_filter"), "Filter items by property values.")
 	cmd.Flags().BoolVar(&stepConfig.Count, "count", false, "Include count of items.")
 	cmd.Flags().StringVar(&stepConfig.Search, "search", os.Getenv("PIPER_search"), "Search items by search phrases.")
-	cmd.Flags().StringSliceVar(&stepConfig.Orderby, "orderby", []string{}, "Order by property values.")
-	cmd.Flags().StringSliceVar(&stepConfig.Select, "select", []string{}, "Select properties to be returned.")
-	cmd.Flags().StringSliceVar(&stepConfig.Expand, "expand", []string{}, "Expand related entities.")
+	cmd.Flags().StringVar(&stepConfig.Orderby, "orderby", os.Getenv("PIPER_orderby"), "Order by property values.")
+	cmd.Flags().StringVar(&stepConfig.Select, "select", os.Getenv("PIPER_select"), "Select properties to be returned.")
+	cmd.Flags().StringVar(&stepConfig.Expand, "expand", os.Getenv("PIPER_expand"), "Expand related entities.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 }
@@ -240,28 +240,28 @@ func apiProxyListMetadata() config.StepData {
 						Name:        "orderby",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_orderby"),
 					},
 					{
 						Name:        "select",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_select"),
 					},
 					{
 						Name:        "expand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_expand"),
 					},
 				},
 			},
