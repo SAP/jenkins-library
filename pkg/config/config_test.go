@@ -888,12 +888,31 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				},
 			},
 		},
-		{name: "Splunk and Sentry",
+		{name: "ANS only",
 			fields: fields{
 				Config:     nil,
 				HookConfig: nil,
 			},
 			args: args{mergeData: map[string]interface{}{
+				"ans": map[string]interface{}{
+					"serviceKey": "serviceKey",
+				},
+			}},
+			want: map[string]interface{}{
+				"ans": map[string]interface{}{
+					"serviceKey": "serviceKey",
+				},
+			},
+		},
+		{name: "ANS, Splunk and Sentry",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"ans": map[string]interface{}{
+					"serviceKey": "serviceKey",
+				},
 				"splunk": map[string]interface{}{
 					"dsn":      "dsn",
 					"token":    "token",
@@ -911,6 +930,9 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				},
 				"sentry": map[string]interface{}{
 					"dsn": "sentrydsn",
+				},
+				"ans": map[string]interface{}{
+					"serviceKey": "serviceKey",
 				},
 			},
 		},
