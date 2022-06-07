@@ -64,6 +64,6 @@ func getDefaultOptionsForApiProxyList() apiProxyListOptions {
 		Top:           4,
 		Skip:          1,
 		Filter:        "isCopy eq false",
-		Orderby:       "name,value",
+		Orderby:       "name",
 	}
 }
