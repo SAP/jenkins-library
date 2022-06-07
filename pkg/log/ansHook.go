@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -16,9 +17,18 @@ type ANSHook struct {
 	firing        bool
 }
 
-// NewANSHook creates a new ANS hook for logrus
-func NewANSHook(config ans.Configuration, correlationID string) (hook ANSHook, err error) {
-	return newANSHook(config, correlationID, &ans.ANS{})
+// RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
+func RegisterANSHookIfConfigured(config ans.Configuration, correlationID string) (err error) {
+	if len(config.ServiceKey) == 0 {
+		config.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
+	}
+	if len(config.ServiceKey) > 0 {
+		RegisterSecret(config.ServiceKey)
+		if ansHook, err := newANSHook(config, correlationID, &ans.ANS{}); err == nil {
+			RegisterHook(&ansHook)
+		}
+	}
+	return
 }
 
 func newANSHook(config ans.Configuration, correlationID string, client ans.Client) (hook ANSHook, err error) {
