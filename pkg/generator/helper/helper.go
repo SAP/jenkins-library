@@ -151,22 +151,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
-				// Try ANS hook specific service key
-				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
-					// Try ANS service key from step implementation
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
-				}
-			}
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
-				log.RegisterSecret({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig.ServiceKey)
-				ansHook, err := log.NewANSHook(ans.Configuration({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig), {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
-				if err != nil {
-					log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
-				} else {
-					log.RegisterHook(&ansHook)
-				}
+			if err = log.RegisterANSHookIfConfigured(ans.Configuration({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig), {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
