@@ -97,22 +97,8 @@ It is primarily made for the transportRequestUploadSOLMAN step to provide the ch
 				log.RegisterHook(logCollector)
 			}
 
-			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
-				// Try ANS hook specific service key
-				GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-				if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) == 0 {
-					// Try ANS service key from step implementation
-					GeneralConfig.HookConfig.ANSConfig.ServiceKey = os.Getenv("PIPER_ansServiceKey")
-				}
-			}
-			if len(GeneralConfig.HookConfig.ANSConfig.ServiceKey) > 0 {
-				log.RegisterSecret(GeneralConfig.HookConfig.ANSConfig.ServiceKey)
-				ansHook, err := log.NewANSHook(ans.Configuration(GeneralConfig.HookConfig.ANSConfig), GeneralConfig.CorrelationID)
-				if err != nil {
-					log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
-				} else {
-					log.RegisterHook(&ansHook)
-				}
+			if err = log.RegisterANSHookIfConfigured(ans.Configuration(GeneralConfig.HookConfig.ANSConfig), GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
