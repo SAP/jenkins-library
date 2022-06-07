@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -18,32 +17,39 @@ type ANSHook struct {
 }
 
 // RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
-func RegisterANSHookIfConfigured(config ans.Configuration, correlationID string) (err error) {
-	if len(config.ServiceKey) == 0 {
-		config.ServiceKey = os.Getenv("PIPER_ansHookServiceKey")
-	}
-	if len(config.ServiceKey) > 0 {
-		RegisterSecret(config.ServiceKey)
-		if ansHook, err := newANSHook(config, correlationID, &ans.ANS{}); err == nil {
-			RegisterHook(&ansHook)
-		}
-	}
-	return
+func RegisterANSHookIfConfigured(config ans.Configuration, correlationID string) error {
+	return registerANSHookIfConfigured(config, correlationID, &ans.ANS{})
 }
 
-func newANSHook(config ans.Configuration, correlationID string, client ans.Client) (hook ANSHook, err error) {
-	var ansServiceKey ans.ServiceKey
-	if ansServiceKey, err = ans.UnmarshallServiceKeyJSON(config.ServiceKey); err != nil {
-		err = errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
-		return
-	}
-	client.SetServiceKey(ansServiceKey)
-
-	if err = client.CheckCorrectSetup(); err != nil {
-		err = errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
-		return
+func registerANSHookIfConfigured(config ans.Configuration, correlationID string, ansClient ans.Client) error {
+	ansServiceKeyJSON := os.Getenv("PIPER_ansHookServiceKey")
+	if len(ansServiceKeyJSON) == 0 {
+		return nil
 	}
 
+	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(ansServiceKeyJSON)
+	if err != nil {
+		return errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
+	}
+	RegisterSecret(ansServiceKey.ClientSecret)
+
+	ansClient.SetServiceKey(ansServiceKey)
+	if err = ansClient.CheckCorrectSetup(); err != nil {
+		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
+	}
+
+	if eventTemplate, err := setupEventTemplate(config, correlationID); err != nil {
+		return err
+	} else {
+		RegisterHook(&ANSHook{
+			client:        ansClient,
+			eventTemplate: eventTemplate,
+		})
+	}
+	return nil
+}
+
+func setupEventTemplate(config ans.Configuration, correlationID string) (ans.Event, error) {
 	event := ans.Event{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
@@ -52,17 +58,8 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 			ResourceName: "Pipeline",
 		},
 	}
-	if len(config.EventTemplateFilePath) > 0 {
-		if eventTemplateString, err := ioutil.ReadFile(config.EventTemplateFilePath); err != nil {
-			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template file with path '%s' could not be read: %v", config.EventTemplateFilePath, err)
-		} else {
-			if err = event.MergeWithJSON(eventTemplateString); err != nil {
-				Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", eventTemplateString, err)
-			}
-		}
-	}
 	if len(config.EventTemplate) > 0 {
-		if err = event.MergeWithJSON([]byte(config.EventTemplate)); err != nil {
+		if err := event.MergeWithJSON([]byte(config.EventTemplate)); err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
 		}
 	}
@@ -74,15 +71,10 @@ func newANSHook(config ans.Configuration, correlationID string, client ans.Clien
 		Entry().WithField("stepName", "ANS").Warnf("event category set to '%s' will be overwritten according to the log level", event.Category)
 		event.Category = ""
 	}
-	if err = event.Validate(); err != nil {
-		err = errors.Wrap(err, "did not initialize SAP Alert Notification Service due to faulty event template json")
-		return
+	if err := event.Validate(); err != nil {
+		return ans.Event{}, errors.Wrap(err, "did not initialize SAP Alert Notification Service due to faulty event template json")
 	}
-	hook = ANSHook{
-		client:        client,
-		eventTemplate: event,
-	}
-	return
+	return event, nil
 }
 
 // Levels returns the supported log level of the hook.

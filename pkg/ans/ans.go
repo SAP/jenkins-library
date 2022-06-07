@@ -21,7 +21,6 @@ type ANS struct {
 
 // Configuration defines the configuration options for the SAP Alert Notification Service on BTP
 type Configuration struct {
-	ServiceKey            string `json:"serviceKey,omitempty"`
 	EventTemplateFilePath string `json:"eventTemplateFilePath,omitempty"`
 	EventTemplate         string `json:"eventTemplate,omitempty"`
 }
