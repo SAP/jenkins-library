@@ -849,7 +849,7 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		args   []args
+		args   args
 		want   map[string]interface{}
 	}{
 		{name: "Splunk only",
@@ -857,13 +857,13 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				Config:     nil,
 				HookConfig: nil,
 			},
-			args: []args{{mergeData: map[string]interface{}{
+			args: args{mergeData: map[string]interface{}{
 				"splunk": map[string]interface{}{
 					"dsn":      "dsn",
 					"token":    "token",
 					"sendLogs": "false",
 				},
-			}}},
+			}},
 			want: map[string]interface{}{
 				"splunk": map[string]interface{}{
 					"dsn":      "dsn",
@@ -877,42 +877,23 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				Config:     nil,
 				HookConfig: nil,
 			},
-			args: []args{{mergeData: map[string]interface{}{
+			args: args{mergeData: map[string]interface{}{
 				"sentry": map[string]interface{}{
 					"dsn": "sentrydsn",
 				},
-			}}},
+			}},
 			want: map[string]interface{}{
 				"sentry": map[string]interface{}{
 					"dsn": "sentrydsn",
 				},
 			},
 		},
-		{name: "ANS only",
+		{name: "Splunk and Sentry",
 			fields: fields{
 				Config:     nil,
 				HookConfig: nil,
 			},
-			args: []args{{mergeData: map[string]interface{}{
-				"ans": map[string]interface{}{
-					"serviceKey": "serviceKey",
-				},
-			}}},
-			want: map[string]interface{}{
-				"ans": map[string]interface{}{
-					"serviceKey": "serviceKey",
-				},
-			},
-		},
-		{name: "ANS, Splunk and Sentry",
-			fields: fields{
-				Config:     nil,
-				HookConfig: nil,
-			},
-			args: []args{{mergeData: map[string]interface{}{
-				"ans": map[string]interface{}{
-					"serviceKey": "serviceKey",
-				},
+			args: args{mergeData: map[string]interface{}{
 				"splunk": map[string]interface{}{
 					"dsn":      "dsn",
 					"token":    "token",
@@ -921,11 +902,8 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				"sentry": map[string]interface{}{
 					"dsn": "sentrydsn",
 				},
-			}}},
+			}},
 			want: map[string]interface{}{
-				"ans": map[string]interface{}{
-					"serviceKey": "serviceKey",
-				},
 				"splunk": map[string]interface{}{
 					"dsn":      "dsn",
 					"token":    "token",
@@ -933,47 +911,6 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				},
 				"sentry": map[string]interface{}{
 					"dsn": "sentrydsn",
-				},
-			},
-		},
-		{name: "Merge data multiple times - former existing keys are overwritten",
-			fields: fields{
-				Config:     nil,
-				HookConfig: nil,
-			},
-			args: []args{
-				{mergeData: map[string]interface{}{
-					"ans": map[string]interface{}{
-						"serviceKey": "this will be overwritten",
-					},
-					"splunk": map[string]interface{}{
-						"dsn":      "these",
-						"token":    "key/value",
-						"sendLogs": "pairs",
-					},
-					"sentry": map[string]interface{}{
-						"dsn": "are kept",
-					},
-				}},
-				{mergeData: map[string]interface{}{
-					"ans": map[string]interface{}{
-						"serviceKey":    "it was overwritten",
-						"eventTemplate": "this was added to the map",
-					},
-				}},
-				{mergeData: nil}},
-			want: map[string]interface{}{
-				"ans": map[string]interface{}{
-					"serviceKey":    "it was overwritten",
-					"eventTemplate": "this was added to the map",
-				},
-				"splunk": map[string]interface{}{
-					"dsn":      "these",
-					"token":    "key/value",
-					"sendLogs": "pairs",
-				},
-				"sentry": map[string]interface{}{
-					"dsn": "are kept",
 				},
 			},
 		},
@@ -982,7 +919,7 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				Config:     nil,
 				HookConfig: nil,
 			},
-			args: []args{{mergeData: nil}},
+			args: args{mergeData: nil},
 			want: map[string]interface{}{},
 		},
 	}
@@ -992,9 +929,7 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				Config:     tt.fields.Config,
 				HookConfig: tt.fields.HookConfig,
 			}
-			for _, arg := range tt.args {
-				s.mixInHookConfig(arg.mergeData)
-			}
+			s.mixInHookConfig(tt.args.mergeData)
 			if !reflect.DeepEqual(s.HookConfig, tt.want) {
 				t.Errorf("mixInHookConfig() = %v, want %v", s.HookConfig, tt.want)
 			}
