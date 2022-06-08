@@ -50,8 +50,7 @@ func getApiProxyList(config *apiProxyListOptions, apistruct apim.Bundle, commonP
 		Select: config.Select, Expand: config.Expand}
 	odataFilters, urlErr := apim.OdataUtils.MakeOdataQuery(&odataFilterInputs)
 	if urlErr != nil {
-
-		return errors.New("failed to create odata filter")
+		return errors.Wrap(urlErr, "failed to create odata filter")
 	}
 	getApiProxyListURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProxies%s", apistruct.Host, odataFilters)
 	header := make(http.Header)

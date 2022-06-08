@@ -78,7 +78,6 @@ func (odataFilters *OdataParameters) MakeOdataQuery() (string, error) {
 			urlParam.Set(strings.ToLower(typeOfS.Field(i).Name), structVal)
 		}
 	}
-	resultQuery := "?" + urlParam.Encode()
-	resultQuery = strings.ReplaceAll(resultQuery, "&", "&$")
+	resultQuery := "?" + strings.ReplaceAll(urlParam.Encode(), "&", "&$")
 	return resultQuery, nil
 }
