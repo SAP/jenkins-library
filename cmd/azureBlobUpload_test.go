@@ -125,10 +125,7 @@ func TestRunAzureBlobUpload(t *testing.T) {
 			t.Parallel()
 			// initialization
 			config := azureBlobUploadOptions{
-				JSONCredentialsAzure: `{
-					"account_name": "name",
-					"container_name": "container",
-				  }`,
+				JSONCredentialsAzure: `faulty json`,
 				FilePath: "nonExistingFilepath",
 			}
 			// test
