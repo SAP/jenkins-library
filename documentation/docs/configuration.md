@@ -131,8 +131,7 @@ The SAP Alert Notification service service-key needs to be present in the
 environment, where the "Piper" binary is run. See the
 [Credential Management guide](https://help.sap.com/docs/ALERT_NOTIFICATION/5967a369d4b74f7a9c2b91f5df8e6ab6/80fe24f86bde4e3aac2903ac05511835.html?locale=en-US)
 in the SAP Help Portal on how to retrieve an alert notification service
-service-key. The environment variable used is: `PIPER_ansHookServiceKey`,
-or, if that is not present: `PIPER_ansServiceKey`.
+service-key. The environment variable used is: `PIPER_ansHookServiceKey`.
 
 If Jenkins is used to run "Piper", you can use the Jenkins credential store
 to store the alert notification service service-key as a "Secret Text"
@@ -145,38 +144,18 @@ hooks:
     serviceKeyCredentialsId: 'my_ANS_Service_Key'
 ```
 
-Or alternatively in the `general` section as follows:
-
-```yaml
-general:
-    ansServiceKeyCredentialsId: 'my_ANS_Service_Key'
-```
-
 #### Event template
 
-You can also create an event template in JSON format to overwrite or add
-certain event details. There are two ways to do this:
+You can also create an event template in JSON format to overwrite
+or add event details to the default. To do this, provide the JSON string
+directly in the environment where the "Piper" binary is run. The environment
+variable used in this case is: `PIPER_ansEventTemplate`.
 
-1. Provide an event template file in JSON format and set the
-   `eventTemplateFilePath` parameter in the config file as follows:
+For example in unix:
 
-   ```yaml
-   hooks:
-     ans:
-       eventTemplateFilePath: './path/to/my/eventTemplate.json'
-   ```
-
-2. Provide the JSON string directly in the environment where the "Piper"
-   binary is run. The environment variable used in this case is:
-   `PIPER_ansEventTemplate`. For example in unix:
-
-    ```bash
-    export PIPER_ansEventTemplate='{"priority": 999}'
-    ```
-
-If both event templates are defined they are merged together. Meaning that any
-fields already defined by the JSON file will be overwritten by the
-environment JSON string.
+```bash
+export PIPER_ansEventTemplate='{"priority": 999}'
+```
 
 The event body, timestamp, severity and category cannot be set via the
 template. They are always set from the log entry.
