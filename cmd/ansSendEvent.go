@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -25,20 +23,21 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 	c.SetServiceKey(ansServiceKey)
 
 	event := ans.Event{
-		EventType: "Piper",
+		EventType: config.EventType,
+		Severity:  config.Severity,
+		Category:  config.Category,
+		Subject:   config.Subject,
+		Body:      config.Body,
+		Priority:  config.Priority,
+		Tags:      config.Tags,
 		Resource: &ans.Resource{
-			ResourceType: "Pipeline",
-			ResourceName: "Pipeline",
+			ResourceName:     config.ResourceName,
+			ResourceType:     config.ResourceType,
+			ResourceInstance: config.ResourceInstance,
+			Tags:             config.ResourceTags,
 		},
-		Subject: fmt.Sprint(log.Entry().Data["stepName"]),
-		Body:    fmt.Sprintf("Call from Piper step: %s", log.Entry().Data["stepName"]),
 	}
-	event.SetSeverityAndCategory(logrus.InfoLevel)
 
-	if err = event.MergeWithJSON([]byte(config.EventJSON)); err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return err
-	}
 	if err = event.Validate(); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err

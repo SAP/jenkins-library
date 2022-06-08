@@ -16,8 +16,18 @@ import (
 )
 
 type ansSendEventOptions struct {
-	AnsServiceKey string `json:"ansServiceKey,omitempty"`
-	EventJSON     string `json:"eventJSON,omitempty"`
+	AnsServiceKey    string                 `json:"ansServiceKey,omitempty"`
+	EventType        string                 `json:"eventType,omitempty"`
+	Severity         string                 `json:"severity,omitempty" validate:"possible-values=INFO NOTICE WARNING ERROR FATAL"`
+	Category         string                 `json:"category,omitempty" validate:"possible-values=NOTIFICATION ALERT EXCEPTION"`
+	Subject          string                 `json:"subject,omitempty"`
+	Body             string                 `json:"body,omitempty"`
+	Priority         int                    `json:"priority,omitempty"`
+	Tags             map[string]interface{} `json:"tags,omitempty"`
+	ResourceName     string                 `json:"resourceName,omitempty"`
+	ResourceType     string                 `json:"resourceType,omitempty"`
+	ResourceInstance string                 `json:"resourceInstance,omitempty"`
+	ResourceTags     map[string]interface{} `json:"resourceTags,omitempty"`
 }
 
 // AnsSendEventCommand Send Event to the SAP Alert Notification Service
@@ -111,10 +121,18 @@ func AnsSendEventCommand() *cobra.Command {
 
 func addAnsSendEventFlags(cmd *cobra.Command, stepConfig *ansSendEventOptions) {
 	cmd.Flags().StringVar(&stepConfig.AnsServiceKey, "ansServiceKey", os.Getenv("PIPER_ansServiceKey"), "Service key JSON string to access the SAP Alert Notification Service")
-	cmd.Flags().StringVar(&stepConfig.EventJSON, "eventJSON", os.Getenv("PIPER_eventJSON"), "Event data in JSON format")
+	cmd.Flags().StringVar(&stepConfig.EventType, "eventType", `Piper`, "Type of the event")
+	cmd.Flags().StringVar(&stepConfig.Severity, "severity", `INFO`, "Event severity")
+	cmd.Flags().StringVar(&stepConfig.Category, "category", `NOTIFICATION`, "Event category")
+	cmd.Flags().StringVar(&stepConfig.Subject, "subject", `ansSendEvent`, "Short description of the event")
+	cmd.Flags().StringVar(&stepConfig.Body, "body", `Call from Piper step ansSendEvent`, "Detailed description of the event")
+	cmd.Flags().IntVar(&stepConfig.Priority, "priority", 0, "Event priority in the range of 1 to 1000")
+
+	cmd.Flags().StringVar(&stepConfig.ResourceName, "resourceName", `Pipeline`, "Unique resource name")
+	cmd.Flags().StringVar(&stepConfig.ResourceType, "resourceType", `Pipeline`, "Resource type identifier")
+	cmd.Flags().StringVar(&stepConfig.ResourceInstance, "resourceInstance", os.Getenv("PIPER_resourceInstance"), "Optional resource instance identifier")
 
 	cmd.MarkFlagRequired("ansServiceKey")
-	cmd.MarkFlagRequired("eventJSON")
 }
 
 // retrieve step metadata
@@ -147,13 +165,101 @@ func ansSendEventMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_ansServiceKey"),
 					},
 					{
-						Name:        "eventJSON",
+						Name:        "eventType",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_eventJSON"),
+						Default:     `Piper`,
+					},
+					{
+						Name:        "severity",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `INFO`,
+					},
+					{
+						Name:        "category",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `NOTIFICATION`,
+					},
+					{
+						Name:        "subject",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `ansSendEvent`,
+					},
+					{
+						Name:        "body",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `Call from Piper step ansSendEvent`,
+					},
+					{
+						Name:        "priority",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
+					},
+					{
+						Name:        "tags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "resourceName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `Pipeline`,
+					},
+					{
+						Name:        "resourceType",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `Pipeline`,
+					},
+					{
+						Name:        "resourceInstance",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_resourceInstance"),
+					},
+					{
+						Name:        "resourceTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
