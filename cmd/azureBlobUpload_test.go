@@ -37,7 +37,7 @@ func uploadFuncMock(ctx context.Context, api *azblob.BlockBlobClient, file *os.F
 func TestRunAzureBlobUpload(t *testing.T) {
 	t.Parallel()
 
-	t.Run("good tests", func(t *testing.T) {
+	t.Run("positive tests", func(t *testing.T) {
 		t.Parallel()
 
 		t.Run("happy path", func(t *testing.T) {
