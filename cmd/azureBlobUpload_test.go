@@ -24,13 +24,13 @@ func mockAzureContainerClient(t *testing.T, fail bool) AzureContainerAPI {
 	return mockAzureContainerAPI(func(blobName string) (*azblob.BlockBlobClient, error) {
 		t.Helper()
 		if fail {
-			return nil, fmt.Errorf("invalid blobName")
+			return nil, fmt.Errorf("error containerClient")
 		}
 		return &azblob.BlockBlobClient{}, nil
 	})
 }
 
-func UploadMock(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
+func uploadFuncMock(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
 	return &http.Response{}, nil
 }
 
@@ -54,9 +54,9 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		config := azureBlobUploadOptions{
 			FilePath: f.Name(),
 		}
-		container := mockAzureContainerClient
+		container := mockAzureContainerClient(t, false)
 		// test
-		err = executeUpload(&config, container(t, false), UploadMock)
+		err = executeUpload(&config, container, uploadFuncMock)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -69,12 +69,12 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		}
 		container := mockAzureContainerClient
 		// test
-		err := executeUpload(&config, container(t, false), UploadMock)
+		err := executeUpload(&config, container(t, false), uploadFuncMock)
 		// assert
 		assert.IsType(t, &fs.PathError{}, errors.Unwrap(err))
 	})
 
-	t.Run("error blobName", func(t *testing.T) {
+	t.Run("error containerClient", func(t *testing.T) {
 		t.Parallel()
 		// create temporary file
 		f, err := os.CreateTemp("", "tmpfile-")
@@ -93,9 +93,9 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		}
 		container := mockAzureContainerClient
 		// test
-		err = executeUpload(&config, container(t, true), UploadMock)
+		err = executeUpload(&config, container(t, true), uploadFuncMock)
 		// assert
-		assert.EqualError(t, err, "Could not instantiate Azure blockBlobClient from Azure Container Client: invalid blobName")
+		assert.EqualError(t, err, "Could not instantiate Azure blockBlobClient from Azure Container Client: error containerClient")
 	})
 
 	t.Run("error credentials", func(t *testing.T) {
