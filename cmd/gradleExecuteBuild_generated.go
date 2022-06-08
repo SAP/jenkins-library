@@ -20,17 +20,19 @@ import (
 )
 
 type gradleExecuteBuildOptions struct {
-	Path               string `json:"path,omitempty"`
-	Task               string `json:"task,omitempty"`
-	Publish            bool   `json:"publish,omitempty"`
-	RepositoryURL      string `json:"repositoryUrl,omitempty"`
-	RepositoryPassword string `json:"repositoryPassword,omitempty"`
-	RepositoryUsername string `json:"repositoryUsername,omitempty"`
-	CreateBOM          bool   `json:"createBOM,omitempty"`
-	ArtifactVersion    string `json:"artifactVersion,omitempty"`
-	ArtifactGroupID    string `json:"artifactGroupId,omitempty"`
-	ArtifactID         string `json:"artifactId,omitempty"`
-	UseWrapper         bool   `json:"useWrapper,omitempty"`
+	Path                          string                   `json:"path,omitempty"`
+	Task                          string                   `json:"task,omitempty"`
+	Publish                       bool                     `json:"publish,omitempty"`
+	RepositoryURL                 string                   `json:"repositoryUrl,omitempty"`
+	RepositoryPassword            string                   `json:"repositoryPassword,omitempty"`
+	RepositoryUsername            string                   `json:"repositoryUsername,omitempty"`
+	CreateBOM                     bool                     `json:"createBOM,omitempty"`
+	GradlePropertiesFile          string                   `json:"gradlePropertiesFile,omitempty"`
+	GradleSensitivePropertiesFile string                   `json:"gradleSensitivePropertiesFile,omitempty"`
+	RootProjectConfig             map[string]interface{}   `json:"rootProjectConfig,omitempty"`
+	SubprojectsCommonConfig       map[string]interface{}   `json:"subprojectsCommonConfig,omitempty"`
+	SubprojectsCustomConfigs      []map[string]interface{} `json:"subprojectsCustomConfigs,omitempty"`
+	UseWrapper                    bool                     `json:"useWrapper,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -103,6 +105,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 			}
 			log.RegisterSecret(stepConfig.RepositoryPassword)
 			log.RegisterSecret(stepConfig.RepositoryUsername)
+			log.RegisterSecret(stepConfig.GradleSensitivePropertiesFile)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -169,9 +172,9 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
-	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
-	cmd.Flags().StringVar(&stepConfig.ArtifactGroupID, "artifactGroupId", os.Getenv("PIPER_artifactGroupId"), "The group of the artifact.")
-	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The name of the artifact.")
+	cmd.Flags().StringVar(&stepConfig.GradlePropertiesFile, "gradlePropertiesFile", `gradle.properties`, "Path to the .properties file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GradleSensitivePropertiesFile, "gradleSensitivePropertiesFile", os.Getenv("PIPER_gradleSensitivePropertiesFile"), ".properties file containing sensitive info e.g. credentials")
+
 	cmd.Flags().BoolVar(&stepConfig.UseWrapper, "useWrapper", false, "If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.")
 
 }
@@ -266,46 +269,62 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Default:     false,
 					},
 					{
-						Name: "artifactVersion",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "artifactVersion",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_artifactVersion"),
+						Name:        "gradlePropertiesFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "gradle/gradlePropertiesFile"}},
+						Default:     `gradle.properties`,
 					},
 					{
-						Name: "artifactGroupId",
+						Name: "gradleSensitivePropertiesFile",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "groupId",
+								Param: "custom/gradleSensitivePropertiesFile",
+							},
+
+							{
+								Name: "gradleSensitivePropertiesFileCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "gradleSensitivePropertiesFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "gradle-sensitive-props",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_artifactGroupId"),
+						Default:   os.Getenv("PIPER_gradleSensitivePropertiesFile"),
 					},
 					{
-						Name: "artifactId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "artifactId",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_artifactId"),
+						Name:        "rootProjectConfig",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "rootProject"}},
+					},
+					{
+						Name:        "subprojectsCommonConfig",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "subprojectsCommon"}},
+					},
+					{
+						Name:        "subprojectsCustomConfigs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "subprojectsCommon"}},
 					},
 					{
 						Name:        "useWrapper",

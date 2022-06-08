@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
+	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -12,70 +14,180 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-var (
-	bomGradleTaskName = "cyclonedxBom"
-	publishTaskName   = "publish"
-)
-
-const publishInitScriptContentTemplate = `
-rootProject {
-    apply plugin: 'maven-publish'
-    apply plugin: 'java'
-
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                versionMapping {
-                    usage('java-api') {
-                        fromResolutionOf('runtimeClasspath')
-                    }
-                    usage('java-runtime') {
-                        fromResolutionResult()
-                    }
-                }
-				{{- if .ArtifactGroupID}}
-				groupId = '{{.ArtifactGroupID}}'
-				{{- end }}
-				{{- if .ArtifactID}}
-				artifactId = '{{.ArtifactID}}'
-				{{- end }}
-				{{- if .ArtifactVersion}}
-				version = '{{.ArtifactVersion}}'
-				{{- end }}
-                from components.java
-            }
-        }
-        repositories {
-            maven {
-                credentials {
-                    username = "{{.RepositoryUsername}}"
-                    password = "{{.RepositoryPassword}}"
-                }
-                url = "{{.RepositoryURL}}"
-            }
-        }
-    }
-}
-`
-
-const bomInitScriptContent = `
+const (
+	bomGradleTaskName         = "cyclonedxBom"
+	publishTaskName           = "publish"
+	tasksTaskName             = "tasks"
+	initScriptContentTemplate = `
 initscript {
   repositories {
     mavenCentral()
     maven {
       url "https://plugins.gradle.org/m2/"
     }
+		maven {
+      url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
   }
   dependencies {
     classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
   }
 }
-
 rootProject {
-    apply plugin: 'java'
-    apply plugin: 'maven'
-    apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+    ext {
+        rootPluginsList = project.hasProperty("rootPluginsList") ? project.getProperty("rootPluginsList") : 'java'
+        rootComponent = project.hasProperty("rootComponent") ? project.getProperty("rootComponent") : 'java'
+        rootArtifactId = project.hasProperty("rootArtifactId") ? project.getProperty("rootArtifactId") : ''
+        rootGroupId = project.hasProperty("rootGroupId") ? project.getProperty("rootGroupId") : ''
+        rootArtifactVersion = project.hasProperty("rootArtifactVersion") ? project.getProperty("rootArtifactVersion") : ''
+        rootUseDeclaredVersioning = project.hasProperty("rootUseDeclaredVersioning") ? project.getProperty("rootUseDeclaredVersioning").toBoolean() : false
+        rootCreateBOM = project.hasProperty("rootCreateBOM") ? project.getProperty("rootCreateBOM").toBoolean() : false
+        rootPublish = project.hasProperty("rootPublish") ? project.getProperty("rootPublish").toBoolean() : false
+   }
+
+    for(projectPlugin in rootPluginsList.tokenize(",")) {
+        apply plugin: projectPlugin
+    }
+
+    if (rootCreateBOM) {
+        apply plugin: "org.cyclonedx.bom"
+    }
+
+    if (rootPublish) {
+        publishing {
+            publications {
+                maven(MavenPublication) {
+                    if (!projectUseDeclaredVersioning){
+                        versionMapping {
+                            usage('java-api') {
+                                fromResolutionOf('runtimeClasspath')
+                            }
+                            usage('java-runtime') {
+                                fromResolutionResult()
+                            }
+                        }
+                    }
+                    if (projectArtifactId != '') {
+                        groupId = projectGroupId
+                    }
+                    if (projectArtifactId != '') {
+                        artifactId = projectArtifactId
+                    }
+                    if (projectVersion != '') {
+                        version = projectVersion
+                    }
+                    from components[rootComponent]
+                }
+            }
+            repositories {
+                maven {
+                    credentials {
+                        username = "{{.RepositoryUsername}}"
+                        password = "{{.RepositoryPassword}}"
+                    }
+                    url = "{{.RepositoryURL}}"
+                }
+            }
+        }
+    }
 }
+subprojects {
+    ext {
+        subprojectsPluginsList = project.hasProperty("subprojectsPluginsList") ? project.getProperty("subprojectsPluginsList") : 'java'
+        subprojectsComponent = project.hasProperty("subprojectsComponent") ? project.getProperty("subprojectsComponent") : 'java'
+        subprojectsUseDeclaredVersioning = project.hasProperty("subprojectsUseDeclaredVersioning") ? project.getProperty("subprojectsUseDeclaredVersioning").toBoolean() : false
+        subprojectsVersion = project.hasProperty("subprojectsVersion") ? project.getProperty("subprojectsVersion") : ''
+        subprojectsGroupId = project.hasProperty("subprojectsGroupId") ? project.getProperty("subprojectsGroupId") : ''
+        subprojectsCreateBOM = project.hasProperty("subprojectsCreateBOM") ? project.getProperty("subprojectsCreateBOM").toBoolean() : false
+        subprojectsPublish = project.hasProperty("subprojectsPublish") ? project.getProperty("subprojectsPublish").toBoolean() : false
+
+        projectPluginsList = project.hasProperty(project.name+"--pluginsList") ? project.getProperty(project.name+"--pluginsList") : subprojectsPluginsList
+        projectPublish = project.hasProperty(project.name+"--publish") ? project.getProperty(project.name+"--publish").toBoolean() : subprojectsPublish
+        projectComponent = project.hasProperty(project.name+"--component") ? project.getProperty(project.name+"--component") : subprojectsComponent
+        projectUseDeclaredVersioning = project.hasProperty(project.name+"--useDeclaredVersioning") ? project.getProperty(project.name+"--useDeclaredVersioning").toBoolean() : subprojectsUseDeclaredVersioning
+        projectVersion = project.hasProperty(project.name+"--version") ? project.getProperty(project.name+"--version") : subprojectsVersion
+        projectArtifactId = project.hasProperty(project.name+"--artifactId") ? project.getProperty(project.name+"--artifactId") : ''
+        projectGroupId = project.hasProperty(project.name+"--groupId") ? project.getProperty(project.name+"--groupId") : subprojectsGroupId
+        projectCreateBOM = project.hasProperty(project.name+"--createBOM") ? project.getProperty(project.name+"--createBOM").toBoolean() : subprojectsCreateBOM
+    }
+
+    for(projectPlugin in projectPluginsList.tokenize(",")){
+        apply plugin: projectPlugin
+    }
+    if (projectCreateBOM) {
+        apply plugin: "org.cyclonedx.bom"
+    }
+
+    if (projectPublish) {
+        apply plugin: 'maven-publish'
+        publishing{
+            publications {
+                maven(MavenPublication) {
+                    if (!projectUseDeclaredVersioning){
+                        versionMapping {
+                            usage('java-api') {
+                                fromResolutionOf('runtimeClasspath')
+                            }
+                            usage('java-runtime') {
+                                fromResolutionResult()
+                            }
+                        }
+                    }
+                    if (projectArtifactId != '') {
+                        groupId = projectGroupId
+                    }
+                    if (projectArtifactId != '') {
+                        artifactId = projectArtifactId
+                    }
+                    if (projectVersion != '') {
+                        version = projectVersion
+                    }
+                    from components[projectComponent]
+                }
+            }
+            repositories {
+                maven {
+                    credentials {
+                        username = "{{.RepositoryUsername}}"
+                        password = "{{.RepositoryPassword}}"
+                    }
+                    url = "{{.RepositoryURL}}"
+                }
+            }
+        }
+    }
+}
+`
+)
+
+const rootProjectProperties = `
+rootPluginsList={{ or .rootPluginsList 'java-library,jacoco'}}
+rootComponent={{ or .rootComponent 'java'}}
+rootUseDeclaredVersioning={{ or .rootUseDeclaredVersioning false}}
+rootPublish={{ or .rootPublish false}}
+rootArtifactId={{ .rootArtifactId }}
+rootGroupId={{ .rootGroupId }}
+rootArtifactVersion={{ .rootArtifactVersion }}
+rootCreateBOM={{ or .rootCreateBOM false}}
+`
+const subprojectCommonProperties = `
+subprojectsPluginsList={{ or .subprojectsPluginsList 'java-library,jacoco'}}
+subprojectsComponent={{ or .subprojectsComponent 'java'}}
+subprojectsUseDeclaredVersioning={{ or .subprojectsUseDeclaredVersioning false}}
+subprojectsVersion={{ .subprojectsVersion}}
+subprojectsGroupId={{ .subprojectsGroupId}}
+subprojectsCreateBOM={{ or .subprojectsCreateBOM false}}
+subprojectsPublish={{ or .subprojectsPublish false}}
+`
+const subprojectCustomProperties = `
+{{.projectName}}--pluginsList={{.pluginsList}}
+{{.projectName}}--publish={{.publish}}
+{{.projectName}}--useDeclaredVersioning={{.useDeclaredVersioning}}
+{{.projectName}}--component={{.component}}
+{{.projectName}}--version={{.version}}
+{{.projectName}}--artifactId={{.artifactId}}
+{{.projectName}}--groupId={{.groupId}}
+{{.projectName}}--createBOM={{.createBOM}}
 `
 
 type gradleExecuteBuildUtils interface {
@@ -107,68 +219,68 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 }
 
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
-	log.Entry().Info("BOM file creation...")
-	if config.CreateBOM {
-		if err := createBOM(config, utils); err != nil {
-			return err
-		}
-	}
-
-	// gradle build
-	gradleOptions := &gradle.ExecuteOptions{
-		BuildGradlePath: config.Path,
-		Task:            config.Task,
-		UseWrapper:      config.UseWrapper,
-	}
-	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
-		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
+	err := extendProperties(config.GradlePropertiesFile, config.RootProjectConfig, config.SubprojectsCommonConfig, config.SubprojectsCustomConfigs, config.GradleSensitivePropertiesFile)
+	if err != nil {
 		return err
 	}
-
-	log.Entry().Info("Publishing of artifacts to staging repository...")
-	if config.Publish {
-		if err := publishArtifacts(config, utils); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func createBOM(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils) error {
-	gradleOptions := &gradle.ExecuteOptions{
-		BuildGradlePath:   config.Path,
-		Task:              bomGradleTaskName,
-		UseWrapper:        config.UseWrapper,
-		InitScriptContent: bomInitScriptContent,
-	}
-	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
-		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
-		return err
-	}
-	return nil
-}
-
-func publishArtifacts(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils) error {
-	publishInitScriptContent, err := getPublishInitScriptContent(config)
+	initScriptContent, err := getInitScript(config)
 	if err != nil {
 		return fmt.Errorf("failed to get publish init script content: %v", err)
 	}
-	gradleOptions := &gradle.ExecuteOptions{
-		BuildGradlePath:   config.Path,
-		Task:              publishTaskName,
-		UseWrapper:        config.UseWrapper,
-		InitScriptContent: publishInitScriptContent,
+
+	if called, err := callGradle(config, utils, initScriptContent, bomGradleTaskName, true); err != nil {
+		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
+		return err
+	} else {
+		if called {
+			log.Entry().Info("BOM file created")
+		} else {
+			log.Entry().Info("skip BOM file creation")
+		}
 	}
-	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
-		log.Entry().WithError(err).Errorf("failed to publish artifacts: %v", err)
+
+	if _, err := callGradle(config, utils, "", config.Task, false); err != nil {
+		log.Entry().WithError(err).Errorf("gradle %s execution was failed: %v", config.Task, err)
 		return err
 	}
+
+	if called, err := callGradle(config, utils, initScriptContent, publishTaskName, true); err != nil {
+		log.Entry().WithError(err).Errorf("failed to publish: %v", err)
+		return err
+	} else {
+		if called {
+			log.Entry().Info("published")
+		} else {
+			log.Entry().Info("skip publishing")
+		}
+	}
+
 	return nil
 }
 
-func getPublishInitScriptContent(options *gradleExecuteBuildOptions) (string, error) {
-	tmpl, err := template.New("resources").Parse(publishInitScriptContentTemplate)
+func callGradle(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils, initScriptContent, task string, optional bool) (bool, error) {
+	gradleOptions := &gradle.ExecuteOptions{
+		BuildGradlePath:   config.Path,
+		UseWrapper:        config.UseWrapper,
+		InitScriptContent: initScriptContent,
+	}
+	if optional {
+		gradleOptions.Task = tasksTaskName
+		output, err := gradle.Execute(gradleOptions, utils)
+		if err != nil {
+			return false, err
+		}
+		if strings.Index(output, task) < 0 {
+			return false, nil
+		}
+	}
+	gradleOptions.Task = task
+	_, err := gradle.Execute(gradleOptions, utils)
+	return true, err
+}
+
+func getInitScript(options *gradleExecuteBuildOptions) (string, error) {
+	tmpl, err := template.New("resources").Parse(initScriptContentTemplate)
 	if err != nil {
 		return "", err
 	}
@@ -180,4 +292,56 @@ func getPublishInitScriptContent(options *gradleExecuteBuildOptions) (string, er
 	}
 
 	return string(generatedCode.Bytes()), nil
+}
+
+func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]interface{}, subprojectsCommonConfig map[string]interface{}, subprojectsCustomConfigs []map[string]interface{}, sensitiveProperties string) error {
+	properties := []byte(``)
+	var err error
+	if len(gradlePropertiesFile) > 0 {
+		exists, err := fileUtils.FileExists(gradlePropertiesFile)
+		if err != nil {
+			return errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
+		}
+		if !exists {
+			properties, err = fileUtils.FileRead(gradlePropertiesFile)
+			if err != nil {
+				return errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
+			}
+		}
+	}
+	sensitiveProperties = "\n" + sensitiveProperties
+	tplRootProps := template.Must(template.New("rootProjectProps").Parse(rootProjectProperties))
+	tplSubprojectsCommonProps := template.Must(template.New("subprojectsCommonProps").Parse(subprojectCommonProperties))
+	tplSubprojectsCustomProps := template.Must(template.New("subprojectCustomProps").Parse(subprojectCustomProperties))
+
+	properties = append(properties, []byte(sensitiveProperties)...)
+	properties, err = appendPropertiesByTemplate(properties, tplRootProps, rootProjectConfig)
+	if err != nil {
+		return errors.Wrapf(err, "failed to generate rootProject properties")
+	}
+	properties, err = appendPropertiesByTemplate(properties, tplSubprojectsCommonProps, subprojectsCommonConfig)
+	if err != nil {
+		return errors.Wrapf(err, "failed to generate subprojects common properties")
+	}
+	for _, cfg := range subprojectsCustomConfigs {
+		properties, err = appendPropertiesByTemplate(properties, tplSubprojectsCustomProps, cfg)
+		if err != nil {
+			return errors.Wrapf(err, "failed to generate subprojects custom properties")
+		}
+	}
+
+	resultGradlePropertiesFile := "gradle.properties"
+	if err := fileUtils.FileWrite(resultGradlePropertiesFile, properties, 0644); err != nil {
+		return errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
+	}
+	return nil
+}
+
+func appendPropertiesByTemplate(source []byte, tpl *template.Template, config map[string]interface{}) ([]byte, error) {
+	generatedProps := bytes.Buffer{}
+	err := tpl.Execute(&generatedProps, config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to generate %s properties", tpl.Name())
+	}
+	return append(source, generatedProps.Bytes()...), nil
 }
