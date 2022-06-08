@@ -126,12 +126,12 @@ func TestRunAzureBlobUpload(t *testing.T) {
 			// initialization
 			config := azureBlobUploadOptions{
 				JSONCredentialsAzure: `faulty json`,
-				FilePath: "nonExistingFilepath",
+				FilePath:             "nonExistingFilepath",
 			}
 			// test
 			_, err := setup(&config)
 			// assert
-			assert.EqualError(t, err, "Could not read JSONCredentialsAzure: invalid character '}' looking for beginning of object key string")
+			assert.EqualError(t, err, "Could not read JSONCredentialsAzure: invalid character 'u' in literal false (expecting 'l')")
 		})
 	})
 }
