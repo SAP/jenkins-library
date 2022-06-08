@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -110,7 +109,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				log.RegisterHook(logCollector)
 			}
 
-			if err = log.RegisterANSHookIfConfigured(ans.Configuration(GeneralConfig.HookConfig.ANSConfig), GeneralConfig.CorrelationID); err != nil {
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
 				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 

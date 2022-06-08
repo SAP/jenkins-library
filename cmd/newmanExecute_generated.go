@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -149,7 +148,7 @@ func NewmanExecuteCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
-			if err = log.RegisterANSHookIfConfigured(ans.Configuration(GeneralConfig.HookConfig.ANSConfig), GeneralConfig.CorrelationID); err != nil {
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
 				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
