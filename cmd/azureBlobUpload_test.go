@@ -65,7 +65,7 @@ func TestRunAzureBlobUpload(t *testing.T) {
 		})
 	})
 
-	t.Run("bad tests", func(t *testing.T) {
+	t.Run("negative tests", func(t *testing.T) {
 		t.Parallel()
 
 		t.Run("error path", func(t *testing.T) {
