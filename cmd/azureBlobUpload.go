@@ -15,24 +15,24 @@ import (
 )
 
 // AzureContainerAPI is used to mock Azure containerClients in unit tests
-type AzureContainerAPI interface {
+type azureContainerAPI interface {
 	NewBlockBlobClient(blobName string) (*azblob.BlockBlobClient, error)
 }
 
 // newBlockBlobClient creates a blockBlobClient from a containerClient
-func newBlockBlobClient(blobName string, api AzureContainerAPI) (*azblob.BlockBlobClient, error) {
+func newBlockBlobClient(blobName string, api azureContainerAPI) (*azblob.BlockBlobClient, error) {
 	return api.NewBlockBlobClient(blobName)
 }
 
-// UploadFile uploads a file to an Azure Blob Storage
+// uploadFileFunc uploads a file to an Azure Blob Storage
 // The function uses the UploadFile function from the Azure SDK
 // We introduce this 'wrapper' for mocking reasons
-func UploadFile(ctx context.Context, blobClient *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
+func uploadFileFunc(ctx context.Context, blobClient *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
 	return blobClient.UploadFile(ctx, file, o)
 }
 
 // Struct to store Azure credentials from specified JSON string
-type AzureCredentials struct {
+type azureCredentials struct {
 	SASToken    string `json:"sas_token" validate:"required"`
 	AccountName string `json:"account_name" validate:"required"`
 	Container   string `json:"container_name" validate:"required"`
@@ -50,13 +50,13 @@ func runAzureBlobUpload(config *azureBlobUploadOptions) error {
 	if err != nil {
 		return err
 	}
-	return executeUpload(config, containerClient, UploadFile)
+	return executeUpload(config, containerClient, uploadFileFunc)
 }
 
 func setup(config *azureBlobUploadOptions) (*azblob.ContainerClient, error) {
 	// Read credentials from JSON String
 	log.Entry().Infoln("Start reading Azure Credentials")
-	var creds AzureCredentials
+	var creds azureCredentials
 
 	err := json.Unmarshal([]byte(config.JSONCredentialsAzure), &creds)
 	if err != nil {
@@ -87,7 +87,7 @@ func setup(config *azureBlobUploadOptions) (*azblob.ContainerClient, error) {
 }
 
 // Validate validates the Azure credentials (checks for empty fields in struct)
-func validate(creds *AzureCredentials) error {
+func validate(creds *azureCredentials) error {
 	validate := validator.New()
 	if err := validate.Struct(creds); err != nil {
 		return err
@@ -95,7 +95,7 @@ func validate(creds *AzureCredentials) error {
 	return nil
 }
 
-func executeUpload(config *azureBlobUploadOptions, containerClient AzureContainerAPI, UploadFunc func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
+func executeUpload(config *azureBlobUploadOptions, containerClient azureContainerAPI, UploadFunc func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
 	log.Entry().Infof("Starting walk through FilePath '%v'", config.FilePath)
 
 	// All Blob Operations operate with context.Context, in our case the clients do not expire
