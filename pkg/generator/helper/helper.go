@@ -65,7 +65,6 @@ import (
 	{{ end -}}
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/ans"
 	{{ if .ExportPrefix -}}
 	{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"
 	{{ end -}}
@@ -151,7 +150,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
-			if err = log.RegisterANSHookIfConfigured(ans.Configuration({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.ANSConfig), {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID); err != nil {
+			if err = log.RegisterANSHookIfConfigured({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID); err != nil {
 				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
