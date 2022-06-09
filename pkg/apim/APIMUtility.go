@@ -3,13 +3,12 @@ package apim
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
+	"github.com/pasztorpisti/qs"
 	"github.com/pkg/errors"
 )
 
@@ -69,15 +68,10 @@ func (apim *Bundle) IsPayloadJSON() bool {
 
 func (odataFilters *OdataParameters) MakeOdataQuery() (string, error) {
 
-	odataFiltersIt := reflect.ValueOf(odataFilters).Elem()
-	typeOfS := odataFiltersIt.Type()
-	urlParam := url.Values{}
-	for i := 0; i < odataFiltersIt.NumField(); i++ {
-		structVal := fmt.Sprintf("%v", odataFiltersIt.Field(i).Interface())
-		if structVal != "" {
-			urlParam.Set(strings.ToLower(typeOfS.Field(i).Name), structVal)
-		}
-	}
-	resultQuery := "?" + strings.ReplaceAll(urlParam.Encode(), "&", "&$")
-	return resultQuery, nil
+	customMarshaler := qs.NewMarshaler(&qs.MarshalOptions{
+		DefaultMarshalPresence: qs.OmitEmpty,
+	})
+	values, encodeErr := customMarshaler.Marshal(odataFilters)
+	values = "?" + strings.ReplaceAll(values, "&", "&$")
+	return values, encodeErr
 }
