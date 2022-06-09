@@ -95,7 +95,7 @@ func validate(creds *azureCredentials) error {
 	return nil
 }
 
-func executeUpload(config *azureBlobUploadOptions, containerClient azureContainerAPI, UploadFunc func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
+func executeUpload(config *azureBlobUploadOptions, containerClient azureContainerAPI, uploadFunc func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
 	log.Entry().Infof("Starting walk through FilePath '%v'", config.FilePath)
 
 	// All Blob Operations operate with context.Context, in our case the clients do not expire
