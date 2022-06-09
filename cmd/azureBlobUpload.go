@@ -132,7 +132,7 @@ func executeUpload(config *azureBlobUploadOptions, containerClient azureContaine
 
 			// Upload File
 			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
-			_, e = UploadFunc(ctx, blockBlobClient, data, azblob.UploadOption{})
+			_, e = uploadFunc(ctx, blockBlobClient, data, azblob.UploadOption{})
 			if e != nil {
 				log.SetErrorCategory(log.ErrorService)
 				return fmt.Errorf("There was an error during the upload of file '%v': %w", currentFilePath, e)
