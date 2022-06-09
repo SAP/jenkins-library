@@ -51,7 +51,7 @@ func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomDat
 func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
 	// check input data
 	// example for script: sources: ["./script.sh"]
-	for _, source := range config.Sources {
+	for position, source := range config.Sources {
 
 		if strings.Contains(source, "https") {
 			scriptLocation, err := downloadScript(config, utils, source)
@@ -70,9 +70,15 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 			log.Entry().WithError(err).Errorf("the script '%v' could not be found: %v", source, err)
 			return fmt.Errorf("the script '%v' could not be found", source)
 		}
+
+		args := []string{}
+		if isArgumentAtPosition(config.ScriptArguments, position) {
+			args = strings.Split(config.ScriptArguments[position], " ")
+		}
+
 		log.Entry().Info("starting running script:", source)
 
-		err = utils.RunExecutable(source)
+		err = utils.RunExecutable(source, args...)
 		if err != nil {
 			log.Entry().Errorln("starting running script:", source)
 		}
@@ -94,6 +100,10 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	}
 
 	return nil
+}
+
+func isArgumentAtPosition(scriptArguments []string, index int) bool {
+	return ((len(scriptArguments) > index) && scriptArguments[index] != "")
 }
 
 func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
