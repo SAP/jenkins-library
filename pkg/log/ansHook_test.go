@@ -17,18 +17,23 @@ import (
 )
 
 func TestANSHook_Levels(t *testing.T) {
-	// hook, _ := registerANSHookIfConfigured(defaultConfiguration(), "", &ansMock{})
-	// assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
-	// 	hook.Levels())
+
+	hook := &ANSHook{client: defaultClient(), eventTemplate: defaultEvent()}
+
+	t.Run("good", func(t *testing.T) {
+		t.Run("default hook levels", func(t *testing.T) {
+			assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}, hook.Levels())
+		})
+	})
 }
 
 func TestANSHook_setupEventTemplate(t *testing.T) {
 	t.Run("good", func(t *testing.T) {
-		t.Run("setup event without template", func(t *testing.T) {
+		t.Run("setup event without customer template", func(t *testing.T) {
 			event, _ := setupEventTemplate("", defaultCorrelationID())
 			assert.Equal(t, defaultEvent(), event, "unexpected event data")
 		})
-		t.Run("setup event from default template", func(t *testing.T) {
+		t.Run("setup event from default customer template", func(t *testing.T) {
 			event, _ := setupEventTemplate(customerEventString(), defaultCorrelationID())
 			assert.Equal(t, defaultEvent(), event, "unexpected event data")
 		})
@@ -38,20 +43,20 @@ func TestANSHook_setupEventTemplate(t *testing.T) {
 		})
 		t.Run("setup event with severity", func(t *testing.T) {
 			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Severity": "WARNING"}), defaultCorrelationID())
-			assert.Equal(t, "", event.Severity, "unexpected severity  data")
+			assert.Equal(t, "", event.Severity, "unexpected severity data")
 		})
 		t.Run("setup event with invalid category", func(t *testing.T) {
 			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Category": "invalid"}), defaultCorrelationID())
-			assert.Equal(t, "", event.Category, "unexpected event data")
+			assert.Equal(t, "", event.Category, "unexpected category data")
 		})
 		t.Run("setup event with priority", func(t *testing.T) {
 			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Priority": "1"}), defaultCorrelationID())
-			assert.Equal(t, 1, event.Priority, "unexpected event data")
+			assert.Equal(t, 1, event.Priority, "unexpected priority data")
 		})
 		t.Run("setup event with omitted priority 0", func(t *testing.T) {
 			event, err := setupEventTemplate(customerEventString(map[string]interface{}{"Priority": "0"}), defaultCorrelationID())
 			assert.Equal(t, nil, err, "priority 0 must not fail")
-			assert.Equal(t, 0, event.Priority, "unexpected priority data ")
+			assert.Equal(t, 0, event.Priority, "unexpected priority data")
 		})
 	})
 
@@ -240,14 +245,7 @@ func defaultCorrelationID() string {
 }
 
 func customerEventString(params ...interface{}) string {
-	event := ans.Event{
-		EventType: "Piper",
-		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
-		Resource: &ans.Resource{
-			ResourceType: "Pipeline",
-			ResourceName: "Pipeline",
-		},
-	}
+	event := defaultEvent()
 
 	additionalFields := make(map[string]interface{})
 
@@ -281,13 +279,13 @@ func customerEventString(params ...interface{}) string {
 		}
 	}
 
-	b, err := json.Marshal(event)
+	marshaled, err := json.Marshal(event)
 	if err != nil {
 		panic(fmt.Sprintf("cannot marshal customer event: %v", err))
 	}
 
 	if len(additionalFields) > 0 {
-		closingBraceIdx := bytes.LastIndexByte(b, '}')
+		closingBraceIdx := bytes.LastIndexByte(marshaled, '}')
 		for key, value := range additionalFields {
 			var entry string
 			switch value.(type) {
@@ -300,16 +298,19 @@ func customerEventString(params ...interface{}) string {
 			}
 
 			add := []byte(entry)
-			b = append(b[:closingBraceIdx], add...)
+			marshaled = append(marshaled[:closingBraceIdx], add...)
 		}
-		b = append(b, '}')
+		marshaled = append(marshaled, '}')
 	}
 
-	return string(b)
-
+	return string(marshaled)
 }
 
-func defaultEvent(params ...interface{}) ans.Event {
+func defaultClient() *ansMock {
+	return &ansMock{}
+}
+
+func defaultEvent() ans.Event {
 	event := ans.Event{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
