@@ -17,11 +17,11 @@ type ANSHook struct {
 }
 
 // RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
-func RegisterANSHookIfConfigured(config ans.Configuration, correlationID string) error {
-	return registerANSHookIfConfigured(config, correlationID, &ans.ANS{})
+func RegisterANSHookIfConfigured(correlationID string) error {
+	return registerANSHookIfConfigured(correlationID, &ans.ANS{})
 }
 
-func registerANSHookIfConfigured(config ans.Configuration, correlationID string, ansClient ans.Client) error {
+func registerANSHookIfConfigured(correlationID string, ansClient ans.Client) error {
 	ansServiceKeyJSON := os.Getenv("PIPER_ansHookServiceKey")
 	if len(ansServiceKeyJSON) == 0 {
 		return nil
@@ -38,7 +38,7 @@ func registerANSHookIfConfigured(config ans.Configuration, correlationID string,
 		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
 	}
 
-	if eventTemplate, err := setupEventTemplate(config, correlationID); err != nil {
+	if eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID); err != nil {
 		return err
 	} else {
 		RegisterHook(&ANSHook{
@@ -49,7 +49,7 @@ func registerANSHookIfConfigured(config ans.Configuration, correlationID string,
 	return nil
 }
 
-func setupEventTemplate(config ans.Configuration, correlationID string) (ans.Event, error) {
+func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event, error) {
 	event := ans.Event{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
@@ -58,10 +58,11 @@ func setupEventTemplate(config ans.Configuration, correlationID string) (ans.Eve
 			ResourceName: "Pipeline",
 		},
 	}
-	if len(config.EventTemplate) > 0 {
-		if err := event.MergeWithJSON([]byte(config.EventTemplate)); err != nil {
-			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
-			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", config.EventTemplate)
+
+	if len(customerEventTemplate) > 0 {
+		if err := event.MergeWithJSON([]byte(customerEventTemplate)); err != nil {
+			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", customerEventTemplate, err)
+			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", customerEventTemplate)
 		}
 	}
 	if len(event.Severity) > 0 {

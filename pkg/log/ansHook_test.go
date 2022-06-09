@@ -25,31 +25,31 @@ func TestANSHook_Levels(t *testing.T) {
 func TestANSHook_setupEventTemplate(t *testing.T) {
 	t.Run("good", func(t *testing.T) {
 		t.Run("setup event without template", func(t *testing.T) {
-			event, _ := setupEventTemplate(createConfiguration(), defaultCorrelationID())
+			event, _ := setupEventTemplate("", defaultCorrelationID())
 			assert.Equal(t, defaultEvent(), event, "unexpected event data")
 		})
 		t.Run("setup event from default template", func(t *testing.T) {
-			event, _ := setupEventTemplate(createConfiguration(customerEventString()), defaultCorrelationID())
+			event, _ := setupEventTemplate(customerEventString(), defaultCorrelationID())
 			assert.Equal(t, defaultEvent(), event, "unexpected event data")
 		})
 		t.Run("setup event with category", func(t *testing.T) {
-			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Category": "ALERT"})), defaultCorrelationID())
+			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Category": "ALERT"}), defaultCorrelationID())
 			assert.Equal(t, "", event.Category, "unexpected category data")
 		})
 		t.Run("setup event with severity", func(t *testing.T) {
-			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Severity": "WARNING"})), defaultCorrelationID())
+			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Severity": "WARNING"}), defaultCorrelationID())
 			assert.Equal(t, "", event.Severity, "unexpected severity  data")
 		})
 		t.Run("setup event with invalid category", func(t *testing.T) {
-			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Category": "invalid"})), defaultCorrelationID())
+			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Category": "invalid"}), defaultCorrelationID())
 			assert.Equal(t, "", event.Category, "unexpected event data")
 		})
 		t.Run("setup event with priority", func(t *testing.T) {
-			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Priority": "1"})), defaultCorrelationID())
+			event, _ := setupEventTemplate(customerEventString(map[string]interface{}{"Priority": "1"}), defaultCorrelationID())
 			assert.Equal(t, 1, event.Priority, "unexpected event data")
 		})
 		t.Run("setup event with omitted priority 0", func(t *testing.T) {
-			event, err := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Priority": "0"})), defaultCorrelationID())
+			event, err := setupEventTemplate(customerEventString(map[string]interface{}{"Priority": "0"}), defaultCorrelationID())
 			assert.Equal(t, nil, err, "priority 0 must not fail")
 			assert.Equal(t, 0, event.Priority, "unexpected priority data ")
 		})
@@ -57,11 +57,11 @@ func TestANSHook_setupEventTemplate(t *testing.T) {
 
 	t.Run("bad", func(t *testing.T) {
 		t.Run("setup event with invalid priority", func(t *testing.T) {
-			_, err := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Priority": "-1"})), defaultCorrelationID())
+			_, err := setupEventTemplate(customerEventString(map[string]interface{}{"Priority": "-1"}), defaultCorrelationID())
 			assert.Contains(t, err.Error(), "Priority must be 1 or greater", "unexpected error text")
 		})
 		t.Run("setup event with invalid variable name", func(t *testing.T) {
-			_, err := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Invalid": "invalid"})), defaultCorrelationID())
+			_, err := setupEventTemplate(customerEventString(map[string]interface{}{"Invalid": "invalid"}), defaultCorrelationID())
 			assert.Contains(t, err.Error(), "could not be unmarshalled", "unexpected error text")
 		})
 	})
@@ -128,11 +128,8 @@ func TestANSHook_newANSHook(t *testing.T) {
 				defer os.Remove(testEventTemplateFilePath)
 			}
 
-			ansConfig := ans.Configuration{
-				EventTemplate: tt.args.eventTemplate,
-			}
 			clientMock := ansMock{checkErr: tt.checkErr}
-			if err := registerANSHookIfConfigured(ansConfig, testCorrelationID, &clientMock); err != nil {
+			if err := registerANSHookIfConfigured(testCorrelationID, &clientMock); err != nil {
 				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
@@ -242,38 +239,8 @@ func defaultCorrelationID() string {
 	return testCorrelationID
 }
 
-func createConfiguration(events ...string) ans.Configuration {
-	config := ans.Configuration{}
-	if len(events) > 0 {
-		config.EventTemplate = events[0]
-	}
-	return config
-}
-
-type FakeEvent ans.Event
-
-var marshalAdditionalFields map[string]interface{}
-
-func (b FakeEvent) MarshalJSON() ([]byte, error) {
-
-	// m := make(map[string]interface{})
-	// m["Event"] = ans.Event(b)
-
-	// if marshalAdditionalFields != nil {
-	// 	for key, value := range marshalAdditionalFields {
-	// 		m[key] = value
-	// 	}
-	// }
-
-	return json.Marshal(struct {
-		ans.Event
-	}{
-		Event: ans.Event(b),
-	})
-}
-
 func customerEventString(params ...interface{}) string {
-	event := FakeEvent{
+	event := ans.Event{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
 		Resource: &ans.Resource{
@@ -314,27 +281,23 @@ func customerEventString(params ...interface{}) string {
 		}
 	}
 
-	// if len(additionalFields) > 0 {
-	// 	marshalAdditionalFields = additionalFields
-	// }
-
 	b, err := json.Marshal(event)
 	if err != nil {
 		panic(fmt.Sprintf("cannot marshal customer event: %v", err))
 	}
-	// marshalAdditionalFields = nil
 
 	if len(additionalFields) > 0 {
 		closingBraceIdx := bytes.LastIndexByte(b, '}')
 		for key, value := range additionalFields {
-			var jvalue string
+			var entry string
 			switch value.(type) {
+			default:
+				panic(fmt.Sprintf("invalid key value type: %v", key))
 			case string:
-				jvalue = value.(string)
+				entry = `, "` + key + `": "` + value.(string) + `"`
 			case int:
-				jvalue = strconv.Itoa(value.(int))
+				entry = `, "` + key + `": "` + strconv.Itoa(value.(int)) + `"`
 			}
-			entry := `, "` + key + `": "` + jvalue + `"`
 
 			add := []byte(entry)
 			b = append(b[:closingBraceIdx], add...)
