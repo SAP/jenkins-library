@@ -1,6 +1,7 @@
 package log
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
@@ -9,14 +10,61 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
+	"reflect"
+	"strconv"
 	"testing"
 	"time"
 )
 
 func TestANSHook_Levels(t *testing.T) {
-	hook, _ := newANSHook(ans.Configuration{}, "", &ansMock{})
-	assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
-		hook.Levels())
+	// hook, _ := registerANSHookIfConfigured(defaultConfiguration(), "", &ansMock{})
+	// assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel},
+	// 	hook.Levels())
+}
+
+func TestANSHook_setupEventTemplate(t *testing.T) {
+	t.Run("good", func(t *testing.T) {
+		t.Run("setup event without template", func(t *testing.T) {
+			event, _ := setupEventTemplate(createConfiguration(), defaultCorrelationID())
+			assert.Equal(t, defaultEvent(), event, "unexpected event data")
+		})
+		t.Run("setup event from default template", func(t *testing.T) {
+			event, _ := setupEventTemplate(createConfiguration(customerEventString()), defaultCorrelationID())
+			assert.Equal(t, defaultEvent(), event, "unexpected event data")
+		})
+		t.Run("setup event with category", func(t *testing.T) {
+			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Category": "ALERT"})), defaultCorrelationID())
+			assert.Equal(t, "", event.Category, "unexpected category data")
+		})
+		t.Run("setup event with severity", func(t *testing.T) {
+			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Severity": "WARNING"})), defaultCorrelationID())
+			assert.Equal(t, "", event.Severity, "unexpected severity  data")
+		})
+		t.Run("setup event with invalid category", func(t *testing.T) {
+			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Category": "invalid"})), defaultCorrelationID())
+			assert.Equal(t, "", event.Category, "unexpected event data")
+		})
+		t.Run("setup event with priority", func(t *testing.T) {
+			event, _ := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Priority": "1"})), defaultCorrelationID())
+			assert.Equal(t, 1, event.Priority, "unexpected event data")
+		})
+		t.Run("setup event with omitted priority 0", func(t *testing.T) {
+			event, err := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Priority": "0"})), defaultCorrelationID())
+			assert.Equal(t, nil, err, "priority 0 must not fail")
+			assert.Equal(t, 0, event.Priority, "unexpected priority data ")
+		})
+	})
+
+	t.Run("bad", func(t *testing.T) {
+		t.Run("setup event with invalid priority", func(t *testing.T) {
+			_, err := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Priority": "-1"})), defaultCorrelationID())
+			assert.Contains(t, err.Error(), "Priority must be 1 or greater", "unexpected error text")
+		})
+		t.Run("setup event with invalid variable name", func(t *testing.T) {
+			_, err := setupEventTemplate(createConfiguration(customerEventString(map[string]interface{}{"Invalid": "invalid"})), defaultCorrelationID())
+			assert.Contains(t, err.Error(), "could not be unmarshalled", "unexpected error text")
+		})
+	})
 }
 
 func TestANSHook_newANSHook(t *testing.T) {
@@ -81,17 +129,15 @@ func TestANSHook_newANSHook(t *testing.T) {
 			}
 
 			ansConfig := ans.Configuration{
-				ServiceKey:            tt.args.serviceKey,
-				EventTemplateFilePath: testEventTemplateFilePath,
-				EventTemplate:         tt.args.eventTemplate,
+				EventTemplate: tt.args.eventTemplate,
 			}
 			clientMock := ansMock{checkErr: tt.checkErr}
-			if got, err := newANSHook(ansConfig, testCorrelationID, &clientMock); err != nil {
+			if err := registerANSHookIfConfigured(ansConfig, testCorrelationID, &clientMock); err != nil {
 				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
 				assert.Equal(t, defaultANSClient(), clientMock.a, "new ANSHook not as expected")
-				assert.Equal(t, tt.wantEvent, got.eventTemplate, "new ANSHook not as expected")
+				//				assert.Equal(t, tt.wantEvent, got.eventTemplate, "new ANSHook not as expected")
 			}
 		})
 	}
@@ -192,8 +238,42 @@ const defaultServiceKeyJSON = `{"url": "https://my.test.backend", "client_id": "
 
 var defaultTime = time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC)
 
-func defaultEvent() ans.Event {
-	return ans.Event{
+func defaultCorrelationID() string {
+	return testCorrelationID
+}
+
+func createConfiguration(events ...string) ans.Configuration {
+	config := ans.Configuration{}
+	if len(events) > 0 {
+		config.EventTemplate = events[0]
+	}
+	return config
+}
+
+type FakeEvent ans.Event
+
+var marshalAdditionalFields map[string]interface{}
+
+func (b FakeEvent) MarshalJSON() ([]byte, error) {
+
+	// m := make(map[string]interface{})
+	// m["Event"] = ans.Event(b)
+
+	// if marshalAdditionalFields != nil {
+	// 	for key, value := range marshalAdditionalFields {
+	// 		m[key] = value
+	// 	}
+	// }
+
+	return json.Marshal(struct {
+		ans.Event
+	}{
+		Event: ans.Event(b),
+	})
+}
+
+func customerEventString(params ...interface{}) string {
+	event := FakeEvent{
 		EventType: "Piper",
 		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
 		Resource: &ans.Resource{
@@ -201,7 +281,83 @@ func defaultEvent() ans.Event {
 			ResourceName: "Pipeline",
 		},
 	}
+
+	additionalFields := make(map[string]interface{})
+
+	if len(params) > 0 {
+		for i := 0; i < len(params); i++ {
+			switch params[i].(type) {
+			case map[string]interface{}:
+				{
+					m := params[i].(map[string]interface{})
+					for key, value := range m {
+						obj := reflect.Indirect(reflect.ValueOf(&event))
+						if field := obj.FieldByName(key); field != (reflect.Value{}) {
+							switch field.Kind() {
+							case reflect.String:
+								field.SetString(value.(string))
+							case reflect.Int:
+								switch value.(type) {
+								case string:
+									v, _ := strconv.Atoi(value.(string))
+									field.SetInt(int64(v))
+								case int:
+									field.SetInt(int64((value).(int)))
+								}
+							}
+						} else {
+							additionalFields[key] = value
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// if len(additionalFields) > 0 {
+	// 	marshalAdditionalFields = additionalFields
+	// }
+
+	b, err := json.Marshal(event)
+	if err != nil {
+		panic(fmt.Sprintf("cannot marshal customer event: %v", err))
+	}
+	// marshalAdditionalFields = nil
+
+	if len(additionalFields) > 0 {
+		closingBraceIdx := bytes.LastIndexByte(b, '}')
+		for key, value := range additionalFields {
+			var jvalue string
+			switch value.(type) {
+			case string:
+				jvalue = value.(string)
+			case int:
+				jvalue = strconv.Itoa(value.(int))
+			}
+			entry := `, "` + key + `": "` + jvalue + `"`
+
+			add := []byte(entry)
+			b = append(b[:closingBraceIdx], add...)
+		}
+		b = append(b, '}')
+	}
+
+	return string(b)
+
 }
+
+func defaultEvent(params ...interface{}) ans.Event {
+	event := ans.Event{
+		EventType: "Piper",
+		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
+		Resource: &ans.Resource{
+			ResourceType: "Pipeline",
+			ResourceName: "Pipeline",
+		},
+	}
+	return event
+}
+
 func defaultResultingEvent() ans.Event {
 	return ans.Event{
 		EventType:      "Piper",

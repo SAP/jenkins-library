@@ -61,6 +61,7 @@ func setupEventTemplate(config ans.Configuration, correlationID string) (ans.Eve
 	if len(config.EventTemplate) > 0 {
 		if err := event.MergeWithJSON([]byte(config.EventTemplate)); err != nil {
 			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", config.EventTemplate, err)
+			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", config.EventTemplate)
 		}
 	}
 	if len(event.Severity) > 0 {

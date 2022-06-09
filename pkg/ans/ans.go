@@ -21,8 +21,7 @@ type ANS struct {
 
 // Configuration defines the configuration options for the SAP Alert Notification Service on BTP
 type Configuration struct {
-	EventTemplateFilePath string `json:"eventTemplateFilePath,omitempty"`
-	EventTemplate         string `json:"eventTemplate,omitempty"`
+	EventTemplate string `json:"eventTemplate,omitempty"`
 }
 
 // Client to send the event to the SAP Alert Notification Service
