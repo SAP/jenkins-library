@@ -305,7 +305,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 					{
 						Name:        "rootProjectConfig",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"STAGES", "STEPS"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "rootProject"}},
@@ -313,7 +313,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 					{
 						Name:        "subprojectsCommonConfig",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"STAGES", "STEPS"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "subprojectsCommon"}},
@@ -321,7 +321,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 					{
 						Name:        "subprojectsCustomConfigs",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"STAGES", "STEPS"},
 						Type:        "[]map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "subprojectsCommon"}},

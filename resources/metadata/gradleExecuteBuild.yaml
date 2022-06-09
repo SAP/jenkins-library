@@ -108,7 +108,6 @@ spec:
           - name: rootProject
         type: "map[string]interface{}"
         scope:
-          - PARAMETERS
           - STAGES
           - STEPS
       - name: subprojectsCommonConfig
@@ -116,7 +115,6 @@ spec:
         - name: subprojectsCommon
         type: "map[string]interface{}"
         scope:
-          - PARAMETERS
           - STAGES
           - STEPS
       - name: subprojectsCustomConfigs
@@ -124,7 +122,6 @@ spec:
           - name: subprojectsCommon
         type: "[]map[string]interface{}"
         scope:
-          - PARAMETERS
           - STAGES
           - STEPS
       - name: useWrapper

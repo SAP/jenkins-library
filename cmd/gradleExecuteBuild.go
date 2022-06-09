@@ -161,33 +161,33 @@ subprojects {
 )
 
 const rootProjectProperties = `
-rootPluginsList={{ or .pluginsList 'java-library,jacoco'}}
-rootComponent={{ or .component 'java'}}
-rootUseDeclaredVersioning={{ or .useDeclaredVersioning false}}
-rootPublish={{ or .publish false}}
-rootArtifactId={{ .artifactId }}
-rootGroupId={{ .groupId }}
-rootVersion={{ .version }}
-rootCreateBOM={{ or .createBOM false}}
+rootPluginsList={{ or .pluginsList "java-library,jacoco"}}
+rootComponent={{ or .component "java"}}
+rootArtifactId={{ or .artifactId ""}}
+rootGroupId={{ or .groupId ""}}
+rootVersion={{ or .version ""}}
+{{if eq false .createBOM}}rootCreateBOM=false{{end}}{{if .createBOM}}rootCreateBOM={{.createBOM}}{{end}}
+{{if eq false .useDeclaredVersioning}}rootUseDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}rootUseDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
+{{if eq false .publish}}rootPublish=false{{end}}{{if .publish}}rootPublish={{.publish}}{{end}}
 `
 const subprojectCommonProperties = `
-subprojectsPluginsList={{ or .pluginsList 'java-library,jacoco'}}
-subprojectsComponent={{ or .component 'java'}}
-subprojectsUseDeclaredVersioning={{ or .useDeclaredVersioning false}}
-subprojectsVersion={{ .version}}
-subprojectsGroupId={{ .groupId}}
-subprojectsCreateBOM={{ or .createBOM false}}
-subprojectsPublish={{ or .publish false}}
+subprojectsPluginsList={{ or .pluginsList "java-library,jacoco"}}
+subprojectsComponent={{ or .component "java"}}
+subprojectsVersion={{ or .version ""}}
+subprojectsGroupId={{ or .groupId ""}}
+{{if eq false .publish}}subprojectsPublish=false{{end}}{{if .publish}}subprojectsPublish={{.publish}}{{end}}
+{{if eq false .createBOM}}subprojectsCreateBOM=false{{end}}{{if .createBOM}}subprojectsCreateBOM={{.createBOM}}{{end}}
+{{if eq false .useDeclaredVersioning}}subprojectsUseDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}subprojectsUseDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
 `
 const subprojectCustomProperties = `
-{{.projectName}}--pluginsList={{.pluginsList}}
-{{.projectName}}--publish={{.publish}}
-{{.projectName}}--useDeclaredVersioning={{.useDeclaredVersioning}}
-{{.projectName}}--component={{.component}}
-{{.projectName}}--version={{.version}}
-{{.projectName}}--artifactId={{.artifactId}}
-{{.projectName}}--groupId={{.groupId}}
-{{.projectName}}--createBOM={{.createBOM}}
+{{.projectName}}--pluginsList={{or .pluginsList ""}}
+{{.projectName}}--component={{or .component ""}}
+{{.projectName}}--version={{or .version ""}}
+{{.projectName}}--artifactId={{or .artifactId ""}}
+{{.projectName}}--groupId={{or .groupId ""}}
+{{if eq false .publish}}{{.projectName}}--publish=false{{end}}{{if .publish}}{{.projectName}}--publish={{.publish}}{{end}}
+{{if eq false .createBOM}}{{.projectName}}--createBOM=false{{end}}{{if .createBOM}}{{.projectName}}--createBOM={{.createBOM}}{{end}}
+{{if eq false .useDeclaredVersioning}}{{.projectName}}--useDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}{{.projectName}}--useDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
 `
 
 type gradleExecuteBuildUtils interface {
@@ -302,7 +302,7 @@ func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]
 		if err != nil {
 			return errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
 		}
-		if !exists {
+		if exists {
 			properties, err = fileUtils.FileRead(gradlePropertiesFile)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
