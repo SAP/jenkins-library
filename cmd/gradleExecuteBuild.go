@@ -15,17 +15,19 @@ import (
 )
 
 const (
-	bomGradleTaskName         = "cyclonedxBom"
-	publishTaskName           = "publish"
-	tasksTaskName             = "tasks"
-	initScriptContentTemplate = `
+	originalGradlePropertiesFile  = "gradle.properties"
+	temporaryGradlePropertiesFile = "gradle.properties.tmp"
+	bomGradleTaskName             = "cyclonedxBom"
+	publishTaskName               = "publish"
+	tasksTaskName                 = "tasks"
+	initScriptContentTemplate     = `
 initscript {
   repositories {
     mavenCentral()
     maven {
       url "https://plugins.gradle.org/m2/"
     }
-		maven {
+    maven {
       url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
   }
@@ -218,11 +220,55 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 	}
 }
 
+func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) error {
+	if exists, err := utils.FileExists(oldName); err != nil {
+		return errors.Wrapf(err, "unable to check %s file existance", oldName)
+	} else {
+		if exists {
+			if err := utils.FileRename(oldName, oldName); err != nil {
+				return errors.Wrapf(err, "unable to rename %s file", oldName)
+			}
+		}
+	}
+	return nil
+}
+
+func safeRemoveFile(utils gradleExecuteBuildUtils, name string) error {
+	if exists, err := utils.FileExists(name); err != nil {
+		log.Entry().WithError(err).Errorf("unable to check %s file existance", name)
+	} else {
+		if exists {
+			if err := utils.FileRemove(name); err != nil {
+				log.Entry().WithError(err).Errorf("unable to remove %s file", name)
+			}
+		}
+	}
+	return nil
+}
+
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
-	err := extendProperties(config.GradlePropertiesFile, config.RootProjectConfig, config.SubprojectsCommonConfig, config.SubprojectsCustomConfigs, config.GradleSensitivePropertiesFile)
+	resultProperties, err := extendProperties(config.GradlePropertiesFile, config.RootProjectConfig, config.SubprojectsCommonConfig, config.SubprojectsCustomConfigs, config.GradleSensitivePropertiesFile)
 	if err != nil {
 		return err
 	}
+	//moving original gradle.properties to tmp file
+	if err := safeRenameFile(utils, originalGradlePropertiesFile, temporaryGradlePropertiesFile); err != nil {
+		return err
+	}
+	//then writing generated properties to gradle.properties
+	if err := fileUtils.FileWrite(originalGradlePropertiesFile, resultProperties, 0644); err != nil {
+		return errors.Wrapf(err, "failed to read file '%v'", originalGradlePropertiesFile)
+	}
+	//once done - removing generated properties and renaming origina gradle.properties back from tmp file
+	defer func() {
+		if err := safeRemoveFile(utils, originalGradlePropertiesFile); err != nil {
+			log.Entry().Error(err)
+		}
+		if err := safeRenameFile(utils, temporaryGradlePropertiesFile, originalGradlePropertiesFile); err != nil {
+			log.Entry().Error(err)
+		}
+	}()
+
 	initScriptContent, err := getInitScript(config)
 	if err != nil {
 		return fmt.Errorf("failed to get publish init script content: %v", err)
@@ -294,19 +340,20 @@ func getInitScript(options *gradleExecuteBuildOptions) (string, error) {
 	return string(generatedCode.Bytes()), nil
 }
 
-func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]interface{}, subprojectsCommonConfig map[string]interface{}, subprojectsCustomConfigs []map[string]interface{}, sensitiveProperties string) error {
-	properties := []byte(``)
+func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]interface{}, subprojectsCommonConfig map[string]interface{}, subprojectsCustomConfigs []map[string]interface{}, sensitiveProperties string) ([]byte, error) {
+	originalProperties := []byte(``)
 	var err error
 	if len(gradlePropertiesFile) > 0 {
 		exists, err := fileUtils.FileExists(gradlePropertiesFile)
 		if err != nil {
-			return errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
+			return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
 		}
-		if exists {
-			properties, err = fileUtils.FileRead(gradlePropertiesFile)
-			if err != nil {
-				return errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
-			}
+		if !exists {
+			return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
+		}
+		originalProperties, err = fileUtils.FileRead(gradlePropertiesFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
 		}
 	}
 	sensitiveProperties = "\n" + sensitiveProperties
@@ -314,27 +361,22 @@ func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]
 	tplSubprojectsCommonProps := template.Must(template.New("subprojectsCommonProps").Parse(subprojectCommonProperties))
 	tplSubprojectsCustomProps := template.Must(template.New("subprojectCustomProps").Parse(subprojectCustomProperties))
 
-	properties = append(properties, []byte(sensitiveProperties)...)
+	properties := append(originalProperties, []byte(sensitiveProperties)...)
 	properties, err = appendPropertiesByTemplate(properties, tplRootProps, rootProjectConfig)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate rootProject properties")
+		return nil, errors.Wrapf(err, "failed to generate rootProject properties")
 	}
 	properties, err = appendPropertiesByTemplate(properties, tplSubprojectsCommonProps, subprojectsCommonConfig)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate subprojects common properties")
+		return nil, errors.Wrapf(err, "failed to generate subprojects common properties")
 	}
 	for _, cfg := range subprojectsCustomConfigs {
 		properties, err = appendPropertiesByTemplate(properties, tplSubprojectsCustomProps, cfg)
 		if err != nil {
-			return errors.Wrapf(err, "failed to generate subprojects custom properties")
+			return nil, errors.Wrapf(err, "failed to generate subprojects custom properties")
 		}
 	}
-
-	resultGradlePropertiesFile := "gradle.properties"
-	if err := fileUtils.FileWrite(resultGradlePropertiesFile, properties, 0644); err != nil {
-		return errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
-	}
-	return nil
+	return properties, nil
 }
 
 func appendPropertiesByTemplate(source []byte, tpl *template.Template, config map[string]interface{}) ([]byte, error) {
