@@ -126,7 +126,6 @@ func TestRunAzureBlobUpload(t *testing.T) {
 			// initialization
 			config := azureBlobUploadOptions{
 				JSONCredentialsAzure: `faulty json`,
-				FilePath:             "nonExistingFilepath",
 			}
 			// test
 			_, err := setup(&config)
