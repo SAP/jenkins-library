@@ -51,6 +51,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: alias
+        type: string
+        description: |
+          Logical name used for this image.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: containerImageTag
         aliases:
           - name: artifactVersion
@@ -210,10 +219,12 @@ spec:
           dockerConfigJsonCredentialsId: CREDENTIALS
           multipleImages:
           - containerImageName: java-app
+            alias: java
             buildpacks:
             - "java"
             path: "source/java"
           - containerImageName: nodejs-app
+            alias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
             - "nodejs"
