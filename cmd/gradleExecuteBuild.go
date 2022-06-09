@@ -39,7 +39,7 @@ rootProject {
         rootComponent = project.hasProperty("rootComponent") ? project.getProperty("rootComponent") : 'java'
         rootArtifactId = project.hasProperty("rootArtifactId") ? project.getProperty("rootArtifactId") : ''
         rootGroupId = project.hasProperty("rootGroupId") ? project.getProperty("rootGroupId") : ''
-        rootArtifactVersion = project.hasProperty("rootArtifactVersion") ? project.getProperty("rootArtifactVersion") : ''
+        rootVersion = project.hasProperty("rootVersion") ? project.getProperty("rootVersion") : ''
         rootUseDeclaredVersioning = project.hasProperty("rootUseDeclaredVersioning") ? project.getProperty("rootUseDeclaredVersioning").toBoolean() : false
         rootCreateBOM = project.hasProperty("rootCreateBOM") ? project.getProperty("rootCreateBOM").toBoolean() : false
         rootPublish = project.hasProperty("rootPublish") ? project.getProperty("rootPublish").toBoolean() : false
@@ -57,7 +57,7 @@ rootProject {
         publishing {
             publications {
                 maven(MavenPublication) {
-                    if (!projectUseDeclaredVersioning){
+                    if (!rootUseDeclaredVersioning){
                         versionMapping {
                             usage('java-api') {
                                 fromResolutionOf('runtimeClasspath')
@@ -67,14 +67,14 @@ rootProject {
                             }
                         }
                     }
-                    if (projectArtifactId != '') {
-                        groupId = projectGroupId
+                    if (rootGroupId != '') {
+                        groupId = rootGroupId
                     }
-                    if (projectArtifactId != '') {
-                        artifactId = projectArtifactId
+                    if (rootArtifactId != '') {
+                        artifactId = rootArtifactId
                     }
-                    if (projectVersion != '') {
-                        version = projectVersion
+                    if (rootVersion != '') {
+                        version = rootVersion
                     }
                     from components[rootComponent]
                 }
@@ -161,23 +161,23 @@ subprojects {
 )
 
 const rootProjectProperties = `
-rootPluginsList={{ or .rootPluginsList 'java-library,jacoco'}}
-rootComponent={{ or .rootComponent 'java'}}
-rootUseDeclaredVersioning={{ or .rootUseDeclaredVersioning false}}
-rootPublish={{ or .rootPublish false}}
-rootArtifactId={{ .rootArtifactId }}
-rootGroupId={{ .rootGroupId }}
-rootArtifactVersion={{ .rootArtifactVersion }}
-rootCreateBOM={{ or .rootCreateBOM false}}
+rootPluginsList={{ or .pluginsList 'java-library,jacoco'}}
+rootComponent={{ or .component 'java'}}
+rootUseDeclaredVersioning={{ or .useDeclaredVersioning false}}
+rootPublish={{ or .publish false}}
+rootArtifactId={{ .artifactId }}
+rootGroupId={{ .groupId }}
+rootVersion={{ .version }}
+rootCreateBOM={{ or .createBOM false}}
 `
 const subprojectCommonProperties = `
-subprojectsPluginsList={{ or .subprojectsPluginsList 'java-library,jacoco'}}
-subprojectsComponent={{ or .subprojectsComponent 'java'}}
-subprojectsUseDeclaredVersioning={{ or .subprojectsUseDeclaredVersioning false}}
-subprojectsVersion={{ .subprojectsVersion}}
-subprojectsGroupId={{ .subprojectsGroupId}}
-subprojectsCreateBOM={{ or .subprojectsCreateBOM false}}
-subprojectsPublish={{ or .subprojectsPublish false}}
+subprojectsPluginsList={{ or .pluginsList 'java-library,jacoco'}}
+subprojectsComponent={{ or .component 'java'}}
+subprojectsUseDeclaredVersioning={{ or .useDeclaredVersioning false}}
+subprojectsVersion={{ .version}}
+subprojectsGroupId={{ .groupId}}
+subprojectsCreateBOM={{ or .createBOM false}}
+subprojectsPublish={{ or .publish false}}
 `
 const subprojectCustomProperties = `
 {{.projectName}}--pluginsList={{.pluginsList}}
