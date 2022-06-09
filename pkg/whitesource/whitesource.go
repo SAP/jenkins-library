@@ -556,13 +556,12 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 }
 
 // AddDefaultProjectTag
-func (s *System) AddDefaultProjectTag(userKey string, projectToken string) error {
+func (s *System) AddDefaultProjectTag(projectToken string) error {
 	projectTagKey := "scan_source"
 	projectTagValue := "piper.io"
 
 	req := Request{
 		RequestType:     "saveProjectTag",
-		UserKey:         userKey,
 		ProjectToken:    projectToken,
 		ProjectTagKey:   projectTagKey,
 		ProjectTagValue: projectTagValue,

@@ -125,7 +125,7 @@ func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library,
 }
 
 // AddDefaultProjectTag returns nil
-func (m *SystemMock) AddDefaultProjectTag(userKey string, projectToken string) error {
+func (m *SystemMock) AddDefaultProjectTag(projectToken string) error {
 	return nil
 }
 
