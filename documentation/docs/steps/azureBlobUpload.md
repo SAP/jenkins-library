@@ -23,7 +23,7 @@ For Example:
 }
 ```
 
-If the JSON string contains additional information, this is not a problem. These are automatically detected and skipped.
+If the JSON string contains additional information, this is not a problem. These are skipped.
 
 ## About Files/Directories to Upload
 
