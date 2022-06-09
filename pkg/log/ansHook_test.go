@@ -18,11 +18,13 @@ import (
 
 func TestANSHook_Levels(t *testing.T) {
 
-	hook := &ANSHook{client: defaultClient(), eventTemplate: defaultEvent()}
+	//	hook := &ANSHook{client: defaultClient(), eventTemplate: defaultEvent()}
+	registrationUtil := defaultRegistrationUtil()
 
 	t.Run("good", func(t *testing.T) {
 		t.Run("default hook levels", func(t *testing.T) {
-			assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}, hook.Levels())
+			registerANSHookIfConfigured(testCorrelationID, registrationUtil)
+			assert.Equal(t, []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}, registrationUtil.Hook.Levels())
 		})
 	})
 }
@@ -133,12 +135,14 @@ func TestANSHook_newANSHook(t *testing.T) {
 				defer os.Remove(testEventTemplateFilePath)
 			}
 
-			clientMock := ansMock{checkErr: tt.checkErr}
-			if err := registerANSHookIfConfigured(testCorrelationID, &clientMock); err != nil {
+			registrationUtil := defaultRegistrationUtil(map[string]interface{}{"CheckErr": tt.checkErr})
+
+			//			clientMock := ansMock{checkErr: tt.checkErr}
+			if err := registerANSHookIfConfigured(testCorrelationID, registrationUtil); err != nil {
 				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
 			} else {
 				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
-				assert.Equal(t, defaultANSClient(), clientMock.a, "new ANSHook not as expected")
+				//				assert.Equal(t, defaultANSClient(), clientMock.a, "new ANSHook not as expected")
 				//				assert.Equal(t, tt.wantEvent, got.eventTemplate, "new ANSHook not as expected")
 			}
 		})
@@ -217,9 +221,10 @@ func TestANSHook_Fire(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			clientMock := ansMock{}
+			registrationUtil := defaultRegistrationUtil()
+
 			ansHook := &ANSHook{
-				client:        &clientMock,
+				client:        registrationUtil,
 				eventTemplate: tt.fields.defaultEvent,
 				firing:        tt.fields.firing,
 			}
@@ -230,7 +235,7 @@ func TestANSHook_Fire(t *testing.T) {
 				}
 				assert.Equal(t, originalLogLevel.String(), entryArg.Level.String(), "Entry error level has been altered")
 			}
-			assert.Equal(t, tt.wantEvent, clientMock.event, "Event is not as expected.")
+			assert.Equal(t, tt.wantEvent, registrationUtil.Event, "Event is not as expected.")
 		})
 	}
 }
@@ -306,8 +311,88 @@ func customerEventString(params ...interface{}) string {
 	return string(marshaled)
 }
 
-func defaultClient() *ansMock {
-	return &ansMock{}
+type RegistrationUtilMock struct {
+	ans.Client
+	Event      ans.Event
+	ServiceKey ans.ServiceKey
+	SendErr    error
+	CheckErr   error
+	Hook       *ANSHook
+}
+
+func (m *RegistrationUtilMock) Send(event ans.Event) error {
+	m.Event = event
+	return m.SendErr
+}
+
+func (m *RegistrationUtilMock) CheckCorrectSetup() error {
+	return m.CheckErr
+}
+
+func (m *RegistrationUtilMock) SetServiceKey(serviceKey ans.ServiceKey) {
+	m.ServiceKey = serviceKey
+}
+
+func (m *RegistrationUtilMock) registerHook(hook *ANSHook) {
+	m.Hook = hook
+}
+
+func defaultRegistrationUtil(params ...interface{}) *RegistrationUtilMock {
+
+	mock := RegistrationUtilMock{}
+	if len(params) > 0 {
+		for i := 0; i < len(params); i++ {
+			pokeObject(&mock, params[i])
+		}
+	}
+	return &mock
+}
+
+func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
+
+	additionalFields := make(map[string]interface{})
+
+	switch param.(type) {
+	case map[string]interface{}:
+		{
+			m := param.(map[string]interface{})
+			v := reflect.ValueOf(obj)
+			iv := reflect.Indirect(v)
+			fmt.Printf("Obj ValueOf:  v:%v, v.i:%v, kind:%v, type:%v\n", v, v.Interface(), v.Kind(), v.Type())
+			fmt.Printf("Obj Indirect: v:%v, v.i:%v, kind:%v, type:%v\n", iv, iv.Interface(), iv.Kind(), v.Type())
+
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+				fmt.Printf("Obj Elem:     v:%v, v.i:%v, kind:%v, type:%v\n", v, v.Interface(), v.Kind(), v.Type())
+			}
+			for key, value := range m {
+				f := v.FieldByName(key)
+				fmt.Printf("Field(%v):    f:%v, kind:%v, type:%v\n", key, f, f.Kind(), v.Type())
+
+				if f != (reflect.Value{}) {
+					switch f.Kind() {
+					case reflect.String:
+						f.SetString(value.(string))
+					case reflect.Int:
+						switch value.(type) {
+						case string:
+							v, _ := strconv.Atoi(value.(string))
+							f.SetInt(int64(v))
+						case int:
+							f.SetInt(int64((value).(int)))
+						}
+					case reflect.Interface:
+						n := reflect.New(reflect.TypeOf(value))
+						n.Elem().Set(reflect.ValueOf(value))
+						f.Set(n)
+					}
+				} else {
+					additionalFields[key] = value
+				}
+			}
+		}
+	}
+	return additionalFields
 }
 
 func defaultEvent() ans.Event {
@@ -377,23 +462,22 @@ func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
 	return event1
 }
 
-type ansMock struct {
-	a        *ans.ANS
-	event    ans.Event
-	checkErr error
+type aansMock struct {
+	event      ans.Event
+	serviceKey ans.ServiceKey
+	sendErr    error
+	checkErr   error
 }
 
-func (am *ansMock) Send(event ans.Event) error {
+func (am *aansMock) Send(event ans.Event) error {
 	am.event = event
-	return nil
+	return am.sendErr
 }
 
-func (am *ansMock) CheckCorrectSetup() error {
+func (am *aansMock) CheckCorrectSetup() error {
 	return am.checkErr
 }
 
-func (am *ansMock) SetServiceKey(serviceKey ans.ServiceKey) {
-	a := &ans.ANS{}
-	a.SetServiceKey(serviceKey)
-	am.a = a
+func (am *aansMock) SetServiceKey(serviceKey ans.ServiceKey) {
+	am.serviceKey = serviceKey
 }

@@ -16,69 +16,6 @@ type ANSHook struct {
 	firing        bool
 }
 
-// RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
-func RegisterANSHookIfConfigured(correlationID string) error {
-	return registerANSHookIfConfigured(correlationID, &ans.ANS{})
-}
-
-func registerANSHookIfConfigured(correlationID string, ansClient ans.Client) error {
-	ansServiceKeyJSON := os.Getenv("PIPER_ansHookServiceKey")
-	if len(ansServiceKeyJSON) == 0 {
-		return nil
-	}
-
-	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(ansServiceKeyJSON)
-	if err != nil {
-		return errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
-	}
-	RegisterSecret(ansServiceKey.ClientSecret)
-
-	ansClient.SetServiceKey(ansServiceKey)
-	if err = ansClient.CheckCorrectSetup(); err != nil {
-		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
-	}
-
-	if eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID); err != nil {
-		return err
-	} else {
-		RegisterHook(&ANSHook{
-			client:        ansClient,
-			eventTemplate: eventTemplate,
-		})
-	}
-	return nil
-}
-
-func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event, error) {
-	event := ans.Event{
-		EventType: "Piper",
-		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
-		Resource: &ans.Resource{
-			ResourceType: "Pipeline",
-			ResourceName: "Pipeline",
-		},
-	}
-
-	if len(customerEventTemplate) > 0 {
-		if err := event.MergeWithJSON([]byte(customerEventTemplate)); err != nil {
-			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", customerEventTemplate, err)
-			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", customerEventTemplate)
-		}
-	}
-	if len(event.Severity) > 0 {
-		Entry().WithField("stepName", "ANS").Warnf("event severity set to '%s' will be overwritten according to the log level", event.Severity)
-		event.Severity = ""
-	}
-	if len(event.Category) > 0 {
-		Entry().WithField("stepName", "ANS").Warnf("event category set to '%s' will be overwritten according to the log level", event.Category)
-		event.Category = ""
-	}
-	if err := event.Validate(); err != nil {
-		return ans.Event{}, errors.Wrap(err, "did not initialize SAP Alert Notification Service due to faulty event template json")
-	}
-	return event, nil
-}
-
 // Levels returns the supported log level of the hook.
 func (ansHook *ANSHook) Levels() []logrus.Level {
 	return []logrus.Level{logrus.WarnLevel, logrus.ErrorLevel, logrus.PanicLevel, logrus.FatalLevel}
@@ -117,4 +54,80 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	event.Tags["logLevel"] = logLevel.String()
 
 	return ansHook.client.Send(event)
+}
+
+type RegistrationUtil interface {
+	ans.Client
+	registerHook(hook *ANSHook)
+}
+
+type RegistrationUtilImpl struct {
+	ans.Client
+}
+
+func (u *RegistrationUtilImpl) registerHook(hook *ANSHook) {
+	RegisterHook(hook)
+}
+
+// RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
+func RegisterANSHookIfConfigured(correlationID string) error {
+	return registerANSHookIfConfigured(correlationID, &RegistrationUtilImpl{Client: &ans.ANS{}})
+}
+
+func registerANSHookIfConfigured(correlationID string, util RegistrationUtil) error {
+	ansServiceKeyJSON := os.Getenv("PIPER_ansHookServiceKey")
+	if len(ansServiceKeyJSON) == 0 {
+		return nil
+	}
+
+	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(ansServiceKeyJSON)
+	if err != nil {
+		return errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
+	}
+	RegisterSecret(ansServiceKey.ClientSecret)
+
+	util.SetServiceKey(ansServiceKey)
+	if err = util.CheckCorrectSetup(); err != nil {
+		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
+	}
+
+	if eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID); err != nil {
+		return err
+	} else {
+		util.registerHook(&ANSHook{
+			client:        util,
+			eventTemplate: eventTemplate,
+		})
+	}
+	return nil
+}
+
+func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event, error) {
+	event := ans.Event{
+		EventType: "Piper",
+		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
+		Resource: &ans.Resource{
+			ResourceType: "Pipeline",
+			ResourceName: "Pipeline",
+		},
+	}
+
+	if len(customerEventTemplate) > 0 {
+		if err := event.MergeWithJSON([]byte(customerEventTemplate)); err != nil {
+			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", customerEventTemplate, err)
+			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", customerEventTemplate)
+		}
+	}
+	if len(event.Severity) > 0 {
+		Entry().WithField("stepName", "ANS").Warnf("event severity set to '%s' will be overwritten according to the log level", event.Severity)
+		event.Severity = ""
+	}
+	if len(event.Category) > 0 {
+		Entry().WithField("stepName", "ANS").Warnf("event category set to '%s' will be overwritten according to the log level", event.Category)
+		event.Category = ""
+	}
+	if err := event.Validate(); err != nil {
+		return ans.Event{}, errors.Wrap(err, "did not initialize SAP Alert Notification Service due to faulty event template json")
+	}
+	return event, nil
 }
