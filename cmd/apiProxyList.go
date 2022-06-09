@@ -5,24 +5,12 @@ import (
 	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/apim"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-type apiProxyListUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The apiProxyListUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
 
 func apiProxyList(config apiProxyListOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *apiProxyListCommonPipelineEnvironment) {
 

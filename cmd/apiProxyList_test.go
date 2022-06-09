@@ -5,22 +5,8 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/apim"
 	apimhttp "github.com/SAP/jenkins-library/pkg/apim"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type apiProxyListMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newApiProxyListTestsUtils() apiProxyListMockUtils {
-	utils := apiProxyListMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunApiProxyList(t *testing.T) {
 	t.Parallel()
