@@ -225,7 +225,7 @@ func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) erro
 		return errors.Wrapf(err, "unable to check %s file existance", oldName)
 	} else {
 		if exists {
-			if err := utils.FileRename(oldName, oldName); err != nil {
+			if err := utils.FileRename(oldName, newName); err != nil {
 				return errors.Wrapf(err, "unable to rename %s file", oldName)
 			}
 		}
