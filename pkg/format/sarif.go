@@ -103,7 +103,7 @@ type SarifProperties struct {
 // Tool these structs are relevant to the Tool object
 type Tool struct {
 	Driver     Driver   `json:"driver"`
-	Extensions []Driver `json:"extensions"`
+	Extensions []Driver `json:"extensions,omitempty"`
 }
 
 // Driver meta information for the scan and tool context
