@@ -233,6 +233,17 @@ func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) erro
 	return nil
 }
 
+func safeReadFile(utils gradleExecuteBuildUtils, name string) ([]byte, error) {
+	if exists, err := utils.FileExists(name); err != nil {
+		return nil, errors.Wrapf(err, "unable to check %s file existance", name)
+	} else {
+		if exists {
+			return utils.FileRead(name)
+		}
+	}
+	return nil, nil
+}
+
 func safeRemoveFile(utils gradleExecuteBuildUtils, name string) error {
 	if exists, err := utils.FileExists(name); err != nil {
 		log.Entry().WithError(err).Errorf("unable to check %s file existance", name)
@@ -247,7 +258,11 @@ func safeRemoveFile(utils gradleExecuteBuildUtils, name string) error {
 }
 
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
-	resultProperties, err := extendProperties(config.GradlePropertiesFile, config.RootProjectConfig, config.SubprojectsCommonConfig, config.SubprojectsCustomConfigs, config.GradleSensitivePropertiesFile)
+	sensitiveProperties, err := safeReadFile(utils, config.GradleSensitivePropertiesFile)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read file '%v'", config.GradleSensitivePropertiesFile)
+	}
+	resultProperties, err := extendProperties(config.GradlePropertiesFile, config.RootProjectConfig, config.SubprojectsCommonConfig, config.SubprojectsCustomConfigs, sensitiveProperties)
 	if err != nil {
 		return err
 	}
@@ -340,7 +355,7 @@ func getInitScript(options *gradleExecuteBuildOptions) (string, error) {
 	return string(generatedCode.Bytes()), nil
 }
 
-func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]interface{}, subprojectsCommonConfig map[string]interface{}, subprojectsCustomConfigs []map[string]interface{}, sensitiveProperties string) ([]byte, error) {
+func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]interface{}, subprojectsCommonConfig map[string]interface{}, subprojectsCustomConfigs []map[string]interface{}, sensitiveProperties []byte) ([]byte, error) {
 	originalProperties := []byte(``)
 	var err error
 	if len(gradlePropertiesFile) > 0 {
@@ -356,7 +371,7 @@ func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]
 			return nil, errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
 		}
 	}
-	sensitiveProperties = "\n" + sensitiveProperties
+	sensitiveProperties = append([]byte("\n"), sensitiveProperties...)
 	tplRootProps := template.Must(template.New("rootProjectProps").Parse(rootProjectProperties))
 	tplSubprojectsCommonProps := template.Must(template.New("subprojectsCommonProps").Parse(subprojectCommonProperties))
 	tplSubprojectsCustomProps := template.Must(template.New("subprojectCustomProps").Parse(subprojectCustomProperties))
