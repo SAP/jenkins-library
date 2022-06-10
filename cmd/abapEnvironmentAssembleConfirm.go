@@ -123,7 +123,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 }
 
 func (b *buildWithRepository) startConfirm() error {
-	if b.repo.Name == "" || b.repo.Namespace == "" || b.repo.PackageName == "" {
+	if b.repo.Name == "" || b.repo.PackageName == "" {
 		return errors.New("Parameters missing. Please provide software component name, namespace and packagename")
 	}
 	valuesInput := abapbuild.Values{
@@ -132,12 +132,23 @@ func (b *buildWithRepository) startConfirm() error {
 				ValueID: "SWC",
 				Value:   b.repo.Name,
 			},
-			{
-				ValueID: "SSDC-delta",
-				Value:   b.repo.Namespace + b.repo.PackageName,
-			},
 		},
 	}
+	if br.repo.Namespace != "" {
+		// Steampunk Use Case, Namespace provided by AAKaaS
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "SSDC-delta",
+				Value: b.repo.Namespace + b.repo.PackageName})
+	} else {
+		// Traditional SWCs, Namespace to be provided in assembly system via build script
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "PACKAGE_TYPE",
+				Value: br.repo.PackageType})
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
+				Value: br.repo.PackageName})
+	}
+
 	phase := "BUILD_CONFIRM"
 	log.Entry().Infof("Starting confirmation of package %s", b.repo.PackageName)
 	return b.build.Start(phase, valuesInput)
