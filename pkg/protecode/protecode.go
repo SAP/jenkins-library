@@ -329,7 +329,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 			log.Entry().Warn("[DEBUG] ===> customDataJSONMap flag either not set or the value is invalid JSON. Check the value of --customDataJSONMap and try again.")
 		}
 		for k, v := range customDataHeaders {
-			headers[k] = []string{v}
+			headers[k] = []string{fmt.Sprintf("META-%s", v)}
 		}
 	}
 
@@ -355,7 +355,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 	}
 
-	log.Entry().Debugf("[DEBUG] ===> Headers for UploadScanFile upload: %v", headers)
+	log.Entry().Warnf("[WARN] ===> Headers for UploadScanFile upload: %v", headers)
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 
