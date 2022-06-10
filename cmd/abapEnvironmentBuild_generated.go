@@ -24,6 +24,7 @@ type abapEnvironmentBuildOptions struct {
 	CfServiceInstance               string   `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName                string   `json:"cfServiceKeyName,omitempty"`
 	Host                            string   `json:"host,omitempty"`
+	AbapSourceClient                string   `json:"abapSourceClient,omitempty"`
 	Username                        string   `json:"username,omitempty"`
 	Password                        string   `json:"password,omitempty"`
 	Phase                           string   `json:"phase,omitempty"`
@@ -172,6 +173,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.AbapSourceClient, "abapSourceClient", os.Getenv("PIPER_abapSourceClient"), "Specifies the client of the SAP Cloud Platform ABAP Environment system, use only in combination with host")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
 	cmd.Flags().StringVar(&stepConfig.Phase, "phase", os.Getenv("PIPER_phase"), "Phase as specified in the build script in the backend system")
@@ -269,6 +271,15 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_host"),
+					},
+					{
+						Name:        "abapSourceClient",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapSourceClient"),
 					},
 					{
 						Name:        "username",

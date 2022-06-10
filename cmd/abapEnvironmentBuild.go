@@ -178,6 +178,9 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Password = config.Password
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 	connConfig.CertificateNames = config.CertificateNames
+	if len(config.AbapSourceClient) != 0 {
+		connConfig.Parameters = []string{"sap-client=" + config.AbapSourceClient}
+	}
 
 	if err := conn.InitBuildFramework(connConfig, *utils, *utils); err != nil {
 		return err
