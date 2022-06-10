@@ -117,4 +117,23 @@ func TestRunShellExecute(t *testing.T) {
 		assert.Equal(t, []string{"arg2"}, u.ExecMockRunner.Calls[1].Params)
 		assert.NoError(t, err)
 	})
+
+	t.Run("success case - positional script arguments gets added to the correct script with multiple params", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
+			ScriptArguments: []string{"arg1 arg2", "arg3 arg4"},
+		}
+
+		u := newShellExecuteTestsUtils()
+		u.AddFile("path1/script1.sh", []byte(`echo dummy1`))
+		u.AddFile("path2/script2.sh", []byte(`echo dummy2`))
+
+		err := runShellExecute(o, nil, u)
+
+		assert.Equal(t, "path1/script1.sh", u.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"arg1", "arg2"}, u.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "path2/script2.sh", u.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"arg3", "arg4"}, u.ExecMockRunner.Calls[1].Params)
+		assert.NoError(t, err)
+	})
 }
