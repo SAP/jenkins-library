@@ -316,28 +316,42 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 }
 
 // UploadScanFile upload the scan file to the protecode server
-func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, version string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, filePath, fileName, version string, productID int, replaceBinary bool) *ResultData {
 	log.Entry().Debugf("[DEBUG] ===> UploadScanFile started.....")
 
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
 
-	if (replaceBinary) && (version != "") {
-		log.Entry().Debugf("[DEBUG] ===> replaceBinary && version != empty ")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}}
-	} else if replaceBinary {
-		log.Entry().Debugf("[DEBUG] ===> replaceBinary")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}}
-	} else if version != "" {
-		log.Entry().Debugf("[DEBUG] ===> version != empty ")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}}
-	} else {
-		log.Entry().Debugf("[DEBUG] ===> replaceBinary is false and version == empty")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
+	if len(customDataJSONMap) > 0 {
+		if err := json.Unmarshal([]byte(customDataJSONMap), &headers); err != nil {
+			log.Entry().Warn("[DEBUG] ===> customDataJSONMap flag either not set or the value is invalid JSON. Check the value of --customDataJSONMap and try again.")
+		}
 	}
 
-	// log.Entry().Debugf("[DEBUG] ===> Headers for UploadScanFile upload: %v", headers)
+	if (replaceBinary) && (version != "") {
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary && version != empty ")
+		headers["Group"] = []string{group}
+		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
+		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
+		headers["Version"] = []string{version}
+	} else if replaceBinary {
+		headers["Group"] = []string{group}
+		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
+		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary")
+	} else if version != "" {
+		log.Entry().Debugf("[DEBUG] ===> version != empty ")
+		headers["Group"] = []string{group}
+		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
+		headers["Version"] = []string{version}
+	} else {
+		log.Entry().Debugf("[DEBUG] ===> replaceBinary is false and version == empty")
+		headers["Group"] = []string{group}
+		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
+	}
+
+	log.Entry().Debugf("[DEBUG] ===> Headers for UploadScanFile upload: %v", headers)
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 

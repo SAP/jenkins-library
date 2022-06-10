@@ -42,6 +42,7 @@ type protecodeExecuteScanOptions struct {
 	CustomScanVersion           string `json:"customScanVersion,omitempty"`
 	VersioningModel             string `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
+	CustomDataJSONMap           string `json:"customDataJSONMap,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -254,6 +255,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
+	cmd.Flags().StringVar(&stepConfig.CustomDataJSONMap, "customDataJSONMap", os.Getenv("PIPER_customDataJSONMap"), "The JSON map of key-value pairs to be included in this scan's Custom Data (See protecode API)")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
@@ -510,6 +512,15 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pullRequestName"),
+					},
+					{
+						Name:        "customDataJSONMap",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customDataJSONMap"),
 					},
 				},
 			},
