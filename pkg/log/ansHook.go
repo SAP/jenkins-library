@@ -69,6 +69,10 @@ func (u *RegistrationUtilImpl) registerHook(hook *ANSHook) {
 	RegisterHook(hook)
 }
 
+func (u *RegistrationUtilImpl) registerSecret(secret string) {
+	RegisterSecret(secret)
+}
+
 // RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
 func RegisterANSHookIfConfigured(correlationID string) error {
 	return registerANSHookIfConfigured(correlationID, &RegistrationUtilImpl{Client: &ans.ANS{}})

@@ -19,7 +19,7 @@ import (
 func TestANSHook_Levels(t *testing.T) {
 
 	//	hook := &ANSHook{client: defaultClient(), eventTemplate: defaultEvent()}
-	registrationUtil := defaultRegistrationUtil()
+	registrationUtil := createRegUtil()
 
 	t.Run("good", func(t *testing.T) {
 		t.Run("default hook levels", func(t *testing.T) {
@@ -74,79 +74,65 @@ func TestANSHook_setupEventTemplate(t *testing.T) {
 	})
 }
 
-func TestANSHook_newANSHook(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		serviceKey    string
-		eventTemplate string
-	}
-	tests := []struct {
-		name                     string
-		args                     args
-		eventTemplateFileContent string
-		checkErr                 error
-		wantEvent                ans.Event
-		wantErrMsg               string
-	}{
-		{
-			name:      "Straight forward test",
-			args:      args{serviceKey: defaultServiceKeyJSON},
-			wantEvent: defaultEvent(),
-		},
-		{
-			name:       "No service key yields error",
-			wantErrMsg: "cannot initialize SAP Alert Notification Service due to faulty serviceKey json: error unmarshalling ANS serviceKey: unexpected end of JSON input",
-		},
-		{
-			name:       "Fails on check error",
-			args:       args{serviceKey: defaultServiceKeyJSON},
-			wantErrMsg: "check http request to SAP Alert Notification Service failed; not setting up the ANS hook: check failed",
-			checkErr:   fmt.Errorf("check failed"),
-		},
-		{
-			name:                     "With event template as file",
-			args:                     args{serviceKey: defaultServiceKeyJSON},
-			eventTemplateFileContent: `{"priority":123}`,
-			wantEvent:                mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
-		},
-		{
-			name:      "With event template as string",
-			args:      args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":123}`},
-			wantEvent: mergeEvents(t, defaultEvent(), ans.Event{Priority: 123}),
-		},
-		{
-			name:                     "With event template from two sources, string overwrites file",
-			args:                     args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":789}`},
-			eventTemplateFileContent: `{"priority":123}`,
-			wantEvent:                mergeEvents(t, defaultEvent(), ans.Event{Priority: 789}),
-		},
-		{
-			name:       "Fails on validation error",
-			args:       args{serviceKey: defaultServiceKeyJSON, eventTemplate: `{"priority":-1}`},
-			wantErrMsg: "did not initialize SAP Alert Notification Service due to faulty event template json: Priority must be 1 or greater: event JSON failed the validation",
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			var testEventTemplateFilePath string
-			if len(tt.eventTemplateFileContent) > 0 {
-				testEventTemplateFilePath = writeTempFile(t, tt.eventTemplateFileContent)
-				defer os.Remove(testEventTemplateFilePath)
-			}
+func TestANSHook_registerANSHook(t *testing.T) {
 
-			registrationUtil := defaultRegistrationUtil(map[string]interface{}{"CheckErr": tt.checkErr})
+	os.Setenv("PIPER_ansHookServiceKey", defaultServiceKeyJSON)
 
-			//			clientMock := ansMock{checkErr: tt.checkErr}
-			if err := registerANSHookIfConfigured(testCorrelationID, registrationUtil); err != nil {
-				assert.EqualError(t, err, tt.wantErrMsg, "Error mismatch")
-			} else {
-				assert.Equal(t, tt.wantErrMsg, "", "There was an error expected")
-				//				assert.Equal(t, defaultANSClient(), clientMock.a, "new ANSHook not as expected")
-				//				assert.Equal(t, tt.wantEvent, got.eventTemplate, "new ANSHook not as expected")
-			}
+	t.Run("good", func(t *testing.T) {
+		t.Run("No service key skips registration", func(t *testing.T) {
+			util := createRegUtil()
+			os.Setenv("PIPER_ansHookServiceKey", "")
+			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not nil")
+			assert.Nil(t, util.Hook, "registration registered hook")
+			os.Setenv("PIPER_ansHookServiceKey", defaultServiceKeyJSON)
 		})
-	}
+		t.Run("Default registration registers hook and secret", func(t *testing.T) {
+			util := createRegUtil()
+			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not nil")
+			assert.NotNil(t, util.Hook, "registration didnt register hook")
+			assert.NotNil(t, util.Secret, "registration didnt register secret")
+		})
+		t.Run("Registration with default template", func(t *testing.T) {
+			util := createRegUtil()
+			eventJson := customerEventString()
+			os.Setenv("PIPER_ansEventTemplate", eventJson)
+			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not return nil")
+			assert.Equal(t, customerEvent(eventJson), util.Hook.eventTemplate, "unexpected event template data")
+			os.Setenv("PIPER_ansEventTemplate", "")
+		})
+		t.Run("Registration with cutomized template", func(t *testing.T) {
+			util := createRegUtil()
+			eventJson := customerEventString(map[string]interface{}{"Priority": "123"})
+			os.Setenv("PIPER_ansEventTemplate", eventJson)
+			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not return nil")
+			assert.Equal(t, 123, util.Hook.eventTemplate.Priority, "unexpected event template data")
+			os.Setenv("PIPER_ansEventTemplate", "")
+		})
+		t.Run("With event template as file", func(t *testing.T) {
+			util := createRegUtil()
+			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not nil")
+			assert.NotNil(t, util.Hook, "registration didnt register hook")
+			assert.NotNil(t, util.Secret, "registration didnt register secret")
+			assert.Equal(t, customerEvent(), util.Hook.eventTemplate, "unexpected event template data")
+		})
+	})
+
+	t.Run("bad", func(t *testing.T) {
+		t.Run("Fails on check error", func(t *testing.T) {
+			util := createRegUtil(map[string]interface{}{"CheckErr": fmt.Errorf("check failed")})
+			err := registerANSHookIfConfigured(testCorrelationID, util)
+			assert.Contains(t, err.Error(), "check failed", "unexpected error text")
+		})
+
+		t.Run("Fails on validation error", func(t *testing.T) {
+			os.Setenv("PIPER_ansEventTemplate", customerEventString(map[string]interface{}{"Priority": "-1"}))
+			err := registerANSHookIfConfigured(testCorrelationID, createRegUtil())
+			assert.Contains(t, err.Error(), "Priority must be 1 or greater", "unexpected error text")
+			os.Setenv("PIPER_ansEventTemplate", "")
+		})
+
+	})
+	os.Setenv("PIPER_ansHookServiceKey", "")
 }
 
 func TestANSHook_Fire(t *testing.T) {
@@ -221,7 +207,7 @@ func TestANSHook_Fire(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			registrationUtil := defaultRegistrationUtil()
+			registrationUtil := createRegUtil()
 
 			ansHook := &ANSHook{
 				client:        registrationUtil,
@@ -249,46 +235,55 @@ func defaultCorrelationID() string {
 	return testCorrelationID
 }
 
+func merge(base, overlay map[string]interface{}) map[string]interface{} {
+
+	result := map[string]interface{}{}
+
+	if base == nil {
+		base = map[string]interface{}{}
+	}
+
+	for key, value := range base {
+		result[key] = value
+	}
+
+	for key, value := range overlay {
+		if val, ok := value.(map[string]interface{}); ok {
+			if valBaseKey, ok := base[key].(map[string]interface{}); !ok {
+				result[key] = merge(map[string]interface{}{}, val)
+			} else {
+				result[key] = merge(valBaseKey, val)
+			}
+		} else {
+			result[key] = value
+		}
+	}
+	return result
+}
+
+func customerEvent(params ...interface{}) ans.Event {
+	event := ans.Event{}
+	json.Unmarshal([]byte(customerEventString(params)), &event)
+	return event
+}
+
 func customerEventString(params ...interface{}) string {
 	event := defaultEvent()
 
 	additionalFields := make(map[string]interface{})
-
 	if len(params) > 0 {
 		for i := 0; i < len(params); i++ {
-			switch params[i].(type) {
-			case map[string]interface{}:
-				{
-					m := params[i].(map[string]interface{})
-					for key, value := range m {
-						obj := reflect.Indirect(reflect.ValueOf(&event))
-						if field := obj.FieldByName(key); field != (reflect.Value{}) {
-							switch field.Kind() {
-							case reflect.String:
-								field.SetString(value.(string))
-							case reflect.Int:
-								switch value.(type) {
-								case string:
-									v, _ := strconv.Atoi(value.(string))
-									field.SetInt(int64(v))
-								case int:
-									field.SetInt(int64((value).(int)))
-								}
-							}
-						} else {
-							additionalFields[key] = value
-						}
-					}
-				}
-			}
+			additionalFields = merge(additionalFields, pokeObject(&event, params[i]))
 		}
 	}
 
+	//  create json string from Event
 	marshaled, err := json.Marshal(event)
 	if err != nil {
 		panic(fmt.Sprintf("cannot marshal customer event: %v", err))
 	}
 
+	// add non Event members to json string
 	if len(additionalFields) > 0 {
 		closingBraceIdx := bytes.LastIndexByte(marshaled, '}')
 		for key, value := range additionalFields {
@@ -318,6 +313,7 @@ type RegistrationUtilMock struct {
 	SendErr    error
 	CheckErr   error
 	Hook       *ANSHook
+	Secret     string
 }
 
 func (m *RegistrationUtilMock) Send(event ans.Event) error {
@@ -337,7 +333,11 @@ func (m *RegistrationUtilMock) registerHook(hook *ANSHook) {
 	m.Hook = hook
 }
 
-func defaultRegistrationUtil(params ...interface{}) *RegistrationUtilMock {
+func (m *RegistrationUtilMock) registerSecret(secret string) {
+	m.Secret = secret
+}
+
+func createRegUtil(params ...interface{}) *RegistrationUtilMock {
 
 	mock := RegistrationUtilMock{}
 	if len(params) > 0 {
@@ -357,17 +357,11 @@ func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
 		{
 			m := param.(map[string]interface{})
 			v := reflect.ValueOf(obj)
-			iv := reflect.Indirect(v)
-			fmt.Printf("Obj ValueOf:  v:%v, v.i:%v, kind:%v, type:%v\n", v, v.Interface(), v.Kind(), v.Type())
-			fmt.Printf("Obj Indirect: v:%v, v.i:%v, kind:%v, type:%v\n", iv, iv.Interface(), iv.Kind(), v.Type())
-
 			if v.Kind() == reflect.Ptr {
 				v = v.Elem()
-				fmt.Printf("Obj Elem:     v:%v, v.i:%v, kind:%v, type:%v\n", v, v.Interface(), v.Kind(), v.Type())
 			}
 			for key, value := range m {
 				f := v.FieldByName(key)
-				fmt.Printf("Field(%v):    f:%v, kind:%v, type:%v\n", key, f, f.Kind(), v.Type())
 
 				if f != (reflect.Value{}) {
 					switch f.Kind() {
@@ -382,9 +376,12 @@ func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
 							f.SetInt(int64((value).(int)))
 						}
 					case reflect.Interface:
-						n := reflect.New(reflect.TypeOf(value))
-						n.Elem().Set(reflect.ValueOf(value))
-						f.Set(n)
+						if value != nil {
+							val := reflect.ValueOf(value)
+							f.Set(val)
+						} else {
+							f.Set(reflect.Zero(f.Type()))
+						}
 					}
 				} else {
 					additionalFields[key] = value
@@ -460,24 +457,4 @@ func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {
 	err = event1.MergeWithJSON(event2JSON)
 	require.NoError(t, err)
 	return event1
-}
-
-type aansMock struct {
-	event      ans.Event
-	serviceKey ans.ServiceKey
-	sendErr    error
-	checkErr   error
-}
-
-func (am *aansMock) Send(event ans.Event) error {
-	am.event = event
-	return am.sendErr
-}
-
-func (am *aansMock) CheckCorrectSetup() error {
-	return am.checkErr
-}
-
-func (am *aansMock) SetServiceKey(serviceKey ans.ServiceKey) {
-	am.serviceKey = serviceKey
 }
