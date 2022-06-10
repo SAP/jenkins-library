@@ -4,6 +4,10 @@ metadata:
   longDescription: This step runs a gradle build command with parameters provided to the step.
 spec:
   inputs:
+    secrets:
+      - name: gradleSensitivePropertiesFileCredentialsId
+        description: gradle sensitive properties credentials ID
+        type: jenkins
     params:
       - name: path
         aliases:

@@ -189,6 +189,9 @@ func gradleExecuteBuildMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "gradleSensitivePropertiesFileCredentialsId", Description: "gradle sensitive properties credentials ID", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "path",
