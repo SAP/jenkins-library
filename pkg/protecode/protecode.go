@@ -326,7 +326,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 		customDataHeaders := map[string]string{}
 		if err := json.Unmarshal([]byte(customDataJSONMap), &customDataHeaders); err != nil {
 			log.Entry().Debugf("[DEBUG] ===> customDataJSONMap: %v", customDataJSONMap)
-			log.Entry().Warn("[DEBUG] ===> customDataJSONMap flag either not set or the value is invalid JSON. Check the value of --customDataJSONMap and try again.")
+			log.Entry().Warn("[WARN] ===> customDataJSONMap flag either not set or the value is invalid JSON. Check the value of --customDataJSONMap and try again.")
 		}
 		for k, v := range customDataHeaders {
 			headers["META-"+k] = []string{v}
