@@ -355,7 +355,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 	}
 
-	log.Entry().Warnf("[WARN] ===> Headers for UploadScanFile upload: %v", headers)
+	// log.Entry().Debugf("[DEBUG] ===> Headers for UploadScanFile upload: %v", headers)
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 
