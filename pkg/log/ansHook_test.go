@@ -100,20 +100,13 @@ func TestANSHook_registerANSHook(t *testing.T) {
 			assert.Equal(t, customerEvent(eventJson), util.Hook.eventTemplate, "unexpected event template data")
 			os.Setenv("PIPER_ansEventTemplate", "")
 		})
-		t.Run("Registration with cutomized template", func(t *testing.T) {
+		t.Run("Registration with customized template", func(t *testing.T) {
 			util := createRegUtil()
 			eventJson := customerEventString(map[string]interface{}{"Priority": "123"})
 			os.Setenv("PIPER_ansEventTemplate", eventJson)
 			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not return nil")
 			assert.Equal(t, 123, util.Hook.eventTemplate.Priority, "unexpected event template data")
 			os.Setenv("PIPER_ansEventTemplate", "")
-		})
-		t.Run("With event template as file", func(t *testing.T) {
-			util := createRegUtil()
-			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not nil")
-			assert.NotNil(t, util.Hook, "registration didnt register hook")
-			assert.NotNil(t, util.Secret, "registration didnt register secret")
-			assert.Equal(t, customerEvent(), util.Hook.eventTemplate, "unexpected event template data")
 		})
 	})
 
