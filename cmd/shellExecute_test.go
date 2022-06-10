@@ -97,7 +97,6 @@ func TestRunShellExecute(t *testing.T) {
 		runShellExecute(o, nil, u)
 
 		assert.Equal(t, http.Header{"Accept": []string{"application/vnd.github.v3.raw"}, "Authorization": []string{"Token dummy@12345"}}, u.header)
-		// assert.Equal(t, ".pipeline/myScript.sh", u.ExecMockRunner.Calls[0].Exec)
 	})
 
 	t.Run("success case - positional script arguments gets added to the correct script", func(t *testing.T) {
