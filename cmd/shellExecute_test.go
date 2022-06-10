@@ -99,7 +99,7 @@ func TestRunShellExecute(t *testing.T) {
 		assert.Equal(t, http.Header{"Accept": []string{"application/vnd.github.v3.raw"}, "Authorization": []string{"Token dummy@12345"}}, u.header)
 	})
 
-	t.Run("success case - positional script arguments gets added to the correct script", func(t *testing.T) {
+	t.Run("success case - single positional script arguments gets added to the correct script", func(t *testing.T) {
 		o := &shellExecuteOptions{
 			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
 			ScriptArguments: []string{"arg1", "arg2"},
@@ -118,7 +118,7 @@ func TestRunShellExecute(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("success case - positional script arguments gets added to the correct script with multiple params", func(t *testing.T) {
+	t.Run("success case - multiple positional script arguments gets added to the correct script", func(t *testing.T) {
 		o := &shellExecuteOptions{
 			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
 			ScriptArguments: []string{"arg1 arg2", "arg3 arg4"},
