@@ -72,10 +72,8 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		}
 
 		args := []string{}
-		if len(config.ScriptArguments) > 0 {
-			if isArgumentAtPosition(config.ScriptArguments, position) {
-				args = strings.Split(config.ScriptArguments[position], " ")
-			}
+		if len(config.ScriptArguments) > 0 && isArgumentAtPosition(config.ScriptArguments, position) {
+			args = strings.Split(config.ScriptArguments[position], " ")
 		}
 
 		log.Entry().Info("starting running script:", source)
