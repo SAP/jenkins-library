@@ -134,7 +134,7 @@ func (b *buildWithRepository) startConfirm() error {
 			},
 		},
 	}
-	if br.repo.Namespace != "" {
+	if b.repo.Namespace != "" {
 		// Steampunk Use Case, Namespace provided by AAKaaS
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "SSDC-delta",
@@ -143,10 +143,10 @@ func (b *buildWithRepository) startConfirm() error {
 		// Traditional SWCs, Namespace to be provided in assembly system via build script
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "PACKAGE_TYPE",
-				Value: br.repo.PackageType})
+				Value: b.repo.PackageType})
 		valuesInput.Values = append(valuesInput.Values,
-			abapbuild.Value{ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
-				Value: br.repo.PackageName})
+			abapbuild.Value{ValueID: "PACKAGE_NAME_" + b.repo.PackageType,
+				Value: b.repo.PackageName})
 	}
 
 	phase := "BUILD_CONFIRM"
