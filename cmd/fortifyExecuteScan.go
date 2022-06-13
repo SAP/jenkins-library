@@ -724,7 +724,7 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 
 func autoresolveGradleClasspath(config fortifyExecuteScanOptions, file string, utils fortifyUtils) (string, error) {
 	gradleOptions := &gradle.ExecuteOptions{
-		Task:              "getClasspath",
+		Tasks:             []string{"getClasspath"},
 		UseWrapper:        true,
 		InitScriptContent: getClasspathScriptContent,
 		ProjectProperties: map[string]string{"filename": file},

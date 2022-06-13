@@ -23,7 +23,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		}
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: false,
 		}
 
@@ -40,14 +40,16 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: false,
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, 3, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "cyclonedxBom", "publish", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
 	})
 
 	t.Run("success case - bom creation", func(t *testing.T) {
@@ -58,7 +60,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: false,
 			CreateBOM:  true,
 		}
@@ -67,8 +69,8 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.Calls))
 		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"cyclonedxBom", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[2])
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"tasks", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "cyclonedxBom", "publish", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
 		assert.True(t, utils.HasWrittenFile("initScript.gradle.tmp"))
 		assert.True(t, utils.HasRemovedFile("initScript.gradle.tmp"))
 	})
@@ -81,7 +83,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: false,
 			Publish:    true,
 		}
@@ -89,9 +91,9 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		err := runGradleExecuteBuild(options, nil, utils)
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[1])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"publish", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "cyclonedxBom", "publish", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
 		assert.True(t, utils.HasWrittenFile("initScript.gradle.tmp"))
 		assert.True(t, utils.HasRemovedFile("initScript.gradle.tmp"))
 	})
@@ -105,27 +107,29 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		utils.FilesMock.AddFile("gradlew", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: true,
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "./gradlew", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, 3, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "./gradlew", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "./gradlew", Params: []string{"tasks", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "./gradlew", Params: []string{"build", "cyclonedxBom", "publish", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
 	})
 
 	t.Run("failed case - build", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
-				ShouldFailOnCommand: map[string]error{"gradle build -p path/to": errors.New("failed to build")},
+				ShouldFailOnCommand: map[string]error{"gradle build cyclonedxBom publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to build")},
 			},
 			FilesMock: &mock.FilesMock{},
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: false,
 		}
 
@@ -137,7 +141,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 	t.Run("failed case - bom creation", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
-				ShouldFailOnCommand: map[string]error{"./gradlew cyclonedxBom -p path/to --init-script initScript.gradle.tmp": errors.New("failed to create bom")},
+				ShouldFailOnCommand: map[string]error{"gradlew build cyclonedxBom publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to create bom")},
 			},
 			FilesMock: &mock.FilesMock{},
 		}
@@ -145,7 +149,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		utils.FilesMock.AddFile("gradlew", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: true,
 			CreateBOM:  true,
 		}
@@ -158,7 +162,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 	t.Run("failed case - publish artifacts", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
-				ShouldFailOnCommand: map[string]error{"./gradlew publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to publish artifacts")},
+				ShouldFailOnCommand: map[string]error{"./gradlew build cyclonedxBom publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to publish artifacts")},
 			},
 			FilesMock: &mock.FilesMock{},
 		}
@@ -166,7 +170,7 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		utils.FilesMock.AddFile("gradlew", []byte{})
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
-			Task:       "build",
+			Tasks:      []string{"build"},
 			UseWrapper: true,
 			Publish:    true,
 		}

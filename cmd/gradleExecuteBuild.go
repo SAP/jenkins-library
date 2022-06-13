@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/pkg/errors"
-	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -289,55 +288,16 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		return fmt.Errorf("failed to get publish init script content: %v", err)
 	}
 
-	if called, err := callGradle(config, utils, initScriptContent, bomGradleTaskName, true); err != nil {
-		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
-		return err
-	} else {
-		if called {
-			log.Entry().Info("BOM file created")
-		} else {
-			log.Entry().Info("skip BOM file creation")
-		}
-	}
-
-	if _, err := callGradle(config, utils, "", config.Task, false); err != nil {
-		log.Entry().WithError(err).Errorf("gradle %s execution was failed: %v", config.Task, err)
-		return err
-	}
-
-	if called, err := callGradle(config, utils, initScriptContent, publishTaskName, true); err != nil {
-		log.Entry().WithError(err).Errorf("failed to publish: %v", err)
-		return err
-	} else {
-		if called {
-			log.Entry().Info("published")
-		} else {
-			log.Entry().Info("skip publishing")
-		}
-	}
-
-	return nil
-}
-
-func callGradle(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils, initScriptContent, task string, optional bool) (bool, error) {
 	gradleOptions := &gradle.ExecuteOptions{
 		BuildGradlePath:   config.Path,
 		UseWrapper:        config.UseWrapper,
 		InitScriptContent: initScriptContent,
+		InitScriptTasks:   []string{bomGradleTaskName, publishTaskName},
+		Tasks:             config.Tasks,
+		SkipTasks:         config.SkipTasks,
 	}
-	if optional {
-		gradleOptions.Task = tasksTaskName
-		output, err := gradle.Execute(gradleOptions, utils)
-		if err != nil {
-			return false, err
-		}
-		if strings.Index(output, task) < 0 {
-			return false, nil
-		}
-	}
-	gradleOptions.Task = task
-	_, err := gradle.Execute(gradleOptions, utils)
-	return true, err
+	_, err = gradle.Execute(gradleOptions, utils)
+	return err
 }
 
 func getInitScript(options *gradleExecuteBuildOptions) (string, error) {

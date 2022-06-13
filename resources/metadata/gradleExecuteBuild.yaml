@@ -20,15 +20,23 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-      - name: task
-        type: string
-        description: Gradle task that should be executed.
+      - name: tasks
+        type: "[]string"
+        description: Gradle tasks that should be executed.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: false
         default: build
+      - name: skipTasks
+        type: "[]string"
+        description: Gradle tasks that should be excluded.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
       - name: publish
         type: bool
         description: Configures gradle to publish the artifact to a repository.

@@ -67,7 +67,7 @@ func (g *Gradle) initGetArtifact() error {
 
 	if g.gradlePropsOut == nil {
 		gradleOptions := &gradle.ExecuteOptions{
-			Task:       "properties",
+			Tasks:      []string{"properties"},
 			UseWrapper: true,
 		}
 		stdOut, err := gradle.Execute(gradleOptions, g.utils)

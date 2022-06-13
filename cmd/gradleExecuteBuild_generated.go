@@ -21,7 +21,8 @@ import (
 
 type gradleExecuteBuildOptions struct {
 	Path                          string                   `json:"path,omitempty"`
-	Task                          string                   `json:"task,omitempty"`
+	Tasks                         []string                 `json:"tasks,omitempty"`
+	SkipTasks                     []string                 `json:"skipTasks,omitempty"`
 	Publish                       bool                     `json:"publish,omitempty"`
 	RepositoryURL                 string                   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword            string                   `json:"repositoryPassword,omitempty"`
@@ -166,7 +167,8 @@ func GradleExecuteBuildCommand() *cobra.Command {
 
 func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.")
-	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed.")
+	cmd.Flags().StringSliceVar(&stepConfig.Tasks, "tasks", []string{`build`}, "Gradle tasks that should be executed.")
+	cmd.Flags().StringSliceVar(&stepConfig.SkipTasks, "skipTasks", []string{}, "Gradle tasks that should be excluded.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures gradle to publish the artifact to a repository.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
@@ -203,13 +205,22 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_path"),
 					},
 					{
-						Name:        "task",
+						Name:        "tasks",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `build`,
+						Default:     []string{`build`},
+					},
+					{
+						Name:        "skipTasks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "publish",
