@@ -36,6 +36,15 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: scriptArguments
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        description: scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param.
+          For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list
+        mandatory: false
   containers:
     - name: shell
       image: node:lts-stretch
