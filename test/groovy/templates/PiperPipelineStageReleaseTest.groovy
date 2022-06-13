@@ -72,6 +72,11 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             stepsCalled.add('githubPublishRelease')
             stepParameters.githubPublishRelease = m
         })
+
+        helper.registerAllowedMethod('transportRequestUploadCTS', [Map.class], {m ->
+            stepsCalled.add('transportRequestUploadCTS')
+            stepParameters.transportRequestUploadCTS = m
+        })
     }
 
     @Test
@@ -81,7 +86,7 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('githubPublishRelease'))))
+        assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('githubPublishRelease'), hasItem('transportRequestUploadCTS'))))
     }
 
     @Test
@@ -157,5 +162,17 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('githubPublishRelease'))
+    }
+
+    @Test
+    void testReleaseStageTransportRequestUploadCTS() {
+
+        jsr.step.piperPipelineStageRelease(
+            script: nullScript,
+            juStabUtils: utils,
+            transportRequestUploadCTS: true
+        )
+
+        assertThat(stepsCalled, hasItem('transportRequestUploadCTS'))
     }
 }

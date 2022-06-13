@@ -27,6 +27,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'githubPublishRelease',
     /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
     'npmExecuteEndToEndTests'
+    /** This step uploads SAPUI5 application to the SAPUI5 ABAP repository. */
+    'transportRequestUploadCTS'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -54,6 +56,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
         .addIfEmpty('kubernetesDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.kubernetesDeploy)
         .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
+        .addIfEmpty('transportRequestUploadCTS', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.transportRequestUploadCTS)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -104,6 +107,12 @@ void call(Map parameters = [:]) {
 
         if (config.githubPublishRelease) {
             githubPublishRelease script: script
+        }
+
+        if (config.transportRequestUploadCTS) {
+            durationMeasure(script: script, measurementName: 'deploy_release_transportRequestUploadCTS_duration') {
+                transportRequestUploadCTS script: script
+            }
         }
 
     }
