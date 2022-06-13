@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
-	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,6 @@ import (
 
 func TestANSHook_Levels(t *testing.T) {
 
-	//	hook := &ANSHook{client: defaultClient(), eventTemplate: defaultEvent()}
 	registrationUtil := createRegUtil()
 
 	t.Run("good", func(t *testing.T) {
@@ -30,6 +28,7 @@ func TestANSHook_Levels(t *testing.T) {
 }
 
 func TestANSHook_setupEventTemplate(t *testing.T) {
+
 	t.Run("good", func(t *testing.T) {
 		t.Run("setup event without customer template", func(t *testing.T) {
 			event, _ := setupEventTemplate("", defaultCorrelationID())
@@ -94,16 +93,14 @@ func TestANSHook_registerANSHook(t *testing.T) {
 		})
 		t.Run("Registration with default template", func(t *testing.T) {
 			util := createRegUtil()
-			eventJson := customerEventString()
-			os.Setenv("PIPER_ansEventTemplate", eventJson)
+			os.Setenv("PIPER_ansEventTemplate", customerEventString())
 			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not return nil")
-			assert.Equal(t, customerEvent(eventJson), util.Hook.eventTemplate, "unexpected event template data")
+			assert.Equal(t, customerEvent(), util.Hook.eventTemplate, "unexpected event template data")
 			os.Setenv("PIPER_ansEventTemplate", "")
 		})
 		t.Run("Registration with customized template", func(t *testing.T) {
 			util := createRegUtil()
-			eventJson := customerEventString(map[string]interface{}{"Priority": "123"})
-			os.Setenv("PIPER_ansEventTemplate", eventJson)
+			os.Setenv("PIPER_ansEventTemplate", customerEventString(map[string]interface{}{"Priority": "123"}))
 			assert.Nil(t, registerANSHookIfConfigured(testCorrelationID, util), "registration did not return nil")
 			assert.Equal(t, 123, util.Hook.eventTemplate.Priority, "unexpected event template data")
 			os.Setenv("PIPER_ansEventTemplate", "")
@@ -299,7 +296,7 @@ func customerEventString(params ...interface{}) string {
 	return string(marshaled)
 }
 
-type RegistrationUtilMock struct {
+type registrationUtilMock struct {
 	ans.Client
 	Event      ans.Event
 	ServiceKey ans.ServiceKey
@@ -309,30 +306,30 @@ type RegistrationUtilMock struct {
 	Secret     string
 }
 
-func (m *RegistrationUtilMock) Send(event ans.Event) error {
+func (m *registrationUtilMock) Send(event ans.Event) error {
 	m.Event = event
 	return m.SendErr
 }
 
-func (m *RegistrationUtilMock) CheckCorrectSetup() error {
+func (m *registrationUtilMock) CheckCorrectSetup() error {
 	return m.CheckErr
 }
 
-func (m *RegistrationUtilMock) SetServiceKey(serviceKey ans.ServiceKey) {
+func (m *registrationUtilMock) SetServiceKey(serviceKey ans.ServiceKey) {
 	m.ServiceKey = serviceKey
-}
 
-func (m *RegistrationUtilMock) registerHook(hook *ANSHook) {
+}
+func (m *registrationUtilMock) registerHook(hook *ANSHook) {
 	m.Hook = hook
 }
 
-func (m *RegistrationUtilMock) registerSecret(secret string) {
+func (m *registrationUtilMock) registerSecret(secret string) {
 	m.Secret = secret
 }
 
-func createRegUtil(params ...interface{}) *RegistrationUtilMock {
+func createRegUtil(params ...interface{}) *registrationUtilMock {
 
-	mock := RegistrationUtilMock{}
+	mock := registrationUtilMock{}
 	if len(params) > 0 {
 		for i := 0; i < len(params); i++ {
 			pokeObject(&mock, params[i])
@@ -345,7 +342,7 @@ func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
 
 	additionalFields := make(map[string]interface{})
 
-	switch param.(type) {
+	switch t := param.(type) {
 	case map[string]interface{}:
 		{
 			m := param.(map[string]interface{})
@@ -360,13 +357,27 @@ func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
 					switch f.Kind() {
 					case reflect.String:
 						f.SetString(value.(string))
-					case reflect.Int:
-						switch value.(type) {
+					case reflect.Int, reflect.Int64:
+						switch t := value.(type) {
 						case string:
 							v, _ := strconv.Atoi(value.(string))
 							f.SetInt(int64(v))
 						case int:
 							f.SetInt(int64((value).(int)))
+						case int64:
+							f.SetInt(value.(int64))
+						default:
+							panic(fmt.Sprintf("unsupported value type: %v of key:%v value:%v\n", t, key, value))
+						}
+					case reflect.Map:
+						switch value.(type) {
+						case map[string]string, map[string]interface{}:
+							if value != nil {
+								val := reflect.ValueOf(value)
+								f.Set(val)
+							} else {
+								f.Set(reflect.Zero(f.Type()))
+							}
 						}
 					case reflect.Interface:
 						if value != nil {
@@ -375,12 +386,21 @@ func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
 						} else {
 							f.Set(reflect.Zero(f.Type()))
 						}
+					default:
+						panic(fmt.Sprintf("unsupported field type: %v of key:%v value:%v\n", f.Kind(), key, value))
 					}
 				} else {
 					additionalFields[key] = value
 				}
 			}
 		}
+	case []interface{}:
+		p := param.([]interface{})
+		for i := 0; i < len(p); i++ {
+			pokeObject(obj, p[i])
+		}
+	default:
+		panic(fmt.Sprintf("unsupported paramter type: %v", t))
 	}
 	return additionalFields
 }
@@ -388,7 +408,10 @@ func pokeObject(obj interface{}, param interface{}) map[string]interface{} {
 func defaultEvent() ans.Event {
 	event := ans.Event{
 		EventType: "Piper",
-		Tags:      map[string]interface{}{"ans:correlationId": testCorrelationID, "ans:sourceEventId": testCorrelationID},
+		Tags: map[string]interface{}{
+			"ans:correlationId": testCorrelationID,
+			"ans:sourceEventId": testCorrelationID,
+		},
 		Resource: &ans.Resource{
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",
@@ -398,19 +421,20 @@ func defaultEvent() ans.Event {
 }
 
 func defaultResultingEvent() ans.Event {
-	return ans.Event{
-		EventType:      "Piper",
-		EventTimestamp: defaultTime.Unix(),
-		Severity:       "WARNING",
-		Category:       "ALERT",
-		Subject:        "testStep",
-		Body:           "my log message",
-		Resource: &ans.Resource{
-			ResourceType: "Pipeline",
-			ResourceName: "Pipeline",
+	return customerEvent(map[string]interface{}{
+		"EventTimestamp": defaultTime.Unix(),
+		"Severity":       "WARNING",
+		"Category":       "ALERT",
+		"Subject":        "testStep",
+		"Body":           "my log message",
+		"Tags": map[string]interface{}{
+			"ans:correlationId": "1234",
+			"ans:sourceEventId": "1234",
+			"stepName":          "testStep",
+			"logLevel":          "warning",
+			"errorCategory":     "test",
 		},
-		Tags: map[string]interface{}{"ans:correlationId": "1234", "ans:sourceEventId": "1234", "stepName": "testStep", "logLevel": "warning", "errorCategory": "test"},
-	}
+	})
 }
 
 func defaultLogrusEntry() *logrus.Entry {
@@ -420,28 +444,6 @@ func defaultLogrusEntry() *logrus.Entry {
 		Message: "my log message",
 		Data:    map[string]interface{}{"stepName": "testStep"},
 	}
-}
-
-func defaultANSClient() *ans.ANS {
-	return &ans.ANS{
-		XSUAA: xsuaa.XSUAA{
-			OAuthURL:     "https://my.test.oauth.provider",
-			ClientID:     "myTestClientID",
-			ClientSecret: "super secret",
-		},
-		URL: "https://my.test.backend",
-	}
-}
-
-func writeTempFile(t *testing.T, fileContent string) (fileName string) {
-	var err error
-	testEventTemplateFile, err := os.CreateTemp("", "event_template_*.json")
-	require.NoError(t, err, "File creation failed!")
-	defer testEventTemplateFile.Close()
-	data := []byte(fileContent)
-	_, err = testEventTemplateFile.Write(data)
-	require.NoError(t, err, "Could not write test data to test file!")
-	return testEventTemplateFile.Name()
 }
 
 func mergeEvents(t *testing.T, event1, event2 ans.Event) ans.Event {

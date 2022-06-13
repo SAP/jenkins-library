@@ -56,29 +56,29 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	return ansHook.client.Send(event)
 }
 
-type RegistrationUtil interface {
+type registrationUtil interface {
 	ans.Client
 	registerHook(hook *ANSHook)
 }
 
-type RegistrationUtilImpl struct {
+type registrationUtilImpl struct {
 	ans.Client
 }
 
-func (u *RegistrationUtilImpl) registerHook(hook *ANSHook) {
+func (u *registrationUtilImpl) registerHook(hook *ANSHook) {
 	RegisterHook(hook)
 }
 
-func (u *RegistrationUtilImpl) registerSecret(secret string) {
+func (u *registrationUtilImpl) registerSecret(secret string) {
 	RegisterSecret(secret)
 }
 
 // RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
 func RegisterANSHookIfConfigured(correlationID string) error {
-	return registerANSHookIfConfigured(correlationID, &RegistrationUtilImpl{Client: &ans.ANS{}})
+	return registerANSHookIfConfigured(correlationID, &registrationUtilImpl{Client: &ans.ANS{}})
 }
 
-func registerANSHookIfConfigured(correlationID string, util RegistrationUtil) error {
+func registerANSHookIfConfigured(correlationID string, util registrationUtil) error {
 	ansServiceKeyJSON := os.Getenv("PIPER_ansHookServiceKey")
 	if len(ansServiceKeyJSON) == 0 {
 		return nil
