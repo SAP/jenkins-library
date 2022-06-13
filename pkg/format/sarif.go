@@ -11,13 +11,14 @@ type SARIF struct {
 type Runs struct {
 	Results             []Results           `json:"results"`
 	Tool                Tool                `json:"tool"`
-	Invocations         []Invocations       `json:"invocations,omitempty"`
+	Invocations         []Invocation        `json:"invocations,omitempty"`
 	OriginalUriBaseIds  *OriginalUriBaseIds `json:"originalUriBaseIds,omitempty"`
 	Artifacts           []Artifact          `json:"artifacts,omitempty"`
 	AutomationDetails   AutomationDetails   `json:"automationDetails,omitempty"`
 	ColumnKind          string              `json:"columnKind,omitempty" default:"utf16CodeUnits"`
 	ThreadFlowLocations []Locations         `json:"threadFlowLocations,omitempty"`
 	Taxonomies          []Taxonomies        `json:"taxonomies,omitempty"`
+	Conversion          *Conversion         `json:"conversion,omitempty"`
 }
 
 // Results these structs are relevant to the Results object
@@ -231,15 +232,15 @@ type SarifRuleProperties struct {
 	SecuritySeverity string   `json:"security-severity,omitempty"` //used by GHAS to defined the tag (low,medium,high)
 }
 
-// Invocations These structs are relevant to the Invocations object
-type Invocations struct {
-	CommandLine                string                       `json:"commandLine"`
-	StartTimeUtc               string                       `json:"startTimeUtc"`
-	ToolExecutionNotifications []ToolExecutionNotifications `json:"toolExecutionNotifications"`
+// Invocation These structs are relevant to the Invocation object
+type Invocation struct {
+	CommandLine                string                       `json:"commandLine,omitempty"`
+	StartTimeUtc               string                       `json:"startTimeUtc,omitempty"`
+	ToolExecutionNotifications []ToolExecutionNotifications `json:"toolExecutionNotifications,omitempty"`
 	ExecutionSuccessful        bool                         `json:"executionSuccessful"`
-	Machine                    string                       `json:"machine"`
-	Account                    string                       `json:"account"`
-	Properties                 InvocationProperties         `json:"properties"`
+	Machine                    string                       `json:"machine,omitempty"`
+	Account                    string                       `json:"account,omitempty"`
+	Properties                 *InvocationProperties        `json:"properties,omitempty"`
 }
 
 // ToolExecutionNotifications
@@ -301,4 +302,10 @@ type Taxonomies struct {
 // Taxa
 type Taxa struct {
 	Id string `json:"id"`
+}
+
+// Conversion object
+type Conversion struct {
+	Tool       Tool       `json:"tool,omitempty"`
+	Invocation Invocation `json:"invocation,omitempty"`
 }
