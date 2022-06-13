@@ -85,6 +85,7 @@ func Execute() {
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
+	rootCmd.AddCommand(DefaultsCommand())
 	rootCmd.AddCommand(ContainerSaveImageCommand())
 	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
@@ -94,6 +95,7 @@ func Execute() {
 	rootCmd.AddCommand(UiVeri5ExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
+	rootCmd.AddCommand(HelmExecuteCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
 	rootCmd.AddCommand(GithubCommentIssueCommand())
@@ -106,6 +108,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
+	rootCmd.AddCommand(AbapEnvironmentCreateTagCommand())
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
@@ -117,10 +120,12 @@ func Execute() {
 	rootCmd.AddCommand(MavenExecuteIntegrationCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(AbapEnvironmentPushATCSystemConfigCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(GctsExecuteABAPQualityChecksCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
@@ -175,8 +180,12 @@ func Execute() {
 	rootCmd.AddCommand(ShellExecuteCommand())
 	rootCmd.AddCommand(ApiProxyDownloadCommand())
 	rootCmd.AddCommand(ApiKeyValueMapDownloadCommand())
+	rootCmd.AddCommand(ApiProviderDownloadCommand())
 	rootCmd.AddCommand(ApiProxyUploadCommand())
 	rootCmd.AddCommand(GradleExecuteBuildCommand())
+	rootCmd.AddCommand(ApiKeyValueMapUploadCommand())
+	rootCmd.AddCommand(PythonBuildCommand())
+	rootCmd.AddCommand(AwsS3UploadCommand())
 
 	addRootFlags(rootCmd)
 
@@ -196,7 +205,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
 
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.GetBuildUrl(), "ID for unique identification of a pipeline run")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.GetBuildURL(), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", AccessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")

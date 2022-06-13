@@ -36,9 +36,13 @@ type abapEnvironmentBuildOptions struct {
 	FilenamePrefixForDownload       string   `json:"filenamePrefixForDownload,omitempty"`
 	TreatWarningsAsError            bool     `json:"treatWarningsAsError,omitempty"`
 	MaxRuntimeInMinutes             int      `json:"maxRuntimeInMinutes,omitempty"`
-	PollingIntervallInSeconds       int      `json:"pollingIntervallInSeconds,omitempty"`
+	PollingIntervalInSeconds        int      `json:"pollingIntervalInSeconds,omitempty"`
 	CertificateNames                []string `json:"certificateNames,omitempty"`
 	CpeValues                       string   `json:"cpeValues,omitempty"`
+	UseFieldsOfAddonDescriptor      string   `json:"useFieldsOfAddonDescriptor,omitempty"`
+	ConditionOnAddonDescriptor      string   `json:"conditionOnAddonDescriptor,omitempty"`
+	StopOnFirstError                bool     `json:"stopOnFirstError,omitempty"`
+	AddonDescriptor                 string   `json:"addonDescriptor,omitempty"`
 }
 
 type abapEnvironmentBuildCommonPipelineEnvironment struct {
@@ -171,18 +175,22 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
 	cmd.Flags().StringVar(&stepConfig.Phase, "phase", os.Getenv("PIPER_phase"), "Phase as specified in the build script in the backend system")
-	cmd.Flags().StringVar(&stepConfig.Values, "values", os.Getenv("PIPER_values"), "Input values for the build framework")
+	cmd.Flags().StringVar(&stepConfig.Values, "values", os.Getenv("PIPER_values"), "Input values for the build framework, please enter in the format '[{\"value_id\":\"Id1\",\"value\":\"value1\"},{\"value_id\":\"Id2\",\"value\":\"value2\"}]'")
 	cmd.Flags().BoolVar(&stepConfig.DownloadAllResultFiles, "downloadAllResultFiles", false, "If true, all build artefacts are downloaded")
-	cmd.Flags().StringSliceVar(&stepConfig.DownloadResultFilenames, "downloadResultFilenames", []string{}, "Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored")
+	cmd.Flags().StringSliceVar(&stepConfig.DownloadResultFilenames, "downloadResultFilenames", []string{}, "Only the specified files are downloaded. If downloadAllResultFiles is true, this parameter is ignored")
 	cmd.Flags().BoolVar(&stepConfig.PublishAllDownloadedResultFiles, "publishAllDownloadedResultFiles", false, "If true, it publishes all downloaded files")
 	cmd.Flags().StringSliceVar(&stepConfig.PublishResultFilenames, "publishResultFilenames", []string{}, "Only the specified files get published, in case the file was not downloaded before an error occures")
 	cmd.Flags().StringVar(&stepConfig.SubDirectoryForDownload, "subDirectoryForDownload", os.Getenv("PIPER_subDirectoryForDownload"), "Target directory to store the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly")
 	cmd.Flags().StringVar(&stepConfig.FilenamePrefixForDownload, "filenamePrefixForDownload", os.Getenv("PIPER_filenamePrefixForDownload"), "Filename prefix for the downloaded files, {buildID} and {taskID} can be used and will be resolved accordingly")
 	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "If a warrning occures, the step will be set to unstable")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
-	cmd.Flags().IntVar(&stepConfig.PollingIntervallInSeconds, "pollingIntervallInSeconds", 60, "wait time in seconds till next status request in the backend system")
+	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 60, "wait time in seconds till next status request in the backend system")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
 	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
+	cmd.Flags().StringVar(&stepConfig.UseFieldsOfAddonDescriptor, "useFieldsOfAddonDescriptor", os.Getenv("PIPER_useFieldsOfAddonDescriptor"), "use fields of the addonDescriptor in the cpe as input values. Please enter in the format '[{\"use\":\"Name\",\"renameTo\":\"SWC\"}]'")
+	cmd.Flags().StringVar(&stepConfig.ConditionOnAddonDescriptor, "conditionOnAddonDescriptor", os.Getenv("PIPER_conditionOnAddonDescriptor"), "normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions. Please enter in the format '[{\"field\":\"Status\",\"operator\":\"==\",\"value\":\"P\"}]'")
+	cmd.Flags().BoolVar(&stepConfig.StopOnFirstError, "stopOnFirstError", false, "If false, it does not stop if an error occured for one repository in the addonDescriptor, but continues with the next repository. However the step is marked as failed in the end if an error occured.")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -191,7 +199,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.MarkFlagRequired("publishAllDownloadedResultFiles")
 	cmd.MarkFlagRequired("treatWarningsAsError")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
-	cmd.MarkFlagRequired("pollingIntervallInSeconds")
+	cmd.MarkFlagRequired("pollingIntervalInSeconds")
 }
 
 // retrieve step metadata
@@ -371,7 +379,7 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Default:     360,
 					},
 					{
-						Name:        "pollingIntervallInSeconds",
+						Name:        "pollingIntervalInSeconds",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
@@ -401,6 +409,47 @@ func abapEnvironmentBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_cpeValues"),
+					},
+					{
+						Name:        "useFieldsOfAddonDescriptor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_useFieldsOfAddonDescriptor"),
+					},
+					{
+						Name:        "conditionOnAddonDescriptor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_conditionOnAddonDescriptor"),
+					},
+					{
+						Name:        "stopOnFirstError",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "addonDescriptor",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "abap/addonDescriptor",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

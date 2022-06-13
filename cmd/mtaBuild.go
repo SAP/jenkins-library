@@ -230,7 +230,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mtaBuild"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}
@@ -281,7 +281,6 @@ func runMtaBuild(config mtaBuildOptions,
 				mtarArtifactName := mtarName
 
 				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
-				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".", "/")
 
 				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
@@ -289,7 +288,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
 
-				data, err := os.Open(mtarName)
+				data, err := os.Open(getMtarFilePath(config, mtarName))
 				if err != nil {
 					return errors.Wrap(err, "failed to open mtar archive for upload")
 				}

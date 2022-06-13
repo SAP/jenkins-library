@@ -9,7 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CertificateUpdate adds certificates to the given truststore
 func CertificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, caCertsFile string) error {
+	// TODO this implementation doesn't work on non-linux machines, is not failsafe and should be implemented differently
+
+	if len(certLinks) == 0 {
+		return nil
+	}
+
 	caCerts, err := fileUtils.FileRead(caCertsFile)
 	if err != nil {
 		return errors.Wrapf(err, "failed to load file '%v'", caCertsFile)

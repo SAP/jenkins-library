@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,11 +91,11 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 	sys.previousPName = projectName
 	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
-func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) checkmarx.Team {
+func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) (checkmarx.Team, error) {
 	if teamName == "OpenSource/Cracks/16" {
-		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, nil
 	}
-	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
+	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}, nil
 }
 func (sys *systemMock) FilterTeamByID(_ []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
 	teamIDBytes, _ := teamID.MarshalJSON()
@@ -143,6 +144,9 @@ func (sys *systemMock) CreateProject(string, string) (checkmarx.ProjectCreateRes
 func (sys *systemMock) CreateBranch(int, string) int {
 	return 18
 }
+func (sys *systemMock) GetShortDescription(int, int) (checkmarx.ShortDescription, error) {
+	return checkmarx.ShortDescription{Text: "dummyText"}, nil
+}
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
 	sys.getPresetsCalled = true
 	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}, {ID: 16, Name: "CX_Default", OwnerName: "16"}}
@@ -177,8 +181,8 @@ func (sys *systemMockForExistingProject) GetProjectByID(int) (checkmarx.Project,
 func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 }
-func (sys *systemMockForExistingProject) FilterTeamByName([]checkmarx.Team, string) checkmarx.Team {
-	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+func (sys *systemMockForExistingProject) FilterTeamByName([]checkmarx.Team, string) (checkmarx.Team, error) {
+	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, nil
 }
 func (sys *systemMockForExistingProject) FilterTeamByID([]checkmarx.Team, json.RawMessage) checkmarx.Team {
 	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
@@ -197,6 +201,9 @@ func (sys *systemMockForExistingProject) GetResults(int) checkmarx.ResultsStatis
 }
 func (sys *systemMockForExistingProject) GetScans(int) ([]checkmarx.ScanStatus, error) {
 	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
+}
+func (sys *systemMockForExistingProject) GetShortDescription(int, int) (checkmarx.ShortDescription, error) {
+	return checkmarx.ShortDescription{Text: "dummyText"}, nil
 }
 func (sys *systemMockForExistingProject) GetScanStatusAndDetail(int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
@@ -240,6 +247,8 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnWriteFile      bool
 	errorOnPathMatch      bool
 	workspace             string
+	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
+	ghCreateIssueError    error
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
@@ -283,6 +292,14 @@ func (c checkmarxExecuteScanUtilsMock) Open(name string) (*os.File, error) {
 		return nil, fmt.Errorf("error on Open")
 	}
 	return os.Open(name)
+}
+
+func (c checkmarxExecuteScanUtilsMock) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+	if c.ghCreateIssueError != nil {
+		return c.ghCreateIssueError
+	}
+	c.ghCreateIssueOptions = ghCreateIssueOptions
+	return nil
 }
 
 func TestFilterFileGlob(t *testing.T) {

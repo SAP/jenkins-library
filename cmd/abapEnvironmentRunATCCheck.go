@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	var resp *http.Response
 	abapEndpoint := details.URL
 
-	log.Entry().Debugf("Request Body: %s", bodyString)
+	log.Entry().Infof("Request Body: %s", bodyString)
 	var body = []byte(bodyString)
 	details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
 	resp, err = runATC("POST", details, body, client)
@@ -131,16 +132,28 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 		runParameters += ` configuration="` + atcConfig.Configuration + `"`
 	}
 
-	objectSet, err := getATCObjectSet(atcConfig)
+	var objectSetString string
+	//check if OSL Objectset is present
+	if !reflect.DeepEqual(abaputils.ObjectSet{}, atcConfig.ObjectSet) {
+		objectSetString = abaputils.BuildOSLString(atcConfig.ObjectSet)
+	}
+	//if initial - check if ATC Object set is present
+	if objectSetString == "" && (len(atcConfig.Objects.Package) != 0 || len(atcConfig.Objects.SoftwareComponent) != 0) {
+		objectSetString, err = getATCObjectSet(atcConfig)
+	}
 
-	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSet + `</atc:runparameters>`
+	if objectSetString == "" {
+		return objectSetString, fmt.Errorf("Error while parsing ATC test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+	}
+
+	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSetString + `</atc:runparameters>`
 	return bodyString, err
 }
 
 func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfig ATCConfiguration, err error) {
 
 	if config.AtcConfig != "" {
-		// Configuration defaults to AUnitConfig
+		// Configuration defaults to ATC Config
 		log.Entry().Infof("ATC Configuration: %s", config.AtcConfig)
 		atcConfigFile, err := abaputils.ReadConfigFile(config.AtcConfig)
 		if err != nil {
@@ -167,11 +180,6 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 }
 
 func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
-	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
-	}
-
 	objectSet += `<obj:objectSet>`
 
 	//Build SC XML body
@@ -240,23 +248,39 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	return nil
+
 }
 
 func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
-	log.Entry().WithField("ABAP endpoint: ", details.URL).Info("Triggering ATC run")
+	log.Entry().WithField("ABAP endpoint: ", details.URL).Info("triggering ATC run")
 
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	if err != nil {
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	logResponseBody(resp)
+	if err != nil || (resp != nil && resp.StatusCode == 400) { //send request does not seem to produce error with StatusCode 400!!!
+		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
-		return req, fmt.Errorf("Triggering ATC run failed: %w", err)
+		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
 	}
-	defer req.Body.Close()
-	return req, err
+	defer resp.Body.Close()
+	return resp, err
+}
+
+func logResponseBody(resp *http.Response) error {
+	var bodyText []byte
+	var readError error
+	if resp != nil {
+		bodyText, readError = ioutil.ReadAll(resp.Body)
+		if readError != nil {
+			return readError
+		}
+		log.Entry().Infof("Response body: %s", bodyText)
+	}
+	return nil
 }
 
 func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -277,6 +301,7 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
+
 }
 
 func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
@@ -315,11 +340,11 @@ func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetai
 	header := make(map[string][]string)
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
 
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return req, fmt.Errorf("Getting ATC run status failed: %w", err)
+		return resp, fmt.Errorf("Getting ATC run status failed: %w", err)
 	}
-	return req, err
+	return resp, err
 }
 
 func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -330,11 +355,11 @@ func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP
 	header["x-csrf-token"] = []string{details.XCsrfToken}
 	header["Accept"] = []string{"application/vnd.sap.atc.checkstyle.v1+xml"}
 
-	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return req, fmt.Errorf("Getting ATC run results failed: %w", err)
+		return resp, fmt.Errorf("Getting ATC run results failed: %w", err)
 	}
-	return req, err
+	return resp, err
 }
 
 func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.AbapEnvironmentOptions {
@@ -383,9 +408,10 @@ func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
 
 //ATCConfiguration object for parsing yaml config of software components and packages
 type ATCConfiguration struct {
-	CheckVariant  string     `json:"checkvariant,omitempty"`
-	Configuration string     `json:"configuration,omitempty"`
-	Objects       ATCObjects `json:"atcobjects"`
+	CheckVariant  string              `json:"checkvariant,omitempty"`
+	Configuration string              `json:"configuration,omitempty"`
+	Objects       ATCObjects          `json:"atcobjects"`
+	ObjectSet     abaputils.ObjectSet `json:"objectset,omitempty"`
 }
 
 //ATCObjects in form of packages and software components to be checked

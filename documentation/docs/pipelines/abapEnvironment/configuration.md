@@ -9,9 +9,9 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 |--------------------------|-------|
 | Init                     | -     |
 | [Initial Checks](stages/initialChecks.md)           | [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/), [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/), [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/),|
-| [Prepare System](stages/prepareSystem.md)           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)|
-| [Clone Repositories](stages/cloneRepositories.md)       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/), [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/), [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/)|
-| [Test](stages/Test.md)                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/), [abapEnvironmentRunAUnitTest](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/)|
+| [Prepare System](stages/prepareSystem.md)           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/) |
+| [Clone Repositories](stages/cloneRepositories.md)       | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/), [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/), [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/), [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/)|
+| [Test](stages/test.md)                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/), [abapEnvironmentRunAUnitTest](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/), [abapEnvironmentPushATCSystemConfig](https://sap.github.io/jenkins-library/steps/abapEnvironmentPushATCSystemConfig/)|
 | [Build](stages/build.md)                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/),  [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/), [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/), [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/), [abapEnvironmentAssembleConfirm](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssembleConfirm/), [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector/), [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
 | [Integration Tests](stages/integrationTest.md)        | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 | [Confirm](stages/confirm.md)                  | -     |
@@ -110,9 +110,13 @@ stages:
     strategy: 'Clone'
     repositories: 'repositories.yml'
   ATC:
-    active: true
+    # In order to be executed, the ATC stage needs at least one configuration entry
+    # If the ATC stage should not be executed, delete the whole section
+    execute: stage
   AUnit:
-    active: true
+    # In order to be executed, the AUnit stage needs at least one configuration entry
+    # If the AUnit stage should not be executed, delete the whole section
+    execute: stage
   Post:
     cfDeleteServiceKeys: true
 ```
@@ -139,7 +143,7 @@ The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respect
 
 ### ATC & AUnit
 
-The ATC and AUnit stage will be executed, if the `config.yml` file contains an entry for the respective stage. If you are using the default configuration a placeholder entry `active: true` has to be added in order to activate the stages. If you are using a dedicated configuration file - `atcConfig.yml` and `aunitConfig.yml` - this is not necessary.
+The ATC and AUnit stage will be executed, if the `config.yml` file contains an entry for the respective stage. If you are using the default configuration a placeholder entry `execute: stage` has to be added in order to activate the stages. If you are using a dedicated configuration file - `atcConfig.yml` and `aunitConfig.yml` - this is not necessary.
 
 ## 7. Create a Jenkins Pipeline
 

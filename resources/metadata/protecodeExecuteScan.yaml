@@ -99,13 +99,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: includeLayers
-        type: bool
-        description: Flag if the docker layers should be included
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: timeoutMinutes
         aliases:
           - name: protecodeTimeoutMinutes
@@ -275,3 +268,14 @@ spec:
                 type: int
               - name: vulnerabilities
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/toolrun_protecode_*.json"
+            type: protecode
+          - paramRef: reportFileName
+            type: protecode
+          - filePattern: "**/protecodeExecuteScan.json"
+            type: protecode
+          - filePattern: "**/protecodescan_vulns.json"
+            type: protecode

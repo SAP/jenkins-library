@@ -1,10 +1,12 @@
 package abaputils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,8 +14,11 @@ func TestPollEntity(t *testing.T) {
 
 	t.Run("Test poll entity - success case", func(t *testing.T) {
 
+		logResultSuccess := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &ClientMock{
 			BodyList: []string{
+				logResultSuccess,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 			},
@@ -47,9 +52,11 @@ func TestPollEntity(t *testing.T) {
 	})
 
 	t.Run("Test poll entity - error case", func(t *testing.T) {
-
+		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &ClientMock{
 			BodyList: []string{
+				logResultError,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
 			},
@@ -295,5 +302,24 @@ func TestCreateRequestBodies(t *testing.T) {
 		}
 		body := repo.GetPullRequestBody()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
+	})
+}
+
+func TestGetStatus(t *testing.T) {
+	t.Run("Graceful Exit", func(t *testing.T) {
+
+		client := &ClientMock{
+			NilResponse: true,
+			Error:       errors.New("Backend Error"),
+			StatusCode:  500,
+		}
+		connectionDetails := ConnectionDetailsHTTP{
+			URL: "example.com",
+		}
+
+		_, status, err := GetStatus("failure message", connectionDetails, client)
+
+		assert.Error(t, err, "Expected Error")
+		assert.Equal(t, "", status)
 	})
 }

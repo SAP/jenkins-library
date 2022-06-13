@@ -105,6 +105,10 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 	// handle step-parameters (incl. secrets)
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		if paramName == param.Name {
+			furtherInfo := ""
+			if param.DeprecationMessage != "" {
+				furtherInfo += "![deprecated](https://img.shields.io/badge/-deprecated-red)"
+			}
 			if param.Secret {
 				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
 				if param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil {
@@ -116,9 +120,9 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, strings.ToLower(res.Name))
 					}
 				}
-				return checkParameterInfo(secretInfo, true, executionEnvironment)
+				return checkParameterInfo(furtherInfo+secretInfo, true, executionEnvironment)
 			}
-			return checkParameterInfo("", true, executionEnvironment)
+			return checkParameterInfo(furtherInfo, true, executionEnvironment)
 		}
 	}
 	return checkParameterInfo("", true, executionEnvironment)
@@ -159,6 +163,9 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += "| Scope | Details |\n"
 		details += "| ---- | --------- |\n"
 
+		if param.DeprecationMessage != "" {
+			details += fmt.Sprintf("| Deprecated | %v |\n", param.DeprecationMessage)
+		}
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases))
 		details += fmt.Sprintf("| Type | `%v` |\n", param.Type)
 		mandatory, mandatoryString, furtherInfo := parameterMandatoryInformation(param, "")
@@ -214,7 +221,12 @@ func formatDefault(param config.StepParameters, stepParameterNames []string) str
 		defaults := []string{}
 		for _, condDef := range v {
 			//ToDo: add type-specific handling of default
-			defaults = append(defaults, fmt.Sprintf("%v=`%v`: `%v`", condDef.key, condDef.value, condDef.def))
+			if len(condDef.key) > 0 && len(condDef.value) > 0 {
+				defaults = append(defaults, fmt.Sprintf("%v=`%v`: `%v`", condDef.key, condDef.value, condDef.def))
+			} else {
+				// containers with no condition will only hold def
+				defaults = append(defaults, fmt.Sprintf("`%v`", condDef.def))
+			}
 		}
 		return strings.Join(defaults, "<br />")
 	case []interface{}:

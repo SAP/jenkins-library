@@ -44,6 +44,7 @@ spec:
             1. `containerImageName` parameter.
             2. `project.id` field of a `project.toml` file.
             3. `git/repository` parameter of the `commonPipelineEnvironment`.
+            4. `github/repository` parameter of the `commonPipelineEnvironment`.
           If none of the above was found - an error will be raised.
         scope:
           - GENERAL
@@ -64,6 +65,8 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+          - name: commonPipelineEnvironment
+            param: git/commitId
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -104,7 +107,7 @@ spec:
       - name: path
         type: string
         description: |
-          The path should either point to a directory with your sources or an artifact in zip format.
+          Glob that should either point to a directory with your sources or one artifact in zip format.
           This property determines the input to the buildpack.
         scope:
           - PARAMETERS
@@ -113,12 +116,14 @@ spec:
       - name: projectDescriptor
         type: string
         description: |
-          Path to the project.toml file.
+          Relative path to the project.toml file.
           See [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.
           Parameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.
           Environment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.
 
-          Note: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
+          *Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.
+
+          *Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.
         default: project.toml
         scope:
           - PARAMETERS
@@ -188,12 +193,59 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: multipleImages
+        aliases:
+          - name: images
+        type: "[]map[string]interface{}"
+        description: |
+          This parameter is only needed if `cnbBuild` should create multiple images.
+          Otherwise it can be ignored!!!
+
+          In case of multiple images, this array contains one entry for each image. That
+          entry can override any parameter from the main section, e.g.
+
+          ```yaml
+          containerImageTag: latest
+          containerRegistryUrl: docker.io/example
+          dockerConfigJsonCredentialsId: CREDENTIALS
+          multipleImages:
+          - containerImageName: java-app
+            buildpacks:
+            - "java"
+            path: "source/java"
+          - containerImageName: nodejs-app
+            containerImageTag: v1.0.0
+            buildpacks:
+            - "nodejs"
+            path: "source/nodejs"
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: preserveFiles
+        type: "[]string"
+        description: |
+          List of globs, for keeping build results in the Jenkins workspace.
+
+          *Note*: globs will be calculated relative to the [path](#path) property.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: container/registryUrl
+          - name: container/imageDigest
           - name: container/imageNameTag
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
+            type: "[]string"
   containers:
-    - image: "paketobuildpacks/builder:full"
+    - image: "paketobuildpacks/builder:base"

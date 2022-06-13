@@ -43,8 +43,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var defines []string
 	var goals []string
 
-	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
-
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
@@ -66,6 +64,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		defines = append(defines, createBOMConfig...)
 	}
 
+	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
+
 	if config.Verify {
 		goals = append(goals, "verify")
 	} else {
@@ -85,9 +85,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
+	}
+
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}
@@ -181,13 +185,17 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		return errors.Wrap(err, "Could not find the existing java cacerts")
 	}
 
-	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "mavenCaCerts")
+	trustStore := filepath.Join(".pipeline", "mavenCaCerts")
 
 	log.Entry().Infof("copying java cacerts : %s to new cacerts : %s", existingJavaCaCerts, trustStore)
 	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
 
 	if fileUtilserr != nil {
 		return errors.Wrap(err, "Could not copy existing cacerts into new cacerts location ")
+	}
+
+	if err := fileUtils.Chmod(trustStore, 0666); err != nil {
+		return errors.Wrap(err, "unable to provide correct permission to trust store")
 	}
 
 	log.Entry().Infof("using trust store %s", trustStore)
@@ -232,14 +240,6 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
 	return nil
-}
-
-func getWorkingDirForTrustStore() string {
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Entry().WithError(err).WithField("path", workingDir).Debug("Retrieving of work directory failed")
-	}
-	return workingDir
 }
 
 func getTempDirForCertFile() string {

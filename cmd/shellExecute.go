@@ -2,11 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -15,17 +19,20 @@ import (
 type shellExecuteUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
+	piperhttp.Downloader
 }
 
 type shellExecuteUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
 func newShellExecuteUtils() shellExecuteUtils {
 	utils := shellExecuteUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -44,7 +51,15 @@ func shellExecute(config shellExecuteOptions, telemetryData *telemetry.CustomDat
 func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.CustomData, utils shellExecuteUtils) error {
 	// check input data
 	// example for script: sources: ["./script.sh"]
-	for _, source := range config.Sources {
+	for position, source := range config.Sources {
+
+		if strings.Contains(source, "https") {
+			scriptLocation, err := downloadScript(config, utils, source)
+			if err != nil {
+				return errors.Wrapf(err, "script download error")
+			}
+			source = scriptLocation
+		}
 		// check if the script is physically present
 		exists, err := utils.FileExists(source)
 		if err != nil {
@@ -55,8 +70,15 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 			log.Entry().WithError(err).Errorf("the script '%v' could not be found: %v", source, err)
 			return fmt.Errorf("the script '%v' could not be found", source)
 		}
+
+		args := []string{}
+		if len(config.ScriptArguments) > 0 && isArgumentAtPosition(config.ScriptArguments, position) {
+			args = strings.Split(config.ScriptArguments[position], " ")
+		}
+
 		log.Entry().Info("starting running script:", source)
-		err = utils.RunExecutable(source)
+
+		err = utils.RunExecutable(source, args...)
 		if err != nil {
 			log.Entry().Errorln("starting running script:", source)
 		}
@@ -78,4 +100,30 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	}
 
 	return nil
+}
+
+func isArgumentAtPosition(scriptArguments []string, index int) bool {
+	return ((len(scriptArguments) > index) && scriptArguments[index] != "")
+}
+
+func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
+	header := http.Header{}
+	if len(config.GithubToken) > 0 {
+		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
+		header.Set("Accept", "application/vnd.github.v3.raw")
+	}
+
+	log.Entry().Infof("downloading script : %v", url)
+	fileNameParts := strings.Split(url, "/")
+	fileName := fileNameParts[len(fileNameParts)-1]
+	err := utils.DownloadFile(url, filepath.Join(".pipeline", fileName), header, []*http.Cookie{})
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to download script from %v", url)
+	}
+	log.Entry().Infof("downloaded script %v successfully", url)
+	err = fileUtils.Chmod(filepath.Join(".pipeline", fileName), 0555)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to change script permission for %v", filepath.Join(".pipeline", fileName))
+	}
+	return filepath.Join(".pipeline", fileName), nil
 }

@@ -471,9 +471,10 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:  cookieJar,
+		Username:   config.Username,
+		Password:   config.Password,
+		MaxRetries: -1,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -531,9 +532,10 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 		return errors.Wrapf(cookieErr, "creating repository on the ABAP system %v failed", config.Host)
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:  cookieJar,
+		Username:   config.Username,
+		Password:   config.Password,
+		MaxRetries: -1,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -615,7 +617,7 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 	var response configurationMetadataBody
 	log.Entry().Infof("Starting to retrieve configuration metadata from the system")
 	requestURL := config.Host +
-		"/sap/bc/cts_abapvcs/config"
+		"/sap/bc/cts_abapvcs/config?sap-client=" + config.Client
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {

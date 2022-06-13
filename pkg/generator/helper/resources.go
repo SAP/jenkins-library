@@ -3,8 +3,9 @@ package helper
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // PiperEnvironmentResource defines a piper environement resource which stores data across multiple pipeline steps
@@ -69,13 +70,13 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 
 // StructName returns the name of the environment resource struct
 func (p *PiperEnvironmentResource) StructName() string {
-	return fmt.Sprintf("%v%v", p.StepName, strings.Title(p.Name))
+	return fmt.Sprintf("%v%v", p.StepName, piperutils.Title(p.Name))
 }
 
 // StructString returns the golang coding for the struct definition of the environment resource
 func (p *PiperEnvironmentResource) StructString() (string, error) {
 	funcMap := template.FuncMap{
-		"title":             strings.Title,
+		"title":             piperutils.Title,
 		"golangName":        golangName,
 		"resourceFieldType": resourceFieldType,
 	}
@@ -172,7 +173,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 // StructString returns the golang coding for the struct definition of the InfluxResource
 func (i *InfluxResource) StructString() (string, error) {
 	funcMap := template.FuncMap{
-		"title":             strings.Title,
+		"title":             piperutils.Title,
 		"golangName":        golangName,
 		"resourceFieldType": resourceFieldType,
 	}
@@ -193,7 +194,7 @@ func (i *InfluxResource) StructString() (string, error) {
 
 // StructName returns the name of the influx resource struct
 func (i *InfluxResource) StructName() string {
-	return fmt.Sprintf("%v%v", i.StepName, strings.Title(i.Name))
+	return fmt.Sprintf("%v%v", i.StepName, piperutils.Title(i.Name))
 }
 
 // PiperEnvironmentResource defines a piper environement resource which stores data across multiple pipeline steps
@@ -230,6 +231,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig {{ .StepName }}Op
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+        	return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -249,13 +251,13 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig {{ .StepName }}Op
 
 // StructName returns the name of the environment resource struct
 func (p *ReportsResource) StructName() string {
-	return fmt.Sprintf("%v%v", p.StepName, strings.Title(p.Name))
+	return fmt.Sprintf("%v%v", p.StepName, piperutils.Title(p.Name))
 }
 
 // StructString returns the golang coding for the struct definition of the environment resource
 func (p *ReportsResource) StructString() (string, error) {
 	funcMap := template.FuncMap{
-		"title":             strings.Title,
+		"title":             piperutils.Title,
 		"golangName":        golangName,
 		"resourceFieldType": resourceFieldType,
 	}

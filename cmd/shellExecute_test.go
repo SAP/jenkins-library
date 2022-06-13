@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -14,6 +15,11 @@ type shellExecuteMockUtils struct {
 	config *shellExecuteOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*mock.HttpClientMock
+	downloadError error
+	filename      string
+	header        http.Header
+	url           string
 }
 
 type shellExecuteFileMock struct {
@@ -33,12 +39,22 @@ func (f *shellExecuteFileMock) FileExists(path string) (bool, error) {
 	return strings.EqualFold(path, "path/to/script/script.sh"), nil
 }
 
-func newShellExecuteTestsUtils() shellExecuteMockUtils {
+func (f *shellExecuteMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if f.downloadError != nil {
+		return f.downloadError
+	}
+	f.url = url
+	f.filename = filename
+	f.header = header
+	return nil
+}
+
+func newShellExecuteTestsUtils() *shellExecuteMockUtils {
 	utils := shellExecuteMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utils
+	return &utils
 }
 
 func (v *shellExecuteMockUtils) GetConfig() *shellExecuteOptions {
@@ -57,20 +73,67 @@ func TestRunShellExecute(t *testing.T) {
 		assert.EqualError(t, err, "the script 'path/to/script.sh' could not be found")
 	})
 
-	t.Run("success case - script is present", func(t *testing.T) {
-		o := &shellExecuteOptions{}
-		u := newShellExecuteTestsUtils()
-
-		err := runShellExecute(o, nil, u)
-		assert.NoError(t, err)
-	})
-
 	t.Run("success case - script run successfully", func(t *testing.T) {
-		o := &shellExecuteOptions{}
+		o := &shellExecuteOptions{
+			Sources: []string{"path/script.sh"},
+		}
+
 		u := newShellExecuteTestsUtils()
+		u.AddFile("path/script.sh", []byte(`echo dummy`))
 
 		err := runShellExecute(o, nil, u)
+		assert.Equal(t, "path/script.sh", u.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{}, u.ExecMockRunner.Calls[0].Params)
 		assert.NoError(t, err)
 	})
 
+	t.Run("success case - download script header gets added", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:     []string{"https://myScriptLocation/myScript.sh"},
+			GithubToken: "dummy@12345",
+		}
+		u := newShellExecuteTestsUtils()
+
+		runShellExecute(o, nil, u)
+
+		assert.Equal(t, http.Header{"Accept": []string{"application/vnd.github.v3.raw"}, "Authorization": []string{"Token dummy@12345"}}, u.header)
+	})
+
+	t.Run("success case - single positional script arguments gets added to the correct script", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
+			ScriptArguments: []string{"arg1", "arg2"},
+		}
+
+		u := newShellExecuteTestsUtils()
+		u.AddFile("path1/script1.sh", []byte(`echo dummy1`))
+		u.AddFile("path2/script2.sh", []byte(`echo dummy2`))
+
+		err := runShellExecute(o, nil, u)
+
+		assert.Equal(t, "path1/script1.sh", u.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"arg1"}, u.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "path2/script2.sh", u.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"arg2"}, u.ExecMockRunner.Calls[1].Params)
+		assert.NoError(t, err)
+	})
+
+	t.Run("success case - multiple positional script arguments gets added to the correct script", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
+			ScriptArguments: []string{"arg1 arg2", "arg3 arg4"},
+		}
+
+		u := newShellExecuteTestsUtils()
+		u.AddFile("path1/script1.sh", []byte(`echo dummy1`))
+		u.AddFile("path2/script2.sh", []byte(`echo dummy2`))
+
+		err := runShellExecute(o, nil, u)
+
+		assert.Equal(t, "path1/script1.sh", u.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"arg1", "arg2"}, u.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "path2/script2.sh", u.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"arg3", "arg4"}, u.ExecMockRunner.Calls[1].Params)
+		assert.NoError(t, err)
+	})
 }

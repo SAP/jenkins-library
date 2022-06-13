@@ -43,10 +43,100 @@ type GroupAssignment struct {
 
 // Alert
 type Alert struct {
-	Vulnerability Vulnerability `json:"vulnerability"`
-	Library       Library       `json:"library,omitempty"`
-	Project       string        `json:"project,omitempty"`
-	CreationDate  string        `json:"creation_date,omitempty"`
+	Vulnerability    Vulnerability `json:"vulnerability"`
+	Type             string        `json:"type,omitempty"`
+	Level            string        `json:"level,omitempty"`
+	Library          Library       `json:"library,omitempty"`
+	Project          string        `json:"project,omitempty"`
+	DirectDependency bool          `json:"directDependency,omitempty"`
+	Description      string        `json:"description,omitempty"`
+	CreationDate     string        `json:"date,omitempty"`
+	ModifiedDate     string        `json:"modifiedDate,omitempty"`
+	Status           string        `json:"status,omitempty"`
+}
+
+// Title returns the issue title representation of the contents
+func (a Alert) Title() string {
+	return fmt.Sprintf("%v/%v/%v/%v", a.Type, consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Vulnerability.Name, a.Library.ArtifactID)
+}
+
+func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
+	switch cvss3severity {
+	case "low":
+		return "LOW"
+	case "medium":
+		return "MEDIUM"
+	case "high":
+		if cvss3score >= 9 {
+			return "CRITICAL"
+		}
+		return "HIGH"
+	}
+	switch cvss2severity {
+	case "low":
+		return "LOW"
+	case "medium":
+		return "MEDIUM"
+	case "high":
+		if cvss2score >= 9 {
+			return "CRITICAL"
+		}
+		return "HIGH"
+	}
+	return "none"
+}
+
+// ToMarkdown returns the markdown representation of the contents
+func (a Alert) ToMarkdown() ([]byte, error) {
+	score := a.Vulnerability.CVSS3Score
+	if score == 0 {
+		score = a.Vulnerability.Score
+	}
+	return []byte(fmt.Sprintf(
+		`**Vulnerability %v**
+| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
+`,
+		a.Vulnerability.Name,
+		a.Vulnerability.Severity,
+		score,
+		score,
+		a.Library.ArtifactID,
+		a.Library.Version,
+		a.Vulnerability.Description,
+		a.Vulnerability.TopFix.FixResolution,
+		a.Vulnerability.Name,
+		a.Vulnerability.URL,
+	)), nil
+}
+
+// ToTxt returns the textual representation of the contents
+func (a Alert) ToTxt() string {
+	score := a.Vulnerability.CVSS3Score
+	if score == 0 {
+		score = a.Vulnerability.Score
+	}
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Base (NVD) Score: %v
+Temporal Score: %v
+Package: %v
+Installed Version: %v
+Description: %v
+Fix Resolution: %v
+Link: [%v](%v)`,
+		a.Vulnerability.Name,
+		a.Vulnerability.Severity,
+		score,
+		score,
+		a.Library.ArtifactID,
+		a.Library.Version,
+		a.Vulnerability.Description,
+		a.Vulnerability.TopFix.FixResolution,
+		a.Vulnerability.Name,
+		a.Vulnerability.URL,
+	)
 }
 
 // Library
@@ -56,24 +146,23 @@ type Library struct {
 	ArtifactID string `json:"artifactId,omitempty"`
 	GroupID    string `json:"groupId,omitempty"`
 	Version    string `json:"version,omitempty"`
-	Project    string `json:"project,omitempty"`
 }
 
 // Vulnerability defines a vulnerability as returned by WhiteSource
 type Vulnerability struct {
-	Name              string  `json:"name,omitempty"`
-	Type              string  `json:"type,omitempty"`
-	Severity          string  `json:"severity,omitempty"`
-	Score             float64 `json:"score,omitempty"`
-	CVSS3Severity     string  `json:"cvss3_severity,omitempty"`
-	CVSS3Score        float64 `json:"cvss3_score,omitempty"`
-	PublishDate       string  `json:"publishDate,omitempty"`
-	URL               string  `json:"url,omitempty"`
-	Description       string  `json:"description,omitempty"`
-	TopFix            Fix     `json:"topFix,omitempty"`
-	AllFixes          []Fix   `json:"allFixes,omitempty"`
-	Level             string  `json:"level,omitempty"`
-	FixResolutionText string  `json:"fixResolutionText,omitempty"`
+	Name              string      `json:"name,omitempty"`
+	Type              string      `json:"type,omitempty"`
+	Severity          string      `json:"severity,omitempty"`
+	Score             float64     `json:"score,omitempty"`
+	CVSS3Severity     string      `json:"cvss3_severity,omitempty"`
+	CVSS3Score        float64     `json:"cvss3_score,omitempty"`
+	PublishDate       string      `json:"publishDate,omitempty"`
+	URL               string      `json:"url,omitempty"`
+	Description       string      `json:"description,omitempty"`
+	TopFix            Fix         `json:"topFix,omitempty"`
+	AllFixes          []Fix       `json:"allFixes,omitempty"`
+	FixResolutionText string      `json:"fixResolutionText,omitempty"`
+	References        []Reference `json:"references,omitempty"`
 }
 
 // Fix defines a Fix as returned by WhiteSource
@@ -86,6 +175,13 @@ type Fix struct {
 	Date          string `json:"date,omitempty"`
 	Message       string `json:"message,omitempty"`
 	ExtraData     string `json:"extraData,omitempty"`
+}
+
+// Reference defines a reference for the library affected
+type Reference struct {
+	URL                 string `json:"url,omitempty"`
+	Homepage            string `json:"homepage,omitempty"`
+	GenericPackageIndex string `json:"genericPackageIndex,omitempty"`
 }
 
 // Project defines a WhiteSource project with name and token
@@ -525,11 +621,10 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 	response, err := s.httpClient.SendRequest(http.MethodPost, s.serverURL, bytes.NewBuffer(body), headers, nil)
-
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to send request to WhiteSource")
 	}
-
+	defer response.Body.Close()
 	responseBody, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
