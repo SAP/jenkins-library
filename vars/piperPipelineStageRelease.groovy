@@ -26,7 +26,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
     /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
-    'npmExecuteEndToEndTests'
+    'npmExecuteEndToEndTests',
     /** This step uploads SAPUI5 application to the SAPUI5 ABAP repository. */
     'transportRequestUploadCTS'
 ]
