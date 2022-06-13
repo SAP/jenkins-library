@@ -4,6 +4,10 @@ metadata:
   longDescription: This step runs a gradle build command with parameters provided to the step.
 spec:
   inputs:
+    secrets:
+      - name: gradleSensitivePropertiesFileCredentialsId
+        description: gradle sensitive properties credentials ID
+        type: jenkins
     params:
       - name: path
         aliases:
@@ -76,37 +80,54 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-      - name: artifactVersion
+      - name: gradlePropertiesFile
         type: string
-        description: Version of the artifact to be built.
+        description: Path to the .properties file that should be used as project settings file.
         scope:
           - GENERAL
-          - PARAMETERS
-          - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
-      - name: artifactGroupId
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: gradle/gradlePropertiesFile
+        default: gradle.properties
+      - name: gradleSensitivePropertiesFile
         type: string
-        description: The group of the artifact.
+        description: .properties file containing sensitive info e.g. credentials
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
         resourceRef:
           - name: commonPipelineEnvironment
-            param: groupId
-      - name: artifactId
-        type: string
-        description: The name of the artifact.
+            param: custom/gradleSensitivePropertiesFile
+          - name: gradleSensitivePropertiesFileCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: gradleSensitivePropertiesFileVaultSecretName
+            default: gradle-sensitive-props
+      - name: rootProjectConfig
+        aliases:
+          - name: rootProject
+        type: "map[string]interface{}"
         scope:
-          - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactId
+      - name: subprojectsCommonConfig
+        aliases:
+        - name: subprojectsCommon
+        type: "map[string]interface{}"
+        scope:
+          - STAGES
+          - STEPS
+      - name: subprojectsCustomConfigs
+        aliases:
+          - name: subprojectsCommon
+        type: "[]map[string]interface{}"
+        scope:
+          - STAGES
+          - STEPS
       - name: useWrapper
         type: bool
         description: If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.
