@@ -184,6 +184,17 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		assert.Equal(t, ConfigOptions{{Name: "ignoreSourceFiles", Value: true, Force: true}, {Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
 	})
 
+	t.Run("success case", func(t *testing.T) {
+                utilsMock := NewScanUtilsMock()
+                var testConfig ConfigOptions
+                whitesourceConfig := ScanOptions{
+                        BuildTool: "dub",
+                }
+                err := testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+                assert.NoError(t, err)
+                assert.Equal(t, ConfigOptions{{Name: "fileSystemScan", Value: false, Force: true}, {Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
+        })
+
 	t.Run("error case", func(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		var testConfig ConfigOptions
