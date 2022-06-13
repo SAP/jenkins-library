@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/ans"
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -12,10 +12,6 @@ import (
 const testTimestamp = 1651585103
 
 func TestRunAnsSendEvent(t *testing.T) {
-	t.Parallel()
-
-	log.Entry().Data["stepName"] = "testStep"
-
 	tests := []struct {
 		name       string
 		config     ansSendEventOptions
@@ -45,15 +41,12 @@ func TestRunAnsSendEvent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			defer tt.ansMock.cleanup()
 			if err := runAnsSendEvent(&tt.config, &tt.ansMock); tt.wantErrMsg != "" {
 				assert.EqualError(t, err, tt.wantErrMsg)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, "https://my.test.backend", tt.ansMock.testANS.URL)
-				assert.Equal(t, "myTestClientID", tt.ansMock.testANS.XSUAA.ClientID)
-				assert.Equal(t, "super secret", tt.ansMock.testANS.XSUAA.ClientSecret)
-				assert.Equal(t, "https://my.test.oauth.provider", tt.ansMock.testANS.XSUAA.OAuthURL)
+				assert.Equal(t, defaultXsuaa(), tt.ansMock.testANS.XSUAA)
 				assert.Equal(t, defaultEvent(), tt.ansMock.testEvent)
 			}
 
@@ -97,6 +90,14 @@ func defaultEvent() ans.Event {
 	}
 }
 
+func defaultXsuaa() xsuaa.XSUAA {
+	return xsuaa.XSUAA{
+		OAuthURL:        "https://my.test.oauth.provider",
+		ClientID:        "myTestClientID",
+		ClientSecret:    "super secret",
+	}
+}
+
 const goodServiceKey = `{
 				"url": "https://my.test.backend",
 				"client_id": "myTestClientID",
@@ -125,8 +126,4 @@ func (am ansMock) CheckCorrectSetup() error {
 
 func (am *ansMock) SetServiceKey(serviceKey ans.ServiceKey) {
 	am.testANS.SetServiceKey(serviceKey)
-}
-
-func (am *ansMock) cleanup() {
-	am = &ansMock{}
 }
