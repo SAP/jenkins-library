@@ -3,9 +3,11 @@ package checkmarx
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -135,6 +137,8 @@ func ConvertCxxmlToSarif(sys System, xmlReportName string, scanID int) (format.S
 func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
+
+	start := time.Now() // For the conversion start time
 
 	var cxxml CxXMLResults
 	err := decoder.Decode(&cxxml)
@@ -349,6 +353,15 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
 	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper Checkmarx XML to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	conversion.Invocation.StartTimeUtc = fmt.Sprintf("%s", start.Format("2006-01-02T15:04:05.000Z")) // "YYYY-MM-DDThh:mm:ss.sZ" on 2006-01-02 15:04:05
+	conversion.Invocation.Account = cxxml.InitiatorName
+	sarif.Runs[0].Conversion = conversion
 
 	return sarif, nil
 }

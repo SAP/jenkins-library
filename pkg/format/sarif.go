@@ -110,7 +110,7 @@ type Tool struct {
 // Driver meta information for the scan and tool context
 type Driver struct {
 	Name                string                `json:"name"`
-	Version             string                `json:"version"`
+	Version             string                `json:"version,omitempty"`
 	GUID                string                `json:"guid,omitempty"`
 	InformationUri      string                `json:"informationUri,omitempty"`
 	Rules               []SarifRule           `json:"rules,omitempty"`
