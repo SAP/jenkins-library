@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -15,7 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/format"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // FVDL This struct encapsulates everyting in the FVDL document
@@ -112,14 +113,14 @@ type ClassInfo struct {
 	Type            string   `xml:"Type"`
 	Subtype         string   `xml:"Subtype,omitempty"`
 	AnalyzerName    string   `xml:"AnalyzerName"`
-	DefaultSeverity string   `xml:"DefaultSeverity"`
+	DefaultSeverity float64  `xml:"DefaultSeverity"`
 }
 
 // InstanceInfo
 type InstanceInfo struct {
 	XMLName          xml.Name `xml:"InstanceInfo"`
 	InstanceID       string   `xml:"InstanceID"`
-	InstanceSeverity string   `xml:"InstanceSeverity"`
+	InstanceSeverity float64  `xml:"InstanceSeverity"`
 	Confidence       string   `xml:"Confidence"`
 }
 
@@ -505,7 +506,7 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 		return sarif, err
 	}
 
-	_, err = FileUtils.Unzip(resultFilePath, tmpFolder)
+	_, err = piperutils.Unzip(resultFilePath, tmpFolder)
 	if err != nil {
 		return sarif, err
 	}
@@ -541,17 +542,21 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	log.Entry().Debug("Querying Fortify SSC for batch audit data")
 	oneRequestPerIssueMode := false
 	var auditData []*models.ProjectVersionIssue
-	if sys != nil {
+	maxretries := 5 // Maximum number of requests allowed to fail before stopping them
+	if sys != nil && projectVersion != nil {
 		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
-		if err != nil {
+		if err != nil || len(auditData) == 0 { // It's reasonable to admit that with a length of 0, something went wrong
 			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
 			oneRequestPerIssueMode = true
+			// We do not lower maxretries here in case a "real" bug happened
 		} else {
 			log.Entry().Debug("Request successful, data frame size: ", len(auditData), " audits")
 		}
 	} else {
-		log.Entry().Error("no system instance found, lookup impossible")
+		log.Entry().Error("no system instance or project version found, lookup impossible")
 		oneRequestPerIssueMode = true
+		maxretries = 1 // Set to 1 if the sys instance isn't defined: chances are it couldn't be created, we'll live a chance if there was an unknown bug
+		log.Entry().Debug("request failed: remaining retries ", maxretries)
 	}
 
 	//Now, we handle the sarif
@@ -580,8 +585,18 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Subtype)
 		}
 		result.RuleID = "fortify-" + strings.Join(idArray, "/")
-		// end handle result
-		result.Level = "none" //TODO
+		result.Kind = "fail" // Default value, Level must not be set if kind is not fail
+		// This is an "easy" treatment of result.Level. It does not follow the spec exactly, but the idea is there
+		// An exact processing algorithm can be found here https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/sarif-v2.1.0-os.html#_Toc34317648
+		if fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity >= 3.0 {
+			result.Level = "error"
+		} else if fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity >= 1.5 {
+			result.Level = "warning"
+		} else if fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity < 1.5 {
+			result.Level = "note"
+		} else {
+			result.Level = "none"
+		}
 		//get message
 		for j := 0; j < len(fvdl.Description); j++ {
 			if fvdl.Description[j].ClassID == fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID {
@@ -682,8 +697,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					location = *tfloc
 					//set Kinds
 					threadFlowLocation.Location = tfloc
-					threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "review") //TODO
-					threadFlowLocation.Index = 0                                          // to be safe?
+					//threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "review") //TODO
+					threadFlowLocation.Index = 0 // to be safe?
 					tfla = append(tfla, threadFlowLocation)
 
 					// "Node-in-node" edge case! in some cases the "Reason" object will contain a "Trace>Primary>Entry>Node" object
@@ -770,21 +785,16 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 		//handle properties
 		prop := new(format.SarifProperties)
-		prop.InstanceSeverity = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity
+		prop.InstanceSeverity = strconv.FormatFloat(fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity, 'f', 1, 64)
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
 		//Get the audit data
-		if sys != nil {
-			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
-				log.Entry().Debug(err)
-				prop.Audited = false
-				prop.ToolState = "Unknown"
-				prop.ToolAuditMessage = "Error fetching audit state"
+		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
+			log.Entry().Debug(err)
+			maxretries = maxretries - 1
+			if maxretries >= 0 {
+				log.Entry().Debug("request failed: remaining retries ", maxretries)
 			}
-		} else {
-			prop.Audited = false
-			prop.ToolState = "Unknown"
-			prop.ToolAuditMessage = "Cannot fetch audit state"
 		}
 		result.Properties = prop
 
@@ -812,7 +822,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom, " ")
 					for index, element := range words { // These are required to ensure that titlecase is respected in titles, part of sarif "friendly name" rules
-						words[index] = strings.Title(strings.ToLower(element))
+						words[index] = piperutils.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
@@ -820,7 +830,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type, " ")
 					for index, element := range words {
-						words[index] = strings.Title(strings.ToLower(element))
+						words[index] = piperutils.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
@@ -828,7 +838,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype, " ")
 					for index, element := range words {
-						words[index] = strings.Title(strings.ToLower(element))
+						words[index] = piperutils.Title(strings.ToLower(element))
 					}
 					nameArray = append(nameArray, words...)
 				}
@@ -836,12 +846,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				sarifRule.Name = strings.Join(nameArray, "")
 				defaultConfig := new(format.DefaultConfiguration)
 				defaultConfig.Level = "warning" // Default value
-				defaultConfig.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
+				defaultConfig.Enabled = true    // Default value
+				defaultConfig.Rank = -1.0       // Default value
+				defaultConfig.Properties.DefaultSeverity = strconv.FormatFloat(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity, 'f', 1, 64)
 				sarifRule.DefaultConfiguration = defaultConfig
 
 				//Descriptions
 				for j := 0; j < len(fvdl.Description); j++ {
 					if fvdl.Description[j].ClassID == sarifRule.GUID {
+						//rawAbstract := strings.Join(idArray, "/")
 						rawAbstract := unescapeXML(fvdl.Description[j].Abstract.Text)
 						rawExplanation := unescapeXML(fvdl.Description[j].Explanation.Text)
 
@@ -858,7 +871,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 								}
 								// If Description has a CustomDescription, add it for good measure
 								if fvdl.Description[j].CustomDescription.RuleID != "" {
-									rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
+									rawExplanation = rawExplanation + " \n; " + unescapeXML(fvdl.Description[j].CustomDescription.Explanation.Text)
 								}
 								sd := new(format.Message)
 								sd.Text = rawAbstract
@@ -900,8 +913,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					}
 				}
 				var ruleProp *format.SarifRuleProperties
+				ruleProp = new(format.SarifRuleProperties)
 				if len(propArray) != 0 {
-					ruleProp = new(format.SarifRuleProperties)
 					for j := 0; j < len(propArray); j++ {
 						if propArray[j][0] == "Accuracy" {
 							ruleProp.Accuracy = propArray[j][1]
@@ -912,11 +925,29 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 						}
 					}
 				}
+
+				// Add each part of the "name" in the tags
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+				}
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
+				}
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
+				}
+
+				//Add the SecuritySeverity parameter for GHAS tagging
+				ruleProp.SecuritySeverity = strconv.FormatFloat(2*fvdl.Vulnerabilities.Vulnerability[j].InstanceInfo.InstanceSeverity, 'f', 1, 64)
+
 				sarifRule.Properties = ruleProp
 
 				//relationships: will most likely require some expansion
 				//One relationship per CWE id
 				for j := 0; j < len(cweIds); j++ {
+					if cweIds[j] == "None" {
+						continue
+					}
 					sarifRule.Properties.Tags = append(sarifRule.Properties.Tags, "external/cwe/cwe-"+cweIds[j])
 
 					rls := *new(format.Relationships)
@@ -944,6 +975,15 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	sTax.Index = 1
 	sTax.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
 	tool.Driver.SupportedTaxonomies = append(tool.Driver.SupportedTaxonomies, sTax)
+
+	//Add additional rulepacks
+	for pack := 0; pack < len(fvdl.EngineData.RulePacks); pack++ {
+		extension := *new(format.Driver)
+		extension.Name = fvdl.EngineData.RulePacks[pack].Name
+		extension.Version = fvdl.EngineData.RulePacks[pack].Version
+		extension.GUID = fvdl.EngineData.RulePacks[pack].RulePackID
+		tool.Extensions = append(tool.Extensions, extension)
+	}
 
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
@@ -1116,8 +1156,25 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+	// Set default values
+	ruleProp.Audited = false
+	ruleProp.FortifyCategory = "Unknown"
+	ruleProp.ToolSeverity = "Unknown"
+	ruleProp.ToolState = "Unknown"
+	ruleProp.ToolAuditMessage = "Error fetching audit state" // We set this as default for the error phase, then reset it to nothing
+	ruleProp.ToolSeverityIndex = 0
+	ruleProp.ToolStateIndex = 0
+	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
+	if maxretries == 0 {
+		// Max retries reached, we stop there to avoid a longer execution time
+		err := errors.New("request failed: maximum number of retries reached, placeholder values will be set from now on for audit data")
+		return err
+	} else if maxretries < 0 {
+		return nil // Avoid spamming logfile
+	}
 	if sys == nil {
+		ruleProp.ToolAuditMessage = "Cannot fetch audit state: no sys instance"
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
 	}
@@ -1125,6 +1182,8 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}
+	// Reset the audit message
+	ruleProp.ToolAuditMessage = ""
 	var data []*models.ProjectVersionIssue
 	var err error
 	if oneRequestPerIssue {
@@ -1143,6 +1202,17 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
 		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+	}
+	if filterSet != nil {
+		for i := 0; i < len(filterSet.Folders); i++ {
+			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
+				ruleProp.FortifyCategory = filterSet.Folders[i].Name
+				break
+			}
+		}
+	} else {
+		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
+		return err
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
@@ -1184,17 +1254,6 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		}
 		ruleProp.ToolAuditMessage = unescapeXML(*commentData[0].Comment)
 	}
-	if filterSet != nil {
-		for i := 0; i < len(filterSet.Folders); i++ {
-			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
-				ruleProp.FortifyCategory = filterSet.Folders[i].Name
-				break
-			}
-		}
-	} else {
-		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
-		return err
-	}
 	return nil
 }
 
@@ -1233,9 +1292,9 @@ func handleSnippet(snippetType string, snippet string) string {
 func unescapeXML(input string) string {
 	raw := input
 	// Post-treat string to change the XML escaping generated by Unmarshal
+	raw = strings.ReplaceAll(raw, "&amp;", "&")
 	raw = strings.ReplaceAll(raw, "&lt;", "<")
 	raw = strings.ReplaceAll(raw, "&gt;", ">")
-	raw = strings.ReplaceAll(raw, "&amp;", "&")
 	raw = strings.ReplaceAll(raw, "&apos;", "'")
 	raw = strings.ReplaceAll(raw, "&quot;", "\"")
 	return raw

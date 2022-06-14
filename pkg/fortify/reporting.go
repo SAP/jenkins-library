@@ -22,6 +22,7 @@ import (
 type FortifyReportData struct {
 	ToolName                            string                  `json:"toolName"`
 	ToolInstance                        string                  `json:"toolInstance"`
+	ProjectID                           int64                   `json:"projectID"`
 	ProjectName                         string                  `json:"projectName"`
 	ProjectVersion                      string                  `json:"projectVersion"`
 	ProjectVersionID                    int64                   `json:"projectVersionID"`
