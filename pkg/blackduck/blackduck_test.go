@@ -496,6 +496,23 @@ func TestGetProjectVersionLink(t *testing.T) {
 	})
 }
 
+func TestAddDefaultProjectTag(t *testing.T) {
+	t.Run("Success Case", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                authContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/tags": "",
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		err := bdClient.AddDefaultProjectTag("5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf")
+		assert.NoError(t, err)
+		headerExpected := http.Header{"Content-Type": {"application/vnd.blackducksoftware.project-detail-4+json"}}
+		assert.Equal(t, headerExpected, myTestClient.header["https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/tags"])
+	})
+}
+
 func TestAuthenticate(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		myTestClient := httpMockClient{

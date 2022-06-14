@@ -536,3 +536,54 @@ func TestDeleteScanSuccess(t *testing.T) {
 		}
 	}
 }
+
+func TestAddDefaultProductTag(t *testing.T) {
+	requestURI := ""
+	var passedHeaders = map[string][]string{}
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		passedHeaders = map[string][]string{}
+		if req.Header != nil {
+			for name, headers := range req.Header {
+				passedHeaders[name] = headers
+			}
+		}
+
+		rw.Write([]byte("OK"))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	pc := makeProtecode(Options{})
+	po := Options{ServerURL: server.URL}
+	pc.SetOptions(po)
+
+	cases := []struct {
+		pc        Protecode
+		productID int
+		want      string
+	}{
+		{pc, 1, "/api/product/1/custom-data"},
+	}
+	for _, c := range cases {
+
+		err := pc.AddDefaultProductTag(c.productID)
+		assert.NoError(t, err)
+		assert.Equal(t, requestURI, c.want)
+	}
+	cases = []struct {
+		pc        Protecode
+		productID int
+		want      string
+	}{
+		{pc, 2, "piper.io"},
+	}
+	for _, c := range cases {
+
+		err := pc.AddDefaultProductTag(c.productID)
+		assert.NoError(t, err)
+		assert.Equal(t, passedHeaders["Meta-Scan-Source"][0], c.want)
+	}
+}
