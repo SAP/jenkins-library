@@ -2,6 +2,8 @@
 
 ## ${docGenDescription}
 
+**Note:** This step is deprecated.
+
 ## Prerequisites
 
 * Solution Manager version `ST720 SP08` or newer.

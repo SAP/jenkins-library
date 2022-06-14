@@ -25,7 +25,6 @@ consumer-test/**/workspace
 debug.test
 /cache/protecode
 
-
 # build artifacts
 /piper
 /piper.exe
@@ -46,19 +45,8 @@ ATCResults.xml
 AUnitResults.xml
 ATCResults.html
 AUnitResults.html
-
-<<<<<<< HEAD
-/cmd/*
-=======
-/cmd/temp-*
-/cmd/toolruns
-/cmd/checkmarx
-/cmd/.pipeline
-/cmd/fortify
-/cmd/protecode
-cmd/dockerimagename_latest.tar
-<<<<<<< HEAD
->>>>>>> 06e5ca29 (OSL - AUnit & ATC usage)
-=======
-cmd/atcSystemConfig.json
->>>>>>> b126ba70 (Unittest ATC: packagetree --> package incl. subpackages)
+cmd/checkmarx/piper_checkmarx_report.json
+cmd/fortify/piper_fortify_report.html
+cmd/fortify/piper_fortify_report.json
+cmd/toolruns/toolrun_malwarescan_20220519143229.json
+cmd/toolruns/toolrun_protecode_20220519143230.json

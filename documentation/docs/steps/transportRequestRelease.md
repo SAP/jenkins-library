@@ -2,6 +2,8 @@
 
 ## ${docGenDescription}
 
+**Note:** This step is deprecated.
+
 ## Prerequisites
 
 * No prerequisites

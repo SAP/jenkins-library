@@ -291,9 +291,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config

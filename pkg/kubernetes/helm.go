@@ -45,6 +45,7 @@ type HelmExecuteOptions struct {
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
 	Version                   string   `json:"version,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
+	PublishVersion            string   `json:"publishVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
 	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
@@ -399,7 +400,7 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.Version+".tgz")
+	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PublishVersion+".tgz")
 
 	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
 

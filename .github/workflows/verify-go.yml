@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.17.x'
+          go-version: '1.18.x'
       - name: Cache Golang Packages
         uses: actions/cache@v1
         with:
@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.17.x'
+          go-version: '1.18.x'
       - name: Cache Golang Packages
         uses: actions/cache@v1
         with:
@@ -56,20 +56,24 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.18.x'
       - name: checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
       - name: staticcheck
-        uses: dominikh/staticcheck-action@v1.1.0
+        uses: dominikh/staticcheck-action@v1.2.0
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
+          install-go: false
   generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.17.x'
+          go-version: '1.18.x'
       - name: Cache Golang Packages
         uses: actions/cache@v1
         with:
@@ -89,7 +93,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.17.x'
+          go-version: '1.18.x'
       - name: Cache Golang Packages
         uses: actions/cache@v1
         with:
