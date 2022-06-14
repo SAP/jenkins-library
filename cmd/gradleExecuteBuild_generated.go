@@ -23,16 +23,13 @@ type gradleExecuteBuildOptions struct {
 	Path                          string                   `json:"path,omitempty"`
 	Tasks                         []string                 `json:"tasks,omitempty"`
 	SkipTasks                     []string                 `json:"skipTasks,omitempty"`
-	Publish                       bool                     `json:"publish,omitempty"`
 	RepositoryURL                 string                   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword            string                   `json:"repositoryPassword,omitempty"`
 	RepositoryUsername            string                   `json:"repositoryUsername,omitempty"`
-	CreateBOM                     bool                     `json:"createBOM,omitempty"`
 	GradlePropertiesFile          string                   `json:"gradlePropertiesFile,omitempty"`
 	GradleSensitivePropertiesFile string                   `json:"gradleSensitivePropertiesFile,omitempty"`
-	RootProjectConfig             map[string]interface{}   `json:"rootProjectConfig,omitempty"`
-	SubprojectsCommonConfig       map[string]interface{}   `json:"subprojectsCommonConfig,omitempty"`
-	SubprojectsCustomConfigs      []map[string]interface{} `json:"subprojectsCustomConfigs,omitempty"`
+	ProjectsCommonConfig          map[string]interface{}   `json:"projectsCommonConfig,omitempty"`
+	ProjectsCustomConfigs         []map[string]interface{} `json:"projectsCustomConfigs,omitempty"`
 	UseWrapper                    bool                     `json:"useWrapper,omitempty"`
 }
 
@@ -169,11 +166,9 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.")
 	cmd.Flags().StringSliceVar(&stepConfig.Tasks, "tasks", []string{`build`}, "Gradle tasks that should be executed.")
 	cmd.Flags().StringSliceVar(&stepConfig.SkipTasks, "skipTasks", []string{}, "Gradle tasks that should be excluded.")
-	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures gradle to publish the artifact to a repository.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
-	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().StringVar(&stepConfig.GradlePropertiesFile, "gradlePropertiesFile", `gradle.properties`, "Path to the .properties file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GradleSensitivePropertiesFile, "gradleSensitivePropertiesFile", os.Getenv("PIPER_gradleSensitivePropertiesFile"), ".properties file containing sensitive info e.g. credentials")
 
@@ -223,15 +218,6 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
-						Name:        "publish",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
 						Name: "repositoryUrl",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -274,15 +260,6 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_repositoryUsername"),
 					},
 					{
-						Name:        "createBOM",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
 						Name:        "gradlePropertiesFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
@@ -317,28 +294,20 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_gradleSensitivePropertiesFile"),
 					},
 					{
-						Name:        "rootProjectConfig",
+						Name:        "projectsCommonConfig",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STAGES", "STEPS"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "rootProject"}},
+						Aliases:     []config.Alias{{Name: "projectsCommon"}},
 					},
 					{
-						Name:        "subprojectsCommonConfig",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "subprojectsCommon"}},
-					},
-					{
-						Name:        "subprojectsCustomConfigs",
+						Name:        "projectsCustomConfigs",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STAGES", "STEPS"},
 						Type:        "[]map[string]interface{}",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "subprojectsCommon"}},
+						Aliases:     []config.Alias{{Name: "projectsCustom"}},
 					},
 					{
 						Name:        "useWrapper",

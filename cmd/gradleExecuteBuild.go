@@ -18,7 +18,6 @@ const (
 	temporaryGradlePropertiesFile = "gradle.properties.tmp"
 	bomGradleTaskName             = "cyclonedxBom"
 	publishTaskName               = "publish"
-	tasksTaskName                 = "tasks"
 	initScriptContentTemplate     = `
 initscript {
   repositories {
@@ -34,153 +33,94 @@ initscript {
     classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
   }
 }
-rootProject {
-    ext {
-        rootPluginsList = project.hasProperty("rootPluginsList") ? project.getProperty("rootPluginsList") : 'java'
-        rootComponent = project.hasProperty("rootComponent") ? project.getProperty("rootComponent") : 'java'
-        rootArtifactId = project.hasProperty("rootArtifactId") ? project.getProperty("rootArtifactId") : ''
-        rootGroupId = project.hasProperty("rootGroupId") ? project.getProperty("rootGroupId") : ''
-        rootVersion = project.hasProperty("rootVersion") ? project.getProperty("rootVersion") : ''
-        rootUseDeclaredVersioning = project.hasProperty("rootUseDeclaredVersioning") ? project.getProperty("rootUseDeclaredVersioning").toBoolean() : false
-        rootCreateBOM = project.hasProperty("rootCreateBOM") ? project.getProperty("rootCreateBOM").toBoolean() : false
-        rootPublish = project.hasProperty("rootPublish") ? project.getProperty("rootPublish").toBoolean() : false
-   }
 
-    for(projectPlugin in rootPluginsList.tokenize(",")) {
+apply plugin: EnterpriseRepositoryPlugin
+class EnterpriseRepositoryPlugin implements Plugin < Gradle > {
+
+  void apply(Gradle gradle) {
+
+    gradle.allprojects {
+      project ->
+      ext {
+        projectsPluginsList = properties.hasProperty("projectsPluginsList") ? properties.getProperty("projectsPluginsList") : 'java'
+        projectsComponent = properties.hasProperty("projectsComponent") ? properties.getProperty("projectsComponent") : 'java'
+        projectsUseDeclaredVersioning = project.hasProperty("projectsUseDeclaredVersioning") ? project.getProperty("projectsUseDeclaredVersioning").toBoolean() : false
+        projectsVersion = project.hasProperty("projectsVersion") ? project.getProperty("projectsVersion") : ''
+        projectsGroupId = project.hasProperty("projectsGroupId") ? project.getProperty("projectsGroupId") : ''
+        projectsCreateBOM = project.hasProperty("projectsCreateBOM") ? project.getProperty("projectsCreateBOM").toBoolean() : false
+        projectsPublish = project.hasProperty("projectsPublish") ? project.getProperty("projectsPublish").toBoolean() : false
+
+        projectPluginsList = project.hasProperty(project.name + "--pluginsList") ? project.getProperty(project.name + "--pluginsList") : projectsPluginsList
+        projectPublish = project.hasProperty(project.name + "--publish") ? project.getProperty(project.name + "--publish").toBoolean() : projectsPublish
+        projectComponent = project.hasProperty(project.name + "--component") ? project.getProperty(project.name + "--component") : projectsComponent
+        projectUseDeclaredVersioning = project.hasProperty(project.name + "--useDeclaredVersioning") ? project.getProperty(project.name + "--useDeclaredVersioning").toBoolean() : projectsUseDeclaredVersioning
+        projectVersion = project.hasProperty(project.name + "--version") ? project.getProperty(project.name + "--version") : projectsVersion
+        projectArtifactId = project.hasProperty(project.name + "--artifactId") ? project.getProperty(project.name + "--artifactId") : ''
+        projectGroupId = project.hasProperty(project.name + "--groupId") ? project.getProperty(project.name + "--groupId") : projectsGroupId
+        projectCreateBOM = project.hasProperty(project.name + "--createBOM") ? project.getProperty(project.name + "--createBOM").toBoolean() : projectsCreateBOM
+      }
+
+      for (projectPlugin in projectPluginsList.tokenize(",")) {
         apply plugin: projectPlugin
-    }
+      }
+      if (projectCreateBOM) {
+        apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+      }
 
-    if (rootCreateBOM) {
-        apply plugin: "org.cyclonedx.bom"
-    }
-
-    if (rootPublish) {
-        publishing {
-            publications {
-                maven(MavenPublication) {
-                    if (!rootUseDeclaredVersioning){
-                        versionMapping {
-                            usage('java-api') {
-                                fromResolutionOf('runtimeClasspath')
-                            }
-                            usage('java-runtime') {
-                                fromResolutionResult()
-                            }
-                        }
-                    }
-                    if (rootGroupId != '') {
-                        groupId = rootGroupId
-                    }
-                    if (rootArtifactId != '') {
-                        artifactId = rootArtifactId
-                    }
-                    if (rootVersion != '') {
-                        version = rootVersion
-                    }
-                    from components[rootComponent]
-                }
-            }
-            repositories {
-                maven {
-                    credentials {
-                        username = "{{.RepositoryUsername}}"
-                        password = "{{.RepositoryPassword}}"
-                    }
-                    url = "{{.RepositoryURL}}"
-                }
-            }
-        }
-    }
-}
-subprojects {
-    ext {
-        subprojectsPluginsList = project.hasProperty("subprojectsPluginsList") ? project.getProperty("subprojectsPluginsList") : 'java'
-        subprojectsComponent = project.hasProperty("subprojectsComponent") ? project.getProperty("subprojectsComponent") : 'java'
-        subprojectsUseDeclaredVersioning = project.hasProperty("subprojectsUseDeclaredVersioning") ? project.getProperty("subprojectsUseDeclaredVersioning").toBoolean() : false
-        subprojectsVersion = project.hasProperty("subprojectsVersion") ? project.getProperty("subprojectsVersion") : ''
-        subprojectsGroupId = project.hasProperty("subprojectsGroupId") ? project.getProperty("subprojectsGroupId") : ''
-        subprojectsCreateBOM = project.hasProperty("subprojectsCreateBOM") ? project.getProperty("subprojectsCreateBOM").toBoolean() : false
-        subprojectsPublish = project.hasProperty("subprojectsPublish") ? project.getProperty("subprojectsPublish").toBoolean() : false
-
-        projectPluginsList = project.hasProperty(project.name+"--pluginsList") ? project.getProperty(project.name+"--pluginsList") : subprojectsPluginsList
-        projectPublish = project.hasProperty(project.name+"--publish") ? project.getProperty(project.name+"--publish").toBoolean() : subprojectsPublish
-        projectComponent = project.hasProperty(project.name+"--component") ? project.getProperty(project.name+"--component") : subprojectsComponent
-        projectUseDeclaredVersioning = project.hasProperty(project.name+"--useDeclaredVersioning") ? project.getProperty(project.name+"--useDeclaredVersioning").toBoolean() : subprojectsUseDeclaredVersioning
-        projectVersion = project.hasProperty(project.name+"--version") ? project.getProperty(project.name+"--version") : subprojectsVersion
-        projectArtifactId = project.hasProperty(project.name+"--artifactId") ? project.getProperty(project.name+"--artifactId") : ''
-        projectGroupId = project.hasProperty(project.name+"--groupId") ? project.getProperty(project.name+"--groupId") : subprojectsGroupId
-        projectCreateBOM = project.hasProperty(project.name+"--createBOM") ? project.getProperty(project.name+"--createBOM").toBoolean() : subprojectsCreateBOM
-    }
-
-    for(projectPlugin in projectPluginsList.tokenize(",")){
-        apply plugin: projectPlugin
-    }
-    if (projectCreateBOM) {
-        apply plugin: "org.cyclonedx.bom"
-    }
-
-    if (projectPublish) {
+      if (projectPublish) {
         apply plugin: 'maven-publish'
-        publishing{
-            publications {
-                maven(MavenPublication) {
-                    if (!projectUseDeclaredVersioning){
-                        versionMapping {
-                            usage('java-api') {
-                                fromResolutionOf('runtimeClasspath')
-                            }
-                            usage('java-runtime') {
-                                fromResolutionResult()
-                            }
-                        }
-                    }
-                    if (projectArtifactId != '') {
-                        groupId = projectGroupId
-                    }
-                    if (projectArtifactId != '') {
-                        artifactId = projectArtifactId
-                    }
-                    if (projectVersion != '') {
-                        version = projectVersion
-                    }
-                    from components[projectComponent]
+        publishing {
+          publications {
+            maven(MavenPublication) {
+              if (!projectUseDeclaredVersioning) {
+                versionMapping {
+                  usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                  }
+                  usage('java-runtime') {
+                    fromResolutionResult()
+                  }
                 }
+              }
+              if (projectArtifactId != '') {
+                groupId = projectGroupId
+              }
+              if (projectArtifactId != '') {
+                artifactId = projectArtifactId
+              }
+              if (projectVersion != '') {
+                version = projectVersion
+              }
+              from components[projectComponent]
             }
-            repositories {
-                maven {
-                    credentials {
-                        username = "{{.RepositoryUsername}}"
-                        password = "{{.RepositoryPassword}}"
-                    }
-                    url = "{{.RepositoryURL}}"
-                }
+          }
+          repositories {
+            maven {
+              credentials {
+                username = "{{.RepositoryUsername}}"
+                password = "{{.RepositoryPassword}}"
+              }
+              url = "{{.RepositoryURL}}"
             }
+          }
         }
+      }
     }
+  }
 }
 `
 )
 
-const rootProjectProperties = `
-rootPluginsList={{ or .pluginsList "java-library,jacoco"}}
-rootComponent={{ or .component "java"}}
-rootArtifactId={{ or .artifactId ""}}
-rootGroupId={{ or .groupId ""}}
-rootVersion={{ or .version ""}}
-{{if eq false .createBOM}}rootCreateBOM=false{{end}}{{if .createBOM}}rootCreateBOM={{.createBOM}}{{end}}
-{{if eq false .useDeclaredVersioning}}rootUseDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}rootUseDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
-{{if eq false .publish}}rootPublish=false{{end}}{{if .publish}}rootPublish={{.publish}}{{end}}
+const projectCommonProperties = `
+projectsPluginsList={{ or .pluginsList "java-library,jacoco"}}
+projectsComponent={{ or .component "java"}}
+projectsVersion={{ or .version ""}}
+projectsGroupId={{ or .groupId ""}}
+{{if eq false .publish}}projectsPublish=false{{end}}{{if .publish}}projectsPublish={{.publish}}{{end}}
+{{if eq false .createBOM}}projectsCreateBOM=false{{end}}{{if .createBOM}}projectsCreateBOM={{.createBOM}}{{end}}
+{{if eq false .useDeclaredVersioning}}projectsUseDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}projectsUseDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
 `
-const subprojectCommonProperties = `
-subprojectsPluginsList={{ or .pluginsList "java-library,jacoco"}}
-subprojectsComponent={{ or .component "java"}}
-subprojectsVersion={{ or .version ""}}
-subprojectsGroupId={{ or .groupId ""}}
-{{if eq false .publish}}subprojectsPublish=false{{end}}{{if .publish}}subprojectsPublish={{.publish}}{{end}}
-{{if eq false .createBOM}}subprojectsCreateBOM=false{{end}}{{if .createBOM}}subprojectsCreateBOM={{.createBOM}}{{end}}
-{{if eq false .useDeclaredVersioning}}subprojectsUseDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}subprojectsUseDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
-`
-const subprojectCustomProperties = `
+const projectCustomProperties = `
 {{.projectName}}--pluginsList={{or .pluginsList ""}}
 {{.projectName}}--component={{or .component ""}}
 {{.projectName}}--version={{or .version ""}}
@@ -219,17 +159,17 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 	}
 }
 
-func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) error {
+func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) (bool, error) {
 	if exists, err := utils.FileExists(oldName); err != nil {
-		return errors.Wrapf(err, "unable to check %s file existance", oldName)
+		return false, errors.Wrapf(err, "unable to check %s file existance", oldName)
 	} else {
 		if exists {
 			if err := utils.FileRename(oldName, newName); err != nil {
-				return errors.Wrapf(err, "unable to rename %s file", oldName)
+				return true, errors.Wrapf(err, "unable to rename %s file", oldName)
 			}
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func safeReadFile(utils gradleExecuteBuildUtils, name string) ([]byte, error) {
@@ -261,16 +201,17 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	if err != nil {
 		return errors.Wrapf(err, "failed to read file '%v'", config.GradleSensitivePropertiesFile)
 	}
-	resultProperties, err := extendProperties(config.GradlePropertiesFile, config.RootProjectConfig, config.SubprojectsCommonConfig, config.SubprojectsCustomConfigs, sensitiveProperties)
+	resultProperties, err := extendProperties(utils, config.GradlePropertiesFile, config.ProjectsCommonConfig, config.ProjectsCustomConfigs, sensitiveProperties)
 	if err != nil {
 		return err
 	}
 	//moving original gradle.properties to tmp file
-	if err := safeRenameFile(utils, originalGradlePropertiesFile, temporaryGradlePropertiesFile); err != nil {
+	propertiesExists, err := safeRenameFile(utils, originalGradlePropertiesFile, temporaryGradlePropertiesFile)
+	if err != nil {
 		return err
 	}
 	//then writing generated properties to gradle.properties
-	if err := fileUtils.FileWrite(originalGradlePropertiesFile, resultProperties, 0644); err != nil {
+	if err := utils.FileWrite(originalGradlePropertiesFile, resultProperties, 0644); err != nil {
 		return errors.Wrapf(err, "failed to read file '%v'", originalGradlePropertiesFile)
 	}
 	//once done - removing generated properties and renaming origina gradle.properties back from tmp file
@@ -278,8 +219,14 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		if err := safeRemoveFile(utils, originalGradlePropertiesFile); err != nil {
 			log.Entry().Error(err)
 		}
-		if err := safeRenameFile(utils, temporaryGradlePropertiesFile, originalGradlePropertiesFile); err != nil {
-			log.Entry().Error(err)
+		if propertiesExists {
+			if _, err := safeRenameFile(utils, temporaryGradlePropertiesFile, originalGradlePropertiesFile); err != nil {
+				log.Entry().Error(err)
+			}
+		} else {
+			if err := utils.FileRemove(temporaryGradlePropertiesFile); err != nil {
+				log.Entry().Error(err)
+			}
 		}
 	}()
 
@@ -315,40 +262,35 @@ func getInitScript(options *gradleExecuteBuildOptions) (string, error) {
 	return string(generatedCode.Bytes()), nil
 }
 
-func extendProperties(gradlePropertiesFile string, rootProjectConfig map[string]interface{}, subprojectsCommonConfig map[string]interface{}, subprojectsCustomConfigs []map[string]interface{}, sensitiveProperties []byte) ([]byte, error) {
+func extendProperties(utils gradleExecuteBuildUtils, gradlePropertiesFile string, projectsCommonConfig map[string]interface{}, projectsCustomConfigs []map[string]interface{}, sensitiveProperties []byte) ([]byte, error) {
 	originalProperties := []byte(``)
 	var err error
 	if len(gradlePropertiesFile) > 0 {
-		exists, err := fileUtils.FileExists(gradlePropertiesFile)
+		exists, err := utils.FileExists(gradlePropertiesFile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
 		}
 		if !exists {
 			return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
 		}
-		originalProperties, err = fileUtils.FileRead(gradlePropertiesFile)
+		originalProperties, err = utils.FileRead(gradlePropertiesFile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
 		}
 	}
 	sensitiveProperties = append([]byte("\n"), sensitiveProperties...)
-	tplRootProps := template.Must(template.New("rootProjectProps").Parse(rootProjectProperties))
-	tplSubprojectsCommonProps := template.Must(template.New("subprojectsCommonProps").Parse(subprojectCommonProperties))
-	tplSubprojectsCustomProps := template.Must(template.New("subprojectCustomProps").Parse(subprojectCustomProperties))
+	tplProjectsCommonProps := template.Must(template.New("projectsCommonProps").Parse(projectCommonProperties))
+	tplProjectsCustomProps := template.Must(template.New("projectCustomProps").Parse(projectCustomProperties))
 
-	properties := append(originalProperties, []byte(sensitiveProperties)...)
-	properties, err = appendPropertiesByTemplate(properties, tplRootProps, rootProjectConfig)
+	properties := append(originalProperties, sensitiveProperties...)
+	properties, err = appendPropertiesByTemplate(properties, tplProjectsCommonProps, projectsCommonConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to generate rootProject properties")
+		return nil, errors.Wrapf(err, "failed to generate projects common properties")
 	}
-	properties, err = appendPropertiesByTemplate(properties, tplSubprojectsCommonProps, subprojectsCommonConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to generate subprojects common properties")
-	}
-	for _, cfg := range subprojectsCustomConfigs {
-		properties, err = appendPropertiesByTemplate(properties, tplSubprojectsCustomProps, cfg)
+	for _, cfg := range projectsCustomConfigs {
+		properties, err = appendPropertiesByTemplate(properties, tplProjectsCustomProps, cfg)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate subprojects custom properties")
+			return nil, errors.Wrapf(err, "failed to generate projects custom properties")
 		}
 	}
 	return properties, nil

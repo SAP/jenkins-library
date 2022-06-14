@@ -62,7 +62,6 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 			Path:       "path/to",
 			Tasks:      []string{"build"},
 			UseWrapper: false,
-			CreateBOM:  true,
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils)
@@ -85,7 +84,6 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 			Path:       "path/to",
 			Tasks:      []string{"build"},
 			UseWrapper: false,
-			Publish:    true,
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils)
@@ -151,7 +149,6 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 			Path:       "path/to",
 			Tasks:      []string{"build"},
 			UseWrapper: true,
-			CreateBOM:  true,
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils)
@@ -172,7 +169,6 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 			Path:       "path/to",
 			Tasks:      []string{"build"},
 			UseWrapper: true,
-			Publish:    true,
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils)

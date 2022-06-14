@@ -37,14 +37,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-      - name: publish
-        type: bool
-        description: Configures gradle to publish the artifact to a repository.
-        scope:
-          - STEPS
-          - STAGES
-          - PARAMETERS
-        default: false
       - name: repositoryUrl
         type: string
         description: Url to the repository to which the project artifacts should be published.
@@ -80,14 +72,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-      - name: createBOM
-        type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin.
-        scope:
-          - GENERAL
-          - STEPS
-          - STAGES
-          - PARAMETERS
       - name: gradlePropertiesFile
         type: string
         description: Path to the .properties file that should be used as project settings file.
@@ -115,23 +99,16 @@ spec:
           - type: vaultSecretFile
             name: gradleSensitivePropertiesFileVaultSecretName
             default: gradle-sensitive-props
-      - name: rootProjectConfig
+      - name: projectsCommonConfig
         aliases:
-          - name: rootProject
+        - name: projectsCommon
         type: "map[string]interface{}"
         scope:
           - STAGES
           - STEPS
-      - name: subprojectsCommonConfig
+      - name: projectsCustomConfigs
         aliases:
-        - name: subprojectsCommon
-        type: "map[string]interface{}"
-        scope:
-          - STAGES
-          - STEPS
-      - name: subprojectsCustomConfigs
-        aliases:
-          - name: subprojectsCommon
+          - name: projectsCustom
         type: "[]map[string]interface{}"
         scope:
           - STAGES

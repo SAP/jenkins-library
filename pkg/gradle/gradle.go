@@ -130,7 +130,7 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 
 	// default value for task is 'build', so no necessary to checking for empty parameter
 	parameters = append(parameters, append(options.Tasks, options.InitScriptTasks...)...)
-
+	log.Entry().Infof("the folowing tasks will be called: %v", parameters)
 	for _, task := range options.SkipTasks {
 		parameters = append(parameters, "-x", task)
 	}
