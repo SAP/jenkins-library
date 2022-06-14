@@ -159,17 +159,17 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 	}
 }
 
-func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) (bool, error) {
+func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) error {
 	if exists, err := utils.FileExists(oldName); err != nil {
-		return false, errors.Wrapf(err, "unable to check %s file existance", oldName)
+		return errors.Wrapf(err, "unable to check %s file existance", oldName)
 	} else {
 		if exists {
 			if err := utils.FileRename(oldName, newName); err != nil {
-				return true, errors.Wrapf(err, "unable to rename %s file", oldName)
+				return errors.Wrapf(err, "unable to rename %s file", oldName)
 			}
 		}
 	}
-	return false, nil
+	return nil
 }
 
 func safeReadFile(utils gradleExecuteBuildUtils, name string) ([]byte, error) {
@@ -206,8 +206,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		return err
 	}
 	//moving original gradle.properties to tmp file
-	propertiesExists, err := safeRenameFile(utils, originalGradlePropertiesFile, temporaryGradlePropertiesFile)
-	if err != nil {
+	if err := safeRenameFile(utils, originalGradlePropertiesFile, temporaryGradlePropertiesFile); err != nil {
 		return err
 	}
 	//then writing generated properties to gradle.properties
@@ -219,14 +218,8 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		if err := safeRemoveFile(utils, originalGradlePropertiesFile); err != nil {
 			log.Entry().Error(err)
 		}
-		if propertiesExists {
-			if _, err := safeRenameFile(utils, temporaryGradlePropertiesFile, originalGradlePropertiesFile); err != nil {
-				log.Entry().Error(err)
-			}
-		} else {
-			if err := utils.FileRemove(temporaryGradlePropertiesFile); err != nil {
-				log.Entry().Error(err)
-			}
+		if err := safeRenameFile(utils, temporaryGradlePropertiesFile, originalGradlePropertiesFile); err != nil {
+			log.Entry().Error(err)
 		}
 	}()
 

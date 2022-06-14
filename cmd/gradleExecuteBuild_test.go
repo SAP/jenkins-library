@@ -34,8 +34,12 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 	t.Run("success case - only build", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{},
-			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
+			},
+			FilesMock: &mock.FilesMock{},
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
@@ -54,8 +58,12 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 	t.Run("success case - bom creation", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{},
-			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
+			},
+			FilesMock: &mock.FilesMock{},
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
@@ -76,8 +84,12 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 	t.Run("success case - publishing of artifacts", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{},
-			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
+			},
+			FilesMock: &mock.FilesMock{},
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
@@ -98,8 +110,12 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 	t.Run("success case - build using wrapper", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{},
-			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
+			},
+			FilesMock: &mock.FilesMock{},
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		utils.FilesMock.AddFile("gradlew", []byte{})
@@ -120,6 +136,9 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 	t.Run("failed case - build", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
 				ShouldFailOnCommand: map[string]error{"gradle build cyclonedxBom publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to build")},
 			},
 			FilesMock: &mock.FilesMock{},
@@ -139,6 +158,9 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 	t.Run("failed case - bom creation", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
 				ShouldFailOnCommand: map[string]error{"gradlew build cyclonedxBom publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to create bom")},
 			},
 			FilesMock: &mock.FilesMock{},
@@ -159,6 +181,9 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 	t.Run("failed case - publish artifacts", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "cyclonedxBom publish",
+				},
 				ShouldFailOnCommand: map[string]error{"./gradlew build cyclonedxBom publish -p path/to --init-script initScript.gradle.tmp": errors.New("failed to publish artifacts")},
 			},
 			FilesMock: &mock.FilesMock{},

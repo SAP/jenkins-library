@@ -74,7 +74,7 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed list gradle tasks: %v", err)
 		}
-		if hasTasks {
+		if !hasTasks {
 			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
 			if err != nil {
 				return "", fmt.Errorf("failed create init script: %v", err)
@@ -117,12 +117,12 @@ func hasAllTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *b
 		return false, err
 	}
 	tasksOut := stdOutBuf.String()
-	for _, task := range options.InitScriptTasks {
+	for _, task := range tasks {
 		if !strings.Contains(tasksOut, task) {
-			return true, nil
+			return false, nil
 		}
 	}
-	return false, nil
+	return true, nil
 }
 
 func getParametersFromOptions(options *ExecuteOptions) []string {
