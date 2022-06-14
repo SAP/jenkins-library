@@ -376,7 +376,7 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
 		}
 
-		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, version, productID, replaceBinary)
+		resultData := client.UploadScanFile(config.CleanupMode, config.Group, config.CustomDataJSONMap, pathToFile, combinedFileName, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}

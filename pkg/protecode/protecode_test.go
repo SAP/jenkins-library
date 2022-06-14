@@ -419,28 +419,29 @@ func TestUploadScanFileSuccess(t *testing.T) {
 	}
 
 	cases := []struct {
-		cleanupMode    string
-		protecodeGroup string
-		filePath       string
-		version        string
-		productID      int
-		replaceBinary  bool
-		want           int
+		cleanupMode       string
+		protecodeGroup    string
+		customDataJSONMap string
+		filePath          string
+		version           string
+		productID         int
+		replaceBinary     bool
+		want              int
 	}{
-		{"binary", "group1", testFile.Name(), "", 1, true, 1},
-		{"binary", "group1", testFile.Name(), "custom-test-version", 0, true, 0},
-		{"binary", "group1", testFile.Name(), "1.2.3", -1, true, -1},
+		{"binary", "group1", `{"custom-header": "custom-value"}`, testFile.Name(), "", 1, true, 1},
+		{"binary", "group1", "", testFile.Name(), "custom-test-version", 0, true, 0},
+		{"binary", "group1", "", testFile.Name(), "1.2.3", -1, true, -1},
 
-		{"binary", "group1", testFile.Name(), "", 1, false, 112},
-		{"binary", "group1", testFile.Name(), "custom-test-version", 0, false, 112},
-		{"binary", "group1", testFile.Name(), "1.2.3", -1, false, 112},
+		{"binary", "group1", "", testFile.Name(), "", 1, false, 112},
+		{"binary", "group1", "", testFile.Name(), "custom-test-version", 0, false, 112},
+		{"binary", "group1", "", testFile.Name(), "1.2.3", -1, false, 112},
 
 		// {"binary", "group1", testFile.Name(), "/api/upload/dummy"},
 		// {"Test", "group2", testFile.Name(), "/api/upload/dummy"},
 	}
 	for _, c := range cases {
 
-		got := pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.filePath, "dummy.tar", c.version, c.productID, c.replaceBinary)
+		got := pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.customDataJSONMap, c.filePath, "dummy.tar", c.version, c.productID, c.replaceBinary)
 
 		assert.Equal(t, requestURI, "/api/upload/dummy.tar")
 		assert.Contains(t, passedHeaders, "Group")
