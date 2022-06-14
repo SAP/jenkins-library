@@ -23,7 +23,7 @@ via _Jenkins_ -> _Credentials_ -> _System_ -> _Global credentials (unrestricted)
 ### Additional hints
 
 To run the `cnbBuild` with a different builder, you can specify the `dockerImage` parameter.
-Without specifying it, the step will run with the `paketobuildpacks/builder:full` builder.
+Without specifying it, the step will run with the `paketobuildpacks/builder:base` builder.
 
 #### Default Excludes
 

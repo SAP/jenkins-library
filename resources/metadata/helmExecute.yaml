@@ -49,8 +49,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        mandatory: true
-        description: Defines the chart path for helm.
+        description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
           - PARAMETERS
           - STAGES
@@ -69,10 +68,7 @@ spec:
             param: custom/repositoryUrl
       - name: targetRepositoryName
         type: string
-        description: set the chart repository
-        mandatoryIf:
-          - name: helmCommand
-            value: install
+        description: set the chart repository. The value is required for install/upgrade/uninstall commands.
         scope:
           - GENERAL
           - PARAMETERS
@@ -259,6 +255,14 @@ spec:
         type: bool
         description: Configures helm to run the deploy command to publish artifacts to a repository.
         default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: version
+        type: string
+        description: Defines the artifact version to use from helm package/publish commands.
         scope:
           - GENERAL
           - PARAMETERS

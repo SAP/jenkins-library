@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -113,8 +114,9 @@ type Line struct {
 }
 
 // ConvertCxxmlToSarif is the entrypoint for the Parse function
-func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
+func ConvertCxxmlToSarif(sys System, xmlReportName string, scanID int) (format.SARIF, error) {
 	var sarif format.SARIF
+	log.Entry().Debug("Reading audit file.")
 	data, err := ioutil.ReadFile(xmlReportName)
 	if err != nil {
 		return sarif, err
@@ -126,11 +128,11 @@ func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
 	}
 
 	log.Entry().Debug("Calling Parse.")
-	return Parse(data)
+	return Parse(sys, data, scanID)
 }
 
 // Parse function
-func Parse(data []byte) (format.SARIF, error) {
+func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
@@ -148,30 +150,57 @@ func Parse(data []byte) (format.SARIF, error) {
 	checkmarxRun.ColumnKind = "utf16CodeUnits"
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
-	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "CxWebClient/ScanQueryDescription.aspx?"
+	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "/CxWebClient/ScanQueryDescription.aspx?"
 	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
 	cweCounter := 0
+	//maxretries := 5
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
+	log.Entry().Debug("[SARIF] Now handling results.")
 	for i := 0; i < len(cxxml.Query); i++ {
 		//add cweid to array
 		cweIdsForTaxonomies[cxxml.Query[i].CweID] = cweCounter
 		cweCounter = cweCounter + 1
 		for j := 0; j < len(cxxml.Query[i].Result); j++ {
+			var apiDescription string
 			result := *new(format.Results)
 
+			// COMMENTED UNTIL CHECKMARX API WORK AS INTENDED
+			// For rules later, fetch description
+			/*if maxretries == 0 { // Don't spam logfile: only enter the loop if maxretries is positive, and only display the error if it hits 0
+				log.Entry().Error("request failed: maximum number of retries reached, descriptions will no longer be fetched")
+				maxretries = maxretries - 1
+			} else if maxretries > 0 {
+				if sys != nil {
+					apiShortDescription, err := sys.GetShortDescription(scanID, cxxml.Query[i].Result[j].Path.PathID)
+					if err != nil {
+						maxretries = maxretries - 1
+						log.Entry().Debug("request failed: remaining retries ", maxretries)
+						log.Entry().Error(err)
+					} else {
+						apiDescription = apiShortDescription.Text
+					}
+				} else {
+					maxretries = maxretries - 1
+					log.Entry().Debug("request failed: no system instance, remaining retries ", maxretries)
+				}
+			}*/
+
 			//General
-			result.RuleID = cxxml.Query[i].ID
+			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
 			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
 			msg := new(format.Message)
-			msg.Text = cxxml.Query[i].Categories
+			//msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
+			if apiDescription != "" {
+				msg.Text = apiDescription
+			} else {
+				msg.Text = cxxml.Query[i].Name
+			}
 			result.Message = msg
-			analysisTarget := new(format.ArtifactLocation)
-			analysisTarget.URI = cxxml.Query[i].Result[j].FileName
-			result.AnalysisTarget = analysisTarget
+
 			if cxxml.Query[i].Name != "" {
 				msg := new(format.Message)
 				msg.Text = cxxml.Query[i].Name
@@ -181,12 +210,11 @@ func Parse(data []byte) (format.SARIF, error) {
 				loc := *new(format.Location)
 				loc.PhysicalLocation.ArtifactLocation.URI = cxxml.Query[i].Result[j].FileName
 				loc.PhysicalLocation.Region.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				loc.PhysicalLocation.Region.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				loc.PhysicalLocation.Region.StartColumn = cxxml.Query[i].Result[j].Path.PathNode[k].Column
 				snip := new(format.SnippetSarif)
 				snip.Text = cxxml.Query[i].Result[j].Path.PathNode[k].Snippet.Line.Code
 				loc.PhysicalLocation.Region.Snippet = snip
-				loc.PhysicalLocation.ContextRegion.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				loc.PhysicalLocation.ContextRegion.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				loc.PhysicalLocation.ContextRegion.Snippet = snip
 				result.Locations = append(result.Locations, loc)
 
 				//Related Locations
@@ -200,6 +228,9 @@ func Parse(data []byte) (format.SARIF, error) {
 				result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
 			}
+
+			result.PartialFingerprints.CheckmarxSimilarityID = cxxml.Query[i].Result[j].Path.SimilarityID
+			result.PartialFingerprints.PrimaryLocationLineHash = cxxml.Query[i].Result[j].Path.SimilarityID
 
 			//Properties
 			props := new(format.SarifProperties)
@@ -256,17 +287,50 @@ func Parse(data []byte) (format.SARIF, error) {
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-		rule.ID = cxxml.Query[i].ID
-		rule.Name = cxxml.Query[i].Name
+		rule.ID = "checkmarx-" + cxxml.Query[i].ID
+		words := strings.Split(cxxml.Query[i].Name, "_")
+		for w := 0; w < len(words); w++ {
+			words[w] = piperutils.Title(strings.ToLower(words[w]))
+		}
+		rule.Name = strings.Join(words, "")
 		rule.HelpURI = baseURL + "queryID=" + cxxml.Query[i].ID + "&queryVersionCode=" + cxxml.Query[i].QueryVersionCode + "&queryTitle=" + cxxml.Query[i].Name
+		rule.Help = new(format.Help)
+		rule.Help.Text = rule.HelpURI
+		rule.ShortDescription = new(format.Message)
+		rule.ShortDescription.Text = cxxml.Query[i].Name
+		rule.Properties = new(format.SarifRuleProperties)
+		/*if apiDescription != "" {
+			rule.FullDescription = new(format.Message)
+			rule.FullDescription.Text = apiDescription
+		} else */if cxxml.Query[i].Categories != "" {
+			rule.FullDescription = new(format.Message)
+			rule.FullDescription.Text = cxxml.Query[i].Categories
+
+			//split categories on ;
+			cats := strings.Split(cxxml.Query[i].Categories, ";")
+			for cat := 0; cat < len(cats); cat++ {
+				rule.Properties.Tags = append(rule.Properties.Tags, cats[cat])
+			}
+		}
+
+		if cxxml.Query[i].CweID != "" {
+			rule.Properties.Tags = append(rule.Properties.Tags, "external/cwe/cwe-"+cxxml.Query[i].CweID)
+		}
 		rulesArray = append(rulesArray, rule)
 	}
 
 	// Handle driver object
+	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "Checkmarx SCA"
-	tool.Driver.Version = cxxml.CheckmarxVersion
+	versionData := strings.Split(cxxml.CheckmarxVersion, "V ")
+	if len(versionData) > 1 { // Safety check
+		tool.Driver.Version = strings.Split(cxxml.CheckmarxVersion, "V ")[1]
+	} else {
+		tool.Driver.Version = cxxml.CheckmarxVersion // Safe case
+	}
+	tool.Driver.InformationUri = "https://checkmarx.atlassian.net/wiki/spaces/KC/pages/1170245301/Navigating+Scan+Results+v9.0.0+to+v9.2.0"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
 

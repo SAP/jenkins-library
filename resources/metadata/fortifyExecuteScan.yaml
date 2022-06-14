@@ -656,6 +656,8 @@ spec:
                 type: bool
           - name: fortify_data
             fields:
+              - name: projectID
+                type: int64
               - name: projectName
               - name: projectVersion
               - name: projectVersionId

@@ -452,7 +452,7 @@ uri = "some-buildpack"`))
 		assert.Equal(t, "folder", string(customData.Data[0].Path))
 		assert.Contains(t, customData.Data[0].AdditionalTags, "latest")
 		assert.Contains(t, customData.Data[0].BindingKeys, "SECRET")
-		assert.Equal(t, "paketobuildpacks/builder:full", customData.Data[0].Builder)
+		assert.Equal(t, "paketobuildpacks/builder:base", customData.Data[0].Builder)
 
 		assert.Contains(t, customData.Data[0].Buildpacks.FromConfig, "paketobuildpacks/java")
 		assert.NotContains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "paketobuildpacks/java")

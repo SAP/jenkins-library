@@ -43,8 +43,9 @@ type HelmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	PackageVersion            string   `json:"packageVersion,omitempty"`
+	Version                   string   `json:"version,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
+	PublishVersion            string   `json:"publishVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
 	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
@@ -95,6 +96,12 @@ func (h *HelmExecute) runHelmAdd() error {
 	if len(h.config.TargetRepositoryName) == 0 {
 		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
 	}
+	if len(h.config.TargetRepositoryUser) != 0 {
+		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
+	}
+	if len(h.config.TargetRepositoryPassword) != 0 {
+		helmParams = append(helmParams, "--password", h.config.TargetRepositoryPassword)
+	}
 	helmParams = append(helmParams, h.config.TargetRepositoryName)
 	helmParams = append(helmParams, h.config.TargetRepositoryURL)
 	if h.verbose {
@@ -110,8 +117,16 @@ func (h *HelmExecute) runHelmAdd() error {
 
 // RunHelmUpgrade is used to upgrade a release
 func (h *HelmExecute) RunHelmUpgrade() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	err := h.runHelmInit()
 	if err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
+	if err := h.runHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
@@ -184,6 +199,10 @@ func (h *HelmExecute) RunHelmLint() error {
 
 // RunHelmInstall is used to install a chart
 func (h *HelmExecute) RunHelmInstall() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	if err := h.runHelmInit(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
@@ -235,6 +254,10 @@ func (h *HelmExecute) RunHelmUninstall() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
+	if err := h.runHelmAdd(); err != nil {
+		return fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
 	helmParams := []string{
 		"uninstall",
 		h.config.DeploymentName,
@@ -267,6 +290,10 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 // RunHelmPackage is used to package a chart directory into a chart archive
 func (h *HelmExecute) runHelmPackage() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
@@ -276,8 +303,8 @@ func (h *HelmExecute) runHelmPackage() error {
 		"package",
 		h.config.ChartPath,
 	}
-	if len(h.config.PackageVersion) > 0 {
-		helmParams = append(helmParams, "--version", h.config.PackageVersion)
+	if len(h.config.Version) > 0 {
+		helmParams = append(helmParams, "--version", h.config.Version)
 	}
 	if h.config.PackageDependencyUpdate {
 		helmParams = append(helmParams, "--dependency-update")
@@ -373,7 +400,7 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PackageVersion+".tgz")
+	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PublishVersion+".tgz")
 
 	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
 

@@ -248,4 +248,4 @@ spec:
           - name: container/imageDigests
             type: "[]string"
   containers:
-    - image: "paketobuildpacks/builder:full"
+    - image: "paketobuildpacks/builder:base"
