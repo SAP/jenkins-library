@@ -31,6 +31,7 @@ type cnbBuildOptions struct {
 	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
 	MultipleImages            []map[string]interface{} `json:"multipleImages,omitempty"`
 	PreserveFiles             []string                 `json:"preserveFiles,omitempty"`
+	BuildSettingsInfo         string                   `json:"buildSettingsInfo,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -41,6 +42,9 @@ type cnbBuildCommonPipelineEnvironment struct {
 		imageNames    []string
 		imageNameTags []string
 		imageDigests  []string
+	}
+	custom struct {
+		buildSettingsInfo string
 	}
 }
 
@@ -56,6 +60,7 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		{category: "container", name: "imageNames", value: p.container.imageNames},
 		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 		{category: "container", name: "imageDigests", value: p.container.imageDigests},
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
 	errCount := 0
@@ -176,6 +181,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
 
 	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -345,6 +351,20 @@ func cnbBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -362,6 +382,7 @@ func cnbBuildMetadata() config.StepData {
 							{"name": "container/imageNames", "type": "[]string"},
 							{"name": "container/imageNameTags", "type": "[]string"},
 							{"name": "container/imageDigests", "type": "[]string"},
+							{"name": "custom/buildSettingsInfo"},
 						},
 					},
 				},
