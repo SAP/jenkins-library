@@ -47,7 +47,7 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Build': true
         ]
-        jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStageBuild(script: nullScript)
 
         assertThat(stepsCalled, hasItems('cloudFoundryCreateServiceKey',
                                             'abapEnvironmentAssemblePackages',
@@ -64,7 +64,7 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Build': true
         ]
-        jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript,  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageBuild(script: nullScript,  host: 'abc.com')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentAssemblePackages',
                                             'abapEnvironmentBuild',
