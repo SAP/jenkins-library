@@ -233,6 +233,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -247,5 +257,6 @@ spec:
             type: "[]string"
           - name: container/imageDigests
             type: "[]string"
+          - name: custom/buildSettingsInfo
   containers:
     - image: "paketobuildpacks/builder:base"
