@@ -13,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field STAGE_STEP_KEYS = [
     'cloudFoundryCreateServiceKey',
     'abapEnvironmentAssemblePackages',
-    'abapEnvironmentBuild'
+    'abapEnvironmentBuild',
     'abapAddonAssemblyKitRegisterPackages',
     'abapAddonAssemblyKitReleasePackages',
     'abapEnvironmentAssembleConfirm',
