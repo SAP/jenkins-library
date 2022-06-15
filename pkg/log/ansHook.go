@@ -38,6 +38,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	}
 
 	logLevel := entry.Level
+	event.SetSeverityAndCategory(logLevel)
 	for k, v := range entry.Data {
 		event.Tags[k] = v
 	}
@@ -47,10 +48,9 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 
 	event.EventTimestamp = entry.Time.Unix()
 	if event.Subject == "" {
-		event.Subject = fmt.Sprint(entry.Data["stepName"])
+		event.Subject = fmt.Sprintf("Pipeline step '%s' sends '%s'", entry.Data["stepName"], event.Severity)
 	}
 	event.Body = entry.Message
-	event.SetSeverityAndCategory(logLevel)
 	event.Tags["pipeline:logLevel"] = logLevel.String()
 
 	return ansHook.client.Send(event)
