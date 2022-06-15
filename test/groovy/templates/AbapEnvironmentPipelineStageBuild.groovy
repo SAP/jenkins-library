@@ -33,8 +33,8 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
             return body()
         })
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
-        helper.registerAllowedMethod('abapAddonAssemblyKitReserveNextPackages', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitReserveNextPackages')})
         helper.registerAllowedMethod('abapEnvironmentAssemblePackages', [Map.class], {m -> stepsCalled.add('abapEnvironmentAssemblePackages')})
+        helper.registerAllowedMethod('abapEnvironmentBuild', [Map.class], {m -> stepsCalled.add('abapEnvironmentBuild')})
         helper.registerAllowedMethod('abapAddonAssemblyKitRegisterPackages', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitRegisterPackages')})
         helper.registerAllowedMethod('abapAddonAssemblyKitReleasePackages', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitReleasePackages')})
         helper.registerAllowedMethod('abapEnvironmentAssembleConfirm', [Map.class], {m -> stepsCalled.add('abapEnvironmentAssembleConfirm')})
@@ -50,8 +50,8 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
 
         assertThat(stepsCalled, hasItems('cloudFoundryCreateServiceKey',
-                                            'abapAddonAssemblyKitReserveNextPackages',
                                             'abapEnvironmentAssemblePackages',
+                                            'abapEnvironmentBuild',
                                             'abapAddonAssemblyKitRegisterPackages',
                                             'abapAddonAssemblyKitReleasePackages',
                                             'abapEnvironmentAssembleConfirm',
@@ -66,8 +66,8 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         ]
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript,  host: 'abc.com')
 
-        assertThat(stepsCalled, hasItems('abapAddonAssemblyKitReserveNextPackages',
-                                            'abapEnvironmentAssemblePackages',
+        assertThat(stepsCalled, hasItems('abapEnvironmentAssemblePackages',
+                                            'abapEnvironmentBuild',
                                             'abapAddonAssemblyKitRegisterPackages',
                                             'abapAddonAssemblyKitReleasePackages',
                                             'abapEnvironmentAssembleConfirm',
