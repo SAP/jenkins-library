@@ -72,6 +72,8 @@ func (odataFilters *OdataParameters) MakeOdataQuery() (string, error) {
 		DefaultMarshalPresence: qs.OmitEmpty,
 	})
 	values, encodeErr := customMarshaler.Marshal(odataFilters)
-	values = "?" + strings.ReplaceAll(values, "&", "&$")
+	if encodeErr == nil && len(values) > 0 {
+		values = "?" + strings.ReplaceAll(values, "&", "&$")
+	}
 	return values, encodeErr
 }

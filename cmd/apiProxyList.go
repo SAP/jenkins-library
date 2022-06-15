@@ -13,7 +13,6 @@ import (
 )
 
 func apiProxyList(config apiProxyListOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *apiProxyListCommonPipelineEnvironment) {
-
 	httpClient := &piperhttp.Client{}
 	err := runApiProxyList(&config, telemetryData, httpClient, commonPipelineEnvironment)
 	if err != nil {
@@ -44,8 +43,8 @@ func getApiProxyList(config *apiProxyListOptions, apistruct apim.Bundle, commonP
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 	apiProxyListResp, httpErr := httpClient.SendRequest(httpMethod, getApiProxyListURL, nil, header, nil)
-	failureMessage := "Failed to create API provider artefact"
-	successMessage := "Successfully created api provider artefact in API Portal"
+	failureMessage := "Failed to get List of API Proxy"
+	successMessage := "Successfully retrieved the api proxy list from API Portal"
 	httpGetRequestParameters := cpi.HttpFileUploadRequestParameters{
 		ErrMessage:     failureMessage,
 		Response:       apiProxyListResp,
