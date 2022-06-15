@@ -53,6 +53,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                      ]
                                  ]
         Utils.metaClass.echo = { def m -> }
+        helper.registerAllowedMethod('addBadge', [Map], {return})
+        helper.registerAllowedMethod('createSummary', [Map], {return})
     }
 
     @After
