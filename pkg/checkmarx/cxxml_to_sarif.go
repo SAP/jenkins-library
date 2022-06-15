@@ -114,7 +114,7 @@ type Line struct {
 }
 
 // ConvertCxxmlToSarif is the entrypoint for the Parse function
-func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
+func ConvertCxxmlToSarif(sys System, xmlReportName string, scanID int) (format.SARIF, error) {
 	var sarif format.SARIF
 	log.Entry().Debug("Reading audit file.")
 	data, err := ioutil.ReadFile(xmlReportName)
@@ -128,11 +128,11 @@ func ConvertCxxmlToSarif(xmlReportName string) (format.SARIF, error) {
 	}
 
 	log.Entry().Debug("Calling Parse.")
-	return Parse(data)
+	return Parse(sys, data, scanID)
 }
 
 // Parse function
-func Parse(data []byte) (format.SARIF, error) {
+func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
@@ -153,6 +153,7 @@ func Parse(data []byte) (format.SARIF, error) {
 	baseURL := "https://" + strings.Split(cxxml.DeepLink, "/")[2] + "/CxWebClient/ScanQueryDescription.aspx?"
 	cweIdsForTaxonomies := make(map[string]int) //use a map to avoid duplicates
 	cweCounter := 0
+	//maxretries := 5
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
@@ -163,7 +164,29 @@ func Parse(data []byte) (format.SARIF, error) {
 		cweIdsForTaxonomies[cxxml.Query[i].CweID] = cweCounter
 		cweCounter = cweCounter + 1
 		for j := 0; j < len(cxxml.Query[i].Result); j++ {
+			var apiDescription string
 			result := *new(format.Results)
+
+			// COMMENTED UNTIL CHECKMARX API WORK AS INTENDED
+			// For rules later, fetch description
+			/*if maxretries == 0 { // Don't spam logfile: only enter the loop if maxretries is positive, and only display the error if it hits 0
+				log.Entry().Error("request failed: maximum number of retries reached, descriptions will no longer be fetched")
+				maxretries = maxretries - 1
+			} else if maxretries > 0 {
+				if sys != nil {
+					apiShortDescription, err := sys.GetShortDescription(scanID, cxxml.Query[i].Result[j].Path.PathID)
+					if err != nil {
+						maxretries = maxretries - 1
+						log.Entry().Debug("request failed: remaining retries ", maxretries)
+						log.Entry().Error(err)
+					} else {
+						apiDescription = apiShortDescription.Text
+					}
+				} else {
+					maxretries = maxretries - 1
+					log.Entry().Debug("request failed: no system instance, remaining retries ", maxretries)
+				}
+			}*/
 
 			//General
 			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
@@ -171,13 +194,13 @@ func Parse(data []byte) (format.SARIF, error) {
 			result.Level = "none"
 			msg := new(format.Message)
 			//msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
-			msg.Text = cxxml.Query[i].Name
+			if apiDescription != "" {
+				msg.Text = apiDescription
+			} else {
+				msg.Text = cxxml.Query[i].Name
+			}
 			result.Message = msg
-			//analysisTarget := new(format.ArtifactLocation)
-			//analysisTarget.URI = cxxml.Query[i].Result[j].FileName
-			//analysisTarget.Index = index
 
-			//result.AnalysisTarget = analysisTarget
 			if cxxml.Query[i].Name != "" {
 				msg := new(format.Message)
 				msg.Text = cxxml.Query[i].Name
@@ -185,22 +208,6 @@ func Parse(data []byte) (format.SARIF, error) {
 			//Locations
 			for k := 0; k < len(cxxml.Query[i].Result[j].Path.PathNode); k++ {
 				loc := *new(format.Location)
-				/*index := 0
-				//Check if that artifact has been added
-				added := false
-				for file := 0; file < len(sarif.Runs[0].Artifacts); file++ {
-					if sarif.Runs[0].Artifacts[file].Location.Uri == cxxml.Query[i].Result[j].FileName {
-						added = true
-						index = file
-						break
-					}
-				}
-				if !added {
-					artifact := format.Artifact{Location: format.SarifLocation{Uri: cxxml.Query[i].Result[j].FileName}}
-					sarif.Runs[0].Artifacts = append(sarif.Runs[0].Artifacts, artifact)
-					index = len(sarif.Runs[0].Artifacts) - 1
-				}
-				loc.PhysicalLocation.ArtifactLocation.Index = index */
 				loc.PhysicalLocation.ArtifactLocation.URI = cxxml.Query[i].Result[j].FileName
 				loc.PhysicalLocation.Region.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
 				loc.PhysicalLocation.Region.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
@@ -208,9 +215,6 @@ func Parse(data []byte) (format.SARIF, error) {
 				snip := new(format.SnippetSarif)
 				snip.Text = cxxml.Query[i].Result[j].Path.PathNode[k].Snippet.Line.Code
 				loc.PhysicalLocation.Region.Snippet = snip
-				//loc.PhysicalLocation.ContextRegion.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				//loc.PhysicalLocation.ContextRegion.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
-				//loc.PhysicalLocation.ContextRegion.Snippet = snip
 				result.Locations = append(result.Locations, loc)
 
 				//Related Locations
@@ -294,11 +298,21 @@ func Parse(data []byte) (format.SARIF, error) {
 		rule.Help.Text = rule.HelpURI
 		rule.ShortDescription = new(format.Message)
 		rule.ShortDescription.Text = cxxml.Query[i].Name
-		if cxxml.Query[i].Categories != "" {
+		rule.Properties = new(format.SarifRuleProperties)
+		/*if apiDescription != "" {
+			rule.FullDescription = new(format.Message)
+			rule.FullDescription.Text = apiDescription
+		} else */if cxxml.Query[i].Categories != "" {
 			rule.FullDescription = new(format.Message)
 			rule.FullDescription.Text = cxxml.Query[i].Categories
+
+			//split categories on ;
+			cats := strings.Split(cxxml.Query[i].Categories, ";")
+			for cat := 0; cat < len(cats); cat++ {
+				rule.Properties.Tags = append(rule.Properties.Tags, cats[cat])
+			}
 		}
-		rule.Properties = new(format.SarifRuleProperties)
+
 		if cxxml.Query[i].CweID != "" {
 			rule.Properties.Tags = append(rule.Properties.Tags, "external/cwe/cwe-"+cxxml.Query[i].CweID)
 		}
