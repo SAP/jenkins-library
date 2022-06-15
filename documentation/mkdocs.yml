@@ -77,6 +77,7 @@ nav:
         - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - awsS3Upload: steps/awsS3Upload.md
+        - azureBlobUpload: steps/azureBlobUpload.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
