@@ -42,7 +42,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 		event.Tags[k] = v
 	}
 	if errorCategory := GetErrorCategory().String(); errorCategory != "undefined" {
-		event.Tags["errorCategory"] = errorCategory
+		event.Tags["pipeline:errorCategory"] = errorCategory
 	}
 
 	event.EventTimestamp = entry.Time.Unix()
@@ -51,7 +51,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	}
 	event.Body = entry.Message
 	event.SetSeverityAndCategory(logLevel)
-	event.Tags["logLevel"] = logLevel.String()
+	event.Tags["pipeline:logLevel"] = logLevel.String()
 
 	return ansHook.client.Send(event)
 }
