@@ -129,6 +129,7 @@ There are certain extensions:
 
 1. [Logging](#logging)
 1. [Error handling](#error-handling)
+1. [HTTP calls](#http-calls)
 
 Implementing a new step starts by adding a new yaml file in `resources/metadata/` and running
 the [step generator](#generating-step-framework). This creates most of the boiler-plate code for the
@@ -226,6 +227,27 @@ log.Entry().WithError(err).Fatal("the error message")
 
 the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
+
+### HTTP calls
+
+All HTTP(S) interactions with other systems should be leveraging the [`pkg/http`](pkg/http) to enable capabilities provided
+centrally like automatic retries in case of intermittend HTTP errors or individual and optimized timout or logging capabilities.
+The HTTP package provides a thin wrapper around the standard golang `net/http` package adding just the right bit of sugar on top to
+have more control on common behaviors.
+
+### Automatic retries
+
+Automatic retries have been implemented based on [hashicorp's retryable HTTP client for golang](https://github.com/hashicorp/go-retryablehttp)
+with some extensions and customizations to the HTTP status codes being retried as well as to improve some service specific error situations.
+The client by default retries 15 times until it gives up and regards a specific communication event as being not recoverable. If you know by heart that
+your service is much more stable and cloud live without retry handling or a specifically lower amout of retries, you can easily customize behavior via the
+`ClientOptions` as shown in the sample below:
+
+```golang
+clientOptions := piperhttp.ClientOptions{}
+clientOptions.MaxRetries = -1
+httpClient.SetOptions(clientOptions)
+```
 
 ## Testing
 
