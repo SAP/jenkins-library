@@ -39,8 +39,9 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 
 	logLevel := entry.Level
 	event.SetSeverityAndCategory(logLevel)
-	for k, v := range entry.Data {
-		event.Tags[k] = v
+	stepName := fmt.Sprint(entry.Data["stepName"])
+	if stepName != "" {
+		event.Tags["pipeline:stepName"] = stepName
 	}
 	if errorCategory := GetErrorCategory().String(); errorCategory != "undefined" {
 		event.Tags["pipeline:errorCategory"] = errorCategory
@@ -48,7 +49,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 
 	event.EventTimestamp = entry.Time.Unix()
 	if event.Subject == "" {
-		event.Subject = fmt.Sprintf("Pipeline step '%s' sends '%s'", entry.Data["stepName"], event.Severity)
+		event.Subject = fmt.Sprintf("Pipeline step '%s' sends '%s'", stepName, event.Severity)
 	}
 	event.Body = entry.Message
 	event.Tags["pipeline:logLevel"] = logLevel.String()
@@ -95,14 +96,14 @@ func registerANSHookIfConfigured(correlationID string, util registrationUtil) er
 		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
 	}
 
-	if eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID); err != nil {
+	eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID)
+	if err != nil {
 		return err
-	} else {
-		util.registerHook(&ANSHook{
-			client:        util,
-			eventTemplate: eventTemplate,
-		})
 	}
+	util.registerHook(&ANSHook{
+		client:        util,
+		eventTemplate: eventTemplate,
+	})
 	return nil
 }
 

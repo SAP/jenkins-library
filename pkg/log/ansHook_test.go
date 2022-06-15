@@ -170,7 +170,6 @@ func TestANSHook_Fire(t *testing.T) {
 					Level:   logrus.ErrorLevel,
 					Time:    defaultTime.Add(1234),
 					Message: "first log message",
-					Data:    map[string]interface{}{"stepName": "testStep", "this entry": "should only be part of this event"},
 				},
 				defaultLogrusEntry(),
 			},
@@ -425,14 +424,14 @@ func defaultResultingEvent() ans.Event {
 		"EventTimestamp": defaultTime.Unix(),
 		"Severity":       "WARNING",
 		"Category":       "ALERT",
-		"Subject":        "testStep",
+		"Subject":        "Pipeline step 'testStep' sends 'WARNING'",
 		"Body":           "my log message",
 		"Tags": map[string]interface{}{
-			"ans:correlationId": "1234",
-			"ans:sourceEventId": "1234",
-			"stepName":          "testStep",
-			"logLevel":          "warning",
-			"errorCategory":     "test",
+			"ans:correlationId":      "1234",
+			"ans:sourceEventId":      "1234",
+			"pipeline:stepName":      "testStep",
+			"pipeline:logLevel":      "warning",
+			"pipeline:errorCategory": "test",
 		},
 	})
 }
