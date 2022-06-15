@@ -51,7 +51,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: alias
+      - name: containerImageAlias
         type: string
         description: |
           Logical name used for this image.

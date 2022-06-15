@@ -468,8 +468,8 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 	commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag))
 	imageNameAlias := targetImage.ContainerImageName
-	if config.Alias != "" {
-		imageNameAlias = config.Alias
+	if config.ContainerImageAlias != "" {
+		imageNameAlias = config.ContainerImageAlias
 	}
 	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, imageNameAlias)
 

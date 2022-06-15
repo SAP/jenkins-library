@@ -580,7 +580,7 @@ uri = "some-buildpack"
 			ContainerRegistryURL: imageRegistry,
 			DockerConfigJSON:     "/path/to/my-config.json",
 			AdditionalTags:       []string{"3", "3.1", "3.1", "3.1.5"},
-			MultipleImages:       []map[string]interface{}{{"ContainerImageName": "my-image-0", "Alias": "simple"}, {"ContainerImageName": "my-image-1"}},
+			MultipleImages:       []map[string]interface{}{{"ContainerImageName": "my-image-0", "ContainerImageAlias": "simple"}, {"ContainerImageName": "my-image-1"}},
 		}
 
 		expectedImageCount := len(config.MultipleImages)
