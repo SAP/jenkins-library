@@ -52,7 +52,7 @@ func TestRunApiProxyList(t *testing.T) {
 		// test
 		err := getApiProxyList(&config, apim, &seOut)
 		// assert
-		assert.EqualError(t, err, "HTTP GET request to /apiportal/api/1.0/Management.svc/APIProxies?filter=isCopy+eq+false&$orderby=name&$skip=1&$top=4 failed with error: : Bad Request")
+		assert.EqualError(t, err, "HTTP GET request to /apiportal/api/1.0/Management.svc/APIProxies failed with error: : Bad Request")
 	})
 
 }
