@@ -2,9 +2,9 @@
 
 ## ${docGenDescription}
 
-With this step, you can retrieve all the API proxies from the API portal. An API Proxy is a concept in API Management, which anonymize any HTTP endpoints like REST, OData or SOAP and enhance it with policies, and routes.
+With this step, you can retrieve all the API proxies from the API portal. An API Proxy is a concept in API Management, capability of SAP Integration Suite, which anonymizes any HTTP endpoints like REST, OData, or SOAP and enhance it with policies and routes.
 
-An API proxy is a discrete representation of an API. It is implemented as a set of configuration files, policies, and code snippets that rely on the resource information provided by API Management.For more details, see the document [API Proxy](https://help.sap.com/doc/654e5912ee554d46bcc6347599fb2096/CLOUD/en-US/Unit%2004.3%20-%20API%20Proxy%20-%20API%20Resource.pdf/)
+An API proxy is a discrete representation of an API. It is implemented as a set of configuration files, policies, and code snippets that rely on the resource information provided by API Management.For more information, see the document [API Proxy](https://help.sap.com/doc/654e5912ee554d46bcc6347599fb2096/CLOUD/en-US/Unit%2004.3%20-%20API%20Proxy%20-%20API%20Resource.pdf/)
 
 To consume the ApiProxyList step, proceed as follows:
 

@@ -72,7 +72,7 @@ func ApiProxyListCommand() *cobra.Command {
 	var createApiProxyListCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Get the List of an API Proxy from the API Portal",
-		Long:  `With this step you can get list of all API Proxy from the API Portal using the OData API. Learn more about the SAP API Management API for getting list of an api proxy artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
+		Long:  `With this step you can get list of all API Proxy from the API Portal using the OData API. Learn more about the API Management API for getting list of an API proxy artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
