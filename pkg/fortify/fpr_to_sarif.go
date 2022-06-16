@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/piper-validation/fortify-client-go/models"
 
@@ -532,6 +533,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
+	start := time.Now() // For the conversion start time
+
 	var fvdl FVDL
 	err := decoder.Decode(&fvdl)
 	if err != nil {
@@ -991,7 +994,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 	//handle invocations object
 	log.Entry().Debug("[SARIF] Now handling invocation.")
-	invocation := *new(format.Invocations)
+	invocation := *new(format.Invocation)
 	for i := 0; i < len(fvdl.EngineData.Properties); i++ { //i selects the properties type
 		if fvdl.EngineData.Properties[i].PropertiesType == "Fortify" { // This is the correct type, now iterate on props
 			for j := 0; j < len(fvdl.EngineData.Properties[i].Property); j++ {
@@ -1015,7 +1018,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	invocation.ExecutionSuccessful = true //fvdl doesn't seem to plan for this setting
 	invocation.Machine = fvdl.EngineData.MachineInfo.Hostname
 	invocation.Account = fvdl.EngineData.MachineInfo.Username
-	invocation.Properties.Platform = fvdl.EngineData.MachineInfo.Platform
+	invocProp := new(format.InvocationProperties)
+	invocProp.Platform = fvdl.EngineData.MachineInfo.Platform
+	invocation.Properties = invocProp
 	sarif.Runs[0].Invocations = append(sarif.Runs[0].Invocations, invocation)
 
 	//handle originalUriBaseIds
@@ -1139,6 +1144,19 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
 	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	conversion.Invocation.StartTimeUtc = fmt.Sprintf("%s", start.Format("2006-01-02T15:04:05.000Z")) // "YYYY-MM-DDThh:mm:ss.sZ" on 2006-01-02 15:04:05
+	conversion.Invocation.Machine = fvdl.EngineData.MachineInfo.Hostname
+	conversion.Invocation.Account = fvdl.EngineData.MachineInfo.Username
+	convInvocProp := new(format.InvocationProperties)
+	convInvocProp.Platform = fvdl.EngineData.MachineInfo.Platform
+	conversion.Invocation.Properties = convInvocProp
+	sarif.Runs[0].Conversion = conversion
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
