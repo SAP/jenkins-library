@@ -189,7 +189,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			}*/
 
 			//General
-			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
+			result.RuleID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
 			msg := new(format.Message)
@@ -278,6 +278,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 				}
 				props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
 			}
+			props.RuleGUID = cxxml.Query[i].ID
 			props.UnifiedAuditState = ""
 			result.Properties = props
 
@@ -287,7 +288,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-		rule.ID = "checkmarx-" + cxxml.Query[i].ID
+		rule.ID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 		words := strings.Split(cxxml.Query[i].Name, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))

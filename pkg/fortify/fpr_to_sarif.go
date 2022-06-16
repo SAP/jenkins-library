@@ -575,9 +575,9 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		//result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
 		// Handle ruleID the same way than in Rule
 		idArray := []string{}
-		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom != "" {
+		/*if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom != "" {
 			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom)
-		}
+		}*/
 		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Type != "" {
 			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Type)
 		}
@@ -788,6 +788,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		prop.InstanceSeverity = strconv.FormatFloat(fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity, 'f', 1, 64)
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
+		prop.RuleGUID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
 		//Get the audit data
 		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
 			log.Entry().Debug(err)
