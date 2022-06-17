@@ -85,13 +85,18 @@ func TestExecute(t *testing.T) {
 
 	t.Run("use init script to apply plugin", func(t *testing.T) {
 		utils := &MockUtils{
-			FilesMock:      &mock.FilesMock{},
-			ExecMockRunner: &mock.ExecMockRunner{},
-			existingFiles:  []string{"path/to/build.gradle.kts"},
+			FilesMock: &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{
+					"tasks -p path/to --init-script initScript.gradle.tmp": "superTask",
+				},
+			},
+			existingFiles: []string{"path/to/build.gradle.kts"},
 		}
 		opts := ExecuteOptions{
 			BuildGradlePath:   "path/to",
-			InitScriptTasks:   []string{"build"},
+			Tasks:             []string{"build"},
+			InitScriptTasks:   []string{"superTask"},
 			InitScriptContent: "some content",
 			UseWrapper:        false,
 		}
