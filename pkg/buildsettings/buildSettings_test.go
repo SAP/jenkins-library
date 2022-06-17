@@ -64,6 +64,11 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				buildTool: "npmExecuteScripts",
 				expected:  "{\"npmExecuteScripts\":[{\"createBOM\":true}]}",
 			},
+			{
+				config:    BuildOptions{DockerImage: "builder:latest"},
+				buildTool: "cnbBuild",
+				expected:  "{\"cnbBuild\":[{\"dockerImage\":\"builder:latest\"}]}",
+			},
 		}
 
 		for _, testCase := range testTableConfig {
