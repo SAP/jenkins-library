@@ -178,7 +178,9 @@ void call(Map parameters = [:]) {
         if (config.transportRequestReqIDFromGit) {
             echo "STEP EXECUTED TO GET TRANSPORT ID"
             transportRequestReqIDFromGit(script: script)
-            echo "GET ID XXXXX: ${script.commonPipelineEnvironment.custom.transportRequestId}"
+            echo "AAAAAAAAAAAA: ${script.commonPipelineEnvironment}"
+            echo "ZZZZZZZZZZZZ: ${script.commonPipelineEnvironment?.custom?.transportRequestId}"
+            echo "GET ID XXXXX: ${script.commonPipelineEnvironment?.transportRequestId}"
         }
         
         if (config.legacyConfigSettings) {
