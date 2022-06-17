@@ -87,6 +87,7 @@ type PartialFingerprints struct {
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
+	RuleGUID              string `json:"ruleGUID,omitempty"`
 	InstanceID            string `json:"instanceID,omitempty"`
 	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
 	Confidence            string `json:"confidence,omitempty"`
