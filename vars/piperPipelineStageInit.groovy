@@ -179,7 +179,6 @@ void call(Map parameters = [:]) {
             echo "STEP EXECUTED TO GET TRANSPORT ID"
             transportRequestReqIDFromGit(script: script)
             echo "AAAAAAAAAAAA: ${script.commonPipelineEnvironment}"
-            echo "ZZZZZZZZZZZZ: ${script.commonPipelineEnvironment?.custom?.transportRequestId}"
             echo "GET ID XXXXX: ${script.commonPipelineEnvironment?.transportRequestId}"
         }
         
