@@ -126,93 +126,64 @@ func TestANSHook_registerANSHook(t *testing.T) {
 }
 
 func TestANSHook_Fire(t *testing.T) {
-	SetErrorCategory(ErrorTest)
-	defer SetErrorCategory(ErrorUndefined)
-	type fields struct {
-		levels       []logrus.Level
-		defaultEvent ans.Event
-		firing       bool
+	registrationUtil := createRegUtil()
+	ansHook := &ANSHook{
+		client: registrationUtil,
 	}
-	tests := []struct {
-		name       string
-		fields     fields
-		entryArgs  []*logrus.Entry
-		wantEvent  ans.Event
-		wantErrMsg string
-	}{
-		{
-			name:      "Straight forward test",
-			fields:    fields{defaultEvent: defaultEvent()},
-			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
-			wantEvent: defaultResultingEvent(),
-		},
-		{
-			name: "Event already set",
-			fields: fields{
-				defaultEvent: mergeEvents(t, defaultEvent(), ans.Event{
-					EventType: "My event type",
-					Subject:   "My subject line",
-					Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
-				}),
-			},
-			entryArgs: []*logrus.Entry{defaultLogrusEntry()},
-			wantEvent: mergeEvents(t, defaultResultingEvent(), ans.Event{
-				EventType: "My event type",
-				Subject:   "My subject line",
-				Tags:      map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true},
-			}),
-		},
-		{
-			name:   "Log entries should not affect each other",
-			fields: fields{defaultEvent: defaultEvent()},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.ErrorLevel,
-					Time:    defaultTime.Add(1234),
-					Message: "first log message",
-				},
-				defaultLogrusEntry(),
-			},
-			wantEvent: defaultResultingEvent(),
-		},
-		{
-			name:   "White space messages should not send",
-			fields: fields{defaultEvent: defaultEvent()},
-			entryArgs: []*logrus.Entry{
-				{
-					Level:   logrus.ErrorLevel,
-					Time:    defaultTime,
-					Message: "   ",
-					Data:    map[string]interface{}{"stepName": "testStep"},
-				},
-			},
-		},
-		{
-			name:       "Should not fire twice",
-			fields:     fields{firing: true, defaultEvent: defaultEvent()},
-			entryArgs:  []*logrus.Entry{defaultLogrusEntry()},
-			wantErrMsg: "ANS hook has already been fired",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			registrationUtil := createRegUtil()
 
-			ansHook := &ANSHook{
-				client:        registrationUtil,
-				eventTemplate: tt.fields.defaultEvent,
-				firing:        tt.fields.firing,
-			}
-			for _, entryArg := range tt.entryArgs {
-				originalLogLevel := entryArg.Level
-				if err := ansHook.Fire(entryArg); err != nil {
-					assert.EqualError(t, err, tt.wantErrMsg)
-				}
-				assert.Equal(t, originalLogLevel.String(), entryArg.Level.String(), "Entry error level has been altered")
-			}
-			assert.Equal(t, tt.wantEvent, registrationUtil.Event, "Event is not as expected.")
-		})
-	}
+	t.Run("Straight forward test", func(t *testing.T) {
+		ansHook.eventTemplate = defaultEvent()
+		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
+		assert.Equal(t, defaultResultingEvent(), registrationUtil.Event, "error category tag is not as expected")
+		registrationUtil.clearEventTemplate()
+	})
+	t.Run("Set error category", func(t *testing.T) {
+		SetErrorCategory(ErrorTest)
+		ansHook.eventTemplate = defaultEvent()
+		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
+		assert.Equal(t, "test", registrationUtil.Event.Tags["pipeline:errorCategory"], "error category tag is not as expected")
+		SetErrorCategory(ErrorUndefined)
+		registrationUtil.clearEventTemplate()
+	})
+	t.Run("Event already set", func(t *testing.T) {
+		alreadySetEvent := ans.Event{EventType: "My event type", Subject: "My subject line", Tags: map[string]interface{}{"Some": 1.0, "Additional": "a string", "Tags": true}}
+		ansHook.eventTemplate = mergeEvents(t, defaultEvent(), alreadySetEvent)
+		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
+		assert.Equal(t, mergeEvents(t, defaultResultingEvent(), alreadySetEvent), registrationUtil.Event, "event is not as expected")
+		registrationUtil.clearEventTemplate()
+	})
+	t.Run("Log entries should not affect each other", func(t *testing.T) {
+		ansHook.eventTemplate = defaultEvent()
+		SetErrorCategory(ErrorTest)
+		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
+		assert.Equal(t, "test", registrationUtil.Event.Tags["pipeline:errorCategory"], "error category tag is not as expected")
+		SetErrorCategory(ErrorUndefined)
+		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
+		assert.Nil(t, registrationUtil.Event.Tags["pipeline:errorCategory"], "error category tag is not nil")
+		registrationUtil.clearEventTemplate()
+	})
+	t.Run("White space messages should not send", func(t *testing.T) {
+		ansHook.eventTemplate = defaultEvent()
+		entryWithSpaceMessage := defaultLogrusEntry()
+		entryWithSpaceMessage.Message = "   "
+		require.NoError(t, ansHook.Fire(entryWithSpaceMessage), "error is not nil")
+		assert.Equal(t, ans.Event{}, registrationUtil.Event, "event is not empty")
+	})
+	t.Run("Should not fire twice", func(t *testing.T) {
+		ansHook.eventTemplate = defaultEvent()
+		ansHook.firing = true
+		require.EqualError(t, ansHook.Fire(defaultLogrusEntry()), "ANS hook has already been fired", "error message is not as expected")
+		ansHook.firing = false
+	})
+	t.Run("No stepName set", func(t *testing.T) {
+		ansHook.eventTemplate = defaultEvent()
+		logrusEntryWithoutStepName := defaultLogrusEntry()
+		logrusEntryWithoutStepName.Data = map[string]interface{}{}
+		require.NoError(t, ansHook.Fire(logrusEntryWithoutStepName), "error is not nil")
+		assert.Equal(t, "n/a", registrationUtil.Event.Tags["pipeline:stepName"], "event step name tag is not as expected.")
+		assert.Equal(t, "Pipeline step 'n/a' sends 'WARNING'", registrationUtil.Event.Subject, "event subject is not as expected")
+		registrationUtil.clearEventTemplate()
+	})
 }
 
 const testCorrelationID = "1234"
@@ -326,6 +297,10 @@ func (m *registrationUtilMock) registerSecret(secret string) {
 	m.Secret = secret
 }
 
+func (m *registrationUtilMock) clearEventTemplate() {
+	m.Event = ans.Event{}
+}
+
 func createRegUtil(params ...interface{}) *registrationUtilMock {
 
 	mock := registrationUtilMock{}
@@ -427,11 +402,10 @@ func defaultResultingEvent() ans.Event {
 		"Subject":        "Pipeline step 'testStep' sends 'WARNING'",
 		"Body":           "my log message",
 		"Tags": map[string]interface{}{
-			"ans:correlationId":      "1234",
-			"ans:sourceEventId":      "1234",
-			"pipeline:stepName":      "testStep",
-			"pipeline:logLevel":      "warning",
-			"pipeline:errorCategory": "test",
+			"ans:correlationId": "1234",
+			"ans:sourceEventId": "1234",
+			"pipeline:stepName": "testStep",
+			"pipeline:logLevel": "warning",
 		},
 	})
 }
