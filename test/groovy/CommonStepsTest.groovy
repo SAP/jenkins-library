@@ -217,6 +217,7 @@ public class CommonStepsTest extends BasePiperTest{
         'apiKeyValueMapUpload', //implementing new golang pattern without fields
         'apiProviderUpload', //implementing new golang pattern without fields
         'pythonBuild', //implementing new golang pattern without fields
+        'azureBlobUpload',
         'awsS3Upload'
     ]
 

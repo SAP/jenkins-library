@@ -3,9 +3,11 @@ package checkmarx
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -136,6 +138,8 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
+	start := time.Now() // For the conversion start time
+
 	var cxxml CxXMLResults
 	err := decoder.Decode(&cxxml)
 	if err != nil {
@@ -189,7 +193,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			}*/
 
 			//General
-			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
+			result.RuleID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
 			msg := new(format.Message)
@@ -278,6 +282,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 				}
 				props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
 			}
+			props.RuleGUID = cxxml.Query[i].ID
 			props.UnifiedAuditState = ""
 			result.Properties = props
 
@@ -287,7 +292,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-		rule.ID = "checkmarx-" + cxxml.Query[i].ID
+		rule.ID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 		words := strings.Split(cxxml.Query[i].Name, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
@@ -349,6 +354,15 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
 	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper Checkmarx XML to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	conversion.Invocation.StartTimeUtc = fmt.Sprintf("%s", start.Format("2006-01-02T15:04:05.000Z")) // "YYYY-MM-DDThh:mm:ss.sZ" on 2006-01-02 15:04:05
+	conversion.Invocation.Account = cxxml.InitiatorName
+	sarif.Runs[0].Conversion = conversion
 
 	return sarif, nil
 }
