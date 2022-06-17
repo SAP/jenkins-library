@@ -171,7 +171,13 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.buildTool)
             .withMandatoryProperty('buildTool')
             .use()
-
+        
+        if (config.transportRequestReqIDFromGit) {
+            echo "STEP EXECUTED TO GET TRANSPORT ID"
+            transportRequestReqIDFromGit(script: script)
+            echo "GET ID XXXXX: ${script.commonPipelineEnvironment.custom.transportRequestId}"
+        }
+        
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
             checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
