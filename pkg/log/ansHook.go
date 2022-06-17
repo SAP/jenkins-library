@@ -39,10 +39,13 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 
 	logLevel := entry.Level
 	event.SetSeverityAndCategory(logLevel)
-	stepName := fmt.Sprint(entry.Data["stepName"])
-	if stepName != "" {
-		event.Tags["pipeline:stepName"] = stepName
+	var stepName string
+	if entry.Data["stepName"] != nil {
+		stepName = fmt.Sprint(entry.Data["stepName"])
+	} else {
+		stepName = "n/a"
 	}
+	event.Tags["pipeline:stepName"] = stepName
 	if errorCategory := GetErrorCategory().String(); errorCategory != "undefined" {
 		event.Tags["pipeline:errorCategory"] = errorCategory
 	}
