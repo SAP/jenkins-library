@@ -75,6 +75,16 @@ func (event *Event) Validate() (err error) {
 	return
 }
 
+// Copy will copy an ANS Event
+func (event *Event) Copy() (destination Event, err error) {
+	var sourceJSON []byte
+	if sourceJSON, err = json.Marshal(event); err != nil {
+		return
+	}
+	err = destination.MergeWithJSON(sourceJSON)
+	return
+}
+
 // SetSeverityAndCategory takes the logrus log level and sets the corresponding ANS severity and category string
 func (event *Event) SetSeverityAndCategory(level logrus.Level) {
 	switch level {
