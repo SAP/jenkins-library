@@ -173,6 +173,8 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('buildTool')
             .use()
         
+        echo "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
+        
         if (config.transportRequestReqIDFromGit) {
             echo "STEP EXECUTED TO GET TRANSPORT ID"
             transportRequestReqIDFromGit(script: script)
