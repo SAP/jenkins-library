@@ -6,7 +6,7 @@ spec:
   inputs:
     secrets:
       - name: gradleSensitivePropertiesFileCredentialsId
-        description: gradle sensitive properties credentials ID
+        description: Jenkins credentails ID for gradle sensitive properties
         type: jenkins
     params:
       - name: path
@@ -31,7 +31,7 @@ spec:
         default: build
       - name: skipTasks
         type: "[]string"
-        description: Gradle tasks that should be excluded.
+        description: Gradle tasks that should be skipped while executing "tasks".
         scope:
           - PARAMETERS
           - STAGES
@@ -100,6 +100,31 @@ spec:
             name: gradleSensitivePropertiesFileVaultSecretName
             default: gradle-sensitive-props
       - name: projectsCommonConfig
+        description: |
+          This config used to configure default values for each project/subproject.
+          Available properties:
+
+
+          - `pluginsList` - coma separated list of pluggins to apply (default values: java-library,jacoco)
+          - `component` - component from which artifact will be published (default value: java)
+          - `version` - common artifact version
+          - `groupId` - artifact group Id
+          - `publish` - set to true if artifacts should be published (default: false)
+          - `createBOM` - set to true if bom file should be created (default: false)
+          - `useDeclaredVersioning` - set to true to use declared versions otherwise resolved versions will be used
+
+
+          Example:
+
+          ```yaml
+              projectsCommonConfig:
+                pluginsList: java
+                component: java
+                useDeclaredVersioning: false
+                publish: false
+                version: 1.2.3
+                createBOM: false
+          ```
         aliases:
         - name: projectsCommon
         type: "map[string]interface{}"
@@ -107,6 +132,36 @@ spec:
           - STAGES
           - STEPS
       - name: projectsCustomConfigs
+        description: |
+          This config is pretty similar to projectsCommonConfig but with ability to specify properties for each project independently
+          Available properties:
+
+
+          - `projectName` - this property clarifies project which should be configured with the following properties
+          - `pluginsList` - coma separated list of pluggins to apply (default: java-library,jacoco)
+          - `component` - component from which artifact will be published (default value: java)
+          - `version` - project artifact version
+          - `artifactId` - project artifact Id
+          - `groupId` - project group Id
+          - `publish` - set to true if project has to be published (default: false)
+          - `createBOM` - set to true if bom file should be created for project (default: false)
+          - `useDeclaredVersioning` - set to true to use declared versions for the project otherwise resolved versions will be used
+
+
+          If no property specified then common property will be used.
+
+          Example:
+
+          ```yaml
+              projectsCustomConfigs:
+              - projectName: p1
+                publish: false
+              - projectName: p2
+                pluginsList: java-platform
+                component: javaPlatform
+                publish: false
+          ```
+
         aliases:
           - name: projectsCustom
         type: "[]map[string]interface{}"

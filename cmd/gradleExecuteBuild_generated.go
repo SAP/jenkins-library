@@ -165,7 +165,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.")
 	cmd.Flags().StringSliceVar(&stepConfig.Tasks, "tasks", []string{`build`}, "Gradle tasks that should be executed.")
-	cmd.Flags().StringSliceVar(&stepConfig.SkipTasks, "skipTasks", []string{}, "Gradle tasks that should be excluded.")
+	cmd.Flags().StringSliceVar(&stepConfig.SkipTasks, "skipTasks", []string{}, "Gradle tasks that should be skipped while executing \"tasks\".")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
@@ -187,7 +187,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "gradleSensitivePropertiesFileCredentialsId", Description: "gradle sensitive properties credentials ID", Type: "jenkins"},
+					{Name: "gradleSensitivePropertiesFileCredentialsId", Description: "Jenkins credentails ID for gradle sensitive properties", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
