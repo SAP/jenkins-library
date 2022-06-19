@@ -21,27 +21,31 @@ const (
 	initScriptName        = "initScript.gradle.tmp"
 )
 
-type Utils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(e string, p ...string) error
+type (
+	cancelFunc func()
+	Utils      interface {
+		Stdout(out io.Writer)
+		Stderr(err io.Writer)
+		RunExecutable(e string, p ...string) error
 
-	FileExists(filename string) (bool, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	FileRemove(path string) error
-}
+		FileExists(filename string) (bool, error)
+		FileWrite(path string, content []byte, perm os.FileMode) error
+		FileRemove(path string) error
+	}
+	// ExecuteOptions are used by Execute() to construct the Gradle command line.
+	ExecuteOptions struct {
+		BuildGradlePath   string            `json:"path,omitempty"`
+		Tasks             []string          `json:"tasks,omitempty"`
+		InitScriptTasks   []string          `json:"initScriptTasks,omitempty"`
+		SkipTasks         []string          `json:"skipTasks,omitempty"`
+		InitScriptContent string            `json:"initScriptContent,omitempty"`
+		UseWrapper        bool              `json:"useWrapper,omitempty"`
+		ProjectProperties map[string]string `json:"projectProperties,omitempty"`
+		setInitScript     bool
+	}
+)
 
-// ExecuteOptions are used by Execute() to construct the Gradle command line.
-type ExecuteOptions struct {
-	BuildGradlePath   string            `json:"path,omitempty"`
-	Tasks             []string          `json:"tasks,omitempty"`
-	InitScriptTasks   []string          `json:"initScriptTasks,omitempty"`
-	SkipTasks         []string          `json:"skipTasks,omitempty"`
-	InitScriptContent string            `json:"initScriptContent,omitempty"`
-	UseWrapper        bool              `json:"useWrapper,omitempty"`
-	ProjectProperties map[string]string `json:"projectProperties,omitempty"`
-	setInitScript     bool
-}
+var cancelNothing = func() {}
 
 func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	stdOutBuf := new(bytes.Buffer)
@@ -55,7 +59,6 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the specified gradle build script could not be found: %v", err)
 	}
-
 	exec := gradleExecutable
 	if options.UseWrapper {
 		wrapperExists, err := utils.FileExists("gradlew")
@@ -69,21 +72,40 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	}
 	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
 
+	err, cancel := handleInitTasks(exec, options, utils, stdOutBuf)
+	if err != nil {
+		return "", err
+	}
+	defer cancel()
+	parameters := getParametersFromOptions(options)
+	err = utils.RunExecutable(exec, parameters...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		commandLine := append([]string{exec}, parameters...)
+		return "", fmt.Errorf("failed to run executable, command: '%s', error: %v", commandLine, err)
+	}
+	return string(stdOutBuf.Bytes()), nil
+}
+
+func handleInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) (error, cancelFunc) {
+	cancel := cancelNothing
 	if options.InitScriptContent != "" {
-		hasTasks, err := hasAllTasks(exec, options, utils, stdOutBuf, options.InitScriptTasks...)
+		hasTasks, err := hasInitTasks(exec, options, utils, stdOutBuf)
 		if err != nil {
-			return "", fmt.Errorf("failed list gradle tasks: %v", err)
+			return fmt.Errorf("failed list gradle tasks: %v", err), nil
 		}
 		if !hasTasks {
 			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
 			if err != nil {
-				return "", fmt.Errorf("failed create init script: %v", err)
+				return fmt.Errorf("failed create init script: %v", err), nil
 			}
-			defer utils.FileRemove(initScriptName)
+			cancel = func() {
+				utils.FileRemove(initScriptName)
+			}
 			options.setInitScript = true
-			hasTasks, err := hasAllTasks(exec, options, utils, stdOutBuf, options.InitScriptTasks...)
+			hasTasks, err := hasInitTasks(exec, options, utils, stdOutBuf)
 			if err != nil {
-				return "", fmt.Errorf("failed list gradle tasks with init script: %v", err)
+				return fmt.Errorf("failed list gradle tasks with init script: %v", err), nil
 			}
 			if !hasTasks {
 				options.InitScriptTasks = nil
@@ -92,20 +114,10 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	} else {
 		options.InitScriptTasks = nil
 	}
-
-	parameters := getParametersFromOptions(options)
-
-	err = utils.RunExecutable(exec, parameters...)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		commandLine := append([]string{exec}, parameters...)
-		return "", fmt.Errorf("failed to run executable, command: '%s', error: %v", commandLine, err)
-	}
-
-	return string(stdOutBuf.Bytes()), nil
+	return nil, cancel
 }
 
-func hasAllTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer, tasks ...string) (bool, error) {
+func hasInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) (bool, error) {
 	parameters := []string{"tasks"}
 	if options.BuildGradlePath != "" {
 		parameters = append(parameters, "-p", options.BuildGradlePath)
@@ -117,7 +129,7 @@ func hasAllTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *b
 		return false, err
 	}
 	tasksOut := stdOutBuf.String()
-	for _, task := range tasks {
+	for _, task := range options.InitScriptTasks {
 		if !strings.Contains(tasksOut, task) {
 			return false, nil
 		}

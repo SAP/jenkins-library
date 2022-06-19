@@ -160,25 +160,25 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 }
 
 func safeRenameFile(utils gradleExecuteBuildUtils, oldName, newName string) error {
-	if exists, err := utils.FileExists(oldName); err != nil {
+	exists, err := utils.FileExists(oldName)
+	if err != nil {
 		return errors.Wrapf(err, "unable to check %s file existance", oldName)
-	} else {
-		if exists {
-			if err := utils.FileRename(oldName, newName); err != nil {
-				return errors.Wrapf(err, "unable to rename %s file", oldName)
-			}
+	}
+	if exists {
+		if err := utils.FileRename(oldName, newName); err != nil {
+			return errors.Wrapf(err, "unable to rename %s file", oldName)
 		}
 	}
 	return nil
 }
 
 func safeReadFile(utils gradleExecuteBuildUtils, name string) ([]byte, error) {
-	if exists, err := utils.FileExists(name); err != nil {
+	exists, err := utils.FileExists(name)
+	if err != nil {
 		return nil, errors.Wrapf(err, "unable to check %s file existance", name)
-	} else {
-		if exists {
-			return utils.FileRead(name)
-		}
+	}
+	if exists {
+		return utils.FileRead(name)
 	}
 	return nil, nil
 }
