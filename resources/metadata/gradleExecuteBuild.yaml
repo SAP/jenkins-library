@@ -126,7 +126,7 @@ spec:
                 createBOM: false
           ```
         aliases:
-        - name: projectsCommon
+          - name: projectsCommon
         type: "map[string]interface{}"
         scope:
           - STAGES
