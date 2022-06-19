@@ -107,7 +107,7 @@ func TestExecute(t *testing.T) {
 		assert.Equal(t, 3, len(utils.Calls))
 		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
 		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"tasks", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "superTask", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
 		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.writtenFiles)
 		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.removedFiles)
 	})
