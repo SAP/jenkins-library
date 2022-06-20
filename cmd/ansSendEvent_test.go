@@ -92,9 +92,9 @@ func defaultEvent() ans.Event {
 
 func defaultXsuaa() xsuaa.XSUAA {
 	return xsuaa.XSUAA{
-		OAuthURL:        "https://my.test.oauth.provider",
-		ClientID:        "myTestClientID",
-		ClientSecret:    "super secret",
+		OAuthURL:     "https://my.test.oauth.provider",
+		ClientID:     "myTestClientID",
+		ClientSecret: "super secret",
 	}
 }
 
