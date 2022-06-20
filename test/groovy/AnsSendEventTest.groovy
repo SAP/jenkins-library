@@ -1,24 +1,15 @@
-import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import org.yaml.snakeyaml.parser.ParserException
-
-import hudson.AbortException
 import util.BasePiperTest
-import util.JenkinsDockerExecuteRule
-import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
-import util.JenkinsShellCallRule
 import util.JenkinsStepRule
-import util.JenkinsWriteFileRule
 import util.Rules
 
-import static org.hamcrest.Matchers.*
-import static org.junit.Assert.assertThat
+import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.is
+import static org.junit.Assert.assertThat
 
 public class AnsSendEventTest extends BasePiperTest {
 
@@ -44,10 +35,10 @@ public class AnsSendEventTest extends BasePiperTest {
             [Map, String, String, List],
             {
                 params, stepName, metaData, creds ->
-                calledWithParameters = params
-                calledWithStepName = stepName
-                calledWithMetadata = metaData
-                calledWithCredentials = creds
+                    calledWithParameters = params
+                    calledWithStepName = stepName
+                    calledWithMetadata = metaData
+                    calledWithCredentials = creds
             }
         )
 
@@ -60,6 +51,6 @@ public class AnsSendEventTest extends BasePiperTest {
         assertThat(calledWithStepName, is('ansSendEvent'))
         assertThat(calledWithMetadata, is('metadata/ansSendEvent.yaml'))
         assertThat(calledWithCredentials[0].size(), is(3))
-        assertThat(calledWithCredentials[0], allOf(hasEntry('type','token'), hasEntry('id','ansServiceKeyCredentialsId'), hasEntry('env',['PIPER_ansServiceKey'])))
+        assertThat(calledWithCredentials[0], allOf(hasEntry('type', 'token'), hasEntry('id', 'ansServiceKeyCredentialsId'), hasEntry('env', ['PIPER_ansServiceKey'])))
     }
 }
