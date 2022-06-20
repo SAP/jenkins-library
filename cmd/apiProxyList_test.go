@@ -55,6 +55,16 @@ func TestRunApiProxyList(t *testing.T) {
 		assert.EqualError(t, err, "HTTP GET request to /apiportal/api/1.0/Management.svc/APIProxies failed with error: : Bad Request")
 	})
 
+	t.Run("MakeOdataQuery- Success Test", func(t *testing.T) {
+		config := getDefaultOptionsForApiProxyList()
+		odataFilterInputs := apim.OdataParameters{Filter: config.Filter, Search: config.Search,
+			Top: config.Top, Skip: config.Skip, Orderby: config.Orderby,
+			Select: config.Select, Expand: config.Expand}
+		odataFilters, Err := apim.OdataUtils.MakeOdataQuery(&odataFilterInputs)
+		assert.NoError(t, Err)
+		assert.Equal(t, "?filter=isCopy+eq+false&$orderby=name&$skip=1&$top=4", odataFilters)
+	})
+
 }
 
 func getDefaultOptionsForApiProxyList() apiProxyListOptions {
