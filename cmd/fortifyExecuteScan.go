@@ -39,6 +39,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+const getClasspathScriptContent = `
+gradle.allprojects {
+    task getClasspath {
+        doLast {
+            new File(projectDir, filename).text = sourceSets.main.compileClasspath.asPath
+        }
+    }
+}
+`
+
 type pullRequestService interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 }
@@ -712,6 +722,19 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 	return readAllClasspathFiles(file), nil
 }
 
+func autoresolveGradleClasspath(config fortifyExecuteScanOptions, file string, utils fortifyUtils) (string, error) {
+	gradleOptions := &gradle.ExecuteOptions{
+		Task:              "getClasspath",
+		UseWrapper:        true,
+		InitScriptContent: getClasspathScriptContent,
+		ProjectProperties: map[string]string{"filename": file},
+	}
+	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
+		log.Entry().WithError(err).Warnf("failed to determine classpath using Gradle: %v", err)
+	}
+	return readAllClasspathFiles(file), nil
+}
+
 func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
 	defines := []string{
 		fmt.Sprintf("-Dmdep.outputFile=%v", file),
@@ -814,7 +837,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 				return err
 			}
 		}
-		config.Translate, err = populateMavenTranslate(&config, classpath)
+		config.Translate, err = populateMavenGradleTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
+		}
+	} else if config.BuildTool == "gradle" {
+		if config.AutodetectClasspath {
+			classpath, err = autoresolveGradleClasspath(config, classpathFileName, utils)
+			if err != nil {
+				return err
+			}
+		}
+		config.Translate, err = populateMavenGradleTranslate(&config, classpath)
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
@@ -876,7 +910,7 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 	return string(translateJSON), err
 }
 
-func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
 	if len(config.Translate) > 0 {
 		return config.Translate, nil
 	}
@@ -1019,7 +1053,7 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 			options = append(options, "-libdirs", t["libDirs"])
 		}
 
-	case "maven":
+	case "maven", "gradle":
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
