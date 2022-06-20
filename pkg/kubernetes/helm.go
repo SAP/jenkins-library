@@ -45,6 +45,7 @@ type HelmExecuteOptions struct {
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
 	Version                   string   `json:"version,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
+	PublishVersion            string   `json:"publishVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
 	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
@@ -94,6 +95,12 @@ func (h *HelmExecute) runHelmAdd() error {
 	}
 	if len(h.config.TargetRepositoryName) == 0 {
 		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
+	}
+	if len(h.config.TargetRepositoryUser) != 0 {
+		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
+	}
+	if len(h.config.TargetRepositoryPassword) != 0 {
+		helmParams = append(helmParams, "--password", h.config.TargetRepositoryPassword)
 	}
 	helmParams = append(helmParams, h.config.TargetRepositoryName)
 	helmParams = append(helmParams, h.config.TargetRepositoryURL)
@@ -393,7 +400,7 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.Version+".tgz")
+	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PublishVersion+".tgz")
 
 	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
 

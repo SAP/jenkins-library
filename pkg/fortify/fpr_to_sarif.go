@@ -8,14 +8,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/piper-validation/fortify-client-go/models"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // FVDL This struct encapsulates everyting in the FVDL document
@@ -112,14 +114,14 @@ type ClassInfo struct {
 	Type            string   `xml:"Type"`
 	Subtype         string   `xml:"Subtype,omitempty"`
 	AnalyzerName    string   `xml:"AnalyzerName"`
-	DefaultSeverity string   `xml:"DefaultSeverity"`
+	DefaultSeverity float64  `xml:"DefaultSeverity"`
 }
 
 // InstanceInfo
 type InstanceInfo struct {
 	XMLName          xml.Name `xml:"InstanceInfo"`
 	InstanceID       string   `xml:"InstanceID"`
-	InstanceSeverity string   `xml:"InstanceSeverity"`
+	InstanceSeverity float64  `xml:"InstanceSeverity"`
 	Confidence       string   `xml:"Confidence"`
 }
 
@@ -211,6 +213,7 @@ type Node struct {
 	XMLName        xml.Name       `xml:"Node"`
 	IsDefault      string         `xml:"isDefault,attr,omitempty"`
 	NodeLabel      string         `xml:"label,attr,omitempty"`
+	ID             int            `xml:"id,attr,omitempty"`
 	SourceLocation SourceLocation `xml:"SourceLocation"`
 	Action         Action         `xml:"Action,omitempty"`
 	Reason         Reason         `xml:"Reason,omitempty"`
@@ -493,16 +496,6 @@ type Attribute struct {
 	Value   string   `xml:"value"`
 }
 
-// Utils
-
-func (n Node) isEmpty() bool {
-	return n.IsDefault == ""
-}
-
-func (a Action) isEmpty() bool {
-	return a.ActionData == ""
-}
-
 // ConvertFprToSarif converts the FPR file contents into SARIF format
 func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
@@ -514,7 +507,7 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 		return sarif, err
 	}
 
-	_, err = FileUtils.Unzip(resultFilePath, tmpFolder)
+	_, err = piperutils.Unzip(resultFilePath, tmpFolder)
 	if err != nil {
 		return sarif, err
 	}
@@ -540,6 +533,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
+	start := time.Now() // For the conversion start time
+
 	var fvdl FVDL
 	err := decoder.Decode(&fvdl)
 	if err != nil {
@@ -550,17 +545,21 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	log.Entry().Debug("Querying Fortify SSC for batch audit data")
 	oneRequestPerIssueMode := false
 	var auditData []*models.ProjectVersionIssue
-	if sys != nil {
+	maxretries := 5 // Maximum number of requests allowed to fail before stopping them
+	if sys != nil && projectVersion != nil {
 		auditData, err = sys.GetAllIssueDetails(projectVersion.ID)
-		if err != nil {
+		if err != nil || len(auditData) == 0 { // It's reasonable to admit that with a length of 0, something went wrong
 			log.Entry().WithError(err).Error("failed to get all audit data, defaulting to one-request-per-issue basis")
 			oneRequestPerIssueMode = true
+			// We do not lower maxretries here in case a "real" bug happened
 		} else {
 			log.Entry().Debug("Request successful, data frame size: ", len(auditData), " audits")
 		}
 	} else {
-		log.Entry().Error("no system instance found, lookup impossible")
+		log.Entry().Error("no system instance or project version found, lookup impossible")
 		oneRequestPerIssueMode = true
+		maxretries = 1 // Set to 1 if the sys instance isn't defined: chances are it couldn't be created, we'll live a chance if there was an unknown bug
+		log.Entry().Debug("request failed: remaining retries ", maxretries)
 	}
 
 	//Now, we handle the sarif
@@ -576,16 +575,39 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	log.Entry().Debug("[SARIF] Now handling results.")
 	for i := 0; i < len(fvdl.Vulnerabilities.Vulnerability); i++ {
 		result := *new(format.Results)
-		result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
-		result.Level = "none" //TODO
+		//result.RuleID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
+		// Handle ruleID the same way than in Rule
+		idArray := []string{}
+		/*if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom != "" {
+			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Kingdom)
+		}*/
+		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Type != "" {
+			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Type)
+		}
+		if fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Subtype != "" {
+			idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.Subtype)
+		}
+		result.RuleID = "fortify-" + strings.Join(idArray, "/")
+		result.Kind = "fail" // Default value, Level must not be set if kind is not fail
+		// This is an "easy" treatment of result.Level. It does not follow the spec exactly, but the idea is there
+		// An exact processing algorithm can be found here https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/sarif-v2.1.0-os.html#_Toc34317648
+		if fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity >= 3.0 {
+			result.Level = "error"
+		} else if fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity >= 1.5 {
+			result.Level = "warning"
+		} else if fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity < 1.5 {
+			result.Level = "note"
+		} else {
+			result.Level = "none"
+		}
 		//get message
 		for j := 0; j < len(fvdl.Description); j++ {
-			if fvdl.Description[j].ClassID == result.RuleID {
-				result.RuleIndex = j //Seems very abstract
-				rawMessage := fvdl.Description[j].Abstract.Text
+			if fvdl.Description[j].ClassID == fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID {
+				result.RuleIndex = j
+				rawMessage := unescapeXML(fvdl.Description[j].Abstract.Text)
 				// Replacement defintions in message
 				for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def); l++ {
-					rawMessage = strings.ReplaceAll(rawMessage, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+					rawMessage = strings.ReplaceAll(rawMessage, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
 				}
 				msg := new(format.Message)
 				msg.Text = rawMessage
@@ -596,7 +618,6 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 
 		// Handle all locations items
 		location := *new(format.Location)
-		var startingColumn int
 		//get location
 		for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace); k++ { // k iterates on traces
 			//In each trace/primary, there can be one or more entries
@@ -605,100 +626,142 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			threadFlow := *new(format.ThreadFlow)
 			//We now iterate on Entries in the trace/primary
 			for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry); l++ { // l iterates on entries
-				threadFlowLocation := *new(format.Locations) //One is created regardless
-				//the default node dictates the interesting threadflow (location, and so on)
+				tfla := *new([]format.Locations)             //threadflowlocationarray. Useful for the node-in-node edge case
+				threadFlowLocation := *new(format.Locations) //One is created regardless of the path taken afterwards
 				//this will populate both threadFlowLocation AND the parent location object (result.Locations[0])
-				if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.isEmpty() && fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault == "true" {
-					//initalize threadFlowLocation.Location
-					threadFlowLocation.Location = new(format.Location)
+				// We check if a noderef is present: if no (index of ref is the default 0), this is a "real" node. As a measure of safety (in case a node refers to nodeid 0), we add another check: the node must have a label or a isdefault value
+				if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId == 0 && (fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.NodeLabel != "" || fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.IsDefault != "") {
+					//initalize the current location object, it will be added to threadFlowLocation.Location
+					tfloc := new(format.Location)
 					//get artifact location
 					for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
 						if fvdl.Build.SourceFiles[j].Name == fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path {
-							threadFlowLocation.Location.PhysicalLocation.ArtifactLocation.Index = j
+							tfloc.PhysicalLocation.ArtifactLocation.Index = j + 1
+							tfloc.PhysicalLocation.ArtifactLocation.URI = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Path
+							tfloc.PhysicalLocation.ArtifactLocation.URIBaseId = "%SRCROOT%"
 							break
 						}
 					}
 					//get region & context region
-					threadFlowLocation.Location.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Line
+					tfloc.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Line
+					tfloc.PhysicalLocation.Region.EndLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.LineEnd
+					tfloc.PhysicalLocation.Region.StartColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
+					tfloc.PhysicalLocation.Region.EndColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColEnd
 					//Snippet is handled last
-					//threadFlowLocation.Location.PhysicalLocation.Region.Snippet.Text = "foobar"
 					targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Snippet
 					for j := 0; j < len(fvdl.Snippets); j++ {
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
+							tfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
+							tfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 							snippetSarif := new(format.SnippetSarif)
 							snippetSarif.Text = fvdl.Snippets[j].Text
-							threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet = snippetSarif
+							tfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 							break
 						}
 					}
-					//parse SourceLocation object for the startColumn value, store it appropriately
-					startingColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.ColStart
-					//check for existance of action object, and if yes, save message
-					if !fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.isEmpty() {
-						threadFlowLocation.Location.Message = new(format.Message)
-						threadFlowLocation.Location.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-						// Handle snippet
-						snippetTarget := ""
-						switch fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type {
-						case "Assign":
-							snippetWords := strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, " ")
-							if snippetWords[0] == "Assignment" {
-								snippetTarget = snippetWords[2]
-							} else {
-								snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+					// if a label is passed, put it as message
+					if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.NodeLabel != "" {
+						tfloc.Message = new(format.Message)
+						tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.NodeLabel
+					} else {
+						// otherwise check for existance of action object, and if yes, save message
+						if !(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData == "") {
+							tfloc.Message = new(format.Message)
+							tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
+
+							// Handle snippet
+							snippetTarget := handleSnippet(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData)
+
+							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+								physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
+								snippetText := ""
+								for j := 0; j < len(physLocationSnippetLines); j++ {
+									if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
+										snippetText = physLocationSnippetLines[j]
+										break
+									}
+								}
+								snippetSarif := new(format.SnippetSarif)
+								if snippetText != "" {
+									snippetSarif.Text = snippetText
+								} else {
+									snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
+								}
+								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
 							}
-						case "InCall":
-							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
-						case "OutCall":
-							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
-						case "InOutCall":
-							snippetTarget = strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, "(")[0]
-						case "Return":
-							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-						case "Read":
-							snippetWords := strings.Split(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData, " ")
-							if len(snippetWords) > 1 {
-								snippetTarget = " " + snippetWords[1]
-							} else {
-								snippetTarget = snippetWords[0]
+						} else {
+							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+								snippetSarif := new(format.SnippetSarif)
+								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
+								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
 							}
-						default:
-							snippetTarget = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
 						}
-						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
-							physLocationSnippetLines := strings.Split(threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-							snippetText := ""
-							for j := 0; j < len(physLocationSnippetLines); j++ {
-								if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-									snippetText = physLocationSnippetLines[j]
+					}
+					location = *tfloc
+					//set Kinds
+					threadFlowLocation.Location = tfloc
+					//threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "review") //TODO
+					threadFlowLocation.Index = 0 // to be safe?
+					tfla = append(tfla, threadFlowLocation)
+
+					// "Node-in-node" edge case! in some cases the "Reason" object will contain a "Trace>Primary>Entry>Node" object
+					// Check for it at depth 1 only, as an in-case
+					if len(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry) > 0 {
+						ninThreadFlowLocation := *new(format.Locations)
+						if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].NodeRef.RefId != 0 {
+							// As usual, only the index for a ref
+							ninThreadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].NodeRef.RefId + 1
+						} else {
+							// Build a new "node-in-node" tfloc, it will be appended to tfla
+							nintfloc := new(format.Location)
+
+							// artifactlocation
+							for j := 0; j < len(fvdl.Build.SourceFiles); j++ {
+								if fvdl.Build.SourceFiles[j].Name == fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Path {
+									nintfloc.PhysicalLocation.ArtifactLocation.Index = j + 1
+									nintfloc.PhysicalLocation.ArtifactLocation.URI = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Path
+									nintfloc.PhysicalLocation.ArtifactLocation.URIBaseId = "%SRCROOT%"
 									break
 								}
 							}
-							snippetSarif := new(format.SnippetSarif)
-							if snippetText != "" {
-								snippetSarif.Text = snippetText
-							} else {
-								snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
+
+							// region & context region
+							nintfloc.PhysicalLocation.Region.StartLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Line
+							nintfloc.PhysicalLocation.Region.EndLine = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.LineEnd
+							nintfloc.PhysicalLocation.Region.StartColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.ColStart
+							nintfloc.PhysicalLocation.Region.EndColumn = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.ColEnd
+							// snippet
+							targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Snippet
+							for j := 0; j < len(fvdl.Snippets); j++ {
+								if fvdl.Snippets[j].SnippetId == targetSnippetId {
+									nintfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
+									nintfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
+									snippetSarif := new(format.SnippetSarif)
+									snippetSarif.Text = fvdl.Snippets[j].Text
+									nintfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
+									break
+								}
 							}
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
+							// label as message
+							if fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.NodeLabel != "" {
+								nintfloc.Message = new(format.Message)
+								nintfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.NodeLabel
+							}
+
+							ninThreadFlowLocation.Location = nintfloc
+							ninThreadFlowLocation.Index = 0 // Safety
 						}
-					} else {
-						if threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet != nil {
-							snippetSarif := new(format.SnippetSarif)
-							snippetSarif.Text = threadFlowLocation.Location.PhysicalLocation.ContextRegion.Snippet.Text
-							threadFlowLocation.Location.PhysicalLocation.Region.Snippet = snippetSarif
-						}
+						tfla = append(tfla, ninThreadFlowLocation)
 					}
-					location = *threadFlowLocation.Location
-					//set Kinds
-					threadFlowLocation.Kinds = append(threadFlowLocation.Kinds, "unknown") //TODO
+					// END edge case
+
 				} else { //is not a main threadflow: just register NodeRef index in threadFlowLocation
-					threadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId
+					// Sarif does not provision 0 as a valid array index, so we increment the node ref id
+					// Each index i serves to reference the i-th object in run.threadFlowLocations
+					threadFlowLocation.Index = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].NodeRef.RefId + 1
+					tfla = append(tfla, threadFlowLocation)
 				}
-				//add the threadflowlocation to the list of locations
-				threadFlow.Locations = append(threadFlow.Locations, threadFlowLocation)
+				threadFlow.Locations = append(threadFlow.Locations, tfla...)
 			}
 			codeFlow.ThreadFlows = append(codeFlow.ThreadFlows, threadFlow)
 			result.CodeFlows = append(result.CodeFlows, codeFlow)
@@ -716,33 +779,26 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		relatedLocation.PhysicalLocation.ArtifactLocation = location.PhysicalLocation.ArtifactLocation
 		relatedLocation.PhysicalLocation.Region = *new(format.RelatedRegion)
 		relatedLocation.PhysicalLocation.Region.StartLine = location.PhysicalLocation.Region.StartLine
-		relatedLocation.PhysicalLocation.Region.StartColumn = startingColumn
+		relatedLocation.PhysicalLocation.Region.StartColumn = location.PhysicalLocation.Region.StartColumn
 		result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
+
+		//handle partialFingerprints
+		result.PartialFingerprints.FortifyInstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
+		result.PartialFingerprints.PrimaryLocationLineHash = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID //Fixit
 
 		//handle properties
 		prop := new(format.SarifProperties)
-		prop.InstanceSeverity = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity
+		prop.InstanceSeverity = strconv.FormatFloat(fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceSeverity, 'f', 1, 64)
 		prop.Confidence = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.Confidence
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
-		//Use a query to get the audit data
-		// B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885 is "custom rules": handle differently?
-		if result.RuleID == "B5C0FEFD-CCB2-4F21-A9D7-87AE600A5885" {
-			// Custom Rules has no audit value: it's notificaiton in the FVDL only.
-			prop.Audited = true
-			prop.ToolAuditMessage = "Custom Rules: not a vuln"
-			prop.ToolState = "Not an Issue"
-			prop.ToolStateIndex = 1
-		} else if sys != nil {
-			if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode); err != nil {
-				log.Entry().Debug(err)
-				prop.Audited = false
-				prop.ToolState = "Unknown"
-				prop.ToolAuditMessage = "Error fetching audit state"
+		prop.RuleGUID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
+		//Get the audit data
+		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
+			log.Entry().Debug(err)
+			maxretries = maxretries - 1
+			if maxretries >= 0 {
+				log.Entry().Debug("request failed: remaining retries ", maxretries)
 			}
-		} else {
-			prop.Audited = false
-			prop.ToolState = "Unknown"
-			prop.ToolAuditMessage = "Cannot fetch audit state"
 		}
 		result.Properties = prop
 
@@ -765,130 +821,180 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		for j := 0; j < len(fvdl.Vulnerabilities.Vulnerability); j++ { //j iterates on vulns to find the name
 			if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.ClassID == fvdl.EngineData.RuleInfo[i].RuleID {
 				var nameArray []string
+				var idArray []string
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
-					nameArray = append(nameArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom, " ")
+					for index, element := range words { // These are required to ensure that titlecase is respected in titles, part of sarif "friendly name" rules
+						words[index] = piperutils.Title(strings.ToLower(element))
+					}
+					nameArray = append(nameArray, words...)
 				}
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type != "" {
-					nameArray = append(nameArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
+					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
+					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type, " ")
+					for index, element := range words {
+						words[index] = piperutils.Title(strings.ToLower(element))
+					}
+					nameArray = append(nameArray, words...)
 				}
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype != "" {
-					nameArray = append(nameArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
+					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
+					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype, " ")
+					for index, element := range words {
+						words[index] = piperutils.Title(strings.ToLower(element))
+					}
+					nameArray = append(nameArray, words...)
 				}
-				sarifRule.Name = strings.Join(nameArray, "/")
+				sarifRule.ID = "fortify-" + strings.Join(idArray, "/")
+				sarifRule.Name = strings.Join(nameArray, "")
 				defaultConfig := new(format.DefaultConfiguration)
-				defaultConfig.Properties.DefaultSeverity = fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity
+				defaultConfig.Level = "warning" // Default value
+				defaultConfig.Enabled = true    // Default value
+				defaultConfig.Rank = -1.0       // Default value
+				defaultConfig.Properties.DefaultSeverity = strconv.FormatFloat(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.DefaultSeverity, 'f', 1, 64)
 				sarifRule.DefaultConfiguration = defaultConfig
-				break
-			}
-		}
-		//Descriptions
-		for j := 0; j < len(fvdl.Description); j++ {
-			if fvdl.Description[j].ClassID == sarifRule.ID {
-				rawAbstract := fvdl.Description[j].Abstract.Text
-				rawExplanation := fvdl.Description[j].Explanation.Text
-				// Replacement defintions in abstract/explanation
-				for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability); k++ { // Iterate on vulns to find the correct one (where ReplacementDefinitions are)
-					if fvdl.Vulnerabilities.Vulnerability[k].ClassInfo.ClassID == fvdl.Description[j].ClassID {
-						for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def); l++ {
-							rawAbstract = strings.ReplaceAll(rawAbstract, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
-							rawExplanation = strings.ReplaceAll(rawExplanation, "Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+
+				//Descriptions
+				for j := 0; j < len(fvdl.Description); j++ {
+					if fvdl.Description[j].ClassID == sarifRule.GUID {
+						//rawAbstract := strings.Join(idArray, "/")
+						rawAbstract := unescapeXML(fvdl.Description[j].Abstract.Text)
+						rawExplanation := unescapeXML(fvdl.Description[j].Explanation.Text)
+
+						// Replacement defintions in abstract/explanation
+						for k := 0; k < len(fvdl.Vulnerabilities.Vulnerability); k++ { // Iterate on vulns to find the correct one (where ReplacementDefinitions are)
+							if fvdl.Vulnerabilities.Vulnerability[k].ClassInfo.ClassID == fvdl.Description[j].ClassID {
+								for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def); l++ {
+									rawAbstract = strings.ReplaceAll(rawAbstract, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+									rawExplanation = strings.ReplaceAll(rawExplanation, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
+								}
+								// Replacement locationdef in explanation
+								for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
+									rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
+								}
+								// If Description has a CustomDescription, add it for good measure
+								if fvdl.Description[j].CustomDescription.RuleID != "" {
+									rawExplanation = rawExplanation + " \n; " + unescapeXML(fvdl.Description[j].CustomDescription.Explanation.Text)
+								}
+								sd := new(format.Message)
+								sd.Text = rawAbstract
+								sarifRule.ShortDescription = sd
+								fd := new(format.Message)
+								fd.Text = rawExplanation
+								sarifRule.FullDescription = fd
+								break
+							}
 						}
-						// Replacement locationdef in explanation
-						for l := 0; l < len(fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef); l++ {
-							rawExplanation = strings.ReplaceAll(rawExplanation, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Key, fvdl.Vulnerabilities.Vulnerability[k].AnalysisInfo.ReplacementDefinitions.LocationDef[l].Path)
-						}
-						// If Description has a CustomDescription, add it for good measure
-						if fvdl.Description[j].CustomDescription.RuleID != "" {
-							rawExplanation = rawExplanation + "\n;" + fvdl.Description[j].CustomDescription.Explanation.Text
-						}
-						sd := new(format.Message)
-						sd.Text = rawAbstract
-						sarifRule.ShortDescription = sd
-						fd := new(format.Message)
-						fd.Text = rawExplanation
-						sarifRule.FullDescription = fd
 						break
 					}
 				}
+
+				//properties
+				//Prepare a CWE id object as an in-case
+				cweIds := []string{}
+				//scan for the properties we want:
+				var propArray [][]string
+				for j := 0; j < len(fvdl.EngineData.RuleInfo[i].MetaInfoGroup); j++ {
+					if (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Accuracy") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Impact") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Probability") {
+						propArray = append(propArray, []string{fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name, fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data})
+					} else if fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "altcategoryCWE" {
+						//Get all CWE IDs. First, split on ", "
+						rawCweIds := strings.Split(fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data, ", ")
+						//If not "None", split each string on " " and add its 2nd index
+						if rawCweIds[0] != "None" {
+							for k := 0; k < len(rawCweIds); k++ {
+								cweId := strings.Split(rawCweIds[k], " ")[2]
+								//Fill the cweIdsForTaxonomies map if not already in
+								if _, isIn := cweIdsForTaxonomies[cweId]; !isIn {
+									cweIdsForTaxonomies[cweId] = cweId
+								}
+								cweIds = append(cweIds, cweId)
+							}
+						} else {
+							cweIds = append(cweIds, rawCweIds[0])
+						}
+					}
+				}
+				var ruleProp *format.SarifRuleProperties
+				ruleProp = new(format.SarifRuleProperties)
+				if len(propArray) != 0 {
+					for j := 0; j < len(propArray); j++ {
+						if propArray[j][0] == "Accuracy" {
+							ruleProp.Accuracy = propArray[j][1]
+						} else if propArray[j][0] == "Impact" {
+							ruleProp.Impact = propArray[j][1]
+						} else if propArray[j][0] == "Probability" {
+							ruleProp.Probability = propArray[j][1]
+						}
+					}
+				}
+
+				// Add each part of the "name" in the tags
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+				}
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Type)
+				}
+				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype != "" {
+					ruleProp.Tags = append(ruleProp.Tags, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Subtype)
+				}
+
+				//Add the SecuritySeverity parameter for GHAS tagging
+				ruleProp.SecuritySeverity = strconv.FormatFloat(2*fvdl.Vulnerabilities.Vulnerability[j].InstanceInfo.InstanceSeverity, 'f', 1, 64)
+
+				sarifRule.Properties = ruleProp
+
+				//relationships: will most likely require some expansion
+				//One relationship per CWE id
+				for j := 0; j < len(cweIds); j++ {
+					if cweIds[j] == "None" {
+						continue
+					}
+					sarifRule.Properties.Tags = append(sarifRule.Properties.Tags, "external/cwe/cwe-"+cweIds[j])
+
+					rls := *new(format.Relationships)
+					rls.Target.Id = cweIds[j]
+					rls.Target.ToolComponent.Name = "CWE"
+					rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+					rls.Kinds = append(rls.Kinds, "relevant")
+					sarifRule.Relationships = append(sarifRule.Relationships, rls)
+				}
+
+				// Add a helpURI as some processors require it
+				sarifRule.HelpURI = "https://vulncat.fortify.com/en/weakness"
+
+				//Finalize: append the rule
+				tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+
+				// A rule vuln has been found for this rule, no need to keep iterating
 				break
 			}
 		}
-		// Avoid empty descriptions to respect standard
-		//if sarifRule.ShortDescription.Text == "" {
-		//	sarifRule.ShortDescription.Text = "None."
-		//}
-		//if sarifRule.FullDescription.Text == "" { // OR USE OMITEMPTY
-		//	sarifRule.FullDescription.Text = "None."
-		//}
-
-		//properties
-		//Prepare a CWE id object as an in-case
-		cweIds := []string{}
-		//scan for the properties we want:
-		var propArray [][]string
-		for j := 0; j < len(fvdl.EngineData.RuleInfo[i].MetaInfoGroup); j++ {
-			if (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Accuracy") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Impact") || (fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "Probability") {
-				propArray = append(propArray, []string{fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name, fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data})
-			} else if fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Name == "altcategoryCWE" {
-				//Get all CWE IDs. First, split on ", "
-				rawCweIds := strings.Split(fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data, ", ")
-				//If not "None", split each string on " " and add its 2nd index
-				if rawCweIds[0] != "None" {
-					for k := 0; k < len(rawCweIds); k++ {
-						cweId := strings.Split(rawCweIds[k], " ")[2]
-						//Fill the cweIdsForTaxonomies map if not already in
-						if _, isIn := cweIdsForTaxonomies[cweId]; !isIn {
-							cweIdsForTaxonomies[cweId] = cweId
-						}
-						cweIds = append(cweIds, cweId)
-					}
-				} else {
-					cweIds = append(cweIds, rawCweIds[0])
-				}
-			}
-		}
-		var ruleProp *format.SarifRuleProperties
-		if len(propArray) != 0 {
-			ruleProp = new(format.SarifRuleProperties)
-			for j := 0; j < len(propArray); j++ {
-				if propArray[j][0] == "Accuracy" {
-					ruleProp.Accuracy = propArray[j][1]
-				} else if propArray[j][0] == "Impact" {
-					ruleProp.Impact = propArray[j][1]
-				} else if propArray[j][0] == "Probability" {
-					ruleProp.Probability = propArray[j][1]
-				}
-			}
-		}
-		sarifRule.Properties = ruleProp
-
-		//relationships: will most likely require some expansion
-		//One relationship per CWE id
-		for j := 0; j < len(cweIds); j++ {
-			rls := *new(format.Relationships)
-			rls.Target.Id = cweIds[j]
-			rls.Target.ToolComponent.Name = "CWE"
-			rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
-			rls.Kinds = append(rls.Kinds, "relevant")
-			sarifRule.Relationships = append(sarifRule.Relationships, rls)
-		}
-
-		//Finalize: append the rule
-		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 	}
 	//supportedTaxonomies
 	sTax := *new(format.SupportedTaxonomies) //This object seems fixed, but it will have to be checked
 	sTax.Name = "CWE"
-	sTax.Index = 0
+	sTax.Index = 1
 	sTax.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
 	tool.Driver.SupportedTaxonomies = append(tool.Driver.SupportedTaxonomies, sTax)
+
+	//Add additional rulepacks
+	for pack := 0; pack < len(fvdl.EngineData.RulePacks); pack++ {
+		extension := *new(format.Driver)
+		extension.Name = fvdl.EngineData.RulePacks[pack].Name
+		extension.Version = fvdl.EngineData.RulePacks[pack].Version
+		extension.GUID = fvdl.EngineData.RulePacks[pack].RulePackID
+		tool.Extensions = append(tool.Extensions, extension)
+	}
 
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
 
 	//handle invocations object
 	log.Entry().Debug("[SARIF] Now handling invocation.")
-	invocation := *new(format.Invocations)
+	invocation := *new(format.Invocation)
 	for i := 0; i < len(fvdl.EngineData.Properties); i++ { //i selects the properties type
 		if fvdl.EngineData.Properties[i].PropertiesType == "Fortify" { // This is the correct type, now iterate on props
 			for j := 0; j < len(fvdl.EngineData.Properties[i].Property); j++ {
@@ -912,12 +1018,19 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	invocation.ExecutionSuccessful = true //fvdl doesn't seem to plan for this setting
 	invocation.Machine = fvdl.EngineData.MachineInfo.Hostname
 	invocation.Account = fvdl.EngineData.MachineInfo.Username
-	invocation.Properties.Platform = fvdl.EngineData.MachineInfo.Platform
+	invocProp := new(format.InvocationProperties)
+	invocProp.Platform = fvdl.EngineData.MachineInfo.Platform
+	invocation.Properties = invocProp
 	sarif.Runs[0].Invocations = append(sarif.Runs[0].Invocations, invocation)
 
 	//handle originalUriBaseIds
 	oubi := new(format.OriginalUriBaseIds)
-	oubi.SrcRoot.Uri = "file:///" + fvdl.Build.SourceBasePath + "/"
+	prefix := "file://"
+	if fvdl.Build.SourceBasePath[0] == '/' {
+		oubi.SrcRoot.Uri = prefix + fvdl.Build.SourceBasePath + "/"
+	} else {
+		oubi.SrcRoot.Uri = prefix + "/" + fvdl.Build.SourceBasePath + "/"
+	}
 	sarif.Runs[0].OriginalUriBaseIds = oubi
 
 	//handle artifacts
@@ -945,31 +1058,25 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	//handle threadFlowLocations
 	log.Entry().Debug("[SARIF] Now handling threadFlowLocations.")
 	threadFlowLocationsObject := []format.Locations{}
-	//prepare a check object
+	//to ensure an exact replacement in case a threadFlowLocation object refers to another, we prepare a map
+	threadFlowIndexMap := make(map[int]([]int)) // This  will store indexes, we will work with it only to reduce item copies to a minimum
 	for i := 0; i < len(fvdl.UnifiedNodePool.Node); i++ {
-		unique := true
-		//Uniqueness Check
-		for check := 0; check < i; check++ {
-			if fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet == fvdl.UnifiedNodePool.Node[check].SourceLocation.Snippet &&
-				fvdl.UnifiedNodePool.Node[i].Action.ActionData == fvdl.UnifiedNodePool.Node[check].Action.ActionData {
-				unique = false
-			}
-		}
-		if !unique {
-			continue
-		}
-		locations := *new(format.Locations)
+		threadFlowIndexMap[i+1] = append(threadFlowIndexMap[i+1], i+1)
 		loc := new(format.Location)
 		//get artifact location
 		for j := 0; j < len(fvdl.Build.SourceFiles); j++ { // j iterates on source files
 			if fvdl.Build.SourceFiles[j].Name == fvdl.UnifiedNodePool.Node[i].SourceLocation.Path {
-				loc.PhysicalLocation.ArtifactLocation.Index = j
+				loc.PhysicalLocation.ArtifactLocation.Index = j + 1
+				loc.PhysicalLocation.ArtifactLocation.URI = fvdl.UnifiedNodePool.Node[i].SourceLocation.Path
+				loc.PhysicalLocation.ArtifactLocation.URIBaseId = "%SRCROOT%"
 				break
 			}
 		}
 		//get region & context region
 		loc.PhysicalLocation.Region.StartLine = fvdl.UnifiedNodePool.Node[i].SourceLocation.Line
-		//loc.PhysicalLocation.Region.Snippet.Text = "foobar" //TODO
+		loc.PhysicalLocation.Region.EndLine = fvdl.UnifiedNodePool.Node[i].SourceLocation.LineEnd
+		loc.PhysicalLocation.Region.StartColumn = fvdl.UnifiedNodePool.Node[i].SourceLocation.ColStart
+		loc.PhysicalLocation.Region.EndColumn = fvdl.UnifiedNodePool.Node[i].SourceLocation.ColEnd
 		targetSnippetId := fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet
 		for j := 0; j < len(fvdl.Snippets); j++ {
 			if fvdl.Snippets[j].SnippetId == targetSnippetId {
@@ -983,34 +1090,10 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		}
 		loc.Message = new(format.Message)
 		loc.Message.Text = fvdl.UnifiedNodePool.Node[i].Action.ActionData
+
 		// Handle snippet
-		snippetTarget := ""
-		switch fvdl.UnifiedNodePool.Node[i].Action.Type {
-		case "Assign":
-			snippetWords := strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, " ")
-			if snippetWords[0] == "Assignment" {
-				snippetTarget = snippetWords[2]
-			} else {
-				snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
-			}
-		case "InCall":
-			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
-		case "OutCall":
-			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
-		case "InOutCall":
-			snippetTarget = strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, "(")[0]
-		case "Return":
-			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
-		case "Read":
-			snippetWords := strings.Split(fvdl.UnifiedNodePool.Node[i].Action.ActionData, " ")
-			if len(snippetWords) > 1 {
-				snippetTarget = " " + snippetWords[1]
-			} else {
-				snippetTarget = snippetWords[0]
-			}
-		default:
-			snippetTarget = fvdl.UnifiedNodePool.Node[i].Action.ActionData
-		}
+		snippetTarget := handleSnippet(fvdl.UnifiedNodePool.Node[i].Action.Type, fvdl.UnifiedNodePool.Node[i].Action.ActionData)
+
 		if loc.PhysicalLocation.ContextRegion.Snippet != nil {
 			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 			snippetText := ""
@@ -1028,12 +1111,52 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 			}
 			loc.PhysicalLocation.Region.Snippet = snippetSarif
 		}
-		locations.Location = loc
-		locations.Kinds = append(locations.Kinds, "unknown")
-		threadFlowLocationsObject = append(threadFlowLocationsObject, locations)
+		log.Entry().Debug("Compute eventual sub-nodes")
+		threadFlowIndexMap[i+1] = computeLocationPath(fvdl, i+1) // Recursively traverse array
+		locs := format.Locations{Location: loc}
+		threadFlowLocationsObject = append(threadFlowLocationsObject, locs)
 	}
 
 	sarif.Runs[0].ThreadFlowLocations = threadFlowLocationsObject
+
+	// Now, iterate on threadflows in each result, and replace eventual indexes...
+	for i := 0; i < len(sarif.Runs[0].Results); i++ {
+		for cf := 0; cf < len(sarif.Runs[0].Results[i].CodeFlows); cf++ {
+			for tf := 0; tf < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows); tf++ {
+				log.Entry().Debug("Handling tf: ", tf, "from instance ", sarif.Runs[0].Results[i].PartialFingerprints.FortifyInstanceID)
+				newLocations := *new([]format.Locations)
+				for j := 0; j < len(sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations); j++ {
+					if sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index != 0 {
+						indexes := threadFlowIndexMap[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index]
+						log.Entry().Debug("Indexes found: ", indexes)
+						for rep := 0; rep < len(indexes); rep++ {
+							newLocations = append(newLocations, sarif.Runs[0].ThreadFlowLocations[indexes[rep]-1])
+							newLocations[rep].Index = 0 // void index
+						}
+					} else {
+						newLocations = append(newLocations, sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j])
+					}
+				}
+				sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations = newLocations
+			}
+		}
+	}
+
+	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
+	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	conversion.Invocation.StartTimeUtc = fmt.Sprintf("%s", start.Format("2006-01-02T15:04:05.000Z")) // "YYYY-MM-DDThh:mm:ss.sZ" on 2006-01-02 15:04:05
+	conversion.Invocation.Machine = fvdl.EngineData.MachineInfo.Hostname
+	conversion.Invocation.Account = fvdl.EngineData.MachineInfo.Username
+	convInvocProp := new(format.InvocationProperties)
+	convInvocProp.Platform = fvdl.EngineData.MachineInfo.Platform
+	conversion.Invocation.Properties = convInvocProp
+	sarif.Runs[0].Conversion = conversion
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
@@ -1052,8 +1175,25 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+	// Set default values
+	ruleProp.Audited = false
+	ruleProp.FortifyCategory = "Unknown"
+	ruleProp.ToolSeverity = "Unknown"
+	ruleProp.ToolState = "Unknown"
+	ruleProp.ToolAuditMessage = "Error fetching audit state" // We set this as default for the error phase, then reset it to nothing
+	ruleProp.ToolSeverityIndex = 0
+	ruleProp.ToolStateIndex = 0
+	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
+	if maxretries == 0 {
+		// Max retries reached, we stop there to avoid a longer execution time
+		err := errors.New("request failed: maximum number of retries reached, placeholder values will be set from now on for audit data")
+		return err
+	} else if maxretries < 0 {
+		return nil // Avoid spamming logfile
+	}
 	if sys == nil {
+		ruleProp.ToolAuditMessage = "Cannot fetch audit state: no sys instance"
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
 	}
@@ -1061,6 +1201,8 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}
+	// Reset the audit message
+	ruleProp.ToolAuditMessage = ""
 	var data []*models.ProjectVersionIssue
 	var err error
 	if oneRequestPerIssue {
@@ -1078,8 +1220,18 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		}
 	}
 	if len(data) != 1 { //issueInstanceID is supposedly unique so len(data) = 1
-		//log.Entry().Error("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
-		return errors.New("not exactly 1 issue found for instance ID " + issueInstanceID + ", found " + fmt.Sprint(len(data)))
+		return errors.New("not exactly 1 issue found, found " + fmt.Sprint(len(data)))
+	}
+	if filterSet != nil {
+		for i := 0; i < len(filterSet.Folders); i++ {
+			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
+				ruleProp.FortifyCategory = filterSet.Folders[i].Name
+				break
+			}
+		}
+	} else {
+		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
+		return err
 	}
 	ruleProp.Audited = data[0].Audited
 	ruleProp.ToolSeverity = *data[0].Friority
@@ -1119,18 +1271,70 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		if err != nil {
 			return err
 		}
-		ruleProp.ToolAuditMessage = *commentData[0].Comment
-	}
-	if filterSet != nil {
-		for i := 0; i < len(filterSet.Folders); i++ {
-			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
-				ruleProp.FortifyCategory = filterSet.Folders[i].Name
-				break
-			}
-		}
-	} else {
-		err := errors.New("no filter set defined, category will be missing from " + issueInstanceID)
-		return err
+		ruleProp.ToolAuditMessage = unescapeXML(*commentData[0].Comment)
 	}
 	return nil
+}
+
+// Factorizes some code used to obtain the relevant value for a snippet based on the type given by Fortify
+func handleSnippet(snippetType string, snippet string) string {
+	snippetTarget := ""
+	switch snippetType {
+	case "Assign":
+		snippetWords := strings.Split(snippet, " ")
+		if snippetWords[0] == "Assignment" {
+			snippetTarget = snippetWords[2]
+		} else {
+			snippetTarget = snippet
+		}
+	case "InCall":
+		snippetTarget = strings.Split(snippet, "(")[0]
+	case "OutCall":
+		snippetTarget = strings.Split(snippet, "(")[0]
+	case "InOutCall":
+		snippetTarget = strings.Split(snippet, "(")[0]
+	case "Return":
+		snippetTarget = snippet
+	case "Read":
+		snippetWords := strings.Split(snippet, " ")
+		if len(snippetWords) > 1 {
+			snippetTarget = " " + snippetWords[1]
+		} else {
+			snippetTarget = snippetWords[0]
+		}
+	default:
+		snippetTarget = snippet
+	}
+	return snippetTarget
+}
+
+func unescapeXML(input string) string {
+	raw := input
+	// Post-treat string to change the XML escaping generated by Unmarshal
+	raw = strings.ReplaceAll(raw, "&amp;", "&")
+	raw = strings.ReplaceAll(raw, "&lt;", "<")
+	raw = strings.ReplaceAll(raw, "&gt;", ">")
+	raw = strings.ReplaceAll(raw, "&apos;", "'")
+	raw = strings.ReplaceAll(raw, "&quot;", "\"")
+	return raw
+}
+
+// Used to build a reference array of index for the successors of each node in the UnifiedNodePool
+func computeLocationPath(fvdl FVDL, input int) []int {
+	log.Entry().Debug("Computing for ID ", input)
+	// Find the successors of input
+	var subnodes []int
+	var result []int
+	for j := 0; j < len(fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry); j++ {
+		if fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry[j].NodeRef.RefId != 0 && fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry[j].NodeRef.RefId != (input-1) {
+			subnodes = append(subnodes, fvdl.UnifiedNodePool.Node[input-1].Reason.Trace.Primary.Entry[j].NodeRef.RefId+1)
+		}
+	}
+	result = append(result, input)
+	log.Entry().Debug("Successors: ", subnodes)
+	for j := 0; j < len(subnodes); j++ {
+		result = append(result, computeLocationPath(fvdl, subnodes[j])...)
+	}
+	log.Entry().Debug("Finishing computing for ID ", input)
+	return result
 }

@@ -2,6 +2,9 @@ package versioning
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -40,7 +43,18 @@ type Options struct {
 
 // Utils defines the versioning operations for various build tools
 type Utils interface {
-	maven.Utils
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(e string, p ...string) error
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Glob(pattern string) (matches []string, err error)
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
+	FileRemove(path string) error
 }
 
 type mvnRunner struct{}
@@ -90,6 +104,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		artifact = &Gradle{
 			path:         buildDescriptorFilePath,
 			versionField: opts.VersionField,
+			utils:        utils,
 		}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {

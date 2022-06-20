@@ -1,0 +1,6 @@
+general:
+  createBOM: true
+
+steps:
+  gradleExecuteBuild:
+    useWrapper: true

@@ -17,6 +17,7 @@ type BuildSettings struct {
 	MtaBuild          []BuildOptions `json:"mtaBuild,omitempty"`
 	PythonBuild       []BuildOptions `json:"pythonBuild,omitempty"`
 	NpmExecuteScripts []BuildOptions `json:"npmExecuteScripts,omitempty"`
+	CnbBuild          []BuildOptions `json:"cnbBuild,omitempty"`
 }
 
 type BuildOptions struct {
@@ -100,6 +101,10 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		case "npmExecuteScripts":
 			jsonResult, err = json.Marshal(BuildSettings{
 				NpmExecuteScripts: settings,
+			})
+		case "cnbBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				CnbBuild: settings,
 			})
 		default:
 			log.Entry().Warningf("buildTool '%s' not supported for creation of build settings", buildTool)

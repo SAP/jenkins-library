@@ -62,6 +62,7 @@ type artifactPrepareVersionUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRead(path string) ([]byte, error)
+	FileRemove(path string) error
 
 	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
 }
@@ -152,10 +153,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
+	now := time.Now()
 
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
-		now := time.Now()
-
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
 		provider, err := utils.NewOrchestratorSpecificConfigProvider()
@@ -196,7 +196,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		// propagate version information to additional descriptors
 		if len(config.AdditionalTargetTools) > 0 {
-			err = propagateVersion(config, utils, &artifactOpts, newVersion, gitCommitID, now)
+			err = propagateVersion(config, utils, &artifactOpts, version, gitCommitID, now)
 			if err != nil {
 				return err
 			}
@@ -210,6 +210,14 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 					log.SetErrorCategory(log.ErrorCustom)
 				}
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
+			}
+		}
+	} else {
+		// propagate version information to additional descriptors
+		if len(config.AdditionalTargetTools) > 0 {
+			err = propagateVersion(config, utils, &artifactOpts, version, gitCommitID, now)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -480,7 +488,7 @@ func calculateCloudVersion(artifact versioning.Artifact, config *artifactPrepare
 	return newVersion, nil
 }
 
-func propagateVersion(config *artifactPrepareVersionOptions, utils artifactPrepareVersionUtils, artifactOpts *versioning.Options, newVersion, gitCommitID string, now time.Time) error {
+func propagateVersion(config *artifactPrepareVersionOptions, utils artifactPrepareVersionUtils, artifactOpts *versioning.Options, version, gitCommitID string, now time.Time) error {
 	var err error
 
 	if len(config.AdditionalTargetDescriptors) > 0 && len(config.AdditionalTargetTools) != len(config.AdditionalTargetDescriptors) {
@@ -518,9 +526,9 @@ func propagateVersion(config *artifactPrepareVersionOptions, utils artifactPrepa
 			}
 
 			// Make sure that version type fits to target artifact
-			var descriptorVersion string
+			descriptorVersion := version
 			if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
-				descriptorVersion, err = calculateCloudVersion(targetArtifact, config, newVersion, gitCommitID, now)
+				descriptorVersion, err = calculateCloudVersion(targetArtifact, config, version, gitCommitID, now)
 				if err != nil {
 					return err
 				}
