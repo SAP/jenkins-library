@@ -1,6 +1,7 @@
 package build
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
@@ -21,8 +22,9 @@ func TestCreateUrl(t *testing.T) {
 	})
 	t.Run("One Parameter", func(t *testing.T) {
 		//arange
+		conn.Parameters = url.Values{}
 		abapSourceClient := "001"
-		conn.Parameters = []string{"sap-client=" + abapSourceClient}
+		conn.Parameters.Add("sap-client", abapSourceClient)
 		//act
 		url := conn.createUrl("/builds('123456789')")
 
@@ -31,27 +33,26 @@ func TestCreateUrl(t *testing.T) {
 	})
 	t.Run("Two Parameters", func(t *testing.T) {
 		//arrange
-		configParameters := make([]string, 2)
-		configParameters[0] = "sap-client=001"
-		configParameters[1] = "$format=json"
-		conn.Parameters = configParameters
+		conn.Parameters = url.Values{}
+		conn.Parameters.Add("sap-client", "001")
+		conn.Parameters.Add("format", "json")
 		//act
 		url := conn.createUrl("/builds('123456789')")
 
 		//assert
-		assert.Equal(t, "/BUILD/CORE_SRV/builds('123456789')?sap-client=001&$format=json", url)
+		assert.Equal(t, "/BUILD/CORE_SRV/builds('123456789')?format=json&sap-client=001", url)
 	})
 	t.Run("Three Parameters", func(t *testing.T) {
 		//arrange
-		configParameters := make([]string, 3)
-		configParameters[0] = "sap-client=001"
-		configParameters[1] = "$format=json"
-		configParameters[2] = "$top=2"
-		conn.Parameters = configParameters
+		conn.Parameters = url.Values{}
+		conn.Parameters.Add("sap-client", "001")
+		conn.Parameters.Add("format", "json")
+		conn.Parameters.Add("top", "2")
+
 		//act
 		url := conn.createUrl("/builds('123456789')")
 
 		//assert
-		assert.Equal(t, "/BUILD/CORE_SRV/builds('123456789')?sap-client=001&$format=json&$top=2", url)
+		assert.Equal(t, "/BUILD/CORE_SRV/builds('123456789')?format=json&sap-client=001&top=2", url)
 	})
 }

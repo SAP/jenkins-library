@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -20,7 +21,7 @@ type Connector struct {
 	DownloadClient  piperhttp.Downloader
 	Header          map[string][]string
 	Baseurl         string
-	Parameters      []string
+	Parameters      url.Values
 	MaxRuntime      time.Duration // just as handover parameter for polling functions
 	PollingInterval time.Duration // just as handover parameter for polling functions
 }
@@ -38,7 +39,7 @@ type ConnectorConfiguration struct {
 	AddonDescriptor     string
 	MaxRuntimeInMinutes int
 	CertificateNames    []string
-	Parameters          []string
+	Parameters          url.Values
 }
 
 // HTTPSendLoader : combine both interfaces [sender, downloader]
@@ -120,15 +121,12 @@ func (conn Connector) Download(appendum string, downloadPath string) error {
 
 // create url
 func (conn Connector) createUrl(appendum string) string {
-	url := conn.Baseurl + appendum
+	myUrl := conn.Baseurl + appendum
 	if len(conn.Parameters) == 0 {
-		return url
+		return myUrl
 	}
-	url = url + "?" + conn.Parameters[0]
-	for _, para := range conn.Parameters[1:] {
-		url = url + "&" + para
-	}
-	return url
+	myUrl = myUrl + "?" + conn.Parameters.Encode()
+	return myUrl
 }
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
