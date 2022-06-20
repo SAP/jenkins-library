@@ -201,7 +201,11 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	if err != nil {
 		return errors.Wrapf(err, "failed to read file '%v'", config.GradleSensitivePropertiesFile)
 	}
-	resultProperties, err := extendProperties(utils, config.GradlePropertiesFile, config.ProjectsCommonConfig, config.ProjectsCustomConfigs, sensitiveProperties)
+	originalProperties, err := getOriginalProperties(utils, config.GradlePropertiesFile)
+	if err != nil {
+		return err
+	}
+	resultProperties, err := extendProperties(originalProperties, config.ProjectsCommonConfig, config.ProjectsCustomConfigs, sensitiveProperties)
 	if err != nil {
 		return err
 	}
@@ -255,28 +259,32 @@ func getInitScript(options *gradleExecuteBuildOptions) (string, error) {
 	return string(generatedCode.Bytes()), nil
 }
 
-func extendProperties(utils gradleExecuteBuildUtils, gradlePropertiesFile string, projectsCommonConfig map[string]interface{}, projectsCustomConfigs []map[string]interface{}, sensitiveProperties []byte) ([]byte, error) {
+func getOriginalProperties(utils gradleExecuteBuildUtils, gradlePropertiesFile string) ([]byte, error) {
 	originalProperties := []byte(``)
-	var err error
-	if len(gradlePropertiesFile) > 0 {
-		exists, err := utils.FileExists(gradlePropertiesFile)
-		if err != nil {
-			return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
-		}
-		if !exists {
-			return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
-		}
-		originalProperties, err = utils.FileRead(gradlePropertiesFile)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
-		}
+	if len(gradlePropertiesFile) == 0 {
+		return originalProperties, nil
 	}
+	exists, err := utils.FileExists(gradlePropertiesFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
+	}
+	if !exists {
+		return nil, errors.Wrapf(err, "file '%v' does not exist", gradlePropertiesFile)
+	}
+	originalProperties, err = utils.FileRead(gradlePropertiesFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read file '%v'", gradlePropertiesFile)
+	}
+	return originalProperties, nil
+}
+
+func extendProperties(originalProperties []byte, projectsCommonConfig map[string]interface{}, projectsCustomConfigs []map[string]interface{}, sensitiveProperties []byte) ([]byte, error) {
 	sensitiveProperties = append([]byte("\n"), sensitiveProperties...)
 	tplProjectsCommonProps := template.Must(template.New("projectsCommonProps").Parse(projectCommonProperties))
 	tplProjectsCustomProps := template.Must(template.New("projectCustomProps").Parse(projectCustomProperties))
 
 	properties := append(originalProperties, sensitiveProperties...)
-	properties, err = appendPropertiesByTemplate(properties, tplProjectsCommonProps, projectsCommonConfig)
+	properties, err := appendPropertiesByTemplate(properties, tplProjectsCommonProps, projectsCommonConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to generate projects common properties")
 	}
