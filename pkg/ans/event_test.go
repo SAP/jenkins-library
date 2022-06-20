@@ -179,3 +179,15 @@ func defaultEvent() Event {
 		},
 	}
 }
+
+func TestEvent_Copy(t *testing.T) {
+	t.Parallel()
+	t.Run("good", func(t *testing.T) {
+		originalEvent := defaultEvent()
+		newEvent, err := originalEvent.Copy()
+		require.NoError(t, err)
+		assert.Equal(t, originalEvent, newEvent, "Events should be the same after copying.")
+		newEvent.Resource.ResourceType = "different"
+		assert.NotEqual(t, originalEvent, newEvent, "Events should not affect each other after copying")
+	})
+}
