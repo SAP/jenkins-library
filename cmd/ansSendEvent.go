@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -36,6 +37,11 @@ func runAnsSendEvent(config *ansSendEventOptions, c ans.Client) error {
 			ResourceInstance: config.ResourceInstance,
 			Tags:             config.ResourceTags,
 		},
+	}
+
+	if GeneralConfig.Verbose {
+		eventJson, _ := json.MarshalIndent(event, "", "  ")
+		log.Entry().Infof("Event details: %s", eventJson)
 	}
 
 	if err = event.Validate(); err != nil {
