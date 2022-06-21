@@ -220,7 +220,8 @@ public class CommonStepsTest extends BasePiperTest{
         'awsS3Upload',
         'apiProxyList', //implementing new golang pattern without fields
         'azureBlobUpload',
-        'awsS3Upload'
+        'awsS3Upload',
+        'ansSendEvent'
     ]
 
     @Test
