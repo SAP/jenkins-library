@@ -49,11 +49,10 @@ type GeneralConfigOptions struct {
 	GCSSubFolder         string
 }
 
-// HookConfiguration contains the configuration for supported hooks, so far ANS, Sentry and Splunk are supported.
+// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
-	ANSConfig    ANSConfiguration    `json:"ans,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -67,13 +66,6 @@ type SplunkConfiguration struct {
 	Token    string `json:"token,omitempty"`
 	Index    string `json:"index,omitempty"`
 	SendLogs bool   `json:"sendLogs"`
-}
-
-// ANSConfiguration defines the configuration options for the SAP Alert Notification Service on BTP
-type ANSConfiguration struct {
-	ServiceKey            string `json:"serviceKey,omitempty"`
-	EventTemplateFilePath string `json:"eventTemplateFilePath,omitempty"`
-	EventTemplate         string `json:"eventTemplate,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
