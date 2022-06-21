@@ -72,6 +72,7 @@ nav:
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
         - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
+        - apiProxyList: steps/apiProxyList.md
         - apiProviderDownload: steps/apiProviderDownload.md
         - apiProviderUpload: steps/apiProviderUpload.md
         - apiProxyUpload: steps/apiProxyUpload.md

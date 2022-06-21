@@ -31,6 +31,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"apiProviderDownload":                       apiProviderDownloadMetadata(),
 		"apiProviderUpload":                         apiProviderUploadMetadata(),
 		"apiProxyDownload":                          apiProxyDownloadMetadata(),
+		"apiProxyList":                              apiProxyListMetadata(),
 		"apiProxyUpload":                            apiProxyUploadMetadata(),
 		"artifactPrepareVersion":                    artifactPrepareVersionMetadata(),
 		"awsS3Upload":                               awsS3UploadMetadata(),
