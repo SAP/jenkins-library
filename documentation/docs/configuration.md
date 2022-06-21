@@ -96,19 +96,22 @@ log entry content as follows:
 - `priority`: (optional) an integer number in the range [1:1000] (not set by
   "Piper", but can be set with the event template)
 - `tags`: optional key-value pairs. The following are set by "Piper":
-  - `logLevel`: the "Piper" log level
-  - `ans:correlationId`: a unique correlation ID of the pipeline run
-    (defaults to the URL of that pipeline run, but can be overwritten with the
-    event template)
-  - `ans:sourceEventId`: also set to the "Piper" correlation ID (can also be
-    overwritten with the event template)
+    - `ans:correlationId`: a unique correlation ID of the pipeline run
+      (defaults to the URL of that pipeline run, but can be overwritten with the
+      event template)
+    - `ans:sourceEventId`: also set to the "Piper" correlation ID (can also be
+      overwritten with the event template)
+    - `pipeline:stepName`: the "Piper" step name
+    - `pipeline:logLevel`: the "Piper" log level
+    - `pipeline:errorCategory`: the "Piper" error category, if available
 - `resource`: the following default properties are set by "Piper":
-  - `resourceType`: resource type identifier (defaults to 'Pipeline', but
-    can be overwritten with the event template)
-  - `resourceName`: unique resource name (defaults to 'Pipeline', can be
-    overwritten with the event template)
-  - `resourceInstance`: (optional) resource instance identifier (not set by
-    "Piper", can be set with the event template)
+    - `resourceType`: resource type identifier (defaults to 'Pipeline', but
+      can be overwritten with the event template)
+    - `resourceName`: unique resource name (defaults to 'Pipeline', can be
+      overwritten with the event template)
+    - `resourceInstance`: (optional) resource instance identifier (not set by
+      "Piper", can be set with the event template)
+    - `tags`: optional key-value pairs.
 
 The following event properties cannot be set and are instead set by the SAP
 Alert Notification service:
