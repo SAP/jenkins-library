@@ -5,74 +5,46 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
-type apiProxyListOptions struct {
-	APIServiceKey string `json:"apiServiceKey,omitempty"`
-	Top           int    `json:"top,omitempty"`
-	Skip          int    `json:"skip,omitempty"`
-	Filter        string `json:"filter,omitempty"`
-	Count         bool   `json:"count,omitempty"`
-	Search        string `json:"search,omitempty"`
-	Orderby       string `json:"orderby,omitempty"`
-	Select        string `json:"select,omitempty"`
-	Expand        string `json:"expand,omitempty"`
+type ansSendEventOptions struct {
+	AnsServiceKey    string                 `json:"ansServiceKey,omitempty"`
+	EventType        string                 `json:"eventType,omitempty"`
+	Severity         string                 `json:"severity,omitempty" validate:"possible-values=INFO NOTICE WARNING ERROR FATAL"`
+	Category         string                 `json:"category,omitempty" validate:"possible-values=NOTIFICATION ALERT EXCEPTION"`
+	Subject          string                 `json:"subject,omitempty"`
+	Body             string                 `json:"body,omitempty"`
+	Priority         int                    `json:"priority,omitempty"`
+	Tags             map[string]interface{} `json:"tags,omitempty"`
+	ResourceName     string                 `json:"resourceName,omitempty"`
+	ResourceType     string                 `json:"resourceType,omitempty"`
+	ResourceInstance string                 `json:"resourceInstance,omitempty"`
+	ResourceTags     map[string]interface{} `json:"resourceTags,omitempty"`
 }
 
-type apiProxyListCommonPipelineEnvironment struct {
-	custom struct {
-		APIProxyList string
-	}
-}
+// AnsSendEventCommand Send Event to the SAP Alert Notification Service
+func AnsSendEventCommand() *cobra.Command {
+	const STEP_NAME = "ansSendEvent"
 
-func (p *apiProxyListCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
-		category string
-		name     string
-		value    interface{}
-	}{
-		{category: "custom", name: "apiProxyList", value: p.custom.APIProxyList},
-	}
-
-	errCount := 0
-	for _, param := range content {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
-		if err != nil {
-			log.Entry().WithError(err).Error("Error persisting piper environment.")
-			errCount++
-		}
-	}
-	if errCount > 0 {
-		log.Entry().Error("failed to persist Piper environment")
-	}
-}
-
-// ApiProxyListCommand Get the List of an API Proxy from the API Portal
-func ApiProxyListCommand() *cobra.Command {
-	const STEP_NAME = "apiProxyList"
-
-	metadata := apiProxyListMetadata()
-	var stepConfig apiProxyListOptions
+	metadata := ansSendEventMetadata()
+	var stepConfig ansSendEventOptions
 	var startTime time.Time
-	var commonPipelineEnvironment apiProxyListCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createApiProxyListCmd = &cobra.Command{
+	var createAnsSendEventCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Get the List of an API Proxy from the API Portal",
-		Long:  `With this step you can get list of all API Proxy from the API Portal using the OData API. Learn more about the API Management API for getting list of an API proxy artifact [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
+		Short: "Send Event to the SAP Alert Notification Service",
+		Long:  `With this step one can send an Event to the SAP Alert Notification Service.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -89,7 +61,7 @@ func ApiProxyListCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.APIServiceKey)
+			log.RegisterSecret(stepConfig.AnsServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -121,7 +93,6 @@ func ApiProxyListCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -142,50 +113,52 @@ func ApiProxyListCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			apiProxyList(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			ansSendEvent(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addApiProxyListFlags(createApiProxyListCmd, &stepConfig)
-	return createApiProxyListCmd
+	addAnsSendEventFlags(createAnsSendEventCmd, &stepConfig)
+	return createAnsSendEventCmd
 }
 
-func addApiProxyListFlags(cmd *cobra.Command, stepConfig *apiProxyListOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the API Management Runtime service instance of plan 'api'")
-	cmd.Flags().IntVar(&stepConfig.Top, "top", 0, "Show only the first n items.")
-	cmd.Flags().IntVar(&stepConfig.Skip, "skip", 0, "Skip the first n items.")
-	cmd.Flags().StringVar(&stepConfig.Filter, "filter", os.Getenv("PIPER_filter"), "Filter items by property values.")
-	cmd.Flags().BoolVar(&stepConfig.Count, "count", false, "Include count of items.")
-	cmd.Flags().StringVar(&stepConfig.Search, "search", os.Getenv("PIPER_search"), "Search items by search phrases.")
-	cmd.Flags().StringVar(&stepConfig.Orderby, "orderby", os.Getenv("PIPER_orderby"), "Order by property values.")
-	cmd.Flags().StringVar(&stepConfig.Select, "select", os.Getenv("PIPER_select"), "Select properties to be returned.")
-	cmd.Flags().StringVar(&stepConfig.Expand, "expand", os.Getenv("PIPER_expand"), "Expand related entities.")
+func addAnsSendEventFlags(cmd *cobra.Command, stepConfig *ansSendEventOptions) {
+	cmd.Flags().StringVar(&stepConfig.AnsServiceKey, "ansServiceKey", os.Getenv("PIPER_ansServiceKey"), "Service key JSON string to access the SAP Alert Notification Service")
+	cmd.Flags().StringVar(&stepConfig.EventType, "eventType", `Piper`, "Type of the event")
+	cmd.Flags().StringVar(&stepConfig.Severity, "severity", `INFO`, "Event severity")
+	cmd.Flags().StringVar(&stepConfig.Category, "category", `NOTIFICATION`, "Event category")
+	cmd.Flags().StringVar(&stepConfig.Subject, "subject", `ansSendEvent`, "Short description of the event")
+	cmd.Flags().StringVar(&stepConfig.Body, "body", `Call from Piper step ansSendEvent`, "Detailed description of the event")
+	cmd.Flags().IntVar(&stepConfig.Priority, "priority", 0, "Event priority in the range of 1 to 1000")
 
-	cmd.MarkFlagRequired("apiServiceKey")
+	cmd.Flags().StringVar(&stepConfig.ResourceName, "resourceName", `Pipeline`, "Unique resource name")
+	cmd.Flags().StringVar(&stepConfig.ResourceType, "resourceType", `Pipeline`, "Resource type identifier")
+	cmd.Flags().StringVar(&stepConfig.ResourceInstance, "resourceInstance", os.Getenv("PIPER_resourceInstance"), "Optional resource instance identifier")
+
+	cmd.MarkFlagRequired("ansServiceKey")
 }
 
 // retrieve step metadata
-func apiProxyListMetadata() config.StepData {
+func ansSendEventMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "apiProxyList",
+			Name:        "ansSendEvent",
 			Aliases:     []config.Alias{},
-			Description: "Get the List of an API Proxy from the API Portal",
+			Description: "Send Event to the SAP Alert Notification Service",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
+					{Name: "ansServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to access the SAP Alert Notification Service", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "apiServiceKey",
+						Name: "ansServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "apimApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
+								Name:  "ansServiceKeyCredentialsId",
+								Param: "ansServiceKey",
 								Type:  "secret",
 							},
 						},
@@ -193,10 +166,55 @@ func apiProxyListMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
+						Default:   os.Getenv("PIPER_ansServiceKey"),
 					},
 					{
-						Name:        "top",
+						Name:        "eventType",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `Piper`,
+					},
+					{
+						Name:        "severity",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `INFO`,
+					},
+					{
+						Name:        "category",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `NOTIFICATION`,
+					},
+					{
+						Name:        "subject",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `ansSendEvent`,
+					},
+					{
+						Name:        "body",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `Call from Piper step ansSendEvent`,
+					},
+					{
+						Name:        "priority",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
@@ -205,78 +223,47 @@ func apiProxyListMetadata() config.StepData {
 						Default:     0,
 					},
 					{
-						Name:        "skip",
+						Name:        "tags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
+						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     0,
 					},
 					{
-						Name:        "filter",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filter"),
-					},
-					{
-						Name:        "count",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "search",
+						Name:        "resourceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_search"),
+						Default:     `Pipeline`,
 					},
 					{
-						Name:        "orderby",
+						Name:        "resourceType",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_orderby"),
+						Default:     `Pipeline`,
 					},
 					{
-						Name:        "select",
+						Name:        "resourceInstance",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_select"),
+						Default:     os.Getenv("PIPER_resourceInstance"),
 					},
 					{
-						Name:        "expand",
+						Name:        "resourceTags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_expand"),
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/apiProxyList"},
-						},
 					},
 				},
 			},
