@@ -3,10 +3,12 @@ package apim
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
+	"github.com/pasztorpisti/qs"
 	"github.com/pkg/errors"
 )
 
@@ -14,6 +16,18 @@ import (
 type Utils interface {
 	InitAPIM() error
 	IsPayloadJSON() bool
+}
+
+//OdataUtils for apim
+type OdataUtils interface {
+	MakeOdataQuery() (string, error)
+}
+
+//OdataParameters struct
+type OdataParameters struct {
+	Filter, Search          string
+	Top, Skip               int
+	Orderby, Select, Expand string
 }
 
 //Bundle struct
@@ -50,4 +64,16 @@ func (apim *Bundle) InitAPIM() error {
 func (apim *Bundle) IsPayloadJSON() bool {
 	var js json.RawMessage
 	return json.Unmarshal([]byte(apim.Payload), &js) == nil
+}
+
+func (odataFilters *OdataParameters) MakeOdataQuery() (string, error) {
+
+	customMarshaler := qs.NewMarshaler(&qs.MarshalOptions{
+		DefaultMarshalPresence: qs.OmitEmpty,
+	})
+	values, encodeErr := customMarshaler.Marshal(odataFilters)
+	if encodeErr == nil && len(values) > 0 {
+		values = "?" + strings.ReplaceAll(values, "&", "&$")
+	}
+	return values, encodeErr
 }
