@@ -47,8 +47,8 @@ class EnterpriseRepositoryPlugin implements Plugin < Gradle > {
         projectsUseDeclaredVersioning = project.hasProperty("projectsUseDeclaredVersioning") ? project.getProperty("projectsUseDeclaredVersioning").toBoolean() : false
         projectsVersion = project.hasProperty("projectsVersion") ? project.getProperty("projectsVersion") : ''
         projectsGroupId = project.hasProperty("projectsGroupId") ? project.getProperty("projectsGroupId") : ''
-        projectsCreateBOM = project.hasProperty("projectsCreateBOM") ? project.getProperty("projectsCreateBOM").toBoolean() : false
-        projectsPublish = project.hasProperty("projectsPublish") ? project.getProperty("projectsPublish").toBoolean() : false
+        projectsCreateBOM = project.hasProperty("projectsCreateBOM") ? project.getProperty("projectsCreateBOM").toBoolean() : true
+        projectsPublish = project.hasProperty("projectsPublish") ? project.getProperty("projectsPublish").toBoolean() : true
 
         projectPluginsList = project.hasProperty(project.name + "--pluginsList") ? project.getProperty(project.name + "--pluginsList") : projectsPluginsList
         projectPublish = project.hasProperty(project.name + "--publish") ? project.getProperty(project.name + "--publish").toBoolean() : projectsPublish

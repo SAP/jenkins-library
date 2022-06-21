@@ -90,11 +90,11 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 func handleInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) (error, cancelFunc) {
 	cancel := cancelNothing
 	if options.InitScriptContent != "" {
-		hasTasks, err := hasInitTasks(exec, options, utils, stdOutBuf)
+		existingTasks, err := hasInitTasks(exec, options, utils, stdOutBuf)
 		if err != nil {
 			return fmt.Errorf("failed list gradle tasks: %v", err), nil
 		}
-		if !hasTasks {
+		if len(existingTasks) == 0 {
 			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
 			if err != nil {
 				return fmt.Errorf("failed create init script: %v", err), nil
@@ -103,13 +103,11 @@ func handleInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBu
 				utils.FileRemove(initScriptName)
 			}
 			options.setInitScript = true
-			hasTasks, err := hasInitTasks(exec, options, utils, stdOutBuf)
+			existingTasks, err = hasInitTasks(exec, options, utils, stdOutBuf)
 			if err != nil {
 				return fmt.Errorf("failed list gradle tasks with init script: %v", err), nil
 			}
-			if !hasTasks {
-				options.InitScriptTasks = nil
-			}
+			options.InitScriptTasks = existingTasks
 		}
 	} else {
 		options.InitScriptTasks = nil
@@ -117,7 +115,7 @@ func handleInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBu
 	return nil, cancel
 }
 
-func hasInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) (bool, error) {
+func hasInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) ([]string, error) {
 	parameters := []string{"tasks"}
 	if options.BuildGradlePath != "" {
 		parameters = append(parameters, "-p", options.BuildGradlePath)
@@ -126,15 +124,16 @@ func hasInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *
 		parameters = append(parameters, "--init-script", initScriptName)
 	}
 	if err := utils.RunExecutable(exec, parameters...); err != nil {
-		return false, err
+		return nil, err
 	}
 	tasksOut := stdOutBuf.String()
+	var existingTasks []string
 	for _, task := range options.InitScriptTasks {
-		if !strings.Contains(tasksOut, task) {
-			return false, nil
+		if strings.Contains(tasksOut, task) {
+			existingTasks = append(existingTasks, task)
 		}
 	}
-	return true, nil
+	return existingTasks, nil
 }
 
 func getParametersFromOptions(options *ExecuteOptions) []string {

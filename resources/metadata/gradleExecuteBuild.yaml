@@ -109,8 +109,8 @@ spec:
           - `component` - component from which artifact will be published (default value: java)
           - `version` - common artifact version
           - `groupId` - artifact group Id
-          - `publish` - set to true if artifacts should be published (default: false)
-          - `createBOM` - set to true if bom file should be created (default: false)
+          - `publish` - set to true if artifacts should be published (default: true)
+          - `createBOM` - set to true if bom file should be created (default: true)
           - `useDeclaredVersioning` - set to true to use declared versions otherwise resolved versions will be used
 
 
@@ -138,13 +138,13 @@ spec:
 
 
           - `projectName` - this property clarifies project which should be configured with the following properties
-          - `pluginsList` - coma separated list of pluggins to apply (default: java-library,jacoco)
-          - `component` - component from which artifact will be published (default value: java)
+          - `pluginsList` - coma separated list of pluggins to apply
+          - `component` - component from which artifact will be published
           - `version` - project artifact version
           - `artifactId` - project artifact Id
           - `groupId` - project group Id
-          - `publish` - set to true if project has to be published (default: false)
-          - `createBOM` - set to true if bom file should be created for project (default: false)
+          - `publish` - set to true if project has to be published
+          - `createBOM` - set to true if bom file should be created for project
           - `useDeclaredVersioning` - set to true to use declared versions for the project otherwise resolved versions will be used
 
 

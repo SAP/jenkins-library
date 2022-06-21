@@ -1,5 +1,4 @@
 general:
-  createBOM: true
 
 steps:
   gradleExecuteBuild:

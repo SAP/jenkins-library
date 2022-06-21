@@ -66,8 +66,8 @@ cd /test
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew tasks")
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew cyclonedxBom --init-script initScript.gradle.tmp")
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew build")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew tasks --init-script initScript.gradle.tmp")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew build cyclonedxBom --init-script initScript.gradle.tmp")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
@@ -139,8 +139,7 @@ cd /test
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle tasks")
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle cyclonedxBom")
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle build")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle build cyclonedxBom")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
