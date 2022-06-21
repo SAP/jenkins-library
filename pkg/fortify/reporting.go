@@ -55,6 +55,7 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 		Subheaders: []reporting.Subheader{
 			{Description: "Fortify project name", Details: data.ProjectName},
 			{Description: "Fortify project version", Details: data.ProjectVersion},
+			{Description: "Fortify URL", Details: data.URL},
 		},
 		Overview: []reporting.OverviewRow{
 			{Description: "Number of compliance violations", Details: fmt.Sprint(data.Violations)},

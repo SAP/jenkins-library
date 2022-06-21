@@ -38,47 +38,51 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	}
 
 	logLevel := entry.Level
-	for k, v := range entry.Data {
-		event.Tags[k] = v
+	event.SetSeverityAndCategory(logLevel)
+	var stepName string
+	if entry.Data["stepName"] != nil {
+		stepName = fmt.Sprint(entry.Data["stepName"])
+	} else {
+		stepName = "n/a"
 	}
+	event.Tags["pipeline:stepName"] = stepName
 	if errorCategory := GetErrorCategory().String(); errorCategory != "undefined" {
-		event.Tags["errorCategory"] = errorCategory
+		event.Tags["pipeline:errorCategory"] = errorCategory
 	}
 
 	event.EventTimestamp = entry.Time.Unix()
 	if event.Subject == "" {
-		event.Subject = fmt.Sprint(entry.Data["stepName"])
+		event.Subject = fmt.Sprintf("Pipeline step '%s' sends '%s'", stepName, event.Severity)
 	}
 	event.Body = entry.Message
-	event.SetSeverityAndCategory(logLevel)
-	event.Tags["logLevel"] = logLevel.String()
+	event.Tags["pipeline:logLevel"] = logLevel.String()
 
 	return ansHook.client.Send(event)
 }
 
-type RegistrationUtil interface {
+type registrationUtil interface {
 	ans.Client
 	registerHook(hook *ANSHook)
 }
 
-type RegistrationUtilImpl struct {
+type registrationUtilImpl struct {
 	ans.Client
 }
 
-func (u *RegistrationUtilImpl) registerHook(hook *ANSHook) {
+func (u *registrationUtilImpl) registerHook(hook *ANSHook) {
 	RegisterHook(hook)
 }
 
-func (u *RegistrationUtilImpl) registerSecret(secret string) {
+func (u *registrationUtilImpl) registerSecret(secret string) {
 	RegisterSecret(secret)
 }
 
 // RegisterANSHookIfConfigured creates a new ANS hook for logrus if it is configured and registers it
 func RegisterANSHookIfConfigured(correlationID string) error {
-	return registerANSHookIfConfigured(correlationID, &RegistrationUtilImpl{Client: &ans.ANS{}})
+	return registerANSHookIfConfigured(correlationID, &registrationUtilImpl{Client: &ans.ANS{}})
 }
 
-func registerANSHookIfConfigured(correlationID string, util RegistrationUtil) error {
+func registerANSHookIfConfigured(correlationID string, util registrationUtil) error {
 	ansServiceKeyJSON := os.Getenv("PIPER_ansHookServiceKey")
 	if len(ansServiceKeyJSON) == 0 {
 		return nil
@@ -95,14 +99,14 @@ func registerANSHookIfConfigured(correlationID string, util RegistrationUtil) er
 		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
 	}
 
-	if eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID); err != nil {
+	eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID)
+	if err != nil {
 		return err
-	} else {
-		util.registerHook(&ANSHook{
-			client:        util,
-			eventTemplate: eventTemplate,
-		})
 	}
+	util.registerHook(&ANSHook{
+		client:        util,
+		eventTemplate: eventTemplate,
+	})
 	return nil
 }
 
