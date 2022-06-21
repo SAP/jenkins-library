@@ -187,6 +187,8 @@ func Execute() {
 	rootCmd.AddCommand(PythonBuildCommand())
 	rootCmd.AddCommand(AzureBlobUploadCommand())
 	rootCmd.AddCommand(AwsS3UploadCommand())
+	rootCmd.AddCommand(ApiProxyListCommand())
+	rootCmd.AddCommand(AnsSendEventCommand())
 
 	addRootFlags(rootCmd)
 
