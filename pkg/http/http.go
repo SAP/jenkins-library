@@ -226,7 +226,6 @@ func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	if err != nil {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
 	}
-
 	return c.handleResponse(response, request.URL.String())
 }
 
@@ -475,6 +474,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 			}
 		}
 	}
+	
 	handleAuthentication(request, c.username, c.password, c.token)
 
 	for _, cookie := range cookies {
