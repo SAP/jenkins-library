@@ -121,7 +121,7 @@ func TestRunShellExecute(t *testing.T) {
 	t.Run("success case - multiple positional script arguments gets added to the correct script", func(t *testing.T) {
 		o := &shellExecuteOptions{
 			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
-			ScriptArguments: []string{"arg1 arg2", "arg3 arg4"},
+			ScriptArguments: []string{"arg1,arg2", "arg3,arg4"},
 		}
 
 		u := newShellExecuteTestsUtils()
