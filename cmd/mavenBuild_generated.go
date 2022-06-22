@@ -192,6 +192,10 @@ general:
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
