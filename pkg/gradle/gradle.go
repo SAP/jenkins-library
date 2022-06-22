@@ -45,7 +45,7 @@ type (
 )
 
 func Execute(options *ExecuteOptions, utils Utils) (string, error) {
-	stdOutBuf := new(bytes.Buffer)
+	stdOutBuf := &bytes.Buffer{}
 	utils.Stdout(io.MultiWriter(log.Writer(), stdOutBuf))
 	utils.Stderr(log.Writer())
 
