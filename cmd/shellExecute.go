@@ -28,6 +28,10 @@ type shellExecuteUtilsBundle struct {
 	*piperhttp.Client
 }
 
+const (
+	argumentDelimter = ","
+)
+
 func newShellExecuteUtils() shellExecuteUtils {
 	utils := shellExecuteUtilsBundle{
 		Command: &command.Command{},
@@ -73,7 +77,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 
 		args := []string{}
 		if len(config.ScriptArguments) > 0 && isArgumentAtPosition(config.ScriptArguments, position) {
-			args = strings.Split(config.ScriptArguments[position], " ")
+			args = strings.Split(config.ScriptArguments[position], argumentDelimter)
 		}
 
 		log.Entry().Info("starting running script:", source)
