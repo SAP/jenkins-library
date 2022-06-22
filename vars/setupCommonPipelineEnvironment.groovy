@@ -271,7 +271,7 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitBranch) {
     }
 
     //TODO: refs for merge pull requests
-    if (gitBranch.equals("PR")) {
+    if (gitBranch.contains("PR")) {
 		script.commonPipelineEnvironment.setGitRef("refs/pull/" + gitBranch.split("-")[1] + "/head")
 	} else {
 		script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
