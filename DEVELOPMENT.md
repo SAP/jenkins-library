@@ -29,6 +29,8 @@ First you need to set up an appropriate development environment:
 1. Install Go, see [GO Getting Started](https://golang.org/doc/install)
 1. Install an IDE with Go plugins, see for example [Go in Visual Studio Code](https://code.visualstudio.com/docs/languages/go)
 
+**Note:** The Go version to be used is the one specified in the "go.mod" file.
+
 ### Go basics
 
 In order to get yourself started, there is a lot of useful information out there.
