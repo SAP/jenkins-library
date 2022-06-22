@@ -51,7 +51,7 @@ type Location struct {
 type PhysicalLocation struct {
 	ArtifactLocation ArtifactLocation  `json:"artifactLocation"`
 	Region           Region            `json:"region"`
-	ContextRegion    ContextRegion     `json:"contextRegion"`
+	ContextRegion    *ContextRegion    `json:"contextRegion,omitempty"`
 	LogicalLocations []LogicalLocation `json:"logicalLocations,omitempty"`
 }
 
