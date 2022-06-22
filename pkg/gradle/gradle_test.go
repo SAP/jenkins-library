@@ -85,13 +85,9 @@ func TestExecute(t *testing.T) {
 
 	t.Run("use init script to apply plugin", func(t *testing.T) {
 		utils := &MockUtils{
-			FilesMock: &mock.FilesMock{},
-			ExecMockRunner: &mock.ExecMockRunner{
-				StdoutReturn: map[string]string{
-					"tasks -p path/to --init-script initScript.gradle.tmp": "superTask",
-				},
-			},
-			existingFiles: []string{"path/to/build.gradle.kts"},
+			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{},
+			existingFiles:  []string{"path/to/build.gradle.kts"},
 		}
 		opts := ExecuteOptions{
 			BuildGradlePath:   "path/to",
@@ -104,10 +100,8 @@ func TestExecute(t *testing.T) {
 		_, err := Execute(&opts, utils)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 3, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"tasks", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "superTask", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[2])
+		assert.Equal(t, 1, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "superTask", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[0])
 		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.writtenFiles)
 		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.removedFiles)
 	})
@@ -138,7 +132,6 @@ func TestExecute(t *testing.T) {
 			ExecMockRunner: &mock.ExecMockRunner{},
 			existingFiles:  []string{"path/to/build.gradle.kts"},
 		}
-		utils.StdoutReturn = map[string]string{"gradle tasks -p path/to": "createBom"}
 		opts := ExecuteOptions{
 			BuildGradlePath:   "path/to",
 			InitScriptTasks:   []string{"createBom"},
@@ -149,11 +142,10 @@ func TestExecute(t *testing.T) {
 		_, err := Execute(&opts, utils)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"createBom", "-p", "path/to"}}, utils.Calls[1])
-		assert.Equal(t, []string(nil), utils.writtenFiles)
-		assert.Equal(t, []string(nil), utils.removedFiles)
+		assert.Equal(t, 1, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"createBom", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[0])
+		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.writtenFiles)
+		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.removedFiles)
 	})
 
 	t.Run("failed - run command", func(t *testing.T) {
