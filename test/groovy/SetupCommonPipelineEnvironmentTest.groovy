@@ -313,7 +313,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        def dummyScmInfo = [BRANCH_NAME: 'testbranch']
+        def dummyScmInfo = [BRANCH_NAME: 'origin/testbranch']
 
         stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/heads/testbranch'))

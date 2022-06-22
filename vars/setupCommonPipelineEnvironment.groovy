@@ -262,6 +262,10 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 }
 
 private void setGitRefOnCommonPipelineEnvironment(script, String gitBranch) {
+    if(gitBranch.contains("/")){
+        gitBranch = gitBranch.split("/")[1]
+    }
+
     //TODO: refs for merge pull requests
     if (gitBranch.equals("PR")) {
 		script.commonPipelineEnvironment.setGitRef("refs/pull/" + gitBranch.split("-")[1] + "/head")
