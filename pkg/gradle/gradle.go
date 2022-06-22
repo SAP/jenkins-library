@@ -45,7 +45,7 @@ type (
 )
 
 func Execute(options *ExecuteOptions, utils Utils) (string, error) {
-	stdOutBuf := &bytes.Buffer{}
+	stdOutBuf := new(bytes.Buffer)
 	utils.Stdout(io.MultiWriter(log.Writer(), stdOutBuf))
 	utils.Stderr(log.Writer())
 
@@ -85,20 +85,18 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 }
 
 func handleInitTasks(options *ExecuteOptions, utils Utils) (error, cancelFunc) {
-	var cancel cancelFunc
-	if options.InitScriptContent != "" {
-		err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
-		if err != nil {
-			return fmt.Errorf("failed create init script: %v", err), nil
-		}
-		cancel = func() {
-			utils.FileRemove(initScriptName)
-		}
-		options.setInitScript = true
-	} else {
+	if options.InitScriptContent == "" {
 		options.InitScriptTasks = nil
+		return nil, func() {}
 	}
-	return nil, cancel
+	err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
+	if err != nil {
+		return fmt.Errorf("failed create init script: %v", err), func() {}
+	}
+	options.setInitScript = true
+	return nil, func() {
+		utils.FileRemove(initScriptName)
+	}
 }
 
 func getParametersFromOptions(options *ExecuteOptions) []string {
