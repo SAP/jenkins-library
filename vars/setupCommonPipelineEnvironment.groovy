@@ -118,7 +118,7 @@ void call(Map parameters = [:]) {
         if (scmInfo) {
             setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
             script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
-            setGitRefOnCommonPipelineEnvironment(script, scmInfo.BRANCH_NAME)
+            setGitRefOnCommonPipelineEnvironment(script, scmInfo.GIT_BRANCH)
         }
     }
 }
