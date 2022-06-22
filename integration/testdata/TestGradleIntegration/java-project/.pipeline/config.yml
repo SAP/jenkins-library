@@ -3,3 +3,5 @@ general:
 steps:
   gradleExecuteBuild:
     useWrapper: true
+    projectsCommonConfig:
+      publish: false
