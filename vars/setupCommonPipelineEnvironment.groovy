@@ -263,8 +263,8 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
 private void setGitRefOnCommonPipelineEnvironment(script, String gitBranch) {
     //TODO: refs for merge pull requests
-    if strings.Contains(gitBranch, "PR") {
-		script.commonPipelineEnvironment.setGitRef("refs/pull/" + strings.Split(gitBranch, "-")[1] + "/head")
+    if (gitBranch.equals"PR") {
+		script.commonPipelineEnvironment.setGitRef("refs/pull/" + gitBranch.split("-")[1] + "/head")
 	} else {
 		script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
 	}

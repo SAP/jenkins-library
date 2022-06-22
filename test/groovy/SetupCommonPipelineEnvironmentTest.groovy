@@ -308,6 +308,30 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
+    void "Set scmInfo parameter sets git reference for branch"() {
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.yml')
+        })
+
+        def dummyScmInfo = [BRANCH_NAME: 'testbranch']
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
+        assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/heads/testbranch'))
+    }
+
+    @Test
+    void "Set scmInfo parameter sets git reference for pull request"() {
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.yml')
+        })
+
+        def dummyScmInfo = [BRANCH_NAME: 'PR-42']
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
+        assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/pull/42/head'))
+    }
+
+    @Test
     void "No scmInfo passed as parameter yields empty git info"() {
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
@@ -319,6 +343,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertNull(nullScript.commonPipelineEnvironment.getGitHttpsUrl())
         assertNull(nullScript.commonPipelineEnvironment.getGithubOrg())
         assertNull(nullScript.commonPipelineEnvironment.getGithubRepo())
+        assertNull(nullScript.commonPipelineEnvironment.getGitRef())
     }
 
     @Test
