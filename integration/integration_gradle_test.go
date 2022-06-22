@@ -65,7 +65,6 @@ cd /test
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew tasks")
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew tasks --init-script initScript.gradle.tmp")
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew build cyclonedxBom --init-script initScript.gradle.tmp")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")

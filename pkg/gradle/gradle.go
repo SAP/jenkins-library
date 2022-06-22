@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -45,8 +44,6 @@ type (
 	}
 )
 
-var cancelNothing = func() {}
-
 func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	stdOutBuf := new(bytes.Buffer)
 	utils.Stdout(io.MultiWriter(log.Writer(), stdOutBuf))
@@ -72,7 +69,7 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	}
 	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
 
-	err, cancel := handleInitTasks(exec, options, utils, stdOutBuf)
+	err, cancel := handleInitTasks(options, utils)
 	if err != nil {
 		return "", err
 	}
@@ -87,53 +84,21 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	return string(stdOutBuf.Bytes()), nil
 }
 
-func handleInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) (error, cancelFunc) {
-	cancel := cancelNothing
+func handleInitTasks(options *ExecuteOptions, utils Utils) (error, cancelFunc) {
+	var cancel cancelFunc
 	if options.InitScriptContent != "" {
-		existingTasks, err := hasInitTasks(exec, options, utils, stdOutBuf)
+		err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
 		if err != nil {
-			return fmt.Errorf("failed list gradle tasks: %v", err), nil
+			return fmt.Errorf("failed create init script: %v", err), nil
 		}
-		if len(existingTasks) == 0 {
-			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
-			if err != nil {
-				return fmt.Errorf("failed create init script: %v", err), nil
-			}
-			cancel = func() {
-				utils.FileRemove(initScriptName)
-			}
-			options.setInitScript = true
-			existingTasks, err = hasInitTasks(exec, options, utils, stdOutBuf)
-			if err != nil {
-				return fmt.Errorf("failed list gradle tasks with init script: %v", err), nil
-			}
-			options.InitScriptTasks = existingTasks
+		cancel = func() {
+			utils.FileRemove(initScriptName)
 		}
+		options.setInitScript = true
 	} else {
 		options.InitScriptTasks = nil
 	}
 	return nil, cancel
-}
-
-func hasInitTasks(exec string, options *ExecuteOptions, utils Utils, stdOutBuf *bytes.Buffer) ([]string, error) {
-	parameters := []string{"tasks"}
-	if options.BuildGradlePath != "" {
-		parameters = append(parameters, "-p", options.BuildGradlePath)
-	}
-	if options.setInitScript {
-		parameters = append(parameters, "--init-script", initScriptName)
-	}
-	if err := utils.RunExecutable(exec, parameters...); err != nil {
-		return nil, err
-	}
-	tasksOut := stdOutBuf.String()
-	var existingTasks []string
-	for _, task := range options.InitScriptTasks {
-		if strings.Contains(tasksOut, task) {
-			existingTasks = append(existingTasks, task)
-		}
-	}
-	return existingTasks, nil
 }
 
 func getParametersFromOptions(options *ExecuteOptions) []string {

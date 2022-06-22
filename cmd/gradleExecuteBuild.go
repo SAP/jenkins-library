@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/pkg/errors"
+	"k8s.io/utils/strings/slices"
+	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -16,6 +17,7 @@ import (
 const (
 	originalGradlePropertiesFile  = "gradle.properties"
 	temporaryGradlePropertiesFile = "gradle.properties.tmp"
+	tasksTaskName                 = "tasks"
 	bomGradleTaskName             = "cyclonedxBom"
 	publishTaskName               = "publish"
 	initScriptContentTemplate     = `
@@ -63,11 +65,11 @@ class EnterpriseRepositoryPlugin implements Plugin < Gradle > {
       for (projectPlugin in projectPluginsList.tokenize(",")) {
         apply plugin: projectPlugin
       }
-      if (projectCreateBOM) {
+      if (projectCreateBOM && !{{.HasCyclonedxBomTask}}) {
         apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
       }
 
-      if (projectPublish) {
+      if (projectPublish && !{{.HasPublishTask}}) {
         apply plugin: 'maven-publish'
         publishing {
           publications {
@@ -131,15 +133,23 @@ const projectCustomProperties = `
 {{if eq false .useDeclaredVersioning}}{{.projectName}}--useDeclaredVersioning=false{{end}}{{if .useDeclaredVersioning}}{{.projectName}}--useDeclaredVersioning={{.useDeclaredVersioning}}{{end}}
 `
 
-type gradleExecuteBuildUtils interface {
-	command.ExecRunner
-	piperutils.FileUtils
-}
+type (
+	gradleExecuteBuildUtils interface {
+		command.ExecRunner
+		piperutils.FileUtils
+	}
 
-type gradleExecuteBuildUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-}
+	gradleExecuteBuildUtilsBundle struct {
+		*command.Command
+		*piperutils.Files
+	}
+
+	initScriptOptions struct {
+		*gradleExecuteBuildOptions
+		HasPublishTask      bool
+		HasCyclonedxBomTask bool
+	}
+)
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 	utils := gradleExecuteBuildUtilsBundle{
@@ -227,16 +237,26 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		}
 	}()
 
-	initScriptContent, err := getInitScript(config)
+	initTasks := []string{bomGradleTaskName, publishTaskName}
+	existingTasks, err := findTasks(config, utils, "", initTasks)
 	if err != nil {
-		return fmt.Errorf("failed to get publish init script content: %v", err)
+		return err
+	}
+	initScriptContent, err := getInitScript(&initScriptOptions{
+		gradleExecuteBuildOptions: config,
+		HasCyclonedxBomTask:       slices.Contains(existingTasks, bomGradleTaskName),
+		HasPublishTask:            slices.Contains(existingTasks, publishTaskName),
+	})
+	existingTasks, err = findTasks(config, utils, initScriptContent, initTasks)
+	if err != nil {
+		return err
 	}
 
 	gradleOptions := &gradle.ExecuteOptions{
 		BuildGradlePath:   config.Path,
 		UseWrapper:        config.UseWrapper,
 		InitScriptContent: initScriptContent,
-		InitScriptTasks:   []string{bomGradleTaskName, publishTaskName},
+		InitScriptTasks:   existingTasks,
 		Tasks:             config.Tasks,
 		SkipTasks:         config.SkipTasks,
 	}
@@ -244,7 +264,28 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	return err
 }
 
-func getInitScript(options *gradleExecuteBuildOptions) (string, error) {
+func findTasks(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils, initScriptContent string, tasks []string) ([]string, error) {
+	gradleOptions := &gradle.ExecuteOptions{
+		BuildGradlePath:   config.Path,
+		UseWrapper:        config.UseWrapper,
+		Tasks:             []string{tasksTaskName},
+		InitScriptContent: initScriptContent,
+	}
+	output, err := gradle.Execute(gradleOptions, utils)
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't get tasks")
+	}
+
+	var existingTasks []string
+	for _, task := range tasks {
+		if strings.Contains(output, task) {
+			existingTasks = append(existingTasks, task)
+		}
+	}
+	return existingTasks, nil
+}
+
+func getInitScript(options *initScriptOptions) (string, error) {
 	tmpl, err := template.New("resources").Parse(initScriptContentTemplate)
 	if err != nil {
 		return "", err

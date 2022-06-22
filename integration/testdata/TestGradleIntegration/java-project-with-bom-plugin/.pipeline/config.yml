@@ -1,4 +1,5 @@
 general:
+
 steps:
   gradleExecuteBuild:
     projectsCommonConfig:
