@@ -262,6 +262,10 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 }
 
 private void setGitRefOnCommonPipelineEnvironment(script, String gitBranch) {
+    if(!gitBranch){
+        return
+    }
+
     if(gitBranch.contains("/")){
         gitBranch = gitBranch.split("/")[1]
     }
