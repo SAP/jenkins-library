@@ -4,4 +4,4 @@ steps:
   gradleExecuteBuild:
     useWrapper: true
     projectsCommonConfig:
-      publish: true
+      publish: false
