@@ -98,10 +98,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: git/ref
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: repository
         aliases:
           - name: githubRepo
@@ -109,21 +105,12 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: git/httpsUrl
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
         type: string
       - name: commitId
         description: "SHA of commit that was analyzed."
         resourceRef:
           - name: commonPipelineEnvironment
             param: git/commitId
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
         type: string
   containers:
     - image: ""
