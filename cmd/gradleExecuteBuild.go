@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"github.com/pkg/errors"
-	"k8s.io/utils/strings/slices"
 	"strings"
 	"text/template"
 
@@ -149,6 +148,7 @@ type (
 		HasPublishTask      bool
 		HasCyclonedxBomTask bool
 	}
+	tasks []string
 )
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
@@ -244,8 +244,8 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	}
 	initScriptContent, err := getInitScript(&initScriptOptions{
 		gradleExecuteBuildOptions: config,
-		HasCyclonedxBomTask:       slices.Contains(existingTasks, bomGradleTaskName),
-		HasPublishTask:            slices.Contains(existingTasks, publishTaskName),
+		HasCyclonedxBomTask:       existingTasks.contains(bomGradleTaskName),
+		HasPublishTask:            existingTasks.contains(publishTaskName),
 	})
 	existingTasks, err = findTasks(config, utils, initScriptContent, initTasks)
 	if err != nil {
@@ -264,7 +264,16 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	return err
 }
 
-func findTasks(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils, initScriptContent string, tasks []string) ([]string, error) {
+func (t tasks) contains(task string) bool {
+	for _, v := range t {
+		if v == task {
+			return true
+		}
+	}
+	return false
+}
+
+func findTasks(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils, initScriptContent string, tasks []string) (tasks, error) {
 	gradleOptions := &gradle.ExecuteOptions{
 		BuildGradlePath:   config.Path,
 		UseWrapper:        config.UseWrapper,
