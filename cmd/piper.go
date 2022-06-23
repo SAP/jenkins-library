@@ -186,7 +186,10 @@ func Execute() {
 	rootCmd.AddCommand(GradleExecuteBuildCommand())
 	rootCmd.AddCommand(ApiKeyValueMapUploadCommand())
 	rootCmd.AddCommand(PythonBuildCommand())
+	rootCmd.AddCommand(AzureBlobUploadCommand())
 	rootCmd.AddCommand(AwsS3UploadCommand())
+	rootCmd.AddCommand(ApiProxyListCommand())
+	rootCmd.AddCommand(AnsSendEventCommand())
 
 	addRootFlags(rootCmd)
 

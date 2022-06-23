@@ -1,7 +1,6 @@
 package versioning
 
 import (
-	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -21,6 +21,7 @@ type gradleExecRunner interface {
 // Gradle defines a maven artifact used for versioning
 type Gradle struct {
 	execRunner     gradleExecRunner
+	utils          gradle.Utils
 	gradlePropsOut []byte
 	path           string
 	propertiesFile *PropertiesFile
@@ -65,16 +66,16 @@ func (g *Gradle) initGetArtifact() error {
 	}
 
 	if g.gradlePropsOut == nil {
-		gradlePropsBuffer := &bytes.Buffer{}
-		g.execRunner.Stdout(gradlePropsBuffer)
-		var p []string
-		p = append(p, "properties", "--no-daemon", "--console=plain", "-q")
-		err := g.execRunner.RunExecutable("gradle", p...)
+		gradleOptions := &gradle.ExecuteOptions{
+			Task:       "properties",
+			UseWrapper: true,
+		}
+		stdOut, err := gradle.Execute(gradleOptions, g.utils)
 		if err != nil {
+			log.Entry().WithError(err).Errorf("failed to retrieve properties of the gradle project: %v", err)
 			return err
 		}
-		g.gradlePropsOut = gradlePropsBuffer.Bytes()
-		g.execRunner.Stdout(log.Writer())
+		g.gradlePropsOut = []byte(stdOut)
 	}
 	return nil
 }
