@@ -60,6 +60,11 @@ func (a *AzureDevOpsConfigProvider) fetchAPIInformation() {
 	}
 }
 
+func (a *AzureDevOpsConfigProvider) GetChangeSet() []ChangeSet {
+	log.Entry().Warn("GetChangeSet for AzureDevOps not yet implemented")
+	return []ChangeSet{}
+}
+
 // getSystemCollectionURI returns the URI of the TFS collection or Azure DevOps organization e.g. https://dev.azure.com/fabrikamfiber/
 func (a *AzureDevOpsConfigProvider) getSystemCollectionURI() string {
 	return getEnv("SYSTEM_COLLECTIONURI", "n/a")
