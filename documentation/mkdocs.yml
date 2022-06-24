@@ -89,6 +89,7 @@ nav:
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - cnbBuild: steps/cnbBuild.md
+        - codeqlExecuteScan: steps/codeqlExecuteScan.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md

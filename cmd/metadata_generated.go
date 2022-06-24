@@ -45,6 +45,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"cloudFoundryDeleteSpace":                   cloudFoundryDeleteSpaceMetadata(),
 		"cloudFoundryDeploy":                        cloudFoundryDeployMetadata(),
 		"cnbBuild":                                  cnbBuildMetadata(),
+		"codeqlExecuteScan":                         codeqlExecuteScanMetadata(),
 		"containerExecuteStructureTests":            containerExecuteStructureTestsMetadata(),
 		"containerSaveImage":                        containerSaveImageMetadata(),
 		"detectExecuteScan":                         detectExecuteScanMetadata(),
