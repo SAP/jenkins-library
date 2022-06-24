@@ -230,8 +230,14 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 	var abapResp map[string]*json.RawMessage
 	bodyText, _ := ioutil.ReadAll(resp.Body)
 
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	marshallError := json.Unmarshal(bodyText, &abapResp)
+	if marshallError != nil {
+		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	if marshallError != nil {
+		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
 
 	if reflect.DeepEqual(PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).Error(failureMessage)
