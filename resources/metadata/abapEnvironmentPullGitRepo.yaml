@@ -60,6 +60,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: repositoryName
+        type: string
+        description: Specifies a repository (Software Components) on the SAP BTP ABAP Environment system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: commitID
+        type: string
+        description: Specifies a commitID of the repository, configured via "repositoryName" on the SAP BTP ABAP Environment system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: host
         type: string
         description: Specifies the host address of the SAP BTP ABAP Environment system
