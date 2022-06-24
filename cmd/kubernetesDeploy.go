@@ -44,7 +44,11 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 		if len(config.TeardownScript) > 0 {
 			log.Entry().Debugf("start running teardownScript script %v", config.TeardownScript)
 			if scriptErr := downloadAndExecuteExtensionScript(config.TeardownScript, config.GithubToken, utils); scriptErr != nil {
-				err = fmt.Errorf("failed to download/run teardownScript script: %v: %w", fmt.Sprint(scriptErr), err)
+				if err != nil {
+					err = fmt.Errorf("failed to download/run teardownScript script: %v: %w", fmt.Sprint(scriptErr), err)
+				} else {
+					err = scriptErr
+				}
 			}
 			log.Entry().Debugf("finished running teardownScript script %v", config.TeardownScript)
 		}
