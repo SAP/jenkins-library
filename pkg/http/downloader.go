@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -54,4 +55,24 @@ func (c *Client) GetRequest(url string, header http.Header, cookies []*http.Cook
 		return &http.Response{}, errors.Wrapf(err, "HTTP request to %v failed with error", url)
 	}
 	return response, nil
+}
+
+func DownloadExecutable(githubToken string, fileUtils piperutils.FileUtils, downloader Downloader, url string) (string, error) {
+	header := http.Header{}
+	if len(githubToken) > 0 {
+		header = http.Header{"Authorization": []string{"Token " + githubToken}}
+		header.Set("Accept", "application/vnd.github.v3.raw")
+	}
+
+	fileNameParts := strings.Split(url, "/")
+	fileName := fileNameParts[len(fileNameParts)-1]
+	err := downloader.DownloadFile(url, filepath.Join(".pipeline", fileName), header, []*http.Cookie{})
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to download script from %v", url)
+	}
+	err = fileUtils.Chmod(filepath.Join(".pipeline", fileName), 0555)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to change script permission for %v", filepath.Join(".pipeline", fileName))
+	}
+	return filepath.Join(".pipeline", fileName), nil
 }
