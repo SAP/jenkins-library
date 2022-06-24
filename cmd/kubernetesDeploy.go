@@ -40,7 +40,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		err := runHelmDeploy(config, utils, stdout)
-		// download and execute verification script
+		// download and execute teardown script
 		if len(config.TeardownScript) > 0 {
 			log.Entry().Debugf("start running teardownScript script %v", config.TeardownScript)
 			if scriptErr := downloadAndExecuteExtensionScript(config.TeardownScript, config.GithubToken, utils); scriptErr != nil {
