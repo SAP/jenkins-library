@@ -22,14 +22,14 @@ import (
 
 // FVDL This struct encapsulates everyting in the FVDL document
 type FVDL struct {
-	XMLName         xml.Name `xml:"FVDL"`
-	Xmlns           string   `xml:"xmlns,attr"`
-	XmlnsXsi        string   `xml:"xsi,attr"`
-	Version         string   `xml:"version,attr"`
-	XsiType         string   `xml:"type,attr"`
-	Created         CreatedTS
-	Uuid            UUID
-	Build           Build
+	XMLName         xml.Name        `xml:"FVDL"`
+	Xmlns           string          `xml:"xmlns,attr"`
+	XmlnsXsi        string          `xml:"xsi,attr"`
+	Version         string          `xml:"version,attr"`
+	XsiType         string          `xml:"type,attr"`
+	Created         CreatedTS       `xml:"CreatedTS"`
+	Uuid            UUID            `xml:"UUID"`
+	Build           Build           `xml:"Build"`
 	Vulnerabilities Vulnerabilities `xml:"Vulnerabilities"`
 	ContextPool     ContextPool     `xml:"ContextPool"`
 	UnifiedNodePool UnifiedNodePool `xml:"UnifiedNodePool"`
@@ -99,6 +99,7 @@ type Vulnerabilities struct {
 	Vulnerability []Vulnerability `xml:"Vulnerability"`
 }
 
+// Vulnerability
 type Vulnerability struct {
 	XMLName      xml.Name     `xml:"Vulnerability"`
 	ClassInfo    ClassInfo    `xml:"ClassInfo"`
@@ -134,10 +135,10 @@ type AnalysisInfo struct { //Note that this is directly the "Unified" object
 
 // Context
 type Context struct {
-	XMLName   xml.Name `xml:"Context"`
-	ContextId string   `xml:"id,attr,omitempty"`
-	Function  Function
-	FDSL      FunctionDeclarationSourceLocation
+	XMLName   xml.Name                          `xml:"Context"`
+	ContextId string                            `xml:"id,attr,omitempty"`
+	Function  Function                          `xml:"Function"`
+	FDSL      FunctionDeclarationSourceLocation `xml:"FunctionDeclarationSourceLocation"`
 }
 
 // Function
@@ -651,6 +652,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Snippet
 					for j := 0; j < len(fvdl.Snippets); j++ {
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
+							tfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 							tfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 							tfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 							snippetSarif := new(format.SnippetSarif)
@@ -672,7 +674,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 							// Handle snippet
 							snippetTarget := handleSnippet(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData)
 
-							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
 								physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 								snippetText := ""
 								for j := 0; j < len(physLocationSnippetLines); j++ {
@@ -690,7 +692,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
 							}
 						} else {
-							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
 								snippetSarif := new(format.SnippetSarif)
 								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
 								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
@@ -734,6 +736,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 							targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Snippet
 							for j := 0; j < len(fvdl.Snippets); j++ {
 								if fvdl.Snippets[j].SnippetId == targetSnippetId {
+									nintfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 									nintfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 									nintfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 									snippetSarif := new(format.SnippetSarif)
@@ -1080,6 +1083,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		targetSnippetId := fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet
 		for j := 0; j < len(fvdl.Snippets); j++ {
 			if fvdl.Snippets[j].SnippetId == targetSnippetId {
+				loc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 				snippetSarif := new(format.SnippetSarif)
@@ -1094,7 +1098,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		// Handle snippet
 		snippetTarget := handleSnippet(fvdl.UnifiedNodePool.Node[i].Action.Type, fvdl.UnifiedNodePool.Node[i].Action.ActionData)
 
-		if loc.PhysicalLocation.ContextRegion.Snippet != nil {
+		if loc.PhysicalLocation.ContextRegion != nil && loc.PhysicalLocation.ContextRegion.Snippet != nil {
 			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 			snippetText := ""
 			for j := 0; j < len(physLocationSnippetLines); j++ {
