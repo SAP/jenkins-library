@@ -483,7 +483,7 @@ spec:
           - replace
       - name: setupScript
         type: string
-        description: HTTP location of setup script 
+        description: HTTP location of setup script
         longDescription: |
           For helm-based deploymens only!
           HTTP location of setup script.
@@ -494,7 +494,7 @@ spec:
           - STEPS
       - name: verificationScript
         type: string
-        description: HTTP location of verification script 
+        description: HTTP location of verification script
         longDescription: |
           For helm-based deploymens only!
           HTTP location of verification script.
@@ -506,7 +506,7 @@ spec:
           - STEPS
       - name: teardownScript
         type: string
-        description: HTTP location of teardown script 
+        description: HTTP location of teardown script
         longDescription: |
           For helm-based deploymens only!
           HTTP location of setup script.
