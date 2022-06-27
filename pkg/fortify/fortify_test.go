@@ -304,7 +304,7 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 	t.Run("test filter projectVersion", func(t *testing.T) {
 		result, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(8888, "1", true, "autocreate")
 		assert.NoError(t, err, "GetProjectVersionDetailsByNameAndProjectID call not successful")
-		assert.Equal(t, "0", *result.Name, "Expected to get exact project version")
+		assert.Equal(t, "1", *result.Name, "Expected to get exact project version")
 	})
 }
 
