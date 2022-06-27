@@ -468,6 +468,16 @@ func TestPullConfigChecker(t *testing.T) {
 		err := checkPullRepositoryConfiguration(config)
 		assert.Equal(t, errorMessage, err.Error(), "Different error message expected")
 	})
+	t.Run("Failure case: config overload", func(t *testing.T) {
+		errorMessage := "Checking configuration failed: Only one of the paramters `RepositoryName`,`RepositoryNames` or `Repositories` may be configured at the same time"
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNames: []string{"testRepo", "testRepo2"},
+			RepositoryName:  "Test",
+			CommitID:        "123456",
+		}
+		err := checkPullRepositoryConfiguration(config)
+		assert.Equal(t, errorMessage, err.Error(), "Different error message expected")
+	})
 }
 
 func TestHelpFunctions(t *testing.T) {
