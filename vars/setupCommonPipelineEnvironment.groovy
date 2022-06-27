@@ -118,6 +118,7 @@ void call(Map parameters = [:]) {
         if (scmInfo) {
             setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
             script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
+            setGitRefOnCommonPipelineEnvironment(script, scmInfo.GIT_BRANCH)
         }
     }
 }
@@ -258,4 +259,21 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
     }
     script.commonPipelineEnvironment.setGithubOrg(gitFolder)
     script.commonPipelineEnvironment.setGithubRepo(gitRepo)
+}
+
+private void setGitRefOnCommonPipelineEnvironment(script, String gitBranch) {
+    if(!gitBranch){
+        return
+    }
+
+    if(gitBranch.contains("/")){
+        gitBranch = gitBranch.split("/")[1]
+    }
+
+    //TODO: refs for merge pull requests
+    if (gitBranch.contains("PR")) {
+		script.commonPipelineEnvironment.setGitRef("refs/pull/" + gitBranch.split("-")[1] + "/head")
+	} else {
+		script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
+	}
 }

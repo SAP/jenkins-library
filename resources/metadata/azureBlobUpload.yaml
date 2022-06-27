@@ -1,0 +1,34 @@
+metadata:
+  name: azureBlobUpload
+  description: "Uploads a specified file or directory into a given Azure Blob Storage."
+  longDescription: |
+    Uploads a specified file or directory into a given Azure Blob Storage.
+    In case a file is uploaded that is already contained in the storage, it will be overwritten with the latest version.
+spec:
+  inputs:
+    secrets:
+      - name: azureCredentialsId
+        description: Jenkins 'Secret Text' credentials ID containing the JSON file to authenticate to the Azure Blob Storage
+        type: jenkins
+    params:
+      - name: jsonCredentialsAzure
+        description: JSON String Credentials to access Azure Blob Storage
+        type: string
+        mandatory: true
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - name: azureCredentialsId
+            type: secret
+      - name: filePath
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
+        type: string
+        mandatory: true
+        description: "Name/Path of the file which should be uploaded"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
