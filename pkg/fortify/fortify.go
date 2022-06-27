@@ -197,18 +197,19 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
 // projectName parameter is only used if autoCreate=true
 func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
-	nameParam := fmt.Sprintf("name=%v", versionName)
+	nameParam := fmt.Sprintf("name:%v", versionName)
 	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionOfProjectController.ListProjectVersionOfProject(params, sys)
 	if err != nil {
 		return nil, err
 	}
-	for _, projectVersion := range result.GetPayload().Data {
-		if *projectVersion.Name == versionName {
-			return projectVersion, nil
-		}
+
+	projectVersion := result.GetPayload().Data[0]
+	if *projectVersion.Name == versionName {
+		return projectVersion, nil
 	}
+
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
 		log.SetErrorCategory(log.ErrorConfiguration)
