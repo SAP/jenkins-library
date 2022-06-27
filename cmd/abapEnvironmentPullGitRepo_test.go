@@ -290,6 +290,44 @@ repositories:
 		}
 	})
 
+	t.Run("Status Error, RepositoryName without commit", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentPullGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			RepositoryName:    "/DMO/SWC",
+			IgnoreCommit:      false,
+		}
+		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				logResultError,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		if assert.Error(t, err, "Expected error") {
+			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC' failed on the ABAP system", err.Error(), "Expected different error message")
+		}
+	})
+
 	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
 		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
