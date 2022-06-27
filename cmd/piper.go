@@ -112,6 +112,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
+	rootCmd.AddCommand(CodeqlExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
