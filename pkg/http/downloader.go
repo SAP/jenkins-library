@@ -66,13 +66,14 @@ func DownloadExecutable(githubToken string, fileUtils piperutils.FileUtils, down
 
 	fileNameParts := strings.Split(url, "/")
 	fileName := fileNameParts[len(fileNameParts)-1]
-	err := downloader.DownloadFile(url, filepath.Join(".pipeline", fileName), header, []*http.Cookie{})
+	fullFileName := filepath.Join(".pipeline", fileName)
+	err := downloader.DownloadFile(url, fullFileName, header, []*http.Cookie{})
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to download script from %v", url)
 	}
-	err = fileUtils.Chmod(filepath.Join(".pipeline", fileName), 0555)
+	err = fileUtils.Chmod(fullFileName, 0555)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to change script permission for %v", filepath.Join(".pipeline", fileName))
+		return "", errors.Wrapf(err, "unable to change script permission for %v", fullFileName)
 	}
-	return filepath.Join(".pipeline", fileName), nil
+	return fullFileName, nil
 }
