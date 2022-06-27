@@ -102,9 +102,9 @@ log entry content as follows:
     event template)
   - `ans:sourceEventId`: also set to the "Piper" correlation ID (can also be
     overwritten with the event template)
-  - `pipeline:stepName`: the "Piper" step name
-  - `pipeline:logLevel`: the "Piper" log level
-  - `pipeline:errorCategory`: the "Piper" error category, if available
+  - `cicd:stepName`: the "Piper" step name
+  - `cicd:logLevel`: the "Piper" log level
+  - `cicd:errorCategory`: the "Piper" error category, if available
 
 - `resource`: the following default properties are set by "Piper":
 
