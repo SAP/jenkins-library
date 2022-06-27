@@ -141,7 +141,7 @@ func TestANSHook_Fire(t *testing.T) {
 		SetErrorCategory(ErrorTest)
 		ansHook.eventTemplate = defaultEvent()
 		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
-		assert.Equal(t, "test", registrationUtil.Event.Tags["pipeline:errorCategory"], "error category tag is not as expected")
+		assert.Equal(t, "test", registrationUtil.Event.Tags["cicd:errorCategory"], "error category tag is not as expected")
 		SetErrorCategory(ErrorUndefined)
 		registrationUtil.clearEventTemplate()
 	})
@@ -156,10 +156,10 @@ func TestANSHook_Fire(t *testing.T) {
 		ansHook.eventTemplate = defaultEvent()
 		SetErrorCategory(ErrorTest)
 		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
-		assert.Equal(t, "test", registrationUtil.Event.Tags["pipeline:errorCategory"], "error category tag is not as expected")
+		assert.Equal(t, "test", registrationUtil.Event.Tags["cicd:errorCategory"], "error category tag is not as expected")
 		SetErrorCategory(ErrorUndefined)
 		require.NoError(t, ansHook.Fire(defaultLogrusEntry()), "error is not nil")
-		assert.Nil(t, registrationUtil.Event.Tags["pipeline:errorCategory"], "error category tag is not nil")
+		assert.Nil(t, registrationUtil.Event.Tags["cicd:errorCategory"], "error category tag is not nil")
 		registrationUtil.clearEventTemplate()
 	})
 	t.Run("White space messages should not send", func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestANSHook_Fire(t *testing.T) {
 		logrusEntryWithoutStepName := defaultLogrusEntry()
 		logrusEntryWithoutStepName.Data = map[string]interface{}{}
 		require.NoError(t, ansHook.Fire(logrusEntryWithoutStepName), "error is not nil")
-		assert.Equal(t, "n/a", registrationUtil.Event.Tags["pipeline:stepName"], "event step name tag is not as expected.")
+		assert.Equal(t, "n/a", registrationUtil.Event.Tags["cicd:stepName"], "event step name tag is not as expected.")
 		assert.Equal(t, "Pipeline step 'n/a' sends 'WARNING'", registrationUtil.Event.Subject, "event subject is not as expected")
 		registrationUtil.clearEventTemplate()
 	})
@@ -404,8 +404,8 @@ func defaultResultingEvent() ans.Event {
 		"Tags": map[string]interface{}{
 			"ans:correlationId": "1234",
 			"ans:sourceEventId": "1234",
-			"pipeline:stepName": "testStep",
-			"pipeline:logLevel": "warning",
+			"cicd:stepName":     "testStep",
+			"cicd:logLevel":     "warning",
 		},
 	})
 }
