@@ -205,13 +205,10 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 		return nil, err
 	}
 
-	projectVersion := result.GetPayload().Data[0]
-	if *projectVersion.Name == versionName {
+	if result.Payload.Count > 0 {
+		projectVersion := result.GetPayload().Data[0]
 		return projectVersion, nil
-	}
-
-	// projectVersion not found for specified project id and name, check if autoCreate is enabled
-	if !autoCreate {
+	} else if !autoCreate { // projectVersion not found for specified project id and name, check if autoCreate is enabled
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
 	}
