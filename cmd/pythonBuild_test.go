@@ -87,7 +87,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "twine"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
 			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
-			"dist/*"}, utils.ExecMockRunner.Calls[4].Params)
+			"--disable-progress-bar", "dist/*"}, utils.ExecMockRunner.Calls[4].Params)
 	})
 
 	t.Run("success - create BOM", func(t *testing.T) {
