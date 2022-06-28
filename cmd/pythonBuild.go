@@ -161,7 +161,7 @@ func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, pipIns
 	}
 	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["twine"], "upload", "--username", config.TargetRepositoryUser,
-		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
+		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL, "--disable-progress-bar",
 		"dist/*"); err != nil {
 		return err
 	}
