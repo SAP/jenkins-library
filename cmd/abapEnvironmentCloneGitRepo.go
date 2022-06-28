@@ -141,7 +141,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	jsonBody := []byte(repo.GetCloneRequestBody())
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
 	if err != nil {
-		err, alreadyCloned := handleAlreadyCloned(resp, err, cloneConnectionDetails, client, repo)
+		err, alreadyCloned := handleCloneError(resp, err, cloneConnectionDetails, client, repo)
 		return uriConnectionDetails, err, alreadyCloned
 	}
 	defer resp.Body.Close()
@@ -168,7 +168,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	return uriConnectionDetails, nil, false
 }
 
-func handleAlreadyCloned(resp *http.Response, err error, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, repo abaputils.Repository) (returnedError error, alreadyCloned bool) {
+func handleCloneError(resp *http.Response, err error, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, repo abaputils.Repository) (returnedError error, alreadyCloned bool) {
 	alreadyCloned = false
 	returnedError = nil
 	if resp == nil {
@@ -183,6 +183,9 @@ func handleAlreadyCloned(resp *http.Response, err error, cloneConnectionDetails 
 		return
 	}
 	if errorCode == "A4C_A2G/257" {
+		// With the latest release, a repeated "clone" was prohibited
+		// As an intermediate workaround, we react to the error message A4C_A2G/257 that gets thrown, if the repository had already been cloned
+		// In this case, a checkout branch and a pull will be performed
 		alreadyCloned = true
 		log.Entry().Infof("-------------------------")
 		log.Entry().Infof("-------------------------")
