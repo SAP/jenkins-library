@@ -88,9 +88,9 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 	return "FAILURE"
 }
 
-// GetChangeSet returns the commitIds and timestamp of the changeset of the current run
+// GetChangeSet returns the commitIds and timestamp of the changeSet of the current run
 func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
-	//j.fetchAPIInformation()
+	j.fetchAPIInformation()
 
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
