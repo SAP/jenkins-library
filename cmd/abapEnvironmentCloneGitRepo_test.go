@@ -412,7 +412,7 @@ func TestALreadyCloned(t *testing.T) {
 		}
 
 		err := errors.New("Custom Error")
-		err, _ = handleAlreadyCloned(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
+		err, _ = handleCloneError(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
 		assert.NoError(t, err, "Did not expect error")
 	})
 
@@ -458,7 +458,7 @@ func TestALreadyCloned(t *testing.T) {
 		}
 
 		err := errors.New("Custom Error")
-		err, _ = handleAlreadyCloned(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
+		err, _ = handleCloneError(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component 'Test', commit 'abcd1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -506,7 +506,7 @@ func TestALreadyCloned(t *testing.T) {
 		}
 
 		err := errors.New("Custom Error")
-		err, _ = handleAlreadyCloned(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
+		err, _ = handleCloneError(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Something failed during the checkout: Checkout failed: Checkout of branch Branch failed on the ABAP System", err.Error(), "Expected different error message")
 		}
@@ -544,7 +544,7 @@ func TestALreadyCloned(t *testing.T) {
 		}
 
 		err := errors.New("Custom Error")
-		err, _ = handleAlreadyCloned(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
+		err, _ = handleCloneError(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Custom Error: A4C_A2G/258 - Some error message", err.Error(), "Expected different error message")
 		}
