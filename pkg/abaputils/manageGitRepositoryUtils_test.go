@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -138,7 +139,7 @@ repositories:
 			Repositories:    "repositoriesTest.yml",
 		}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, true)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.NoError(t, err)
@@ -171,7 +172,7 @@ repositories:
 			Repositories: "repositoriesTest.yml",
 		}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, false)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.EqualError(t, err, expectedErrorMessage)
@@ -204,7 +205,7 @@ repositories:
 			Repositories: "repositoriesTest.yml",
 		}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, false)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.EqualError(t, err, expectedErrorMessage)
@@ -215,7 +216,7 @@ repositories:
 
 		config := RepositoriesConfig{}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, false)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.EqualError(t, err, expectedErrorMessage)
@@ -301,5 +302,24 @@ func TestCreateRequestBodies(t *testing.T) {
 		}
 		body := repo.GetPullRequestBody()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
+	})
+}
+
+func TestGetStatus(t *testing.T) {
+	t.Run("Graceful Exit", func(t *testing.T) {
+
+		client := &ClientMock{
+			NilResponse: true,
+			Error:       errors.New("Backend Error"),
+			StatusCode:  500,
+		}
+		connectionDetails := ConnectionDetailsHTTP{
+			URL: "example.com",
+		}
+
+		_, status, err := GetStatus("failure message", connectionDetails, client)
+
+		assert.Error(t, err, "Expected Error")
+		assert.Equal(t, "", status)
 	})
 }

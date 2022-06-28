@@ -27,10 +27,17 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: dockerCredentialsId
+      - name: kubeConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
+        aliases:
+          - name: kubeCredentialsId
+            deprecated: true
         type: jenkins
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
+        type: jenkins
+      - name: targetRepositoryCredentialsId
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
         type: jenkins
     resources:
       - name: deployDescriptor
@@ -75,7 +82,9 @@ spec:
           - STAGES
           - STEPS
       - name: targetRepositoryUser
-        description: "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
+        aliases:
+          - name: helmRepositoryUsername
+        description: "Username for the chart repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
           - PARAMETERS
@@ -83,11 +92,19 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: targetRepositoryCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            name: targetRepositoryUserSecretName
+            default: publishing
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: targetRepositoryPassword
+        aliases:
+          - name: helmRepositoryPassword
         description: "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
@@ -96,6 +113,12 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: targetRepositoryCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: targetRepositoryPasswordSecret
+            default: publishing
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
@@ -268,9 +291,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config

@@ -1,0 +1,118 @@
+metadata:
+  name: ansSendEvent
+  description: Send Event to the SAP Alert Notification Service
+  longDescription: |
+    With this step one can send an Event to the SAP Alert Notification Service.
+
+spec:
+  inputs:
+    secrets:
+      - name: ansServiceKeyCredentialsId
+        description: Jenkins secret text credential ID containing the service key to access the SAP Alert Notification Service
+        type: jenkins
+    params:
+      - name: ansServiceKey
+        type: string
+        description: Service key JSON string to access the SAP Alert Notification Service
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: ansServiceKeyCredentialsId
+            type: secret
+            param: ansServiceKey
+      - name: eventType
+        type: string
+        description: Type of the event
+        default: "Piper"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: severity
+        type: string
+        description: Event severity
+        default: "INFO"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - INFO
+          - NOTICE
+          - WARNING
+          - ERROR
+          - FATAL
+      - name: category
+        type: string
+        description: Event category
+        default: "NOTIFICATION"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - NOTIFICATION
+          - ALERT
+          - EXCEPTION
+      - name: subject
+        type: string
+        description: Short description of the event
+        default: "ansSendEvent"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: body
+        type: string
+        description: Detailed description of the event
+        default: "Call from Piper step ansSendEvent"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: priority
+        type: int
+        description: Event priority in the range of 1 to 1000
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: tags
+        type: "map[string]interface{}"
+        description: Optional key-value pairs describing the event in details
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: resourceName
+        type: string
+        description: Unique resource name
+        default: "Pipeline"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: resourceType
+        type: string
+        description: Resource type identifier
+        default: "Pipeline"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: resourceInstance
+        type: string
+        description: Optional resource instance identifier
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: resourceTags
+        type: "map[string]interface{}"
+        description: Optional key-value pairs describing the resource in details
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS

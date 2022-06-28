@@ -147,6 +147,10 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -555,7 +559,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cfDeploy", Image: "ppiper/cf-cli:6"},
+				{Name: "cfDeploy", Image: "ppiper/cf-cli:latest"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

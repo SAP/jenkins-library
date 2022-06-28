@@ -48,6 +48,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 echo "Context Config: ${config}"
             }
 
+            //Add ANS credential information to the config
+            ansHookServiceKeyCredentialsId =
+                DefaultValueCache.getInstance().getDefaultValues().hooks?.ans?.serviceKeyCredentialsId
+            config += ["ansHookServiceKeyCredentialsId": ansHookServiceKeyCredentialsId]
+
             // prepare stashes
             // first eliminate empty stashes
             config.stashContent = utils.unstashAll(config.stashContent)
@@ -168,7 +173,7 @@ void dockerWrapper(script, stepName, config, body) {
 // reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
     credentialInfo = handleVaultCredentials(config, credentialInfo)
-
+    credentialInfo = handleANSCredentials(config, credentialInfo)
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
@@ -251,6 +256,14 @@ List handleVaultCredentials(config, List credentialInfo) {
 
     if (config.containsKey('vaultTokenCredentialsId')) {
         credentialInfo += [[type: 'token', id: 'vaultTokenCredentialsId', env: ['PIPER_vaultToken']]]
+    }
+
+    return credentialInfo
+}
+
+List handleANSCredentials(config, List credentialInfo){
+    if (config.containsKey('ansHookServiceKeyCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'ansHookServiceKeyCredentialsId', env: ['PIPER_ansHookServiceKey']]]
     }
 
     return credentialInfo

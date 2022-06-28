@@ -325,7 +325,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	// generate sarif report
 	if config.ConvertToSarif {
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := checkmarx.ConvertCxxmlToSarif(xmlReportName)
+		sarif, err := checkmarx.ConvertCxxmlToSarif(sys, xmlReportName, scanID)
 		if err != nil {
 			return fmt.Errorf("failed to generate SARIF")
 		}
@@ -653,7 +653,6 @@ func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, pro
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}
-	log.Entry().Debugf("Configuration of project %v updated", projectName)
 	return nil
 }
 
