@@ -11,7 +11,7 @@ import (
 )
 
 func TestCloneStep(t *testing.T) {
-	t.Run("Run Step - Successful", func(t *testing.T) {
+	t.Run("Run Step - Successful with repositories.yml", func(t *testing.T) {
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
@@ -53,8 +53,6 @@ repositories:
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
-			BranchName:        "testBranch1",
 			Repositories:      "filename.yaml",
 		}
 
@@ -73,6 +71,39 @@ repositories:
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		assert.NoError(t, err, "Did not expect error")
+		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
+	})
+
+	t.Run("Run Step - Successful with repositoryName", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCloneGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			RepositoryName:    "testRepo1",
+			BranchName:        "testBranch1",
+		}
+
+		logResultSuccess := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+		client := &abaputils.ClientMock{
+			BodyList: []string{
 				logResultSuccess,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
@@ -275,8 +306,6 @@ repositories:
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
-			BranchName:        "testBranch1",
 			Repositories:      "filename.yaml",
 		}
 
@@ -294,5 +323,45 @@ repositories:
 			assert.Equal(t, "Something failed during the clone: Could not find filename.yaml", err.Error(), "Expected different error message")
 		}
 
+	})
+
+	t.Run("Config overload", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCloneGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "filename.yaml",
+			RepositoryName:    "/DMO/REPO",
+			BranchName:        "Branch",
+		}
+
+		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				logResultError,
+				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		if assert.Error(t, err, "Expected error") {
+			assert.Equal(t, "The provided configuration is not allowed: It is not allowed to configure the parameters `repositories`and `repositoryName` at the same time", err.Error(), "Expected different error message")
+		}
 	})
 }

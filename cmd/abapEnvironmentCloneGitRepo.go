@@ -60,6 +60,11 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		Password:           connectionDetails.Password,
 	})
 
+	errConfig := checkConfiguration(config)
+	if errConfig != nil {
+		return errors.Wrap(errConfig, "The provided configuration is not allowed")
+	}
+
 	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, true)
 	if errGetRepos != nil {
 		return fmt.Errorf("Something failed during the clone: %w", errGetRepos)
@@ -94,6 +99,16 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	}
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were cloned successfully")
+	return nil
+}
+
+func checkConfiguration(config *abapEnvironmentCloneGitRepoOptions) error {
+	if config.Repositories != "" && config.RepositoryName != "" {
+		return errors.New("It is not allowed to configure the parameters `repositories`and `repositoryName` at the same time")
+	}
+	if config.Repositories == "" && config.RepositoryName == "" {
+		return errors.New("Please provide one of the following parameters: `repositories` or `repositoryName`")
+	}
 	return nil
 }
 
