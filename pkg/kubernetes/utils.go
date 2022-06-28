@@ -19,7 +19,6 @@ type DeployUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
-	//DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	piperutils.FileUtils
 	piperhttp.Uploader
