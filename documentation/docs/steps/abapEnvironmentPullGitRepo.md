@@ -26,7 +26,7 @@ If you want to provide the host and credentials of the Communication Arrangement
 ```yaml
 steps:
   abapEnvironmentPullGitRepo:
-    repositoryNames: ['/DMO/GIT_REPOSITORY']
+    repositoryName: '/DMO/GIT_REPOSITORY'
     abapCredentialsId: 'abapCredentialsId'
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
@@ -63,7 +63,7 @@ If you want to read the host and credentials from the cloud foundry service key 
 ```yaml
 steps:
   abapEnvironmentPullGitRepo:
-    repositoryNames: ['/DMO/GIT_REPOSITORY']
+    repositoryName: '/DMO/GIT_REPOSITORY'
     cfCredentialsId: 'cfCredentialsId'
     cfApiEndpoint: 'https://test.server.com'
     cfOrg: 'cfOrg'
@@ -80,7 +80,8 @@ In the first example, the host and the credentialsId of the Communication Arrang
 ```groovy
 abapEnvironmentPullGitRepo (
   script: this,
-  repositoryNames: ['/DMO/GIT_REPOSITORY'],
+  repositoryName: '/DMO/GIT_REPOSITORY',
+  CommitID: 'abcd1234'
   abapCredentialsId: 'abapCredentialsId',
   host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 )
@@ -91,7 +92,7 @@ In the second example, the host and credentialsId will be read from the provided
 ```groovy
 abapEnvironmentPullGitRepo (
   script: this,
-  repositoryNames: ['/DMO/GIT_REPOSITORY', '/DMO/GIT_REPO'],
+  repositoryName: '/DMO/GIT_REPOSITORY',
   abapCredentialsId: 'cfCredentialsId',
   cfApiEndpoint: 'https://test.server.com',
   cfOrg: 'cfOrg',
