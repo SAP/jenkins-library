@@ -81,12 +81,12 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		log.Entry().Info("-------------------------")
 
 		// Triggering the Clone of the repository into the ABAP Environment system
-		uriConnectionDetails, errorTriggerClone, checkoutPullInstead := triggerClone(repo, connectionDetails, client)
+		uriConnectionDetails, errorTriggerClone, didCheckoutPullInstead := triggerClone(repo, connectionDetails, client)
 		if errorTriggerClone != nil {
 			return errors.Wrapf(errorTriggerClone, errorString)
 		}
 
-		if !checkoutPullInstead {
+		if !didCheckoutPullInstead {
 			// Polling the status of the repository import on the ABAP Environment system
 			// If the repository had been cloned already, as checkout/pull has been done - polling the status is not necessary anymore
 			status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
