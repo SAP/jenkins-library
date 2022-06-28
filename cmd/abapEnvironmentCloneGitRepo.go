@@ -82,20 +82,22 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 		// Triggering the Clone of the repository into the ABAP Environment system
 		uriConnectionDetails, errorTriggerClone, checkoutPullInstead := triggerClone(repo, connectionDetails, client)
-		if errorTriggerClone != nil || checkoutPullInstead {
+		if errorTriggerClone != nil {
 			return errors.Wrapf(errorTriggerClone, errorString)
 		}
 
-		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
-		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, errorString)
+		if !checkoutPullInstead {
+			// Polling the status of the repository import on the ABAP Environment system
+			// If the repository had been cloned already, as checkout/pull has been done - polling the status is not necessary anymore
+			status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
+			if errorPollEntity != nil {
+				return errors.Wrapf(errorPollEntity, errorString)
+			}
+			if status == "E" {
+				return errors.New("Clone of " + logString + " failed on the ABAP System")
+			}
+			log.Entry().Info("The " + logString + " was cloned successfully")
 		}
-		if status == "E" {
-			return errors.New("Clone of " + logString + " failed on the ABAP System")
-		}
-
-		log.Entry().Info("The " + logString + " was cloned successfully")
 	}
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were cloned successfully")
@@ -140,10 +142,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
 	if err != nil {
 		err, alreadyCloned := handleAlreadyCloned(resp, err, cloneConnectionDetails, client, repo)
-		if !alreadyCloned {
-			err = abaputils.HandleHTTPError(resp, err, "Could not clone the "+repo.GetCloneLogString(), uriConnectionDetails)
-		}
-		return uriConnectionDetails, err, true
+		return uriConnectionDetails, err, alreadyCloned
 	}
 	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Info("Triggered Clone of Repository / Software Component")
@@ -173,12 +172,14 @@ func handleAlreadyCloned(resp *http.Response, err error, cloneConnectionDetails 
 	alreadyCloned = false
 	returnedError = nil
 	if resp == nil {
+		log.Entry().WithError(err).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Error("Request failed")
 		returnedError = errors.New("Response is nil")
 		return
 	}
-	_, errorCode, parsingError := abaputils.GetErrorDetailsFromResponse(resp)
+	defer resp.Body.Close()
+	errorText, errorCode, parsingError := abaputils.GetErrorDetailsFromResponse(resp)
 	if parsingError != nil {
-		returnedError = errors.New("Could not parse error")
+		returnedError = err
 		return
 	}
 	if errorCode == "A4C_A2G/257" {
@@ -219,6 +220,10 @@ func handleAlreadyCloned(resp *http.Response, err error, cloneConnectionDetails 
 		if returnedError != nil {
 			return
 		}
+	} else {
+		log.Entry().WithField("StatusCode", resp.Status).Error("Could not clone the " + repo.GetCloneLogString())
+		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
+		returnedError = errors.Wrap(abapError, err.Error())
 	}
 	return
 }

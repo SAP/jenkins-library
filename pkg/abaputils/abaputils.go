@@ -203,7 +203,7 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 	if _, ok := abapResp["error"]; ok {
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
 		if (AbapError{}) != abapErrorResponse {
-			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Debug(abapErrorResponse.Message.Value)
 			return abapErrorResponse.Message.Value, abapErrorResponse.Code, nil
 		}
 	}
