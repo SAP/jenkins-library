@@ -57,6 +57,7 @@ func (c *Client) GetRequest(url string, header http.Header, cookies []*http.Cook
 	return response, nil
 }
 
+// DownloadExecutable downloads a script or another executable and sets appropriate permissions
 func DownloadExecutable(githubToken string, fileUtils piperutils.FileUtils, downloader Downloader, url string) (string, error) {
 	header := http.Header{}
 	if len(githubToken) > 0 {

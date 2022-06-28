@@ -32,7 +32,7 @@ func TestDownloadFile(t *testing.T) {
 	t.Parallel()
 	t.Run("DownloadFile", func(t *testing.T) {
 		utils := HttpClientMock{
-			HttpFileUtils: &FilesMock{},
+			HTTPFileUtils: &FilesMock{},
 		}
 		url := "https://localhost"
 		filename := "testFile"
@@ -40,7 +40,7 @@ func TestDownloadFile(t *testing.T) {
 		var cookies []*http.Cookie
 		err := utils.DownloadFile(url, filename, header, cookies)
 		assert.NoError(t, err)
-		content, err := utils.HttpFileUtils.FileRead(filename)
+		content, err := utils.HTTPFileUtils.FileRead(filename)
 		assert.NoError(t, err)
 		assert.Equal(t, "some content", string(content))
 	})

@@ -1050,7 +1050,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			TeardownScript:          "https://github.com/my/test/teardown_script.sh",
 		}
 		mockUtils := newKubernetesDeployMockUtils()
-		mockUtils.HttpClientMock = &mock.HttpClientMock{HttpFileUtils: mockUtils.FilesMock}
+		mockUtils.HttpClientMock = &mock.HttpClientMock{HTTPFileUtils: mockUtils.FilesMock}
 
 		var stdout bytes.Buffer
 
