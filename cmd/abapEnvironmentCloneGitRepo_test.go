@@ -523,7 +523,6 @@ func TestALreadyCloned(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 		client := &abaputils.ClientMock{
 			BodyList: []string{
-
 				`{"d" : { "status" : "R" } }`,
 			},
 			Token:      "myToken",
