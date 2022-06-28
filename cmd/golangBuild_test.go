@@ -81,12 +81,23 @@ func newGolangBuildTestsUtils() *golangBuildMockUtils {
 
 func TestRunGolangBuild(t *testing.T) {
 	cpe := golangBuildCommonPipelineEnvironment{}
+	modTestFile := `module private.example.com/test
+
+require (
+		example.com/public/module v1.0.0
+		private1.example.com/private/repo v0.1.0
+		private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
 
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
 		}
+
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -103,6 +114,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -122,6 +134,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -136,6 +149,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -146,6 +160,24 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - simple publish", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures: []string{"linux,amd64"},
+			Publish:             true,
+			TargetRepositoryURL: "https://my.target.repository.local/",
+			ArtifactVersion:     "1.0.0",
+		}
+
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, "test", cpe.custom.artifacts[0].Name)
 	})
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
@@ -204,6 +236,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -286,6 +319,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
@@ -624,7 +658,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, utils.Env, "GOARCH=amd64")
 		assert.Equal(t, utils.Calls[0].Exec, "go")
 		assert.Equal(t, utils.Calls[0].Params[0], "build")
-		assert.Equal(t, binaryName, "testBinary")
+		assert.Equal(t, binaryName[0], "testBinary")
 	})
 
 	t.Run("success - custom params", func(t *testing.T) {
@@ -786,8 +820,8 @@ go 1.17`
 			expect: expectations{
 				envVars: []string{"GOPRIVATE=*.example.com"},
 				commandsExecuted: [][]string{
-					[]string{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
-					[]string{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
+					{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
+					{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
 				},
 			},
 		},
