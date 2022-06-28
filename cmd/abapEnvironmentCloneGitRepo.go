@@ -60,7 +60,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		Password:           connectionDetails.Password,
 	})
 
-	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories})
+	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, true)
 	if errGetRepos != nil {
 		return fmt.Errorf("Something failed during the clone: %w", errGetRepos)
 	}

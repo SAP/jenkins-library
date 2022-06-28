@@ -249,7 +249,7 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 }
 
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
-func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
+func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -274,6 +274,9 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	}
 	if config.RepositoryName != "" && config.BranchName != "" {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
+	}
+	if config.RepositoryName != "" && !branchRequired {
+		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
@@ -426,6 +429,7 @@ type LogResults struct {
 //RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
 type RepositoriesConfig struct {
 	BranchName      string
+	CommitID        string
 	RepositoryName  string
 	RepositoryNames []string
 	Repositories    string
