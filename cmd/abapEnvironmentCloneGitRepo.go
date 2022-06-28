@@ -210,11 +210,11 @@ func handleAlreadyCloned(resp *http.Response, err error, cloneConnectionDetails 
 		log.Entry().Infof("-------------------------")
 		log.Entry().Infof("-------------------------")
 		pullOptions := *&abapEnvironmentPullGitRepoOptions{
-			Username:        cloneConnectionDetails.User,
-			Password:        cloneConnectionDetails.Password,
-			Host:            cloneConnectionDetails.Host,
-			RepositoryNames: []string{repo.Name},
-			// CommitdID
+			Username:       cloneConnectionDetails.User,
+			Password:       cloneConnectionDetails.Password,
+			Host:           cloneConnectionDetails.Host,
+			RepositoryName: repo.Name,
+			CommitID:       repo.CommitID,
 		}
 		returnedError = runAbapEnvironmentPullGitRepo(&pullOptions, &com, client)
 		if returnedError != nil {

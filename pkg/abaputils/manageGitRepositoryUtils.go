@@ -28,7 +28,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 			return status, err
 		}
 		status = pullEntity.Status
-		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
+		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
 
 			if serviceContainsNewLogEntities(connectionDetails, client) {
