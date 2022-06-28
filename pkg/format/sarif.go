@@ -11,19 +11,21 @@ type SARIF struct {
 type Runs struct {
 	Results             []Results           `json:"results"`
 	Tool                Tool                `json:"tool"`
-	Invocations         []Invocations       `json:"invocations,omitempty"`
+	Invocations         []Invocation        `json:"invocations,omitempty"`
 	OriginalUriBaseIds  *OriginalUriBaseIds `json:"originalUriBaseIds,omitempty"`
 	Artifacts           []Artifact          `json:"artifacts,omitempty"`
 	AutomationDetails   AutomationDetails   `json:"automationDetails,omitempty"`
 	ColumnKind          string              `json:"columnKind,omitempty" default:"utf16CodeUnits"`
 	ThreadFlowLocations []Locations         `json:"threadFlowLocations,omitempty"`
 	Taxonomies          []Taxonomies        `json:"taxonomies,omitempty"`
+	Conversion          *Conversion         `json:"conversion,omitempty"`
 }
 
 // Results these structs are relevant to the Results object
 type Results struct {
 	RuleID              string              `json:"ruleId"`
 	RuleIndex           int                 `json:"ruleIndex"`
+	Kind                string              `json:"kind,omitempty"`
 	Level               string              `json:"level,omitempty"`
 	Message             *Message            `json:"message,omitempty"`
 	AnalysisTarget      *ArtifactLocation   `json:"analysisTarget,omitempty"`
@@ -49,7 +51,7 @@ type Location struct {
 type PhysicalLocation struct {
 	ArtifactLocation ArtifactLocation  `json:"artifactLocation"`
 	Region           Region            `json:"region"`
-	ContextRegion    ContextRegion     `json:"contextRegion"`
+	ContextRegion    *ContextRegion    `json:"contextRegion,omitempty"`
 	LogicalLocations []LogicalLocation `json:"logicalLocations,omitempty"`
 }
 
@@ -85,6 +87,7 @@ type PartialFingerprints struct {
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
+	RuleGUID              string `json:"ruleGUID,omitempty"`
 	InstanceID            string `json:"instanceID,omitempty"`
 	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
 	Confidence            string `json:"confidence,omitempty"`
@@ -101,15 +104,17 @@ type SarifProperties struct {
 
 // Tool these structs are relevant to the Tool object
 type Tool struct {
-	Driver Driver `json:"driver"`
+	Driver     Driver   `json:"driver"`
+	Extensions []Driver `json:"extensions,omitempty"`
 }
 
 // Driver meta information for the scan and tool context
 type Driver struct {
 	Name                string                `json:"name"`
-	Version             string                `json:"version"`
+	Version             string                `json:"version,omitempty"`
+	GUID                string                `json:"guid,omitempty"`
 	InformationUri      string                `json:"informationUri,omitempty"`
-	Rules               []SarifRule           `json:"rules"`
+	Rules               []SarifRule           `json:"rules,omitempty"`
 	SupportedTaxonomies []SupportedTaxonomies `json:"supportedTaxonomies,omitempty"`
 }
 
@@ -191,6 +196,8 @@ type SupportedTaxonomies struct {
 type DefaultConfiguration struct {
 	Properties DefaultProperties `json:"properties,omitempty"`
 	Level      string            `json:"level,omitempty"` //This exists in the template, but not sure how it is populated. TODO.
+	Enabled    bool              `json:"enabled,omitempty"`
+	Rank       float64           `json:"rank,omitempty"`
 }
 
 // DefaultProperties
@@ -218,22 +225,23 @@ type ToolComponent struct {
 
 //SarifRuleProperties
 type SarifRuleProperties struct {
-	Accuracy    string   `json:"accuracy,omitempty"`
-	Impact      string   `json:"impact,omitempty"`
-	Probability string   `json:"probability,omitempty"`
-	Tags        []string `json:"tags,omitempty"`
-	Precision   string   `json:"precision,omitempty"`
+	Accuracy         string   `json:"accuracy,omitempty"`
+	Impact           string   `json:"impact,omitempty"`
+	Probability      string   `json:"probability,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
+	Precision        string   `json:"precision,omitempty"`
+	SecuritySeverity string   `json:"security-severity,omitempty"` //used by GHAS to defined the tag (low,medium,high)
 }
 
-// Invocations These structs are relevant to the Invocations object
-type Invocations struct {
-	CommandLine                string                       `json:"commandLine"`
-	StartTimeUtc               string                       `json:"startTimeUtc"`
-	ToolExecutionNotifications []ToolExecutionNotifications `json:"toolExecutionNotifications"`
+// Invocation These structs are relevant to the Invocation object
+type Invocation struct {
+	CommandLine                string                       `json:"commandLine,omitempty"`
+	StartTimeUtc               string                       `json:"startTimeUtc,omitempty"`
+	ToolExecutionNotifications []ToolExecutionNotifications `json:"toolExecutionNotifications,omitempty"`
 	ExecutionSuccessful        bool                         `json:"executionSuccessful"`
-	Machine                    string                       `json:"machine"`
-	Account                    string                       `json:"account"`
-	Properties                 InvocationProperties         `json:"properties"`
+	Machine                    string                       `json:"machine,omitempty"`
+	Account                    string                       `json:"account,omitempty"`
+	Properties                 *InvocationProperties        `json:"properties,omitempty"`
 }
 
 // ToolExecutionNotifications
@@ -295,4 +303,10 @@ type Taxonomies struct {
 // Taxa
 type Taxa struct {
 	Id string `json:"id"`
+}
+
+// Conversion object
+type Conversion struct {
+	Tool       Tool       `json:"tool,omitempty"`
+	Invocation Invocation `json:"invocation,omitempty"`
 }

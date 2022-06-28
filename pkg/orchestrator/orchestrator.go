@@ -2,9 +2,10 @@ package orchestrator
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type Orchestrator int
@@ -22,6 +23,7 @@ type OrchestratorSpecificConfigProviding interface {
 	OrchestratorVersion() string
 	GetStageName() string
 	GetBranch() string
+	GetReference() string
 	GetBuildURL() string
 	GetBuildID() string
 	GetJobURL() string

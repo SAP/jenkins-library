@@ -66,7 +66,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	err = checkCheckoutBranchRepositoryConfiguration(*options)
 
 	if err == nil {
-		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: options.BranchName, RepositoryName: options.RepositoryName, Repositories: options.Repositories})
+		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: options.BranchName, RepositoryName: options.RepositoryName, Repositories: options.Repositories}, true)
 	}
 	if err == nil {
 		err = checkoutBranches(repositories, connectionDetails, client, pollIntervall)

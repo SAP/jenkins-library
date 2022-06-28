@@ -1,4 +1,5 @@
 import com.sap.piper.DebugReport
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
@@ -152,6 +153,31 @@ class PiperExecuteBinTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams.stashContent, is([]))
 
         assertThat(artifacts[0], allOf(hasEntry('artifacts', '1234.pdf'), hasEntry('allowEmptyArchive', false)))
+    }
+
+    @Test
+    void testPiperExecuteBinANSCredentialsFromHooksSection() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
+
+        def newScript = nullScript
+        DefaultValueCache.createInstance([hooks: [ans: [serviceKeyCredentialsId: "ansServiceKeyID"]]])
+
+        List stepCredentials = []
+        stepRule.step.piperExecuteBin(
+                [
+                        juStabUtils: utils,
+                        jenkinsUtilsStub: jenkinsUtils,
+                        testParam: "This is test content",
+                        script: newScript
+                ],
+                'testStep',
+                'metadata/test.yaml',
+                stepCredentials
+        )
+        // asserts
+        assertThat(credentials.size(), is(1))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'ansServiceKeyID'), hasEntry('variable', 'PIPER_ansHookServiceKey')))
+        DefaultValueCache.reset()
     }
 
     @Test
