@@ -209,7 +209,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
-	cmd.MarkFlagRequired("image")
+	cmd.Flags().MarkDeprecated("image", "This parameter is deprecated, please use [containerImageName](#containerimagename) and [containerImageTag](#containerimagetag)")
 }
 
 // retrieve step metadata
@@ -455,11 +455,12 @@ func kubernetesDeployMetadata() config.StepData {
 								Param: "container/imageNameTag",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "deployImage"}},
-						Default:   os.Getenv("PIPER_image"),
+						Scope:              []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:               "string",
+						Mandatory:          false,
+						Aliases:            []config.Alias{{Name: "deployImage"}},
+						Default:            os.Getenv("PIPER_image"),
+						DeprecationMessage: "This parameter is deprecated, please use [containerImageName](#containerimagename) and [containerImageTag](#containerimagetag)",
 					},
 					{
 						Name: "imageNames",
