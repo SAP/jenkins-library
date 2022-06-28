@@ -139,7 +139,7 @@ repositories:
 			Repositories:    "repositoriesTest.yml",
 		}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, true)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.NoError(t, err)
@@ -172,7 +172,7 @@ repositories:
 			Repositories: "repositoriesTest.yml",
 		}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, false)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.EqualError(t, err, expectedErrorMessage)
@@ -205,7 +205,7 @@ repositories:
 			Repositories: "repositoriesTest.yml",
 		}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, false)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.EqualError(t, err, expectedErrorMessage)
@@ -216,7 +216,7 @@ repositories:
 
 		config := RepositoriesConfig{}
 
-		repositories, err := GetRepositories(&config)
+		repositories, err := GetRepositories(&config, false)
 
 		assert.Equal(t, expectedRepositoryList, repositories)
 		assert.EqualError(t, err, expectedErrorMessage)
