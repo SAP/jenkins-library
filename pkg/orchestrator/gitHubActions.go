@@ -1,10 +1,11 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type GitHubActionsConfigProvider struct{}
@@ -51,6 +52,10 @@ func (g *GitHubActionsConfigProvider) GetBuildReason() string {
 
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
+}
+
+func (g *GitHubActionsConfigProvider) GetReference() string {
+	return getEnv("GITHUB_REF", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
