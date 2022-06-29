@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,7 +61,13 @@ func TestRunUtils(t *testing.T) {
 		}
 
 		for _, testCase := range testTable {
-			utils := newHelmMockUtilsBundle()
+			utils := helmMockUtilsBundle{
+				ExecMockRunner: &mock.ExecMockRunner{},
+				FilesMock:      &mock.FilesMock{},
+				HttpClientMock: &mock.HttpClientMock{
+					FileUploads: map[string]string{},
+				},
+			}
 			utils.AddFile(testCase.chartYamlFile, []byte(testCase.dataChartYaml))
 			if testCase.setFileReadError {
 				utils.FileReadErrors = map[string]error{testCase.chartYamlFile: testCase.expectedError}
