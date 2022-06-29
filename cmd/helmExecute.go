@@ -130,6 +130,7 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 	return nil
 }
 
+//getAndRenderImageInfo gets data from commonPipelineEnvironment
 func getAndRenderImageInfo(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))

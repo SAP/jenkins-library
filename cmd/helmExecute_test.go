@@ -349,6 +349,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 
 }
 
+//TODO: implement Table-Driven Testing
 func TestGetAndRenderImageInfo(t *testing.T) {
 	commonPipelineEnvironment := "commonPipelineEnvironment"
 	valuesYaml := []byte(`
