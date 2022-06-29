@@ -97,6 +97,10 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         helper.registerAllowedMethod('slackSendNotification', [Map.class], {m ->
             stepsCalled.add('slackSendNotification')
         })
+
+        helper.registerAllowedMethod('transportRequestReqIDFromGit', [Map.class], {m ->
+            stepsCalled.add('transportRequestReqIDFromGit')
+        })
     }
 
     @Test
@@ -126,7 +130,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testInitDefault() {
-
         jsr.step.piperPipelineStageInit(
             script: nullScript,
             juStabUtils: utils,
@@ -135,6 +138,34 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is([]))
+    }
+
+    @Test
+    void testTransportRequestReqIDFromGitIfFalse() {
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            transportRequestReqIDFromGit: false
+        )
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is([]))
+    }
+
+    @Test
+    void testTransportRequestReqIDFromGitIfTrue() {
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            transportRequestReqIDFromGit: true
+        )
+        assertThat(stepsCalled, hasItems('checkout', 'transportRequestReqIDFromGit', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
         assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is([]))
     }

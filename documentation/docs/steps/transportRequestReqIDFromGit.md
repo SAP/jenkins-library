@@ -14,6 +14,16 @@ See [transportRequestUploadSOLMAN](transportRequestUploadSOLMAN.md).
 With `transportRequestReqIDFromGit`  you can retrieve the transport request ID from the commit message of the Git repository of your project. This way, you can address the transport request without having to change the setup of your pipeline.
 Please make sure that the ID is unique in the defined search range.
 
+### General purpose pipeline Init Stage
+
+The step can also be configured via General purpose pipeline in Init stage using config.yml. The configuration will look as below:
+```yaml
+stages:
+  Init:
+    transportRequestReqIDFromGit: true
+```
+This will initialize the step within the Init stage of pipeline and retrieve transportRequestId from the git commit history.
+
 ### Specifying the Git Commit Message
 
 `transportRequestReqIDFromGit` searches for lines that follow a defined pattern in the Git commit messages (`git log`) of your project.

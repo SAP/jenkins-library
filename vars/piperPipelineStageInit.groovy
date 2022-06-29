@@ -71,6 +71,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `true`, `false`
      */
     'artifactPrepareVersion',
+    /**
+     * Retrieve transport request from git commit history.
+     * @possibleValues `true`, `false`
+     */
     'transportRequestReqIDFromGit'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
@@ -125,7 +129,6 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
-
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
@@ -172,16 +175,12 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.buildTool)
             .withMandatoryProperty('buildTool')
             .use()
-        
-        echo "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
-        
+
         if (config.transportRequestReqIDFromGit) {
-            echo "STEP EXECUTED TO GET TRANSPORT ID"
+            echo "Retrieving transportRequestID from git commit history"
             transportRequestReqIDFromGit(script: script)
-            echo "AAAAAAAAAAAA: ${script.commonPipelineEnvironment}"
-            echo "GET ID XXXXX: ${script.commonPipelineEnvironment?.transportRequestId}"
         }
-        
+
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
             checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)

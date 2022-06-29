@@ -172,7 +172,7 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             juStabUtils: utils,
             transportRequestUploadCTS: true
         )
-
+        println stepsCalled
         assertThat(stepsCalled, hasItem('transportRequestUploadCTS'))
     }
 }
