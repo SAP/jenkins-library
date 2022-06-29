@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"path"
+	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
@@ -52,6 +56,11 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 
 	if len(helmConfig.PublishVersion) == 0 {
 		helmConfig.PublishVersion = artifactInfo.Version
+	}
+
+	err = getAndRenderImageInfo(config, GeneralConfig.EnvRootPath, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("failed to get/render image info: %v", err)
 	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
@@ -118,5 +127,43 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 		}
 	}
 
+	return nil
+}
+
+func getAndRenderImageInfo(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
+	cpe := piperenv.CPEMap{}
+	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))
+	if err != nil {
+		return fmt.Errorf("failed to load values from commonPipelineEnvironment: %v", err)
+	}
+
+	valuesFiles := []string{fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")}
+	valuesFiles = append(valuesFiles, config.HelmValues...)
+
+	params := struct {
+		CPE map[string]interface{}
+	}{
+		CPE: cpe,
+	}
+
+	for _, valuesFile := range valuesFiles {
+		b, err := utils.FileRead(valuesFile)
+		if err != nil {
+			return fmt.Errorf("failed to read file: %v", err)
+		}
+		tmpl, err := template.New("new").Parse(string(b))
+		if err != nil {
+			return fmt.Errorf("failed to parse template: %v", err)
+		}
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, params)
+		if err != nil {
+			return fmt.Errorf("failed to execute template: %v", err)
+		}
+		err = utils.FileWrite(valuesFile, buf.Bytes(), 0700)
+		if err != nil {
+			return fmt.Errorf("failed to update file: %v", err)
+		}
+	}
 	return nil
 }
