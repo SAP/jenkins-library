@@ -237,7 +237,6 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 	if err != nil {
 		return body, resp.Status, errors.Wrap(err, "Could not read response")
 	}
-	log.Entry().Info(string(bodyText))
 	json.Unmarshal(*abapResp["d"], &body)
 	if err != nil {
 		return body, resp.Status, errors.Wrap(err, "Could not read response")
