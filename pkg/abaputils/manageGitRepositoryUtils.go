@@ -30,17 +30,16 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		status = pullEntity.Status
 		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
-
+			printTransportLogs := true
 			if serviceContainsNewLogEntities(connectionDetails, client) {
 				PrintLogs(repositoryName, connectionDetails, client)
+				printTransportLogs = false
+			}
+			if pullEntity.Status == "E" {
+				log.SetErrorCategory(log.ErrorUndefined)
+				PrintLegacyLogs(repositoryName, connectionDetails, client, true, printTransportLogs)
 			} else {
-				// Fallback
-				if pullEntity.Status == "E" {
-					log.SetErrorCategory(log.ErrorUndefined)
-					PrintLegacyLogs(repositoryName, connectionDetails, client, true)
-				} else {
-					PrintLegacyLogs(repositoryName, connectionDetails, client, false)
-				}
+				PrintLegacyLogs(repositoryName, connectionDetails, client, false, printTransportLogs)
 			}
 			break
 		}
@@ -161,7 +160,7 @@ func printLog(logEntry LogResultsV2) {
 }
 
 // PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
-func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) {
+func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool, includeTransportLog bool) {
 
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
 	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
@@ -179,12 +178,14 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 
 	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
 	if errorOnSystem {
-		log.Entry().Info("-------------------------")
-		log.Entry().Info("Transport Log")
-		log.Entry().Info("-------------------------")
-		for _, logEntry := range entity.ToTransportLog.Results {
+		if includeTransportLog {
+			log.Entry().Info("-------------------------")
+			log.Entry().Info("Transport Log")
+			log.Entry().Info("-------------------------")
+			for _, logEntry := range entity.ToTransportLog.Results {
 
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+			}
 		}
 
 		log.Entry().Info("-------------------------")
@@ -195,12 +196,14 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 		}
 		log.Entry().Info("-------------------------")
 	} else {
-		log.Entry().Debug("-------------------------")
-		log.Entry().Debug("Transport Log")
-		log.Entry().Debug("-------------------------")
-		for _, logEntry := range entity.ToTransportLog.Results {
+		if includeTransportLog {
+			log.Entry().Debug("-------------------------")
+			log.Entry().Debug("Transport Log")
+			log.Entry().Debug("-------------------------")
+			for _, logEntry := range entity.ToTransportLog.Results {
 
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+			}
 		}
 
 		log.Entry().Debug("-------------------------")
@@ -231,7 +234,13 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 	bodyText, _ := ioutil.ReadAll(resp.Body)
 
 	json.Unmarshal(bodyText, &abapResp)
+	if err != nil {
+		return body, resp.Status, errors.Wrap(err, "Could not read response")
+	}
 	json.Unmarshal(*abapResp["d"], &body)
+	if err != nil {
+		return body, resp.Status, errors.Wrap(err, "Could not read response")
+	}
 
 	if reflect.DeepEqual(PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).Error(failureMessage)
@@ -243,7 +252,7 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 }
 
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
-func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
+func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -268,6 +277,9 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	}
 	if config.RepositoryName != "" && config.BranchName != "" {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
+	}
+	if config.RepositoryName != "" && !branchRequired {
+		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
@@ -420,6 +432,7 @@ type LogResults struct {
 //RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
 type RepositoriesConfig struct {
 	BranchName      string
+	CommitID        string
 	RepositoryName  string
 	RepositoryNames []string
 	Repositories    string

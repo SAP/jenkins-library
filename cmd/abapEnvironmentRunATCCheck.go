@@ -165,7 +165,7 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
 		log.Entry().Infof("ATC Configuration derived from: %s", config.Repositories)
-		repositories, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
+		repositories, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}), false)
 		if err != nil {
 			return atcConfig, err
 		}

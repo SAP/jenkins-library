@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,25 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/stretchr/testify/assert"
 )
+
+var executionLogStringClone string
+
+func init() {
+	executionLog := abaputils.PullEntity{
+		ToExecutionLog: abaputils.AbapLogs{
+			Results: []abaputils.LogResults{
+				{
+					Index:       "1",
+					Type:        "LogEntry",
+					Description: "S",
+					Timestamp:   "/Date(1644332299000+0000)/",
+				},
+			},
+		},
+	}
+	executionLogResponse, _ := json.Marshal(executionLog)
+	executionLogStringClone = string(executionLogResponse)
+}
 
 func TestCloneStep(t *testing.T) {
 	t.Run("Run Step - Successful", func(t *testing.T) {
@@ -61,18 +81,21 @@ repositories:
 		logResultSuccess := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
@@ -172,6 +195,7 @@ repositories:
 		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : ` + executionLogStringClone + `}`,
 				logResultError,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,

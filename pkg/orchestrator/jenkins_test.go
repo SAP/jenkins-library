@@ -3,15 +3,17 @@ package orchestrator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"net/http"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"net/http"
 )
 
 func TestJenkins(t *testing.T) {
@@ -29,6 +31,7 @@ func TestJenkins(t *testing.T) {
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.GetBuildURL())
 		assert.Equal(t, "main", p.GetBranch())
+		assert.Equal(t, "refs/heads/main", p.GetReference())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
 		assert.Equal(t, "Jenkins", p.OrchestratorType())
@@ -46,6 +49,7 @@ func TestJenkins(t *testing.T) {
 		c := p.GetPullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
+		assert.Equal(t, "refs/pull/42/head", p.GetReference())
 		assert.Equal(t, "feat/test-jenkins", c.Branch)
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
