@@ -43,6 +43,9 @@ spec:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins credentials ID containing the github token.
+        type: jenkins
     resources:
       - name: deployDescriptor
         type: stash
@@ -294,6 +297,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
       - name: image
         aliases:
           - name: deployImage
@@ -460,6 +481,41 @@ spec:
         possibleValues:
           - apply
           - replace
+      - name: setupScript
+        type: string
+        description: HTTP location of setup script
+        longDescription: |
+          For helm-based deploymens only!
+          HTTP location of setup script.
+          The script will be downloaded from a GitHub location using the `githubToken` and executed before the installation of the helm package.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: verificationScript
+        type: string
+        description: HTTP location of verification script
+        longDescription: |
+          For helm-based deploymens only!
+          HTTP location of verification script.
+          The script will be downloaded from a GitHub location using the `githubToken` and executed after installation of the helm package.
+          It can be used to verify if all required artifacts are ready before progressing with for example `helmTest` using the step option `runHelmTests: true`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: teardownScript
+        type: string
+        description: HTTP location of teardown script
+        longDescription: |
+          For helm-based deploymens only!
+          HTTP location of setup script.
+          The script will be downloaded from a GitHub location using the `githubToken` and executed at the end of the step.
+          This can for example be used in order to remove a temporary namespace which was created for the test.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.8.1
       workingDir: /config
