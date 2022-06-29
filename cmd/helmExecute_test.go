@@ -2,12 +2,33 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+type helmMockUtilsBundle struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+	*mock.HttpClientMock
+}
+
+func newHelmMockUtilsBundle() helmMockUtilsBundle {
+	utils := helmMockUtilsBundle{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+		HttpClientMock: &mock.HttpClientMock{
+			FileUploads: map[string]string{},
+		},
+	}
+	return utils
+}
 
 func TestRunHelmUpgrade(t *testing.T) {
 	t.Parallel()
@@ -326,4 +347,80 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		})
 	}
 
+}
+
+func TestGetAndRenderImageInfo(t *testing.T) {
+	commonPipelineEnvironment := "commonPipelineEnvironment"
+	valuesYaml := []byte(`
+image: "image_1"
+tag: {{ .CPE.artifactVersion }}
+`)
+	values1Yaml := []byte(`
+image: "image_2"
+tag: {{ .CPE.artVersion }}
+`)
+	values3Yaml := []byte(`
+image: "image_3"
+tag: {{ .CPE.artVersion
+`)
+
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "test-data-*")
+	require.NoError(t, err)
+	err = os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment), 0700)
+	require.NoError(t, err)
+	err = os.WriteFile(path.Join(tmpDir, commonPipelineEnvironment, "artifactVersion"), []byte("1.0.0-123456789"), 0700)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		os.RemoveAll(tmpDir)
+	})
+
+	config := helmExecuteOptions{
+		ChartPath: ".",
+	}
+
+	t.Run("'artifactVersion' file exists in CPE", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
+
+		err = getAndRenderImageInfo(config, tmpDir, utils)
+		assert.NoError(t, err)
+	})
+
+	t.Run("'artVersion' file does not exist in CPE", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), values1Yaml)
+
+		err = getAndRenderImageInfo(config, tmpDir, utils)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Wrong template {{ .CPE.artVersion", func(t *testing.T) {
+		utils := newHelmMockUtilsBundle()
+		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), values3Yaml)
+
+		err = getAndRenderImageInfo(config, tmpDir, utils)
+		assert.EqualError(t, err, "failed to parse template: template: new:4: unclosed action started at new:3")
+	})
+
+	t.Run("Multiple values files", func(t *testing.T) {
+		config.HelmValues = []string{"./values_1.yaml", "./values_2.yaml"}
+
+		utils := newHelmMockUtilsBundle()
+		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
+		utils.AddFile(config.HelmValues[0], valuesYaml)
+		utils.AddFile(config.HelmValues[1], valuesYaml)
+
+		err = getAndRenderImageInfo(config, tmpDir, utils)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Wrong path to values file", func(t *testing.T) {
+		config.HelmValues = []string{"wrong/path/to/values_1.yaml"}
+
+		utils := newHelmMockUtilsBundle()
+		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
+
+		err = getAndRenderImageInfo(config, tmpDir, utils)
+		assert.EqualError(t, err, "failed to read file: could not read 'wrong/path/to/values_1.yaml'")
+	})
 }
