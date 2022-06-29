@@ -1,6 +1,7 @@
 package abaputils
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,8 +16,22 @@ func TestPollEntity(t *testing.T) {
 	t.Run("Test poll entity - success case", func(t *testing.T) {
 
 		logResultSuccess := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+		executionLog := PullEntity{
+			ToExecutionLog: AbapLogs{
+				Results: []LogResults{
+					{
+						Index:       "1",
+						Type:        "LogEntry",
+						Description: "S",
+						Timestamp:   "/Date(1644332299000+0000)/",
+					},
+				},
+			},
+		}
+		executionLogResponse, _ := json.Marshal(executionLog)
 		client := &ClientMock{
 			BodyList: []string{
+				`{"d" : ` + string(executionLogResponse) + `}`,
 				logResultSuccess,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
@@ -53,8 +68,22 @@ func TestPollEntity(t *testing.T) {
 
 	t.Run("Test poll entity - error case", func(t *testing.T) {
 		logResultError := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+		executionLog := PullEntity{
+			ToExecutionLog: AbapLogs{
+				Results: []LogResults{
+					{
+						Index:       "1",
+						Type:        "LogEntry",
+						Description: "S",
+						Timestamp:   "/Date(1644332299000+0000)/",
+					},
+				},
+			},
+		}
+		executionLogResponse, _ := json.Marshal(executionLog)
 		client := &ClientMock{
 			BodyList: []string{
+				`{"d" : ` + string(executionLogResponse) + `}`,
 				logResultError,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
