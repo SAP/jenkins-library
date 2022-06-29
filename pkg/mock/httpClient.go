@@ -14,9 +14,10 @@ import (
 // HttpClientMock mock struct
 type HttpClientMock struct {
 	ClientOptions          []piperhttp.ClientOptions // set by mock
-	FileUploads            map[string]string         // set by mock
-	ReturnFileUploadStatus int                       // expected to be set upfront
-	ReturnFileUploadError  error                     // expected to be set upfront
+	HTTPFileUtils          *FilesMock
+	FileUploads            map[string]string // set by mock
+	ReturnFileUploadStatus int               // expected to be set upfront
+	ReturnFileUploadError  error             // expected to be set upfront
 }
 
 // SendRequest mock
@@ -52,5 +53,8 @@ func (utils *HttpClientMock) UploadFile(url, file, fieldName string, header http
 
 // DownloadFile mock
 func (utils *HttpClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
+	if utils.HTTPFileUtils != nil {
+		utils.HTTPFileUtils.AddFile(filename, []byte("some content"))
+	}
+	return nil
 }
