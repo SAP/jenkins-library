@@ -500,3 +500,73 @@ func TestJenkinsConfigProvider_InitOrchestratorProvider(t *testing.T) {
 		})
 	}
 }
+
+func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
+
+	changeSetTwo := []byte(`{
+"displayName": "#531",
+"duration": 424269,
+"changeSets": [
+        {
+            "_class": "hudson.plugins.git.GitChangeSetList",
+            "items": [
+                {
+                    "_class": "hudson.plugins.git.GitChangeSet",
+                    "commitId": "987654321",
+                    "timestamp": 1655057520000
+                },
+		{
+                    "_class": "hudson.plugins.git.GitChangeSet",
+                    "commitId": "123456789",
+                    "timestamp": 1656057520000
+                }
+            ],
+            "kind": "git"
+        }
+    ]
+				}`)
+	changeSetEmpty := []byte(`{
+"displayName": "#531",
+"duration": 424269,
+"changeSets": []
+}`)
+	changeSetNotAvailable := []byte(`{
+"displayName": "#531",
+"duration": 424269
+}`)
+	tests := []struct {
+		name          string
+		want          []ChangeSet
+		testChangeSet []byte
+	}{
+		{
+			name: "success",
+			want: []ChangeSet{
+				{CommitId: "987654321", timestamp: "1655057520000"},
+				{CommitId: "123456789", timestamp: "1656057520000"},
+			},
+			testChangeSet: changeSetTwo,
+		},
+		{
+			name:          "failure - changeSet empty",
+			want:          []ChangeSet{},
+			testChangeSet: changeSetEmpty,
+		},
+		{
+			name:          "failure - no changeSet found",
+			want:          []ChangeSet{},
+			testChangeSet: changeSetNotAvailable,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var apiInformation map[string]interface{}
+			err := json.Unmarshal(tt.testChangeSet, &apiInformation)
+			if err != nil {
+				t.Fatal("could not parse json:", err)
+			}
+			j := &JenkinsConfigProvider{apiInformation: apiInformation}
+			assert.Equalf(t, tt.want, j.GetChangeSet(), "GetChangeSet()")
+		})
+	}
+}

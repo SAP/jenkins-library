@@ -36,12 +36,18 @@ type OrchestratorSpecificConfigProviding interface {
 	GetPipelineStartTime() time.Time
 	GetBuildStatus() string
 	GetBuildReason() string
+	GetChangeSet() []ChangeSet
 }
 
 type PullRequestConfig struct {
 	Branch string
 	Base   string
 	Key    string
+}
+
+type ChangeSet struct {
+	CommitId  string
+	timestamp string
 }
 
 // OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
