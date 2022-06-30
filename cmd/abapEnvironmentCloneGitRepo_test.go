@@ -131,7 +131,7 @@ repositories:
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
 				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
-				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
 			},
