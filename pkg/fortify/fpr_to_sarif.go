@@ -1180,6 +1180,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 }
 
 func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+
 	// Set default values
 	ruleProp.Audited = false
 	ruleProp.FortifyCategory = "Unknown"
