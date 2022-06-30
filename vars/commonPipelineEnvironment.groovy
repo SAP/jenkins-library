@@ -85,6 +85,7 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties = [:]
 
         gitCommitId = null
+        gitHeadCommitId = null
         gitCommitMessage = null
         gitSshUrl = null
         gitHttpsUrl = null
