@@ -28,7 +28,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 			return status, err
 		}
 		status = pullEntity.Status
-		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
+		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
 			printTransportLogs := true
 			if serviceContainsNewLogEntities(connectionDetails, client) {
@@ -233,13 +233,13 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 	var abapResp map[string]*json.RawMessage
 	bodyText, _ := ioutil.ReadAll(resp.Body)
 
-	json.Unmarshal(bodyText, &abapResp)
-	if err != nil {
-		return body, resp.Status, errors.Wrap(err, "Could not read response")
+	marshallError := json.Unmarshal(bodyText, &abapResp)
+	if marshallError != nil {
+		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
-	json.Unmarshal(*abapResp["d"], &body)
-	if err != nil {
-		return body, resp.Status, errors.Wrap(err, "Could not read response")
+	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	if marshallError != nil {
+		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
 
 	if reflect.DeepEqual(PullEntity{}, body) {
