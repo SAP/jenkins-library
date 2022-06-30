@@ -200,6 +200,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/headCommitId', property: 'gitHeadCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/httpsUrl', property: 'gitHttpsUrl'],
         [filename: '.pipeline/commonPipelineEnvironment/git/ref', property: 'gitRef'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
