@@ -64,6 +64,7 @@ nav:
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
+        - abapEnvironmentCreateTag: steps/abapEnvironmentCreateTag.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentPushATCSystemConfig: steps/abapEnvironmentPushATCSystemConfig.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
@@ -71,9 +72,13 @@ nav:
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
         - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
+        - apiProxyList: steps/apiProxyList.md
         - apiProviderDownload: steps/apiProviderDownload.md
+        - apiProviderUpload: steps/apiProviderUpload.md
         - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
+        - awsS3Upload: steps/awsS3Upload.md
+        - azureBlobUpload: steps/azureBlobUpload.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
@@ -84,6 +89,7 @@ nav:
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - cnbBuild: steps/cnbBuild.md
+        - codeqlExecuteScan: steps/codeqlExecuteScan.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
@@ -112,6 +118,7 @@ nav:
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
+        - helmExecute: steps/helmExecute.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
@@ -159,9 +166,7 @@ nav:
         - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
-        - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
-        - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
         - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
@@ -175,6 +180,8 @@ nav:
         - artifactSetVersion: steps/artifactSetVersion.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - npmExecute: steps/npmExecute.md
+        - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
     - 'Command line tool': cli/index.md
@@ -199,7 +206,8 @@ markdown_extensions:
         permalink: true
     - footnotes
     - pymdownx.superfences
-    - pymdownx.tabbed
+    - pymdownx.tabbed:
+        alternate_style: true 
     - pymdownx.details
 extra_css:
     - 'css/extra.css'

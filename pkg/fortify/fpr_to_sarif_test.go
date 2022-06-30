@@ -385,7 +385,7 @@ If you are concerned about leaking system data via NFC on an Android device, you
 		assert.Equal(t, len(sarif.Runs[0].Results), 2)
 		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Unknown")
-		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state")
+		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state: no sys instance")
 	})
 }
 
@@ -441,7 +441,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
 		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, filterSet, false)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, filterSet, false, 5)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, ruleProp.Audited, true)
 		assert.Equal(t, ruleProp.ToolState, "Exploitable")
@@ -456,7 +456,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		projectVersion := models.ProjectVersion{ID: 11037}
 		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, nil, &projectVersion, auditData, filterSet, false)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, nil, &projectVersion, auditData, filterSet, false, 5)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 
@@ -464,7 +464,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		auditData, _ := sys.GetAllIssueDetails(11037)
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, nil, auditData, filterSet, false)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, nil, auditData, filterSet, false, 5)
 		assert.Error(t, err, "project or projectVersion is undefined: lookup aborted for 11037")
 	})
 
@@ -473,7 +473,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
 		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", nil, &project, &projectVersion, auditData, filterSet, false)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", nil, &project, &projectVersion, auditData, filterSet, false, 5)
 		assert.Error(t, err, "no system instance, lookup impossible for DUMMYDUMMYDUMMY")
 	})
 
@@ -482,7 +482,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
 		auditData, _ := sys.GetAllIssueDetails(projectVersion.ID)
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, nil, false)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, nil, false, 5)
 		assert.Error(t, err, "no filter set defined, category will be missing from 11037")
 	})
 
@@ -490,7 +490,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, false)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, false, 5)
 		assert.Error(t, err, "not exactly 1 issue found for instance ID 11037, found 0")
 	})
 
@@ -498,7 +498,7 @@ func TestIntegrateAuditData(t *testing.T) {
 		ruleProp := *new(format.SarifProperties)
 		project := models.Project{}
 		projectVersion := models.ProjectVersion{ID: 11037}
-		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, true)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, nil, filterSet, true, 5)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, ruleProp.Audited, true)
 		assert.Equal(t, ruleProp.ToolState, "Exploitable")
@@ -509,4 +509,21 @@ func TestIntegrateAuditData(t *testing.T) {
 		assert.Equal(t, ruleProp.FortifyCategory, "Audit All")
 	})
 
+	t.Run("Max retries set to 0: error raised", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		auditData, _ := sys.GetAllIssueDetails(11037)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, filterSet, false, 0)
+		assert.Error(t, err, "request failed: maximum number of retries reached, placeholder values will be set from now on for audit data")
+	})
+
+	t.Run("Max retries set to -1: fail silently", func(t *testing.T) {
+		ruleProp := *new(format.SarifProperties)
+		project := models.Project{}
+		projectVersion := models.ProjectVersion{ID: 11037}
+		auditData, _ := sys.GetAllIssueDetails(11037)
+		err := integrateAuditData(&ruleProp, "DUMMYDUMMYDUMMY", sys, &project, &projectVersion, auditData, filterSet, false, -1)
+		assert.NoError(t, err)
+	})
 }

@@ -190,7 +190,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	for _, platform := range platforms {
-		binaryNames, err := runGolangBuildPerArchitecture(config, utils, ldflags, platform)
+		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
 
 		if err != nil {
 			return err
@@ -259,7 +259,9 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 		utils.SetOptions(repoClientOptions)
 
+		var binaryArtifacts piperenv.Artifacts
 		for _, binary := range binaries {
+
 			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
 
 			separator := "/"
@@ -281,7 +283,13 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			if !(response.StatusCode == 200 || response.StatusCode == 201) {
 				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 			}
+
+			binaryArtifacts = append(binaryArtifacts, piperenv.Artifact{
+				Name: binary,
+			})
 		}
+		commonPipelineEnvironment.custom.artifacts = binaryArtifacts
+
 	}
 
 	return nil
@@ -424,7 +432,7 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	return generatedLdflags.String(), nil
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
 	var binaryNames []string
 
 	envVars := os.Environ()
@@ -455,6 +463,10 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 			buildOptions = append(buildOptions, "-o", binaryName)
 			binaryNames = append(binaryNames, binaryName)
 		}
+	} else {
+		// use default name in case no name is defined via Output
+		binaryName := path.Base(goModFile.Module.Mod.Path)
+		binaryNames = append(binaryNames, binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
 	if len(ldflags) > 0 {

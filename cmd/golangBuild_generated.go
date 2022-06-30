@@ -50,6 +50,7 @@ type golangBuildOptions struct {
 type golangBuildCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		artifacts         piperenv.Artifacts
 	}
 }
 
@@ -60,6 +61,7 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 	}
 
 	errCount := 0
@@ -164,6 +166,10 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
@@ -526,6 +532,7 @@ func golangBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
 					{

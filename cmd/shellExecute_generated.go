@@ -16,8 +16,9 @@ import (
 )
 
 type shellExecuteOptions struct {
-	Sources     []string `json:"sources,omitempty"`
-	GithubToken string   `json:"githubToken,omitempty"`
+	Sources         []string `json:"sources,omitempty"`
+	GithubToken     string   `json:"githubToken,omitempty"`
+	ScriptArguments []string `json:"scriptArguments,omitempty"`
 }
 
 // ShellExecuteCommand Step executes defined script
@@ -62,6 +63,10 @@ func ShellExecuteCommand() *cobra.Command {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
@@ -112,6 +117,7 @@ func ShellExecuteCommand() *cobra.Command {
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts paths that must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the 'githubToken' param. Make sure the script has the necessary execute permissions.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringSliceVar(&stepConfig.ScriptArguments, "scriptArguments", []string{}, "scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param. For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list")
 
 }
 
@@ -157,6 +163,15 @@ func shellExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
+						Name:        "scriptArguments",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

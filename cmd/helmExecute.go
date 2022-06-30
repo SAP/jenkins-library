@@ -11,12 +11,15 @@ import (
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
 	helmConfig := kubernetes.HelmExecuteOptions{
+		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
 		Image:                     config.Image,
 		Namespace:                 config.Namespace,
 		KubeContext:               config.KubeContext,
+		KeepFailedDeployments:     config.KeepFailedDeployments,
 		KubeConfig:                config.KubeConfig,
 		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
+		DockerConfigJSON:          config.DockerConfigJSON,
 		AppVersion:                config.AppVersion,
 		Dependency:                config.Dependency,
 		PackageDependencyUpdate:   config.PackageDependencyUpdate,
@@ -29,8 +32,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		TargetRepositoryPassword:  config.TargetRepositoryPassword,
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
-		// ArtifactVersion:           config.Version,
-		Version: config.Version,
+		Version:                   config.Version,
+		PublishVersion:            config.Version,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
@@ -47,8 +50,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 
 	helmConfig.DeploymentName = artifactInfo.ArtifactID
 
-	if len(config.Version) == 0 {
-		helmConfig.Version = artifactInfo.Version
+	if len(helmConfig.PublishVersion) == 0 {
+		helmConfig.PublishVersion = artifactInfo.Version
 	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
