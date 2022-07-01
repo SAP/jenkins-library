@@ -474,7 +474,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 			}
 		}
 	}
-	
+
 	handleAuthentication(request, c.username, c.password, c.token)
 
 	for _, cookie := range cookies {
