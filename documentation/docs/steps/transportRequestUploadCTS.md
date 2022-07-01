@@ -143,15 +143,13 @@ transportRequestUploadCTS( script: this, ... )
 
 The step can also be configured via General purpose pipeline in Release stage using config.yml. The configuration will look as below:
 
-```yaml
+```groovy
 stages:
   Release:
     transportRequestUploadCTS: true
 ```
 
 This will initialize the step within the Release stage of pipeline and will upload the desired application (SAPUI5/OPENUI5) to the SAPUI5 ABAP repository.
-
-
 
 
 ## ${docGenParameters}
