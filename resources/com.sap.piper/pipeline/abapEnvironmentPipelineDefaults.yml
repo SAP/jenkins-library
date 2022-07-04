@@ -57,3 +57,9 @@ stages:
   Post:
     ordinal: 100
     cfDeleteServiceKeys: true
+
+steps:
+  abapEnvironmentCreateTag:
+    cfServiceKeyName: 'sap_com_0510'
+    generateTagForAddonProductVersion: true
+    generateTagForAddonComponentVersion: true
