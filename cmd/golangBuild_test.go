@@ -628,7 +628,7 @@ func TestPrepareLdflags(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		result, err := prepareLdflags(&config, utils, dir)
 		assert.NoError(t, err)
-		assert.Equal(t, "-X version=1.2.3", result)
+		assert.Equal(t, "-X version=1.2.3", (*result).String())
 	})
 
 	t.Run("error - template parsing", func(t *testing.T) {
