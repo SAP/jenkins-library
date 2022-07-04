@@ -57,4 +57,5 @@ void call(Map parameters = [:]) {
         } catch (e) {
             echo 'Tag creation failed: ' + e.message
         }
+    }
 }
