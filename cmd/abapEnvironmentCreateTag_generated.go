@@ -203,7 +203,7 @@ func abapEnvironmentCreateTagMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "addonDescriptorFileName"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_repositories"),
 					},
 					{
