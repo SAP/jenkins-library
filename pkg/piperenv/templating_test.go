@@ -29,7 +29,7 @@ func TestParseTemplate(t *testing.T) {
 			assert.Contains(t, fmt.Sprint(err), fmt.Sprint(test.expectedError))
 		} else {
 			assert.NoError(t, err)
-			assert.Equal(t, test.expected, res)
+			assert.Equal(t, test.expected, (*res).String())
 		}
 
 	}

@@ -173,11 +173,11 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	ldflags := ""
 
 	if len(config.LdflagsTemplate) > 0 {
-		var err error
-		ldflags, err = prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
+		ldf, err := prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
+		ldflags = (*ldf).String()
 		log.Entry().Infof("ldflags from template: '%v'", ldflags)
 	}
 
@@ -404,7 +404,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (string, error) {
+func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (*bytes.Buffer, error) {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(envRootPath, "commonPipelineEnvironment"))
 	if err != nil {
