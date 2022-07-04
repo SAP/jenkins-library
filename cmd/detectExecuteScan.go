@@ -459,6 +459,9 @@ func isActiveVulnerability(v bd.Vulnerability) bool {
 }
 
 func isMajorVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.Severity {
 	case "CRITICAL":
 		return true
