@@ -53,6 +53,8 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        aliases:
+          - name: addonDescriptorFileName
       - name: repositoryName
         type: string
         description: Specifies a repository (Software Components) on the SAP BTP ABAP Environment system

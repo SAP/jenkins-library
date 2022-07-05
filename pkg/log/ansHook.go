@@ -52,7 +52,7 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 
 	event.EventTimestamp = entry.Time.Unix()
 	if event.Subject == "" {
-		event.Subject = fmt.Sprintf("Pipeline step '%s' sends '%s'", stepName, event.Severity)
+		event.Subject = fmt.Sprintf("Step '%s' sends '%s'", stepName, event.Severity)
 	}
 	event.Body = entry.Message
 	event.Tags["cicd:logLevel"] = logLevel.String()
