@@ -111,7 +111,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 			for i := range builds {
 				if err := builds[i].build.Get(); err != nil {
 					return err
-				} 
+				}
 				if !builds[i].build.IsFinished() {
 					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollInterval)
 					allFinished = false
