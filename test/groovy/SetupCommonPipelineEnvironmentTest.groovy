@@ -1,5 +1,6 @@
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.Utils
+import com.sap.piper.GitUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
