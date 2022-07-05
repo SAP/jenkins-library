@@ -298,6 +298,13 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void "Set scmInfo parameter sets commit id"() {
+
+        def GitUtils gitUtils = new GitUtils() {
+            boolean isMergeCommit(String gitCommitId){
+                return false
+            }
+        }
+
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
         })
@@ -310,6 +317,13 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void "Set scmInfo parameter sets git reference for branch"() {
+
+        def GitUtils gitUtils = new GitUtils() {
+            boolean isMergeCommit(String gitCommitId){
+                return false
+            }
+        }
+
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
         })
