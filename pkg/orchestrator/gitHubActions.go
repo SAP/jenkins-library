@@ -37,6 +37,11 @@ func (g *GitHubActionsConfigProvider) GetBuildID() string {
 	return "n/a"
 }
 
+func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
+	log.Entry().Warn("GetChangeSet for GitHubActions not yet implemented")
+	return []ChangeSet{}
+}
+
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
 	return time.Time{}.UTC()
