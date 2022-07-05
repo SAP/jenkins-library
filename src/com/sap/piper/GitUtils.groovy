@@ -4,6 +4,45 @@ boolean insideWorkTree() {
     return sh(returnStatus: true, script: 'git rev-parse --is-inside-work-tree 1>/dev/null 2>&1') == 0
 }
 
+boolean isMergeCommit(String gitCommitId){
+    def cmd = 'git rev-parse --verify '+gitCommitId+'^2'
+    return sh(returnStatus: true, script: cmd) == 0
+}
+
+String getGitMergeCommitId(String gitChangeId){
+    if(!scm){
+        throw new Exception('scm content not found')
+    }
+
+    def remoteConfig = scm.getUserRemoteConfigs()
+    echo "scm ${remoteConfig[0]}"
+    if(!remoteConfig || remoteConfig.size() == 0 || !remoteConfig[0].getCredentialsId()){
+        throw new Exception('scm remote configuration not found')
+    }
+
+
+    def scmCredId = remoteConfig[0].getCredentialsId()
+    try{
+        withCredentials([gitUsernamePassword(credentialsId: scmCredId, gitToolName: 'git-tool')]) {
+            sh 'git fetch origin "+refs/pull/'+gitChangeId+'/*:refs/remotes/origin/pull/'+gitChangeId+'/*"'
+        }
+    } catch (Exception e) {
+        echo 'Error in running git fetch'
+        throw e
+    }
+
+    String commitId
+    def cmd = "git rev-parse refs/remotes/origin/pull/"+gitChangeId+"/merge"
+    try {
+        commitId = sh(returnStdout: true, script: cmd).trim()
+    } catch (Exception e) {
+        echo 'Exception occurred getting the git merge commitId'
+        throw e
+    }
+
+    return commitId
+}
+
 boolean isWorkTreeDirty() {
 
     if(!insideWorkTree()) error 'Method \'isWorkTreeClean\' called outside a git work tree.'
