@@ -206,7 +206,8 @@ markdown_extensions:
         permalink: true
     - footnotes
     - pymdownx.superfences
-    - pymdownx.tabbed
+    - pymdownx.tabbed:
+        alternate_style: true 
     - pymdownx.details
 extra_css:
     - 'css/extra.css'
