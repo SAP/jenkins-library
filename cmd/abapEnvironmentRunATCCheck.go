@@ -74,8 +74,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 
 func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
 	var err error
-	var abapEndpoint string
-	abapEndpoint = details.URL
+	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
 	location, err = pollATCRun(details, nil, client)
@@ -159,8 +158,10 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 		if err != nil {
 			return atcConfig, err
 		}
-		json.Unmarshal(atcConfigFile, &atcConfig)
-		return atcConfig, err
+		if err := json.Unmarshal(atcConfigFile, &atcConfig); err != nil {
+			return atcConfig, err
+		}
+		return atcConfig, nil
 
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
@@ -205,7 +206,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
+func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML bool) error {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -217,12 +218,14 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 	}
 
 	parsedXML := new(Result)
-	xml.Unmarshal([]byte(body), &parsedXML)
+	if err := xml.Unmarshal([]byte(body), &parsedXML); err != nil {
+		return err
+	}
 	if len(parsedXML.Files) == 0 {
 		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
 	}
 
-	err = ioutil.WriteFile(atcResultFileName, body, 0644)
+	err := ioutil.WriteFile(atcResultFileName, body, 0644)
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
@@ -232,7 +235,7 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
-		if generateHTML == true {
+		if generateHTML {
 			htmlString := generateHTMLDocument(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			atcResultHTMLFileName := strings.Trim(atcResultFileName, ".xml") + ".html"
@@ -260,7 +263,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	logResponseBody(resp)
+	_ = logResponseBody(resp)
 	if err != nil || (resp != nil && resp.StatusCode == 400) { //send request does not seem to produce error with StatusCode 400!!!
 		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
@@ -319,7 +322,9 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 		}
 
 		x := new(Run)
-		xml.Unmarshal(bodyText, &x)
+		if err := xml.Unmarshal(bodyText, &x); err != nil {
+			return "", err
+		}
 		log.Entry().WithField("StatusCode", resp.StatusCode).Info("Status: " + x.Status)
 
 		if x.Status == "Not Created" {
