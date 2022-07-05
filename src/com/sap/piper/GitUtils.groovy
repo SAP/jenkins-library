@@ -15,7 +15,6 @@ String getGitMergeCommitId(String gitChangeId){
     }
 
     def remoteConfig = scm.getUserRemoteConfigs()
-    echo "scm ${remoteConfig[0]}"
     if(!remoteConfig || remoteConfig.size() == 0 || !remoteConfig[0].getCredentialsId()){
         throw new Exception('scm remote configuration not found')
     }
