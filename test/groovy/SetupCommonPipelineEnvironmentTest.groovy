@@ -311,7 +311,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_URL: 'https://github.com/testOrg/testRepo.git']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitCommitId, is('dummy_git_commit_id'))
     }
 
@@ -330,7 +330,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'origin/testbranch']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/heads/testbranch'))
     }
 
@@ -353,7 +353,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'PR-42']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/pull/42/head'))
         assertThat(nullScript.commonPipelineEnvironment.gitRemoteCommitId, is('dummy_git_commit_id'))
         assertThat(nullScript.commonPipelineEnvironment.gitCommitId, is('dummy_git_commit_id'))
