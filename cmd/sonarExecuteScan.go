@@ -53,7 +53,6 @@ var (
 )
 
 const (
-	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
 	javaBinaries        = "sonar.java.binaries="
 	javaLibraries       = "sonar.java.libraries="
 	coverageExclusions  = "sonar.coverage.exclusions="

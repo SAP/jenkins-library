@@ -206,6 +206,9 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPubl
 		MediaType: mediaType,
 	}
 	file, err := os.Open(config.AssetPath)
+	if err != nil {
+		return fmt.Errorf("failed to open release asset %v: %w", config.AssetPath, err)
+	}
 	defer file.Close()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to load release asset '%v'", config.AssetPath)

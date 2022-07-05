@@ -440,7 +440,7 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 }
 
 func copyFileFromHomeToPwd(xsSessionFile string, fileUtils piperutils.FileUtils) error {
-	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), fmt.Sprintf("%s", xsSessionFile)
+	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), xsSessionFile
 	log.Entry().Debugf("Copying xs session file from home directory ('%s') to workspace ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from home directory ('%s') to workspace ('%s')", src, dest)
@@ -458,7 +458,7 @@ func copyFileFromPwdToHome(xsSessionFile string, fileUtils piperutils.FileUtils)
 	// affects also other builds.
 	//
 
-	src, dest := fmt.Sprintf("%s", xsSessionFile), fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
+	src, dest := xsSessionFile, fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from workspace ('%s') to home directory ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from workspace ('%s') to home directory ('%s')", src, dest)

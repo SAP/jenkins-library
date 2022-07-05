@@ -61,14 +61,16 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 func TestGetGitRepoInfo(t *testing.T) {
 	t.Run("Valid URL1", func(t *testing.T) {
 		var repoInfo RepoInfo
-		getGitRepoInfo("https://github.hello.test/Testing/fortify.git", &repoInfo)
+		err := getGitRepoInfo("https://github.hello.test/Testing/fortify.git", &repoInfo)
+		assert.NoError(t, err)
 		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
 		assert.Equal(t, "Testing/fortify", repoInfo.repo)
 	})
 
 	t.Run("Valid URL2", func(t *testing.T) {
 		var repoInfo RepoInfo
-		getGitRepoInfo("https://github.hello.test/Testing/fortify", &repoInfo)
+		err := getGitRepoInfo("https://github.hello.test/Testing/fortify", &repoInfo)
+		assert.NoError(t, err)
 		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
 		assert.Equal(t, "Testing/fortify", repoInfo.repo)
 	})

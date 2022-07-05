@@ -346,7 +346,7 @@ bar: 42
 		stepConfig["foo"] = "entry"
 
 		// Test
-		stepConfig = checkTypes(stepConfig, options)
+		_ = checkTypes(stepConfig, options)
 
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")

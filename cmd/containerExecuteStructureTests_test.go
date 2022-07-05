@@ -12,8 +12,6 @@ import (
 
 type containerStructureTestsMockUtils struct {
 	shouldFail     bool
-	requestedUrls  []string
-	requestedFiles []string
 	*mock.FilesMock
 	*mock.ExecMockRunner
 }

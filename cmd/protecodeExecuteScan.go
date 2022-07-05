@@ -383,13 +383,6 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 	return productID
 }
 
-func hasExisting(productID int, verifyOnly bool) bool {
-	if (productID > 0) || verifyOnly {
-		return true
-	}
-	return false
-}
-
 func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 	path := config.DockerConfigJSON
 	if len(path) > 0 {

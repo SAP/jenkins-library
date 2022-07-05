@@ -10,8 +10,6 @@ import (
 
 type mavenMockUtils struct {
 	shouldFail     bool
-	requestedUrls  []string
-	requestedFiles []string
 	*mock.FilesMock
 	*mock.ExecMockRunner
 }

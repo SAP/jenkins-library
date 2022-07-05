@@ -796,7 +796,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 // persistScannedProjects writes all actually scanned WhiteSource project names as list
 // into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
 func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
-	projectNames := []string{}
+	var projectNames []string
 	if config.ProjectName != "" {
 		projectNames = []string{config.ProjectName + " - " + config.Version}
 	} else {

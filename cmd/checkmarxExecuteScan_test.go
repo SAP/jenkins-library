@@ -99,7 +99,7 @@ func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) (ch
 }
 func (sys *systemMock) FilterTeamByID(_ []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
 	teamIDBytes, _ := teamID.MarshalJSON()
-	if bytes.Compare(teamIDBytes, []byte(`"16"`)) == 0 {
+	if bytes.Equal(teamIDBytes, []byte(`"16"`)) {
 		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 	}
 	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
@@ -247,7 +247,6 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnWriteFile      bool
 	errorOnPathMatch      bool
 	workspace             string
-	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
 	ghCreateIssueError    error
 }
 
@@ -298,7 +297,6 @@ func (c checkmarxExecuteScanUtilsMock) CreateIssue(ghCreateIssueOptions *piperGi
 	if c.ghCreateIssueError != nil {
 		return c.ghCreateIssueError
 	}
-	c.ghCreateIssueOptions = ghCreateIssueOptions
 	return nil
 }
 
