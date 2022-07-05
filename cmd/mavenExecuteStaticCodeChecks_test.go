@@ -46,8 +46,8 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		if err != nil {
 			t.Fatal("Could not get current working directory")
 		}
-		defer os.Chdir(currentDir)
-		os.Chdir("../test/resources/maven/")
+		defer func(){_ = os.Chdir(currentDir)}()
+		_ = os.Chdir("../test/resources/maven/")
 
 		err = runMavenStaticCodeChecks(&config, nil, utils)
 

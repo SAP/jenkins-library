@@ -108,7 +108,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		return err
 	}
 
-	defer utils.FileRemove(config.FilePath)
+	defer func(){_ = utils.FileRemove(config.FilePath)}()
 
 	if err := utils.RemoveAll(cachePath); err != nil {
 		log.Entry().Warnf("Error during cleanup folder %v", err)
@@ -129,7 +129,7 @@ func handleArtifactVersion(artifactVersion string) string {
 }
 
 func getDockerImage(utils protecodeUtils, config *protecodeExecuteScanOptions, cachePath string) (string, string, error) {
-	m := regexp.MustCompile("[\\s@:/]")
+	m := regexp.MustCompile(`[\\s@:/]`)
 
 	tarFileName := fmt.Sprintf("%s.tar", m.ReplaceAllString(config.ScanImage, "-"))
 	tarFilePath, err := filepath.Abs(filepath.Join(cachePath, tarFileName))
@@ -150,7 +150,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 
 	log.Entry().Debugf("[DEBUG] ===> Load existing product Group:%v, VerifyOnly:%v, Filename:%v, replaceProductId:%v", config.Group, config.VerifyOnly, fileName, config.ReplaceProductID)
 
-	productID := -1
+	var productID int
 
 	// If replaceProductId is not provided then switch to automatic existing product detection
 	if config.ReplaceProductID > 0 {
@@ -196,7 +196,9 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	result := client.PollForResult(productID, config.TimeoutMinutes)
 	// write results to file
 	jsonData, _ := json.Marshal(result)
-	utils.FileWrite(filepath.Join(reportPath, scanResultFile), jsonData, 0644)
+	if err := utils.FileWrite(filepath.Join(reportPath, scanResultFile), jsonData, 0644); err != nil {
+		log.Entry().Warningf("failed to write result file: %v", err)
+	}
 
 	//check if result is ok else notify
 	if protecode.HasFailed(result) {

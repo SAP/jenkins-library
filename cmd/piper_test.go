@@ -216,7 +216,9 @@ func TestGetProjectConfigFile(t *testing.T) {
 			}
 
 			for _, file := range test.filesAvailable {
-				ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700)
+				if err := ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
+					t.Fail()
+				}
 			}
 
 			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))

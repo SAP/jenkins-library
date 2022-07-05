@@ -147,7 +147,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	var outputBytes []byte
 	for _, currentFile := range allFiles {
 		if config.Tool == toolKubectl {
-			outputBytes, err = executeKubectl(config, command, outputBytes, currentFile)
+			outputBytes, err = executeKubectl(config, command, currentFile)
 			if err != nil {
 				return errors.Wrap(err, "error on kubectl execution")
 			}
@@ -168,11 +168,6 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 				return errors.Wrap(err, "failed to apply kustomize command")
 			}
 			outputBytes = nil
-		} else if config.Tool == toolKustomize {
-			outputBytes, err = runKustomizeCommand(command, config, filePath)
-			if err != nil {
-				return errors.Wrap(err, "failed to apply kustomize command")
-			}
 		} else {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.New("tool " + config.Tool + " is not supported")
@@ -310,7 +305,8 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 	return nil
 }
 
-func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, outputBytes []byte, filePath string) ([]byte, error) {
+func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, filePath string) ([]byte, error) {
+	var  outputBytes []byte
 	registryImage, err := buildRegistryPlusImage(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to apply kubectl command")

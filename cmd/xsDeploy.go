@@ -177,7 +177,9 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	go func() {
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prOut, os.Stderr)
-		io.Copy(buf, r)
+		if _, err := io.Copy(buf, r); err != nil {
+			log.Entry().Warningf("failed to copy buffer")
+		}
 		o = buf.String()
 		wg.Done()
 	}()
@@ -185,7 +187,9 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	go func() {
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prErr, os.Stderr)
-		io.Copy(buf, r)
+		if _, err := io.Copy(buf, r); err != nil {
+			log.Entry().Warningf("failed to copy buffer")
+		}
 		e = buf.String()
 		wg.Done()
 	}()
@@ -431,7 +435,9 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 	}
 
 	var script bytes.Buffer
-	tmpl.Execute(&script, properties)
+	if err := tmpl.Execute(&script, properties); err != nil {
+		return err
+	}
 	if e := s.RunShell("/bin/bash", script.String()); e != nil {
 		return e
 	}

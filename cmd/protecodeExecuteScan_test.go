@@ -43,7 +43,7 @@ func TestRunProtecodeScan(t *testing.T) {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
 
-			json.NewEncoder(&b).Encode(response)
+			_ = json.NewEncoder(&b).Encode(response)
 
 		} else if requestURI == "/api/fetch/" {
 			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
@@ -52,7 +52,7 @@ func TestRunProtecodeScan(t *testing.T) {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
 
-			json.NewEncoder(&b).Encode(response)
+			_ = json.NewEncoder(&b).Encode(response)
 
 		} else if requestURI == "/api/product/4486/pdf-report" {
 
@@ -60,14 +60,18 @@ func TestRunProtecodeScan(t *testing.T) {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
 
 			var b bytes.Buffer
-			json.NewEncoder(&b).Encode(&response)
-			rw.Write([]byte(b.Bytes()))
+			_ = json.NewEncoder(&b).Encode(&response)
+			if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+				t.Fail()
+			}
 		} else {
 			response := protecode.Result{ProductID: 4486, ReportURL: requestURI}
-			json.NewEncoder(&b).Encode(&response)
+			_ = json.NewEncoder(&b).Encode(&response)
 		}
 
-		rw.Write([]byte(b.Bytes()))
+		if _, err :=  rw.Write([]byte(b.Bytes())); err != nil{
+			t.Fail()
+		}
 	}))
 
 	// Close the server when test finishes
@@ -209,15 +213,19 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		if requestURI == "/api/fetch/" {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			var b bytes.Buffer
-			json.NewEncoder(&b).Encode(&response)
-			rw.Write([]byte(b.Bytes()))
+			_ = json.NewEncoder(&b).Encode(&response)
+			if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+				t.Fail()
+			}
 		}
 		if requestURI == fmt.Sprintf("/api/upload/%v", fileName) || requestURI == fmt.Sprintf("/api/upload/PR_4711_%v", fileName) {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 
 			var b bytes.Buffer
-			json.NewEncoder(&b).Encode(&response)
-			rw.Write([]byte(b.Bytes()))
+			_ = json.NewEncoder(&b).Encode(&response)
+			if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+				t.Fail()
+			}
 		}
 	}))
 
@@ -282,16 +290,18 @@ func TestExecuteProtecodeScan(t *testing.T) {
 			response := protecode.ResultData{}
 			err = json.Unmarshal(byteContent, &response)
 
-			json.NewEncoder(&b).Encode(response)
+			_ = json.NewEncoder(&b).Encode(response)
 
 		} else if requestURI == "/api/product/4711/pdf-report" {
 
 		} else {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
-			json.NewEncoder(&b).Encode(&response)
+			_ = json.NewEncoder(&b).Encode(&response)
 		}
 
-		rw.Write([]byte(b.Bytes()))
+		if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+			t.Fail()
+		}
 	}))
 
 	// Close the server when test finishes
@@ -343,7 +353,9 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		defer os.RemoveAll(testDirectory)
 
 		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
-		os.Mkdir(dockerConfigDir, 0755)
+		if err := os.Mkdir(dockerConfigDir, 0755); err != nil{
+			t.Fail()
+		}
 		require.DirExists(t, dockerConfigDir)
 
 		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")

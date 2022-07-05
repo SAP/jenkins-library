@@ -6,22 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type integrationArtifactDownloadMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newIntegrationArtifactDownloadTestsUtils() integrationArtifactDownloadMockUtils {
-	utils := integrationArtifactDownloadMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunIntegrationArtifactDownload(t *testing.T) {
 	t.Parallel()
