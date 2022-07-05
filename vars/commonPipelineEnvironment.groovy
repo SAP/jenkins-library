@@ -30,6 +30,7 @@ class commonPipelineEnvironment implements Serializable {
     String gitSshUrl
     String gitHttpsUrl
     String gitBranch
+    String gitRef
 
     String xsDeploymentId
 
@@ -88,6 +89,7 @@ class commonPipelineEnvironment implements Serializable {
         gitSshUrl = null
         gitHttpsUrl = null
         gitBranch = null
+        gitRef = null
 
         githubOrg = null
         githubRepo = null
@@ -199,6 +201,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/httpsUrl', property: 'gitHttpsUrl'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/ref', property: 'gitRef'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],

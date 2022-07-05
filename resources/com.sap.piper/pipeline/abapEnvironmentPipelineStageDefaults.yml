@@ -22,6 +22,7 @@ stages:
   'ATC':
     ordinal: 40
     cfServiceKeyName: 'sap_com_0510'
+    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
 
   'AUnit':
     ordinal: 50
@@ -44,6 +45,7 @@ stages:
     includeAddon: 'true'
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
+    cfDeleteServiceKeys: true
 
   Confirm:
     ordinal: 80

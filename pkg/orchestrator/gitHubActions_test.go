@@ -24,6 +24,7 @@ func TestGitHubActions(t *testing.T) {
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "github.com/foo/bar/actions/runs/42", p.GetBuildURL())
 		assert.Equal(t, "feat/test-gh-actions", p.GetBranch())
+		assert.Equal(t, "refs/heads/feat/test-gh-actions", p.GetReference())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
 		assert.Equal(t, "GitHubActions", p.OrchestratorType())

@@ -1,8 +1,9 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type UnknownOrchestratorConfigProvider struct{}
@@ -22,6 +23,11 @@ func (u *UnknownOrchestratorConfigProvider) OrchestratorVersion() string {
 func (u *UnknownOrchestratorConfigProvider) GetBuildStatus() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "FAILURE"
+}
+
+func (u *UnknownOrchestratorConfigProvider) GetChangeSet() []ChangeSet {
+	log.Entry().Infof("Unknown orchestrator - returning default values.")
+	return []ChangeSet{}
 }
 
 // GetBuildReason returns n/a for the unknownOrchestrator
@@ -68,6 +74,12 @@ func (u *UnknownOrchestratorConfigProvider) GetStageName() string {
 
 // GetBranch returns n/a for the unknownOrchestrator
 func (u *UnknownOrchestratorConfigProvider) GetBranch() string {
+	log.Entry().Warning("Unknown orchestrator - returning default values.")
+	return "n/a"
+}
+
+// GetReference returns n/a for the unknownOrchestrator
+func (u *UnknownOrchestratorConfigProvider) GetReference() string {
 	log.Entry().Warning("Unknown orchestrator - returning default values.")
 	return "n/a"
 }

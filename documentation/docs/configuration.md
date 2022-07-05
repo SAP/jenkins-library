@@ -62,6 +62,110 @@ steps:
     newmanGlobals: 'myNewmanGlobals'
 ```
 
+## Sending log data to the SAP Alert Notification service for SAP BTP
+
+The SAP Alert Notification service for SAP BTP allows users to define
+certain delivery channels, for example, e-mail or triggering of HTTP
+requests, to receive notifications from pipeline events. If the alert
+notification service service-key is properly configured in "Piper", any "Piper"
+step implemented in golang will send log data to the alert notification
+service backend for log levels higher than warnings, i.e. warnings, error,
+fatal and panic.
+
+The SAP Alert Notification service event properties are defined depending on the
+log entry content as follows:
+
+- `eventType`: the type of event type (defaults to 'Piper', but can be
+  overwritten with the event template)
+- `eventTimestamp`: the time of the log entry
+- `severity` and `category`: the event severity and the event category
+  depends on the log level:
+
+  | log level | severity | category |
+  |-----------|----------|----------|
+  | info | INFO | NOTICE |
+  | debug | INFO | NOTICE |
+  | warn | WARNING | ALERT |
+  | error | ERROR | EXCEPTION |
+  | fatal | FATAL | EXCEPTION |
+  | panic | FATAL | EXCEPTION |
+
+- `subject`: short description of the event (defaults to the step name, but
+  can be overwritten with the event template)
+- `body`: the log message
+- `priority`: (optional) an integer number in the range [1:1000] (not set by
+  "Piper", but can be set with the event template)
+- `tags`: optional key-value pairs. The following are set by "Piper":
+
+  - `ans:correlationId`: a unique correlation ID of the pipeline run
+    (defaults to the URL of that pipeline run, but can be overwritten with the
+    event template)
+  - `ans:sourceEventId`: also set to the "Piper" correlation ID (can also be
+    overwritten with the event template)
+  - `cicd:stepName`: the "Piper" step name
+  - `cicd:logLevel`: the "Piper" log level
+  - `cicd:errorCategory`: the "Piper" error category, if available
+
+- `resource`: the following default properties are set by "Piper":
+
+  - `resourceType`: resource type identifier (defaults to 'Pipeline', but
+    can be overwritten with the event template)
+  - `resourceName`: unique resource name (defaults to 'Pipeline', can be
+    overwritten with the event template)
+  - `resourceInstance`: (optional) resource instance identifier (not set by
+    "Piper", can be set with the event template)
+  - `tags`: optional key-value pairs.
+
+The following event properties cannot be set and are instead set by the SAP
+Alert Notification service:
+`region`, `regionType`, `resource.globalAccount`, `resource.subAccount` and
+`resource.resourceGroup`
+
+For more information and an example of the structure of an alert
+notification service event, see
+[SAP Alert Notification Service Events](https://help.sap.com/viewer/5967a369d4b74f7a9c2b91f5df8e6ab6/Cloud/en-US/eaaa37e6ff62486ebb849507dc33abc6.html)
+in the SAP Help Portal.
+
+### SAP Alert Notification service configuration
+
+There are two options that can be configured: the mandatory service-key and
+the optional event template.
+
+#### Service-Key
+
+The SAP Alert Notification service service-key needs to be present in the
+environment, where the "Piper" binary is run. See the
+[Credential Management guide](https://help.sap.com/docs/ALERT_NOTIFICATION/5967a369d4b74f7a9c2b91f5df8e6ab6/80fe24f86bde4e3aac2903ac05511835.html?locale=en-US)
+in the SAP Help Portal on how to retrieve an alert notification service
+service-key. The environment variable used is: `PIPER_ansHookServiceKey`.
+
+If Jenkins is used to run "Piper", you can use the Jenkins credential store
+to store the alert notification service service-key as a "Secret Text"
+credential. Provide the credential id in the configuration file in the `hooks`
+section as follows:
+
+```yaml
+hooks:
+  ans:
+    serviceKeyCredentialsId: 'my_ANS_Service_Key'
+```
+
+#### Event template
+
+You can also create an event template in JSON format to overwrite
+or add event details to the default. To do this, provide the JSON string
+directly in the environment where the "Piper" binary is run. The environment
+variable used in this case is: `PIPER_ansEventTemplate`.
+
+For example in unix:
+
+```bash
+export PIPER_ansEventTemplate='{"priority": 999}'
+```
+
+The event body, timestamp, severity and category cannot be set via the
+template. They are always set from the log entry.
+
 ## Collecting telemetry and logging data for Splunk
 
 Splunk gives the ability to analyze any kind of logging information and to visualize the retrieved information in dashboards.

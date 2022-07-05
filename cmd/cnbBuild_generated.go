@@ -19,6 +19,7 @@ import (
 
 type cnbBuildOptions struct {
 	ContainerImageName        string                   `json:"containerImageName,omitempty"`
+	ContainerImageAlias       string                   `json:"containerImageAlias,omitempty"`
 	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
 	Buildpacks                []string                 `json:"buildpacks,omitempty"`
@@ -31,6 +32,7 @@ type cnbBuildOptions struct {
 	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
 	MultipleImages            []map[string]interface{} `json:"multipleImages,omitempty"`
 	PreserveFiles             []string                 `json:"preserveFiles,omitempty"`
+	BuildSettingsInfo         string                   `json:"buildSettingsInfo,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -41,6 +43,9 @@ type cnbBuildCommonPipelineEnvironment struct {
 		imageNames    []string
 		imageNameTags []string
 		imageDigests  []string
+	}
+	custom struct {
+		buildSettingsInfo string
 	}
 }
 
@@ -56,6 +61,7 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		{category: "container", name: "imageNames", value: p.container.imageNames},
 		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 		{category: "container", name: "imageDigests", value: p.container.imageDigests},
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
 	errCount := 0
@@ -117,6 +123,10 @@ func CnbBuildCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -165,6 +175,7 @@ func CnbBuildCommand() *cobra.Command {
 
 func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built\n`cnbBuild` step will try to identify a containerImageName using the following precedence:\n  1. `containerImageName` parameter.\n  2. `project.id` field of a `project.toml` file.\n  3. `git/repository` parameter of the `commonPipelineEnvironment`.\n  4. `github/repository` parameter of the `commonPipelineEnvironment`.\nIf none of the above was found - an error will be raised.\n")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageAlias, "containerImageAlias", os.Getenv("PIPER_containerImageAlias"), "Logical name used for this image.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.")
@@ -176,6 +187,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
 
 	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -203,6 +215,15 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 						Default:     os.Getenv("PIPER_containerImageName"),
+					},
+					{
+						Name:        "containerImageAlias",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerImageAlias"),
 					},
 					{
 						Name: "containerImageTag",
@@ -345,6 +366,20 @@ func cnbBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -362,6 +397,7 @@ func cnbBuildMetadata() config.StepData {
 							{"name": "container/imageNames", "type": "[]string"},
 							{"name": "container/imageNameTags", "type": "[]string"},
 							{"name": "container/imageDigests", "type": "[]string"},
+							{"name": "custom/buildSettingsInfo"},
 						},
 					},
 				},
