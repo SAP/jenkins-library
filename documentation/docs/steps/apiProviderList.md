@@ -4,7 +4,7 @@
 
 With this step, you can retrieve all the API providers from the API portal. An API Provider is a concept in API Management, capability of SAP Integration Suite, which defines the connection details for services running on specific hosts whose details you want to access.
 
-You use an API provider to define not only the details of the host you want an application to reach, but also to define any further details that are necessary to establish the connection, for example, proxy settings.For more details, see the blog [API Providers](https://blogs.sap.com/2017/07/27/blog-series-api-providers/)
+You use an API provider to define not only the details of the host you want an application to reach, but also to define any further details that are necessary to establish the connection, for example, proxy settings. For more details, see the blog [API Providers](https://blogs.sap.com/2017/07/27/blog-series-api-providers/)
 
 To consume the ApiProviderList step, proceed as follows:
 
@@ -38,12 +38,12 @@ steps:
   <...>
   apiProviderList:
     apimApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
-    Top: MY_API_PROXY_GET_N_ENTITIES
-    Skip: MY_API_PROXY_SKIP_N_ENTITIES
-    Filter: MY_API_PROXY_FILTER_BY_ENTITY_FIELD
-    Orderby: MY_API_PROXY_ORDER_BY_ENTITY_FIELD
-    Count: MY_API_PROXY_ORDER_ENTITY_COUNT
-    Search: MY_API_PROXY_SEARCH_BY_ENTITY_FIELD
-    Select: MY_API_PROXY_SELECT_BY_ENTITY_FIELD
-    Expand: MY_API_PROXY_EXPAND_BY_ENTITY_FIELD
+    Top: MY_API_PROVIDER_GET_N_ENTITIES
+    Skip: MY_API_PROVIDER_SKIP_N_ENTITIES
+    Filter: MY_API_PROVIDER_FILTER_BY_ENTITY_FIELD
+    Orderby: MY_API_PROVIDER_ORDER_BY_ENTITY_FIELD
+    Count: MY_API_PROVIDER_ORDER_ENTITY_COUNT
+    Search: MY_API_PROVIDER_SEARCH_BY_ENTITY_FIELD
+    Select: MY_API_PROVIDER_SELECT_BY_ENTITY_FIELD
+    Expand: MY_API_PROVIDER_EXPAND_BY_ENTITY_FIELD
 ```
