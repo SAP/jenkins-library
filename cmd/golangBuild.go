@@ -423,7 +423,7 @@ func retrieveGolangciLint() error {
 	// from installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
 	installScript, err := exec.Command("curl", "-sSfL", golangciLintCurlUrl).Output()
 	if err != nil {
-		return fmt.Errorf("failed to install golanci-lint: curl command failed: %w", err)
+		return fmt.Errorf("failed to install golangci-lint: curl command failed: %w", err)
 	}
 
 	cmd := exec.Command("sh", "-s", "--", "-b", golangciLintPath, golangciLintVersion)
@@ -434,7 +434,7 @@ func retrieveGolangciLint() error {
 
 	log.Entry().Infof(string(out))
 	if err != nil {
-		return fmt.Errorf("failed to install golanci-lint: %w", err)
+		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
 
 	return nil
@@ -447,7 +447,7 @@ func runGolangciLint() error {
 
 	log.Entry().Infof(string(out))
 	if err != nil {
-		return fmt.Errorf("running golanci-lint failed: %w", err)
+		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
 
 	return nil
