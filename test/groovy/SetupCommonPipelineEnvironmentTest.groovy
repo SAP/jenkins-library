@@ -300,7 +300,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     void "Set scmInfo parameter sets commit id"() {
 
         def GitUtils gitUtils = new GitUtils() {
-            boolean isMergeCommit(String gitCommitId){
+            boolean isMergeCommit(){
                 return false
             }
         }
@@ -319,7 +319,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     void "Set scmInfo parameter sets git reference for branch"() {
 
         def GitUtils gitUtils = new GitUtils() {
-            boolean isMergeCommit(String gitCommitId){
+            boolean isMergeCommit(){
                 return false
             }
         }
@@ -338,7 +338,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     void "sets gitReference and gitRemoteCommit for pull request"() {
 
         def GitUtils gitUtils = new GitUtils() {
-            boolean isMergeCommit(String gitCommitId){
+            boolean isMergeCommit(){
                 return false
             }
 
@@ -362,7 +362,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     void "sets gitReference and gitRemoteCommit for pull request for merge strategy"() {
 
         def GitUtils gitUtils = new GitUtils() {
-            boolean isMergeCommit(String gitCommitId){
+            boolean isMergeCommit(){
                 return true
             }
 
@@ -390,7 +390,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     void "Set merge commit id as NA"() {
 
         def GitUtils gitUtils = new GitUtils() {
-            boolean isMergeCommit(String gitCommitId){
+            boolean isMergeCommit(){
                 return true
             }
 
