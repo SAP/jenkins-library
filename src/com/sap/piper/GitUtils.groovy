@@ -47,8 +47,6 @@ boolean compareParentsOfMergeAndHead(String mergeCommitId){
     try {
         String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@ | tac").trim()
         String headCommitParents = sh(returnStdout: true, script: "git rev-parse HEAD^@").trim()
-        echo "merge commits parents ${mergeCommitParents}"
-        echo "head commits parents ${headCommitParents}"
         if(mergeCommitParents.equals(headCommitParents)){
             return true
         }
@@ -58,6 +56,8 @@ boolean compareParentsOfMergeAndHead(String mergeCommitId){
     }
 
 
+    echo "GH merge parents: ${mergeCommitParents}"
+    echo "Local merge parents: ${headCommitParents}"
     echo 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
     return false
 }
