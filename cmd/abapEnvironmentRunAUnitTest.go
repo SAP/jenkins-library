@@ -355,7 +355,7 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 	//Optional checks before writing the Results
 	parsedXML := new(AUnitResult)
 	if err := xml.Unmarshal([]byte(body), &parsedXML); err != nil {
-		log.Entry().WithError(err).Warning("failed to unmarschal xml response")
+		log.Entry().WithError(err).Warning("failed to unmarshal xml response")
 	}
 
 	//Write Results
