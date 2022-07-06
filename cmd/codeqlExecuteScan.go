@@ -108,7 +108,7 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 		}
 
 		if config.CommitID == "NA" {
-			return errors.New("failed running upload-results as gitCommitIdfailed is not available")
+			return errors.New("failed running upload-results as gitCommitId is not available")
 		}
 
 		var repoInfo RepoInfo
