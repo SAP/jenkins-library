@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -36,6 +37,9 @@ const (
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
+	golangciLintCurlUrl         = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+	golangciLintVersion         = "latest"
+	golangciLintPath            = "$(go env GOPATH)/bin"
 )
 
 type golangBuildUtils interface {
@@ -163,6 +167,16 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	if failedTests {
 		log.SetErrorCategory(log.ErrorTest)
 		return fmt.Errorf("some tests failed")
+	}
+
+	if config.RunLinter {
+		if err := retrieveGolangciLint(); err != nil {
+			return err
+		}
+
+		if err := runGolangciLint(); err != nil {
+			return err
+		}
 	}
 
 	if config.CreateBOM {
@@ -402,6 +416,40 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 			return fmt.Errorf("failed to create html coverage file: %w", err)
 		}
 	}
+	return nil
+}
+
+func retrieveGolangciLint() error {
+	// from installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
+	installScript, err := exec.Command("curl", "-sSfL", golangciLintCurlUrl).Output()
+	if err != nil {
+		return fmt.Errorf("failed to install golanci-lint: curl command failed: %w", err)
+	}
+
+	cmd := exec.Command("sh", "-s", "--", "-b", golangciLintPath, golangciLintVersion)
+	installScriptBuffer := bytes.Buffer{}
+	installScriptBuffer.Write(installScript)
+	cmd.Stdin = &installScriptBuffer
+	out, err := cmd.CombinedOutput()
+
+	log.Entry().Infof(string(out))
+	if err != nil {
+		return fmt.Errorf("failed to install golanci-lint: %w", err)
+	}
+
+	return nil
+}
+
+func runGolangciLint() error {
+	binaryPath := golangciLintPath + "/golangci-lint"
+	command := fmt.Sprintf("%s run --out-format checkstyle > golangci-lint-report.xml", binaryPath)
+	out, err := exec.Command("bash", "-c", command).CombinedOutput()
+
+	log.Entry().Infof(string(out))
+	if err != nil {
+		return fmt.Errorf("running golanci-lint failed: %w", err)
+	}
+
 	return nil
 }
 
