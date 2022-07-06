@@ -156,7 +156,9 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 			}
 			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
 			//This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
-			vE.appendValuesIfNotPresent(finalValuesForOneBuild, false)
+			if err := vE.appendValuesIfNotPresent(finalValuesForOneBuild, false); err != nil {
+				errstrings = append(errstrings, err.Error())
+			}
 		}
 		finalValues = vE.generateValueSlice()
 		if len(errstrings) > 0 {
@@ -383,7 +385,7 @@ func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string, t
 	var values []abapbuild.Value
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
-		errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
+		return errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
 	}
 	if err := vE.appendValuesIfNotPresent(values, throwErrorIfPresent); err != nil {
 		return err
