@@ -2,9 +2,10 @@ package orchestrator
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type Orchestrator int
@@ -22,6 +23,7 @@ type OrchestratorSpecificConfigProviding interface {
 	OrchestratorVersion() string
 	GetStageName() string
 	GetBranch() string
+	GetReference() string
 	GetBuildURL() string
 	GetBuildID() string
 	GetJobURL() string
@@ -34,12 +36,18 @@ type OrchestratorSpecificConfigProviding interface {
 	GetPipelineStartTime() time.Time
 	GetBuildStatus() string
 	GetBuildReason() string
+	GetChangeSet() []ChangeSet
 }
 
 type PullRequestConfig struct {
 	Branch string
 	Base   string
 	Key    string
+}
+
+type ChangeSet struct {
+	CommitId  string
+	timestamp string
 }
 
 // OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials

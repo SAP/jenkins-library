@@ -22,14 +22,14 @@ import (
 
 // FVDL This struct encapsulates everyting in the FVDL document
 type FVDL struct {
-	XMLName         xml.Name `xml:"FVDL"`
-	Xmlns           string   `xml:"xmlns,attr"`
-	XmlnsXsi        string   `xml:"xsi,attr"`
-	Version         string   `xml:"version,attr"`
-	XsiType         string   `xml:"type,attr"`
-	Created         CreatedTS
-	Uuid            UUID
-	Build           Build
+	XMLName         xml.Name        `xml:"FVDL"`
+	Xmlns           string          `xml:"xmlns,attr"`
+	XmlnsXsi        string          `xml:"xsi,attr"`
+	Version         string          `xml:"version,attr"`
+	XsiType         string          `xml:"type,attr"`
+	Created         CreatedTS       `xml:"CreatedTS"`
+	Uuid            UUID            `xml:"UUID"`
+	Build           Build           `xml:"Build"`
 	Vulnerabilities Vulnerabilities `xml:"Vulnerabilities"`
 	ContextPool     ContextPool     `xml:"ContextPool"`
 	UnifiedNodePool UnifiedNodePool `xml:"UnifiedNodePool"`
@@ -99,6 +99,7 @@ type Vulnerabilities struct {
 	Vulnerability []Vulnerability `xml:"Vulnerability"`
 }
 
+// Vulnerability
 type Vulnerability struct {
 	XMLName      xml.Name     `xml:"Vulnerability"`
 	ClassInfo    ClassInfo    `xml:"ClassInfo"`
@@ -134,10 +135,10 @@ type AnalysisInfo struct { //Note that this is directly the "Unified" object
 
 // Context
 type Context struct {
-	XMLName   xml.Name `xml:"Context"`
-	ContextId string   `xml:"id,attr,omitempty"`
-	Function  Function
-	FDSL      FunctionDeclarationSourceLocation
+	XMLName   xml.Name                          `xml:"Context"`
+	ContextId string                            `xml:"id,attr,omitempty"`
+	Function  Function                          `xml:"Function"`
+	FDSL      FunctionDeclarationSourceLocation `xml:"FunctionDeclarationSourceLocation"`
 }
 
 // Function
@@ -497,7 +498,7 @@ type Attribute struct {
 }
 
 // ConvertFprToSarif converts the FPR file contents into SARIF format
-func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
+func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
@@ -524,11 +525,11 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 	}
 
 	log.Entry().Debug("Calling Parse.")
-	return Parse(sys, project, projectVersion, data, filterSet)
+	return Parse(sys, projectVersion, data, filterSet)
 }
 
 // Parse parses the FPR file
-func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, error) {
+func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -651,6 +652,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.SourceLocation.Snippet
 					for j := 0; j < len(fvdl.Snippets); j++ {
 						if fvdl.Snippets[j].SnippetId == targetSnippetId {
+							tfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 							tfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 							tfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 							snippetSarif := new(format.SnippetSarif)
@@ -672,7 +674,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 							// Handle snippet
 							snippetTarget := handleSnippet(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData)
 
-							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
 								physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 								snippetText := ""
 								for j := 0; j < len(physLocationSnippetLines); j++ {
@@ -690,7 +692,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
 							}
 						} else {
-							if tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
+							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
 								snippetSarif := new(format.SnippetSarif)
 								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
 								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
@@ -734,6 +736,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 							targetSnippetId := fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Reason.Trace.Primary.Entry[0].Node.SourceLocation.Snippet
 							for j := 0; j < len(fvdl.Snippets); j++ {
 								if fvdl.Snippets[j].SnippetId == targetSnippetId {
+									nintfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 									nintfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 									nintfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 									snippetSarif := new(format.SnippetSarif)
@@ -793,7 +796,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
 		prop.RuleGUID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
 		//Get the audit data
-		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
+		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
 			log.Entry().Debug(err)
 			maxretries = maxretries - 1
 			if maxretries >= 0 {
@@ -823,7 +826,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				var nameArray []string
 				var idArray []string
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
-					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+					//idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom, " ")
 					for index, element := range words { // These are required to ensure that titlecase is respected in titles, part of sarif "friendly name" rules
 						words[index] = piperutils.Title(strings.ToLower(element))
@@ -957,7 +960,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					rls := *new(format.Relationships)
 					rls.Target.Id = cweIds[j]
 					rls.Target.ToolComponent.Name = "CWE"
-					rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+					rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765" //This might not be exact, it is taken from the Microsoft tool converter
 					rls.Kinds = append(rls.Kinds, "relevant")
 					sarifRule.Relationships = append(sarifRule.Relationships, rls)
 				}
@@ -1080,6 +1083,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		targetSnippetId := fvdl.UnifiedNodePool.Node[i].SourceLocation.Snippet
 		for j := 0; j < len(fvdl.Snippets); j++ {
 			if fvdl.Snippets[j].SnippetId == targetSnippetId {
+				loc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
 				snippetSarif := new(format.SnippetSarif)
@@ -1094,7 +1098,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		// Handle snippet
 		snippetTarget := handleSnippet(fvdl.UnifiedNodePool.Node[i].Action.Type, fvdl.UnifiedNodePool.Node[i].Action.ActionData)
 
-		if loc.PhysicalLocation.ContextRegion.Snippet != nil {
+		if loc.PhysicalLocation.ContextRegion != nil && loc.PhysicalLocation.ContextRegion.Snippet != nil {
 			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
 			snippetText := ""
 			for j := 0; j < len(physLocationSnippetLines); j++ {
@@ -1175,7 +1179,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+
 	// Set default values
 	ruleProp.Audited = false
 	ruleProp.FortifyCategory = "Unknown"
@@ -1197,7 +1202,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
 	}
-	if project == nil || projectVersion == nil {
+	if projectVersion == nil {
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}

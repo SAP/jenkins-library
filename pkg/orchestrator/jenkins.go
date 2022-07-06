@@ -2,12 +2,14 @@ package orchestrator
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"strings"
+	"time"
+
 	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"time"
 )
 
 type JenkinsConfigProvider struct {
@@ -84,6 +86,39 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 		}
 	}
 	return "FAILURE"
+}
+
+// GetChangeSet returns the commitIds and timestamp of the changeSet of the current run
+func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
+	j.fetchAPIInformation()
+
+	marshal, err := json.Marshal(j.apiInformation)
+	if err != nil {
+		log.Entry().WithError(err).Debugf("could not marshal apiInformation")
+		return []ChangeSet{}
+	}
+	jsonParsed, err := gabs.ParseJSON(marshal)
+	if err != nil {
+		log.Entry().WithError(err).Debugf("could not parse apiInformation")
+		return []ChangeSet{}
+	}
+
+	var changeSetList []ChangeSet
+	for _, child := range jsonParsed.Path("changeSets").Children() {
+		if child.Path("kind").Data().(string) == "git" {
+			for _, item := range child.S("items").Children() {
+				tmpChangeSet := ChangeSet{
+					CommitId:  item.Path("commitId").Data().(string),
+					timestamp: item.Path("timestamp").String(),
+				}
+				changeSetList = append(changeSetList, tmpChangeSet)
+			}
+
+			return changeSetList
+		}
+	}
+	return []ChangeSet{}
+
 }
 
 // GetLog returns the logfile from the current job as byte object
@@ -194,6 +229,18 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 // GetBranch returns the branch name, only works with the git plugin enabled
 func (j *JenkinsConfigProvider) GetBranch() string {
 	return getEnv("BRANCH_NAME", "n/a")
+}
+
+// GetReference returns the git reference, only works with the git plugin enabled
+func (j *JenkinsConfigProvider) GetReference() string {
+	ref := getEnv("BRANCH_NAME", "n/a")
+	if ref == "n/a" {
+		return ref
+	} else if strings.Contains(ref, "PR") {
+		return "refs/pull/" + strings.Split(ref, "-")[1] + "/head"
+	} else {
+		return "refs/heads/" + ref
+	}
 }
 
 // GetBuildURL returns the build url, e.g. https://jaas.url/job/foo/job/bar/job/main/1234/

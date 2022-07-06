@@ -45,17 +45,17 @@ func (ansHook *ANSHook) Fire(entry *logrus.Entry) (err error) {
 	} else {
 		stepName = "n/a"
 	}
-	event.Tags["pipeline:stepName"] = stepName
+	event.Tags["cicd:stepName"] = stepName
 	if errorCategory := GetErrorCategory().String(); errorCategory != "undefined" {
-		event.Tags["pipeline:errorCategory"] = errorCategory
+		event.Tags["cicd:errorCategory"] = errorCategory
 	}
 
 	event.EventTimestamp = entry.Time.Unix()
 	if event.Subject == "" {
-		event.Subject = fmt.Sprintf("Pipeline step '%s' sends '%s'", stepName, event.Severity)
+		event.Subject = fmt.Sprintf("Step '%s' sends '%s'", stepName, event.Severity)
 	}
 	event.Body = entry.Message
-	event.Tags["pipeline:logLevel"] = logLevel.String()
+	event.Tags["cicd:logLevel"] = logLevel.String()
 
 	return ansHook.client.Send(event)
 }

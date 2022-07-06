@@ -45,6 +45,7 @@ stages:
     includeAddon: 'true'
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
+    cfDeleteServiceKeys: true
 
   Confirm:
     ordinal: 80
