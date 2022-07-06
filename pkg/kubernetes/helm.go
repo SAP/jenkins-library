@@ -186,6 +186,10 @@ func (h *HelmExecute) RunHelmLint() error {
 		h.config.ChartPath,
 	}
 
+	for _, v := range h.config.HelmValues {
+		helmParams = append(helmParams, "--values", v)
+	}
+
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
