@@ -39,7 +39,7 @@ const (
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
 	golangciLintCurlUrl         = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-	golangciLintVersion         = "latest"
+	golangciLintVersion         = "v1.46.2"
 )
 
 type golangBuildUtils interface {
