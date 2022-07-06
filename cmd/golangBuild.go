@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -444,8 +445,21 @@ func retrieveGolangciLint(golangciLintDir string) error {
 
 func runGolangciLint(golangciLintDir string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
-	command := fmt.Sprintf("%s run --out-format checkstyle > golangci-lint-report.xml", binaryPath)
+	reportOutputPath := "golangci-lint-report.xml"
+	reportStyle := "checkstyle" // readable by Sonar
+
+	command := fmt.Sprintf("%s run --out-format %s > %s", binaryPath, reportStyle, reportOutputPath)
+	log.Entry().Infof("Running command: %s", command)
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
+
+	if file, err := os.Open(reportOutputPath); err == nil {
+		defer file.Close()
+		b, _ := ioutil.ReadAll(file)
+		log.Entry().Infof("golangci-lint report:")
+		log.Entry().Infof(string(b))
+	} else {
+		log.Entry().Warning("No golangci-lint report file written!")
+	}
 
 	log.Entry().Infof(string(out))
 	if err != nil {
