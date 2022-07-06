@@ -597,18 +597,17 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
-		assert.NoError(t, err)
+		assert.EqualError(t, err, "Getting AUnit run results failed: Test fail")
 		defer resp.Body.Close()
-		if assert.EqualError(t, err, "Getting AUnit run results failed: Test fail") {
-			buf := new(bytes.Buffer)
-			_, err = buf.ReadFrom(resp.Body)
-			assert.NoError(t, err)
-			newStr := buf.String()
-			assert.Equal(t, "AUnit test result body", newStr)
-			assert.Equal(t, int64(0), resp.ContentLength)
-			assert.Equal(t, 400, resp.StatusCode)
-			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
-		}
+
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(resp.Body)
+		assert.NoError(t, err)
+		newStr := buf.String()
+		assert.Equal(t, "AUnit test result body", newStr)
+		assert.Equal(t, int64(0), resp.ContentLength)
+		assert.Equal(t, 400, resp.StatusCode)
+		assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 	})
 }
 
