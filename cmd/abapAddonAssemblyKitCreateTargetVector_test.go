@@ -47,7 +47,8 @@ func TestCreateTargetVectorStep(t *testing.T) {
 		assert.NoError(t, err, "Did not expect error")
 
 		resultAddonDescriptor := abaputils.AddonDescriptor{}
-		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &resultAddonDescriptor)
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &resultAddonDescriptor)
+		assert.NoError(t, err)
 		assert.Equal(t, "W7Q00207512600000262", resultAddonDescriptor.TargetVectorID)
 	})
 
