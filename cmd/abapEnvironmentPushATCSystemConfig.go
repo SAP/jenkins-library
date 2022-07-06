@@ -513,7 +513,9 @@ type parsedConfigJsonBase struct {
 	BlockFindings        string `json:"block_findings"`
 	InformFindings       string `json:"inform_findings"`
 	TransportCheckPolicy string `json:"transport_check_policy"`
-	IsDefault            bool   `json:"is_default"`
+	CheckTasks           bool   `json:"check_tasks"`
+	CheckRequests        bool   `json:"check_requests"`
+	ChechToCs            bool   `json:"check_tocs"`
 	IsDefault            bool   `json:"is_default"`
 	IsProxyVariant       bool   `json:"is_proxy_variant"`
 }
