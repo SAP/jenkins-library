@@ -131,8 +131,12 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	if errRead != nil {
 		return uriConnectionDetails, err
 	}
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return uriConnectionDetails, err
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return uriConnectionDetails, err
+	}
 
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", branchName).Error("Could not switch to specified branch")

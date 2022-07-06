@@ -10,22 +10,8 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type abapEnvironmentRunAUnitTestMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockUtils {
-	utils := abapEnvironmentRunAUnitTestMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestBuildAUnitRequestBody(t *testing.T) {
 	t.Parallel()
@@ -582,10 +568,12 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err = buf.ReadFrom(resp.Body)
+			assert.NoError(t, err)
 			newStr := buf.String()
 			assert.Equal(t, "AUnit test result body", newStr)
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -609,16 +597,17 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
+		assert.EqualError(t, err, "Getting AUnit run results failed: Test fail")
 		defer resp.Body.Close()
-		if assert.EqualError(t, err, "Getting AUnit run results failed: Test fail") {
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
-			newStr := buf.String()
-			assert.Equal(t, "AUnit test result body", newStr)
-			assert.Equal(t, int64(0), resp.ContentLength)
-			assert.Equal(t, 400, resp.StatusCode)
-			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
-		}
+
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(resp.Body)
+		assert.NoError(t, err)
+		newStr := buf.String()
+		assert.Equal(t, "AUnit test result body", newStr)
+		assert.Equal(t, int64(0), resp.ContentLength)
+		assert.Equal(t, 400, resp.StatusCode)
+		assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 	})
 }
 
@@ -725,10 +714,12 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 		}
 		fmt.Println("Body:" + string([]byte(client.Body)))
 		resp, err := getHTTPResponseAUnitRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err = buf.ReadFrom(resp.Body)
+			assert.NoError(t, err)
 			newStr := buf.String()
 			assert.Equal(t, "HTTP response test", newStr)
 			assert.Equal(t, int64(0), resp.ContentLength)

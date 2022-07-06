@@ -35,7 +35,9 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment, fileReader readFile) error {
 
 	var addonDescriptor abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+	if err := json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor); err != nil {
+		return err
+	}
 
 	conn := new(abapbuild.Connector)
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
