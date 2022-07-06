@@ -449,7 +449,7 @@ func runGolangciLint(golangciLintDir string) error {
 	reportStyle := "checkstyle" // readable by Sonar
 
 	command := fmt.Sprintf("%s run --out-format %s > %s", binaryPath, reportStyle, reportOutputPath)
-	log.Entry().Infof("Running command: %s", command)
+	log.Entry().Infof("running command: %s", command)
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 
 	if file, err := os.Open(reportOutputPath); err == nil {
