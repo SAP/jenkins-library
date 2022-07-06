@@ -279,7 +279,7 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
         return
     }
 
-    boolean isMergeCommit = gitUtils.isMergeCommit(gitCommit)
+    boolean isMergeCommit = gitUtils.isMergeCommit()
     def mergeOrHead = isMergeCommit?"merge":"head"
     def changeId = gitBranch.split("-")[1]
     script.commonPipelineEnvironment.setGitRef("refs/pull/" + changeId + "/" + mergeOrHead)
@@ -289,16 +289,15 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
         return
     }
 
-    String gitRemoteCommitId
     try{
-        gitRemoteCommitId = gitUtils.getGitMergeCommitId(changeId)
+        String gitRemoteCommitId = gitUtils.getGitMergeCommitId(changeId)
+        if(gitRemoteCommitId?.trim() && gitUtils.compareParentsOfMergeAndHead(gitRemoteCommitId)){
+            script.commonPipelineEnvironment.setGitRemoteCommitId(gitRemoteCommitId)
+            return
+        }
     }catch(Exception e){
-        echo "Exception in getting git merge commit id: ${e}"
+        echo "Exception in getting git merge commit id or comparing git merge commit parents: ${e}"
     }
 
-    if(gitRemoteCommitId?.trim()){
-        script.commonPipelineEnvironment.setGitRemoteCommitId(gitRemoteCommitId)
-    }else{
-        script.commonPipelineEnvironment.setGitRemoteCommitId(gitCommit)
-    }
+    script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
 }

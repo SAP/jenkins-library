@@ -139,14 +139,14 @@ class GitUtilsTest extends BasePiperTest {
 
     @Test
     void testIsMergeCommitTrue() {
-        shellRule.setReturnValue('git rev-parse --verify dummy_commit^2', 0)
-        assertTrue(gitUtils.isMergeCommit("dummy_commit"))
+        shellRule.setReturnValue('git rev-parse --verify HEAD^2', 0)
+        assertTrue(gitUtils.isMergeCommit())
     }
 
     @Test
     void testIsMergeCommitFalse() {
-        shellRule.setReturnValue('git rev-parse --verify dummy_test_commit^2', 1)
-        assertFalse(gitUtils.isMergeCommit("dummy_test_commit"))
+        shellRule.setReturnValue('git rev-parse --verify HEAD^2', 1)
+        assertFalse(gitUtils.isMergeCommit())
     }
 
     @Test

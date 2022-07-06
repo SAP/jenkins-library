@@ -4,8 +4,8 @@ boolean insideWorkTree() {
     return sh(returnStatus: true, script: 'git rev-parse --is-inside-work-tree 1>/dev/null 2>&1') == 0
 }
 
-boolean isMergeCommit(String gitCommitId){
-    def cmd = 'git rev-parse --verify '+gitCommitId+'^2'
+boolean isMergeCommit(){
+    def cmd = 'git rev-parse --verify HEAD^2'
     return sh(returnStatus: true, script: cmd) == 0
 }
 
@@ -40,6 +40,23 @@ String getGitMergeCommitId(String gitChangeId){
     }
 
     return commitId
+}
+
+boolean compareParentsOfMergeAndHead(String mergeCommitId){
+    try {
+        String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@").trim()
+        String headCommitParents = sh(returnStdout: true, script: "git rev-parse HEAD^@").trim()
+        echo "merge commits parents ${mergeCommitParents}"
+        echo "head commits parents ${headCommitParents}"
+        if(mergeCommitParents.equals(headCommitParents)){
+            return true
+        }
+    } catch (Exception e) {
+        echo 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
+        throw e
+    }
+
+    return false
 }
 
 boolean isWorkTreeDirty() {
