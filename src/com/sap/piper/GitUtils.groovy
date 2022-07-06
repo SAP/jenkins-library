@@ -44,7 +44,7 @@ String getGitMergeCommitId(String gitChangeId){
 
 boolean compareParentsOfMergeAndHead(String mergeCommitId){
     try {
-        String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@").trim()
+        String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@ | tac").trim()
         String headCommitParents = sh(returnStdout: true, script: "git rev-parse HEAD^@").trim()
         echo "merge commits parents ${mergeCommitParents}"
         echo "head commits parents ${headCommitParents}"
