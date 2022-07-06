@@ -43,6 +43,7 @@ String getGitMergeCommitId(String gitChangeId){
 }
 
 boolean compareParentsOfMergeAndHead(String mergeCommitId){
+    def err = 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
     try {
         String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@ | tac").trim()
         String headCommitParents = sh(returnStdout: true, script: "git rev-parse HEAD^@").trim()
@@ -52,10 +53,12 @@ boolean compareParentsOfMergeAndHead(String mergeCommitId){
             return true
         }
     } catch (Exception e) {
-        echo 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
+        echo 'Error comparing merge commit parents and local merge commit parents'
         throw e
     }
 
+
+    echo 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
     return false
 }
 
