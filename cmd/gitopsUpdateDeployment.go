@@ -306,7 +306,7 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 }
 
 func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, filePath string) ([]byte, error) {
-	var  outputBytes []byte
+	var outputBytes []byte
 	registryImage, err := buildRegistryPlusImage(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to apply kubectl command")

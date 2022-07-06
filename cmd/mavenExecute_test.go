@@ -9,7 +9,7 @@ import (
 )
 
 type mavenMockUtils struct {
-	shouldFail     bool
+	shouldFail bool
 	*mock.FilesMock
 	*mock.ExecMockRunner
 }

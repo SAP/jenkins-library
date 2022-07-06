@@ -11,7 +11,7 @@ import (
 )
 
 type containerStructureTestsMockUtils struct {
-	shouldFail     bool
+	shouldFail bool
 	*mock.FilesMock
 	*mock.ExecMockRunner
 }

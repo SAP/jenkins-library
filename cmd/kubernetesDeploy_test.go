@@ -13,7 +13,7 @@ import (
 )
 
 type kubernetesDeployMockUtils struct {
-	shouldFail     bool
+	shouldFail bool
 	*mock.FilesMock
 	*mock.ExecMockRunner
 	*mock.HttpClientMock

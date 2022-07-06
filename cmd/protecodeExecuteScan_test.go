@@ -61,7 +61,7 @@ func TestRunProtecodeScan(t *testing.T) {
 
 			var b bytes.Buffer
 			_ = json.NewEncoder(&b).Encode(&response)
-			if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+			if _, err := rw.Write([]byte(b.Bytes())); err != nil {
 				t.Fail()
 			}
 		} else {
@@ -69,7 +69,7 @@ func TestRunProtecodeScan(t *testing.T) {
 			_ = json.NewEncoder(&b).Encode(&response)
 		}
 
-		if _, err :=  rw.Write([]byte(b.Bytes())); err != nil{
+		if _, err := rw.Write([]byte(b.Bytes())); err != nil {
 			t.Fail()
 		}
 	}))
@@ -214,7 +214,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			var b bytes.Buffer
 			_ = json.NewEncoder(&b).Encode(&response)
-			if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+			if _, err := rw.Write([]byte(b.Bytes())); err != nil {
 				t.Fail()
 			}
 		}
@@ -223,7 +223,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 
 			var b bytes.Buffer
 			_ = json.NewEncoder(&b).Encode(&response)
-			if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+			if _, err := rw.Write([]byte(b.Bytes())); err != nil {
 				t.Fail()
 			}
 		}
@@ -299,7 +299,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 			_ = json.NewEncoder(&b).Encode(&response)
 		}
 
-		if _, err := rw.Write([]byte(b.Bytes())); err != nil{
+		if _, err := rw.Write([]byte(b.Bytes())); err != nil {
 			t.Fail()
 		}
 	}))
@@ -353,7 +353,7 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		defer os.RemoveAll(testDirectory)
 
 		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
-		if err := os.Mkdir(dockerConfigDir, 0755); err != nil{
+		if err := os.Mkdir(dockerConfigDir, 0755); err != nil {
 			t.Fail()
 		}
 		require.DirExists(t, dockerConfigDir)

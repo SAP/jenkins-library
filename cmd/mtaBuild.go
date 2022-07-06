@@ -435,7 +435,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 		return err
 	}
 
-	if err := utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644); err != nil{
+	if err := utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644); err != nil {
 		return fmt.Errorf("failed to write %v: %w", mtaYamlFile, err)
 	}
 	log.Entry().Infof("\"%s\" created.", mtaYamlFile)
@@ -473,7 +473,7 @@ func generateMta(id, applicationName, version string) (string, error) {
 	props := properties{ID: id, ApplicationName: applicationName, Version: version}
 
 	var script bytes.Buffer
-	if err := tmpl.Execute(&script, props); err != nil{
+	if err := tmpl.Execute(&script, props); err != nil {
 		log.Entry().Warningf("failed to execute template: %v", err)
 	}
 	return script.String(), nil

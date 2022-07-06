@@ -994,7 +994,7 @@ func TestCfDeployment(t *testing.T) {
 
 		t.Run("mta config file from project sources", func(t *testing.T) {
 
-			defer func(){_ = filesMock.FileRemove("xyz.mtar")}()
+			defer func() { _ = filesMock.FileRemove("xyz.mtar") }()
 
 			// The mock is inaccurat here.
 			// AddFile() adds the file absolute, prefix with the current working directory
@@ -1071,7 +1071,7 @@ func TestMtarLookup(t *testing.T) {
 
 	t.Run("One MTAR", func(t *testing.T) {
 
-		defer func(){_ = filesMock.FileRemove("x.mtar")}()
+		defer func() { _ = filesMock.FileRemove("x.mtar") }()
 		filesMock.AddFile("x.mtar", []byte("content does not matter"))
 
 		path, err := findMtar()

@@ -108,7 +108,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		return err
 	}
 
-	defer func(){_ = utils.FileRemove(config.FilePath)}()
+	defer func() { _ = utils.FileRemove(config.FilePath) }()
 
 	if err := utils.RemoveAll(cachePath); err != nil {
 		log.Entry().Warnf("Error during cleanup folder %v", err)
