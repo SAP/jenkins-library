@@ -39,7 +39,6 @@ const (
 	sbomFilename                = "bom.xml"
 	golangciLintCurlUrl         = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 	golangciLintVersion         = "latest"
-	golangciLintPath            = "$(go env GOPATH)/bin"
 )
 
 type golangBuildUtils interface {
@@ -170,11 +169,14 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.RunLinter {
-		if err := retrieveGolangciLint(); err != nil {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+
+		if err := retrieveGolangciLint(golangciLintDir); err != nil {
 			return err
 		}
 
-		if err := runGolangciLint(); err != nil {
+		if err := runGolangciLint(golangciLintDir); err != nil {
 			return err
 		}
 	}
@@ -419,14 +421,14 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint() error {
+func retrieveGolangciLint(golangciLintDir string) error {
 	// from installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
 	installScript, err := exec.Command("curl", "-sSfL", golangciLintCurlUrl).Output()
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: curl command failed: %w", err)
 	}
 
-	cmd := exec.Command("sh", "-s", "--", "-b", golangciLintPath, golangciLintVersion)
+	cmd := exec.Command("sh", "-s", "--", "-b", golangciLintDir, golangciLintVersion)
 	installScriptBuffer := bytes.Buffer{}
 	installScriptBuffer.Write(installScript)
 	cmd.Stdin = &installScriptBuffer
@@ -440,8 +442,8 @@ func retrieveGolangciLint() error {
 	return nil
 }
 
-func runGolangciLint() error {
-	binaryPath := golangciLintPath + "/golangci-lint"
+func runGolangciLint(golangciLintDir string) error {
+	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 	command := fmt.Sprintf("%s run --out-format checkstyle > golangci-lint-report.xml", binaryPath)
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 
