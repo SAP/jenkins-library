@@ -72,6 +72,7 @@ nav:
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
         - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
+        - apiProxyList: steps/apiProxyList.md
         - apiProviderDownload: steps/apiProviderDownload.md
         - apiProviderUpload: steps/apiProviderUpload.md
         - apiProxyUpload: steps/apiProxyUpload.md
@@ -88,6 +89,7 @@ nav:
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - cnbBuild: steps/cnbBuild.md
+        - codeqlExecuteScan: steps/codeqlExecuteScan.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
@@ -204,7 +206,8 @@ markdown_extensions:
         permalink: true
     - footnotes
     - pymdownx.superfences
-    - pymdownx.tabbed
+    - pymdownx.tabbed:
+        alternate_style: true 
     - pymdownx.details
 extra_css:
     - 'css/extra.css'

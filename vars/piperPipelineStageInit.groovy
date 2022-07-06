@@ -35,7 +35,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'legacyConfigSettings',
     /**
-     * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases
+     * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases to a fixed branch name.
      */
     'productiveBranch',
     /**
