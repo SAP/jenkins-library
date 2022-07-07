@@ -1,8 +1,8 @@
 metadata:
   name: apiProviderList
-  description: Get the List of an API Providers from the API Portal
+  description: Get a full List of all API providers from the API Portal
   longDescription: |
-    With this step you can get list of all API Providers from the API Portal using the OData API. Learn more about the API Management API for getting list of an API Providers [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
+    With this step, you can get a list of all API providers from the API Portal using the OData API. Learn more about the API Management API for getting list of an API Providers [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
 
 spec:
   inputs:

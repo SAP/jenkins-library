@@ -57,7 +57,7 @@ func (p *apiProviderListCommonPipelineEnvironment) persist(path, resourceName st
 	}
 }
 
-// ApiProviderListCommand Get the List of an API Providers from the API Portal
+// ApiProviderListCommand Get a full List of all API providers from the API Portal
 func ApiProviderListCommand() *cobra.Command {
 	const STEP_NAME = "apiProviderList"
 
@@ -71,8 +71,8 @@ func ApiProviderListCommand() *cobra.Command {
 
 	var createApiProviderListCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Get the List of an API Providers from the API Portal",
-		Long:  `With this step you can get list of all API Providers from the API Portal using the OData API. Learn more about the API Management API for getting list of an API Providers [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
+		Short: "Get a full List of all API providers from the API Portal",
+		Long:  `With this step, you can get a list of all API providers from the API Portal using the OData API. Learn more about the API Management API for getting list of an API Providers [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -172,7 +172,7 @@ func apiProviderListMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "apiProviderList",
 			Aliases:     []config.Alias{},
-			Description: "Get the List of an API Providers from the API Portal",
+			Description: "Get a full List of all API providers from the API Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
