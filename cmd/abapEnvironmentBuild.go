@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"net/url"
 	"reflect"
 	"strings"
 
@@ -181,6 +182,10 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Password = config.Password
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 	connConfig.CertificateNames = config.CertificateNames
+	connConfig.Parameters = url.Values{}
+	if len(config.AbapSourceClient) != 0 {
+		connConfig.Parameters.Add("sap-client", config.AbapSourceClient)
+	}
 
 	if err := conn.InitBuildFramework(connConfig, *utils, *utils); err != nil {
 		return err

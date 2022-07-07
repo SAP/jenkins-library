@@ -148,6 +148,19 @@ func GetBuildMockClient() MockClient {
 	return mc
 }
 
+func GetBuildMockClientWithClient() MockClient {
+	mc := NewMockClient()
+	mc.AddData(buildHeadWithClient)
+	mc.AddData(buildPostWithClient)
+
+	mc.AddData(buildGetTasksWithClient)
+
+	mc.AddData(buildGet2WithClient)
+	mc.AddData(buildGetTask0LogsWithClient)
+	mc.AddData(buildGetValuesWithClient)
+	return mc
+}
+
 // GetBuildMockClientToRun2Times : Constructs a Mock Client with example build Requests/Responses, this can run two times
 func GetBuildMockClientToRun2Times() MockClient {
 	mc := NewMockClient()
@@ -240,6 +253,14 @@ var buildHead = MockData{
 	Header:     http.Header{"x-csrf-token": {"HRfJP0OhB9C9mHs2RRqUzw=="}},
 }
 
+var buildHeadWithClient = MockData{
+	Method:     `HEAD`,
+	Url:        `/sap/opu/odata/BUILD/CORE_SRV?sap-client=001`,
+	Body:       buildHead.Body,
+	StatusCode: 200,
+	Header:     buildHead.Header,
+}
+
 var buildPost = MockData{
 	Method: `POST`,
 	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds`,
@@ -269,6 +290,13 @@ var buildPost = MockData{
 		}
 	}
 }`,
+	StatusCode: 201,
+}
+
+var buildPostWithClient = MockData{
+	Method:     `POST`,
+	Url:        `/sap/opu/odata/BUILD/CORE_SRV/builds?sap-client=001`,
+	Body:       buildPost.Body,
 	StatusCode: 201,
 }
 
@@ -335,6 +363,13 @@ var buildGet2 = MockData{
 		}
 	}
 }`,
+	StatusCode: 200,
+}
+
+var buildGet2WithClient = MockData{
+	Method:     `GET`,
+	Url:        `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')?sap-client=001`,
+	Body:       buildGet2.Body,
 	StatusCode: 200,
 }
 
@@ -665,6 +700,42 @@ var buildGetTasks = MockData{
 				}
 			}
 		},
+		{
+			"__metadata" : {
+				"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)",
+				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)",
+				"type" : "BUILD.CORE_SRV.xBUILDxVIEW_TASKSType"
+			},
+			"build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+			"task_id" : 0,
+			"log_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q_0",
+			"plugin_class" : "",
+			"started_at" : "\/Date(1614108521633+0000)\/",
+			"finished_at" : "\/Date(1614108535356+0000)\/",
+			"result_state" : "SUCCESSFUL",
+			"logs" : {
+				"__deferred" : {
+					"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/logs"
+				}
+			},
+			"results" : {
+				"__deferred" : {
+					"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/results"
+				}
+			}
+		}
+	]
+	}
+}`,
+	StatusCode: 200,
+}
+
+var buildGetTasksWithClient = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks?sap-client=001`,
+	Body: `{
+	"d" : {
+		"results" : [
 		{
 			"__metadata" : {
 				"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)",
@@ -1026,6 +1097,13 @@ var buildGetTask0Logs = MockData{
 		]
 	}
 }`,
+	StatusCode: 200,
+}
+
+var buildGetTask0LogsWithClient = MockData{
+	Method:     `GET`,
+	Url:        `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=0)/logs?sap-client=001`,
+	Body:       buildGetTask0Logs.Body,
 	StatusCode: 200,
 }
 
@@ -1660,6 +1738,28 @@ var buildGetValues = MockData{
 					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
 					"value_id": "BUILD_FRAMEWORK_MODE",
 					"value": "P"
+				}
+			]
+		}
+	}`,
+	StatusCode: 200,
+}
+
+var buildGetValuesWithClient = MockData{
+	Method: `GET`,
+	Url:    `/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/values?sap-client=001`,
+	Body: `{
+		"d": {
+			"results": [
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "PHASE",
+					"value": "AUNIT"
+				},
+				{
+					"build_id": "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+					"value_id": "SUN",
+					"value": "SUMMER"
 				}
 			]
 		}
