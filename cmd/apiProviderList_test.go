@@ -11,7 +11,7 @@ import (
 func TestRunApiProviderList(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get API Provider List successfull test", func(t *testing.T) {
+	t.Run("Get API providers successfull test", func(t *testing.T) {
 		config := getDefaultOptionsForApiProviderList()
 		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 200, ResponseBody: `{"some": "test"}`}
 		seOut := apiProviderListCommonPipelineEnvironment{}
@@ -31,7 +31,7 @@ func TestRunApiProviderList(t *testing.T) {
 		}
 	})
 
-	t.Run("Get API Provider List failed test", func(t *testing.T) {
+	t.Run("Get API provider failed test", func(t *testing.T) {
 		config := getDefaultOptionsForApiProviderList()
 		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 400}
 		seOut := apiProviderListCommonPipelineEnvironment{}
