@@ -28,7 +28,9 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 		return err
 	}
 	var addonDescriptor abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+	if err := json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor); err != nil {
+		return err
+	}
 
 	err := checkInput(addonDescriptor.Repositories)
 	if err != nil {
