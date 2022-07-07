@@ -79,6 +79,15 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: abapSourceClient
+        description: Specifies the client of the SAP Cloud Platform ABAP Environment system, use only in combination with host
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: username
         type: string
         description: User

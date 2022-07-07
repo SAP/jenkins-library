@@ -151,7 +151,7 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 }
 
 func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
-	status := "R"
+	var status string
 	pollIntervall := com.GetPollIntervall()
 	count := 0
 	for {

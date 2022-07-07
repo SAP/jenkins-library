@@ -60,7 +60,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	client.SetOptions(clientOptions)
 	pollIntervall := com.GetPollIntervall()
 
-	repositories := []abaputils.Repository{}
+	var repositories []abaputils.Repository
 	err = checkPullRepositoryConfiguration(*options)
 	if err != nil {
 		return err
@@ -155,8 +155,12 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	if errRead != nil {
 		return uriConnectionDetails, err
 	}
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return uriConnectionDetails, err
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return uriConnectionDetails, err
+	}
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not pull the repository / software component")
 		err := errors.New("Request to ABAP System not successful")

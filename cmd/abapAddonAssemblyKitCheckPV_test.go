@@ -24,7 +24,8 @@ func TestCheckPVStep(t *testing.T) {
 		err := runAbapAddonAssemblyKitCheckPV(&config, nil, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
-		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.NoError(t, err)
 		assert.Equal(t, "0003", addonDescriptorFinal.AddonVersion)
 		assert.Equal(t, "0002", addonDescriptorFinal.AddonSpsLevel)
 		assert.Equal(t, "0001", addonDescriptorFinal.AddonPatchLevel)
