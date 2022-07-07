@@ -127,7 +127,9 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 		case <-timeout:
 			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
-			br.build.Get()
+			if err := br.build.Get(); err != nil {
+				return err
+			}
 			if !br.build.IsFinished() {
 				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollInterval)
 			} else {
@@ -239,7 +241,9 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 			buildFailed = true
 		}
 		if builds[i].build.BuildID != "" {
-			builds[i].build.PrintLogs()
+			if err := builds[i].build.PrintLogs(); err != nil {
+				return err
+			}
 		}
 	}
 	if buildFailed {
