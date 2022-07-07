@@ -138,7 +138,20 @@ func getAndRenderImageInfo(config helmExecuteOptions, rootPath string, utils kub
 		return fmt.Errorf("failed to load values from commonPipelineEnvironment: %v", err)
 	}
 
-	valuesFiles := []string{fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")}
+	valuesFiles := []string{}
+	defaultValuesFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
+	defaultValuesFileExists, err := utils.FileExists(defaultValuesFile)
+	if err != nil {
+		return err
+	}
+
+	if defaultValuesFileExists {
+		valuesFiles = append(valuesFiles, defaultValuesFile)
+	} else {
+		if len(config.HelmValues) == 0 {
+			return fmt.Errorf("no value file to proccess, please provide value file(s)")
+		}
+	}
 	valuesFiles = append(valuesFiles, config.HelmValues...)
 
 	params := struct {
