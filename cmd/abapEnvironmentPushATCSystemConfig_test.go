@@ -72,7 +72,7 @@ Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
 		
-{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":"X","check_requests":"","check_tocs":"X","is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
+{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
@@ -146,7 +146,7 @@ Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
 		
-{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":"X","check_requests":"","check_tocs":"X","is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
+{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
@@ -217,7 +217,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":"X","check_requests":"","check_tocs":"X","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset
 Content-Type: application/http
@@ -241,9 +241,9 @@ Content-Type: application/json
 			"block_findings": "0",
 			"inform_findings": "1",
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,
 			"_priorities": [
@@ -280,7 +280,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":"X","check_requests":"","check_tocs":"X","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset
 Content-Type: application/http
@@ -314,9 +314,9 @@ Content-Type: application/json
 			"block_findings": "0",
 			"inform_findings": "1",
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,		
 			"_priorities": [
@@ -358,7 +358,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":"X","check_requests":"","check_tocs":"X","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset--
 
@@ -372,9 +372,9 @@ Content-Type: application/json
 			"block_findings": "0",
 			"inform_findings": "1",
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false
 		}
@@ -403,7 +403,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":"X","check_requests":"","check_tocs":"X","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset--
 
@@ -417,9 +417,9 @@ Content-Type: application/json
 			"block_findings": "0",
 			"inform_findings": "1",
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,
 			"_priorities": [
@@ -448,9 +448,9 @@ Content-Type: application/json
 			"block_findings": "0",
 			"inform_findings": "1",
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,
 			"_priorities": [
@@ -563,9 +563,9 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			"is_default": false,
 			"is_proxy_variant": false,
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -629,9 +629,9 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			"is_default": false,
 			"is_proxy_variant": false,
 			"transport_check_policy": "C",
-			"check_tasks": "X",
-			"check_requests": "",
-			"check_tocs": "X",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_SOMECLASS",
