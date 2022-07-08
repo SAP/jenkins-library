@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -31,7 +30,7 @@ func init() {
 	}
 	executionLogResponse, _ := json.Marshal(executionLog)
 	executionLogStringPull = string(executionLogResponse)
-	logResultErrorPull = fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+	logResultErrorPull = `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 }
 
 func TestPullStep(t *testing.T) {
@@ -55,7 +54,7 @@ func TestPullStep(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1"},
 		}
 
-		logResultSuccess := fmt.Sprintf(`{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`)
+		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
 				`{"d" : ` + executionLogStringPull + `}`,
@@ -181,7 +180,8 @@ repositories:
   commitID: ABCD1234
 `
 		file, _ := os.Create("filename.yaml")
-		file.Write([]byte(body))
+		_, err := file.Write([]byte(body))
+		assert.NoError(t, err)
 
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -206,7 +206,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -241,7 +241,8 @@ repositories:
   commitID: ABCD1234
 `
 		file, _ := os.Create("filename.yaml")
-		file.Write([]byte(body))
+		_, err := file.Write([]byte(body))
+		assert.NoError(t, err)
 
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -267,7 +268,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
 		}

@@ -57,11 +57,7 @@ func TestHostConfig(t *testing.T) {
 
 		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-		//Testing without ABAP Host
-		config = abaputils.AbapEnvironmentOptions{
-			Username: "testUser",
-			Password: "testPassword",
-		}
+
 		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
@@ -191,6 +187,7 @@ func TestGetHTTPResponseATCRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getHTTPResponseATCRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if err == nil {
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -213,6 +210,7 @@ func TestGetResultATCRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getResultATCRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if err == nil {
 			assert.Equal(t, int64(0), resp.ContentLength)

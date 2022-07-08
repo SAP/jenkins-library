@@ -13,11 +13,11 @@ spec:
 
           ```json
           {
-              "auths": {
-                      "$server": {
-                              "auth": "base64($username + ':' + $password)"
-                      }
+            "auths": {
+              "$server": {
+                "auth": "base64($username + ':' + $password)"
               }
+            }
           }
           ```
 
@@ -25,11 +25,11 @@ spec:
 
           ```json
           {
-              "auths": {
-                      "example.com": {
-                              "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
-                      }
+            "auths": {
+              "example.com": {
+                "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
               }
+            }
           }
           ```
         type: jenkins
@@ -41,10 +41,12 @@ spec:
         description: |
           Name of the container which will be built
           `cnbBuild` step will try to identify a containerImageName using the following precedence:
+
             1. `containerImageName` parameter.
             2. `project.id` field of a `project.toml` file.
             3. `git/repository` parameter of the `commonPipelineEnvironment`.
             4. `github/repository` parameter of the `commonPipelineEnvironment`.
+
           If none of the above was found - an error will be raised.
         scope:
           - GENERAL
@@ -92,7 +94,7 @@ spec:
             param: container/registryUrl
       - name: buildpacks
         type: "[]string"
-        description: List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.
+        description: List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.
         scope:
           - PARAMETERS
           - STAGES
@@ -221,13 +223,13 @@ spec:
           - containerImageName: java-app
             alias: java
             buildpacks:
-            - "java"
+            - "gcr.io/paketo-buildpacks/java"
             path: "source/java"
           - containerImageName: nodejs-app
             alias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
-            - "nodejs"
+            - "gcr.io/paketo-buildpacks/nodejs"
             path: "source/nodejs"
           ```
         scope:

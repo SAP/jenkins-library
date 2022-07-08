@@ -369,7 +369,7 @@ func RemoveVaultSecretFiles() {
 func createTemporarySecretFile(namePattern string, content string) (string, error) {
 	if VaultSecretFileDirectory == "" {
 		var err error
-		VaultSecretFileDirectory, err = ioutil.TempDir("", "vault")
+		VaultSecretFileDirectory, err = ioutil.TempDir(".", "vault")
 		if err != nil {
 			return "", err
 		}
