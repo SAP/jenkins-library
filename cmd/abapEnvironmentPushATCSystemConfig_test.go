@@ -50,6 +50,23 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 	})
 }
 
+func TestCheckATCSystemConfigurationFile(t *testing.T) {
+	t.Parallel()
+	t.Run("Check ATC Configuration File - empty", func(t *testing.T) {
+
+		errExpected := "pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: atcSystemConfig.json)"
+		var parsedConfigurationJsonExpected parsedConfigJsonWithExpand
+		var atcSystemConfiguartionJsonFileExpected []byte
+
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
+
+		parsedConfigurationJson, atcSystemConfiguartionJsonFile, err := checkATCSystemConfigurationFile(&config)
+		assert.Equal(t, errExpected, err.Error())
+		assert.Equal(t, parsedConfigurationJson, parsedConfigurationJsonExpected)
+		assert.Equal(t, atcSystemConfiguartionJsonFile, atcSystemConfiguartionJsonFileExpected)
+	})
+}
+
 func TestHandleHttpResponse(t *testing.T) {
 	t.Parallel()
 
