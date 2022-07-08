@@ -349,79 +349,128 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 
 }
 
-//TODO: implement Table-Driven Testing
-func TestGetAndRenderImageInfo(t *testing.T) {
+func TestParseAndRenderCPETemplate(t *testing.T) {
 	commonPipelineEnvironment := "commonPipelineEnvironment"
 	valuesYaml := []byte(`
 image: "image_1"
-tag: {{ .CPE.artifactVersion }}
+tag: {{ cpe "artifactVersion" }}
 `)
 	values1Yaml := []byte(`
 image: "image_2"
-tag: {{ .CPE.artVersion }}
+tag: {{ cpe "artVersion" }}
 `)
 	values3Yaml := []byte(`
 image: "image_3"
 tag: {{ .CPE.artVersion
+`)
+	values4Yaml := []byte(`
+image: "test-image"
+tag: {{ imageTag "test-image" }}
 `)
 
 	tmpDir, err := os.MkdirTemp(os.TempDir(), "test-data-*")
 	require.NoError(t, err)
 	err = os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment), 0700)
 	require.NoError(t, err)
+	err = os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment, "container"), 0700)
+	require.NoError(t, err)
 	err = os.WriteFile(path.Join(tmpDir, commonPipelineEnvironment, "artifactVersion"), []byte("1.0.0-123456789"), 0700)
+	require.NoError(t, err)
+	err = os.WriteFile(path.Join(tmpDir, commonPipelineEnvironment, "container", "imageNameTags.json"), []byte(`["test-image:1.0.0-123456789"]`), 0700)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		os.RemoveAll(tmpDir)
 	})
 
+	defaultValueFile := "values.yaml"
 	config := helmExecuteOptions{
 		ChartPath: ".",
 	}
 
-	t.Run("'artifactVersion' file exists in CPE", func(t *testing.T) {
-		utils := newHelmMockUtilsBundle()
-		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
+	tt := []struct {
+		name             string
+		defaultValueFile string
+		config           helmExecuteOptions
+		expectedErr      error
+		valueFile        []byte
+	}{
+		{
+			name:             "'artifactVersion' file exists in CPE",
+			defaultValueFile: defaultValueFile,
+			config:           config,
+			expectedErr:      nil,
+			valueFile:        valuesYaml,
+		},
+		{
+			name:             "'artVersion' file does not exist in CPE",
+			defaultValueFile: defaultValueFile,
+			config:           config,
+			expectedErr:      nil,
+			valueFile:        values1Yaml,
+		},
+		{
+			name:             "Good template ({{ imageTag 'test-image' }})",
+			defaultValueFile: defaultValueFile,
+			config:           config,
+			expectedErr:      nil,
+			valueFile:        values4Yaml,
+		},
+		{
+			name:             "Wrong template ({{ .CPE.artVersion)",
+			defaultValueFile: defaultValueFile,
+			config:           config,
+			expectedErr:      fmt.Errorf("failed to parse template: template: cpetemplate:4: unclosed action started at cpetemplate:3"),
+			valueFile:        values3Yaml,
+		},
+		{
+			name:             "Multiple value files",
+			defaultValueFile: defaultValueFile,
+			config: helmExecuteOptions{
+				ChartPath:  ".",
+				HelmValues: []string{"./values_1.yaml", "./values_2.yaml"},
+			},
+			expectedErr: nil,
+			valueFile:   valuesYaml,
+		},
+		{
+			name:             "No value file is provided",
+			defaultValueFile: "",
+			config: helmExecuteOptions{
+				ChartPath:  ".",
+				HelmValues: []string{},
+			},
+			expectedErr: fmt.Errorf("no value file to proccess, please provide value file(s)"),
+			valueFile:   valuesYaml,
+		},
+		{
+			name:             "Wrong path to value file",
+			defaultValueFile: defaultValueFile,
+			config: helmExecuteOptions{
+				ChartPath:  ".",
+				HelmValues: []string{"wrong/path/to/values_1.yaml"},
+			},
+			expectedErr: fmt.Errorf("failed to read file: could not read 'wrong/path/to/values_1.yaml'"),
+			valueFile:   valuesYaml,
+		},
+	}
 
-		err = parseAndRenderCPETemplate(config, tmpDir, utils)
-		assert.NoError(t, err)
-	})
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			utils := newHelmMockUtilsBundle()
+			utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, test.defaultValueFile), test.valueFile)
 
-	t.Run("'artVersion' file does not exist in CPE", func(t *testing.T) {
-		utils := newHelmMockUtilsBundle()
-		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), values1Yaml)
+			if len(test.config.HelmValues) == 2 {
+				for _, value := range test.config.HelmValues {
+					utils.AddFile(value, test.valueFile)
+				}
+			}
 
-		err = parseAndRenderCPETemplate(config, tmpDir, utils)
-		assert.NoError(t, err)
-	})
-
-	t.Run("Wrong template {{ .CPE.artVersion", func(t *testing.T) {
-		utils := newHelmMockUtilsBundle()
-		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), values3Yaml)
-
-		err = parseAndRenderCPETemplate(config, tmpDir, utils)
-		assert.EqualError(t, err, "failed to parse template: template: new:4: unclosed action started at new:3")
-	})
-
-	t.Run("Multiple values files", func(t *testing.T) {
-		config.HelmValues = []string{"./values_1.yaml", "./values_2.yaml"}
-
-		utils := newHelmMockUtilsBundle()
-		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
-		utils.AddFile(config.HelmValues[0], valuesYaml)
-		utils.AddFile(config.HelmValues[1], valuesYaml)
-
-		err = parseAndRenderCPETemplate(config, tmpDir, utils)
-		assert.NoError(t, err)
-	})
-
-	t.Run("Wrong path to values file", func(t *testing.T) {
-		config.HelmValues = []string{"wrong/path/to/values_1.yaml"}
-
-		utils := newHelmMockUtilsBundle()
-		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
-
-		err = parseAndRenderCPETemplate(config, tmpDir, utils)
-		assert.EqualError(t, err, "failed to read file: could not read 'wrong/path/to/values_1.yaml'")
-	})
+			err := parseAndRenderCPETemplate(test.config, tmpDir, utils)
+			if test.expectedErr != nil {
+				assert.EqualError(t, err, test.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
