@@ -383,7 +383,7 @@ tag: {{ .CPE.artVersion
 		utils := newHelmMockUtilsBundle()
 		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
 
-		err = getAndRenderImageInfo(config, tmpDir, utils)
+		err = parseAndRenderCPETemplate(config, tmpDir, utils)
 		assert.NoError(t, err)
 	})
 
@@ -391,7 +391,7 @@ tag: {{ .CPE.artVersion
 		utils := newHelmMockUtilsBundle()
 		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), values1Yaml)
 
-		err = getAndRenderImageInfo(config, tmpDir, utils)
+		err = parseAndRenderCPETemplate(config, tmpDir, utils)
 		assert.NoError(t, err)
 	})
 
@@ -399,7 +399,7 @@ tag: {{ .CPE.artVersion
 		utils := newHelmMockUtilsBundle()
 		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), values3Yaml)
 
-		err = getAndRenderImageInfo(config, tmpDir, utils)
+		err = parseAndRenderCPETemplate(config, tmpDir, utils)
 		assert.EqualError(t, err, "failed to parse template: template: new:4: unclosed action started at new:3")
 	})
 
@@ -411,7 +411,7 @@ tag: {{ .CPE.artVersion
 		utils.AddFile(config.HelmValues[0], valuesYaml)
 		utils.AddFile(config.HelmValues[1], valuesYaml)
 
-		err = getAndRenderImageInfo(config, tmpDir, utils)
+		err = parseAndRenderCPETemplate(config, tmpDir, utils)
 		assert.NoError(t, err)
 	})
 
@@ -421,7 +421,7 @@ tag: {{ .CPE.artVersion
 		utils := newHelmMockUtilsBundle()
 		utils.AddFile(fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml"), valuesYaml)
 
-		err = getAndRenderImageInfo(config, tmpDir, utils)
+		err = parseAndRenderCPETemplate(config, tmpDir, utils)
 		assert.EqualError(t, err, "failed to read file: could not read 'wrong/path/to/values_1.yaml'")
 	})
 }

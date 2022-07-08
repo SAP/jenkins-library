@@ -58,7 +58,7 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		helmConfig.PublishVersion = artifactInfo.Version
 	}
 
-	err = getAndRenderImageInfo(config, GeneralConfig.EnvRootPath, utils)
+	err = parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("failed to get/render image info: %v", err)
 	}
@@ -130,8 +130,8 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 	return nil
 }
 
-//getAndRenderImageInfo gets data from commonPipelineEnvironment
-func getAndRenderImageInfo(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
+// parseAndRenderCPETemplate allows to parse and render a template which contains references to the CPE
+func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))
 	if err != nil {
