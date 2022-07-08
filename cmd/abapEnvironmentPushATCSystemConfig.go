@@ -466,7 +466,9 @@ func getErrorDetailsFromBody(resp *http.Response, bodyText []byte) (errorString 
 			return errorString, errUnmarshal
 		}
 		if _, ok := abapResp["error"]; ok {
-			json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+			if err := json.Unmarshal(*abapResp["error"], &abapErrorResponse); err != nil {
+				return errorString, err
+			}
 			if (AbapError{}) != abapErrorResponse {
 				log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
 				errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
