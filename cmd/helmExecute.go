@@ -138,21 +138,21 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 		return fmt.Errorf("failed to load values from commonPipelineEnvironment: %v", err)
 	}
 
-	valuesFiles := []string{}
-	defaultValuesFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
-	defaultValuesFileExists, err := utils.FileExists(defaultValuesFile)
+	valueFiles := []string{}
+	defaultValueFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
+	defaultValueFileExists, err := utils.FileExists(defaultValueFile)
 	if err != nil {
 		return err
 	}
 
-	if defaultValuesFileExists {
-		valuesFiles = append(valuesFiles, defaultValuesFile)
+	if defaultValueFileExists {
+		valueFiles = append(valueFiles, defaultValueFile)
 	} else {
 		if len(config.HelmValues) == 0 {
 			return fmt.Errorf("no value file to proccess, please provide value file(s)")
 		}
 	}
-	valuesFiles = append(valuesFiles, config.HelmValues...)
+	valueFiles = append(valueFiles, config.HelmValues...)
 
 	params := struct {
 		CPE map[string]interface{}
@@ -160,12 +160,12 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 		CPE: cpe,
 	}
 
-	for _, valuesFile := range valuesFiles {
-		b, err := utils.FileRead(valuesFile)
+	for _, valueFile := range valueFiles {
+		b, err := utils.FileRead(valueFile)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %v", err)
 		}
-		tmpl, err := template.New("new").Parse(string(b))
+		tmpl, err := template.New("cpetemplate").Parse(string(b))
 		if err != nil {
 			return fmt.Errorf("failed to parse template: %v", err)
 		}
@@ -174,7 +174,7 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 		if err != nil {
 			return fmt.Errorf("failed to execute template: %v", err)
 		}
-		err = utils.FileWrite(valuesFile, buf.Bytes(), 0700)
+		err = utils.FileWrite(valueFile, buf.Bytes(), 0700)
 		if err != nil {
 			return fmt.Errorf("failed to update file: %v", err)
 		}
