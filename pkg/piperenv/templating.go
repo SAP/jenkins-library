@@ -45,35 +45,30 @@ func (c *CPEMap) cpe(element string) string {
 	// ToDo: perform validity checks to allow only selected fields for now?
 	// This would allow a stable contract and could perform conversions in case a contract changes.
 
-	el, _ := map[string]interface{}(*c)[element].(string)
-	return el
+	return fmt.Sprint(map[string]interface{}(*c)[element])
 }
 
 func (c *CPEMap) custom(element string) string {
-	el, ok := map[string]interface{}(*c)[fmt.Sprintf("custom/%v", element)].(string)
-	if ok {
-		return el
-	}
 	return fmt.Sprint(map[string]interface{}(*c)[fmt.Sprintf("custom/%v", element)])
 }
 
 func (c *CPEMap) git(element string) string {
 	var el string
 	if element == "organization" || element == "repository" {
-		el, _ = map[string]interface{}(*c)[fmt.Sprintf("github/%v", element)].(string)
+		el = fmt.Sprint(map[string]interface{}(*c)[fmt.Sprintf("github/%v", element)])
 	} else {
-		el, _ = map[string]interface{}(*c)[fmt.Sprintf("git/%v", element)].(string)
+		el = fmt.Sprint(map[string]interface{}(*c)[fmt.Sprintf("git/%v", element)])
 	}
 	return el
 }
 
 func (c *CPEMap) imageDigest(imageName string) string {
-	digests, _ := map[string]interface{}(*c)["container/imageDigests"].([]string)
-	imageNames, _ := map[string]interface{}(*c)["container/imageNames"].([]string)
+	digests, _ := map[string]interface{}(*c)["container/imageDigests"].([]interface{})
+	imageNames, _ := map[string]interface{}(*c)["container/imageNames"].([]interface{})
 	if len(digests) > 0 && len(digests) == len(imageNames) {
 		for i, image := range imageNames {
-			if image == imageName {
-				return digests[i]
+			if fmt.Sprint(image) == imageName {
+				return fmt.Sprint(digests[i])
 			}
 		}
 	}
@@ -81,9 +76,9 @@ func (c *CPEMap) imageDigest(imageName string) string {
 }
 
 func (c *CPEMap) imageTag(imageName string) string {
-	nameTags, _ := map[string]interface{}(*c)["container/imageNameTags"].([]string)
+	nameTags, _ := map[string]interface{}(*c)["container/imageNameTags"].([]interface{})
 	for _, nameTag := range nameTags {
-		nt := strings.Split(nameTag, ":")
+		nt := strings.Split(fmt.Sprint(nameTag), ":")
 		if nt[0] == imageName {
 			return nt[1]
 		}
