@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"net/url"
 	"reflect"
 	"strings"
 
@@ -156,7 +157,9 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 			}
 			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
 			//This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
-			vE.appendValuesIfNotPresent(finalValuesForOneBuild, false)
+			if err := vE.appendValuesIfNotPresent(finalValuesForOneBuild, false); err != nil {
+				errstrings = append(errstrings, err.Error())
+			}
 		}
 		finalValues = vE.generateValueSlice()
 		if len(errstrings) > 0 {
@@ -179,6 +182,10 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Password = config.Password
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 	connConfig.CertificateNames = config.CertificateNames
+	connConfig.Parameters = url.Values{}
+	if len(config.AbapSourceClient) != 0 {
+		connConfig.Parameters.Add("sap-client", config.AbapSourceClient)
+	}
 
 	if err := conn.InitBuildFramework(connConfig, *utils, *utils); err != nil {
 		return err
@@ -383,7 +390,7 @@ func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string, t
 	var values []abapbuild.Value
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
-		errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
+		return errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
 	}
 	if err := vE.appendValuesIfNotPresent(values, throwErrorIfPresent); err != nil {
 		return err
