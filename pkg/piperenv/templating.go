@@ -50,8 +50,11 @@ func (c *CPEMap) cpe(element string) string {
 }
 
 func (c *CPEMap) custom(element string) string {
-	el, _ := map[string]interface{}(*c)[fmt.Sprintf("custom/%v", element)].(string)
-	return el
+	el, ok := map[string]interface{}(*c)[fmt.Sprintf("custom/%v", element)].(string)
+	if ok {
+		return el
+	}
+	return fmt.Sprint(map[string]interface{}(*c)[fmt.Sprintf("custom/%v", element)])
 }
 
 func (c *CPEMap) git(element string) string {
