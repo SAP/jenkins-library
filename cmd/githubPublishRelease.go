@@ -62,6 +62,8 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 	//updating assets only supported on latest release
 	if len(config.AssetPath) > 0 && config.Version == "latest" {
 		return uploadReleaseAsset(ctx, lastRelease.GetID(), config, ghRepoClient)
+	} else if len(config.AssetPathList) > 0 {
+		return uploadReleaseAssetList(ctx, lastRelease.GetID(), config, ghRepoClient)
 	}
 
 	releaseBody := ""
