@@ -130,7 +130,7 @@ func (c *Command) RunShell(shell, script string) error {
 
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+//    Thus, the executable needs to be on the PATH of the current process, and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	c.prepareOut()
@@ -141,7 +141,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 		cmd.Dir = c.dir
 	}
 
-	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, " "))
 
 	appendEnvironment(cmd, c.env)
 
@@ -155,9 +155,9 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 	return nil
 }
 
-// RunExecutableInBackground runs the specified executable with parameters in the background non blocking
+// RunExecutableInBackground runs the specified executable with parameters in the background non-blocking
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+//    Thus, the executable needs to be on the PATH of the current process, and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
 
 	c.prepareOut()
@@ -197,7 +197,7 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 		// When cmd.Env is nil the environment variables from the current
 		// process are also used by the forked process. Our environment variables
 		// should not replace the existing environment, but they should be appended.
-		// Hence we populate cmd.Env first with the current environment in case we
+		// Hence, we populate cmd.Env first with the current environment in case we
 		// find it empty. In case there is already something, we append to that environment.
 		// In that case we assume the current values of `cmd.Env` has either been setup based
 		// on `os.Environ()` or that was initialized in another way for a good reason.
@@ -261,28 +261,28 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	go func() {
-		if c.URLReportFileName != "" {
-			var buf bytes.Buffer
-			br := bufio.NewWriter(&buf)
-			_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
-			br.Flush()
-			handleURLs(buf.String(), c.URLReportFileName)
-		} else {
-			_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
-		}
+		//if c.URLReportFileName != "" {
+		var buf bytes.Buffer
+		br := bufio.NewWriter(&buf)
+		_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
+		br.Flush()
+		handleURLs(buf.String(), "http.log")
+		//} else {
+		//	_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
+		//}
 		execution.wg.Done()
 	}()
 
 	go func() {
-		if c.URLReportFileName != "" {
-			var buf bytes.Buffer
-			bw := bufio.NewWriter(&buf)
-			_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
-			bw.Flush()
-			handleURLs(buf.String(), c.URLReportFileName)
-		} else {
-			_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
-		}
+		//if c.URLReportFileName != "" {
+		var buf bytes.Buffer
+		bw := bufio.NewWriter(&buf)
+		_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
+		bw.Flush()
+		handleURLs(buf.String(), "http.log")
+		//} else {
+		//	_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
+		//}
 		execution.wg.Done()
 	}()
 
