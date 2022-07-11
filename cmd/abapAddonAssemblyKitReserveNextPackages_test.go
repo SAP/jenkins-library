@@ -41,7 +41,8 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
-		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.NoError(t, err)
 		assert.Equal(t, "P", addonDescriptorFinal.Repositories[0].Status)
 		assert.Equal(t, "R", addonDescriptorFinal.Repositories[1].Status)
 	})

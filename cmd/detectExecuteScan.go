@@ -448,6 +448,9 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.RemediationStatus {
 	case "NEW":
 		return true
@@ -461,6 +464,9 @@ func isActiveVulnerability(v bd.Vulnerability) bool {
 }
 
 func isMajorVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.Severity {
 	case "CRITICAL":
 		return true
