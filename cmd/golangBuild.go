@@ -424,18 +424,18 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 
 func retrieveGolangciLint(golangciLintDir string) error {
 	// from installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
-	installScript, err := exec.Command("curl", "-sSfL", golangciLintCurlUrl).Output()
+	installationScript, err := exec.Command("curl", "-sSfL", golangciLintCurlUrl).Output()
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: curl command failed: %w", err)
 	}
 
 	cmd := exec.Command("sh", "-s", "--", "-b", golangciLintDir, golangciLintVersion)
-	installScriptBuffer := bytes.Buffer{}
-	installScriptBuffer.Write(installScript)
-	cmd.Stdin = &installScriptBuffer
-	out, err := cmd.CombinedOutput()
+	installationScriptBuffer := bytes.Buffer{}
+	installationScriptBuffer.Write(installationScript)
+	cmd.Stdin = &installationScriptBuffer
+	cmdOutput, err := cmd.CombinedOutput()
 
-	log.Entry().Infof(string(out))
+	log.Entry().Infof(string(cmdOutput))
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
@@ -451,17 +451,21 @@ func runGolangciLint(golangciLintDir string) error {
 	command := fmt.Sprintf("%s run --out-format %s > %s", binaryPath, reportStyle, reportOutputPath)
 	log.Entry().Infof("running command: %s", command)
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
+	log.Entry().Infof(string(out))
 
 	if file, err := os.Open(reportOutputPath); err == nil {
 		defer file.Close()
-		b, _ := ioutil.ReadAll(file)
-		log.Entry().Infof("golangci-lint report:")
-		log.Entry().Infof(string(b))
+		report, err := ioutil.ReadAll(file)
+
+		if err != nil {
+			return fmt.Errorf("running golangci-lint failed: could not read output report: %w", err)
+		}
+
+		log.Entry().Infof("golangci-lint report: \n" + string(report))
 	} else {
 		log.Entry().Warning("No golangci-lint report file written!")
 	}
 
-	log.Entry().Infof(string(out))
 	if err != nil {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
