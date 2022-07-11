@@ -154,8 +154,12 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	if errRead != nil {
 		return uriConnectionDetails, err, false
 	}
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return uriConnectionDetails, err, false
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return uriConnectionDetails, err, false
+	}
 	if reflect.DeepEqual(abaputils.CloneEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
@@ -212,7 +216,7 @@ func handleCloneError(resp *http.Response, err error, cloneConnectionDetails aba
 		}
 		log.Entry().Infof("-------------------------")
 		log.Entry().Infof("-------------------------")
-		pullOptions := *&abapEnvironmentPullGitRepoOptions{
+		pullOptions := abapEnvironmentPullGitRepoOptions{
 			Username:       cloneConnectionDetails.User,
 			Password:       cloneConnectionDetails.Password,
 			Host:           cloneConnectionDetails.Host,

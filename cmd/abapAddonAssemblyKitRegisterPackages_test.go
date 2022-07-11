@@ -48,7 +48,8 @@ func TestRegisterPackagesStep(t *testing.T) {
 
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
-		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.NoError(t, err)
 		assert.Equal(t, "L", addonDescriptorFinal.Repositories[0].Status)
 	})
 	t.Run("step error - null file", func(t *testing.T) {

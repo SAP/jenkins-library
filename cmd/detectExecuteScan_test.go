@@ -639,8 +639,21 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.True(t, isMajorVulnerability(v))
+	})
+	t.Run("Case Ignored Components", func(t *testing.T) {
+		vr := bd.VulnerabilityWithRemediation{
+			OverallScore: 7.5,
+			Severity:     "HIGH",
+		}
+		v := bd.Vulnerability{
+			Name:                         "",
+			VulnerabilityWithRemediation: vr,
+			Ignored:                      true,
+		}
+		assert.False(t, isMajorVulnerability(v))
 	})
 	t.Run("Case False", func(t *testing.T) {
 		vr := bd.VulnerabilityWithRemediation{
@@ -650,6 +663,7 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.False(t, isMajorVulnerability(v))
 	})

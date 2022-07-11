@@ -26,6 +26,15 @@ func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildUtils {
 	return &utils
 }
 
+func newAbapEnvironmentBuildTestsUtilsWithClient() abapEnvironmentBuildUtils {
+	mC := abapbuild.GetBuildMockClientWithClient()
+	utils := abapEnvironmentBuildMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		MockClient:     &mC,
+	}
+	return &utils
+}
+
 func (mB abapEnvironmentBuildMockUtils) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
 }
 func (mB abapEnvironmentBuildMockUtils) GetAbapCommunicationArrangementInfo(options abaputils.AbapEnvironmentOptions, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
@@ -68,6 +77,23 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		assert.Equal(t, finalValues, cpe.abap.buildValues)
 	})
 
+	t.Run("happy path, use client", func(t *testing.T) {
+		t.Parallel()
+		// init
+		cpe := abapEnvironmentBuildCommonPipelineEnvironment{}
+		config := abapEnvironmentBuildOptions{}
+		config.AddonDescriptor = addonDescriptor
+		config.Values = `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"Value1"}]`
+		config.AbapSourceClient = "001"
+		utils := newAbapEnvironmentBuildTestsUtilsWithClient()
+		// test
+		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		// assert
+		finalValues := `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"SUN","value":"SUMMER"}]`
+		assert.NoError(t, err)
+		assert.Equal(t, finalValues, cpe.abap.buildValues)
+	})
+
 	t.Run("happy path, download only one", func(t *testing.T) {
 		t.Parallel()
 		// init
@@ -101,8 +127,10 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
 		// assert
 		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
-		json.Unmarshal([]byte(finalValues), expectedValueList)
-		json.Unmarshal([]byte(cpe.abap.buildValues), recordedValueList)
+		err = json.Unmarshal([]byte(finalValues), &expectedValueList)
+		assert.NoError(t, err)
+		err = json.Unmarshal([]byte(cpe.abap.buildValues), &recordedValueList)
+		assert.NoError(t, err)
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, expectedValueList, recordedValueList)
 	})

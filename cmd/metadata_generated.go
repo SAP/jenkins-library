@@ -29,6 +29,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"apiKeyValueMapDownload":                    apiKeyValueMapDownloadMetadata(),
 		"apiKeyValueMapUpload":                      apiKeyValueMapUploadMetadata(),
 		"apiProviderDownload":                       apiProviderDownloadMetadata(),
+		"apiProviderList":                           apiProviderListMetadata(),
 		"apiProviderUpload":                         apiProviderUploadMetadata(),
 		"apiProxyDownload":                          apiProxyDownloadMetadata(),
 		"apiProxyList":                              apiProxyListMetadata(),
