@@ -34,7 +34,7 @@ spec:
         aliases:
           - name: protecodeFailOnSevereVulnerabilities
         type: bool
-        description: Whether to fail the job on severe vulnerabilties or not
+        description: Whether to fail the step on severe vulnerabilties or not
         scope:
           - PARAMETERS
           - STAGES
