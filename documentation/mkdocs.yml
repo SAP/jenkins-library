@@ -74,6 +74,7 @@ nav:
         - apiProxyDownload: steps/apiProxyDownload.md
         - apiProxyList: steps/apiProxyList.md
         - apiProviderDownload: steps/apiProviderDownload.md
+        - apiProviderList: steps/apiProviderList.md
         - apiProviderUpload: steps/apiProviderUpload.md
         - apiProxyUpload: steps/apiProxyUpload.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md

@@ -32,6 +32,7 @@ class commonPipelineEnvironment implements Serializable {
     */
     String gitCommitId
     String gitRemoteCommitId
+    String gitHeadCommitId
     String gitCommitMessage
     String gitSshUrl
     String gitHttpsUrl
@@ -92,6 +93,7 @@ class commonPipelineEnvironment implements Serializable {
 
         gitCommitId = null
         gitRemoteCommitId = null
+        gitHeadCommitId = null
         gitCommitMessage = null
         gitSshUrl = null
         gitHttpsUrl = null
@@ -208,6 +210,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/remoteCommitId', property: 'gitRemoteCommitId'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/headCommitId', property: 'gitHeadCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/httpsUrl', property: 'gitHttpsUrl'],
         [filename: '.pipeline/commonPipelineEnvironment/git/ref', property: 'gitRef'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
