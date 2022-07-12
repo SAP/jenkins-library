@@ -51,6 +51,7 @@ type golangBuildUtils interface {
 
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 	getDockerImageValue(stepName string) (string, error)
+	GetExitCode() int
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -177,7 +178,14 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			return err
 		}
 
-		if err := runGolangciLint(golangciLintDir); err != nil {
+		// hardcode those for now
+		lintSettings := map[string]string{
+			"reportStyle":      "checkstyle", // readable by Sonar
+			"reportOutputPath": "golangci-lint-report.xml",
+			"additionalParams": "",
+		}
+
+		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
 			return err
 		}
 	}
@@ -443,34 +451,25 @@ func retrieveGolangciLint(golangciLintDir string) error {
 	return nil
 }
 
-func runGolangciLint(golangciLintDir string) error {
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
-	reportOutputPath := "golangci-lint-report.xml"
-	reportStyle := "checkstyle" // readable by Sonar
+	var outputBuffer bytes.Buffer
+	utils.Stdout(&outputBuffer)
 
-	lintRunCommand := fmt.Sprintf("%s run --out-format %s > %s", binaryPath, reportStyle, reportOutputPath)
-	log.Entry().Infof("running command: %s", lintRunCommand)
-	lintRunOutput, err := exec.Command("bash", "-c", lintRunCommand).CombinedOutput()
-	log.Entry().Infof(string(lintRunOutput))
-
-	exitStatusString := ""
-	if err != nil {
-		exitStatusString = err.Error()
-	}
-
-	// exit status 1 is returned when linter ran fine, but found issues
-	if err != nil && exitStatusString != "exit status 1" {
+	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
 
-	lintReport, err := ioutil.ReadFile(reportOutputPath)
+	log.Entry().Infof("lint report: \n" + outputBuffer.String())
+	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
+	err = ioutil.WriteFile(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
 	if err != nil {
-		return fmt.Errorf("running golangci-lint failed: couldn't read lint report: %w", err)
+		return fmt.Errorf("writing golangci-lint report failed: %w", err)
 	}
-	log.Entry().Infof("lint report: \n" + string(lintReport))
 
-	if exitStatusString == "exit status 1" {
-		return fmt.Errorf("running golangci-lint failed: linter found issues, see report above")
+	if utils.GetExitCode() == 1 {
+		return fmt.Errorf("golangci-lint found issues, see report above")
 	}
 
 	return nil
