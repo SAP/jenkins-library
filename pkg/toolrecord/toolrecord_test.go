@@ -1,8 +1,6 @@
 package toolrecord_test
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
@@ -10,11 +8,7 @@ import (
 )
 
 func TestToolRecord(t *testing.T) {
-	workspace, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	defer os.RemoveAll(workspace)
+	workspace := t.TempDir()
 
 	t.Run("Check toolrecord", func(t *testing.T) {
 		tr := toolrecord.New(workspace, "dummyTool", "dummyInstance")

@@ -27,8 +27,7 @@ func TestKarmaIntegration(t *testing.T) {
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", t.Name()), tempDir)

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,15 +44,11 @@ func TestRunContainerSaveImage(t *testing.T) {
 
 	t.Run("failure - download image", func(t *testing.T) {
 		config := containerSaveImageOptions{}
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		dClient := mock.DownloadMock{ReturnError: "download error"}
 		files := mock.FilesMock{}
-		_, err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
+		_, err := runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient, &files)
 		assert.EqualError(t, err, "failed to download docker image: download error")
 	})
 }

@@ -107,6 +107,10 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 			return errors.New("failed running upload-results as github token was not specified")
 		}
 
+		if config.CommitID == "NA" {
+			return errors.New("failed running upload-results as gitCommitId is not available")
+		}
+
 		var repoInfo RepoInfo
 		err := getGitRepoInfo(config.Repository, &repoInfo)
 		if err != nil {
