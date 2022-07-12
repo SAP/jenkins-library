@@ -253,7 +253,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
 		assert.Equal(t, utilsMock.ExitCode, 3)
 		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
