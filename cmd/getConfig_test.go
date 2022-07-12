@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func configOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
@@ -295,10 +293,7 @@ func TestPrepareOutputEnvironment(t *testing.T) {
 		},
 	}
 
-	dir, tempDirErr := ioutil.TempDir("", "")
-	defer os.RemoveAll(dir)
-	require.NoError(t, tempDirErr)
-	require.DirExists(t, dir, "Failed to create temporary directory")
+	dir := t.TempDir()
 
 	prepareOutputEnvironment(outputResources, dir)
 	assert.DirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path1"))

@@ -24,8 +24,7 @@ func TestBuildPythonProject(t *testing.T) {
 	assert.NoError(t, err, "Getting current working directory failed.")
 	pwd = filepath.Dir(pwd)
 
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPythonIntegration", "python-project"), tempDir)
