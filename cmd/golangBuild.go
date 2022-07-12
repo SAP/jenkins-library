@@ -453,8 +453,10 @@ func runGolangciLint(golangciLintDir string) error {
 	lintRunOutput, err := exec.Command("bash", "-c", lintRunCommand).CombinedOutput()
 	log.Entry().Infof(string(lintRunOutput))
 
+	exitStatusString := err.Error()
+
 	// exit status 1 is returned when linter found issues, but ran fine
-	if err != nil && err.Error() != "exit status 1" {
+	if err != nil && exitStatusString != "exit status 1" {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
 
@@ -463,6 +465,10 @@ func runGolangciLint(golangciLintDir string) error {
 		return fmt.Errorf("running golangci-lint failed: couldn't read lint report: %w", err)
 	}
 	log.Entry().Infof("lint report: \n" + string(lintReport))
+
+	if exitStatusString == "exit status 1" {
+		return fmt.Errorf("running golangci-lint failed: linter found issues, see report above")
+	}
 
 	return nil
 }
