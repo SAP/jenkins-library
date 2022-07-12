@@ -448,27 +448,21 @@ func runGolangciLint(golangciLintDir string) error {
 	reportOutputPath := "golangci-lint-report.xml"
 	reportStyle := "checkstyle" // readable by Sonar
 
-	command := fmt.Sprintf("%s run --out-format %s > %s", binaryPath, reportStyle, reportOutputPath)
-	log.Entry().Infof("running command: %s", command)
-	out, err := exec.Command("bash", "-c", command).CombinedOutput()
-	log.Entry().Infof(string(out))
+	lintRunCommand := fmt.Sprintf("%s run --out-format %s > %s", binaryPath, reportStyle, reportOutputPath)
+	log.Entry().Infof("running command: %s", lintRunCommand)
+	lintRunOutput, err := exec.Command("bash", "-c", lintRunCommand).CombinedOutput()
+	log.Entry().Infof(string(lintRunOutput))
 
-	if file, err := os.Open(reportOutputPath); err == nil {
-		defer file.Close()
-		report, err := ioutil.ReadAll(file)
-
-		if err != nil {
-			return fmt.Errorf("running golangci-lint failed: could not read output report: %w", err)
-		}
-
-		log.Entry().Infof("golangci-lint report: \n" + string(report))
-	} else {
-		log.Entry().Warning("No golangci-lint report file written!")
-	}
-
-	if err != nil {
+	// exit status 1 is returned when linter found issues, but ran fine
+	if err != nil && err.Error() != "exit status 1" {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
+
+	lintReport, err := ioutil.ReadFile(reportOutputPath)
+	if err != nil {
+		return fmt.Errorf("running golangci-lint failed: couldn't read lint report: %w", err)
+	}
+	log.Entry().Infof("lint report: \n" + string(lintReport))
 
 	return nil
 }
