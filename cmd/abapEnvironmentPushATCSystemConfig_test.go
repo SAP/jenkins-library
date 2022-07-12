@@ -510,24 +510,20 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
 
 		atcSystemConfigFileString := ``
 
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -555,17 +551,13 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
@@ -593,7 +585,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -621,17 +613,13 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
@@ -659,7 +647,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}

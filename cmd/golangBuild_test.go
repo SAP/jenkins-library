@@ -613,11 +613,9 @@ func TestReportGolangTestCoverage(t *testing.T) {
 
 func TestPrepareLdflags(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "")
-	defer os.RemoveAll(dir) // clean up
-	assert.NoError(t, err, "Error when creating temp dir")
+	dir := t.TempDir()
 
-	err = os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
+	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
 	err = ioutil.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)

@@ -205,13 +205,11 @@ func TestGetProjectConfigFile(t *testing.T) {
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
-			dir, err := ioutil.TempDir("", "")
-			defer os.RemoveAll(dir) // clean up
-			assert.NoError(t, err)
+			dir := t.TempDir()
 
 			if len(test.filesAvailable) > 0 {
 				configFolder := filepath.Join(dir, filepath.Dir(test.filesAvailable[0]))
-				err = os.MkdirAll(configFolder, 0700)
+				err := os.MkdirAll(configFolder, 0700)
 				assert.NoError(t, err)
 			}
 

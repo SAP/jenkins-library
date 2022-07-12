@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -24,16 +23,11 @@ func TestDownloadRequest(t *testing.T) {
 		logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"),
 	}
 
-	workingDir, err := ioutil.TempDir("", "test detailed results")
-	if err != nil {
-		t.Fatal("Failed to create temporary directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workingDir)
+	workingDir := t.TempDir()
 	targetFile := filepath.Join(workingDir, "abc/123/abc.xml")
 
 	// function under test
-	err = client.DownloadFile(server.URL, targetFile, nil, nil)
+	err := client.DownloadFile(server.URL, targetFile, nil, nil)
 	// asserts
 	assert.NoError(t, err, "Error occurred but none expected")
 	assert.FileExists(t, targetFile, "File not found")
