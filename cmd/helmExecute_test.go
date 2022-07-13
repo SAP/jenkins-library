@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -368,19 +369,17 @@ image: "test-image"
 tag: {{ imageTag "test-image" }}
 `)
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "test-data-*")
+	tmpDir := t.TempDir()
+	require.DirExists(t, tmpDir)
+	err := os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment), 0700)
 	require.NoError(t, err)
-	err = os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment), 0700)
+
+	cpe := piperenv.CPEMap{
+		"artifactVersion":         "1.0.0-123456789",
+		"container/imageNameTags": []string{"test-image:1.0.0-123456789"},
+	}
+	err = cpe.WriteToDisk(tmpDir)
 	require.NoError(t, err)
-	err = os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment, "container"), 0700)
-	require.NoError(t, err)
-	err = os.WriteFile(path.Join(tmpDir, commonPipelineEnvironment, "artifactVersion"), []byte("1.0.0-123456789"), 0700)
-	require.NoError(t, err)
-	err = os.WriteFile(path.Join(tmpDir, commonPipelineEnvironment, "container", "imageNameTags.json"), []byte(`["test-image:1.0.0-123456789"]`), 0700)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(tmpDir)
-	})
 
 	defaultValueFile := "values.yaml"
 	config := helmExecuteOptions{
