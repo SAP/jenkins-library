@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 
 	"github.com/ghodss/yaml"
-
+	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
 )
 
@@ -48,6 +48,10 @@ const (
 
 type Purl struct {
 	Purl string `json:"purl"`
+}
+
+func (p Purl) ToPackageUrl() (packageurl.PackageURL, error) {
+	return packageurl.FromString(p.Purl)
 }
 
 // ReadAssessment loads the assessments and returns their contents
