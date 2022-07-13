@@ -138,9 +138,9 @@ transportRequestReqIDFromGit( script: this )
 transportRequestUploadCTS( script: this, ... )
 ```
 
-## General purpose pipeline release stage
+## General Purpose Pipeline Release Stage
 
-The step can also be configured via General purpose pipeline in Release stage using config.yml. The configuration will look as below:
+The step can also be configured via General Purpose Pipeline in Release stage using the config.yml as follows:
 
 ```groovy
 stages:
@@ -148,7 +148,7 @@ stages:
     transportRequestUploadCTS: true
 ```
 
-This will initialize the step within the Release stage of pipeline and will upload the desired application (SAPUI5/OPENUI5) to the SAPUI5 ABAP repository.
+This will initialize the step within the Release stage of the pipeline and will upload the desired application (SAPUI5/OPENUI5) to the SAPUI5 ABAP repository.
 
 ## ${docGenParameters}
 
