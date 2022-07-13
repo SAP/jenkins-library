@@ -11,24 +11,24 @@ import (
 )
 
 // Assessment format related JSON structs
-type Assessment struct {
-	Ignores    []Ignore `json:"ignore"`
+type Assessments struct {
+	List    []Assessment `json:"ignore"`
 }
 
-type Ignore struct {
+type Assessment struct {
 	Vulnerability string `json:"vulnerability"`
-	Status AssessmentState `json:"status"`
+	Status AssessmentStatus `json:"status"`
 	Analysis AssessmentAnalysis `json:"analysis"`
 	Purls []Purl `json:"purls"`
 }
 
-type AssessmentState string
+type AssessmentStatus string
 
 const (
-	NotAssessed AssessmentState = "Not Assessed"
-	Relevant AssessmentState = "Relevant (True Positive)"
-	NotRelevant AssessmentState = "Not Relevant (False Positive)"
-	InProcess AssessmentState = "In Process"
+	NotAssessed AssessmentStatus = "Not Assessed"
+	Relevant AssessmentStatus = "Relevant (True Positive)"
+	NotRelevant AssessmentStatus = "Not Relevant (False Positive)"
+	InProcess AssessmentStatus = "In Process"
 )
 
 type AssessmentAnalysis string
