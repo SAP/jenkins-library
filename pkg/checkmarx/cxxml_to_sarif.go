@@ -205,10 +205,6 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			}
 			result.Message = msg
 
-			if cxxml.Query[i].Name != "" {
-				msg := new(format.Message)
-				msg.Text = cxxml.Query[i].Name
-			}
 			//Locations
 			codeflow := *new(format.CodeFlow)
 			threadflow := *new(format.ThreadFlow)
@@ -334,6 +330,18 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			for cat := 0; cat < len(cats); cat++ {
 				rule.Properties.Tags = append(rule.Properties.Tags, cats[cat])
 			}
+		}
+		switch cxxml.Query[i].SeverityIndex {
+		case 0:
+			rule.Properties.SecuritySeverity = "0.0"
+		case 1:
+			rule.Properties.SecuritySeverity = "2.0"
+		case 2:
+			rule.Properties.SecuritySeverity = "5.0"
+		case 3:
+			rule.Properties.SecuritySeverity = "7.0"
+		default:
+			rule.Properties.SecuritySeverity = "10.0"
 		}
 
 		if cxxml.Query[i].CweID != "" {

@@ -408,7 +408,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 	})
 
 	t.Run("error - policy violations", func(t *testing.T) {
-		config := ScanOptions{}
+		config := ScanOptions{FailOnSevereVulnerabilities: true}
 		scan := newWhitesourceScan(&config)
 		scan.AppendScannedProject("testProject1")
 		systemMock := ws.NewSystemMock("ignored")
@@ -615,8 +615,9 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken: "mock-product-token",
-			Version:      "1",
+			FailOnSevereVulnerabilities: true,
+			ProductToken:                "mock-product-token",
+			Version:                     "1",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")

@@ -79,6 +79,7 @@ type Vulnerabilities struct {
 type Vulnerability struct {
 	Name                         string `json:"componentName,omitempty"`
 	Version                      string `json:"componentVersionName,omitempty"`
+	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 }
 

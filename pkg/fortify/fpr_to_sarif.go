@@ -498,7 +498,7 @@ type Attribute struct {
 }
 
 // ConvertFprToSarif converts the FPR file contents into SARIF format
-func ConvertFprToSarif(sys System, project *models.Project, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
+func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
@@ -525,11 +525,11 @@ func ConvertFprToSarif(sys System, project *models.Project, projectVersion *mode
 	}
 
 	log.Entry().Debug("Calling Parse.")
-	return Parse(sys, project, projectVersion, data, filterSet)
+	return Parse(sys, projectVersion, data, filterSet)
 }
 
 // Parse parses the FPR file
-func Parse(sys System, project *models.Project, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, error) {
+func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -796,7 +796,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 		prop.InstanceID = fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID
 		prop.RuleGUID = fvdl.Vulnerabilities.Vulnerability[i].ClassInfo.ClassID
 		//Get the audit data
-		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, project, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
+		if err := integrateAuditData(prop, fvdl.Vulnerabilities.Vulnerability[i].InstanceInfo.InstanceID, sys, projectVersion, auditData, filterSet, oneRequestPerIssueMode, maxretries); err != nil {
 			log.Entry().Debug(err)
 			maxretries = maxretries - 1
 			if maxretries >= 0 {
@@ -826,7 +826,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 				var nameArray []string
 				var idArray []string
 				if fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom != "" {
-					idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
+					//idArray = append(idArray, fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom)
 					words := strings.Split(fvdl.Vulnerabilities.Vulnerability[j].ClassInfo.Kingdom, " ")
 					for index, element := range words { // These are required to ensure that titlecase is respected in titles, part of sarif "friendly name" rules
 						words[index] = piperutils.Title(strings.ToLower(element))
@@ -960,7 +960,7 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 					rls := *new(format.Relationships)
 					rls.Target.Id = cweIds[j]
 					rls.Target.ToolComponent.Name = "CWE"
-					rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765"
+					rls.Target.ToolComponent.Guid = "25F72D7E-8A92-459D-AD67-64853F788765" //This might not be exact, it is taken from the Microsoft tool converter
 					rls.Kinds = append(rls.Kinds, "relevant")
 					sarifRule.Relationships = append(sarifRule.Relationships, rls)
 				}
@@ -1179,7 +1179,8 @@ func Parse(sys System, project *models.Project, projectVersion *models.ProjectVe
 	return sarif, nil
 }
 
-func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, project *models.Project, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
+
 	// Set default values
 	ruleProp.Audited = false
 	ruleProp.FortifyCategory = "Unknown"
@@ -1201,7 +1202,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		err := errors.New("no system instance, lookup impossible for " + issueInstanceID)
 		return err
 	}
-	if project == nil || projectVersion == nil {
+	if projectVersion == nil {
 		err := errors.New("project or projectVersion is undefined: lookup aborted for " + issueInstanceID)
 		return err
 	}

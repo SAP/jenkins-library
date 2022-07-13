@@ -104,7 +104,7 @@ func resolveAUnitConfiguration(config abapEnvironmentRunAUnitTestOptions) (aUnit
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
 		log.Entry().Infof("AUnit Configuration derived from: %s", config.Repositories)
-		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}))
+		repos, err := abaputils.GetRepositories((&abaputils.RepositoriesConfig{Repositories: config.Repositories}), false)
 		if err != nil {
 			return aUnitConfig, err
 		}
@@ -136,8 +136,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 
 func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
 	var err error
-	var abapEndpoint string
-	abapEndpoint = details.URL
+	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
 	location, err = pollAUnitRun(details, nil, client)
@@ -298,7 +297,9 @@ func pollAUnitRun(details abaputils.ConnectionDetailsHTTP, body []byte, client p
 			return "", fmt.Errorf("Reading response body failed: %w", err)
 		}
 		x := new(AUnitRun)
-		xml.Unmarshal(bodyText, &x)
+		if err := xml.Unmarshal(bodyText, &x); err != nil {
+			return "", err
+		}
 
 		log.Entry().Infof("Current polling status: %s", x.Progress.Status)
 		if x.Progress.Status == "Not Created" {
@@ -353,7 +354,9 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 
 	//Optional checks before writing the Results
 	parsedXML := new(AUnitResult)
-	xml.Unmarshal([]byte(body), &parsedXML)
+	if err := xml.Unmarshal([]byte(body), &parsedXML); err != nil {
+		log.Entry().WithError(err).Warning("failed to unmarshal xml response")
+	}
 
 	//Write Results
 	err = ioutil.WriteFile(aunitResultFileName, body, 0644)
@@ -379,7 +382,7 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 				log.Entry().Debugf("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
-		if generateHTML == true {
+		if generateHTML {
 			htmlString := generateHTMLDocumentAUnit(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
