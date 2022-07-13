@@ -1,5 +1,15 @@
 package format
 
+import (
+	"fmt"
+	"io"
+	"io/ioutil"
+
+	"github.com/ghodss/yaml"
+
+	"github.com/pkg/errors"
+)
+
 // Assessment format related JSON structs
 type Assessment struct {
 	Ignores    []Ignore `json:"ignore"`
@@ -38,4 +48,20 @@ const (
 
 type Purl struct {
 	Purl string `json:"purl"`
+}
+
+// ReadAssessment loads the assessments and returns their contents
+func (assessment *Assessment) ReadAssessment(assessmentFile io.ReadCloser) error {
+	defer assessmentFile.Close()
+
+	content, err := ioutil.ReadAll(assessmentFile)
+	if err != nil {
+		return errors.Wrapf(err, "error reading %v", assessmentFile)
+	}
+
+	err = yaml.Unmarshal(content, &assessment)
+	if err != nil {
+		return NewParseError(fmt.Sprintf("format of assessment file is invalid %q: %v", content, err))
+	}
+	return nil
 }
