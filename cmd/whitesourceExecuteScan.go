@@ -529,9 +529,12 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 	// and there does not seem to be real benefit in archiving it.
 
 	if policyViolationCount > 0 {
-		log.SetErrorCategory(log.ErrorCompliance)
 		influx.whitesource_data.fields.policy_violations = policyViolationCount
-		return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+		if config.FailOnSevereVulnerabilities {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+		}
+		log.Entry().Infof("%v policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false", policyViolationCount)
 	}
 
 	return policyReport, nil

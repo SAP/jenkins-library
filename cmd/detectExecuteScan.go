@@ -173,9 +173,13 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	if err != nil {
 		// Setting error category based on exit code
 		mapErrorCategory(utils.GetExitCode())
-
-		// Error code mapping with more human readable text
-		err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+		if log.GetErrorCategory() == log.ErrorCompliance && !config.FailOnSevereVulnerabilities {
+			err = nil
+			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
+		} else {
+			// Error code mapping with more human readable text
+			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+		}
 	}
 	// create Toolrecord file
 	toolRecordFileName, toolRecordErr := createToolRecordDetect("./", config, blackduckSystem)
@@ -443,6 +447,9 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.RemediationStatus {
 	case "NEW":
 		return true
@@ -456,6 +463,9 @@ func isActiveVulnerability(v bd.Vulnerability) bool {
 }
 
 func isMajorVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.Severity {
 	case "CRITICAL":
 		return true

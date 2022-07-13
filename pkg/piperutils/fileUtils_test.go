@@ -1,15 +1,16 @@
 package piperutils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileExists(t *testing.T) {
-	runInTempDir(t, "testing dir returns false", "dir", func(t *testing.T) {
+	runInTempDir(t, "testing dir returns false", func(t *testing.T) {
 		err := os.Mkdir("test", 0777)
 		if err != nil {
 			t.Fatal("failed to create test dir in temporary dir")
@@ -18,7 +19,7 @@ func TestFileExists(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, result)
 	})
-	runInTempDir(t, "testing file returns true", "dir", func(t *testing.T) {
+	runInTempDir(t, "testing file returns true", func(t *testing.T) {
 		file, err := ioutil.TempFile("", "testFile")
 		assert.NoError(t, err)
 		result, err := FileExists(file.Name())
@@ -28,7 +29,7 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestDirExists(t *testing.T) {
-	runInTempDir(t, "testing dir exists", "dir-exists", func(t *testing.T) {
+	runInTempDir(t, "testing dir exists", func(t *testing.T) {
 		err := os.Mkdir("test", 0777)
 		if err != nil {
 			t.Fatal("failed to create test dir in temporary dir")
@@ -50,7 +51,7 @@ func TestDirExists(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-	runInTempDir(t, "copying file succeeds", "dir2", func(t *testing.T) {
+	runInTempDir(t, "copying file succeeds", func(t *testing.T) {
 		file := "testFile"
 		err := ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
 		if err != nil {
@@ -61,7 +62,7 @@ func TestCopy(t *testing.T) {
 		assert.NoError(t, err, "Didn't expert error but got one")
 		assert.Equal(t, int64(3), result, "Expected true but got false")
 	})
-	runInTempDir(t, "copying directory fails", "dir3", func(t *testing.T) {
+	runInTempDir(t, "copying directory fails", func(t *testing.T) {
 		src := filepath.Join("some", "file")
 		dst := filepath.Join("another", "file")
 
@@ -81,20 +82,17 @@ func TestCopy(t *testing.T) {
 	})
 }
 
-func runInTempDir(t *testing.T, nameOfRun, tempDirPattern string, run func(t *testing.T)) {
-	dir, err := ioutil.TempDir("", tempDirPattern)
-	if err != nil {
-		t.Fatal("Failed to create temporary directory")
-	}
-	oldCWD, _ := os.Getwd()
-	_ = os.Chdir(dir)
-	// clean up tmp dir
-	defer func() {
-		_ = os.Chdir(oldCWD)
-		_ = os.RemoveAll(dir)
-	}()
+func runInTempDir(t *testing.T, nameOfRun string, run func(t *testing.T)) {
+	t.Run(nameOfRun, func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		t.Cleanup(func() {
+			_ = os.Chdir(oldCWD)
+		})
 
-	t.Run(nameOfRun, run)
+		run(t)
+	})
 }
 
 func TestExcludeFiles(t *testing.T) {

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -19,11 +17,7 @@ func TestRunApiProxyDownload(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Download of API Proxy", func(t *testing.T) {
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		defer os.RemoveAll(tempDir) // clean up
-		if tmpErr != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		tempDir := t.TempDir()
 		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",

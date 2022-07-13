@@ -118,16 +118,12 @@ func TestCloudFoundryCreateService(t *testing.T) {
 	t.Run("Create service: variable substitution in-line", func(t *testing.T) {
 		defer cfMockCleanup(m)
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `  
@@ -146,7 +142,8 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		  plan:   "testPlan"`
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+		err := ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+		assert.NoError(t, err)
 
 		var manifestVariables = []string{"name1=Test1", "name2=Test2"}
 
@@ -171,16 +168,12 @@ func TestCloudFoundryCreateService(t *testing.T) {
 	t.Run("Create service: variable substitution with variable substitution manifest file", func(t *testing.T) {
 		defer cfMockCleanup(m)
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		varsFileString := `name: test1
 		name2: test2`
@@ -202,9 +195,12 @@ func TestCloudFoundryCreateService(t *testing.T) {
 
 		varsFileStringBody := []byte(varsFileString)
 		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("varsTest.yml", varsFileStringBody, 0644)
+		err := ioutil.WriteFile("varsTest.yml", varsFileStringBody, 0644)
+		assert.NoError(t, err)
 		err = ioutil.WriteFile("varsTest2.yml", varsFileStringBody, 0644)
+		assert.NoError(t, err)
 		err = ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+		assert.NoError(t, err)
 
 		var manifestVariablesFiles = []string{"varsTest.yml", "varsTest2.yml"}
 		config := cloudFoundryCreateServiceOptions{

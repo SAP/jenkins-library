@@ -32,6 +32,11 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
 	})
 
+	t.Run("GitCommitID is NA on upload results", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./", CommitID: "NA"}
+		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
+	})
+
 	t.Run("Upload results with token", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./", UploadResults: true, GithubToken: "test"}
 		assert.Equal(t, nil, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
