@@ -7,6 +7,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
+    /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
+    'cloudFoundryCreateServiceKey',
     /** Pulls Software Components / Git repositories into the ABAP Environment instance */
     'abapEnvironmentPullGitRepo',
     /** Checks out a Branch in the pulled Software Component on the ABAP Environment instance */
@@ -14,7 +16,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Clones Software Components / Git repositories into the ABAP Environment instance and checks out the respective branches */
     'abapEnvironmentCloneGitRepo',
     /** Specifies the strategy that should be peformed on the ABAP Environment instance*/
-    'strategy'
+    'strategy',
+    /** Parameter for host config */
+    'host'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -34,6 +38,9 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+        if (!config.host) {
+            cloudFoundryCreateServiceKey script: parameters.script
+        }
         switch (config.strategy) {
             case 'Pull':
                 abapEnvironmentPullGitRepo script: parameters.script

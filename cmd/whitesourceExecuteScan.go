@@ -178,8 +178,9 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 			ContainerRegistryPassword: config.ContainerRegistryPassword,
 			DockerConfigJSON:          config.DockerConfigJSON,
 			FilePath:                  config.ProjectName,
+			ImageFormat:               "legacy", // keep the image format legacy or whitesource is not able to read layers
 		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: ""}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
 		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
@@ -528,9 +529,12 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 	// and there does not seem to be real benefit in archiving it.
 
 	if policyViolationCount > 0 {
-		log.SetErrorCategory(log.ErrorCompliance)
 		influx.whitesource_data.fields.policy_violations = policyViolationCount
-		return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+		if config.FailOnSevereVulnerabilities {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+		}
+		log.Entry().Infof("%v policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false", policyViolationCount)
 	}
 
 	return policyReport, nil

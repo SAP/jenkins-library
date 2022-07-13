@@ -50,7 +50,7 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 	log.Entry().Debug("Create protecode client")
 	client := createProtecodeClient(&config)
 
-	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.DockerRegistryURL, LocalPath: config.FilePath}
+	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.DockerRegistryURL, LocalPath: config.FilePath, ImageFormat: "legacy"}
 	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
 
@@ -279,6 +279,8 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
 		log.SetErrorCategory(log.ErrorCompliance)
 		return fmt.Errorf("the product is not compliant")
+	} else if protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
+		log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 	}
 	return nil
 }

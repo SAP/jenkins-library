@@ -22,6 +22,7 @@ import (
 type FortifyReportData struct {
 	ToolName                            string                  `json:"toolName"`
 	ToolInstance                        string                  `json:"toolInstance"`
+	ProjectID                           int64                   `json:"projectID"`
 	ProjectName                         string                  `json:"projectName"`
 	ProjectVersion                      string                  `json:"projectVersion"`
 	ProjectVersionID                    int64                   `json:"projectVersionID"`
@@ -54,6 +55,7 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 		Subheaders: []reporting.Subheader{
 			{Description: "Fortify project name", Details: data.ProjectName},
 			{Description: "Fortify project version", Details: data.ProjectVersion},
+			{Description: "Fortify URL", Details: data.URL},
 		},
 		Overview: []reporting.OverviewRow{
 			{Description: "Number of compliance violations", Details: fmt.Sprint(data.Violations)},
@@ -154,6 +156,7 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	bufEncoder.SetIndent("", "  ")
 	//encode to buffer
 	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")

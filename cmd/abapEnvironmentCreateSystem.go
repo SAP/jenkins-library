@@ -43,6 +43,9 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 	}
 	// if no manifest file is provided, it is created with the provided config values
 	manifestYAML, err := generateManifestYAML(config)
+	if err != nil {
+		return err
+	}
 
 	// writing the yaml into a temporary file
 	path, _ := os.Getwd()

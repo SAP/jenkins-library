@@ -24,8 +24,7 @@ func TestBuildPythonProject(t *testing.T) {
 	assert.NoError(t, err, "Getting current working directory failed.")
 	pwd = filepath.Dir(pwd)
 
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPythonIntegration", "python-project"), tempDir)
@@ -63,9 +62,9 @@ func TestBuildPythonProject(t *testing.T) {
 	}
 	output := string(content)
 
-	assert.Contains(t, output, "info  pythonBuild - running command: python3 setup.py sdist bdist_wheel")
-	assert.Contains(t, output, "info  pythonBuild - running command: python3 -m pip install --upgrade cyclonedx-bom")
-	assert.Contains(t, output, "info  pythonBuild - running command: cyclonedx-bom --e --output bom.xml")
+	assert.Contains(t, output, "info  pythonBuild - running command: python setup.py sdist bdist_wheel")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade cyclonedx-bom")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-bom --e --output bom.xml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
 	//workaround to use test script util it is possible to set workdir for Exec call

@@ -6,16 +6,20 @@ import (
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
 	helmConfig := kubernetes.HelmExecuteOptions{
+		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
 		Image:                     config.Image,
 		Namespace:                 config.Namespace,
 		KubeContext:               config.KubeContext,
+		KeepFailedDeployments:     config.KeepFailedDeployments,
 		KubeConfig:                config.KubeConfig,
 		HelmDeployWaitSeconds:     config.HelmDeployWaitSeconds,
+		DockerConfigJSON:          config.DockerConfigJSON,
 		AppVersion:                config.AppVersion,
 		Dependency:                config.Dependency,
 		PackageDependencyUpdate:   config.PackageDependencyUpdate,
@@ -28,17 +32,27 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		TargetRepositoryPassword:  config.TargetRepositoryPassword,
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
+		Version:                   config.Version,
+		PublishVersion:            config.Version,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
 
-	helmChart := config.ChartPath + "Chart.yaml"
-	nameChart, packageVersion, err := kubernetes.GetChartInfo(helmChart, utils)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("failed to get version in Chart.yaml: %v", err)
+	artifactOpts := versioning.Options{
+		VersioningScheme: "library",
 	}
-	helmConfig.DeploymentName = nameChart
-	helmConfig.PackageVersion = packageVersion
+
+	artifact, err := versioning.GetArtifact("helm", "", &artifactOpts, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("getting artifact information failed: %v", err)
+	}
+	artifactInfo, err := artifact.GetCoordinates()
+
+	helmConfig.DeploymentName = artifactInfo.ArtifactID
+
+	if len(helmConfig.PublishVersion) == 0 {
+		helmConfig.PublishVersion = artifactInfo.Version
+	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 

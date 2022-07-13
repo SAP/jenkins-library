@@ -16,7 +16,8 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
-type githubRepoClient interface {
+// mock generated with: mockery --name GithubRepoClient --dir cmd --output cmd/mocks
+type GithubRepoClient interface {
 	CreateRelease(ctx context.Context, owner string, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, *github.Response, error)
 	DeleteReleaseAsset(ctx context.Context, owner string, repo string, id int64) (*github.Response, error)
 	GetLatestRelease(ctx context.Context, owner string, repo string) (*github.RepositoryRelease, *github.Response, error)
@@ -41,7 +42,7 @@ func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *tel
 	}
 }
 
-func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOptions, ghRepoClient githubRepoClient, ghIssueClient githubIssueClient) error {
+func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient, ghIssueClient githubIssueClient) error {
 
 	var publishedAt github.Timestamp
 
@@ -61,6 +62,8 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 	//updating assets only supported on latest release
 	if len(config.AssetPath) > 0 && config.Version == "latest" {
 		return uploadReleaseAsset(ctx, lastRelease.GetID(), config, ghRepoClient)
+	} else if len(config.AssetPathList) > 0 && config.Version == "latest" {
+		return uploadReleaseAssetList(ctx, lastRelease.GetID(), config, ghRepoClient)
 	}
 
 	releaseBody := ""
@@ -95,6 +98,8 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 
 	if len(config.AssetPath) > 0 {
 		return uploadReleaseAsset(ctx, createdRelease.GetID(), config, ghRepoClient)
+	} else if len(config.AssetPathList) > 0 {
+		return uploadReleaseAssetList(ctx, createdRelease.GetID(), config, ghRepoClient)
 	}
 
 	return nil
@@ -157,7 +162,18 @@ func getReleaseDeltaText(config *githubPublishReleaseOptions, lastRelease *githu
 	return releaseDeltaText
 }
 
-func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient githubRepoClient) error {
+func uploadReleaseAssetList(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient) error {
+	for _, asset := range config.AssetPathList {
+		config.AssetPath = asset
+		err := uploadReleaseAsset(ctx, releaseID, config, ghRepoClient)
+		if err != nil {
+			return fmt.Errorf("failed to upload release asset: %w", err)
+		}
+	}
+	return nil
+}
+
+func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient) error {
 
 	assets, _, err := ghRepoClient.ListReleaseAssets(ctx, config.Owner, config.Repository, releaseID, &github.ListOptions{})
 	if err != nil {

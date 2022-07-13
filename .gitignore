@@ -25,7 +25,6 @@ consumer-test/**/workspace
 debug.test
 /cache/protecode
 
-
 # build artifacts
 /piper
 /piper.exe
@@ -46,3 +45,8 @@ ATCResults.xml
 AUnitResults.xml
 ATCResults.html
 AUnitResults.html
+cmd/checkmarx/piper_checkmarx_report.json
+cmd/fortify/piper_fortify_report.html
+cmd/fortify/piper_fortify_report.json
+cmd/toolruns/toolrun_malwarescan_20220519143229.json
+cmd/toolruns/toolrun_protecode_20220519143230.json

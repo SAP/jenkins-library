@@ -7,8 +7,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"fmt"
-	"github.com/magiconair/properties/assert"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -18,6 +16,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/magiconair/properties/assert"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -42,6 +43,7 @@ type IntegrationTestDockerExecRunnerBundle struct {
 	Environment map[string]string
 	Setup       []string
 	Network     string
+	ExecNoLogin bool
 }
 
 // IntegrationTestDockerExecRunner keeps the state of an instance of a docker runner
@@ -56,6 +58,7 @@ type IntegrationTestDockerExecRunner struct {
 	Setup         []string
 	Network       string
 	ContainerName string
+	ExecNoLogin   bool
 }
 
 func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBundle) IntegrationTestDockerExecRunner {
@@ -70,6 +73,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		Environment:   bundle.Environment,
 		Setup:         bundle.Setup,
 		Network:       bundle.Network,
+		ExecNoLogin:   bundle.ExecNoLogin,
 		ContainerName: containerName,
 	}
 
@@ -173,7 +177,13 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh", "-l", "/piper-wrapper", "/piper", command}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh"}
+
+	if !d.ExecNoLogin {
+		args = append(args, "-l")
+	}
+
+	args = append(args, "/piper-wrapper", "/piper", command)
 	args = append(args, parameters...)
 	err := d.Runner.RunExecutable("docker", args...)
 	if err != nil {
@@ -184,8 +194,25 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 }
 
 func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh", "-l", "-c", script}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh"}
+
+	if !d.ExecNoLogin {
+		args = append(args, "-l")
+	}
+
+	args = append(args, "-c", script)
 	return d.Runner.RunExecutable("docker", args...)
+}
+
+func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, want string) {
+	buffer, err := d.getPiperOutput()
+	if err != nil {
+		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
+	}
+
+	if strings.Contains(buffer.String(), want) {
+		assert.Equal(t, buffer.String(), want, "Unexpected command output")
+	}
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want string) {

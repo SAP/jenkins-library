@@ -80,6 +80,7 @@ type Vulnerabilities struct {
 type Vulnerability struct {
 	Name                         string `json:"componentName,omitempty"`
 	Version                      string `json:"componentVersionName,omitempty"`
+	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 }
 
@@ -226,7 +227,9 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 		}
 	}
 
-	respBody, err := b.sendRequest("GET", versionPath, map[string]string{}, nil, headers)
+	//While sending a request to 'versions', get all 100 versions from that project by setting limit=100
+	//More than 100 project versions is currently not supported/recommended by Blackduck
+	respBody, err := b.sendRequest("GET", versionPath, map[string]string{"offset": "0", "limit": "100"}, nil, headers)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project version '%v:%v'", projectName, projectVersion)
 	}

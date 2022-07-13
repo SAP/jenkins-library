@@ -19,6 +19,7 @@ type gitopsUpdateDeploymentOptions struct {
 	BranchName            string   `json:"branchName,omitempty"`
 	CommitMessage         string   `json:"commitMessage,omitempty"`
 	ServerURL             string   `json:"serverUrl,omitempty"`
+	ForcePush             bool     `json:"forcePush,omitempty"`
 	Username              string   `json:"username,omitempty"`
 	Password              string   `json:"password,omitempty"`
 	FilePath              string   `json:"filePath,omitempty"`
@@ -84,6 +85,10 @@ For *kustomize* the ` + "`" + `images` + "`" + ` section will be update with the
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -133,6 +138,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", `master`, "The name of the branch where the changes should get pushed into.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
+	cmd.Flags().BoolVar(&stepConfig.ForcePush, "forcePush", false, "Force push to serverUrl")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:\n\n * `kubectl` - path to the `deployment.yaml` that should be patched. Supports globbing.\n * `helm` - path where the helm chart will be generated into. Here no globbing is supported.\n * `kustomize` - path to the `kustomization.yaml`. Supports globbing.\n")
@@ -197,6 +203,15 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 						Default:     `https://github.com`,
+					},
+					{
+						Name:        "forcePush",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "username",

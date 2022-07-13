@@ -43,8 +43,9 @@ type HelmExecuteOptions struct {
 	KubeContext               string   `json:"kubeContext,omitempty"`
 	Namespace                 string   `json:"namespace,omitempty"`
 	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	PackageVersion            string   `json:"packageVersion,omitempty"`
+	Version                   string   `json:"version,omitempty"`
 	AppVersion                string   `json:"appVersion,omitempty"`
+	PublishVersion            string   `json:"publishVersion,omitempty"`
 	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
 	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
 	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
@@ -95,6 +96,15 @@ func (h *HelmExecute) runHelmAdd() error {
 	if len(h.config.TargetRepositoryName) == 0 {
 		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
 	}
+	if len(h.config.TargetRepositoryURL) == 0 {
+		return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
+	}
+	if len(h.config.TargetRepositoryUser) != 0 {
+		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
+	}
+	if len(h.config.TargetRepositoryPassword) != 0 {
+		helmParams = append(helmParams, "--password", h.config.TargetRepositoryPassword)
+	}
 	helmParams = append(helmParams, h.config.TargetRepositoryName)
 	helmParams = append(helmParams, h.config.TargetRepositoryURL)
 	if h.verbose {
@@ -118,7 +128,15 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	helmParams := []string{
 		"upgrade",
 		h.config.DeploymentName,
-		h.config.ChartPath,
+	}
+
+	if len(h.config.ChartPath) == 0 {
+		if err := h.runHelmAdd(); err != nil {
+			return fmt.Errorf("failed to add a chart repository: %v", err)
+		}
+		helmParams = append(helmParams, h.config.TargetRepositoryName)
+	} else {
+		helmParams = append(helmParams, h.config.ChartPath)
 	}
 
 	if h.verbose {
@@ -168,6 +186,10 @@ func (h *HelmExecute) RunHelmLint() error {
 		h.config.ChartPath,
 	}
 
+	for _, v := range h.config.HelmValues {
+		helmParams = append(helmParams, "--values", v)
+	}
+
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -188,14 +210,18 @@ func (h *HelmExecute) RunHelmInstall() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	if err := h.runHelmAdd(); err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
-	}
-
 	helmParams := []string{
 		"install",
 		h.config.DeploymentName,
-		h.config.ChartPath,
+	}
+
+	if len(h.config.ChartPath) == 0 {
+		if err := h.runHelmAdd(); err != nil {
+			return fmt.Errorf("failed to add a chart repository: %v", err)
+		}
+		helmParams = append(helmParams, h.config.TargetRepositoryName)
+	} else {
+		helmParams = append(helmParams, h.config.ChartPath)
 	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
@@ -267,6 +293,10 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 // RunHelmPackage is used to package a chart directory into a chart archive
 func (h *HelmExecute) runHelmPackage() error {
+	if len(h.config.ChartPath) == 0 {
+		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
 	err := h.runHelmInit()
 	if err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
@@ -276,8 +306,8 @@ func (h *HelmExecute) runHelmPackage() error {
 		"package",
 		h.config.ChartPath,
 	}
-	if len(h.config.PackageVersion) > 0 {
-		helmParams = append(helmParams, "--version", h.config.PackageVersion)
+	if len(h.config.Version) > 0 {
+		helmParams = append(helmParams, "--version", h.config.Version)
 	}
 	if h.config.PackageDependencyUpdate {
 		helmParams = append(helmParams, "--dependency-update")
@@ -373,7 +403,7 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PackageVersion+".tgz")
+	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PublishVersion+".tgz")
 
 	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
 
