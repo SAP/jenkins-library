@@ -106,8 +106,8 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 
 	if config.Verbose {
 		cOptions = append(cOptions, []ConfigOption{
-			{Name: "log.level", Value: "trace"},
-			{Name: "log.files.level", Value: "trace"},
+			{Name: "log.level", Value: "debug"},
+			{Name: "log.files.level", Value: "debug"},
 		}...)
 	}
 
@@ -159,8 +159,11 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "docker.excludeBaseImage", Value: "true", Force: false},
 		},
 		"dub": {
-			{Name: "fileSystemScan", Value: false, Force: true},
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
+			{Name: "includes", Value: "**/*.d **/*.di"},
+		},
+		"dub2": {
+			{Name: "fileSystemScan", Value: false, Force: true},
 			{Name: "includes", Value: "**/*.d **/*.di"},
 		},
 		//ToDo: rename to go?

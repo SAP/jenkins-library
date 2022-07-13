@@ -149,9 +149,9 @@ func TestAddGeneralDefaults(t *testing.T) {
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "log.level", testConfig[2].Name)
-		assert.Equal(t, "trace", testConfig[2].Value)
+		assert.Equal(t, "debug", testConfig[2].Value)
 		assert.Equal(t, "log.files.level", testConfig[3].Name)
-		assert.Equal(t, "trace", testConfig[3].Value)
+		assert.Equal(t, "debug", testConfig[3].Value)
 	})
 
 	t.Run("includes and excludes", func(t *testing.T) {
@@ -183,12 +183,12 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ConfigOptions{{Name: "ignoreSourceFiles", Value: true, Force: true}, {Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
 	})
-
+	
 	t.Run("success case", func(t *testing.T) {
                 utilsMock := NewScanUtilsMock()
                 var testConfig ConfigOptions
                 whitesourceConfig := ScanOptions{
-                        BuildTool: "dub",
+                        BuildTool: "dub2",
                 }
                 err := testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
                 assert.NoError(t, err)
