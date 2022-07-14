@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -22,16 +21,12 @@ func TestRunAbapEnvironmentCreateTag(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -92,16 +87,12 @@ repositories:
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -209,16 +200,12 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -279,10 +266,7 @@ repositories:
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir

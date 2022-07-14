@@ -112,17 +112,13 @@ func TestPullStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test pull repos")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -135,7 +131,7 @@ repositories:
 - name: 'testRepo3'
   branch: 'testBranch3'`
 
-		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -159,16 +155,12 @@ repositories:
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -220,16 +212,12 @@ repositories:
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -368,22 +356,18 @@ repositories:
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test pull repos")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := ``
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+		err := ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
 
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -419,16 +403,12 @@ repositories:
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test pull repos")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -436,7 +416,7 @@ repositories:
 - repo: 'testRepo2'`
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+		err := ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
 
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
