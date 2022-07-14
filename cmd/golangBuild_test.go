@@ -310,7 +310,7 @@ go 1.17`
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
-		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+		assert.Contains(t, fmt.Sprint(err), "failed to parse cpe template")
 	})
 
 	t.Run("failure - build failure", func(t *testing.T) {
@@ -626,14 +626,14 @@ func TestPrepareLdflags(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		result, err := prepareLdflags(&config, utils, dir)
 		assert.NoError(t, err)
-		assert.Equal(t, "-X version=1.2.3", result)
+		assert.Equal(t, "-X version=1.2.3", (*result).String())
 	})
 
 	t.Run("error - template parsing", func(t *testing.T) {
 		config := golangBuildOptions{LdflagsTemplate: "-X version={{ .CPE.artifactVersion "}
 		utils := newGolangBuildTestsUtils()
 		_, err := prepareLdflags(&config, utils, dir)
-		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+		assert.Contains(t, fmt.Sprint(err), "failed to parse cpe template")
 	})
 }
 
