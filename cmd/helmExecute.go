@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"path"
-	"strings"
-	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -155,52 +152,20 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 	}
 	valueFiles = append(valueFiles, config.HelmValues...)
 
-	params := struct {
-		CPE map[string]interface{}
-	}{
-		CPE: cpe,
-	}
-
-	// ToDo: use the functionality from PR #3872 once it is merged
-	funcMap := template.FuncMap{
-		"cpe": func(element string) string {
-			el, _ := params.CPE[element].(string)
-			return el
-		},
-		"imageTag": func(imageName string) string {
-			nameTags, _ := params.CPE["container/imageNameTags"].([]interface{})
-			for _, nameTag := range nameTags {
-				nameTagStr, _ := nameTag.(string)
-				nt := strings.Split(nameTagStr, ":")
-				if imageName == nt[0] {
-					return nt[1]
-				}
-			}
-			return ""
-		},
-	}
-
 	for _, valueFile := range valueFiles {
-		b, err := utils.FileRead(valueFile)
+		cpeTemplate, err := utils.FileRead(valueFile)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %v", err)
 		}
-
-		// ToDo: use the functionality from PR #3872 once it is merged
-		tmpl, err := template.New("cpetemplate").Funcs(funcMap).Parse(string(b))
+		generated, err := cpe.ParseTemplate(string(cpeTemplate))
 		if err != nil {
 			return fmt.Errorf("failed to parse template: %v", err)
 		}
-		var buf bytes.Buffer
-		err = tmpl.Execute(&buf, params)
-		if err != nil {
-			return fmt.Errorf("failed to execute template: %v", err)
-		}
-
-		err = utils.FileWrite(valueFile, buf.Bytes(), 0700)
+		err = utils.FileWrite(valueFile, generated.Bytes(), 0700)
 		if err != nil {
 			return fmt.Errorf("failed to update file: %v", err)
 		}
 	}
+
 	return nil
 }
