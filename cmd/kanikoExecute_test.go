@@ -483,7 +483,6 @@ func TestRunKanikoExecute(t *testing.T) {
 			responseBody: "testCert",
 		}
 		fileUtils := &mock.FilesMock{}
-		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths": {"dummyUrl": {"auth": "XXXXXXX"}}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
