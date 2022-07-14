@@ -130,7 +130,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 			downloadClient := &piperhttp.Client{}
 			runner := &command.Command{
-				URLsLogFileName: "mavenBuild_http.log",
+				StepName: "mavenBuild",
 			}
 			fileUtils := &piperutils.Files{}
 			if len(config.CustomTLSCertificateLinks) > 0 {

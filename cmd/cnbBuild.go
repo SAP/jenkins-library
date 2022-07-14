@@ -130,7 +130,7 @@ func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.Bui
 func newCnbBuildUtils() cnbutils.BuildUtils {
 	utils := cnbBuildUtilsBundle{
 		Command: &command.Command{
-			URLsLogFileName: "cnbBuild_http.log",
+			StepName: "cnbBuild",
 		},
 		Files:  &piperutils.Files{},
 		Client: &docker.Client{},

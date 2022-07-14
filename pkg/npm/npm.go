@@ -71,7 +71,7 @@ type utilsBundle struct {
 func (u *utilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{
-			URLsLogFileName: "npmExecuteScripts_http.log",
+			StepName: "npmExecuteScripts",
 		}
 		u.execRunner.Stdout(log.Writer())
 		u.execRunner.Stderr(log.Writer())

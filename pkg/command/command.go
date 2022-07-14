@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/cumuluslog"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -20,7 +21,7 @@ import (
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	ErrorCategoryMapping map[string][]string
-	URLsLogFileName      string
+	StepName             string
 	dir                  string
 	stdin                io.Reader
 	stdout               io.Writer
@@ -202,79 +203,79 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 	stdoutTemp := stdout
 	stderrTemp := stderr
 	if c.ErrorCategoryMapping != nil {
-		errGroup.Go(func() (err error) {
-			pr, pw := io.Pipe()
-			defer func() {
-				err = pr.Close()
-				err = pw.Close()
-			}()
-			tr := io.TeeReader(stdoutTemp, pw)
-			stdoutTemp = pr
-			err = c.scanLog(tr)
-			if err != nil {
-				return fmt.Errorf("can't scan log: %w", err)
-			}
-			return err
-		})
-		errGroup.Go(func() (err error) {
-			pr, pw := io.Pipe()
-			defer func() {
-				err = pr.Close()
-				err = pw.Close()
-			}()
-			tr := io.TeeReader(stderrTemp, pw)
-			stderrTemp = pr
-			err = c.scanLog(tr)
-			if err != nil {
-				return fmt.Errorf("can't scan log: %w", err)
-			}
-			return err
-		})
-		err := errGroup.Wait()
+		for _, stream := range []*io.ReadCloser{&stdoutTemp, &stderrTemp} {
+			var stream = stream
+			errGroup.Go(func() (err error) {
+				pr, pw := io.Pipe()
+				defer func() {
+					dErr := pr.Close()
+					if dErr != nil {
+						err = fmt.Errorf("can't close piper reader: %w", dErr)
+						return
+					}
+					dErr = pw.Close()
+					if dErr != nil {
+						err = fmt.Errorf("can't close piper writer: %w", dErr)
+					}
+				}()
+				tr := io.TeeReader(*stream, pw)
+				*stream = pr
+				err = c.scanLog(tr)
+				if err != nil {
+					return fmt.Errorf("can't scan Logs: %w", err)
+				}
+				return err
+			})
+		}
+		err = errGroup.Wait()
 		if err != nil {
 			return nil, fmt.Errorf("errGroup execution error: %w", err)
 		}
 	}
-	if c.URLsLogFileName != "" {
-		errGroup.Go(func() (err error) {
-			var buf bytes.Buffer
-			w := bufio.NewWriter(&buf)
-			_, err = piperutils.CopyData(io.MultiWriter(c.stdout, w), stdoutTemp)
-			if err != nil {
-				return fmt.Errorf("failed to read stream: %w", err)
+	if c.StepName != "" {
+		var urlsBuf conBuf
+		defer func() {
+			dErr := cumuluslog.WriteLog(urlsBuf.data, c.StepName)
+			if dErr != nil {
+				err = fmt.Errorf("can't write log: %w", dErr)
 			}
-			err = w.Flush()
-			if err != nil {
-				return fmt.Errorf("can't write stream data to writer: %w", err)
-			}
-			err = parseAndWriteURLs(buf, c.URLsLogFileName+".out")
-			if err != nil {
-				return fmt.Errorf("can't log stream URLs: %w", err)
-			}
-			return err
-		})
-		errGroup.Go(func() (err error) {
-			var buf bytes.Buffer
-			w := bufio.NewWriter(&buf)
-			_, err = piperutils.CopyData(io.MultiWriter(c.stderr, w), stderrTemp)
-			if err != nil {
-				return fmt.Errorf("failed to read stream: %w", err)
-			}
-			err = w.Flush()
-			if err != nil {
-				return fmt.Errorf("can't write stream data to writer: %w", err)
-			}
-			err = parseAndWriteURLs(buf, c.URLsLogFileName+".err")
-			if err != nil {
-				return fmt.Errorf("can't log stream URLs: %w", err)
-			}
-			return err
-		})
-		err := errGroup.Wait()
+		}()
+		for i, stream := range []*io.ReadCloser{&stdoutTemp, &stderrTemp} {
+			var i = i
+			var stream = stream
+			errGroup.Go(func() (err error) {
+				var buf bytes.Buffer
+				w := bufio.NewWriter(&buf)
+				_, err = piperutils.CopyData(
+					io.MultiWriter(*func() *io.Writer {
+						switch i {
+						case 0:
+							return &c.stdout
+						case 1:
+							return &c.stderr
+						}
+						return nil
+					}(), w),
+					*stream,
+				)
+				if err != nil {
+					return fmt.Errorf("failed to read stream: %w", err)
+				}
+				err = w.Flush()
+				if err != nil {
+					return fmt.Errorf("can't write stream data to writer: %w", err)
+				}
+				urlsBuf.Lock()
+				defer urlsBuf.Unlock()
+				urlsBuf.data = append(urlsBuf.data, cumuluslog.ParseURLs(buf.Bytes())...)
+				return err
+			})
+		}
+		err = errGroup.Wait()
 		if err != nil {
 			return nil, fmt.Errorf("errGroup execution error: %w", err)
 		}
-		return &execution, nil
+		return &execution, err
 	}
 	_, err = piperutils.CopyData(c.stdout, stdoutTemp)
 	if err != nil {
@@ -284,29 +285,12 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture stderr: %w", err)
 	}
-	return &execution, nil
+	return &execution, err
 }
 
-func parseAndWriteURLs(buf bytes.Buffer, fileName string) error {
-	regExpr, err := regexp.Compile(`([^ :]*)://(?:([^:]*):([^@]*)@|)([^/:]+):?(\d*)?(/[^? ]*)\??((?:[^=&# ]*=?[^&# ]*&?)*)#?([^ ]*)?`)
-	if err != nil {
-		return fmt.Errorf("compiling regular expression error : %w", err)
-	}
-	matches := regExpr.FindAllString(buf.String(), -1)
-	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		return fmt.Errorf("failed to create url report fileName: %w", err)
-	}
-	defer func() {
-		err = file.Close()
-	}()
-	for _, match := range matches {
-		_, err = file.WriteString(match + "\n")
-		if err != nil {
-			return fmt.Errorf("failed to write record to url report: %w", err)
-		}
-	}
-	return err
+type conBuf struct {
+	data [][]byte
+	sync.RWMutex
 }
 
 func (c *Command) scanLog(in io.Reader) error {
@@ -317,7 +301,7 @@ func (c *Command) scanLog(in io.Reader) error {
 		c.parseConsoleErrors(line)
 	}
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("failed to scan log file: %w", err)
+		return fmt.Errorf("failed to scan Logs file: %w", err)
 	}
 	return nil
 }

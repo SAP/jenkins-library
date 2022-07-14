@@ -30,7 +30,7 @@ type pythonBuildUtilsBundle struct {
 func newPythonBuildUtils() pythonBuildUtils {
 	utils := pythonBuildUtilsBundle{
 		Command: &command.Command{
-			URLsLogFileName: "pythonBuild_http.log",
+			StepName: "pythonBuild",
 		},
 		Files: &piperutils.Files{},
 	}

@@ -91,7 +91,7 @@ type gradleExecuteBuildUtilsBundle struct {
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 	utils := gradleExecuteBuildUtilsBundle{
 		Command: &command.Command{
-			URLsLogFileName: "gradleExecuteBuild_http.log",
+			StepName: "gradleExecuteBuild",
 		},
 		Files: &piperutils.Files{},
 	}
