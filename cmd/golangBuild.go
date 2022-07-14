@@ -87,7 +87,9 @@ func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
 	httpClient.SetOptions(httpClientOptions)
 
 	utils := golangBuildUtilsBundle{
-		Command:  &command.Command{},
+		Command: &command.Command{
+			URLsLogFileName: "golangBuild_http.log",
+		},
 		Files:    &piperutils.Files{},
 		Uploader: &httpClient,
 		Client: &goget.ClientImpl{

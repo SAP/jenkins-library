@@ -3,7 +3,9 @@ package command
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"os/exec"
@@ -13,17 +15,12 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
-)
-
-const (
-	RelaxedURLRegEx = `(?:\b)((http(s?):\/\/)?(((www\.)?[a-zA-Z0-9\.\-\_]+(\.[a-zA-Z]{2,3})+)|((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(\/[a-zA-Z0-9\_\-\.\/\?\%\#\&\=]*)?)(?:\s|\b)`
 )
 
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	ErrorCategoryMapping map[string][]string
-	URLReportFileName    string
+	URLsLogFileName      string
 	dir                  string
 	stdin                io.Reader
 	stdout               io.Writer
@@ -95,7 +92,7 @@ func (c *Command) GetStdout() io.Writer {
 	return c.stdout
 }
 
-//GetStderr Retursn the writer for stderr
+//GetStderr Return the writer for stderr
 func (c *Command) GetStderr() io.Writer {
 	return c.stderr
 }
@@ -105,25 +102,18 @@ var ExecCommand = exec.Command
 
 // RunShell runs the specified command on the shell
 func (c *Command) RunShell(shell, script string) error {
-
 	c.prepareOut()
-
 	cmd := ExecCommand(shell)
-
 	if len(c.dir) > 0 {
 		cmd.Dir = c.dir
 	}
-
 	appendEnvironment(cmd, c.env)
-
 	in := bytes.Buffer{}
 	in.Write([]byte(script))
 	cmd.Stdin = &in
-
 	log.Entry().Infof("running shell script: %v %v", shell, script)
-
 	if err := c.runCmd(cmd); err != nil {
-		return errors.Wrapf(err, "running shell script failed with %v", shell)
+		return fmt.Errorf("running shell script failed with %s: %w", shell, err)
 	}
 	return nil
 }
@@ -132,25 +122,18 @@ func (c *Command) RunShell(shell, script string) error {
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
 //    Thus, the executable needs to be on the PATH of the current process, and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
-
 	c.prepareOut()
-
 	cmd := ExecCommand(executable, params...)
-
 	if len(c.dir) > 0 {
 		cmd.Dir = c.dir
 	}
-
-	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, " "))
-
+	log.Entry().Infof("running command: %s %s", executable, strings.Join(params, " "))
 	appendEnvironment(cmd, c.env)
-
 	if c.stdin != nil {
 		cmd.Stdin = c.stdin
 	}
-
 	if err := c.runCmd(cmd); err != nil {
-		return errors.Wrapf(err, "running command '%v' failed", executable)
+		return fmt.Errorf("running command %s failed: %w", executable, err)
 	}
 	return nil
 }
@@ -159,29 +142,20 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
 //    Thus, the executable needs to be on the PATH of the current process, and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
-
 	c.prepareOut()
-
 	cmd := ExecCommand(executable, params...)
-
 	if len(c.dir) > 0 {
 		cmd.Dir = c.dir
 	}
-
-	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
-
+	log.Entry().Infof("running command: %s %s", executable, strings.Join(params, " "))
 	appendEnvironment(cmd, c.env)
-
 	if c.stdin != nil {
 		cmd.Stdin = c.stdin
 	}
-
-	execution, err := c.startCmd(cmd)
-
+	execution, err := c.getExecute(cmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
+		return nil, fmt.Errorf("starting command '%s' failed: %w", executable, err)
 	}
-
 	return execution, nil
 }
 
@@ -191,15 +165,13 @@ func (c *Command) GetExitCode() int {
 }
 
 func appendEnvironment(cmd *exec.Cmd, env []string) {
-
 	if len(env) > 0 {
-
 		// When cmd.Env is nil the environment variables from the current
 		// process are also used by the forked process. Our environment variables
 		// should not replace the existing environment, but they should be appended.
 		// Hence, we populate cmd.Env first with the current environment in case we
 		// find it empty. In case there is already something, we append to that environment.
-		// In that case we assume the current values of `cmd.Env` has either been setup based
+		// In that case we assume the current values of `cmd.Env` has either been set up based
 		// on `os.Environ()` or that was initialized in another way for a good reason.
 		//
 		// In case we have the same environment variable as in the current environment (`os.Environ()`)
@@ -209,7 +181,6 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 		// cf. https://golang.org/pkg/os/exec/#Command
 		//     If Env contains duplicate environment keys, only the last
 		//     value in the slice for each duplicate key is used.
-
 		if len(cmd.Env) == 0 {
 			cmd.Env = os.Environ()
 		}
@@ -217,95 +188,128 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 	}
 }
 
-func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
-
+func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 	stdout, stderr, err := cmdPipes(cmd)
-
 	if err != nil {
-		return nil, errors.Wrap(err, "getting command pipes failed")
+		return nil, fmt.Errorf("getting command pipes failed: %w", err)
 	}
-
 	err = cmd.Start()
 	if err != nil {
-		return nil, errors.Wrap(err, "starting command failed")
+		return nil, fmt.Errorf("starting command failed: %w", err)
 	}
-
-	execution := execution{cmd: cmd}
-	execution.wg.Add(2)
-
-	srcOut := stdout
-	srcErr := stderr
-
+	execution := execution{cmd}
+	errGroup, _ := errgroup.WithContext(context.TODO())
+	stdoutTemp := stdout
+	stderrTemp := stderr
 	if c.ErrorCategoryMapping != nil {
-		prOut, pwOut := io.Pipe()
-		trOut := io.TeeReader(stdout, pwOut)
-		srcOut = prOut
-
-		prErr, pwErr := io.Pipe()
-		trErr := io.TeeReader(stderr, pwErr)
-		srcErr = prErr
-
-		execution.wg.Add(2)
-
-		go func() {
-			defer execution.wg.Done()
-			defer pwOut.Close()
-			c.scanLog(trOut)
-		}()
-
-		go func() {
-			defer execution.wg.Done()
-			defer pwErr.Close()
-			c.scanLog(trErr)
-		}()
+		errGroup.Go(func() (err error) {
+			pr, pw := io.Pipe()
+			defer func() {
+				err = pr.Close()
+				err = pw.Close()
+			}()
+			tr := io.TeeReader(stdoutTemp, pw)
+			stdoutTemp = pr
+			err = c.scanLog(tr)
+			if err != nil {
+				return fmt.Errorf("can't scan log: %w", err)
+			}
+			return err
+		})
+		errGroup.Go(func() (err error) {
+			pr, pw := io.Pipe()
+			defer func() {
+				err = pr.Close()
+				err = pw.Close()
+			}()
+			tr := io.TeeReader(stderrTemp, pw)
+			stderrTemp = pr
+			err = c.scanLog(tr)
+			if err != nil {
+				return fmt.Errorf("can't scan log: %w", err)
+			}
+			return err
+		})
+		err := errGroup.Wait()
+		if err != nil {
+			return nil, fmt.Errorf("errGroup execution error: %w", err)
+		}
 	}
-
-	go func() {
-		//if c.URLReportFileName != "" {
-		var buf bytes.Buffer
-		br := bufio.NewWriter(&buf)
-		_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
-		br.Flush()
-		handleURLs(buf.String(), "http.log")
-		//} else {
-		//	_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
-		//}
-		execution.wg.Done()
-	}()
-
-	go func() {
-		//if c.URLReportFileName != "" {
-		var buf bytes.Buffer
-		bw := bufio.NewWriter(&buf)
-		_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
-		bw.Flush()
-		handleURLs(buf.String(), "http.log")
-		//} else {
-		//	_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
-		//}
-		execution.wg.Done()
-	}()
-
+	if c.URLsLogFileName != "" {
+		errGroup.Go(func() (err error) {
+			var buf bytes.Buffer
+			w := bufio.NewWriter(&buf)
+			_, err = piperutils.CopyData(io.MultiWriter(c.stdout, w), stdoutTemp)
+			if err != nil {
+				return fmt.Errorf("failed to read stream: %w", err)
+			}
+			err = w.Flush()
+			if err != nil {
+				return fmt.Errorf("can't write stream data to writer: %w", err)
+			}
+			err = parseAndWriteURLs(buf, c.URLsLogFileName+".out")
+			if err != nil {
+				return fmt.Errorf("can't log stream URLs: %w", err)
+			}
+			return err
+		})
+		errGroup.Go(func() (err error) {
+			var buf bytes.Buffer
+			w := bufio.NewWriter(&buf)
+			_, err = piperutils.CopyData(io.MultiWriter(c.stderr, w), stderrTemp)
+			if err != nil {
+				return fmt.Errorf("failed to read stream: %w", err)
+			}
+			err = w.Flush()
+			if err != nil {
+				return fmt.Errorf("can't write stream data to writer: %w", err)
+			}
+			err = parseAndWriteURLs(buf, c.URLsLogFileName+".err")
+			if err != nil {
+				return fmt.Errorf("can't log stream URLs: %w", err)
+			}
+			return err
+		})
+		err := errGroup.Wait()
+		if err != nil {
+			return nil, fmt.Errorf("errGroup execution error: %w", err)
+		}
+		return &execution, nil
+	}
+	_, err = piperutils.CopyData(c.stdout, stdoutTemp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to capture stdout: %w", err)
+	}
+	_, err = piperutils.CopyData(c.stderr, stderrTemp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to capture stderr: %w", err)
+	}
 	return &execution, nil
 }
 
-func handleURLs(s, file string) {
-	reg := regexp.MustCompile(RelaxedURLRegEx)
-	matches := reg.FindAllStringSubmatch(s, -1)
-	f, err := os.Create(file)
+func parseAndWriteURLs(buf bytes.Buffer, fileName string) error {
+	regExpr, err := regexp.Compile(`([^ :]*)://(?:([^:]*):([^@]*)@|)([^/:]+):?(\d*)?(/[^? ]*)\??((?:[^=&# ]*=?[^&# ]*&?)*)#?([^ ]*)?`)
 	if err != nil {
-		log.Entry().WithError(err).Info("failed to create url report file")
+		return fmt.Errorf("compiling regular expression error : %w", err)
 	}
-	defer f.Close()
+	matches := regExpr.FindAllString(buf.String(), -1)
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to create url report fileName: %w", err)
+	}
+	defer func() {
+		err = file.Close()
+	}()
 	for _, match := range matches {
-		_, err = f.WriteString(match[1] + "\n")
+		_, err = file.WriteString(match + "\n")
 		if err != nil {
-			log.Entry().WithError(err).Info("failed to write record to url report")
+			return fmt.Errorf("failed to write record to url report: %w", err)
 		}
 	}
+	return err
 }
 
-func (c *Command) scanLog(in io.Reader) {
+func (c *Command) scanLog(in io.Reader) error {
 	scanner := bufio.NewScanner(in)
 	scanner.Split(scanShortLines)
 	for scanner.Scan() {
@@ -313,8 +317,9 @@ func (c *Command) scanLog(in io.Reader) {
 		c.parseConsoleErrors(line)
 	}
 	if err := scanner.Err(); err != nil {
-		log.Entry().WithError(err).Info("failed to scan log file")
+		return fmt.Errorf("failed to scan log file: %w", err)
 	}
+	return nil
 }
 
 func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -331,7 +336,7 @@ func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err err
 	}
 	if i := bytes.IndexByte(data, '\n'); i >= 0 && i < 32767 {
 		// We have a full newline-terminated line with a size limit
-		// Size limit is required since otherwise scanner would stall
+		//  is required since otherwise scanner would stall
 		return i + 1, data[0:i], nil
 	}
 	// If we're at EOF, we have a final, non-terminated line. Return it.
@@ -367,18 +372,11 @@ func matchPattern(text, pattern string) bool {
 }
 
 func (c *Command) runCmd(cmd *exec.Cmd) error {
-
-	execution, err := c.startCmd(cmd)
+	execution, err := c.getExecute(cmd)
 	if err != nil {
 		return err
 	}
-
 	err = execution.Wait()
-
-	if execution.errCopyStdout != nil || execution.errCopyStderr != nil {
-		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", execution.errCopyStdout, execution.errCopyStderr)
-	}
-
 	if err != nil {
 		// provide fallback to ensure a non 0 exit code in case of an error
 		c.exitCode = 1
@@ -388,18 +386,16 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 				c.exitCode = status.ExitStatus()
 			}
 		}
-		return errors.Wrap(err, "cmd.Run() failed")
+		return fmt.Errorf("cmd.Run() failed: %w", err)
 	}
 	c.exitCode = 0
 	return nil
 }
 
 func (c *Command) prepareOut() {
-
-	//ToDo: check use of multiwriter instead to always write into os.Stdout and os.Stdin?
-	//stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
-	//stderr := io.MultiWriter(os.Stderr, &stderrBuf)
-
+	//ToDo: check use of multi-writer instead to always write into os.Stdout and
+	//os.Stdin? stdout := io.MultiWriter(os.Stdout, &stdoutBuf) stderr :=
+	//io.MultiWriter(os.Stderr, &stderrBuf)
 	if c.stdout == nil {
 		c.stdout = os.Stdout
 	}
@@ -411,13 +407,11 @@ func (c *Command) prepareOut() {
 func cmdPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting Stdout pipe failed")
+		return nil, nil, fmt.Errorf("getting Stdout pipe failed: %w", err)
 	}
-
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting Stderr pipe failed")
+		return nil, nil, fmt.Errorf("getting Stderr pipe failed: %w", err)
 	}
-
 	return stdout, stderr, nil
 }

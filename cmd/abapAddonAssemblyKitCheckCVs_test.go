@@ -24,7 +24,8 @@ func TestCheckCVsStep(t *testing.T) {
 		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
-		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.NoError(t, err)
 		assert.Equal(t, "0001", addonDescriptorFinal.Repositories[0].Version)
 		assert.Equal(t, "0002", addonDescriptorFinal.Repositories[0].SpLevel)
 		assert.Equal(t, "0003", addonDescriptorFinal.Repositories[0].PatchLevel)

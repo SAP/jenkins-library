@@ -29,8 +29,10 @@ type pythonBuildUtilsBundle struct {
 
 func newPythonBuildUtils() pythonBuildUtils {
 	utils := pythonBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command: &command.Command{
+			URLsLogFileName: "pythonBuild_http.log",
+		},
+		Files: &piperutils.Files{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
