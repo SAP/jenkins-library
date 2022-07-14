@@ -84,46 +84,23 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
+			return errors.Wrapf(err, "failed to read enhanced file '%v'", config.DockerConfigJSON)
 		}
-
-		if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
-			return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
-		}
-
 	} else if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
-		// /kaniko/.docker/config.json get written inside the docker package
-		_, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", "/kaniko/.docker/config.json", fileUtils)
+		targetConfigJson, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", "/kaniko/.docker/config.json", fileUtils)
 		if err != nil {
 			return errors.Wrap(err, "failed to create new docker config json at /kaniko/.docker/config.json")
 		}
+
+		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read new docker config file at /kaniko/.docker/config.json")
+		}
 	}
-	// if len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
 
-	// 	// if a user provided docker config json already exists
-
-	// } else {
-
-	// 	if len(config.DockerConfigJSON) > 0 {
-	// 		exists, err := fileUtils.FileExists(config.DockerConfigJSON)
-	// 		if exists {
-
-	// 		}
-
-	// 		if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
-	// 			return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
-	// 		}
-
-	// 		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
-	// 		if err != nil {
-	// 			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
-	// 		}
-	// 	}
-	// }
-
-	// if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
-	// 	return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
-	// }
+	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
+		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
+	}
 
 	log.Entry().Debugf("preparing build settings information...")
 	stepName := "kanikoExecute"
