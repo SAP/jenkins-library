@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -176,11 +175,11 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	ldflags := ""
 
 	if len(config.LdflagsTemplate) > 0 {
-		var err error
-		ldflags, err = prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
+		ldf, err := prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
+		ldflags = (*ldf).String()
 		log.Entry().Infof("ldflags from template: '%v'", ldflags)
 	}
 
@@ -407,7 +406,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (string, error) {
+func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (*bytes.Buffer, error) {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(envRootPath, "commonPipelineEnvironment"))
 	if err != nil {
@@ -415,23 +414,7 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	}
 
 	log.Entry().Debugf("ldflagsTemplate in use: %v", config.LdflagsTemplate)
-	tmpl, err := template.New("ldflags").Parse(config.LdflagsTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse ldflagsTemplate '%v': %w", config.LdflagsTemplate, err)
-	}
-
-	ldflagsParams := struct {
-		CPE map[string]interface{}
-	}{
-		CPE: map[string]interface{}(cpe),
-	}
-	var generatedLdflags bytes.Buffer
-	err = tmpl.Execute(&generatedLdflags, ldflagsParams)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute ldflagsTemplate '%v': %w", config.LdflagsTemplate, err)
-	}
-
-	return generatedLdflags.String(), nil
+	return cpe.ParseTemplate(config.LdflagsTemplate)
 }
 
 func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
