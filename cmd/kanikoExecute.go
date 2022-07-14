@@ -74,6 +74,16 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	dockerConfig := []byte(`{"auths":{}}`)
+
+	// respect user provided docker config json file
+	if len(config.DockerConfigJSON) > 0 {
+		var err error
+		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read existing docker config json at '%v'", config.DockerConfigJSON)
+		}
+	}
+
 	// if : user provided docker config json and registry credentials present then enahance the user provided docker provided json with the registry credentials
 	// else if : no user provided docker config json then create a new docker config json for kaniko
 	if len(config.DockerConfigJSON) > 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
