@@ -22,7 +22,7 @@ const (
 	urlsLogFileName = "urls-log.json"
 )
 
-func WriteLog(urlsBuf [][]byte, stepName string) error {
+func WriteURLsLogToJSON(urlsBuf [][]byte, stepName string) error {
 	file, err := os.OpenFile(urlsLogFileName, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)

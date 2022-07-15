@@ -204,7 +204,7 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 	stderrTemp := stderr
 	if c.ErrorCategoryMapping != nil {
 		for _, stream := range []*io.ReadCloser{&stdoutTemp, &stderrTemp} {
-			var stream = stream
+			var s = stream
 			errGroup.Go(func() (err error) {
 				pr, pw := io.Pipe()
 				defer func() {
@@ -218,13 +218,13 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 						err = fmt.Errorf("can't close piper writer: %w", dErr)
 					}
 				}()
-				tr := io.TeeReader(*stream, pw)
-				*stream = pr
+				tr := io.TeeReader(*s, pw)
+				*s = pr
 				err = c.scanLog(tr)
 				if err != nil {
 					return fmt.Errorf("can't scan Logs: %w", err)
 				}
-				return err
+				return
 			})
 		}
 		err = errGroup.Wait()
@@ -235,20 +235,20 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 	if c.StepName != "" {
 		var urlsBuf conBuf
 		defer func() {
-			dErr := cumuluslog.WriteLog(urlsBuf.data, c.StepName)
+			dErr := cumuluslog.WriteURLsLogToJSON(urlsBuf.data, c.StepName)
 			if dErr != nil {
 				err = fmt.Errorf("can't write log: %w", dErr)
 			}
 		}()
 		for i, stream := range []*io.ReadCloser{&stdoutTemp, &stderrTemp} {
-			var i = i
-			var stream = stream
+			var j = i
+			var s = stream
 			errGroup.Go(func() (err error) {
 				var buf bytes.Buffer
 				w := bufio.NewWriter(&buf)
 				_, err = piperutils.CopyData(
 					io.MultiWriter(*func() *io.Writer {
-						switch i {
+						switch j {
 						case 0:
 							return &c.stdout
 						case 1:
@@ -256,19 +256,19 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 						}
 						return nil
 					}(), w),
-					*stream,
+					*s,
 				)
 				if err != nil {
-					return fmt.Errorf("failed to read stream: %w", err)
+					return fmt.Errorf("failed to read s: %w", err)
 				}
 				err = w.Flush()
 				if err != nil {
-					return fmt.Errorf("can't write stream data to writer: %w", err)
+					return fmt.Errorf("can't write s data to writer: %w", err)
 				}
 				urlsBuf.Lock()
 				defer urlsBuf.Unlock()
 				urlsBuf.data = append(urlsBuf.data, cumuluslog.ParseURLs(buf.Bytes())...)
-				return err
+				return
 			})
 		}
 		err = errGroup.Wait()
@@ -301,7 +301,7 @@ func (c *Command) scanLog(in io.Reader) error {
 		c.parseConsoleErrors(line)
 	}
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("failed to scan Logs file: %w", err)
+		return fmt.Errorf("failed to scan log file: %w", err)
 	}
 	return nil
 }
