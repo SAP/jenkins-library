@@ -373,7 +373,6 @@ tag: {{ imageTag "test-image" }}
 	require.DirExists(t, tmpDir)
 	err := os.Mkdir(path.Join(tmpDir, commonPipelineEnvironment), 0700)
 	require.NoError(t, err)
-
 	cpe := piperenv.CPEMap{
 		"artifactVersion":         "1.0.0-123456789",
 		"container/imageNameTags": []string{"test-image:1.0.0-123456789"},
@@ -418,7 +417,7 @@ tag: {{ imageTag "test-image" }}
 			name:             "Wrong template ({{ .CPE.artVersion)",
 			defaultValueFile: defaultValueFile,
 			config:           config,
-			expectedErr:      fmt.Errorf("failed to parse template: template: cpetemplate:4: unclosed action started at cpetemplate:3"),
+			expectedErr:      fmt.Errorf("failed to parse template: failed to parse cpe template '\nimage: \"image_3\"\ntag: {{ .CPE.artVersion\n': template: cpetemplate:4: unclosed action started at cpetemplate:3"),
 			valueFile:        values3Yaml,
 		},
 		{
