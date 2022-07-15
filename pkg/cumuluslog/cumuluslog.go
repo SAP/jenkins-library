@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mvdan.cc/xurls/v2"
 	"os"
+	"sync"
 )
 
 type (
@@ -22,7 +23,21 @@ const (
 	urlsLogFileName = "urls-log.json"
 )
 
-func WriteURLsLogToJSON(urlsBuf [][]byte, stepName string) error {
+type cumulusLogger struct {
+	buf struct {
+		data [][]byte
+		sync.RWMutex
+	}
+	stepName string
+}
+
+func NewCumulusLogger(stepName string) *cumulusLogger {
+	return &cumulusLogger{stepName: stepName}
+}
+
+func (cl *cumulusLogger) WriteURLsLogToJSON() error {
+	cl.buf.Lock()
+	defer cl.buf.Unlock()
 	file, err := os.OpenFile(urlsLogFileName, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -46,13 +61,13 @@ func WriteURLsLogToJSON(urlsBuf [][]byte, stepName string) error {
 		fileBuf = fileBuf[:0]
 	}
 	var urls []string
-	if stepLogs, ok := urlsLog.Step[stepName]; ok {
+	if stepLogs, ok := urlsLog.Step[cl.stepName]; ok {
 		urls = stepLogs.URLs
 	}
-	for _, url := range urlsBuf {
+	for _, url := range cl.buf.data {
 		urls = append(urls, string(url))
 	}
-	urlsLog.Step[stepName] = Logs{urls}
+	urlsLog.Step[cl.stepName] = Logs{urls}
 	encoderBuf := bytes.NewBuffer(fileBuf)
 	jsonEncoder := json.NewEncoder(encoderBuf)
 	jsonEncoder.SetEscapeHTML(false)
@@ -68,6 +83,12 @@ func WriteURLsLogToJSON(urlsBuf [][]byte, stepName string) error {
 	return err
 }
 
-func ParseURLs(src []byte) [][]byte {
+func (cl *cumulusLogger) Parse(buf bytes.Buffer) {
+	cl.buf.Lock()
+	defer cl.buf.Unlock()
+	cl.buf.data = append(cl.buf.data, parseURLs(buf.Bytes())...)
+}
+
+func parseURLs(src []byte) [][]byte {
 	return xurls.Strict().FindAll(src, -1)
 }

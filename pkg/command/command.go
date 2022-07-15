@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -233,9 +232,9 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 		}
 	}
 	if c.StepName != "" {
-		var urlsBuf conBuf
+		cl := cumuluslog.NewCumulusLogger(c.StepName)
 		defer func() {
-			dErr := cumuluslog.WriteURLsLogToJSON(urlsBuf.data, c.StepName)
+			dErr := cl.WriteURLsLogToJSON()
 			if dErr != nil {
 				err = fmt.Errorf("can't write log: %w", dErr)
 			}
@@ -259,15 +258,13 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 					*s,
 				)
 				if err != nil {
-					return fmt.Errorf("failed to read s: %w", err)
+					return fmt.Errorf("failed to read stream: %w", err)
 				}
 				err = w.Flush()
 				if err != nil {
-					return fmt.Errorf("can't write s data to writer: %w", err)
+					return fmt.Errorf("can't write stream data to writer: %w", err)
 				}
-				urlsBuf.Lock()
-				defer urlsBuf.Unlock()
-				urlsBuf.data = append(urlsBuf.data, cumuluslog.ParseURLs(buf.Bytes())...)
+				cl.Parse(buf)
 				return
 			})
 		}
@@ -286,11 +283,6 @@ func (c *Command) getExecute(cmd *exec.Cmd) (*execution, error) {
 		return nil, fmt.Errorf("failed to capture stderr: %w", err)
 	}
 	return &execution, err
-}
-
-type conBuf struct {
-	data [][]byte
-	sync.RWMutex
 }
 
 func (c *Command) scanLog(in io.Reader) error {
