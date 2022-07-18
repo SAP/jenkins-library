@@ -279,6 +279,8 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
 		log.SetErrorCategory(log.ErrorCompliance)
 		return fmt.Errorf("the product is not compliant")
+	} else if protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
+		log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 	}
 	return nil
 }
