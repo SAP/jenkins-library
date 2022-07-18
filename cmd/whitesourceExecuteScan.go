@@ -452,7 +452,6 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 // Unified Agent is the only supported option by WhiteSource going forward:
 // The Unified Agent will be used to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-
 	options := wsScanOptions(config)
 
 	// Execute scan with Unified Agent jar file
@@ -463,7 +462,6 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 }
 
 func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path, influx *whitesourceExecuteScanInflux) (piperutils.Path, error) {
-
 	policyViolationCount := 0
 	for _, project := range scan.ScannedProjects() {
 		alerts, err := sys.GetProjectAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
@@ -491,7 +489,7 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 	}
 
 	jsonViolationReportPath := filepath.Join(ws.ReportsDirectory, "whitesource-ip.json")
-	err = utils.FileWrite(jsonViolationReportPath, violationContent, 0666)
+	err = utils.FileWrite(jsonViolationReportPath, violationContent, 0o666)
 	if err != nil {
 		return piperutils.Path{}, fmt.Errorf("failed to write policy violation report: %w", err)
 	}
@@ -516,12 +514,12 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 	// ignore JSON errors since structure is in our hands
 	jsonReport, _ := ipReport.ToJSON()
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0o777)
 		if err != nil {
 			return policyReport, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0o666); err != nil {
 		return policyReport, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
@@ -637,17 +635,6 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 		return severeVulnerabilities, alerts, nil
 	}
 	return 0, alerts, nil
-
-	/*
-		if policyViolationCount > 0 {
-		influx.whitesource_data.fields.policy_violations = policyViolationCount
-		if config.FailOnSevereVulnerabilities {
-			log.SetErrorCategory(log.ErrorCompliance)
-			return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
-		}
-		log.Entry().Infof("%v policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false", policyViolationCount)
-	}
-	*/
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
@@ -701,7 +688,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	reportPath := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
-	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
+	if err := utils.FileWrite(reportPath, []byte(projectNames), 0o666); err != nil {
 		return errors.Wrapf(err, "failed to write report: %s", reportPath)
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -730,13 +717,13 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 
-	if err := utils.MkdirAll(ws.ReportsDirectory, 0777); err != nil {
+	if err := utils.MkdirAll(ws.ReportsDirectory, 0o777); err != nil {
 		return err
 	}
 
 	fileName := filepath.Join(ws.ReportsDirectory,
 		fmt.Sprintf("vulnerabilities-%s.xlsx", utils.Now().Format(wsReportTimeStampLayout)))
-	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o666)
 	if err != nil {
 		return err
 	}
@@ -795,14 +782,14 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	}
 
 	// Ensure reporting directory exists
-	if err := utils.MkdirAll(ws.ReportsDirectory, 0777); err != nil {
+	if err := utils.MkdirAll(ws.ReportsDirectory, 0o777); err != nil {
 		return errors.Wrapf(err, "failed to create directories: %s", ws.ReportsDirectory)
 	}
 
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", ws.ReportsDirectory,
 		utils.Now().Format(wsReportTimeStampLayout))
-	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output), 0o666); err != nil {
 		return errors.Wrapf(err, "failed to write file: %s", fileName)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
