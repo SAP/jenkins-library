@@ -78,6 +78,7 @@ func TestMavenBuild(t *testing.T) {
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeTestScope=false")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeLicenseText=false")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputFormat=xml")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputName=bom-mvn")
 	})
 
 	t.Run("mavenBuild include install and deploy when publish is true", func(t *testing.T) {

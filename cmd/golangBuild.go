@@ -165,7 +165,8 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreation(utils, sbomFilename); err != nil {
+		goBomOutputFilename := sbomFilename + "-go.xml"
+		if err := runBOMCreation(utils, goBomOutputFilename); err != nil {
 			return err
 		}
 	}

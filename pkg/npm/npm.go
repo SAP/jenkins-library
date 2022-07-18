@@ -353,6 +353,7 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	if err != nil {
 		return err
 	}
+
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
@@ -361,7 +362,7 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 				path,
 				"--include-license-text", "false",
 				"--include-dev", "false", // Include devDependencies
-				"--output", filepath.Join(path, "bom.xml"),
+				"--output", filepath.Join(path, "bom-npm.xml"),
 			}
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {

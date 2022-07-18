@@ -60,6 +60,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			"-DincludeTestScope=false",
 			"-DincludeLicenseText=false",
 			"-DoutputFormat=xml",
+			"-DoutputName=bom-mvn",
 		}
 		defines = append(defines, createBOMConfig...)
 	}
