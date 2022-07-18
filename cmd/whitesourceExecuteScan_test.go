@@ -192,12 +192,12 @@ func TestCheckAndReportScanResults(t *testing.T) {
 	t.Run("check vulnerabilities - limit exceeded", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:            "mock-product-token",
-			ProjectName:             "mock-project - 1",
-			ProjectToken:            "mock-project-token",
-			Version:                 "1",
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "4",
+			ProductToken:                "mock-product-token",
+			ProjectName:                 "mock-project - 1",
+			ProjectToken:                "mock-project-token",
+			Version:                     "1",
+			SecurityVulnerabilities:     true,
+			CvssSeverityLimit:           "4",
 			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(config)
@@ -535,7 +535,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 
 	t.Run("error - non-aggregated", func(t *testing.T) {
 		config := ScanOptions{
-			CvssSeverityLimit: "5",
+			CvssSeverityLimit:           "5",
 			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(&config)
@@ -556,8 +556,8 @@ func TestCheckSecurityViolations(t *testing.T) {
 
 	t.Run("error - aggregated", func(t *testing.T) {
 		config := ScanOptions{
-			CvssSeverityLimit: "5",
-			ProjectToken:      "theProjectToken",
+			CvssSeverityLimit:           "5",
+			ProjectToken:                "theProjectToken",
 			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(&config)
