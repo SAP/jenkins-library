@@ -555,7 +555,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
+		if _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, influx); err != nil {
 			return reportPaths, err
 		}
 	} else {
@@ -564,7 +564,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		allAlerts := []ws.Alert{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
+			if vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, influx); err != nil {
 				allAlerts = append(allAlerts, alerts...)
 				vulnerabilitiesCount += vulCount
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -607,7 +607,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
+func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
@@ -628,12 +628,26 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	}
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
-		log.SetErrorCategory(log.ErrorCompliance)
-		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
-			"or equal to %.1f detected in project %s",
-			severeVulnerabilities, cvssSeverityLimit, project.Name)
+		if config.FailOnSevereVulnerabilities {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
+		}
+		log.Entry().Infof("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
+		log.Entry().Info("Step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
+		return severeVulnerabilities, alerts, nil
 	}
 	return 0, alerts, nil
+
+	/*
+		if policyViolationCount > 0 {
+		influx.whitesource_data.fields.policy_violations = policyViolationCount
+		if config.FailOnSevereVulnerabilities {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+		}
+		log.Entry().Infof("%v policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false", policyViolationCount)
+	}
+	*/
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {

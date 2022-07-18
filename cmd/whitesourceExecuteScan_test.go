@@ -198,6 +198,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 			Version:                 "1",
 			SecurityVulnerabilities: true,
 			CvssSeverityLimit:       "4",
+			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
@@ -535,6 +536,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 	t.Run("error - non-aggregated", func(t *testing.T) {
 		config := ScanOptions{
 			CvssSeverityLimit: "5",
+			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(&config)
 		scan.AppendScannedProject("testProject1")
@@ -556,6 +558,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 		config := ScanOptions{
 			CvssSeverityLimit: "5",
 			ProjectToken:      "theProjectToken",
+			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(&config)
 		systemMock := ws.NewSystemMock("ignored")
@@ -579,7 +582,7 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		systemMock.Alerts = []ws.Alert{}
 		influx := whitesourceExecuteScanInflux{}
 
-		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock, &influx)
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &influx)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
@@ -593,7 +596,7 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		}
 		influx := whitesourceExecuteScanInflux{}
 
-		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock, &influx)
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
 		assert.Equal(t, 1, severeVulnerabilities)
 		assert.Equal(t, 2, len(alerts))
@@ -604,7 +607,7 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		systemMock.AlertError = fmt.Errorf("failed to read alerts")
 		influx := whitesourceExecuteScanInflux{}
 
-		_, _, err := checkProjectSecurityViolations(7.0, project, systemMock, &influx)
+		_, _, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project alerts from WhiteSource")
 	})
 
