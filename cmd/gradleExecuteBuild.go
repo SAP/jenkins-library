@@ -12,6 +12,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const (
+	gradleBomFilename = "bom-gradle"
+)
+
 var (
 	bomGradleTaskName = "cyclonedxBom"
 	publishTaskName   = "publish"
@@ -77,7 +81,7 @@ rootProject {
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
 
     cyclonedxBom {
-	outputName = "bom-gradle"
+	outputName = "` + gradleBomFilename + `"
 	outputFormat = "xml"
 	schemaVersion = "1.3"
     }
