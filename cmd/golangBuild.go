@@ -34,7 +34,7 @@ const (
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
-	sbomFilename                = "bom-go.xml"
+	sbomFilename                = "bom-golang.xml"
 )
 
 type golangBuildUtils interface {

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	PyBomFilename = "bom-py.xml"
+	PyBomFilename = "bom-pip.xml"
 	stepName      = "pythonBuild"
 )
 

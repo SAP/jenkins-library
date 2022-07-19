@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	mvnBomFilename = "bom-mvn"
+	mvnBomFilename = "bom-maven"
 )
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
