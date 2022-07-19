@@ -23,7 +23,6 @@ import (
 )
 
 func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
-
 	// Mapping for options
 	subOptions := convertATCOptions(&options)
 
@@ -31,7 +30,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 
-	var autils = abaputils.AbapUtils{
+	autils := abaputils.AbapUtils{
 		Exec: c,
 	}
 	var err error
@@ -44,12 +43,12 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	client.SetOptions(clientOptions)
 
 	var details abaputils.ConnectionDetailsHTTP
-	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
+	// If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
 		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
 	}
 	var resp *http.Response
-	//Fetch Xcrsf-Token
+	// Fetch Xcrsf-Token
 	if err == nil {
 		credentialsOptions := piperhttp.ClientOptions{
 			Username:  details.User,
@@ -74,8 +73,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 
 func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
 	var err error
-	var abapEndpoint string
-	abapEndpoint = details.URL
+	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
 	location, err = pollATCRun(details, nil, client)
@@ -83,7 +81,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 		details.URL = abapEndpoint + location
 		resp, err = getResultATCRun("GET", details, nil, client)
 	}
-	//Parse response
+	// Parse response
 	var body []byte
 	if err == nil {
 		body, err = ioutil.ReadAll(resp.Body)
@@ -99,7 +97,6 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 }
 
 func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
-
 	bodyString, err := buildATCRequestBody(config)
 	if err != nil {
 		return nil, err
@@ -108,14 +105,13 @@ func triggerATCRun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	abapEndpoint := details.URL
 
 	log.Entry().Infof("Request Body: %s", bodyString)
-	var body = []byte(bodyString)
+	body := []byte(bodyString)
 	details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
 	resp, err = runATC("POST", details, body, client)
 	return resp, err
 }
 
 func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString string, err error) {
-
 	atcConfig, err := resolveATCConfiguration(config)
 	if err != nil {
 		return "", err
@@ -133,11 +129,11 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 	}
 
 	var objectSetString string
-	//check if OSL Objectset is present
+	// check if OSL Objectset is present
 	if !reflect.DeepEqual(abaputils.ObjectSet{}, atcConfig.ObjectSet) {
 		objectSetString = abaputils.BuildOSLString(atcConfig.ObjectSet)
 	}
-	//if initial - check if ATC Object set is present
+	// if initial - check if ATC Object set is present
 	if objectSetString == "" && (len(atcConfig.Objects.Package) != 0 || len(atcConfig.Objects.SoftwareComponent) != 0) {
 		objectSetString, err = getATCObjectSet(atcConfig)
 	}
@@ -151,7 +147,6 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 }
 
 func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfig ATCConfiguration, err error) {
-
 	if config.AtcConfig != "" {
 		// Configuration defaults to ATC Config
 		log.Entry().Infof("ATC Configuration: %s", config.AtcConfig)
@@ -159,8 +154,10 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 		if err != nil {
 			return atcConfig, err
 		}
-		json.Unmarshal(atcConfigFile, &atcConfig)
-		return atcConfig, err
+		if err := json.Unmarshal(atcConfigFile, &atcConfig); err != nil {
+			log.Entry().WithError(err).Warning("failed to unmarschal json")
+		}
+		return atcConfig, nil
 
 	} else if config.Repositories != "" {
 		// Fallback / EasyMode is the Repositories configuration
@@ -182,7 +179,7 @@ func resolveATCConfiguration(config abapEnvironmentRunATCCheckOptions) (atcConfi
 func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	objectSet += `<obj:objectSet>`
 
-	//Build SC XML body
+	// Build SC XML body
 	if len(ATCConfig.Objects.SoftwareComponent) != 0 {
 		objectSet += "<obj:softwarecomponents>"
 		for _, s := range ATCConfig.Objects.SoftwareComponent {
@@ -191,7 +188,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 		objectSet += "</obj:softwarecomponents>"
 	}
 
-	//Build Package XML body
+	// Build Package XML body
 	if len(ATCConfig.Objects.Package) != 0 {
 		objectSet += "<obj:packages>"
 		for _, s := range ATCConfig.Objects.Package {
@@ -205,7 +202,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
+func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML bool) error {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -217,12 +214,14 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 	}
 
 	parsedXML := new(Result)
-	xml.Unmarshal([]byte(body), &parsedXML)
+	if err := xml.Unmarshal([]byte(body), &parsedXML); err != nil {
+		log.Entry().WithError(err).Warning("failed to unmarschal xml response")
+	}
 	if len(parsedXML.Files) == 0 {
 		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
 	}
 
-	err = ioutil.WriteFile(atcResultFileName, body, 0644)
+	err := ioutil.WriteFile(atcResultFileName, body, 0o644)
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
@@ -232,11 +231,11 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
-		if generateHTML == true {
+		if generateHTML {
 			htmlString := generateHTMLDocument(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			atcResultHTMLFileName := strings.Trim(atcResultFileName, ".xml") + ".html"
-			err = ioutil.WriteFile(atcResultHTMLFileName, htmlStringByte, 0644)
+			err = ioutil.WriteFile(atcResultHTMLFileName, htmlStringByte, 0o644)
 			if err == nil {
 				log.Entry().Info("Writing " + atcResultHTMLFileName + " file was successful")
 				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
@@ -248,11 +247,9 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
 	return nil
-
 }
 
 func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
 	log.Entry().WithField("ABAP endpoint: ", details.URL).Info("triggering ATC run")
 
 	header := make(map[string][]string)
@@ -260,8 +257,8 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
-	logResponseBody(resp)
-	if err != nil || (resp != nil && resp.StatusCode == 400) { //send request does not seem to produce error with StatusCode 400!!!
+	_ = logResponseBody(resp)
+	if err != nil || (resp != nil && resp.StatusCode == 400) { // send request does not seem to produce error with StatusCode 400!!!
 		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
 		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
@@ -284,7 +281,6 @@ func logResponseBody(resp *http.Response) error {
 }
 
 func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
-
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Debug("Fetching Xcrsf-Token")
 
 	details.URL += "/sap/bc/adt/api/atc/runs/00000000000000000000000000000000"
@@ -301,11 +297,9 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
-
 }
 
 func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
-
 	log.Entry().WithField("ABAP endpoint", details.URL).Info("Polling ATC run status")
 
 	for {
@@ -319,7 +313,9 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 		}
 
 		x := new(Run)
-		xml.Unmarshal(bodyText, &x)
+		if err := xml.Unmarshal(bodyText, &x); err != nil {
+			log.Entry().WithError(err).Warning("failed to unmarschal xml response")
+		}
 		log.Entry().WithField("StatusCode", resp.StatusCode).Info("Status: " + x.Status)
 
 		if x.Status == "Not Created" {
@@ -336,7 +332,6 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 }
 
 func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
 	header := make(map[string][]string)
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
 
@@ -348,7 +343,6 @@ func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetai
 }
 
 func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Getting ATC results")
 
 	header := make(map[string][]string)
@@ -406,7 +400,7 @@ func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
 	return htmlDocumentString
 }
 
-//ATCConfiguration object for parsing yaml config of software components and packages
+// ATCConfiguration object for parsing yaml config of software components and packages
 type ATCConfiguration struct {
 	CheckVariant  string              `json:"checkvariant,omitempty"`
 	Configuration string              `json:"configuration,omitempty"`
@@ -414,50 +408,50 @@ type ATCConfiguration struct {
 	ObjectSet     abaputils.ObjectSet `json:"objectset,omitempty"`
 }
 
-//ATCObjects in form of packages and software components to be checked
+// ATCObjects in form of packages and software components to be checked
 type ATCObjects struct {
 	Package           []Package           `json:"package"`
 	SoftwareComponent []SoftwareComponent `json:"softwarecomponent"`
 }
 
-//Package for ATC run  to be checked
+// Package for ATC run  to be checked
 type Package struct {
 	Name               string `json:"name"`
 	IncludeSubpackages bool   `json:"includesubpackage"`
 }
 
-//SoftwareComponent for ATC run to be checked
+// SoftwareComponent for ATC run to be checked
 type SoftwareComponent struct {
 	Name string `json:"name"`
 }
 
-//Run Object for parsing XML
+// Run Object for parsing XML
 type Run struct {
 	XMLName xml.Name `xml:"run"`
 	Status  string   `xml:"status,attr"`
 	Link    []Link   `xml:"link"`
 }
 
-//Link of XML object
+// Link of XML object
 type Link struct {
 	Key   string `xml:"href,attr"`
 	Value string `xml:",chardata"`
 }
 
-//Result from ATC check for all files that were checked
+// Result from ATC check for all files that were checked
 type Result struct {
 	XMLName xml.Name `xml:"checkstyle"`
 	Files   []File   `xml:"file"`
 }
 
-//File that contains ATC check with error for checked file
+// File that contains ATC check with error for checked file
 type File struct {
 	Key       string     `xml:"name,attr"`
 	Value     string     `xml:",chardata"`
 	ATCErrors []ATCError `xml:"error"`
 }
 
-//ATCError with message
+// ATCError with message
 type ATCError struct {
 	Text     string `xml:",chardata"`
 	Message  string `xml:"message,attr"`

@@ -426,6 +426,78 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
 	})
 
+	t.Run("success case - updating an existing docker config json with addtional credentials", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+			ContainerRegistryUser:       "dummyUser",
+			ContainerRegistryPassword:   "dummyPassword",
+		}
+
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
+
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+		fileUtils := &mock.FilesMock{}
+		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths": {"dummyUrl": {"auth": "XXXXXXX"}}}`))
+		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, "rm", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"-f", "/kaniko/.docker/config.json"}, runner.Calls[0].Params)
+
+		assert.Equal(t, config.CustomTLSCertificateLinks, certClient.urlsCalled)
+		c, err := fileUtils.FileRead("/kaniko/.docker/config.json")
+		assert.NoError(t, err)
+		assert.Equal(t, `{"auths":{"dummyUrl":{"auth":"XXXXXXX"},"https://my.registry.com:50000":{"auth":"ZHVtbXlVc2VyOmR1bW15UGFzc3dvcmQ="}}}`, string(c))
+	})
+
+	t.Run("success case - creating new docker config json with provided container credentials", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			ContainerRegistryUser:       "dummyUser",
+			ContainerRegistryPassword:   "dummyPassword",
+		}
+
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
+
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+		fileUtils := &mock.FilesMock{}
+		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, "rm", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"-f", "/kaniko/.docker/config.json"}, runner.Calls[0].Params)
+
+		assert.Equal(t, config.CustomTLSCertificateLinks, certClient.urlsCalled)
+		c, err := fileUtils.FileRead("/kaniko/.docker/config.json")
+		assert.NoError(t, err)
+		assert.Equal(t, `{"auths":{"https://my.registry.com:50000":{"auth":"ZHVtbXlVc2VyOmR1bW15UGFzc3dvcmQ="}}}`, string(c))
+	})
+
 	t.Run("error case - multi image build: no docker files", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			ContainerImageName:       "myImage",
@@ -559,7 +631,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
-		assert.EqualError(t, err, "failed to read file 'path/to/docker/config.json': read error")
+		assert.EqualError(t, err, "failed to read existing docker config json at 'path/to/docker/config.json': read error")
 	})
 
 	t.Run("error case - dockerconfig write failed", func(t *testing.T) {

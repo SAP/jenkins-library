@@ -118,7 +118,7 @@ spec:
         description: "SHA of commit that was analyzed."
         resourceRef:
           - name: commonPipelineEnvironment
-            param: git/commitId
+            param: git/remoteCommitId
         type: string
   containers:
     - image: ""

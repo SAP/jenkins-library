@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
 	"testing"
 
 	"github.com/magiconair/properties"
@@ -14,11 +13,7 @@ import (
 
 func TestPropertiesFileGetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
 		ioutil.WriteFile(propsFilePath, []byte("version = 1.2.3"), 0666)
@@ -33,11 +28,7 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 	})
 
 	t.Run("success case - custom version field", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
 		ioutil.WriteFile(propsFilePath, []byte("customversion = 1.2.3"), 0666)
@@ -53,28 +44,20 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 	})
 
 	t.Run("error case - file not found", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
 
 		propsfile := PropertiesFile{
 			path: propsFilePath,
 		}
-		_, err = propsfile.GetVersion()
+		_, err := propsfile.GetVersion()
 
 		assert.Contains(t, fmt.Sprint(err), "failed to load")
 	})
 
 	t.Run("error case - no version found", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
 		ioutil.WriteFile(propsFilePath, []byte("versionx = 1.2.3"), 0666)
@@ -82,7 +65,7 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 		propsfile := PropertiesFile{
 			path: propsFilePath,
 		}
-		_, err = propsfile.GetVersion()
+		_, err := propsfile.GetVersion()
 
 		assert.EqualError(t, err, "no version found in field version")
 	})
@@ -90,11 +73,7 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 
 func TestPropertiesFileSetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
 		ioutil.WriteFile(propsFilePath, []byte("version = 0.0.1"), 0666)
@@ -104,7 +83,7 @@ func TestPropertiesFileSetVersion(t *testing.T) {
 			path:      propsFilePath,
 			writeFile: func(filename string, filecontent []byte, mode os.FileMode) error { content = filecontent; return nil },
 		}
-		err = propsfile.SetVersion("1.2.3")
+		err := propsfile.SetVersion("1.2.3")
 		assert.NoError(t, err)
 
 		assert.Contains(t, string(content), "version = 1.2.3")

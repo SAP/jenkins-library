@@ -314,7 +314,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "git/commitId",
+								Param: "git/remoteCommitId",
 							},
 						},
 						Scope:     []string{},

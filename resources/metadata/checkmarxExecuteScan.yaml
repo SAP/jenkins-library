@@ -321,7 +321,7 @@ spec:
         default: false
       - name: convertToSarif
         type: bool
-        description: "[BETA] Convert the Checkmarx XML (Cxxml) scan results to the open SARIF standard. Uploaded through Cumulus later on."
+        description: "[BETA] Convert the Checkmarx XML (Cxxml) scan results to the open SARIF standard."
         scope:
           - PARAMETERS
           - STAGES

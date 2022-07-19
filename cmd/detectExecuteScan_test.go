@@ -253,7 +253,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
 		assert.Equal(t, utilsMock.ExitCode, 3)
 		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -639,8 +639,21 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.True(t, isMajorVulnerability(v))
+	})
+	t.Run("Case Ignored Components", func(t *testing.T) {
+		vr := bd.VulnerabilityWithRemediation{
+			OverallScore: 7.5,
+			Severity:     "HIGH",
+		}
+		v := bd.Vulnerability{
+			Name:                         "",
+			VulnerabilityWithRemediation: vr,
+			Ignored:                      true,
+		}
+		assert.False(t, isMajorVulnerability(v))
 	})
 	t.Run("Case False", func(t *testing.T) {
 		vr := bd.VulnerabilityWithRemediation{
@@ -650,6 +663,7 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.False(t, isMajorVulnerability(v))
 	})

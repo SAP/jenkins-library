@@ -179,13 +179,7 @@ steps:
 			},
 		}
 
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
 		piperenv.SetParameter(filepath.Join(dir, "commonPipelineEnvironment"), "test_pe1", "pe1_val")
 
@@ -249,13 +243,7 @@ steps:
 			{Name: "p0", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "p0"}}},
 		}}}}
 
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
 		stepConfig, err := c.GetStepConfig(map[string]interface{}{}, "", myConfig, defaults, false, filters, stepMeta, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1")
 
@@ -382,15 +370,9 @@ steps:
 steps:
   step1:
     gcsBucketId: gcsBucketId_value`))}
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 		cpeDir := filepath.Join(dir, "commonPipelineEnvironment/custom")
-		err = os.MkdirAll(cpeDir, 0700)
+		err := os.MkdirAll(cpeDir, 0700)
 		if err != nil {
 			t.Fatal("Failed to create sub directory")
 		}
@@ -456,14 +438,6 @@ stages:
 
 		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
 
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
-
 		stepConfig, err := c.GetStageConfig(paramJSON, myConfig, defaults, false, acceptedParams, "stage1")
 
 		assert.Equal(t, nil, err, "error occurred but none expected")
@@ -505,14 +479,6 @@ stages:
 		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1))}
 
 		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
-
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
 
 		stepConfig, err := c.GetStageConfig(paramJSON, myConfig, defaults, false, acceptedParams, "stage1")
 
