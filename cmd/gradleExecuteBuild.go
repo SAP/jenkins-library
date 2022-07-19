@@ -146,7 +146,6 @@ func createBOM(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils)
 		Task:              bomGradleTaskName,
 		UseWrapper:        config.UseWrapper,
 		InitScriptContent: bomInitScriptContent,
-		ProjectProperties: map[string]string{"outputName": "bom-gdl"},
 	}
 	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
 		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
