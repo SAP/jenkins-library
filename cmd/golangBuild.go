@@ -34,7 +34,7 @@ const (
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
-	sbomFilename                = "bom.xml"
+	sbomFilename                = "bom-go.xml"
 )
 
 type golangBuildUtils interface {
@@ -165,8 +165,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		goBomOutputFilename := sbomFilename + "-go.xml"
-		if err := runBOMCreation(utils, goBomOutputFilename); err != nil {
+		if err := runBOMCreation(utils, sbomFilename); err != nil {
 			return err
 		}
 	}
