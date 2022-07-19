@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	PyBomFilename = "bom.xml"
+	PyBomFilename = "bom-py.xml"
 	stepName      = "pythonBuild"
 )
 
@@ -148,9 +148,7 @@ func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virut
 	}
 	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")
 
-	pyBomOutputFilename := PyBomFilename + "-py"
-
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", pyBomOutputFilename); err != nil {
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename); err != nil {
 		return err
 	}
 	return nil
