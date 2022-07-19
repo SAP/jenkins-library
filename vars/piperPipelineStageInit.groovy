@@ -176,10 +176,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('buildTool')
             .use()
 
-        if (config.transportRequestReqIDFromGit) {
-            echo "Retrieving transportRequestID from git commit history"
-            transportRequestReqIDFromGit(script: script)
-        }
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
@@ -256,6 +252,11 @@ void call(Map parameters = [:]) {
                 prepareVersionParams.dockerImage = ""
             }
             artifactPrepareVersion prepareVersionParams
+        }
+
+        if (config.transportRequestReqIDFromGit) {
+            echo "Retrieving transportRequestID from git commit history"
+            transportRequestReqIDFromGit(script: script)
         }
         pipelineStashFilesBeforeBuild script: script
     }

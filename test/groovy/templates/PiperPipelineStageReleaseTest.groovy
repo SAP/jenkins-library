@@ -175,4 +175,16 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItem('transportRequestUploadCTS'))
     }
+
+    @Test
+    void testReleaseStageTransportRequestUploadCTSWhenSetToFalse() {
+
+        jsr.step.piperPipelineStageRelease(
+            script: nullScript,
+            juStabUtils: utils,
+            transportRequestUploadCTS: false
+        )
+
+        assertThat(stepsCalled, not(hasItem('transportRequestUploadCTS')))
+    }
 }
