@@ -67,7 +67,7 @@ initscript {
     }
   }
   dependencies {
-    classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
+    classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.0"
   }
 }
 
@@ -79,6 +79,7 @@ rootProject {
     cyclonedxBom {
 	outputName = "bom-gradle"
 	outputFormat = "xml"
+	schemaVersion = "1.3"
     }
 }
 `
