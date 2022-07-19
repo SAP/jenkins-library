@@ -18,6 +18,10 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
+const (
+	mvnBomFilename = "bom-mvn"
+)
+
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
 
@@ -60,7 +64,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			"-DincludeTestScope=false",
 			"-DincludeLicenseText=false",
 			"-DoutputFormat=xml",
-			"-DoutputName=bom-mvn",
+			"-DoutputName=" + mvnBomFilename,
 		}
 		defines = append(defines, createBOMConfig...)
 	}
