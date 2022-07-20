@@ -250,10 +250,10 @@ go 1.17`
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
-	t.Run("success - runLinter", func(t *testing.T) {
+	t.Run("success - RunLint", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
-			RunLinter:           true,
+			RunLint:             true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -444,9 +444,9 @@ go 1.17`
 		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
 	})
 
-	t.Run("failure - runLinter: retrieveGolangciLint failed", func(t *testing.T) {
+	t.Run("failure - RunLint: retrieveGolangciLint failed", func(t *testing.T) {
 		config := golangBuildOptions{
-			RunLinter: true,
+			RunLint: true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -458,9 +458,9 @@ go 1.17`
 		assert.EqualError(t, err, "failed to install golangci-lint: curl err")
 	})
 
-	t.Run("failure - runLinter: runGolangciLint failed", func(t *testing.T) {
+	t.Run("failure - RunLint: runGolangciLint failed", func(t *testing.T) {
 		config := golangBuildOptions{
-			RunLinter: true,
+			RunLint: true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
