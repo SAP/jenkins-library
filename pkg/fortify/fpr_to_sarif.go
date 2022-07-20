@@ -1189,6 +1189,9 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	ruleProp.ToolAuditMessage = "Error fetching audit state" // We set this as default for the error phase, then reset it to nothing
 	ruleProp.ToolSeverityIndex = 0
 	ruleProp.ToolStateIndex = 0
+	ruleProp.AuditRequirementIndex = 0
+	ruleProp.AuditRequirement = "Unknown"
+
 	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
 	if maxretries == 0 {
 		// Max retries reached, we stop there to avoid a longer execution time
@@ -1231,6 +1234,18 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		for i := 0; i < len(filterSet.Folders); i++ {
 			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
 				ruleProp.FortifyCategory = filterSet.Folders[i].Name
+				//  classify into audit groups
+				switch ruleProp.FortifyCategory {
+				case "Corporate Security Requirements", "Audit All":
+					ruleProp.AuditRequirementIndex = 1
+					ruleProp.AuditRequirement = "Audit All"
+				case "Spot Checks of Each Category":
+					ruleProp.AuditRequirementIndex = 2
+					ruleProp.AuditRequirement = "Spot Check"
+				case "Optional":
+					ruleProp.AuditRequirementIndex = 3
+					ruleProp.AuditRequirement = "Optional"
+				}
 				break
 			}
 		}

@@ -87,12 +87,9 @@ type PartialFingerprints struct {
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
+	// common
 	RuleGUID              string `json:"ruleGUID,omitempty"`
 	InstanceID            string `json:"instanceID,omitempty"`
-	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
-	Confidence            string `json:"confidence,omitempty"`
-	FortifyCategory       string `json:"fortifyCategory,omitempty"`
-	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
 	Audited               bool   `json:"audited"`
 	ToolSeverity          string `json:"toolSeverity"`
 	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
@@ -100,6 +97,14 @@ type SarifProperties struct {
 	ToolStateIndex        int    `json:"toolStateIndex"`
 	ToolAuditMessage      string `json:"toolAuditMessage"`
 	UnifiedAuditState     string `json:"unifiedAuditState"`
+	AuditRequirement      string `json:"auditRequirement"`
+	AuditRequirementIndex int    `json:"auditRequirementIndex"`
+
+	// specific
+	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
+	Confidence            string `json:"confidence,omitempty"`
+	FortifyCategory       string `json:"fortifyCategory,omitempty"`
+	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
 }
 
 // Tool these structs are relevant to the Tool object
