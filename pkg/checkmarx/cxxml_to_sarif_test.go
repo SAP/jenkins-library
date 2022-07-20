@@ -3,9 +3,9 @@ package checkmarx
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/stretchr/testify/assert"
 )
 
