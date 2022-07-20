@@ -155,9 +155,9 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-      - name: runLinter
+      - name: runLint
         type: bool
-        description: Configures the build to run a linter.
+        description: Configures the build to run linters with [golangci-lint](https://golangci-lint.run/).
         scope:
           - STEPS
           - STAGES
