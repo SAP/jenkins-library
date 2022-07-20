@@ -1,5 +1,12 @@
 package format
 
+const AUDIT_REQUIREMENT_GROUP_1_INDEX = 1
+const AUDIT_REQUIREMENT_GROUP_2_INDEX = 2
+const AUDIT_REQUIREMENT_GROUP_3_INDEX = 3
+const AUDIT_REQUIREMENT_GROUP_1_DESC = "Audit All"
+const AUDIT_REQUIREMENT_GROUP_2_DESC = "Spot Check"
+const AUDIT_REQUIREMENT_GROUP_3_DESC = "Optional"
+
 // SARIF format related JSON structs
 type SARIF struct {
 	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"`

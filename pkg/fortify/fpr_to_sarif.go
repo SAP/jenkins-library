@@ -1237,14 +1237,14 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 				//  classify into audit groups
 				switch ruleProp.FortifyCategory {
 				case "Corporate Security Requirements", "Audit All":
-					ruleProp.AuditRequirementIndex = 1
-					ruleProp.AuditRequirement = "Audit All"
+					ruleProp.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+					ruleProp.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
 				case "Spot Checks of Each Category":
-					ruleProp.AuditRequirementIndex = 2
-					ruleProp.AuditRequirement = "Spot Check"
+					ruleProp.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
+					ruleProp.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_2_DESC
 				case "Optional":
-					ruleProp.AuditRequirementIndex = 3
-					ruleProp.AuditRequirement = "Optional"
+					ruleProp.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
+					ruleProp.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
 				}
 				break
 			}
