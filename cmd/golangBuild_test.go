@@ -1056,7 +1056,7 @@ func TestRunGolangciLint(t *testing.T) {
 			expectedErr:         nil,
 		},
 		{
-			name:                "failure - failed ro run golangci-lint",
+			name:                "failure - failed to run golangci-lint",
 			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
 			exitCode:            0,
 			expectedCommand:     []string{},
