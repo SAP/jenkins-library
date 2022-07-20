@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -462,7 +461,7 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSetting
 
 	log.Entry().Infof("lint report: \n" + outputBuffer.String())
 	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
-	err = ioutil.WriteFile(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
+	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
 	if err != nil {
 		return fmt.Errorf("writing golangci-lint report failed: %w", err)
 	}
