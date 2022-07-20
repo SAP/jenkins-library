@@ -35,7 +35,7 @@ const (
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
-	golangciLintCurlUrl         = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+	golangciLintCurlURL         = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 	golangciLintVersion         = "v1.46.2"
 )
 
@@ -431,7 +431,7 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error 
 	// installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
-	err := utils.RunExecutable("curl", "-sSfL", golangciLintCurlUrl)
+	err := utils.RunExecutable("curl", "-sSfL", golangciLintCurlURL)
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}

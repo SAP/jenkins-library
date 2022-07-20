@@ -262,7 +262,7 @@ go 1.17`
 		assert.NoError(t, err)
 
 		assert.Equal(t, "curl", utils.Calls[0].Exec)
-		assert.Equal(t, []string{"-sSfL", golangciLintCurlUrl}, utils.Calls[0].Params)
+		assert.Equal(t, []string{"-sSfL", golangciLintCurlURL}, utils.Calls[0].Params)
 		assert.Equal(t, "sh", utils.Calls[1].Exec)
 		assert.Equal(t, []string{"-s", "--", "-b", filepath.Join(os.Getenv("GOPATH"), "bin"), golangciLintVersion}, utils.Calls[1].Params)
 		assert.Equal(t, filepath.Join(os.Getenv("GOPATH"), "bin", "golangci-lint"), utils.Calls[2].Exec)
@@ -451,7 +451,7 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
 		utils.ShouldFailOnCommand = map[string]error{
-			fmt.Sprintf("curl -sSfL %s", golangciLintCurlUrl): fmt.Errorf("curl err"),
+			fmt.Sprintf("curl -sSfL %s", golangciLintCurlURL): fmt.Errorf("curl err"),
 		}
 		telemetry := telemetry.CustomData{}
 		err := runGolangBuild(&config, &telemetry, utils, &cpe)
@@ -993,14 +993,14 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			name:                "success",
 			shouldFailOnCommand: map[string]error{},
 			expectedCommands: [][]string{
-				{"curl", "-sSfL", golangciLintCurlUrl},
+				{"curl", "-sSfL", golangciLintCurlURL},
 				{"sh", "-s", "--", "-b", golangciLintDir, golangciLintVersion},
 			},
 			expectedErr: nil,
 		},
 		{
 			name:                "failure - failed to install golangci-lint with curl error",
-			shouldFailOnCommand: map[string]error{fmt.Sprintf("curl -sSfL %s", golangciLintCurlUrl): fmt.Errorf("curl err")},
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("curl -sSfL %s", golangciLintCurlURL): fmt.Errorf("curl err")},
 			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("failed to install golangci-lint: curl err"),
 		},
