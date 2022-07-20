@@ -122,6 +122,11 @@ func TestParse(t *testing.T) {
 		assert.Equal(t, sarif.Runs[0].Results[2].Properties.ToolState, "Confirmed")
 		assert.Equal(t, sarif.Runs[0].Results[2].Properties.ToolAuditMessage, "Changed status to Confirmed \n Dummy comment")
 		//assert.Equal(t, "This is a dummy short description.", sarif.Runs[0].Tool.Driver.Rules[0].FullDescription.Text)
+
+		// ensure the existence of not applicable field (specific Fortify)
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.InstanceSeverity, "")
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.Confidence, "")
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.FortifyCategory, "")
 	})
 
 	t.Run("Missing sys", func(t *testing.T) {

@@ -101,10 +101,10 @@ type SarifProperties struct {
 	AuditRequirementIndex int    `json:"auditRequirementIndex"`
 
 	// specific
-	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
-	Confidence            string `json:"confidence,omitempty"`
-	FortifyCategory       string `json:"fortifyCategory,omitempty"`
-	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
+	InstanceSeverity      string `json:"instanceSeverity"`
+	Confidence            string `json:"confidence"`
+	FortifyCategory       string `json:"fortifyCategory"`
+	CheckmarxSimilarityID string `json:"checkmarxSimilarityID"`
 }
 
 // Tool these structs are relevant to the Tool object
