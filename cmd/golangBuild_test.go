@@ -264,7 +264,7 @@ go 1.17`
 		assert.Equal(t, "curl", utils.Calls[0].Exec)
 		assert.Equal(t, []string{"-sSfL", golangciLintCurlUrl}, utils.Calls[0].Params)
 		assert.Equal(t, "sh", utils.Calls[1].Exec)
-		assert.Equal(t, []string{"-s", "--", "-b", fmt.Sprintf("%s/bin", os.Getenv("GOPATH")), golangciLintVersion}, utils.Calls[1].Params)
+		assert.Equal(t, []string{"-s", "--", "-b", filepath.Join(os.Getenv("GOPATH"), "bin"), golangciLintVersion}, utils.Calls[1].Params)
 		assert.Equal(t, filepath.Join(os.Getenv("GOPATH"), "bin", "golangci-lint"), utils.Calls[2].Exec)
 		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[2].Params)
 
