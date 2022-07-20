@@ -255,7 +255,6 @@ void call(Map parameters = [:]) {
         }
 
         if (config.transportRequestReqIDFromGit) {
-            echo "Retrieving transportRequestID from git commit history"
             transportRequestReqIDFromGit(script: script)
         }
         pipelineStashFilesBeforeBuild script: script
