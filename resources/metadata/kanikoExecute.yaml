@@ -181,6 +181,32 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/registryUrl
+      - name: containerRegistryUser
+        aliases:
+          - name: dockerRegistryUser
+        type: string
+        description: Username of the Container registry where the image should be pushed to - which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+      - name: containerRegistryPassword
+        aliases:
+          - name: dockerRegistryPassword
+        type: string
+        description: Password of the Container registry where the image should be pushed to -  which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
@@ -197,8 +223,6 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
