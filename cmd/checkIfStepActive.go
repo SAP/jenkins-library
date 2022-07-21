@@ -18,10 +18,12 @@ type checkStepActiveCommandOptions struct {
 	openFile        func(s string, t map[string]string) (io.ReadCloser, error)
 	stageConfigFile string
 	stepName        string
+	stepNames       []string
 	stageName       string
 	v1Active        bool
 	stageOutputFile string
 	stepOutputFile  string
+	activeStepsMap  map[string]interface{} //no command flags needed probably
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
@@ -63,6 +65,8 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	}
 	var pConfig config.Config
 
+	// Ashly testing hardcode stepNames
+	checkStepActiveOptions.stepNames = []string{"sapCallStagingService", "golang", "hadolint"}
 	// load project config and defaults
 	projectConfig, err := initializeConfig(&pConfig)
 	if err != nil {
@@ -129,11 +133,24 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 		// do not perform a check if output files are written
 		return nil
 	}
+	if len(checkStepActiveOptions.stepNames) == 0 {
+		if !runSteps[checkStepActiveOptions.stageName][checkStepActiveOptions.stepName] {
+			return errors.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
+		}
+		log.Entry().Infof("Step %s in stage %s is active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
+	} else {
+		log.Entry().Info("Entering list of steps section")
 
-	if !runSteps[checkStepActiveOptions.stageName][checkStepActiveOptions.stepName] {
-		return errors.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
+		for _, eachStepName := range checkStepActiveOptions.stepNames {
+			log.Entry().Infof("The step name %v ", eachStepName)
+
+			if runSteps[checkStepActiveOptions.stageName][eachStepName] {
+				// Todo convert this to slices when go introduces contains feature. Right now in 1.18 it is experimental
+				checkStepActiveOptions.activeStepsMap[eachStepName] = struct{}{}
+			}
+		}
+		log.Entry().Infof("The map %v", checkStepActiveOptions.activeStepsMap)
 	}
-	log.Entry().Infof("Step %s in stage %s is active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
 
 	return nil
 }
@@ -142,6 +159,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageConfigFile, "stageConfig", ".resources/piper-stage-config.yml",
 		"Default config of piper pipeline stages")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepName, "step", "", "Name of the step being checked")
+	cmd.Flags().StringSliceVar(&checkStepActiveOptions.stepNames, "stepNames", []string{}, "List of steps to be checked in a stage.")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", "", "Name of the stage in which contains the step being checked")
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")

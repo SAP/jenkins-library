@@ -1,0 +1,1014 @@
+#Piper general purpose pipeline stage configuration including conditions
+apiVersion: project-piper.io/v1
+kind: PipelineDefinition
+metadata:
+  name: sap-piper.general.purpose.pipeline
+  displayName: Piper general purpose pipeline
+  description: |-
+    This Piper ready-made pipeline consists of a sequence of stages which are considered applicable to many projects based on the experience over the past years.
+
+    !!! tip ""
+
+        === "Jenkins"
+
+            ![Jenkins Pipeline](../../images/jenkinsPipelineOverview.png)
+
+        === "Azure"
+
+            ![Azure Pipeline](../../images/azurePipelineOverview.png)
+
+    !!! note "Configuration to enable the pipeline stages and all included steps"
+
+        The Piper general purpose pipeline provides a number of stages with many steps which are orchestrated by the pipeline.<br />
+        Each step may require certain setup activities. Many of those steps are already automated in case you use [Hyperspace Onboarding](https://hyperspace.tools.sap/).
+
+
+    !!! note "buildTool"
+
+        Please make sure that you specify the correct build tool.
+        
+        When it comes to **building** an artifact within the pipeline, support for a dedicated `buildTool` depends on support in the step [`artifactPrepareVersion`](../../steps/artifactPrepareVersion.md).
+
+        In addition the respective build option may further limit the selection:
+
+        * Delegating build to xMake: most build tools are supported.
+        * Piper native build: limited availability based on commonly used tools as per [SLC-29 Wiki](https://wiki.wdf.sap.corp/wiki/display/pssl/SLC-29).
+
+        The step [`artifactPrepareVersion`](../../steps/artifactPrepareVersion.md) supports for example:
+
+        * `docker`
+        * `dub`
+        * `golang`
+        * `gradle`
+        * `maven`
+        * `mta`
+        * `npm`
+        * `pip`
+        * `sbt`
+
+        When it comes to **validating** an artifact within the pipeline, the pipeline already includes a vast number of tool integrations.<br />
+        Besides, it is possible to extend individual stages in order to possibly include further or different tooling required by your project.
+spec:
+  stages:
+# Init stage
+  - name: init
+    displayName: Init
+    description: |-
+      This stage initializes the pipeline run and prepares further execution.
+
+      !!! tip ""
+
+          === "Jenkins"
+
+              It will for example:
+
+              * Make sure that `piper-lib-os` can be loaded correctly.
+              * Check out the GitHub repository.
+              * Set up the overall Piper pipeline configuration and perform basic checks.
+              * Identify which pipeline stages to execute based on the configuration and file patterns.
+              * Perform automatic versioning of the software artifact in case the `productiveBranch` pipeline is executed.
+
+          === "Azure"
+
+              It will for example::
+
+              * Initialize Azure variables with settings required in later stages of the pipeline.
+              * Identify which pipeline stages to execute based on the configuration and file patterns.
+    steps:
+    - name: getConfig
+      description: Read pipeline stage configuration.
+    - name: artifactPrepareVersion
+      description: Automatic versioning of artifact - only executed on `productiveBranch`, e.g. `main`.
+      orchestrators:
+      - Jenkins
+    - name: pipelineStashFilesBeforeBuild
+      description: Executes stashing before build execution. This makes sure that files from source code repository can be made available for the individual pipeline stages.
+      orchestrators:
+      - Jenkins
+    - name: setupPipelineEnvironment
+      description: |-
+        Initializes the environment for the pipeline run and creates a common object used for passing information between pipeline stages and steps.
+        
+        One important part is reading the pipeline configuration file (located in your source code repository in .pipeline/config.yml).
+      orchestrators:
+      - Jenkins
+# Pull Request voting stage
+  - name: pr_voting
+    displayName: Pull-Request Voting
+    description: |-
+      **Jenkins-only**<br />
+      This stage is executed for every pull-request and is responsible for validating pull-requests.
+
+      Following options for PR voting exist:
+
+      * Docker builds (`buildTool: docker`): execution of step [`kanikoExecute`](../../steps/kanikoExecute.md)
+      * Mta builds (`buildTool: mta`): execution of step [`mtaBuild`](../../steps/mtaBuild.md)
+      * other `buildTool` setting: the build (including unit tests, static checks, ...) will be executed using the defined `dockerCommand` inside a defined `dockerImage`.
+    steps:
+    - name: kanikoExecute 
+      description: Executes a Docker container build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).
+      conditions:
+      - config:
+          buildTool:
+          - 'docker'
+      orchestrators:
+      - Jenkins
+    - name: mtaBuild
+      description: Performs a build of an mta artifact using the mta build tool (mbt).
+      conditions:
+      - config:
+          buildTool:
+          - 'mta'
+      orchestrators:
+      - Jenkins
+    - name: mavenExecuteStaticCodeChecks
+      description: 'Do not use any longer: Executes maven static code checks - **instead**: configure execution as part of the `pom.xml` and run it with the build.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: npmExecuteLint
+      description: 'Do not use any longer: Executes npm linting - **instead**: configure execution as part of the `package.json` and run it with the npm build.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: checksPublishResults 
+      description: Publishes check results to Jenkins. It will always be active.
+      orchestrators:
+      - Jenkins
+    - name: testsPublishResults
+      description: Publishes test results to Jenkins. It will always be active.
+      orchestrators:
+      - Jenkins
+    - name: sonarExecuteScan
+      description: Executes a Sonar scan.
+      conditions:
+      - filePattern: '**/sonar-project.properties'
+      orchestrators:
+      - Jenkins
+# Build stage
+  - name: build
+    displayName: Build
+    description: |-
+      In this stage a build is executed. 
+
+      The build can uses the [xMake build infrastructure](../../build/xMake.md) (only Jenkins) or the ["Piper native build"](../../build/native.md) option.
+
+      Both options support you with a "build once" pattern by using the functionality of the [staging service](https://github.wdf.sap.corp/pages/Repository-services/staging-service/).
+
+      !!! note "tests and code checks"
+          It is recommended to run unit tests as well as code checks during the build.
+
+          This could be done by e.g. appropriate maven configuration, appropriate script inside package.json for npm, ...
+ 
+      !!! note "Jenkins" 
+          On Jenkins this stage is called  _Central Build_
+    steps:
+    - name: artifactPrepareVersion
+      description: Automatic versioning of artifact - only executed on `productiveBranch`, e.g. `main`.
+      orchestrators:
+      - AzureDevOps
+    - name: hadolintExecute
+      description: Executes Haskell Docker Linter in docker based scenario to analyze structural issues in the Dockerfile.
+      conditions:
+      - filePattern: Dockerfile
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: sapCallStagingService
+      description: Performs staging service interactions in order to store build artifact(s).
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: golangBuild
+      description: Executes a golang build and publishes the build result.
+      conditions:
+      - config:
+          buildTool:
+          - 'golang'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: gradleExecuteBuild
+      description: Executes a gradle build and publishes the build result.
+      conditions:
+      - config:
+          buildTool:
+          - 'gradle'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: mavenBuild
+      description: Executes a maven build and publishes the build result.
+      conditions:
+      - config:
+          buildTool:
+          - 'maven'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: npmExecuteScripts
+      description: Executes a npm build and publishes the build result.
+      conditions:
+      - config:
+          buildTool:
+          - 'npm'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: mtaBuild
+      description: Executes a mta build and publishes the build result.
+      conditions:
+      - config:
+          buildTool:
+          - 'mta'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: pythonBuild
+      description: Executes a python build and publishes the build result.
+      conditions:
+      - config:
+          buildTool:
+          - 'pip'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: kanikoExecute
+      description: Executes a Kaniko build which creates and publishes a container.
+      conditions:
+      - config:
+          buildTool:
+          - 'docker'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: cnbBuild
+      description: Executes a Cloud Native Buildpacks build for creating and publishing a container.
+      conditions:
+      - inactive: true
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: helmExecute
+      description: Packages and publishes a HELM chart.
+      conditions:
+      - inactive: true
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: sapXmakeExecuteBuild
+      description: Executes a staging build delegated to the xMake system.
+      conditions:
+      - config:
+          nativeBuild:
+          - false
+      orchestrators:
+      - Jenkins
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: pushToDockerRegistry
+      description: 'For Docker builds using xMake: Automatically pushes created Docker image to a dedicated container registry. It will only be executed in case a `docker.metadata.json` is available from xMake since this contains the required image details.'
+      conditions:
+      - configKey: dockerRegistryUrl
+      orchestrators:
+      - Jenkins
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: karmaExecuteTests
+      description: Executes a karma test (e.g. OPA5, qUnit).
+      conditions:
+      - filePattern: '**/karma.conf.js'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: sonarExecuteScan
+      description: Executes a Sonar scan.
+      conditions:
+      - filePattern: '**/sonar-project.properties'
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: sapCumulusUpload
+      description: Performs upload of result files to cumulus.
+      conditions:
+      - configKey: 'pipelineId'
+    - name: checksPublishResults
+      description:  Publishes check results to Jenkins.
+      orchestrators:
+      - Jenkins
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: testsPublishResults
+      description: Publishes test results to Jenkins.
+      orchestrators:
+      - Jenkins
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+    - name: sapURLScan
+      description: 'For Docker builds using xMake: Analyse given proxy log file to detect insecure URLs.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+      notActiveConditions:
+      - commonPipelineEnvironment:
+          custom/isOptimizedAndScheduled: true
+# Additional unit tests stage
+  - name: additional_unittests
+    displayName: 'Additional Unit Tests'
+    description: |-
+      **DEPRECATED and Jenkins-only**
+      
+      In this stage unit tests, which can not or should not be executed in the central build environment, are executed.
+
+      **Please use the functionality provided by the [build stage](build.md) instead.
+    steps:
+    - name: karmaExecuteTests
+      description: Executes a karma test (e.g. OPA5, qUnit).
+      conditions:
+      - filePattern: '**/karma.conf.js'
+    - name: npmExecuteScripts
+      description: Executes npm scripts to run frontend unit tests. If custom names for the npm scripts are configured via the runScripts parameter the step npmExecuteScripts needs explicit activation via stage configuration.
+      conditions:
+      - npmScript: 'ci-frontend-unit-test'
+# Integration stage
+  - name: integration
+    displayName: Integration
+    description: |-
+      This stage allows to execute project-specific integration tests.
+
+      !!! note "Project-specifics"
+          Integration tests are very project-specific, thus they are typically defined using the [stage extension mechanism](../../extensibility.md).
+    steps:
+    - name: executeCustomIntegrationTests
+      description: '**Deprecated, do not use any longer**'
+      conditions:
+      - filePatternFromConfig: 'extensionIntegrationTestScript'
+      orchestrators:
+      - Jenkins
+    - name: mavenExecuteIntegration
+      description: 'Runs backend integration tests via maven in the module integration-tests/pom.xml.'
+      conditions:
+      - filePattern: 'integration-tests/pom.xml'
+    - name: sapCumulusUpload
+      description: 'Performs upload of result files of the previous steps of this stage to Cumulus.'
+      conditions:
+      - configKey: pipelineId
+# Acceptance stage
+  - name: acceptance
+    displayName: Acceptance
+    description: |-
+      In this stage the build result is typically deployed and automated acceptance tests are executed.<br />
+      This is to make sure that:
+
+      * New functionality is tested end-to-end
+      * There is no end-to-end regression in existing functionality
+
+      !!! success ""
+          This is an important aspect in order to comply with SAP's functional correctness corporate requirement FC-2
+    steps:
+    - name: terraformExecute
+      description: 'Executes [Terraform](https://www.terraform.io/) to apply the desired state of configuration'
+      conditions:
+      - inactive: true
+    - name: multicloudDeploy
+      description: '**Deprecated, do not use any longer** - Can perform both deployments to Cloud Foundry and neo targets.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: cloudFoundryCreateService
+      description: '**Deprecated, do not use any longer** - For Cloud Foundry use-cases: Creates CF Services based on information in yml-format.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: manageCloudFoundryEnvironment
+      description: '**Deprecated, do not use any longer** - For Cloud Foundry use-cases: Sets up the required test environment based on a infrastructure definition in yml-format.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: downloadArtifactsFromNexus
+      description: '**Active for scenarios where no deployment to Kubernetes is performed**. Downloads artifact from Nexus which should be deployed.'
+      conditions:
+      - config:
+          nativeBuild:
+            - false
+      orchestrators:
+      - Jenkins
+    - name: sapDownloadArtifact
+      description: 'For "Piper native build": Downloads the artifact from the staging service'
+      # add NOT condition!
+      conditions:
+      - config:
+          buildTool:
+            - maven
+            - mta
+            - npm
+    - name: cloudFoundryDeploy
+      description: 'For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org.'
+      conditions:
+      - configKey: cfSpace
+      - configKey: cloudFoundry/space
+    - name: kubernetesDeploy
+      description: 'For Docker/Kubernetes use-cases: Performs deployment to Kubernetes cluster.'
+      conditions:
+      - config:
+          deployTool:
+            - 'helm'
+            - 'helm3'
+            - 'kubectl'
+    - name: newmanExecute
+      description: 'Performs API testing using Newman against the deployed application/service.'
+      conditions:
+      - filePatternFromConfig: newmanCollection
+      - configKey: testRepository
+    - name: uiVeri5ExecuteTests
+      description: 'Performs end-to-end UI testing using UIVeri5 test framework against the deployed application/service.'
+      conditions:
+      - filePattern: '**/conf.js'
+    - name: gaugeExecuteTests
+      description: 'Performs behavior-driven tests using Gauge test framework against the deployed application/service.'
+      conditions:
+      - filePattern: '**/*.spec'
+      - configKey: testRepository
+    - name: npmExecuteEndToEndTests
+      description: "Executes end to end tests by running the npm script 'ci-e2e' defined in the project's package.json file."
+      conditions:
+      - configKey: appUrls
+    - name: sapCumulusUpload
+      description: 'Performs upload of result files of the previous steps of this stage to Cumulus.'
+      conditions:
+      - configKey: pipelineId
+    - name: testsPublishResults
+      description: 'Publishes test results to Jenkins. It will automatically be active in case tests are executed.'
+      orchestrators:
+      - Jenkins
+# Performance stage
+  - name: performance
+    displayName: Performance
+    description: |-
+      In this test stage, automated performance tests can be executed.
+
+      !!! info "Test execution"
+          In a broader sense, performance tests can be implemented during various phases in a project, from unit testing to user performance testing.
+
+          There is a great need to strike a balance between constantly testing every code change/commit and ensure continuous workflow.<br />
+          The idea is to implement parallel pipelines, one of which is responsible for continuous delivery and gets executed upon each commit, and finishes within reasonable time.<br />
+          This pipeline can perform performance tests to some degree.
+
+          Other pipelines would deal with larger scale performance test (e.g. a few hours) or require manual intervention.<br />
+          Those would likely run in a custom pipeline and use the performance tests steps provided by Piper together with possibly additional custom logic.
+
+          A general categorization of performance tests can be defined as follow:
+
+          * Unit performance tests: e.g. class/function test - they can run together with the build in the "Build" stage
+          * Component performance tests: e.g. REST service
+          * Single user performance tests: End to end performance tests including UI (e.g. Fiori/UI5)
+          * Load tests: simulate real productive scenarios/loads
+    steps:
+    - name: terraformExecute
+      description: 'Executes [Terraform](https://www.terraform.io/) to apply the desired state of configuration'
+      conditions:
+      - inactive: true
+    - name: cloudFoundryCreateService
+      description: '**Deprecated, do not use any longer** - For Cloud Foundry use-cases: Creates CF Services based on information in yml-format.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: manageCloudFoundryEnvironment
+      description: 'Deprecated, do not use any longer** - For Cloud Foundry use-cases: Sets up the required test environment based on a infrastructure definition in yml-format.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: downloadArtifactsFromNexus
+      description: '**Active for scenarios where no deployment to Kubernetes is performed**. Downloads artifact from Nexus which should be deployed.'
+      conditions:
+      - config:
+          nativeBuild:
+            - false
+      orchestrators:
+      - Jenkins
+    - name: sapDownloadArtifact
+      description: 'For "Piper native build": Downloads the artifact from the staging service'
+      # add NOT condition!
+      conditions:
+      - config:
+          buildTool:
+            - maven
+            - mta
+            - npm
+    - name: cloudFoundryDeploy
+      description: 'For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org.'
+      conditions:
+      - configKey: cfSpace
+      - configKey: cloudFoundry/space
+    - name: kubernetesDeploy
+      description: 'For Docker/Kubernetes use-cases: Performs deployment to Kubernetes cluster.'
+      conditions:
+      - config:
+          deployTool:
+            - 'helm'
+            - 'helm3'
+            - 'kubectl'
+    - name: sapSUPAExecuteTests
+      description: "Performs single user user performance tests using SAP's SUPA tool."
+      conditions:
+      - inactive: true
+    - name: gatlingExecuteTests
+      description: "Performs single user user performance tests using SAP's SUPA tool."
+      conditions:
+      - filePatternFromConfig: 'pomPath'
+      orchestrators:
+      - Jenkins
+    - name: sapCumulusUpload
+      description: 'Performs upload of result files of the previous steps of this stage to Cumulus.'
+      conditions:
+      - configKey: pipelineId
+    - name: testsPublishResults
+      description: 'Publishes test results to Jenkins. It will automatically be active in case tests are executed.'
+      orchestrators:
+      - Jenkins
+# Security stage
+  - name: security
+    displayName: Security
+    description: |-
+      In this stage important security-relevant checks are conducted.
+
+      This is to achieve an appropriate level of security for your application/service.
+
+      Currently there are two tools which we use SAP internally for security source code scanning (SAST = static application security testing):
+
+      1. [Fortify](https://jam4.sapjam.com/groups/about_page/hwsYB62safobfg6sX9QrYW): recommended to scan especially Java code
+      2. [Checkmarx](https://jam4.sapjam.com/groups/about_page/1mlscAGHT38VQ4vxGfhE6u): recommended for security scans of JavaScript, iOS, Swift and Ruby code
+ 
+      In addition to the security code scanning steps we have steps integrated which conducts Open Source dependency analysis.<br />
+      Currently there are three Open Source vulnerability scanning tools:
+ 
+      1. WhiteSource
+      2. BlackDuck/Detect
+      3. Protecode
+ 
+      With these steps you will be able to identify if there are known security vulnerabilities (e.g. published CVEs) within any of your direct or indirect dependencies.<br />
+      As a second line of defense, please also subscribe to your product in [Software Vulnerability Monitor (SVM)](https://go.sap.corp/svm_app).<br />
+      Ideally your Security expert claims ownership for your product in this tool and developers start viewing it.
+
+      !!! note
+          Open source dependency scanning is one important aspect in the [Rugged DevOps](https://youtu.be/dogofef4HWg?list=PLEx5khR4g7PIBIQHkNnOyRy2kclkq25Bh) practice and supports a clean software supply chain management.
+      
+      To round up our offering we provide you with steps to perform dynamic application security testing (DAST) via DASTer and OWASP Zed Attack Proxy (ZAP) complementing the gaps of static application security testing (SAST).
+    steps:
+    - name: checkmarxExecuteScan
+      description: Performs Checkmarx scanning.
+      conditions:
+      - configKey: projectName
+      - configKey: checkmarxProject
+      - configKey: checkMarxProjectName
+    - name: fortifyExecuteScan
+      description:  Performs Fortify scanning.
+      conditions:
+      - configKey: authToken
+      - configKey: fortifyCredentialsId
+    - name: detectExecuteScan
+      description: Performs BlackDuck Detect scanning to identify Open Source Security vulnerabilities.
+      conditions:
+      - configKey: projectName
+    - name: whitesourceExecuteScan
+      description: Performs WhiteSource scanning to identify Open Source Security vulnerabilities.
+      conditions:
+      - configKey: productName
+      - configKey: whitesourceProductName
+    - name: protecodeExecuteScan
+      description: Performs Protecode scanning to identify Open Source Security vulnerabilities.
+      conditions:
+      - configKey: protecodeCredentialsId
+      - configKey: group
+      - configKey: protecodeGroup
+    - name: sapCreateFosstarsReport
+      description: Create Fosstars OSS rating report.
+      conditions:
+      - inactive: true
+    - name: executeDasterScan
+      description: Performs DASTer scanning.
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: executeZAPScan
+      description: Performs ZAP scanning.
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: sapCumulusUpload
+      description: Performs upload of result files of the previous steps of this stage to Cumulus.
+      conditions:
+      - configKey: pipelineId
+# IP Scan and PPMS stage
+  - name: ipscan_ppms
+    displayName: IPScan and PPMS
+    description: |-
+      In this stage SAP's corporate requirements with respect to IP scanning and PPMS documentation are checked.
+    steps:
+    - name: detectExecuteScan
+      description: Performs BlackDuck Detect scanning to identify IP compliance issues.
+      conditions:
+      - configKey: projectName
+    - name: whitesourceExecuteScan
+      description: Performs WhiteSource scanning to identify Open Source Security vulnerabilities.
+      conditions:
+      - configKey: productName
+      - configKey: whitesourceProductName
+    - name: sapCheckPPMSCompliance
+      description: Executes compliance check against SAP's PPMS system including automatic update of PPMS if configured accordingly.
+      conditions:
+      - configKey: ppmsID
+    - name: sapCheckECCNCompliance
+      description: Checks if the PPMS object is already ECCN classified.
+      conditions:
+      - configKey: eccnCredentialsId
+    - name: sapCumulusUpload
+      description: Performs upload of result files of the previous steps of this stage to Cumulus.
+      conditions:
+      - configKey: pipelineId
+# Confirm stage
+  - name: confirm
+    displayName: Confirm
+    description: |-
+      In this stage a manual confirmation is requested before processing subsequent stages like Promote and Release.
+
+      The behavior of the manual confirmation can be adapted using following configuration options:
+
+      !!! tip ""
+
+          === "Jenkins"
+
+              .pipeline/config.yml
+              ```
+              general:
+                # specifies if a manual confirmation is active before running the Promote and Release stages of the pipeline.
+                # default: true
+                manualConfirmation: false
+
+                # Defines message displayed as default manual confirmation.
+                # default: 'Shall we proceed to Promote & Release?'
+                manualConfirmationMessage: 'my message'
+
+                # Defines how many hours a manual confirmation is possible for a dedicated pipeline.
+                # default: 720
+                manualConfirmationTimeout: 360
+              ```
+
+          === "Azure"
+
+              .pipeline/config.yml
+              ```
+              general:
+                # specifies if a manual confirmation is active before running the Promote and Release stages of the pipeline.
+                # default: true
+                manualConfirmation: false
+              ```
+
+              Other settings are fixed (due to [Azure](https://developercommunity.visualstudio.com/t/passing-timeout-as-variable-fails-with-expected-an/852341) [limitations](https://developercommunity.visualstudio.com/t/using-a-variable-in-the-ado-pipeline-task-timeout/1154423)):
+
+              * manualConfirmationMessage: 'Shall we proceed to Promote & Release?'
+              * manualConfirmationTimeout: standard Azure pipeline task timeout of 30 days
+
+              You can however change the timeout value with the `manualConfirmationTimeoutMinutes` parameter in a pipeline definition YAML as follows:
+              ```
+              extends:
+                template: sap-piper-pipeline.yml@piper-pipeline-azure
+                parameters:
+                  manualConfirmationTimeoutMinutes: 30
+              ```
+
+# Promote stage
+  - name: promote
+    displayName: Promote
+    description: |-
+      In this stage a build result which has been previously build in the [Build stage](build.md) is promoted.
+
+      !!! success
+          The promote will only happen if all tests and checks executed in previous stages have been successful.
+    steps:
+    - name: sapCallStagingService
+      description: Performs staging service interactions in order to store build artifact(s).
+      conditions:
+      - configKey: projectName
+    - name: sapXmakeExecuteBuild
+      description: Executes a promote build delegated to the xMake system.
+      conditions:
+      - config:
+          nativeBuild:
+          - false
+    - name: sapCumulusUpload
+      description: 'Performs upload of Cumulus locking file, in case pipeline runs for `productiveBranch` and `lockPipelineRun: true`.'
+      conditions:
+      - configKey: pipelineId
+
+# Release stage
+  - name: release
+    displayName: Release
+    description: |-
+      In this stage the successfully tested application/service is deployed to the productive landscape in an unattended mode or at least a release process is triggered.
+
+    steps:
+    - name: terraformExecute
+      description: 'Executes [Terraform](https://www.terraform.io/) to apply the desired state of configuration'
+      conditions:
+      - inactive: true
+    - name: gitopsUpdateDeployment
+      description: 'Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository.'
+      conditions:
+      - inactive: true
+    - name: multicloudDeploy
+      description: '**Deprecated, do not use any longer** - Can perform both deployments to Cloud Foundry and neo targets.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: cloudFoundryCreateService
+      description: '**Deprecated, do not use any longer** - For Cloud Foundry use-cases: Creates CF Services based on information in yml-format.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: manageCloudFoundryEnvironment
+      description: 'Deprecated, do not use any longer** - For Cloud Foundry use-cases: Sets up the required test environment based on a infrastructure definition in yml-format.'
+      conditions:
+      - inactive: true
+      orchestrators:
+      - Jenkins
+    - name: downloadArtifactsFromNexus
+      description: '**Active for scenarios where no deployment to Kubernetes is performed**. Downloads artifact from Nexus which should be deployed.'
+      conditions:
+      - config:
+          nativeBuild:
+            - false
+      orchestrators:
+      - Jenkins
+    - name: sapDownloadArtifact
+      description: 'For "Piper native build": Downloads the artifact from the staging service'
+      # add NOT condition!
+      conditions:
+      - config:
+          buildTool:
+            - maven
+            - mta
+            - npm
+            - pip
+    - name: cloudFoundryDeploy
+      description: 'For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org.'
+      conditions:
+      - configKey: cfSpace
+      - configKey: cloudFoundry/space
+    - name: kubernetesDeploy
+      description: 'For Docker/Kubernetes use-cases: Performs deployment to Kubernetes cluster.'
+      conditions:
+      - config:
+          deployTool:
+            - 'helm'
+            - 'helm3'
+            - 'kubectl'
+    - name: githubPublishRelease
+      description: 'Publishes release information on GitHub.'
+      conditions:
+      - configKey: token
+
+# Post stage
+  - name: post
+    displayName: Post
+    description: |-
+      In this stage pipeline post actions are executed.
+
+    steps:
+    - name: sapReportPipelineStatus
+      description: 'Reports pipeline status for availability monitoring purposes.'
+    - name: sapCumulusUpload
+      description: Performs upload of result files to cumulus.
+      conditions:
+      - configKey: 'pipelineId'
+    - name: vaultRotateSecretId
+      description: 'Regularly rotates the Vault secretId'
+      conditions:
+      - configKey: vaultNamespace
+
+#--------------------------------
+# kept for compatibility for now
+#--------------------------------
+stages:
+  'Pull-Request Voting':
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-frontend-unit-test'
+  'Build':
+    stepConditions:
+      kanikoExecute:
+        config:
+          buildTool:
+            - 'docker'
+      mavenBuild:
+        config:
+          buildTool:
+            - 'maven'
+      npmExecuteScripts:
+        config:
+          buildTool:
+            - 'npm'
+      mtaBuild:
+        config:
+          buildTool:
+            - 'mta'
+      karmaExecuteTests:
+        filePattern: '**/karma.conf.js'
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+  'Central Build':
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+      hadolintExecute:
+        filePattern: 'Dockerfile'
+      pushToDockerRegistry:
+        configKeys:
+          - 'dockerRegistryUrl'
+  'Additional Unit Tests':
+    stepConditions:
+      karmaExecuteTests:
+        filePattern: '**/karma.conf.js'
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-frontend-unit-test'
+  Integration:
+    stepConditions:
+      executeCustomIntegrationTests:
+        filePatternFromConfig: 'extensionIntegrationTestScript'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+  Acceptance:
+    stepConditions:
+      sapCumulusUpload:
+        configKeys:
+          - 'pipelineId'
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      kubernetesDeploy:
+        config:
+          deployTool:
+            - 'helm'
+            - 'helm3'
+            - 'kubectl'
+      gaugeExecuteTests:
+        filePattern: '**/*.spec'
+        configKeys:
+          - 'testRepository'
+      newmanExecute:
+        filePatternFromConfig: 'newmanCollection'
+        configKeys:
+          - 'testRepository'
+      uiVeri5ExecuteTests:
+        filePattern: '**/conf.js'
+        configKeys:
+          - 'testRepository'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
+      # todo: new condition required: sapDownloadArtifact needs to be active only if kubernetesDeploy is not active
+      sapDownloadArtifact:
+        config:
+          buildTool:
+            - maven
+            - mta
+            - npm
+      terraformExecute:
+        filePattern: '**/*.tf'
+  Security:
+    stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'projectName'
+          - 'checkmarxProject'
+          - 'checkMarxProjectName'
+      executeCheckmarxScan:
+        configKeys:
+          - 'checkmarxGroupId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'authToken'
+          - 'fortifyCredentialsId'
+      executeFortifyScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+      protecodeExecuteScan:
+        configKeys:
+          - 'protecodeCredentialsId'
+          - 'group'
+          - 'protecodeGroup'
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'whitesourceProductName'
+      executeWhitesourceScan:
+        configKeys:
+          - 'whitesourceProductName'
+      detectExecuteScan:
+        configKeys:
+          - 'projectName'
+  Performance:
+    stepConditions:
+      cloudFoundryCreateService:
+        filePatternFromConfig: 'cfServiceManifest'
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      deployToKubernetes:
+        config:
+          deployTool:
+            - 'helm'
+            - 'kubectl'
+      kubernetesDeploy:
+        config:
+          deployTool:
+            - 'helm'
+            - 'helm3'
+            - 'kubectl'
+      manageCloudFoundryEnvironment:
+        filePatternFromConfig: 'environmentDescriptorFile'
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+  'IPScan and PPMS':
+    stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'whitesourceProductName'
+      sapCheckPPMSCompliance:
+        configKeys:
+          - 'ppmsID'
+      executeWhitesourceScan:
+        configKeys:
+          - 'whitesourceProductName'
+      executePPMSComplianceCheck:
+        configKeys:
+          - 'ppmsID'
+      executePPMSWhitesourceComplianceCheck:
+        configKeys:
+          - 'ppmsID'
+      sapCheckECCNCompliance:
+        configKeys:
+          - 'eccnCredentialsId'
+#  Promote:
+  Release:
+    stepConditions:
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      githubPublishRelease:
+        configKeys:
+          - 'githubTokenCredentialsId'
+      gitopsUpdateDeployment:
+        configKeys:
+          - filePath
+      kubernetesDeploy:
+        config:
+          deployTool:
+            - 'helm'
+            - 'helm3'
+            - 'kubectl'
+      # todo: new condition required: sapDownloadArtifact needs to be active only if kubernetesDeploy is not active
+      sapDownloadArtifact:
+        config:
+          buildTool:
+            - maven
+            - mta
+            - npm
+      terraformExecute:
+        filePattern: '**/*.tf'
+  'Post Actions':
+    stepConditions:
+      slackSendNotification:
+        configKeys:
+          - 'channel'
+  Post:
+    stepConditions:
+      sapCumulusUpload:
+        configKeys:
+          - 'pipelineId'
