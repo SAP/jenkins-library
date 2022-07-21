@@ -13,7 +13,8 @@ name = "BP_NODE_VERSION"
 value = "16"
 
 [[build.buildpacks]]
-uri = "gcr.io/paketo-buildpacks/ca-certificates:3.0.3"
+id = "paketo-buildpacks/ca-certificates"
+version = "3.0.3"
 
 [[build.buildpacks]]
 uri = "gcr.io/paketo-buildpacks/node-engine:0.12.0"
