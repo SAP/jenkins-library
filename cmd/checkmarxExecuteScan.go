@@ -361,10 +361,9 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	reportToInflux(results, influx)
 
 	insecure := false
-	insecureResults := []string{}
-	neutralResults := []string{}
+	var insecureResults []string
+	var neutralResults []string
 
-	err = nil
 	if config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
@@ -410,7 +409,7 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	log.Entry().Info(status)
 	stepDetail := "..."
 	stageDetail := "..."
-	for true {
+	for {
 		var detail checkmarx.ScanStatusDetail
 		status, detail = sys.GetScanStatusAndDetail(scan.ID)
 		if len(detail.Stage) > 0 {
@@ -742,20 +741,15 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int,
 				switch result.State {
 				case "1":
 					auditState = "NotExploitable"
-					break
 				case "2":
 					auditState = "Confirmed"
-					break
 				case "3":
 					auditState = "Urgent"
-					break
 				case "4":
 					auditState = "ProposedNotExploitable"
-					break
 				case "0":
 				default:
 					auditState = "ToVerify"
-					break
 				}
 				submap[auditState]++
 

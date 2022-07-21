@@ -86,8 +86,9 @@ func TestCorrectContainerDockerConfigEnvVar(t *testing.T) {
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 
 		// test
-		correctContainerDockerConfigEnvVar(&containerSaveImageOptions{DockerConfigJSON: dockerConfigFile}, &utilsMock)
+		err := correctContainerDockerConfigEnvVar(&containerSaveImageOptions{DockerConfigJSON: dockerConfigFile}, &utilsMock)
 		// assert
+		assert.NoError(t, err)
 		assert.NotNil(t, os.Getenv("DOCKER_CONFIG"))
 	})
 	t.Run("with added credentials", func(t *testing.T) {
@@ -103,8 +104,9 @@ func TestCorrectContainerDockerConfigEnvVar(t *testing.T) {
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 
 		// test
-		correctContainerDockerConfigEnvVar(&containerSaveImageOptions{DockerConfigJSON: dockerConfigFile, ContainerRegistryURL: "https://test.registry", ContainerRegistryUser: "testuser", ContainerRegistryPassword: "testPassword"}, &utilsMock)
+		err := correctContainerDockerConfigEnvVar(&containerSaveImageOptions{DockerConfigJSON: dockerConfigFile, ContainerRegistryURL: "https://test.registry", ContainerRegistryUser: "testuser", ContainerRegistryPassword: "testPassword"}, &utilsMock)
 		// assert
+		assert.NoError(t, err)
 		assert.NotNil(t, os.Getenv("DOCKER_CONFIG"))
 		absoluteFilePath, _ := utilsMock.Abs(fmt.Sprintf("%s/%s", os.Getenv("DOCKER_CONFIG"), "config.json"))
 		content, _ := utilsMock.FileRead(absoluteFilePath)
@@ -117,8 +119,9 @@ func TestCorrectContainerDockerConfigEnvVar(t *testing.T) {
 		os.Setenv("DOCKER_CONFIG", "")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctContainerDockerConfigEnvVar(&containerSaveImageOptions{}, &utilsMock)
+		err := correctContainerDockerConfigEnvVar(&containerSaveImageOptions{}, &utilsMock)
 		// assert
+		assert.NoError(t, err)
 		assert.NotNil(t, os.Getenv("DOCKER_CONFIG"))
 	})
 }

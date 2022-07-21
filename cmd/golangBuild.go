@@ -261,7 +261,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		var binaryArtifacts piperenv.Artifacts
 		for _, binary := range binaries {
 
-			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
+			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, artifactVersion, binary)
 
 			separator := "/"
 
@@ -323,7 +323,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
 
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), fmt.Sprintf("%s", repoURL))
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
 		if err != nil {
 			return err
 		}
