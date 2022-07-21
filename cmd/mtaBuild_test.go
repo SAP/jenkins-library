@@ -118,8 +118,8 @@ func TestMtaBuild(t *testing.T) {
 
 		var result MtaResult
 		mtaContent, _ := utilsMock.FileRead("mta.yaml")
-		yaml.Unmarshal(mtaContent, &result)
-
+		err = yaml.Unmarshal(mtaContent, &result)
+		assert.NoError(t, err)
 		assert.Equal(t, "myName", result.ID)
 		assert.Equal(t, "1.2.3", result.Version)
 		assert.Equal(t, "myApp", result.Modules[0].Name)
