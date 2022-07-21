@@ -28,7 +28,6 @@ type artifactVersioningMock struct {
 	newVersion       string
 	getVersionError  string
 	setVersionError  string
-	initCalled       bool
 	versioningScheme string
 	coordinates      versioning.Coordinates
 	coordinatesError error

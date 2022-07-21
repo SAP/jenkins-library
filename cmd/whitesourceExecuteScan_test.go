@@ -366,7 +366,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Run("success - no violations", func(t *testing.T) {
 		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{}
 		utilsMock := newWhitesourceUtilsMock()
@@ -393,7 +395,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Run("success - no reports", func(t *testing.T) {
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{}
 		utilsMock := newWhitesourceUtilsMock()
@@ -411,7 +415,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Run("error - policy violations", func(t *testing.T) {
 		config := ScanOptions{FailOnSevereVulnerabilities: true}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{
 			{Vulnerability: ws.Vulnerability{Name: "policyVul1"}},
@@ -436,7 +442,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Run("error - get alerts", func(t *testing.T) {
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.AlertError = fmt.Errorf("failed to read alerts")
 		utilsMock := newWhitesourceUtilsMock()
@@ -450,7 +458,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Run("error - write file", func(t *testing.T) {
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{}
 		utilsMock := newWhitesourceUtilsMock()
@@ -465,7 +475,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Run("failed to write json report", func(t *testing.T) {
 		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{}
 		utilsMock := newWhitesourceUtilsMock()
@@ -488,7 +500,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 			CvssSeverityLimit: "7",
 		}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{
 			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
@@ -539,7 +553,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(&config)
-		scan.AppendScannedProject("testProject1")
+		if err := scan.AppendScannedProject("testProject1"); err != nil {
+			t.Fail()
+		}
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{
 			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
