@@ -14,16 +14,16 @@ value = "16"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/ca-certificates"
-version = "3.0.3"
+version = "3.2.4"
 
 [[build.buildpacks]]
-uri = "gcr.io/paketo-buildpacks/node-engine:0.12.0"
+uri = "gcr.io/paketo-buildpacks/node-engine:0.14.0"
 
 [[build.buildpacks]]
-uri = "gcr.io/paketo-buildpacks/npm-install:0.7.2"
+uri = "gcr.io/paketo-buildpacks/npm-install:0.10.0"
 
 [[build.buildpacks]]
-uri = "gcr.io/paketo-buildpacks/node-module-bom:0.2.2"
+uri = "gcr.io/paketo-buildpacks/node-module-bom:0.3.0"
 
 [[build.buildpacks]]
-uri = "gcr.io/paketo-buildpacks/npm-start:0.8.0"
+uri = "gcr.io/paketo-buildpacks/npm-start:0.9.1"
