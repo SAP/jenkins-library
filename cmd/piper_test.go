@@ -214,7 +214,9 @@ func TestGetProjectConfigFile(t *testing.T) {
 			}
 
 			for _, file := range test.filesAvailable {
-				ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700)
+				if err := ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
+					t.Fail()
+				}
 			}
 
 			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))
@@ -344,7 +346,7 @@ bar: 42
 		stepConfig["foo"] = "entry"
 
 		// Test
-		stepConfig = checkTypes(stepConfig, options)
+		_ = checkTypes(stepConfig, options)
 
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")

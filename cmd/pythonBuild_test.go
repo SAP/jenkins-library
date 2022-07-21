@@ -5,27 +5,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type pythonBuildMockUtils struct {
-	t      *testing.T
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
-}
-
-type puthonBuildMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-
-	clientOptions []piperhttp.ClientOptions // set by mock
-	fileUploads   map[string]string         // set by mock
 }
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
