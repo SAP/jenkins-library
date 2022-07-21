@@ -35,6 +35,7 @@ func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Conta
 }
 
 func TestNpmProject(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -76,6 +77,7 @@ func TestNpmProject(t *testing.T) {
 }
 
 func TestProjectDescriptor(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -106,6 +108,7 @@ func TestProjectDescriptor(t *testing.T) {
 }
 
 func TestZipPath(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -130,6 +133,7 @@ func TestZipPath(t *testing.T) {
 }
 
 func TestNonZipPath(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -149,6 +153,7 @@ func TestNonZipPath(t *testing.T) {
 }
 
 func TestNpmCustomBuildpacksFullProject(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -174,6 +179,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 }
 
 func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -199,6 +205,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 }
 
 func TestWrongBuilderProject(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nginx:latest",
@@ -233,6 +240,7 @@ func TestBindings(t *testing.T) {
 }
 
 func TestMultiImage(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -257,6 +265,7 @@ func TestMultiImage(t *testing.T) {
 }
 
 func TestPreserveFiles(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -276,6 +285,7 @@ func TestPreserveFiles(t *testing.T) {
 }
 
 func TestPreserveFilesIgnored(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
