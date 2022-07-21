@@ -16,7 +16,7 @@ import (
 
 const (
 	registryURL = "localhost:5000"
-	baseBuilder = "paketobuildpacks/builder:0.2.17-base"
+	baseBuilder = "paketobuildpacks/builder:0.3.26-base"
 )
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
@@ -253,7 +253,7 @@ func TestMultiImage(t *testing.T) {
 	container.assertHasOutput(t, "Saving localhost:5000/go-app:v1.0.0...")
 	container.assertHasOutput(t, "Using cached buildpack")
 	container.assertHasOutput(t, "Saving localhost:5000/my-app2:latest...")
-	container.terminate(t)
+	// container.terminate(t)
 }
 
 func TestPreserveFiles(t *testing.T) {
