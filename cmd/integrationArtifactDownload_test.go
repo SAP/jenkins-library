@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,9 +11,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Download of Integration flow Artifact", func(t *testing.T) {
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		defer os.RemoveAll(tempDir) // clean up
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
+		tempDir := t.TempDir()
 		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",

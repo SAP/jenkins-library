@@ -553,16 +553,12 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 
 func TestTriggerFortifyScan(t *testing.T) {
 	t.Run("maven", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test trigger fortify scan")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		utils := newFortifyTestUtilsBundle()
@@ -588,16 +584,12 @@ func TestTriggerFortifyScan(t *testing.T) {
 	})
 
 	t.Run("pip", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test trigger fortify scan")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		utils := newFortifyTestUtilsBundle()
@@ -625,16 +617,12 @@ func TestTriggerFortifyScan(t *testing.T) {
 	})
 
 	t.Run("invalid buildTool", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test trigger fortify scan")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		utils := newFortifyTestUtilsBundle()
@@ -642,7 +630,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 			BuildTool:           "docker",
 			AutodetectClasspath: true,
 		}
-		err = triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
+		err := triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
 		assert.Error(t, err)
 		assert.Equal(t, "buildTool 'docker' is not supported by this step", err.Error())
@@ -874,9 +862,7 @@ func TestScanProject(t *testing.T) {
 func TestAutoresolveClasspath(t *testing.T) {
 	t.Run("success pip", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
-		dir, err := ioutil.TempDir("", "classpath")
-		assert.NoError(t, err, "Unexpected error detected")
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 		file := filepath.Join(dir, "cp.txt")
 
 		result, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &utils)
@@ -895,21 +881,17 @@ func TestAutoresolveClasspath(t *testing.T) {
 
 	t.Run("error pip command", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
-		dir, err := ioutil.TempDir("", "classpath")
-		assert.NoError(t, err, "Unexpected error detected")
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 		file := filepath.Join(dir, "cp.txt")
 
-		_, err = autoresolvePipClasspath("python2", []string{"-c", "invalid"}, file, &utils)
+		_, err := autoresolvePipClasspath("python2", []string{"-c", "invalid"}, file, &utils)
 		assert.Error(t, err)
 		assert.Equal(t, "failed to run classpath autodetection command python2 with parameters [-c invalid]: Invalid command", err.Error())
 	})
 
 	t.Run("success maven", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
-		dir, err := ioutil.TempDir("", "classpath")
-		assert.NoError(t, err, "Unexpected error detected")
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 		file := filepath.Join(dir, "cp.txt")
 
 		result, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)

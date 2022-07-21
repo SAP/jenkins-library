@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"testing"
-
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -12,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -348,9 +347,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 func TestCorrectDockerConfigEnvVar(t *testing.T) {
 	t.Run("with credentials", func(t *testing.T) {
 		// init
-		testDirectory, _ := ioutil.TempDir(".", "")
-		require.DirExists(t, testDirectory)
-		defer os.RemoveAll(testDirectory)
+		testDirectory := t.TempDir()
 
 		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
 		if err := os.Mkdir(dockerConfigDir, 0755); err != nil {

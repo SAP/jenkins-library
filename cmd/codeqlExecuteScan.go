@@ -107,6 +107,10 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 			return errors.New("failed running upload-results as github token was not specified")
 		}
 
+		if config.CommitID == "NA" {
+			return errors.New("failed running upload-results as gitCommitId is not available")
+		}
+
 		var repoInfo RepoInfo
 		err := getGitRepoInfo(config.Repository, &repoInfo)
 		if err != nil {
@@ -167,7 +171,7 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) error {
 	var reports []piperutils.Path
-	cmd := []string{"database", "create", "db", "--overwrite", "--source-root", config.ModulePath}
+	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
 
 	language := getLangFromBuildTool(config.BuildTool)
 
@@ -201,7 +205,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%vtarget/codeqlReport.sarif", config.ModulePath), "db")
+	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%vtarget/codeqlReport.sarif", config.ModulePath), config.Database)
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
@@ -212,7 +216,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/codeqlReport.sarif", config.ModulePath)})
 
 	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%vtarget/codeqlReport.csv", config.ModulePath), "db")
+	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%vtarget/codeqlReport.csv", config.ModulePath), config.Database)
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
