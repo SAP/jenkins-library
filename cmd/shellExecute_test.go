@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +10,6 @@ import (
 )
 
 type shellExecuteMockUtils struct {
-	t      *testing.T
 	config *shellExecuteOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
@@ -20,23 +18,6 @@ type shellExecuteMockUtils struct {
 	filename      string
 	header        http.Header
 	url           string
-}
-
-type shellExecuteFileMock struct {
-	*mock.FilesMock
-	fileReadContent map[string]string
-	fileReadErr     map[string]error
-}
-
-func (f *shellExecuteFileMock) FileRead(path string) ([]byte, error) {
-	if f.fileReadErr[path] != nil {
-		return []byte{}, f.fileReadErr[path]
-	}
-	return []byte(f.fileReadContent[path]), nil
-}
-
-func (f *shellExecuteFileMock) FileExists(path string) (bool, error) {
-	return strings.EqualFold(path, "path/to/script/script.sh"), nil
 }
 
 func (f *shellExecuteMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
