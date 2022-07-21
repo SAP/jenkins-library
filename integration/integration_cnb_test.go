@@ -64,7 +64,7 @@ func TestNpmProject(t *testing.T) {
 	container.assertHasOutput(t, "SUCCESS")
 	container.terminate(t)
 
-	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml")
 	assert.NoError(t, err)
 	container2.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container2.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
