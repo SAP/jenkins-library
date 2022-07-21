@@ -35,7 +35,7 @@ const (
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
-	golangciLintCurlURL         = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+	golangciLintCurlURL         = "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	golangciLintVersion         = "v1.46.2"
 )
 
@@ -168,11 +168,8 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.RunLint {
-		goPath := os.Getenv("GOPATH")
-		golangciLintDir := filepath.Join(goPath, "bin")
-
-		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
-			return err
+		if err := utils.RunExecutable("go", "install", fmt.Sprintf("%s@%s", golangciLintCurlURL, golangciLintVersion)); err != nil {
+			return fmt.Errorf("failed to install golangci-lint: %w", err)
 		}
 
 		// hardcode those for now
@@ -182,7 +179,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"additionalParams": "",
 		}
 
-		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
+		if err := runGolangciLint(utils, lintSettings); err != nil {
 			return err
 		}
 	}
@@ -427,33 +424,11 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
-	// installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
-	var outputBuffer bytes.Buffer
-	utils.Stdout(&outputBuffer)
-	err := utils.RunExecutable("curl", "-sSfL", golangciLintCurlURL)
-	if err != nil {
-		return fmt.Errorf("failed to install golangci-lint: %w", err)
-	}
-	installationScript := &outputBuffer
-
-	var inputBuffer bytes.Buffer
-	inputBuffer.ReadFrom(installationScript)
-	utils.Stdin(&inputBuffer)
-	err = utils.RunExecutable("sh", "-s", "--", "-b", golangciLintDir, golangciLintVersion)
-	if err != nil {
-		return fmt.Errorf("failed to install golangci-lint: %w", err)
-	}
-
-	return nil
-}
-
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
-	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+func runGolangciLint(utils golangBuildUtils, lintSettings map[string]string) error {
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
 
-	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	err := utils.RunExecutable("golangci-lint", "run", "--out-format", lintSettings["reportStyle"])
 	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
