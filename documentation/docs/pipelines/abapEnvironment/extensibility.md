@@ -35,6 +35,7 @@ While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the AT
 You can define several quality gates that will be checked after the issues have been reported. For example by providing a `qualityGates` configuration with option `unstable: false` it would be possible to end the pipeline execution in case of findings. See [Quality gate configuration](https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#quality-gate-configuration) for details.
 
 If the pipeline execution should be aborted in case of ATC findings, to not continue with execution of following pipeline stages, use the [error](https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/#error-error-signal) step in the stage extension to cause the build to stop:
+
 ```groovy
 if (currentBuild.result == 'FAILURE') {
   error('Stopping build due to ATC Check quality gate')
