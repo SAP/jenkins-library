@@ -53,11 +53,10 @@ var (
 )
 
 const (
-	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
-	javaBinaries        = "sonar.java.binaries="
-	javaLibraries       = "sonar.java.libraries="
-	coverageExclusions  = "sonar.coverage.exclusions="
-	pomXMLPattern       = "**/pom.xml"
+	javaBinaries       = "sonar.java.binaries="
+	javaLibraries      = "sonar.java.libraries="
+	coverageExclusions = "sonar.coverage.exclusions="
+	pomXMLPattern      = "**/pom.xml"
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
@@ -390,7 +389,9 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 		// create download temp dir
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
-		os.MkdirAll(truststorePath, 0777)
+		if err := os.MkdirAll(truststorePath, 0777); err != nil {
+			log.Entry().Warningf("failed to create directory %v: %v", truststorePath, err)
+		}
 		// copying existing truststore
 		defaultTruststorePath := keytool.GetDefaultTruststorePath()
 		if exists, _ := fileUtilsExists(defaultTruststorePath); exists {

@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -27,6 +25,10 @@ type shellExecuteUtilsBundle struct {
 	*piperutils.Files
 	*piperhttp.Client
 }
+
+const (
+	argumentDelimter = ","
+)
 
 func newShellExecuteUtils() shellExecuteUtils {
 	utils := shellExecuteUtilsBundle{
@@ -54,7 +56,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	for position, source := range config.Sources {
 
 		if strings.Contains(source, "https") {
-			scriptLocation, err := downloadScript(config, utils, source)
+			scriptLocation, err := piperhttp.DownloadExecutable(config.GithubToken, utils, utils, source)
 			if err != nil {
 				return errors.Wrapf(err, "script download error")
 			}
@@ -73,7 +75,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 
 		args := []string{}
 		if len(config.ScriptArguments) > 0 && isArgumentAtPosition(config.ScriptArguments, position) {
-			args = strings.Split(config.ScriptArguments[position], " ")
+			args = strings.Split(config.ScriptArguments[position], argumentDelimter)
 		}
 
 		log.Entry().Info("starting running script:", source)
@@ -104,26 +106,4 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 
 func isArgumentAtPosition(scriptArguments []string, index int) bool {
 	return ((len(scriptArguments) > index) && scriptArguments[index] != "")
-}
-
-func downloadScript(config *shellExecuteOptions, utils shellExecuteUtils, url string) (string, error) {
-	header := http.Header{}
-	if len(config.GithubToken) > 0 {
-		header = http.Header{"Authorization": []string{"Token " + config.GithubToken}}
-		header.Set("Accept", "application/vnd.github.v3.raw")
-	}
-
-	log.Entry().Infof("downloading script : %v", url)
-	fileNameParts := strings.Split(url, "/")
-	fileName := fileNameParts[len(fileNameParts)-1]
-	err := utils.DownloadFile(url, filepath.Join(".pipeline", fileName), header, []*http.Cookie{})
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to download script from %v", url)
-	}
-	log.Entry().Infof("downloaded script %v successfully", url)
-	err = fileUtils.Chmod(filepath.Join(".pipeline", fileName), 0555)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to change script permission for %v", filepath.Join(".pipeline", fileName))
-	}
-	return filepath.Join(".pipeline", fileName), nil
 }

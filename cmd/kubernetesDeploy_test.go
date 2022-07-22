@@ -13,9 +13,7 @@ import (
 )
 
 type kubernetesDeployMockUtils struct {
-	shouldFail     bool
-	requestedUrls  []string
-	requestedFiles []string
+	shouldFail bool
 	*mock.FilesMock
 	*mock.ExecMockRunner
 	*mock.HttpClientMock
@@ -1031,6 +1029,35 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--testParam",
 			"testValue",
 		}, mockUtils.Calls[0].Params, "Wrong upgrade parameters")
+	})
+
+	t.Run("test helm - use extensions", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ChartPath:               "path/to/chart",
+			ContainerRegistrySecret: "testSecret",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+			GithubToken:             "testGHToken",
+			SetupScript:             "https://github.com/my/test/setup_script.sh",
+			VerificationScript:      "https://github.com/my/test/verification_script.sh",
+			TeardownScript:          "https://github.com/my/test/teardown_script.sh",
+		}
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.HttpClientMock = &mock.HttpClientMock{HTTPFileUtils: mockUtils.FilesMock}
+
+		var stdout bytes.Buffer
+
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, 4, len(mockUtils.Calls))
+		assert.Equal(t, ".pipeline/setup_script.sh", mockUtils.Calls[0].Exec)
+		assert.Equal(t, ".pipeline/verification_script.sh", mockUtils.Calls[2].Exec)
+		assert.Equal(t, ".pipeline/teardown_script.sh", mockUtils.Calls[3].Exec)
 	})
 
 	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {

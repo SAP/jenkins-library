@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 type golangBuildMockUtils struct {
@@ -80,12 +81,23 @@ func newGolangBuildTestsUtils() *golangBuildMockUtils {
 
 func TestRunGolangBuild(t *testing.T) {
 	cpe := golangBuildCommonPipelineEnvironment{}
+	modTestFile := `module private.example.com/test
+
+require (
+		example.com/public/module v1.0.0
+		private1.example.com/private/repo v0.1.0
+		private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
 
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
 		}
+
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -102,6 +114,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -121,6 +134,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -135,6 +149,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -145,6 +160,24 @@ func TestRunGolangBuild(t *testing.T) {
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - simple publish", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures: []string{"linux,amd64"},
+			Publish:             true,
+			TargetRepositoryURL: "https://my.target.repository.local/",
+			ArtifactVersion:     "1.0.0",
+		}
+
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, "test", cpe.custom.artifacts[0].Name)
 	})
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
@@ -203,6 +236,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -276,7 +310,7 @@ func TestRunGolangBuild(t *testing.T) {
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
-		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+		assert.Contains(t, fmt.Sprint(err), "failed to parse cpe template")
 	})
 
 	t.Run("failure - build failure", func(t *testing.T) {
@@ -285,6 +319,7 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
@@ -578,11 +613,9 @@ func TestReportGolangTestCoverage(t *testing.T) {
 
 func TestPrepareLdflags(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "")
-	defer os.RemoveAll(dir) // clean up
-	assert.NoError(t, err, "Error when creating temp dir")
+	dir := t.TempDir()
 
-	err = os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
+	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
 	err = ioutil.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
@@ -593,14 +626,14 @@ func TestPrepareLdflags(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		result, err := prepareLdflags(&config, utils, dir)
 		assert.NoError(t, err)
-		assert.Equal(t, "-X version=1.2.3", result)
+		assert.Equal(t, "-X version=1.2.3", (*result).String())
 	})
 
 	t.Run("error - template parsing", func(t *testing.T) {
 		config := golangBuildOptions{LdflagsTemplate: "-X version={{ .CPE.artifactVersion "}
 		utils := newGolangBuildTestsUtils()
 		_, err := prepareLdflags(&config, utils, dir)
-		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+		assert.Contains(t, fmt.Sprint(err), "failed to parse cpe template")
 	})
 }
 
@@ -613,8 +646,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryName, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Greater(t, len(utils.Env), 3)
 		assert.Contains(t, utils.Env, "CGO_ENABLED=0")
@@ -622,7 +656,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, utils.Env, "GOARCH=amd64")
 		assert.Equal(t, utils.Calls[0].Exec, "go")
 		assert.Equal(t, utils.Calls[0].Params[0], "build")
-		assert.Empty(t, binaryName)
+		assert.Equal(t, binaryName[0], "testBinary")
 	})
 
 	t.Run("success - custom params", func(t *testing.T) {
@@ -631,8 +665,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		ldflags := "-X test=test"
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-linux.amd64")
@@ -649,8 +684,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-windows.amd64.exe")
@@ -668,8 +704,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "list")
 		assert.Contains(t, utils.Calls[0].Params, "package/foo")
@@ -691,8 +728,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "list")
 		assert.Contains(t, utils.Calls[0].Params, "package/foo")
@@ -714,8 +752,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "list")
 		assert.Contains(t, utils.Calls[0].Params, "package/foo")
@@ -733,8 +772,9 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("execution error")}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		_, err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
 
@@ -778,8 +818,8 @@ go 1.17`
 			expect: expectations{
 				envVars: []string{"GOPRIVATE=*.example.com"},
 				commandsExecuted: [][]string{
-					[]string{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
-					[]string{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
+					{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
+					{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
 				},
 			},
 		},

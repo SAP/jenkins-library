@@ -179,5 +179,5 @@ func getPublishInitScriptContent(options *gradleExecuteBuildOptions) (string, er
 		return "", err
 	}
 
-	return string(generatedCode.Bytes()), nil
+	return generatedCode.String(), nil
 }

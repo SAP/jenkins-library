@@ -272,7 +272,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 	vaultCredentialEnvPrefix, ok := config.Config["vaultCredentialEnvPrefix"].(string)
 	isCredentialEnvPrefixDefault := false
 
-	if !ok || len(vaultCredentialEnvPrefix) == 0 {
+	if !ok {
 		vaultCredentialEnvPrefix = vaultCredentialEnvPrefixDefault
 		isCredentialEnvPrefixDefault = true
 	}
@@ -369,7 +369,7 @@ func RemoveVaultSecretFiles() {
 func createTemporarySecretFile(namePattern string, content string) (string, error) {
 	if VaultSecretFileDirectory == "" {
 		var err error
-		VaultSecretFileDirectory, err = ioutil.TempDir("", "vault")
+		VaultSecretFileDirectory, err = ioutil.TempDir(".", "vault")
 		if err != nil {
 			return "", err
 		}

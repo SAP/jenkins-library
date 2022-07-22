@@ -10,22 +10,8 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type abapEnvironmentRunAUnitTestMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockUtils {
-	utils := abapEnvironmentRunAUnitTestMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestBuildAUnitRequestBody(t *testing.T) {
 	t.Parallel()
@@ -274,16 +260,12 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			Repositories:         "repositories.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		repositories := `repositories:
@@ -291,7 +273,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
     branch: main
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"AUnit Test Run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:softwareComponent name=\"/DMO/REPO\"/></osl:objectSet></aunit:run>"
-		err = ioutil.WriteFile(config.Repositories, []byte(repositories), 0644)
+		err := ioutil.WriteFile(config.Repositories, []byte(repositories), 0644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -306,16 +288,12 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			AUnitConfig:          "aunit.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -327,7 +305,7 @@ objectset:
   - name: /DMO/SWC
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -342,16 +320,12 @@ objectset:
 			AUnitConfig:          "aunit.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -365,7 +339,7 @@ objectset:
       - name: /DMO/SWC
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -414,16 +388,12 @@ func TestTriggerAUnitrun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -448,7 +418,7 @@ objectset:
   - name: Z_TEST
 `
 
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			_, err := triggerAUnitrun(config, con, client)
 			assert.Equal(t, nil, err)
@@ -472,16 +442,12 @@ objectset:
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -507,7 +473,7 @@ objectset:
       - name: Z_TEST_SC
 `
 
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			_, err := triggerAUnitrun(config, con, client)
 			assert.Equal(t, nil, err)
@@ -520,39 +486,31 @@ func TestParseAUnitResult(t *testing.T) {
 
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
 
-		dir, err := ioutil.TempDir("", "test get result AUnit test run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<?xml version="1.0" encoding="utf-8"?><testsuites title="My AUnit run" system="TST" client="100" executedBy="TESTUSER" time="000.000" timestamp="2021-01-01T00:00:00Z" failures="2" errors="2" skipped="0" asserts="0" tests="2"><testsuite name="" tests="2" failures="2" errors="0" skipped="0" asserts="0" package="testpackage" timestamp="2021-01-01T00:00:00ZZ" time="0.000" hostname="test"><testcase classname="test" name="execute" time="0.000" asserts="2"><failure message="testMessage1" type="Assert Failure">Test1</failure><failure message="testMessage2" type="Assert Failure">Test2</failure></testcase></testsuite></testsuites>`
 		body := []byte(bodyString)
-		err = persistAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
 	t.Run("succes case: test parsing empty AUnit run XML result", func(t *testing.T) {
 
-		dir, err := ioutil.TempDir("", "test get result AUnit test run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
-		err = persistAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
@@ -582,10 +540,12 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err = buf.ReadFrom(resp.Body)
+			assert.NoError(t, err)
 			newStr := buf.String()
 			assert.Equal(t, "AUnit test result body", newStr)
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -609,16 +569,17 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
+		assert.EqualError(t, err, "Getting AUnit run results failed: Test fail")
 		defer resp.Body.Close()
-		if assert.EqualError(t, err, "Getting AUnit run results failed: Test fail") {
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
-			newStr := buf.String()
-			assert.Equal(t, "AUnit test result body", newStr)
-			assert.Equal(t, int64(0), resp.ContentLength)
-			assert.Equal(t, 400, resp.StatusCode)
-			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
-		}
+
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(resp.Body)
+		assert.NoError(t, err)
+		newStr := buf.String()
+		assert.Equal(t, "AUnit test result body", newStr)
+		assert.Equal(t, int64(0), resp.ContentLength)
+		assert.Equal(t, 400, resp.StatusCode)
+		assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 	})
 }
 
@@ -725,10 +686,12 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 		}
 		fmt.Println("Body:" + string([]byte(client.Body)))
 		resp, err := getHTTPResponseAUnitRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err = buf.ReadFrom(resp.Body)
+			assert.NoError(t, err)
 			newStr := buf.String()
 			assert.Equal(t, "HTTP response test", newStr)
 			assert.Equal(t, int64(0), resp.ContentLength)

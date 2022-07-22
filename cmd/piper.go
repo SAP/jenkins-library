@@ -112,6 +112,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
+	rootCmd.AddCommand(CodeqlExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
@@ -187,6 +188,9 @@ func Execute() {
 	rootCmd.AddCommand(PythonBuildCommand())
 	rootCmd.AddCommand(AzureBlobUploadCommand())
 	rootCmd.AddCommand(AwsS3UploadCommand())
+	rootCmd.AddCommand(ApiProxyListCommand())
+	rootCmd.AddCommand(AnsSendEventCommand())
+	rootCmd.AddCommand(ApiProviderListCommand())
 
 	addRootFlags(rootCmd)
 
