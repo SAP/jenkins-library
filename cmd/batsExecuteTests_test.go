@@ -107,7 +107,8 @@ func TestRunBatsExecuteTests(t *testing.T) {
 			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"bats-core/bin/bats": errors.New("error case")}},
 			FilesMock:      &mock.FilesMock{},
 		}
-		runBatsExecuteTests(config, nil, &mockUtils)
+		err := runBatsExecuteTests(config, nil, &mockUtils)
+		assert.Contains(t, fmt.Sprint(err), "failed to run bats test")
 
 		assert.False(t, mockUtils.HasFile("TEST-"+config.TestPackage+".tap"))
 		assert.False(t, mockUtils.HasFile("TEST-"+config.TestPackage+".xml"))

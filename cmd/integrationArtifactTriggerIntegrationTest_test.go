@@ -99,7 +99,9 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile(config.MessageBodyPath, []byte("dummycontent1")) //have to add a file here to see in utils
-		ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755)
+		if err := ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755); err != nil {
+			t.Fail()
+		}
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
@@ -163,7 +165,9 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile(config.MessageBodyPath, []byte(nil)) //have to add a file here to see in utils
-		ioutil.WriteFile(config.MessageBodyPath, []byte(nil), 0755)
+		if err := ioutil.WriteFile(config.MessageBodyPath, []byte(nil), 0755); err != nil {
+			t.Fail()
+		}
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test

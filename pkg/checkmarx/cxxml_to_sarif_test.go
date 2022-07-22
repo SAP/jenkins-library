@@ -3,6 +3,7 @@ package checkmarx
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
@@ -121,7 +122,16 @@ func TestParse(t *testing.T) {
 		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 2)
 		assert.Equal(t, sarif.Runs[0].Results[2].Properties.ToolState, "Confirmed")
 		assert.Equal(t, sarif.Runs[0].Results[2].Properties.ToolAuditMessage, "Changed status to Confirmed \n Dummy comment")
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.ToolSeverityIndex, 3)
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.ToolSeverity, "High")
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.AuditRequirementIndex, format.AUDIT_REQUIREMENT_GROUP_1_INDEX)
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.AuditRequirement, format.AUDIT_REQUIREMENT_GROUP_1_DESC)
 		//assert.Equal(t, "This is a dummy short description.", sarif.Runs[0].Tool.Driver.Rules[0].FullDescription.Text)
+
+		// ensure the existence of not applicable field (specific Fortify)
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.InstanceSeverity, "")
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.Confidence, "")
+		assert.Equal(t, sarif.Runs[0].Results[2].Properties.FortifyCategory, "")
 	})
 
 	t.Run("Missing sys", func(t *testing.T) {
