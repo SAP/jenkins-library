@@ -22,7 +22,7 @@ type kanikoExecuteOptions struct {
 	BuildSettingsInfo                string   `json:"buildSettingsInfo,omitempty"`
 	ContainerBuildOptions            string   `json:"containerBuildOptions,omitempty"`
 	ContainerImage                   string   `json:"containerImage,omitempty"`
-	ContainerImageName               string   `json:"containerImageName,omitempty"`
+	ContainerImageName               string   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
 	ContainerImageTag                string   `json:"containerImageTag,omitempty"`
 	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
 	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
