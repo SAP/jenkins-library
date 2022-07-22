@@ -62,7 +62,8 @@ func TestCfDeployment(t *testing.T) {
 
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
-	filesMock.Chdir("/home/me")
+	err := filesMock.Chdir("/home/me")
+	assert.NoError(t, err)
 	fileUtils = &filesMock
 
 	// everything below in the config map annotated with '//default' is a default in the metadata
@@ -117,7 +118,7 @@ func TestCfDeployment(t *testing.T) {
 		}
 
 		return func() {
-			filesMock.FileRemove(manifestName) // slightly mis-use since that is intended to be used by code under test, not test code
+			_ = filesMock.FileRemove(manifestName) // slightly mis-use since that is intended to be used by code under test, not test code
 			_getManifest = getManifest
 		}
 	}
@@ -589,7 +590,7 @@ func TestCfDeployment(t *testing.T) {
 		config.AppName = "myTestApp"
 
 		defer func() {
-			filesMock.FileRemove("test-manifest.yml")
+			_ = filesMock.FileRemove("test-manifest.yml")
 			_getManifest = getManifest
 		}()
 
@@ -753,7 +754,7 @@ func TestCfDeployment(t *testing.T) {
 		config.Manifest = "test-manifest.yml"
 
 		defer func() {
-			filesMock.FileRemove("test-manifest.yml")
+			_ = filesMock.FileRemove("test-manifest.yml")
 			_getManifest = getManifest
 		}()
 
@@ -794,7 +795,7 @@ func TestCfDeployment(t *testing.T) {
 		config.MtaPath = "target/test.mtar"
 
 		defer func() {
-			filesMock.FileRemove("target/test.mtar")
+			_ = filesMock.FileRemove("target/test.mtar")
 		}()
 
 		filesMock.AddFile("target/test.mtar", []byte("content does not matter"))
@@ -909,8 +910,8 @@ func TestCfDeployment(t *testing.T) {
 		config.AppName = "testAppName"
 
 		defer func() {
-			filesMock.FileRemove("test-manifest.yml")
-			filesMock.FileRemove("vars.yaml")
+			_ = filesMock.FileRemove("test-manifest.yml")
+			_ = filesMock.FileRemove("vars.yaml")
 			_getManifest = getManifest
 			_getVarsOptions = cloudfoundry.GetVarsOptions
 			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
@@ -993,7 +994,7 @@ func TestCfDeployment(t *testing.T) {
 
 		t.Run("mta config file from project sources", func(t *testing.T) {
 
-			defer filesMock.FileRemove("xyz.mtar")
+			defer func() { _ = filesMock.FileRemove("xyz.mtar") }()
 
 			// The mock is inaccurat here.
 			// AddFile() adds the file absolute, prefix with the current working directory
@@ -1070,7 +1071,7 @@ func TestMtarLookup(t *testing.T) {
 
 	t.Run("One MTAR", func(t *testing.T) {
 
-		defer filesMock.FileRemove("x.mtar")
+		defer func() { _ = filesMock.FileRemove("x.mtar") }()
 		filesMock.AddFile("x.mtar", []byte("content does not matter"))
 
 		path, err := findMtar()
@@ -1093,8 +1094,8 @@ func TestMtarLookup(t *testing.T) {
 	t.Run("Several MTARs", func(t *testing.T) {
 
 		defer func() {
-			filesMock.FileRemove("x.mtar")
-			filesMock.FileRemove("y.mtar")
+			_ = filesMock.FileRemove("x.mtar")
+			_ = filesMock.FileRemove("y.mtar")
 		}()
 
 		filesMock.AddFile("x.mtar", []byte("content does not matter"))
@@ -1109,7 +1110,8 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
-	filesMock.Chdir("/home/me")
+	err := filesMock.Chdir("/home/me")
+	assert.NoError(t, err)
 	filesMock.AddFileWithMode("mySmokeTestScript.sh", []byte("Content does not matter"), 0644)
 	fileUtils = &filesMock
 
@@ -1175,12 +1177,13 @@ func TestDefaultManifestVariableFilesHandling(t *testing.T) {
 
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
-	filesMock.Chdir("/home/me")
+	err := filesMock.Chdir("/home/me")
+	assert.NoError(t, err)
 	fileUtils = &filesMock
 
 	t.Run("default manifest variable file is the only one and exists", func(t *testing.T) {
 		defer func() {
-			filesMock.FileRemove("manifest-variables.yml")
+			_ = filesMock.FileRemove("manifest-variables.yml")
 		}()
 		filesMock.AddFile("manifest-variables.yml", []byte("Content does not matter"))
 
@@ -1297,7 +1300,8 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	filesMock := mock.FilesMock{}
 	filesMock.AddDir("/home/me")
-	filesMock.Chdir("/home/me")
+	err := filesMock.Chdir("/home/me")
+	assert.NoError(t, err)
 	fileUtils = &filesMock
 
 	_environ = func() []string {

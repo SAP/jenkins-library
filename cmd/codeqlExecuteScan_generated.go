@@ -25,6 +25,7 @@ type codeqlExecuteScanOptions struct {
 	BuildCommand  string `json:"buildCommand,omitempty"`
 	Language      string `json:"language,omitempty"`
 	ModulePath    string `json:"modulePath,omitempty"`
+	Database      string `json:"database,omitempty"`
 	QuerySuite    string `json:"querySuite,omitempty"`
 	UploadResults bool   `json:"uploadResults,omitempty"`
 	AnalyzedRef   string `json:"analyzedRef,omitempty"`
@@ -173,6 +174,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", os.Getenv("PIPER_buildCommand"), "Command to build the project")
 	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze.")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
+	cmd.Flags().StringVar(&stepConfig.Database, "database", `codeqlDB`, "Path to the CodeQL database to create. This directory will be created, and must not already exist.")
 	cmd.Flags().StringVar(&stepConfig.QuerySuite, "querySuite", os.Getenv("PIPER_querySuite"), "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used.")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
@@ -251,6 +253,15 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `./`,
+					},
+					{
+						Name:        "database",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `codeqlDB`,
 					},
 					{
 						Name:        "querySuite",
