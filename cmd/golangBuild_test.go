@@ -1044,7 +1044,62 @@ func TestRunGolangciLint(t *testing.T) {
 				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
 				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
 			} else {
-				assert.EqualError(t, test.expectedErr, err.Error())
+				assert.EqualError(t, err, test.expectedErr.Error())
+			}
+		})
+	}
+}
+
+func TestRetrieveGolangciLint(t *testing.T) {
+	goPath := os.Getenv("GOPATH")
+	golangciLintDir := filepath.Join(goPath, "bin")
+
+	httpmock.Activate()
+	t.Cleanup(httpmock.Deactivate)
+	httpmock.RegisterNoResponder(httpmock.NewErrorResponder(fmt.Errorf("not found")))
+	httpmock.RegisterResponder("GET", golangciLintURL, httpmock.NewStringResponder(200, "OK"))
+
+	tt := []struct {
+		name                string
+		shouldFailOnCommand map[string]error
+		lintURL             string
+		expectedCommand     []string
+		expectedErr         error
+	}{
+		{
+			name:                "success",
+			shouldFailOnCommand: map[string]error{},
+			lintURL:             golangciLintURL,
+			expectedCommand:     []string{"sh", "-s", "--", "-b", golangciLintDir, golangciLintVersion},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - failed to download golangci-lint",
+			shouldFailOnCommand: map[string]error{},
+			lintURL:             "https://example.com",
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf(`failed to download golangci-lint: Get "https://example.com": not found`),
+		},
+		{
+			name:                "failure - failed to install golangci-lint with sh error",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("sh -s -- -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("sh err")},
+			lintURL:             golangciLintURL,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("failed to install golangci-lint: sh err"),
+		},
+	}
+
+	for i, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+			utils.ShouldFailOnCommand = test.shouldFailOnCommand
+			err := retrieveGolangciLint(utils, test.lintURL, golangciLintDir)
+
+			if test.expectedErr == nil {
+				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
+				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
+			} else {
+				assert.EqualError(t, err, test.expectedErr.Error())
 			}
 		})
 	}
