@@ -359,9 +359,9 @@ func TestNpm(t *testing.T) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "@cyclonedx/bom", "--no-save"}}, utils.execRunner.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", ".",
-					"--include-license-text", "false", "--include-dev", "false", "--output", "bom-npm.xml"}}, utils.execRunner.Calls[1])
+					"--output", "bom-npm.xml"}}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", "src",
-					"--include-license-text", "false", "--include-dev", "false", "--output", filepath.Join("src", "bom-npm.xml")}}, utils.execRunner.Calls[2])
+					"--output", filepath.Join("src", "bom-npm.xml")}}, utils.execRunner.Calls[2])
 			}
 		}
 	})

@@ -364,8 +364,6 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 			params := []string{
 				"cyclonedx-bom",
 				path,
-				"--include-license-text", "false",
-				"--include-dev", "false", // Include devDependencies
 				"--output", filepath.Join(path, npmBomFilename),
 			}
 			err := execRunner.RunExecutable("npx", params...)
