@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +10,6 @@ import (
 )
 
 type shellExecuteMockUtils struct {
-	t      *testing.T
 	config *shellExecuteOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
@@ -20,23 +18,6 @@ type shellExecuteMockUtils struct {
 	filename      string
 	header        http.Header
 	url           string
-}
-
-type shellExecuteFileMock struct {
-	*mock.FilesMock
-	fileReadContent map[string]string
-	fileReadErr     map[string]error
-}
-
-func (f *shellExecuteFileMock) FileRead(path string) ([]byte, error) {
-	if f.fileReadErr[path] != nil {
-		return []byte{}, f.fileReadErr[path]
-	}
-	return []byte(f.fileReadContent[path]), nil
-}
-
-func (f *shellExecuteFileMock) FileExists(path string) (bool, error) {
-	return strings.EqualFold(path, "path/to/script/script.sh"), nil
 }
 
 func (f *shellExecuteMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
@@ -121,7 +102,7 @@ func TestRunShellExecute(t *testing.T) {
 	t.Run("success case - multiple positional script arguments gets added to the correct script", func(t *testing.T) {
 		o := &shellExecuteOptions{
 			Sources:         []string{"path1/script1.sh", "path2/script2.sh"},
-			ScriptArguments: []string{"arg1 arg2", "arg3 arg4"},
+			ScriptArguments: []string{"arg1,arg2", "arg3,arg4"},
 		}
 
 		u := newShellExecuteTestsUtils()
@@ -134,6 +115,28 @@ func TestRunShellExecute(t *testing.T) {
 		assert.Equal(t, []string{"arg1", "arg2"}, u.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "path2/script2.sh", u.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"arg3", "arg4"}, u.ExecMockRunner.Calls[1].Params)
+		assert.NoError(t, err)
+	})
+
+	t.Run("success case - no argument for script 1, single argument for script 2 and multiple argument for script3 gets added to the correct script", func(t *testing.T) {
+		o := &shellExecuteOptions{
+			Sources:         []string{"path1/script1.sh", "path2/script2.sh", "path3/script3.sh"},
+			ScriptArguments: []string{"", "arg2.1", "arg3.1,arg3.2"},
+		}
+
+		u := newShellExecuteTestsUtils()
+		u.AddFile("path1/script1.sh", []byte(`echo dummy1`))
+		u.AddFile("path2/script2.sh", []byte(`echo dummy2`))
+		u.AddFile("path3/script3.sh", []byte(`echo dummy3`))
+
+		err := runShellExecute(o, nil, u)
+
+		assert.Equal(t, "path1/script1.sh", u.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{}, u.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "path2/script2.sh", u.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"arg2.1"}, u.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "path3/script3.sh", u.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"arg3.1", "arg3.2"}, u.ExecMockRunner.Calls[2].Params)
 		assert.NoError(t, err)
 	})
 }

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -73,7 +74,9 @@ func TestDeploy(t *testing.T) {
 
 		go func() {
 			buf := new(bytes.Buffer)
-			io.Copy(buf, rStdout)
+			if _, err := io.Copy(buf, rStdout); err != nil {
+				log.Entry().Warning("failed to copy buffer")
+			}
 			stdout = buf.String()
 			wg.Done()
 		}()

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -174,11 +173,11 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	ldflags := ""
 
 	if len(config.LdflagsTemplate) > 0 {
-		var err error
-		ldflags, err = prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
+		ldf, err := prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
+		ldflags = (*ldf).String()
 		log.Entry().Infof("ldflags from template: '%v'", ldflags)
 	}
 
@@ -190,7 +189,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	for _, platform := range platforms {
-		binaryNames, err := runGolangBuildPerArchitecture(config, utils, ldflags, platform)
+		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
 
 		if err != nil {
 			return err
@@ -262,7 +261,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		var binaryArtifacts piperenv.Artifacts
 		for _, binary := range binaries {
 
-			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
+			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, artifactVersion, binary)
 
 			separator := "/"
 
@@ -324,7 +323,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
 
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), fmt.Sprintf("%s", repoURL))
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
 		if err != nil {
 			return err
 		}
@@ -405,7 +404,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (string, error) {
+func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (*bytes.Buffer, error) {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(envRootPath, "commonPipelineEnvironment"))
 	if err != nil {
@@ -413,26 +412,10 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	}
 
 	log.Entry().Debugf("ldflagsTemplate in use: %v", config.LdflagsTemplate)
-	tmpl, err := template.New("ldflags").Parse(config.LdflagsTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse ldflagsTemplate '%v': %w", config.LdflagsTemplate, err)
-	}
-
-	ldflagsParams := struct {
-		CPE map[string]interface{}
-	}{
-		CPE: map[string]interface{}(cpe),
-	}
-	var generatedLdflags bytes.Buffer
-	err = tmpl.Execute(&generatedLdflags, ldflagsParams)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute ldflagsTemplate '%v': %w", config.LdflagsTemplate, err)
-	}
-
-	return generatedLdflags.String(), nil
+	return cpe.ParseTemplate(config.LdflagsTemplate)
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
 	var binaryNames []string
 
 	envVars := os.Environ()
@@ -463,6 +446,10 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuild
 			buildOptions = append(buildOptions, "-o", binaryName)
 			binaryNames = append(binaryNames, binaryName)
 		}
+	} else {
+		// use default name in case no name is defined via Output
+		binaryName := path.Base(goModFile.Module.Mod.Path)
+		binaryNames = append(binaryNames, binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
 	if len(ldflags) > 0 {

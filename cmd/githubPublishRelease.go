@@ -62,6 +62,8 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 	//updating assets only supported on latest release
 	if len(config.AssetPath) > 0 && config.Version == "latest" {
 		return uploadReleaseAsset(ctx, lastRelease.GetID(), config, ghRepoClient)
+	} else if len(config.AssetPathList) > 0 && config.Version == "latest" {
+		return uploadReleaseAssetList(ctx, lastRelease.GetID(), config, ghRepoClient)
 	}
 
 	releaseBody := ""
@@ -206,6 +208,9 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPubl
 		MediaType: mediaType,
 	}
 	file, err := os.Open(config.AssetPath)
+	if err != nil {
+		return fmt.Errorf("failed to open release asset %v: %w", config.AssetPath, err)
+	}
 	defer file.Close()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to load release asset '%v'", config.AssetPath)

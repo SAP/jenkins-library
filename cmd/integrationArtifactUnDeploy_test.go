@@ -1,15 +1,9 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-type integrationArtifactUnDeployMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
 
 func TestRunIntegrationArtifactUnDeploy(t *testing.T) {
 	t.Parallel()

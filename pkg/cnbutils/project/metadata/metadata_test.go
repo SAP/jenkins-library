@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,11 +36,9 @@ func TestWriteProjectMetadata(t *testing.T) {
 		"branch":        "main",
 	}
 
-	dir, err := ioutil.TempDir("", "")
+	dir := t.TempDir()
+	err := os.MkdirAll(filepath.Join(dir, "commonPipelineEnvironment", "git"), os.ModePerm)
 	assert.NoError(t, err)
-	err = os.MkdirAll(filepath.Join(dir, "commonPipelineEnvironment", "git"), os.ModePerm)
-	assert.NoError(t, err)
-	defer os.RemoveAll(dir)
 
 	for file, content := range cpeFiles {
 		err = fileutils.FileWrite(filepath.Join(dir, "commonPipelineEnvironment", "git", file), []byte(content), os.ModePerm)

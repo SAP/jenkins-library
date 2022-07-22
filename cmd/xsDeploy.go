@@ -177,7 +177,9 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	go func() {
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prOut, os.Stderr)
-		io.Copy(buf, r)
+		if _, err := io.Copy(buf, r); err != nil {
+			log.Entry().Warningf("failed to copy buffer")
+		}
 		o = buf.String()
 		wg.Done()
 	}()
@@ -185,7 +187,9 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	go func() {
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prErr, os.Stderr)
-		io.Copy(buf, r)
+		if _, err := io.Copy(buf, r); err != nil {
+			log.Entry().Warningf("failed to copy buffer")
+		}
 		e = buf.String()
 		wg.Done()
 	}()
@@ -431,7 +435,9 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 	}
 
 	var script bytes.Buffer
-	tmpl.Execute(&script, properties)
+	if err := tmpl.Execute(&script, properties); err != nil {
+		return err
+	}
 	if e := s.RunShell("/bin/bash", script.String()); e != nil {
 		return e
 	}
@@ -440,7 +446,7 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 }
 
 func copyFileFromHomeToPwd(xsSessionFile string, fileUtils piperutils.FileUtils) error {
-	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), fmt.Sprintf("%s", xsSessionFile)
+	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), xsSessionFile
 	log.Entry().Debugf("Copying xs session file from home directory ('%s') to workspace ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from home directory ('%s') to workspace ('%s')", src, dest)
@@ -458,7 +464,7 @@ func copyFileFromPwdToHome(xsSessionFile string, fileUtils piperutils.FileUtils)
 	// affects also other builds.
 	//
 
-	src, dest := fmt.Sprintf("%s", xsSessionFile), fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
+	src, dest := xsSessionFile, fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from workspace ('%s') to home directory ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from workspace ('%s') to home directory ('%s')", src, dest)

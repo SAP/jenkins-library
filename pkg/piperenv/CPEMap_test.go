@@ -21,12 +21,8 @@ func Test_writeMapToDisk(t *testing.T) {
 		"number": 5,
 	}
 
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "test-data-*")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(tmpDir)
-	})
-	err = testMap.WriteToDisk(tmpDir)
+	tmpDir := t.TempDir()
+	err := testMap.WriteToDisk(tmpDir)
 	require.NoError(t, err)
 
 	testData := []struct {
@@ -59,13 +55,9 @@ func Test_writeMapToDisk(t *testing.T) {
 
 func TestCPEMap_LoadFromDisk(t *testing.T) {
 	t.Parallel()
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "test-data-*")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(tmpDir)
-	})
+	tmpDir := t.TempDir()
 
-	err = ioutil.WriteFile(path.Join(tmpDir, "Foo"), []byte("Bar"), 0644)
+	err := ioutil.WriteFile(path.Join(tmpDir, "Foo"), []byte("Bar"), 0644)
 	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(tmpDir, "Hello"), []byte("World"), 0644)
 	require.NoError(t, err)
@@ -92,14 +84,10 @@ func TestCPEMap_LoadFromDisk(t *testing.T) {
 
 func TestNumbersArePassedCorrectly(t *testing.T) {
 	t.Parallel()
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "test-data-*")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(tmpDir)
-	})
+	tmpDir := t.TempDir()
 
 	const jsonNumber = "5.5000"
-	err = ioutil.WriteFile(path.Join(tmpDir, "test.json"), []byte(jsonNumber), 0644)
+	err := ioutil.WriteFile(path.Join(tmpDir, "test.json"), []byte(jsonNumber), 0644)
 	require.NoError(t, err)
 
 	cpeMap := CPEMap{}

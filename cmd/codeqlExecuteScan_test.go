@@ -32,6 +32,11 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
 	})
 
+	t.Run("GitCommitID is NA on upload results", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./", CommitID: "NA"}
+		assert.Error(t, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
+	})
+
 	t.Run("Upload results with token", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./", UploadResults: true, GithubToken: "test"}
 		assert.Equal(t, nil, runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils()))
@@ -61,14 +66,16 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 func TestGetGitRepoInfo(t *testing.T) {
 	t.Run("Valid URL1", func(t *testing.T) {
 		var repoInfo RepoInfo
-		getGitRepoInfo("https://github.hello.test/Testing/fortify.git", &repoInfo)
+		err := getGitRepoInfo("https://github.hello.test/Testing/fortify.git", &repoInfo)
+		assert.NoError(t, err)
 		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
 		assert.Equal(t, "Testing/fortify", repoInfo.repo)
 	})
 
 	t.Run("Valid URL2", func(t *testing.T) {
 		var repoInfo RepoInfo
-		getGitRepoInfo("https://github.hello.test/Testing/fortify", &repoInfo)
+		err := getGitRepoInfo("https://github.hello.test/Testing/fortify", &repoInfo)
+		assert.NoError(t, err)
 		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
 		assert.Equal(t, "Testing/fortify", repoInfo.repo)
 	})

@@ -25,6 +25,11 @@ func (u *UnknownOrchestratorConfigProvider) GetBuildStatus() string {
 	return "FAILURE"
 }
 
+func (u *UnknownOrchestratorConfigProvider) GetChangeSet() []ChangeSet {
+	log.Entry().Infof("Unknown orchestrator - returning default values.")
+	return []ChangeSet{}
+}
+
 // GetBuildReason returns n/a for the unknownOrchestrator
 func (u *UnknownOrchestratorConfigProvider) GetBuildReason() string {
 	log.Entry().Infof("Unknown orchestrator - returning default values.")

@@ -50,6 +50,23 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 	})
 }
 
+func TestCheckATCSystemConfigurationFile(t *testing.T) {
+	t.Parallel()
+	t.Run("Check ATC Configuration File - empty", func(t *testing.T) {
+
+		errExpected := "pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: atcSystemConfig.json)"
+		var parsedConfigurationJsonExpected parsedConfigJsonWithExpand
+		var atcSystemConfiguartionJsonFileExpected []byte
+
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
+
+		parsedConfigurationJson, atcSystemConfiguartionJsonFile, err := checkATCSystemConfigurationFile(&config)
+		assert.Equal(t, errExpected, err.Error())
+		assert.Equal(t, parsedConfigurationJson, parsedConfigurationJsonExpected)
+		assert.Equal(t, atcSystemConfiguartionJsonFile, atcSystemConfiguartionJsonFileExpected)
+	})
+}
+
 func TestHandleHttpResponse(t *testing.T) {
 	t.Parallel()
 
@@ -72,7 +89,7 @@ Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
 		
-{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
+{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
@@ -146,7 +163,7 @@ Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
 		
-{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
+{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
@@ -217,7 +234,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset
 Content-Type: application/http
@@ -240,6 +257,10 @@ Content-Type: application/json
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,
 			"_priorities": [
@@ -276,7 +297,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset
 Content-Type: application/http
@@ -309,8 +330,12 @@ Content-Type: application/json
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
-			"is_proxy_variant": false,
+			"is_proxy_variant": false,		
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -350,7 +375,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset--
 
@@ -363,6 +388,10 @@ Content-Type: application/json
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false
 		}
@@ -391,7 +420,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
 
 --changeset--
 
@@ -404,6 +433,10 @@ Content-Type: application/json
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,
 			"_priorities": [
@@ -431,6 +464,10 @@ Content-Type: application/json
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"is_default": false,
 			"is_proxy_variant": false,
 			"_priorities": [
@@ -473,24 +510,20 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
 
 		atcSystemConfigFileString := ``
 
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -518,17 +551,13 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
@@ -542,6 +571,10 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			"inform_findings": "1",
 			"is_default": false,
 			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -552,7 +585,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -580,17 +613,13 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
@@ -604,6 +633,10 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			"inform_findings": "1",
 			"is_default": false,
 			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_SOMECLASS",
@@ -614,7 +647,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
