@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -353,6 +354,13 @@ func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor p
 }
 
 func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+	tempdir, err := ioutil.TempDir("", "cnbBuild-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(tempdir)
+	utils.AppendEnv([]string{fmt.Sprintf("TMPDIR=%s", tempdir)})
+
 	stepName := "cnbBuild"
 	cnbTelemetry := &cnbBuildTelemetry{
 		Version: 3,
