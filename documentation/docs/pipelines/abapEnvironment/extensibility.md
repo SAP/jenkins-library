@@ -32,7 +32,7 @@ return this
 The Jenkins pipeline step [recordIssues](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#recordissues-record-compiler-warnings-and-static-analysis-results) captures the results:
 While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error in total.
 
-You can define several quality gates that will be checked after the issues have been reported. For example by providing a `qualityGates` configuration with option `unstable: false` it would be possible to end the pipeline execution in case of findings. See [Quality gate configuration](https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#quality-gate-configuration) for details. 
+You can define several quality gates that will be checked after the issues have been reported. For example by providing a `qualityGates` configuration with option `unstable: false` it would be possible to end the pipeline execution in case of findings. See [Quality gate configuration](https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#quality-gate-configuration) for details.
 
 If the pipeline execution should be aborted in case of ATC findings, to not continue with execution of following pipeline stages, use the [error](https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/#error-error-signal) step in the stage extension to cause the build to stop:
 ```groovy
