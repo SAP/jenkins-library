@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -14,7 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/mod/modfile"
@@ -41,7 +43,21 @@ func (g *golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
 }
 
 func (g *golangBuildMockUtils) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	return nil, fmt.Errorf("not implemented")
+	if match, _ := regexp.MatchString("(?i)^https?://", url); match {
+		if !strings.Contains(url, "/wrong/path") {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewReader([]byte("OK"))),
+			}, nil
+		} else {
+			return &http.Response{
+				StatusCode: http.StatusNotFound,
+				Body:       io.NopCloser(bytes.NewReader([]byte("Not found"))),
+			}, nil
+		}
+	} else {
+		return nil, fmt.Errorf("failed to create %v request to %v", method, url)
+	}
 }
 
 func (g *golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
@@ -256,13 +272,8 @@ go 1.17`
 		golangciLintDir := filepath.Join(goPath, "bin")
 		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
-		httpmock.Activate()
-		t.Cleanup(httpmock.Deactivate)
-		httpmock.RegisterResponder("GET", golangciLintURL, httpmock.NewStringResponder(200, "OK"))
-
 		config := golangBuildOptions{
-			TargetArchitectures: []string{"linux,amd64"},
-			RunLint:             true,
+			RunLint: true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -994,6 +1005,8 @@ go 1.17`
 }
 
 func TestRunGolangciLint(t *testing.T) {
+	t.Parallel()
+
 	goPath := os.Getenv("GOPATH")
 	golangciLintDir := filepath.Join(goPath, "bin")
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
@@ -1006,6 +1019,7 @@ func TestRunGolangciLint(t *testing.T) {
 	tt := []struct {
 		name                string
 		shouldFailOnCommand map[string]error
+		fileWriteError      error
 		exitCode            int
 		expectedCommand     []string
 		expectedErr         error
@@ -1013,6 +1027,7 @@ func TestRunGolangciLint(t *testing.T) {
 		{
 			name:                "success",
 			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
 			exitCode:            0,
 			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
 			expectedErr:         nil,
@@ -1020,9 +1035,18 @@ func TestRunGolangciLint(t *testing.T) {
 		{
 			name:                "failure - failed to run golangci-lint",
 			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
+			fileWriteError:      nil,
 			exitCode:            0,
 			expectedCommand:     []string{},
 			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
+		},
+		{
+			name:                "failure - failed to write golangci-lint report",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
 		},
 		{
 			name:                "failure - failed with ExitCode == 1",
@@ -1034,9 +1058,12 @@ func TestRunGolangciLint(t *testing.T) {
 	}
 
 	for i, test := range tt {
+		i, test := i, test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			utils := newGolangBuildTestsUtils()
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
+			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
 			err := runGolangciLint(utils, golangciLintDir, lintSettings)
 
@@ -1051,13 +1078,10 @@ func TestRunGolangciLint(t *testing.T) {
 }
 
 func TestRetrieveGolangciLint(t *testing.T) {
+	t.Parallel()
+
 	goPath := os.Getenv("GOPATH")
 	golangciLintDir := filepath.Join(goPath, "bin")
-
-	httpmock.Activate()
-	t.Cleanup(httpmock.Deactivate)
-	httpmock.RegisterNoResponder(httpmock.NewErrorResponder(fmt.Errorf("not found")))
-	httpmock.RegisterResponder("GET", golangciLintURL, httpmock.NewStringResponder(200, "OK"))
 
 	tt := []struct {
 		name                string
@@ -1074,11 +1098,18 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			expectedErr:         nil,
 		},
 		{
+			name:                "failure - failed to create request",
+			shouldFailOnCommand: map[string]error{},
+			lintURL:             "hppts://example.com/install.sh",
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("failed to create GET request to hppts://example.com/install.sh"),
+		},
+		{
 			name:                "failure - failed to download golangci-lint",
 			shouldFailOnCommand: map[string]error{},
-			lintURL:             "https://example.com",
+			lintURL:             "https://example.com/wrong/path/install.sh",
 			expectedCommand:     []string{},
-			expectedErr:         fmt.Errorf(`failed to download golangci-lint: Get "https://example.com": not found`),
+			expectedErr:         fmt.Errorf("failed to download golangci-lint with status code: 404"),
 		},
 		{
 			name:                "failure - failed to install golangci-lint with sh error",
@@ -1090,7 +1121,9 @@ func TestRetrieveGolangciLint(t *testing.T) {
 	}
 
 	for i, test := range tt {
+		i, test := i, test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			utils := newGolangBuildTestsUtils()
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			err := retrieveGolangciLint(utils, test.lintURL, golangciLintDir)

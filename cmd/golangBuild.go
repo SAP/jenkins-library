@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -431,20 +430,17 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 
 func retrieveGolangciLint(utils golangBuildUtils, golangciLintURL, golangciLintDir string) error {
 	// installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
-	httpClient := &http.Client{
-		Timeout: time.Duration(time.Minute * 5),
-	}
-	req, err := http.NewRequest(http.MethodGet, golangciLintURL, nil)
+	response, err := utils.SendRequest(http.MethodGet, golangciLintURL, nil, nil, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to download golangci-lint: %w", err)
-	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	b, err := io.ReadAll(resp.Body)
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download golangci-lint with status code: %v", response.StatusCode)
+	}
+
+	b, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
