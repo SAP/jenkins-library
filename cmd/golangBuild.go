@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -47,9 +46,9 @@ type golangBuildUtils interface {
 	piperutils.FileUtils
 	piperhttp.Uploader
 
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 	getDockerImageValue(stepName string) (string, error)
 	GetExitCode() int
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -61,6 +60,7 @@ type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	piperhttp.Uploader
+	httpClient *piperhttp.Client
 
 	goget.Client
 
@@ -71,7 +71,7 @@ type golangBuildUtilsBundle struct {
 }
 
 func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
+	return g.httpClient.DownloadFile(url, filename, header, cookies)
 }
 
 func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
@@ -96,6 +96,7 @@ func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
 		Client: &goget.ClientImpl{
 			HTTPClient: &httpClient,
 		},
+		httpClient: &httpClient,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -429,28 +430,22 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 }
 
 func retrieveGolangciLint(utils golangBuildUtils, golangciLintURL, golangciLintDir string) error {
-	// installation instructions: https://golangci-lint.run/usage/install/#linux-and-windows
-	response, err := utils.SendRequest(http.MethodGet, golangciLintURL, nil, nil, nil)
+	installScript := "./install.sh"
+	err := utils.DownloadFile(golangciLintURL, installScript, nil, nil)
 	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download golangci-lint with status code: %v", response.StatusCode)
+		return fmt.Errorf("failed to download golangci-lint %w:", err)
 	}
 
-	b, err := io.ReadAll(response.Body)
+	err = utils.Chmod(installScript, 0777)
 	if err != nil {
 		return err
 	}
 
-	inputBuffer := bytes.NewBuffer(b)
-	utils.Stdin(inputBuffer)
-	err = utils.RunExecutable("sh", "-s", "--", "-b", golangciLintDir, golangciLintVersion)
+	err = utils.RunExecutable(installScript, "-b", golangciLintDir, golangciLintVersion)
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
+
 	return nil
 }
 
