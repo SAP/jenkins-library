@@ -33,12 +33,10 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
-	dir, err := ioutil.TempDir("", "")
-	defer os.RemoveAll(dir) // clean up
-	assert.NoError(t, err, "Error when creating temp dir")
+	dir := t.TempDir()
 
 	testAsset := filepath.Join(dir, "test.txt")
-	err = ioutil.WriteFile(testAsset, []byte("Test"), 0644)
+	err := ioutil.WriteFile(testAsset, []byte("Test"), 0644)
 	assert.NoError(t, err, "Error when writing temporary file")
 	test2Asset := filepath.Join(dir, "test2.txt")
 	err = ioutil.WriteFile(test2Asset, []byte("Test"), 0644)

@@ -221,16 +221,12 @@ func TestGetResultATCRun(t *testing.T) {
 
 func TestParseATCResult(t *testing.T) {
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test get result ATC run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
@@ -246,26 +242,22 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test get result ATC run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
@@ -276,20 +268,16 @@ func TestParseATCResult(t *testing.T) {
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
 	})
 	t.Run("failure case: html response", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test get result ATC run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
-		err = logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
@@ -413,16 +401,12 @@ func TestResolveConfiguration(t *testing.T) {
 			AtcConfig: "atc.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "atcDir")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `checkvariant: MY_TEST
@@ -437,7 +421,7 @@ atcobjects:
     - name: /DMO/SWC
 `
 
-		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -452,16 +436,12 @@ atcobjects:
 			AtcConfig: "atc.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "atcDir")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `checkvariant: MY_TEST
@@ -479,7 +459,7 @@ objectset:
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:package name=\"Z_TEST_TREE\" includeSubpackages=\"true\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></atc:runparameters>"
 
-		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -494,16 +474,12 @@ objectset:
 			Repositories: "repo.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `repositories:
@@ -511,7 +487,7 @@ objectset:
   - name: /DMO/SWC
 `
 
-		err = ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
