@@ -83,7 +83,7 @@ rootProject {
     cyclonedxBom {
 	outputName = "` + gradleBomFilename + `"
 	outputFormat = "xml"
-	schemaVersion = "1.3"
+	schemaVersion = "1.2"
     }
 }
 `
