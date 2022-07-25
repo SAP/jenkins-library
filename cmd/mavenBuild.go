@@ -53,7 +53,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.1:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.2",
 			"-DincludeBomSerialNumber=true",
