@@ -173,7 +173,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
 
-		if err := retrieveGolangciLint(utils, golangciLintURL, golangciLintDir); err != nil {
+		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
 			return err
 		}
 
@@ -429,19 +429,19 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint(utils golangBuildUtils, golangciLintURL, golangciLintDir string) error {
-	installScript := "./install.sh"
-	err := utils.DownloadFile(golangciLintURL, installScript, nil, nil)
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
+	installationScript := "./install.sh"
+	err := utils.DownloadFile(golangciLintURL, installationScript, nil, nil)
 	if err != nil {
-		return fmt.Errorf("failed to download golangci-lint %w:", err)
+		return fmt.Errorf("failed to download golangci-lint: %w", err)
 	}
 
-	err = utils.Chmod(installScript, 0777)
+	err = utils.Chmod(installationScript, 0777)
 	if err != nil {
 		return err
 	}
 
-	err = utils.RunExecutable(installScript, "-b", golangciLintDir, golangciLintVersion)
+	err = utils.RunExecutable(installationScript, "-b", golangciLintDir, golangciLintVersion)
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
