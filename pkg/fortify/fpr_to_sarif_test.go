@@ -446,6 +446,9 @@ func TestIntegrateAuditData(t *testing.T) {
 		assert.Equal(t, ruleProp.ToolSeverityIndex, 3)
 		assert.Equal(t, ruleProp.ToolAuditMessage, "Dummy comment.")
 		assert.Equal(t, ruleProp.FortifyCategory, "Audit All")
+		assert.Equal(t, ruleProp.AuditRequirementIndex, format.AUDIT_REQUIREMENT_GROUP_1_INDEX)
+		assert.Equal(t, ruleProp.AuditRequirement, format.AUDIT_REQUIREMENT_GROUP_1_DESC)
+		assert.Equal(t, ruleProp.CheckmarxSimilarityID, "") // ensure the existence of not applicable field (specific Checkmarx)
 	})
 
 	t.Run("Missing project version", func(t *testing.T) {
@@ -490,6 +493,9 @@ func TestIntegrateAuditData(t *testing.T) {
 		assert.Equal(t, ruleProp.ToolSeverityIndex, 3)
 		assert.Equal(t, ruleProp.ToolAuditMessage, "Dummy comment.")
 		assert.Equal(t, ruleProp.FortifyCategory, "Audit All")
+		assert.Equal(t, ruleProp.AuditRequirementIndex, format.AUDIT_REQUIREMENT_GROUP_1_INDEX)
+		assert.Equal(t, ruleProp.AuditRequirement, format.AUDIT_REQUIREMENT_GROUP_1_DESC)
+		assert.Equal(t, ruleProp.CheckmarxSimilarityID, "") // ensure the existence of not applicable field (specific Checkmarx)
 	})
 
 	t.Run("Max retries set to 0: error raised", func(t *testing.T) {

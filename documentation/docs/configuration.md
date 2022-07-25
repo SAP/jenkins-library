@@ -90,7 +90,7 @@ log entry content as follows:
   | fatal | FATAL | EXCEPTION |
   | panic | FATAL | EXCEPTION |
 
-- `subject`: short description of the event (defaults to the step name, but
+- `subject`: short description of the event (defaults to 'Step <step_name> sends <severity>', but
   can be overwritten with the event template)
 - `body`: the log message
 - `priority`: (optional) an integer number in the range [1:1000] (not set by
