@@ -39,7 +39,17 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
 	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, utils)
 	if err != nil {
-		return err
+		for i := range packagesWithReposLocked {
+			if packagesWithReposLocked[i].Package.Status == aakaas.PackageStatusReleased{
+				numberOfReleasedPackages += 1
+			}
+		}
+		if numberOfReleasedPackages = 0 {
+			log.Entry().Errorf("Release of all packages failed/timed out - Aborting as no abapEnvironmentAssembleConfirm step is not needed").
+			return err
+		}else{
+			log.Entry().Errorf("Release of at least one package failed/timed out - Continuing anyway to enable abapEnvironmentAssembleConfirm to run").
+		}
 	}
 	addonDescriptor.Repositories = sortingBack(packagesWithReposLocked, packagesWithReposNotLocked)
 	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
@@ -78,7 +88,7 @@ func sortByStatus(repos []abaputils.Repository, conn abapbuild.Connector) ([]aak
 			Package: pack,
 			Repo:    repos[i],
 		}
-		if pack.Status == "L" {
+		if pack.Status == aakaas.PackageStatusLocked {
 			packagesWithReposLocked = append(packagesWithReposLocked, pWR)
 		} else {
 			log.Entry().Infof("Package %s has status %s, cannot release this package", pack.PackageName, pack.Status)
