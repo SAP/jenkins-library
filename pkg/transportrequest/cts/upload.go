@@ -101,7 +101,7 @@ func (action *UploadAction) Perform(command command.ShellRunner) error {
 			fmt.Sprintf("%s=%s", abapPasswordKey, action.Connection.Password),
 		})
 
-	cmd := []string{"#!/bin/bash -e"}
+	cmd := []string{"#!/bin/sh -e"}
 
 	noInstall := len(action.Node.DeployDependencies) == 0
 	if !noInstall {
@@ -119,7 +119,7 @@ func (action *UploadAction) Perform(command command.ShellRunner) error {
 
 	cmd = append(cmd, deployStatement)
 
-	return command.RunShell("/bin/bash", strings.Join(cmd, "\n"))
+	return command.RunShell("/bin/sh", strings.Join(cmd, "\n"))
 }
 
 func getPrepareFioriEnvironmentStatement(deps []string, npmInstallOpts []string) string {
