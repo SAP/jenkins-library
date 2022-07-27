@@ -20,5 +20,6 @@ void call(Map parameters = [:]) {
     String piperGoPath = parameters.piperGoPath ?: './piper'
     String stageConfig = parameters.stageConfig
     String stageOutputFile = parameters.stageOutputFile
-    script.sh(returnStdout: true, script: "${piperGoPath} checkIfStepActive --stageConfig ${stageConfig} --useV1 --stageOutputFile ${stageOutputFile}")
+    String step = ""
+    script.sh(returnStdout: true, script: "${piperGoPath} checkIfStepActive --stageConfig ${stageConfig} --useV1 --stageOutputFile ${stageOutputFile} --step ${step}")
 }
