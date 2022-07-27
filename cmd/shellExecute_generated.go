@@ -161,7 +161,7 @@ func shellExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "shell", Image: "node:lts-stretch", WorkingDir: "/home/node"},
+				{Name: "shell", Image: "node:lts-buster", WorkingDir: "/home/node"},
 			},
 		},
 	}
