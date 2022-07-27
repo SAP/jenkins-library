@@ -22,6 +22,7 @@ import (
 type FortifyReportData struct {
 	ToolName                            string                  `json:"toolName"`
 	ToolInstance                        string                  `json:"toolInstance"`
+	ProjectID                           int64                   `json:"projectID"`
 	ProjectName                         string                  `json:"projectName"`
 	ProjectVersion                      string                  `json:"projectVersion"`
 	ProjectVersionID                    int64                   `json:"projectVersionID"`
@@ -54,6 +55,7 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 		Subheaders: []reporting.Subheader{
 			{Description: "Fortify project name", Details: data.ProjectName},
 			{Description: "Fortify project version", Details: data.ProjectVersion},
+			{Description: "Fortify URL", Details: data.URL},
 		},
 		Overview: []reporting.OverviewRow{
 			{Description: "Number of compliance violations", Details: fmt.Sprint(data.Violations)},

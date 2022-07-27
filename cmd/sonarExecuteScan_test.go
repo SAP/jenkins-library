@@ -155,9 +155,7 @@ func TestRunSonar(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		// init
-		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
-		require.NoError(t, err)
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 		createTaskReportFile(t, tmpFolder)
 
 		sonar = sonarSettings{
@@ -177,7 +175,7 @@ func TestRunSonar(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1")
@@ -190,9 +188,7 @@ func TestRunSonar(t *testing.T) {
 	})
 	t.Run("with custom options", func(t *testing.T) {
 		// init
-		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
-		require.NoError(t, err)
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 		createTaskReportFile(t, tmpFolder)
 
 		sonar = sonarSettings{
@@ -210,16 +206,14 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
 	})
 	t.Run("with binaries option", func(t *testing.T) {
 		// init
-		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
-		require.NoError(t, err)
-		defer func() { _ = os.RemoveAll(tmpFolder) }()
+		tmpFolder := t.TempDir()
 		createTaskReportFile(t, tmpFolder)
 
 		sonar = sonarSettings{
@@ -250,7 +244,7 @@ func TestRunSonar(t *testing.T) {
 			PullRequestProvider: "GitHub",
 		}
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s,%s",
@@ -260,9 +254,7 @@ func TestRunSonar(t *testing.T) {
 	})
 	t.Run("with binaries option already given", func(t *testing.T) {
 		// init
-		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
-		require.NoError(t, err)
-		defer func() { _ = os.RemoveAll(tmpFolder) }()
+		tmpFolder := t.TempDir()
 		createTaskReportFile(t, tmpFolder)
 
 		sonar = sonarSettings{
@@ -292,7 +284,7 @@ func TestRunSonar(t *testing.T) {
 			PullRequestProvider: "GitHub",
 		}
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.NotContains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s",
@@ -301,9 +293,7 @@ func TestRunSonar(t *testing.T) {
 	})
 	t.Run("projectKey, coverageExclusions, m2Path, verbose", func(t *testing.T) {
 		// init
-		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
-		require.NoError(t, err)
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 		createTaskReportFile(t, tmpFolder)
 
 		sonar = sonarSettings{
@@ -326,7 +316,7 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=mock-project-key")

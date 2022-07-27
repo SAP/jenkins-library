@@ -1,10 +1,11 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type GitHubActionsConfigProvider struct{}
@@ -36,6 +37,11 @@ func (g *GitHubActionsConfigProvider) GetBuildID() string {
 	return "n/a"
 }
 
+func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
+	log.Entry().Warn("GetChangeSet for GitHubActions not yet implemented")
+	return []ChangeSet{}
+}
+
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
 	return time.Time{}.UTC()
@@ -51,6 +57,10 @@ func (g *GitHubActionsConfigProvider) GetBuildReason() string {
 
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
+}
+
+func (g *GitHubActionsConfigProvider) GetReference() string {
+	return getEnv("GITHUB_REF", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {

@@ -325,7 +325,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	// generate sarif report
 	if config.ConvertToSarif {
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := checkmarx.ConvertCxxmlToSarif(xmlReportName)
+		sarif, err := checkmarx.ConvertCxxmlToSarif(sys, xmlReportName, scanID)
 		if err != nil {
 			return fmt.Errorf("failed to generate SARIF")
 		}
@@ -361,10 +361,9 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	reportToInflux(results, influx)
 
 	insecure := false
-	insecureResults := []string{}
-	neutralResults := []string{}
+	var insecureResults []string
+	var neutralResults []string
 
-	err = nil
 	if config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
 		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
@@ -410,7 +409,7 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	log.Entry().Info(status)
 	stepDetail := "..."
 	stageDetail := "..."
-	for true {
+	for {
 		var detail checkmarx.ScanStatusDetail
 		status, detail = sys.GetScanStatusAndDetail(scan.ID)
 		if len(detail.Stage) > 0 {
@@ -653,7 +652,6 @@ func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, pro
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}
-	log.Entry().Debugf("Configuration of project %v updated", projectName)
 	return nil
 }
 
@@ -743,20 +741,15 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int,
 				switch result.State {
 				case "1":
 					auditState = "NotExploitable"
-					break
 				case "2":
 					auditState = "Confirmed"
-					break
 				case "3":
 					auditState = "Urgent"
-					break
 				case "4":
 					auditState = "ProposedNotExploitable"
-					break
 				case "0":
 				default:
 					auditState = "ToVerify"
-					break
 				}
 				submap[auditState]++
 

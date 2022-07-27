@@ -197,17 +197,17 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
 // projectName parameter is only used if autoCreate=true
 func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
-	nameParam := fmt.Sprintf("name=%v", versionName)
+	nameParam := fmt.Sprintf("name:%v", versionName)
 	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionOfProjectController.ListProjectVersionOfProject(params, sys)
 	if err != nil {
 		return nil, err
 	}
-	for _, projectVersion := range result.GetPayload().Data {
-		if *projectVersion.Name == versionName {
-			return projectVersion, nil
-		}
+
+	if result.Payload.Count > 0 {
+		projectVersion := result.GetPayload().Data[0]
+		return projectVersion, nil
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
@@ -637,7 +637,8 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 // GetIssueDetails returns the details of an issue with its issueInstanceId and projectVersionId
 func (sys *SystemInstance) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	qmStr := "issues"
-	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Q: &issueInstanceId, Qm: &qmStr}
+	showSuppressed := true
+	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Q: &issueInstanceId, Qm: &qmStr, Showsuppressed: &showSuppressed}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
 	if err != nil {
@@ -650,7 +651,8 @@ func (sys *SystemInstance) GetIssueDetails(projectVersionId int64, issueInstance
 func (sys *SystemInstance) GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error) {
 	var limit int32
 	limit = -1
-	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Limit: &limit}
+	showSuppressed := true
+	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Limit: &limit, Showsuppressed: &showSuppressed}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
 	if err != nil {

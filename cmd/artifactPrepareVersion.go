@@ -62,6 +62,7 @@ type artifactPrepareVersionUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRead(path string) ([]byte, error)
+	FileRemove(path string) error
 
 	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
 }

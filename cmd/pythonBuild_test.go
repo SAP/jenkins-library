@@ -5,27 +5,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type pythonBuildMockUtils struct {
-	t      *testing.T
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
-}
-
-type puthonBuildMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-
-	clientOptions []piperhttp.ClientOptions // set by mock
-	fileUploads   map[string]string         // set by mock
 }
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
@@ -87,7 +76,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "twine"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
 			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
-			"dist/*"}, utils.ExecMockRunner.Calls[4].Params)
+			"--disable-progress-bar", "dist/*"}, utils.ExecMockRunner.Calls[4].Params)
 	})
 
 	t.Run("success - create BOM", func(t *testing.T) {

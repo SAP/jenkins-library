@@ -173,9 +173,13 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	if err != nil {
 		// Setting error category based on exit code
 		mapErrorCategory(utils.GetExitCode())
-
-		// Error code mapping with more human readable text
-		err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+		if log.GetErrorCategory() == log.ErrorCompliance && !config.FailOnSevereVulnerabilities {
+			err = nil
+			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
+		} else {
+			// Error code mapping with more human readable text
+			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+		}
 	}
 	// create Toolrecord file
 	toolRecordFileName, toolRecordErr := createToolRecordDetect("./", config, blackduckSystem)
@@ -289,7 +293,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
-			args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+			args = append(args, "--detect.project.codelocation.unmap=true")
 		}
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
 	} else {
@@ -329,7 +333,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	if len(config.DependencyPath) > 0 {
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
 	} else {
-		args = append(args, fmt.Sprintf("--detect.source.path='.'"))
+		args = append(args, "--detect.source.path='.'")
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {
@@ -443,6 +447,9 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.RemediationStatus {
 	case "NEW":
 		return true
@@ -456,6 +463,9 @@ func isActiveVulnerability(v bd.Vulnerability) bool {
 }
 
 func isMajorVulnerability(v bd.Vulnerability) bool {
+	if v.Ignored {
+		return false
+	}
 	switch v.VulnerabilityWithRemediation.Severity {
 	case "CRITICAL":
 		return true
@@ -497,6 +507,9 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	paths = append(paths, vulnerabilityReportPaths...)
 
 	policyStatus, err := getPolicyStatus(config, influx, sys)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
 	policyReport := createPolicyStatusReport(config, policyStatus, influx, sys)
 	policyReportPaths, err := writePolicyStatusReports(policyReport, config, utils)
 	if err != nil {
@@ -516,7 +529,7 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 
 	if violationCount > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
-		errorsOccured = append(errorsOccured, fmt.Sprint("License Policy Violations found"))
+		errorsOccured = append(errorsOccured, "License Policy Violations found")
 	}
 
 	if len(errorsOccured) > 0 {
@@ -634,8 +647,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		errors.Wrapf(err, "failed to get License Policy Violations")
-		return err, 0
+		return errors.Wrapf(err, "failed to get License Policy Violations"), 0
 	}
 
 	violationCount := getActivePolicyViolations(components)
@@ -682,10 +694,7 @@ func getActivePolicyViolations(components *bd.Components) int {
 }
 
 func isActivePolicyViolation(status string) bool {
-	if status == "IN_VIOLATION" {
-		return true
-	}
-	return false
+	return status == "IN_VIOLATION"
 }
 
 // create toolrecord file for detectExecute
@@ -713,7 +722,7 @@ func createToolRecordDetect(workspace string, config detectExecuteScanOptions, s
 	if err != nil {
 		return "", err
 	}
-	record.AddContext("DetectTools", config.DetectTools)
+	_ = record.AddContext("DetectTools", config.DetectTools)
 	err = record.Persist()
 	if err != nil {
 		return "", err

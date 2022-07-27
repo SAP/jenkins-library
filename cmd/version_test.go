@@ -55,6 +55,6 @@ func runVersionCommand(t *testing.T, commitID, tag string) string {
 	w.Close()
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	return buf.String()
 }

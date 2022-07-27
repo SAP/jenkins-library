@@ -99,7 +99,7 @@ func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) (ch
 }
 func (sys *systemMock) FilterTeamByID(_ []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
 	teamIDBytes, _ := teamID.MarshalJSON()
-	if bytes.Compare(teamIDBytes, []byte(`"16"`)) == 0 {
+	if bytes.Equal(teamIDBytes, []byte(`"16"`)) {
 		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 	}
 	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
@@ -143,6 +143,9 @@ func (sys *systemMock) CreateProject(string, string) (checkmarx.ProjectCreateRes
 }
 func (sys *systemMock) CreateBranch(int, string) int {
 	return 18
+}
+func (sys *systemMock) GetShortDescription(int, int) (checkmarx.ShortDescription, error) {
+	return checkmarx.ShortDescription{Text: "dummyText"}, nil
 }
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
 	sys.getPresetsCalled = true
@@ -199,6 +202,9 @@ func (sys *systemMockForExistingProject) GetResults(int) checkmarx.ResultsStatis
 func (sys *systemMockForExistingProject) GetScans(int) ([]checkmarx.ScanStatus, error) {
 	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
 }
+func (sys *systemMockForExistingProject) GetShortDescription(int, int) (checkmarx.ShortDescription, error) {
+	return checkmarx.ShortDescription{Text: "dummyText"}, nil
+}
 func (sys *systemMockForExistingProject) GetScanStatusAndDetail(int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
 }
@@ -241,7 +247,6 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnWriteFile      bool
 	errorOnPathMatch      bool
 	workspace             string
-	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
 	ghCreateIssueError    error
 }
 
@@ -292,7 +297,6 @@ func (c checkmarxExecuteScanUtilsMock) CreateIssue(ghCreateIssueOptions *piperGi
 	if c.ghCreateIssueError != nil {
 		return c.ghCreateIssueError
 	}
-	c.ghCreateIssueOptions = ghCreateIssueOptions
 	return nil
 }
 
@@ -336,14 +340,9 @@ func TestZipFolder(t *testing.T) {
 
 	t.Run("zip files successfully", func(t *testing.T) {
 		t.Parallel()
-		dir, err := ioutil.TempDir("", "test zip files")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
 		assert.NoError(t, err)
 		err = ioutil.WriteFile(filepath.Join(dir, "abcd.yaml"), []byte("abcd.yaml"), 0700)
 		assert.NoError(t, err)
@@ -372,14 +371,9 @@ func TestZipFolder(t *testing.T) {
 
 	t.Run("error on query file info header", func(t *testing.T) {
 		t.Parallel()
-		dir, err := ioutil.TempDir("", "test zip files")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
 		assert.NoError(t, err)
@@ -400,14 +394,9 @@ func TestZipFolder(t *testing.T) {
 
 	t.Run("error on os stat", func(t *testing.T) {
 		t.Parallel()
-		dir, err := ioutil.TempDir("", "test zip files")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
 		assert.NoError(t, err)
@@ -428,14 +417,9 @@ func TestZipFolder(t *testing.T) {
 
 	t.Run("error on os Open", func(t *testing.T) {
 		t.Parallel()
-		dir, err := ioutil.TempDir("", "test zip files")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
 		assert.NoError(t, err)
@@ -480,12 +464,7 @@ func TestGetDetailedResults(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		dir, err := ioutil.TempDir("", "test detailed results")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 		result, err := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, newCheckmarxExecuteScanUtilsMock())
 		assert.NoError(t, err, "error occurred but none expected")
 		assert.Equal(t, "2", result["ProjectId"], "Project ID incorrect")
@@ -518,15 +497,10 @@ func TestGetDetailedResults(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		dir, err := ioutil.TempDir("", "test detailed results")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 		utils := newCheckmarxExecuteScanUtilsMock()
 		utils.errorOnWriteFile = true
-		_, err = getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, utils)
+		_, err := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, utils)
 		assert.EqualError(t, err, "failed to write file: error on WriteFile")
 	})
 }
@@ -536,13 +510,8 @@ func TestRunScan(t *testing.T) {
 
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace1")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -564,13 +533,8 @@ func TestRunScan_nonNumeralPreset(t *testing.T) {
 
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace1")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -588,13 +552,8 @@ func TestRunOptimizedScan(t *testing.T) {
 
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{IsOptimizedAndScheduled: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "1", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace1")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -637,19 +596,14 @@ func TestVerifyOnly(t *testing.T) {
 
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace1")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
+	workspace := t.TempDir()
 
 	influx := checkmarxExecuteScanInflux{}
 
 	utilsMock := newCheckmarxExecuteScanUtilsMock()
 	utilsMock.workspace = workspace
 
-	err = runScan(options, sys, &influx, utilsMock)
+	err := runScan(options, sys, &influx, utilsMock)
 	assert.NoError(t, err, "error occurred but none expected")
 	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
@@ -659,12 +613,7 @@ func TestVerifyOnly_errorOnWriteFileDoesNotBlock(t *testing.T) {
 
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace1")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
+	workspace := t.TempDir()
 
 	influx := checkmarxExecuteScanInflux{}
 
@@ -672,7 +621,7 @@ func TestVerifyOnly_errorOnWriteFileDoesNotBlock(t *testing.T) {
 	utilsMock.workspace = workspace
 	utilsMock.errorOnWriteFile = true
 
-	err = runScan(options, sys, &influx, utilsMock)
+	err := runScan(options, sys, &influx, utilsMock)
 	assert.EqualError(t, err, "scan, upload, and result validation returned an error: project TestExisting not compliant: failed to get detailed results: failed to write file: error on WriteFile")
 }
 
@@ -681,13 +630,8 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace2")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -708,12 +652,7 @@ func TestRunScanErrorInZip(t *testing.T) {
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace2")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
+	workspace := t.TempDir()
 
 	influx := checkmarxExecuteScanInflux{}
 
@@ -721,7 +660,7 @@ func TestRunScanErrorInZip(t *testing.T) {
 	utilsMock.workspace = workspace
 	utilsMock.errorOnFileInfoHeader = true
 
-	err = runScan(options, sys, &influx, utilsMock)
+	err := runScan(options, sys, &influx, utilsMock)
 	assert.EqualError(t, err, "scan, upload, and result validation returned an error: failed to zip workspace files: failed to compact folder: error on FileInfoHeader")
 }
 
@@ -730,13 +669,8 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
-	workspace, err := ioutil.TempDir("", "workspace3")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -756,13 +690,8 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace4")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -783,13 +712,8 @@ func TestRunScanForPullRequestProjectNew_nonNumeralPreset(t *testing.T) {
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace4")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -826,13 +750,8 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 	</Query>
 	</CxXMLResults>`)}
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace5")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -869,13 +788,8 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 		</Query>
 		</CxXMLResults>`)}
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace6")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	workspace := t.TempDir()
+	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 

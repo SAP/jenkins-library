@@ -421,7 +421,7 @@ spec:
         default: true
       - name: convertToSarif
         type: bool
-        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard. Uploaded through Cumulus later on."
+        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard."
         scope:
           - PARAMETERS
           - STAGES
@@ -656,6 +656,8 @@ spec:
                 type: bool
           - name: fortify_data
             fields:
+              - name: projectID
+                type: int64
               - name: projectName
               - name: projectVersion
               - name: projectVersionId

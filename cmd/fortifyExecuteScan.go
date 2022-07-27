@@ -39,6 +39,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+const getClasspathScriptContent = `
+gradle.allprojects {
+    task getClasspath {
+        doLast {
+            new File(projectDir, filename).text = sourceSets.main.compileClasspath.asPath
+        }
+    }
+}
+`
+
 type pullRequestService interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 }
@@ -247,11 +257,19 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf(message+": %w", err)
 	}
 
-	//Place conversion beforehand, or audit will stop the pipeline and conversion will not take place?
+	log.Entry().Infof("Ensuring latest FPR is processed for project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
+	// Ensure latest FPR is processed
+	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
+		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
+	if err != nil {
+		return reports, err
+	}
+
+	// SARIF conversion done after latest FPR is processed, but before the compliance is checked
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath, filterSet)
+		sarif, err := fortify.ConvertFprToSarif(sys, projectVersion, resultFilePath, filterSet)
 		if err != nil {
 			return reports, fmt.Errorf("failed to generate SARIF")
 		}
@@ -262,13 +280,8 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		}
 		reports = append(reports, paths...)
 	}
+
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	// Ensure latest FPR is processed
-	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
-		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
-	if err != nil {
-		return reports, err
-	}
 	err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
@@ -312,6 +325,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 
 	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatus)
 
+	influx.fortify_data.fields.projectID = project.ID
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
 	influx.fortify_data.fields.projectVersionID = projectVersion.ID
@@ -352,6 +366,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportData {
 	input := influx.fortify_data.fields
 	output := fortify.FortifyReportData{}
+	output.ProjectID = input.projectID
 	output.ProjectName = input.projectName
 	output.ProjectVersion = input.projectVersion
 	output.AuditAllAudited = input.auditAllAudited
@@ -707,6 +722,19 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 	return readAllClasspathFiles(file), nil
 }
 
+func autoresolveGradleClasspath(config fortifyExecuteScanOptions, file string, utils fortifyUtils) (string, error) {
+	gradleOptions := &gradle.ExecuteOptions{
+		Task:              "getClasspath",
+		UseWrapper:        true,
+		InitScriptContent: getClasspathScriptContent,
+		ProjectProperties: map[string]string{"filename": file},
+	}
+	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
+		log.Entry().WithError(err).Warnf("failed to determine classpath using Gradle: %v", err)
+	}
+	return readAllClasspathFiles(file), nil
+}
+
 func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
 	defines := []string{
 		fmt.Sprintf("-Dmdep.outputFile=%v", file),
@@ -809,7 +837,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 				return err
 			}
 		}
-		config.Translate, err = populateMavenTranslate(&config, classpath)
+		config.Translate, err = populateMavenGradleTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
+		}
+	} else if config.BuildTool == "gradle" {
+		if config.AutodetectClasspath {
+			classpath, err = autoresolveGradleClasspath(config, classpathFileName, utils)
+			if err != nil {
+				return err
+			}
+		}
+		config.Translate, err = populateMavenGradleTranslate(&config, classpath)
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
@@ -871,7 +910,7 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 	return string(translateJSON), err
 }
 
-func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
 	if len(config.Translate) > 0 {
 		return config.Translate, nil
 	}
@@ -1014,7 +1053,7 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 			options = append(options, "-libdirs", t["libDirs"])
 		}
 
-	case "maven":
+	case "maven", "gradle":
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
