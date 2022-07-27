@@ -39,16 +39,16 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
 	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, utils)
 	if err != nil {
+		var numberOfReleasedPackages int
 		for i := range packagesWithReposLocked {
-			if packagesWithReposLocked[i].Package.Status == aakaas.PackageStatusReleased{
+			if packagesWithReposLocked[i].Package.Status == aakaas.PackageStatusReleased {
 				numberOfReleasedPackages += 1
 			}
 		}
-		if numberOfReleasedPackages = 0 {
-			log.Entry().Errorf("Release of all packages failed/timed out - Aborting as no abapEnvironmentAssembleConfirm step is not needed").
-			return err
-		}else{
-			log.Entry().Errorf("Release of at least one package failed/timed out - Continuing anyway to enable abapEnvironmentAssembleConfirm to run").
+		if numberOfReleasedPackages == 0 {
+			return errors.Wrap(err, "Release of all packages failed/timed out - Aborting as abapEnvironmentAssembleConfirm step is not needed")
+		} else {
+			log.Entry().Errorf("Release of at least one package failed/timed out - Continuing anyway to enable abapEnvironmentAssembleConfirm to run")
 		}
 	}
 	addonDescriptor.Repositories = sortingBack(packagesWithReposLocked, packagesWithReposNotLocked)
@@ -113,6 +113,7 @@ func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, utils *aakaas.AakUtil
 					err := pckgWR[i].Package.Release()
 					// if there is an error, release is not yet finished
 					if err != nil {
+						log.Entry().Error(err)
 						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, (*utils).GetPollingInterval())
 						allFinished = false
 					}
