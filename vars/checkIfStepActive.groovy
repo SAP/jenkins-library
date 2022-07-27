@@ -4,8 +4,8 @@ import groovy.transform.Field
 @Field String METADATA_FILE = ""
 
 void call(Map parameters = [:]) {
-    List credentials = [
-        [type: 'usernamePassword', id: 'golangPrivateModulesGitTokenCredentialsId', env: ['PIPER_privateModulesGitUsername', 'PIPER_privateModulesGitToken']]
-    ]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    //List credentials = [
+      //  [type: 'usernamePassword', id: 'golangPrivateModulesGitTokenCredentialsId', env: ['PIPER_privateModulesGitUsername', 'PIPER_privateModulesGitToken']]
+    //]
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
 }

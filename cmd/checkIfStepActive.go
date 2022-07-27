@@ -23,7 +23,7 @@ type checkStepActiveCommandOptions struct {
 	v1Active        bool
 	stageOutputFile string
 	stepOutputFile  string
-	activeStepsMap  map[string]interface{} //no command flags needed probably
+	activeStepsMap  map[string]interface{}
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
