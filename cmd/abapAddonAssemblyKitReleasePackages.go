@@ -48,7 +48,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 		if numberOfReleasedPackages == 0 {
 			return errors.Wrap(err, "Release of all packages failed/timed out - Aborting as abapEnvironmentAssembleConfirm step is not needed")
 		} else {
-			log.Entry().Errorf("Release of at least one package failed/timed out - Continuing anyway to enable abapEnvironmentAssembleConfirm to run")
+			log.Entry().WithError(err).Warn("Release of at least one package failed/timed out - Continuing anyway to enable abapEnvironmentAssembleConfirm to run")
 		}
 	}
 	addonDescriptor.Repositories = sortingBack(packagesWithReposLocked, packagesWithReposNotLocked)
