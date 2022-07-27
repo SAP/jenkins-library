@@ -44,8 +44,8 @@ class NpmExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmExecute() {
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-stretch')
-        assertEquals 'node:lts-stretch', dockerExecuteRule.dockerParams.dockerImage
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-buster')
+        assertEquals 'node:lts-buster', dockerExecuteRule.dockerParams.dockerImage
     }
 
     @Test
@@ -55,9 +55,9 @@ class NpmExecuteTest extends BasePiperTest {
         def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '/path/to/workspace'
-        
+
         nullScript.commonPipelineEnvironment.configuration = [steps:[npmExecute:[
-            dockerImage: expectedImage, 
+            dockerImage: expectedImage,
             dockerOptions: expectedOptions,
             dockerEnvVars: expectedEnvVars,
             dockerWorkspace: expectedWorkspace
@@ -67,16 +67,16 @@ class NpmExecuteTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        
+
         assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
         assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
         assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
         assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
     }
-    
+
     @Test
     void testNpmExecuteWithClosure() {
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-stretch', npmCommand: 'run build') { }
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-buster', npmCommand: 'run build') { }
         assert shellRule.shell.find { c -> c.contains('npm run build') }
     }
 
@@ -85,6 +85,6 @@ class NpmExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod 'fileExists', [String], { false }
         thrown.expect AbortException
         thrown.expectMessage '[npmExecute] package.json is not found.'
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-stretch', npmCommand: 'run build')
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-buster', npmCommand: 'run build')
     }
 }
