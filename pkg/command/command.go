@@ -264,31 +264,31 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	cl := cumuluslog.NewCumulusLogger(c.StepName)
-	go func() {
-		if c.StepName != "" {
+	if c.StepName != "" {
+		go func() {
 			var buf bytes.Buffer
 			br := bufio.NewWriter(&buf)
 			piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
 			br.Flush()
 			cl.Parse(buf)
-		} else {
-			piperutils.CopyData(c.stdout, srcOut)
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if c.StepName != "" {
+			wg.Done()
+		}()
+		go func() {
 			var buf bytes.Buffer
 			bw := bufio.NewWriter(&buf)
 			piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
 			bw.Flush()
 			cl.Parse(buf)
-		} else {
+			wg.Done()
+		}()
+	} else {
+		go func() {
+			piperutils.CopyData(c.stdout, srcOut)
+		}()
+		go func() {
 			piperutils.CopyData(c.stderr, srcErr)
-		}
-		wg.Done()
-	}()
+		}()
+	}
 
 	if c.StepName != "" {
 		dErr := cl.WriteURLsLogToJSON()
