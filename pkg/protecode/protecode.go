@@ -371,27 +371,25 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, vers
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL, version string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL, version string, productID int, replaceBinary bool, applicationName string) *ResultData {
+	log.Entry().Debugf("[DEBUG] ===> DeclareFetchURL started.....")
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
-	var headers = make(map[string][]string)
+	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 
-	if (replaceBinary) && (version != "") {
-		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary && version != empty ")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
-	} else if replaceBinary {
-		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
-	} else if version != "" {
-		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> version != empty ")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
-	} else {
-		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary is false and version == empty")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	if (replaceBinary) {
+		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
 	}
 
-	// log.Entry().Debugf("[DEBUG] ===> Headers for fetch upload: %v", headers)
-	//headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	if version != "" {
+		headers["Version"] = []string{version}
+	}
+
+	if ( len(applicationName) > 0) {
+		headers["Name"] = []string{applicationName}
+	}
+
+	log.Entry().Debugf("[DEBUG] ===> Headers for DeclareFetchURL: %v", headers)
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, statusCode, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)

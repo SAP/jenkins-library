@@ -99,6 +99,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: applicationName
+        type: string
+        description: The Protecode application name, by default the uploaded filename will be use
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: timeoutMinutes
         aliases:
           - name: protecodeTimeoutMinutes
