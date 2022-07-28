@@ -5,21 +5,16 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/cumuluslog"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
-)
-
-const (
-	RelaxedURLRegEx = `(?:\b)((http(s?):\/\/)?(((www\.)?[a-zA-Z0-9\.\-\_]+(\.[a-zA-Z]{2,3})+)|((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(\/[a-zA-Z0-9\_\-\.\/\?\%\#\&\=]*)?)(?:\s|\b)`
 )
 
 // Command defines the information required for executing a call to any executable
@@ -233,8 +228,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	execution := execution{cmd: cmd}
-	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg := errgroup.Group{}
 
 	srcOut := stdout
 	srcErr := stderr
@@ -243,77 +237,57 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		prOut, pwOut := io.Pipe()
 		trOut := io.TeeReader(stdout, pwOut)
 		srcOut = prOut
-
 		prErr, pwErr := io.Pipe()
 		trErr := io.TeeReader(stderr, pwErr)
 		srcErr = prErr
-
-		wg.Add(2)
-
-		go func() {
-			defer wg.Done()
+		wg.Go(func() error {
 			defer pwOut.Close()
 			c.scanLog(trOut)
-		}()
-
-		go func() {
-			defer wg.Done()
+			return nil
+		})
+		wg.Go(func() error {
 			defer pwErr.Close()
 			c.scanLog(trErr)
-		}()
+			return nil
+		})
 	}
-
-	cl := cumuluslog.NewCumulusLogger(c.StepName)
 	if c.StepName != "" {
-		go func() {
+		cl := cumuluslog.NewCumulusLogger(c.StepName)
+		wg.Go(func() error {
 			var buf bytes.Buffer
 			br := bufio.NewWriter(&buf)
 			piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
 			br.Flush()
 			cl.Parse(buf)
-			wg.Done()
-		}()
-		go func() {
+			return nil
+		})
+		wg.Go(func() error {
 			var buf bytes.Buffer
 			bw := bufio.NewWriter(&buf)
 			piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
 			bw.Flush()
 			cl.Parse(buf)
-			wg.Done()
-		}()
-	} else {
-		go func() {
-			piperutils.CopyData(c.stdout, srcOut)
-		}()
-		go func() {
-			piperutils.CopyData(c.stderr, srcErr)
-		}()
-	}
-
-	if c.StepName != "" {
-		dErr := cl.WriteURLsLogToJSON()
-		if dErr != nil {
-			err = fmt.Errorf("can't write log: %w", dErr)
+			return nil
+		})
+		wg.Wait()
+		if c.StepName != "" {
+			dErr := cl.WriteURLsLogToJSON()
+			if dErr != nil {
+				err = fmt.Errorf("can't write log: %w", dErr)
+			}
 		}
 	}
+	wg.Go(func() error {
+		piperutils.CopyData(c.stdout, srcOut)
+		return nil
+	})
+	wg.Go(func() error {
+		piperutils.CopyData(c.stderr, srcErr)
+		return nil
+	})
+	wg.Wait()
 
 	return &execution, nil
-}
-
-func handleURLs(s, file string) {
-	reg := regexp.MustCompile(RelaxedURLRegEx)
-	matches := reg.FindAllStringSubmatch(s, -1)
-	f, err := os.Create(file)
-	if err != nil {
-		log.Entry().WithError(err).Info("failed to create url report file")
-	}
-	defer f.Close()
-	for _, match := range matches {
-		_, err = f.WriteString(match[1] + "\n")
-		if err != nil {
-			log.Entry().WithError(err).Info("failed to write record to url report")
-		}
-	}
 }
 
 func (c *Command) scanLog(in io.Reader) {
