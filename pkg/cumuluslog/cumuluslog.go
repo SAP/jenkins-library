@@ -11,16 +11,16 @@ import (
 )
 
 type (
-	URLsLog struct {
-		Step map[string]Logs `json:"step"`
+	step struct {
+		Step map[string]url `json:"step"`
 	}
-	Logs struct {
-		URLs []string `json:"urls"`
+	url struct {
+		URLs []string `json:"url"`
 	}
 )
 
 const (
-	urlsLogFileName = "urls-log.json"
+	urlsLogFileName = "url-log.json"
 )
 
 type cumulusLogger struct {
@@ -52,11 +52,11 @@ func (cl *cumulusLogger) WriteURLsLogToJSON() error {
 	if err != nil {
 		return fmt.Errorf("can't read from gile: %w", err)
 	}
-	urlsLog := URLsLog{make(map[string]Logs)}
+	urlsLog := step{make(map[string]url)}
 	if len(fileBuf) != 0 {
 		err = json.Unmarshal(fileBuf, &urlsLog)
 		if err != nil {
-			return fmt.Errorf("can't unmarshal Logs: %w", err)
+			return fmt.Errorf("can't unmarshal log: %w", err)
 		}
 		fileBuf = fileBuf[:0]
 	}
@@ -67,7 +67,7 @@ func (cl *cumulusLogger) WriteURLsLogToJSON() error {
 	for _, url := range cl.buf.data {
 		urls = append(urls, string(url))
 	}
-	urlsLog.Step[cl.stepName] = Logs{urls}
+	urlsLog.Step[cl.stepName] = url{urls}
 	encoderBuf := bytes.NewBuffer(fileBuf)
 	jsonEncoder := json.NewEncoder(encoderBuf)
 	jsonEncoder.SetEscapeHTML(false)
@@ -78,7 +78,7 @@ func (cl *cumulusLogger) WriteURLsLogToJSON() error {
 	}
 	_, err = file.WriteAt(encoderBuf.Bytes(), 0)
 	if err != nil {
-		return fmt.Errorf("failed to write Logs: %w", err)
+		return fmt.Errorf("failed to write log: %w", err)
 	}
 	return err
 }
