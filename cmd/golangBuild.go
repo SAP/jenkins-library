@@ -35,6 +35,8 @@ const (
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom.xml"
+	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+	golangciLintVersion         = "v1.46.2"
 )
 
 type golangBuildUtils interface {
@@ -44,8 +46,9 @@ type golangBuildUtils interface {
 	piperutils.FileUtils
 	piperhttp.Uploader
 
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 	getDockerImageValue(stepName string) (string, error)
+	GetExitCode() int
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -57,6 +60,7 @@ type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	piperhttp.Uploader
+	httpClient *piperhttp.Client
 
 	goget.Client
 
@@ -67,7 +71,7 @@ type golangBuildUtilsBundle struct {
 }
 
 func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
+	return g.httpClient.DownloadFile(url, filename, header, cookies)
 }
 
 func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
@@ -94,6 +98,7 @@ func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
 		Client: &goget.ClientImpl{
 			HTTPClient: &httpClient,
 		},
+		httpClient: &httpClient,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -164,6 +169,26 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	if failedTests {
 		log.SetErrorCategory(log.ErrorTest)
 		return fmt.Errorf("some tests failed")
+	}
+
+	if config.RunLint {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+
+		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
+			return err
+		}
+
+		// hardcode those for now
+		lintSettings := map[string]string{
+			"reportStyle":      "checkstyle", // readable by Sonar
+			"reportOutputPath": "golangci-lint-report.xml",
+			"additionalParams": "",
+		}
+
+		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
+			return err
+		}
 	}
 
 	if config.CreateBOM {
@@ -263,7 +288,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		var binaryArtifacts piperenv.Artifacts
 		for _, binary := range binaries {
 
-			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, config.ArtifactVersion, binary)
+			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, artifactVersion, binary)
 
 			separator := "/"
 
@@ -325,7 +350,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
 
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), fmt.Sprintf("%s", repoURL))
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
 		if err != nil {
 			return err
 		}
@@ -403,6 +428,49 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 			return fmt.Errorf("failed to create html coverage file: %w", err)
 		}
 	}
+	return nil
+}
+
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
+	installationScript := "./install.sh"
+	err := utils.DownloadFile(golangciLintURL, installationScript, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to download golangci-lint: %w", err)
+	}
+
+	err = utils.Chmod(installationScript, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = utils.RunExecutable(installationScript, "-b", golangciLintDir, golangciLintVersion)
+	if err != nil {
+		return fmt.Errorf("failed to install golangci-lint: %w", err)
+	}
+
+	return nil
+}
+
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
+	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+	var outputBuffer bytes.Buffer
+	utils.Stdout(&outputBuffer)
+	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	if err != nil && utils.GetExitCode() != 1 {
+		return fmt.Errorf("running golangci-lint failed: %w", err)
+	}
+
+	log.Entry().Infof("lint report: \n" + outputBuffer.String())
+	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
+	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
+	if err != nil {
+		return fmt.Errorf("writing golangci-lint report failed: %w", err)
+	}
+
+	if utils.GetExitCode() == 1 {
+		return fmt.Errorf("golangci-lint found issues, see report above")
+	}
+
 	return nil
 }
 

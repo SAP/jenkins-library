@@ -452,7 +452,6 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 // Unified Agent is the only supported option by WhiteSource going forward:
 // The Unified Agent will be used to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-
 	options := wsScanOptions(config)
 
 	// Execute scan with Unified Agent jar file
@@ -463,7 +462,6 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 }
 
 func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path, influx *whitesourceExecuteScanInflux) (piperutils.Path, error) {
-
 	policyViolationCount := 0
 	for _, project := range scan.ScannedProjects() {
 		alerts, err := sys.GetProjectAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
@@ -491,7 +489,7 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 	}
 
 	jsonViolationReportPath := filepath.Join(ws.ReportsDirectory, "whitesource-ip.json")
-	err = utils.FileWrite(jsonViolationReportPath, violationContent, 0666)
+	err = utils.FileWrite(jsonViolationReportPath, violationContent, 0o666)
 	if err != nil {
 		return piperutils.Path{}, fmt.Errorf("failed to write policy violation report: %w", err)
 	}
@@ -516,12 +514,12 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 	// ignore JSON errors since structure is in our hands
 	jsonReport, _ := ipReport.ToJSON()
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0o777)
 		if err != nil {
 			return policyReport, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0o666); err != nil {
 		return policyReport, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
@@ -555,7 +553,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
+		if _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, influx); err != nil {
 			return reportPaths, err
 		}
 	} else {
@@ -564,7 +562,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		allAlerts := []ws.Alert{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
+			if vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, influx); err != nil {
 				allAlerts = append(allAlerts, alerts...)
 				vulnerabilitiesCount += vulCount
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -607,7 +605,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
+func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
@@ -628,10 +626,13 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	}
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
-		log.SetErrorCategory(log.ErrorCompliance)
-		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
-			"or equal to %.1f detected in project %s",
-			severeVulnerabilities, cvssSeverityLimit, project.Name)
+		if config.FailOnSevereVulnerabilities {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
+		}
+		log.Entry().Infof("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
+		log.Entry().Info("Step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
+		return severeVulnerabilities, alerts, nil
 	}
 	return 0, alerts, nil
 }
@@ -687,7 +688,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	reportPath := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
-	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
+	if err := utils.FileWrite(reportPath, []byte(projectNames), 0o666); err != nil {
 		return errors.Wrapf(err, "failed to write report: %s", reportPath)
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -716,13 +717,13 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 
-	if err := utils.MkdirAll(ws.ReportsDirectory, 0777); err != nil {
+	if err := utils.MkdirAll(ws.ReportsDirectory, 0o777); err != nil {
 		return err
 	}
 
 	fileName := filepath.Join(ws.ReportsDirectory,
 		fmt.Sprintf("vulnerabilities-%s.xlsx", utils.Now().Format(wsReportTimeStampLayout)))
-	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o666)
 	if err != nil {
 		return err
 	}
@@ -781,14 +782,14 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	}
 
 	// Ensure reporting directory exists
-	if err := utils.MkdirAll(ws.ReportsDirectory, 0777); err != nil {
+	if err := utils.MkdirAll(ws.ReportsDirectory, 0o777); err != nil {
 		return errors.Wrapf(err, "failed to create directories: %s", ws.ReportsDirectory)
 	}
 
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", ws.ReportsDirectory,
 		utils.Now().Format(wsReportTimeStampLayout))
-	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output), 0o666); err != nil {
 		return errors.Wrapf(err, "failed to write file: %s", fileName)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
@@ -799,7 +800,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 // persistScannedProjects writes all actually scanned WhiteSource project names as list
 // into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
 func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
-	projectNames := []string{}
+	var projectNames []string
 	if config.ProjectName != "" {
 		projectNames = []string{config.ProjectName + " - " + config.Version}
 	} else {

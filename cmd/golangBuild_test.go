@@ -24,15 +24,20 @@ type golangBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
 
-	returnFileUploadStatus int   // expected to be set upfront
-	returnFileUploadError  error // expected to be set upfront
+	returnFileUploadStatus  int   // expected to be set upfront
+	returnFileUploadError   error // expected to be set upfront
+	returnFileDownloadError error // expected to be set upfront
 
 	clientOptions []piperhttp.ClientOptions // set by mock
 	fileUploads   map[string]string         // set by mock
 }
 
 func (g *golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
+	if g.returnFileDownloadError != nil {
+		return g.returnFileDownloadError
+	}
+	g.AddFile(filename, []byte("content"))
+	return nil
 }
 
 func (g *golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
@@ -250,6 +255,31 @@ go 1.17`
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
+	t.Run("success - RunLint", func(t *testing.T) {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+
+		config := golangBuildOptions{
+			RunLint: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile("go.mod", []byte(modTestFile))
+		telemetry := telemetry.CustomData{}
+		err := runGolangBuild(&config, &telemetry, utils, &cpe)
+		assert.NoError(t, err)
+
+		b, err := utils.FileRead("install.sh")
+		assert.NoError(t, err)
+
+		assert.Equal(t, []byte("content"), b)
+		assert.Equal(t, "./install.sh", utils.Calls[0].Exec)
+		assert.Equal(t, []string{"-b", golangciLintDir, golangciLintVersion}, utils.Calls[0].Params)
+		assert.Equal(t, binaryPath, utils.Calls[1].Exec)
+		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[1].Params)
+
+	})
+
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests: true,
@@ -422,6 +452,39 @@ go 1.17`
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
+	})
+
+	t.Run("failure - RunLint: retrieveGolangciLint failed", func(t *testing.T) {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+
+		config := golangBuildOptions{
+			RunLint: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile("go.mod", []byte(modTestFile))
+		utils.ShouldFailOnCommand = map[string]error{
+			fmt.Sprintf("./install.sh -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("installation err"),
+		}
+		telemetry := telemetry.CustomData{}
+		err := runGolangBuild(&config, &telemetry, utils, &cpe)
+		assert.EqualError(t, err, "failed to install golangci-lint: installation err")
+	})
+
+	t.Run("failure - RunLint: runGolangciLint failed", func(t *testing.T) {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+
+		config := golangBuildOptions{
+			RunLint: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile("go.mod", []byte(modTestFile))
+		utils.ShouldFailOnCommand = map[string]error{fmt.Sprintf("%s run --out-format checkstyle", binaryPath): fmt.Errorf("err")}
+		telemetry := telemetry.CustomData{}
+		err := runGolangBuild(&config, &telemetry, utils, &cpe)
+		assert.EqualError(t, err, "running golangci-lint failed: err")
 	})
 }
 
@@ -928,6 +991,133 @@ go 1.17`
 				assert.Equal(t, tt.expect.repos, repos)
 			} else {
 				assert.EqualError(t, err, tt.expect.errorMessage)
+			}
+		})
+	}
+}
+
+func TestRunGolangciLint(t *testing.T) {
+	t.Parallel()
+
+	goPath := os.Getenv("GOPATH")
+	golangciLintDir := filepath.Join(goPath, "bin")
+	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+	lintSettings := map[string]string{
+		"reportStyle":      "checkstyle",
+		"reportOutputPath": "golangci-lint-report.xml",
+		"additionalParams": "",
+	}
+
+	tt := []struct {
+		name                string
+		shouldFailOnCommand map[string]error
+		fileWriteError      error
+		exitCode            int
+		expectedCommand     []string
+		expectedErr         error
+	}{
+		{
+			name:                "success",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - failed to run golangci-lint",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
+		},
+		{
+			name:                "failure - failed to write golangci-lint report",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
+		},
+		{
+			name:                "failure - failed with ExitCode == 1",
+			shouldFailOnCommand: map[string]error{},
+			exitCode:            1,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
+		},
+	}
+
+	for i, test := range tt {
+		i, test := i, test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			utils := newGolangBuildTestsUtils()
+			utils.ShouldFailOnCommand = test.shouldFailOnCommand
+			utils.FileWriteError = test.fileWriteError
+			utils.ExitCode = test.exitCode
+			err := runGolangciLint(utils, golangciLintDir, lintSettings)
+
+			if test.expectedErr == nil {
+				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
+				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
+			} else {
+				assert.EqualError(t, err, test.expectedErr.Error())
+			}
+		})
+	}
+}
+
+func TestRetrieveGolangciLint(t *testing.T) {
+	t.Parallel()
+
+	goPath := os.Getenv("GOPATH")
+	golangciLintDir := filepath.Join(goPath, "bin")
+
+	tt := []struct {
+		name                string
+		shouldFailOnCommand map[string]error
+		downloadErr         error
+		expectedCommand     []string
+		expectedErr         error
+	}{
+		{
+			name:                "success",
+			shouldFailOnCommand: map[string]error{},
+			downloadErr:         nil,
+			expectedCommand:     []string{"./install.sh", "-b", golangciLintDir, golangciLintVersion},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - failed to download golangci-lint",
+			shouldFailOnCommand: map[string]error{},
+			downloadErr:         fmt.Errorf("download err"),
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("failed to download golangci-lint: download err"),
+		},
+		{
+			name:                "failure - failed to install golangci-lint with sh error",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("./install.sh -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("installation err")},
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("failed to install golangci-lint: installation err"),
+		},
+	}
+
+	for i, test := range tt {
+		i, test := i, test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			utils := newGolangBuildTestsUtils()
+			utils.ShouldFailOnCommand = test.shouldFailOnCommand
+			utils.returnFileDownloadError = test.downloadErr
+			err := retrieveGolangciLint(utils, golangciLintDir)
+
+			if test.expectedErr == nil {
+				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
+				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
+			} else {
+				assert.EqualError(t, err, test.expectedErr.Error())
 			}
 		})
 	}

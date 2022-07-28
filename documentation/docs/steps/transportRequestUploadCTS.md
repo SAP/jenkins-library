@@ -36,7 +36,7 @@ To create an own Docker image with the [SAP Fiori tools](https://help.sap.com/vi
 1. Push your image to your private [Docker Hub registry](https://hub.docker.com/):
 
     ```/bin/bash
-    docker push my/fiori-node  
+    docker push my/fiori-node
     ```
 
 1. Add the following content to your `config.yml` file:
@@ -137,6 +137,18 @@ This step extracts the ID from the commit messages of your project repository an
 transportRequestReqIDFromGit( script: this )
 transportRequestUploadCTS( script: this, ... )
 ```
+
+## General Purpose Pipeline Release Stage
+
+The step can also be configured via General Purpose Pipeline in Release stage using the config.yml as follows:
+
+```groovy
+stages:
+  Release:
+    transportRequestUploadCTS: true
+```
+
+This will initialize the step within the Release stage of the pipeline and will upload the desired application (SAPUI5/OPENUI5) to the SAPUI5 ABAP repository.
 
 ## ${docGenParameters}
 
