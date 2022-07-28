@@ -95,8 +95,9 @@ func TestReleasePackagesStepMix(t *testing.T) {
 	config.Password = "dummyPassword"
 	t.Run("step error - timeout mix", func(t *testing.T) {
 		//arrange
-		bundle.SetBodyList([]string{"time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", "time out", responseRelease, responseRelease})
+		bundle.SetBodyList([]string{responseRelease, responseRelease}) //Head + Post
 		bundle.SetMaxRuntime(500 * time.Microsecond)
+		bundle.SetErrorInsteadOfDumpToTrue()
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{

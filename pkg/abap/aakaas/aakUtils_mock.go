@@ -53,6 +53,10 @@ func (bundle *AakBundleMock) SetBody(body string) {
 	bundle.ClientMock.BodyList = []string{}
 }
 
+func (bundle *AakBundleMock) SetErrorInsteadOfDumpToTrue() {
+	bundle.ClientMock.ErrorInsteadOfDump = true
+}
+
 func (bundle *AakBundleMock) SetError(errorText string) {
 	bundle.ClientMock.Error = errors.New(errorText)
 }
