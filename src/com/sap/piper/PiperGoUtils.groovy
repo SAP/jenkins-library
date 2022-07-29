@@ -20,6 +20,11 @@ class PiperGoUtils implements Serializable {
     }
 
     void unstashPiperBin() {
+        // Check if the piper binary is already present
+        if (steps.sh(script: "[ -x ./${piperExecutable} ]", returnStatus: true) == 0) {
+            steps.echo "Found ${piperExecutable} binary in the workspace - skipping unstash"
+            return
+        }
 
         if (utils.unstash('piper-bin').size() > 0) return
 
