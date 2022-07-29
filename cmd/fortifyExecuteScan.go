@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -123,6 +124,14 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+	_, err := exec.LookPath("fortifyupdate")
+	if err != nil {
+		return reports, fmt.Errorf("ERROR , command not found: fortifyupdate")
+	}
+	_, err = exec.LookPath("sourceanalyzer")
+	if err != nil {
+		return reports, fmt.Errorf("ERROR , command not found: sourceanalyzer")
+	}
 
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
