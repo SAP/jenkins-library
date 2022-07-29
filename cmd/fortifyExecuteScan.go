@@ -18,7 +18,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -59,13 +59,16 @@ type fortifyUtils interface {
 
 	SetDir(d string)
 	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
-	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
+	GetIssueService() *github.IssuesService
+	GetSearchService() *github.SearchService
 }
 
 type fortifyUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
+	Issues *github.IssuesService
+	Search *github.SearchService
 }
 
 func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
@@ -76,27 +79,44 @@ func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.Creat
 	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
-func newFortifyUtilsBundle() fortifyUtils {
+func (f *fortifyUtilsBundle) GetIssueService() *github.IssuesService {
+	return f.Issues
+}
+
+func (f *fortifyUtilsBundle) GetSearchService() *github.SearchService {
+	return f.Search
+}
+
+func newFortifyUtilsBundle(client *github.Client) fortifyUtils {
 	utils := fortifyUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
+		Issues:  client.Issues,
+		Search:  client.Search,
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
 }
 
-const checkString = "<---CHECK FORTIFY---"
-const classpathFileName = "fortify-execute-scan-cp.txt"
+const (
+	checkString       = "<---CHECK FORTIFY---"
+	classpathFileName = "fortify-execute-scan-cp.txt"
+)
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
+	// TODO provide parameter for trusted certs
+	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
+	}
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
-	utils := newFortifyUtilsBundle()
+	utils := newFortifyUtilsBundle(client)
 
 	influx.step_data.fields.fortify = false
-	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
+	reports, err := runFortifyScan(ctx, config, sys, utils, telemetryData, influx, auditStatus)
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
@@ -120,7 +140,7 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 	return artifact, nil
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
+func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 
@@ -207,7 +227,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	if config.VerifyOnly {
 		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
+		err, paths := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 		reports = append(reports, paths...)
 		return reports, err
 	}
@@ -282,7 +302,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	}
 
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
+	err, paths := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
 }
@@ -293,18 +313,18 @@ func classifyErrorOnLookup(err error) {
 	}
 }
 
-func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
+func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0700)
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700)
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
 		if err != nil {
 			return err, reports
 		}
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700)
 	}
 
 	// Perform audit compliance checks
@@ -343,9 +363,15 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 	log.Entry().Debugf("%v, %v, %v, %v, %v, %v", config.CreateResultIssue, numberOfViolations > 0, len(config.GithubToken) > 0, len(config.GithubAPIURL) > 0, len(config.Owner) > 0, len(config.Repository) > 0)
 	if config.CreateResultIssue && numberOfViolations > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debug("Creating/updating GitHub issue with scan results")
-		err = reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, utils)
-		if err != nil {
-			return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
+		gh := reporting.GitHub{
+			Owner:         &config.Owner,
+			Repository:    &config.Repository,
+			Assignees:     &config.Assignees,
+			IssueService:  utils.GetIssueService(),
+			SearchService: utils.GetSearchService(),
+		}
+		if err := gh.UploadSingleReport(ctx, scanReport); err != nil {
+			return fmt.Errorf("failed to upload scan results into GitHub: %w", err), reports
 		}
 	}
 
@@ -743,7 +769,8 @@ func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string)
 		"-DincludeScope=compile",
 		"-DskipTests",
 		"-Dmaven.javadoc.skip=true",
-		"--fail-at-end"}
+		"--fail-at-end",
+	}
 
 	if len(config.BuildDescriptorExcludeList) > 0 {
 		// From the documentation, these are file paths to a module's pom.xml.
@@ -968,7 +995,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyUti
 }
 
 func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildID, buildLabel, buildProject string) error {
-	var scanOptions = []string{
+	scanOptions := []string{
 		"-verbose",
 		"-64",
 		"-b",
@@ -1001,7 +1028,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
-	//TODO provide parameter for trusted certs
+	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)

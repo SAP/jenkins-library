@@ -10,6 +10,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/pkg/errors"
 )
 
@@ -57,7 +58,10 @@ type Alert struct {
 
 // Title returns the issue title representation of the contents
 func (a Alert) Title() string {
-	return fmt.Sprintf("%v/%v/%v/%v", a.Type, consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Vulnerability.Name, a.Library.ArtifactID)
+	if a.Type == "SECURITY_VULNERABILITY" {
+		return fmt.Sprintf("Security Vulnerability %v %v %v", consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score), a.Vulnerability.Name, a.Library.ArtifactID)
+	}
+	return fmt.Sprintf("%v %v %v ", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
 }
 
 func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
@@ -92,23 +96,34 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 	if score == 0 {
 		score = a.Vulnerability.Score
 	}
-	return []byte(fmt.Sprintf(
-		`**Vulnerability %v**
-| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
-`,
-		a.Vulnerability.Name,
-		a.Vulnerability.Severity,
-		score,
-		score,
-		a.Library.ArtifactID,
-		a.Library.Version,
-		a.Vulnerability.Description,
-		a.Vulnerability.TopFix.FixResolution,
-		a.Vulnerability.Name,
-		a.Vulnerability.URL,
-	)), nil
+
+	vul := reporting.VulnerabilityReport{
+		Score:      score,
+		Severity:   a.Vulnerability.Severity,
+		ArtifactID: a.Vulnerability.Name,
+	}
+
+	return vul.ToMarkdown()
+
+	/*
+			return []byte(fmt.Sprintf(
+				`**Vulnerability %v**
+		| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
+		| --- | --- | --- | --- | --- | --- | --- | --- |
+		|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
+		`,
+				a.Vulnerability.Name,
+				a.Vulnerability.Severity,
+				score,
+				score,
+				a.Library.ArtifactID,
+				a.Library.Version,
+				a.Vulnerability.Description,
+				a.Vulnerability.TopFix.FixResolution,
+				a.Vulnerability.Name,
+				a.Vulnerability.URL,
+			)), nil
+	*/
 }
 
 // ToTxt returns the textual representation of the contents

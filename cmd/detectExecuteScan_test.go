@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +26,14 @@ type detectTestUtilsBundle struct {
 	*mock.ShellMockRunner
 	*mock.FilesMock
 	customEnv []string
+}
+
+func (d *detectTestUtilsBundle) GetIssueService() *github.IssuesService {
+	return nil
+}
+
+func (d *detectTestUtilsBundle) GetSearchService() *github.SearchService {
+	return nil
 }
 
 type httpMockClient struct {
@@ -164,7 +174,6 @@ func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
 }
 
 func (c *detectTestUtilsBundle) SetOptions(piperhttp.ClientOptions) {
-
 }
 
 func (c *detectTestUtilsBundle) GetOsEnv() []string {
@@ -172,7 +181,6 @@ func (c *detectTestUtilsBundle) GetOsEnv() []string {
 }
 
 func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-
 	if c.expectedError != nil {
 		return c.expectedError
 	}
@@ -200,9 +208,10 @@ func TestRunDetect(t *testing.T) {
 	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect7.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -215,12 +224,13 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("success case detect 6", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		options := detectExecuteScanOptions{
 			CustomEnvironmentVariables: []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"},
 		}
-		err := runDetect(options, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, options, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -233,10 +243,11 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("success case detect 6 from OS env", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		utilsMock.customEnv = []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"}
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -249,11 +260,12 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
 		assert.Equal(t, utilsMock.ExitCode, 3)
 		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -261,10 +273,11 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("maven parameters", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.CurrentDir = "root_folder"
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{
+		err := runDetect(ctx, detectExecuteScanOptions{
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
@@ -597,7 +610,6 @@ func TestAddDetectArgs(t *testing.T) {
 
 // Testing exit code mapping method
 func TestExitCodeMapping(t *testing.T) {
-
 	cases := []struct {
 		exitCode int
 		expected string
@@ -617,10 +629,11 @@ func TestExitCodeMapping(t *testing.T) {
 func TestPostScanChecksAndReporting(t *testing.T) {
 	t.Parallel()
 	t.Run("Reporting after scan", func(t *testing.T) {
+		ctx := context.Background()
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		utils := newDetectTestUtilsBundle()
 		sys := newBlackduckMockSystem(config)
-		err := postScanChecksAndReporting(config, &detectExecuteScanInflux{}, utils, &sys)
+		err := postScanChecksAndReporting(ctx, config, &detectExecuteScanInflux{}, utils, &sys)
 
 		assert.EqualError(t, err, "License Policy Violations found")
 		content, err := utils.FileRead("blackduck-ip.json")

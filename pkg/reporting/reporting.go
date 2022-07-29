@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // IssueDetail represents any content that can be transformed into the body of a GitHub issue
@@ -15,6 +17,85 @@ type IssueDetail interface {
 	Title() string
 	ToMarkdown() ([]byte, error)
 	ToTxt() string
+}
+
+// VulnerabilityReport represents metadata for a report on a vulnerability
+type VulnerabilityReport struct {
+	ArtifactID        string
+	Branch            string
+	CommitID          string
+	Description       string
+	DirectDependency  bool
+	Footer            string
+	Group             string
+	PipelineName      string
+	PipelineLink      string
+	PublishDate       time.Time
+	Resolution        string
+	Score             float64
+	Severity          string
+	Version           string
+	VulnerabilityLink string
+	VulnerabilityName string
+}
+
+const vulnerabilityMdTemplate string = `# {{title .Severity }} ({{ .Score }}) Vulnerability {{ .VulnerabilityName }} - {{ .ArtifactID }}
+
+**Vulnerability link:** [{{ .VulnerabilityLink }}]({{ .VulnerabilityLink }})
+
+## Fix
+
+**{{ .Resolution }}**
+
+## Context
+
+{{if .PipelineLink -}}
+### Pipeline
+
+Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
+{{- end}}
+
+### Detected in
+
+{{if .Branch}}**Branch:** {{ .Branch }}{{- end}}
+{{if .CommitID}}**CommitId:** {{ .CommitID }}{{- end}}
+{{if .DirectDependency}}**Dependency:** {{if (eq .DirectDependency true)}}direct{{ else }}indirect{{ end }}{{- end}}
+{{if .ArtifactID}}**ArtifactId:** {{ .ArtifactID }}{{- end}}
+{{if .Group}}**Group:** {{ .Group }}{{- end}}
+{{if .Version}}**Version:** {{ .Version }}{{- end}}
+{{if .PublishDate}}**Publishing date:** {{date .PublishDate }}{{- end}}
+
+## Description
+
+{{ .Description }}
+
+---
+
+{{.Footer}}
+`
+
+func (v *VulnerabilityReport) ToMarkdown() ([]byte, error) {
+	funcMap := template.FuncMap{
+		"date": func(t time.Time) string {
+			return t.Format("2006-01-02")
+		},
+		"title": func(s string) string {
+			caser := cases.Title(language.AmericanEnglish)
+			return caser.String(s)
+		},
+	}
+	md := []byte{}
+	tmpl, err := template.New("report").Funcs(funcMap).Parse(vulnerabilityMdTemplate)
+	if err != nil {
+		return md, fmt.Errorf("failed to create  markdown issue template: %w", err)
+	}
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, v)
+	if err != nil {
+		return md, fmt.Errorf("failed to execute markdown issue template: %w", err)
+	}
+	md = buf.Bytes()
+	return md, nil
 }
 
 // ScanReport defines the elements of a scan report used by various scan steps
@@ -92,7 +173,7 @@ func (s *ScanReport) AddSubHeader(header, details string) {
 	s.Subheaders = append(s.Subheaders, Subheader{Description: header, Details: details})
 }
 
-//StepReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
+// StepReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
 const StepReportDirectory = ".pipeline/stepReports"
 
 // ToJSON returns the report in JSON format
