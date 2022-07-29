@@ -25,3 +25,9 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+cyclonedxBom {
+    outputName = "bom-gradle"
+	outputFormat = "xml"
+	schemaVersion = "1.2"
+}
