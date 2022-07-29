@@ -62,7 +62,7 @@ class PiperGoUtilsTest extends BasePiperTest {
             return []
         })
 
-        shellCallRule.setReturnStatus('[ -x ./piper ]', 1)
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
 
         piperGoUtils.unstashPiperBin()
@@ -83,7 +83,7 @@ class PiperGoUtilsTest extends BasePiperTest {
             return []
         })
 
-        shellCallRule.setReturnStatus('[ -x ./piper ]', 1)
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/testTag/piper\'', '200')
 
         piperGoUtils.unstashPiperBin()
@@ -99,7 +99,7 @@ class PiperGoUtilsTest extends BasePiperTest {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        shellCallRule.setReturnStatus('[ -x ./piper ]', 1)
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('./piper version', "1.2.3")
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
@@ -123,7 +123,7 @@ class PiperGoUtilsTest extends BasePiperTest {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        shellCallRule.setReturnStatus('[ -x ./piper ]', 1)
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
 
@@ -140,7 +140,7 @@ class PiperGoUtilsTest extends BasePiperTest {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        shellCallRule.setReturnStatus('[ -x ./piper ]', 1)
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
 
