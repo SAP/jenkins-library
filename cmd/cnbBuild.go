@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -354,13 +353,6 @@ func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor p
 }
 
 func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
-	tempdir, err := ioutil.TempDir("", "cnbBuild-")
-	if err != nil {
-		return errors.Wrap(err, "failed to create tempdir")
-	}
-	defer os.RemoveAll(tempdir)
-	utils.AppendEnv([]string{fmt.Sprintf("TMPDIR=%s", tempdir)})
-
 	stepName := "cnbBuild"
 	cnbTelemetry := &cnbBuildTelemetry{
 		Version: 3,
@@ -416,6 +408,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
 	}
+
+	tempdir, err := os.MkdirTemp("", "cnbBuild-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(tempdir)
+	if config.BuildEnvVars == nil {
+		config.BuildEnvVars = map[string]interface{}{}
+	}
+	config.BuildEnvVars["TMPDIR"] = tempdir
 
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, cnbTelemetry.dockerImage, config)
