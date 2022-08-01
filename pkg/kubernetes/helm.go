@@ -89,44 +89,51 @@ func (h *HelmExecute) runHelmInit() error {
 
 // runHelmAdd is used to add a chart repository
 func (h *HelmExecute) runHelmAdd() error {
-	helmParams := []string{
-		"repo",
-		"add",
-	}
 
 	repoNames := strings.Split(h.config.TargetRepositoryName, ",")
 	repoUrls := strings.Split(h.config.TargetRepositoryURL, ",")
 	repoUsers := strings.Split(h.config.TargetRepositoryUser, ",")
 	repoPasswords := strings.Split(h.config.TargetRepositoryPassword, ",")
 
-	fmt.Printf("%s, %s, %s, %s", repoNames, repoUrls, repoUsers, repoPasswords)
+	fmt.Printf("[MH] : names: %s, urls: %s, user: %s, passwd: %s\n", repoNames, repoUrls, repoUsers, repoPasswords)
 
-	// the slices should have the same number of entries
+	// the slices should have the same number of entries TODO: we need to check that
+	// that is only POC: should be done with some kind of map for each repo entry.
 
-	for index, name := range repoNames {
-		fmt.Printf("%d/%s", index, name)
-	}
+	for index, _ := range repoNames {
+		repoName := repoNames[index]
+		repoUrl := repoUrls[index]
+		repoUser := repoUsers[index]
+		repoPassword := repoPasswords[index]
+		fmt.Printf("[MH : ] index: %d : repo: %s, url: %s, user: %s, password: %s\n", index, repoName, repoUrl, repoUser, repoPassword)
 
-	if len(h.config.TargetRepositoryName) == 0 {
-		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
-	}
-	if len(h.config.TargetRepositoryURL) == 0 {
-		return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
-	}
-	if len(h.config.TargetRepositoryUser) != 0 {
-		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
-	}
-	if len(h.config.TargetRepositoryPassword) != 0 {
-		helmParams = append(helmParams, "--password", h.config.TargetRepositoryPassword)
-	}
-	helmParams = append(helmParams, h.config.TargetRepositoryName)
-	helmParams = append(helmParams, h.config.TargetRepositoryURL)
-	if h.verbose {
-		helmParams = append(helmParams, "--debug")
-	}
+		helmParams := []string{
+			"repo",
+			"add",
+		}
 
-	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm add call failed")
+		if len(repoName) == 0 {
+			return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
+		}
+		if len(repoUrl) == 0 {
+			return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
+		}
+		if len(repoUser) != 0 {
+			helmParams = append(helmParams, "--username", repoUser)
+		}
+		if len(repoPassword) != 0 {
+			helmParams = append(helmParams, "--password", repoPassword)
+		}
+		helmParams = append(helmParams, repoName)
+		helmParams = append(helmParams, repoUrl)
+		if h.verbose {
+			helmParams = append(helmParams, "--debug")
+		}
+
+		fmt.Printf("[MH]: helm call: %s", strings.Join(helmParams, ","))
+		if err := h.runHelmCommand(helmParams); err != nil {
+			log.Entry().WithError(err).Fatal("Helm add call failed")
+		}
 	}
 
 	return nil

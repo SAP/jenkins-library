@@ -65,13 +65,14 @@ func TestRunHelmAdd(t *testing.T) {
 	}{
 		{
 			config: HelmExecuteOptions{
-				TargetRepositoryURL:      "https://charts.helm.sh/stable",
-				TargetRepositoryName:     "stable",
-				TargetRepositoryUser:     "userAccount",
-				TargetRepositoryPassword: "pwdAccount",
+				TargetRepositoryURL:      "https://charts.helm.sh/stable,https://charts.helm.sh/stable2",
+				TargetRepositoryName:     "stable,stable2",
+				TargetRepositoryUser:     "userAccount,userAccount2",
+				TargetRepositoryPassword: "pwdAccount,pwdAccount2",
 			},
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "--username", "userAccount", "--password", "pwdAccount", "stable", "https://charts.helm.sh/stable"}},
+				{Exec: "helm", Params: []string{"repo", "add", "--username", "userAccount2", "--password", "pwdAccount2", "stable2", "https://charts.helm.sh/stable2"}},
 			},
 			generalVerbose: false,
 			expectedError:  nil,
@@ -222,17 +223,20 @@ func TestRunHelmInstall(t *testing.T) {
 	}{
 		{
 			config: HelmExecuteOptions{
-				ChartPath:             "",
-				DeploymentName:        "testPackage",
-				Namespace:             "test-namespace",
-				HelmDeployWaitSeconds: 525,
-				TargetRepositoryURL:   "https://charts.helm.sh/stable",
-				TargetRepositoryName:  "test",
+				ChartPath:                "",
+				DeploymentName:           "testPackage",
+				Namespace:                "test-namespace",
+				HelmDeployWaitSeconds:    525,
+				TargetRepositoryURL:      "https://charts.helm.sh/stable,https://charts.helm.sh/stable2",
+				TargetRepositoryName:     "test,test2",
+				TargetRepositoryUser:     ",",
+				TargetRepositoryPassword: ",",
 			},
 			generalVerbose: false,
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "test", "https://charts.helm.sh/stable"}},
-				{Exec: "helm", Params: []string{"install", "testPackage", "test", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
+				{Exec: "helm", Params: []string{"repo", "add", "test2", "https://charts.helm.sh/stable2"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", "test,test2", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
 			},
 		},
 		{
@@ -284,6 +288,10 @@ func TestRunHelmInstall(t *testing.T) {
 			assert.Equal(t, testCase.expectedExecCalls, utils.Calls)
 		})
 	}
+}
+
+func TestMH(t *testing.T) {
+	fmt.Printf("Hello Marcus")
 }
 
 func TestRunHelmUninstall(t *testing.T) {
