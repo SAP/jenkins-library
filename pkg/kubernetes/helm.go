@@ -104,35 +104,43 @@ func (h *HelmExecute) runHelmAdd() error {
 		repoUser := repoUsers[index]
 		repoPassword := repoPasswords[index]
 
-		helmParams := []string{
-			"repo",
-			"add",
-		}
-
-		if len(repoName) == 0 {
-			return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
-		}
-		if len(repoUrl) == 0 {
-			return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
-		}
-		if len(repoUser) != 0 {
-			helmParams = append(helmParams, "--username", repoUser)
-		}
-		if len(repoPassword) != 0 {
-			helmParams = append(helmParams, "--password", repoPassword)
-		}
-		helmParams = append(helmParams, repoName)
-		helmParams = append(helmParams, repoUrl)
-		if h.verbose {
-			helmParams = append(helmParams, "--debug")
-		}
-
-		if err := h.runHelmCommand(helmParams); err != nil {
-			log.Entry().WithError(err).Fatal("Helm add call failed")
-		}
+		// TODO: revisit: error is swallowed. Was like that before (... but should not be probably)
+		h.runHelmAddSingleRepo(repoName, repoUrl, repoUser, repoPassword)
 	}
 
 	return nil
+}
+
+func (h *HelmExecute) runHelmAddSingleRepo(repoName, repoUrl, repoUser, repoPassword string) error {
+
+	helmParams := []string{
+		"repo",
+		"add",
+	}
+
+	if len(repoName) == 0 {
+		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
+	}
+	if len(repoUrl) == 0 {
+		return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
+	}
+	if len(repoUser) != 0 {
+		helmParams = append(helmParams, "--username", repoUser)
+	}
+	if len(repoPassword) != 0 {
+		helmParams = append(helmParams, "--password", repoPassword)
+	}
+	helmParams = append(helmParams, repoName)
+	helmParams = append(helmParams, repoUrl)
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
+	}
+
+	var err error
+	if err = h.runHelmCommand(helmParams); err != nil {
+		log.Entry().WithError(err).Fatal("Helm add call failed")
+	}
+	return err
 }
 
 // RunHelmUpgrade is used to upgrade a release
@@ -227,47 +235,69 @@ func (h *HelmExecute) RunHelmInstall() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	helmParams := []string{
-		"install",
-		h.config.DeploymentName,
-	}
+	deploymentNames := strings.Split(h.config.DeploymentName, ",")
+	targetRepoNames := strings.Split(h.config.TargetRepositoryName, ",")
+	targetRepoUrls := strings.Split(h.config.TargetRepositoryURL, ",")
+	targetRepoUsers := strings.Split(h.config.TargetRepositoryUser, ",")
+	targetRepoPasswords := strings.Split(h.config.TargetRepositoryPassword, ",")
+	chartPaths := strings.Split(h.config.ChartPath, ",")
+	namespaces := strings.Split(h.config.Namespace, ",")
 
-	if len(h.config.ChartPath) == 0 {
-		if err := h.runHelmAdd(); err != nil {
-			return fmt.Errorf("failed to add a chart repository: %v", err)
+	// the slices should have the same number of entries TODO: we need to check that
+	// that is only POC: should be done with some kind of map for each repo entry.
+
+	for index, _ := range targetRepoNames {
+		deploymentName := deploymentNames[index]
+		targetRepoName := targetRepoNames[index]
+		targetRepoUrl := targetRepoUrls[index]
+		targetRepoUser := targetRepoUsers[index]
+		targetRepoPassword := targetRepoPasswords[index]
+		chartPath := chartPaths[index]
+		namespace := namespaces[index]
+
+		// TODO: revisit: error is swallowed. Was like that before (... but should not be probably)
+
+		helmParams := []string{
+			"install",
+			deploymentName,
 		}
-		helmParams = append(helmParams, h.config.TargetRepositoryName)
-	} else {
-		helmParams = append(helmParams, h.config.ChartPath)
-	}
-	helmParams = append(helmParams, "--namespace", h.config.Namespace)
-	helmParams = append(helmParams, "--create-namespace")
-	if !h.config.KeepFailedDeployments {
-		helmParams = append(helmParams, "--atomic")
-	}
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
-	for _, v := range h.config.HelmValues {
-		helmParams = append(helmParams, "--values", v)
-	}
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
-	}
-	if h.verbose {
-		helmParams = append(helmParams, "--debug")
-	}
 
-	if h.verbose {
-		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
-		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm install --dry-run call failed")
+		if len(chartPath) == 0 {
+			if err := h.runHelmAddSingleRepo(targetRepoName, targetRepoUrl, targetRepoUser, targetRepoPassword); err != nil {
+				return fmt.Errorf("failed to add a chart repository: %v", err)
+			}
+			helmParams = append(helmParams, targetRepoName)
+		} else {
+			helmParams = append(helmParams, chartPath)
+		}
+		helmParams = append(helmParams, "--namespace", namespace)
+		helmParams = append(helmParams, "--create-namespace")
+		if !h.config.KeepFailedDeployments {
+			helmParams = append(helmParams, "--atomic")
+		}
+		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
+		for _, v := range h.config.HelmValues {
+			helmParams = append(helmParams, "--values", v)
+		}
+		if len(h.config.AdditionalParameters) > 0 {
+			helmParams = append(helmParams, h.config.AdditionalParameters...)
+		}
+		if h.verbose {
+			helmParams = append(helmParams, "--debug")
+		}
+
+		if h.verbose {
+			helmParamsDryRun := helmParams
+			helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+			if err := h.runHelmCommand(helmParamsDryRun); err != nil {
+				log.Entry().WithError(err).Error("Helm install --dry-run call failed")
+			}
+		}
+
+		if err := h.runHelmCommand(helmParams); err != nil {
+			log.Entry().WithError(err).Fatal("Helm install call failed")
 		}
 	}
-
-	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm install call failed")
-	}
-
 	return nil
 }
 

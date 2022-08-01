@@ -223,9 +223,9 @@ func TestRunHelmInstall(t *testing.T) {
 	}{
 		{
 			config: HelmExecuteOptions{
-				ChartPath:                "",
-				DeploymentName:           "testPackage",
-				Namespace:                "test-namespace",
+				ChartPath:                ",",
+				DeploymentName:           "testPackage,testPackage2",
+				Namespace:                "test-namespace,test-namespace2",
 				HelmDeployWaitSeconds:    525,
 				TargetRepositoryURL:      "https://charts.helm.sh/stable,https://charts.helm.sh/stable2",
 				TargetRepositoryName:     "test,test2",
@@ -235,10 +235,12 @@ func TestRunHelmInstall(t *testing.T) {
 			generalVerbose: false,
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "test", "https://charts.helm.sh/stable"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", "test", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
 				{Exec: "helm", Params: []string{"repo", "add", "test2", "https://charts.helm.sh/stable2"}},
-				{Exec: "helm", Params: []string{"install", "testPackage", "test,test2", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
+				{Exec: "helm", Params: []string{"install", "testPackage2", "test2", "--namespace", "test-namespace2", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
 			},
 		},
+
 		{
 			config: HelmExecuteOptions{
 				ChartPath:             ".",
