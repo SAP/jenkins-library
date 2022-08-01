@@ -70,12 +70,12 @@ func mockExecinPath(exec string) (string, error) {
 	if exec == "fortifyupdate" || exec == "sourceanalyzer" {
 		return "/fortifyupdate", nil
 	}
-	return "", errors.New("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+	return "", errors.New("ERROR , command not found. Please configure a supported docker image or install Fortify SCA on the system.")
 }
 
 func failMockExecinPath(exec string) (string, error) {
 	if exec == "fortifyupdate" || exec == "sourceanalyzer" {
-		return "", errors.New("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+		return "", errors.New("ERROR , command not found. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 	return "/fortifyupdate", nil
 }

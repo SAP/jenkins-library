@@ -126,13 +126,12 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	_, err := execInPath("fortifyupdate")
-	if err != nil {
-		return reports, fmt.Errorf("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
-	}
-	_, err = execInPath("sourceanalyzer")
-	if err != nil {
-		return reports, fmt.Errorf("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executable_list {
+		_, err := execInPath(exec)
+		if err != nil {
+			return reports, fmt.Errorf("ERROR , command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+		}
 	}
 
 	if config.BuildTool == "maven" && config.InstallArtifacts {
