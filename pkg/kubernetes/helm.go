@@ -93,6 +93,20 @@ func (h *HelmExecute) runHelmAdd() error {
 		"repo",
 		"add",
 	}
+
+	repoNames := strings.Split(h.config.TargetRepositoryName, ",")
+	repoUrls := strings.Split(h.config.TargetRepositoryURL, ",")
+	repoUsers := strings.Split(h.config.TargetRepositoryUser, ",")
+	repoPasswords := strings.Split(h.config.TargetRepositoryPassword, ",")
+
+	fmt.Printf("%s, %s, %s, %s", repoNames, repoUrls, repoUsers, repoPasswords)
+
+	// the slices should have the same number of entries
+
+	for index, name := range repoNames {
+		fmt.Printf("%d/%s", index, name)
+	}
+
 	if len(h.config.TargetRepositoryName) == 0 {
 		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
 	}
