@@ -241,7 +241,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	buildID := uuid.New().String()
 	utils.SetDir(config.ModulePath)
 	if err := os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm); err != nil {
-		return reports, err
+		log.Entry().WithError(err).Error("failed to create directory")
 	}
 
 	if config.UpdateRulePack {
