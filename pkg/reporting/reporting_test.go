@@ -30,7 +30,7 @@ func TestVulToMarkdown(t *testing.T) {
 			Group:             "the.group",
 			PipelineName:      "thePipelineName",
 			PipelineLink:      "https://the.link.to.the.pipeline",
-			PublishDate:       time.Date(2022, 6, 30, 0, 0, 0, 0, time.UTC),
+			PublishDate:       "2022-06-30",
 			Resolution:        "This is the test resolution.",
 			Score:             7.8,
 			Severity:          "high",

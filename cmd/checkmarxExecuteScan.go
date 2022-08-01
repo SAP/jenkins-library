@@ -83,6 +83,17 @@ func (c *checkmarxExecuteScanUtilsBundle) GetSearchService() *github.SearchServi
 	return c.Search
 }
 
+func newCheckmarxExecuteScanUtilsBundle(workspace string, client *github.Client) checkmarxExecuteScanUtils {
+	utils := checkmarxExecuteScanUtilsBundle{
+		workspace: workspace,
+	}
+	if client != nil {
+		utils.Issues = client.Issues
+		utils.Search = client.Search
+	}
+	return &utils
+}
+
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
@@ -90,15 +101,15 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 	// TODO provide parameter for trusted certs
 	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
+		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
 	influx.step_data.fields.checkmarx = false
-	utils := checkmarxExecuteScanUtilsBundle{workspace: "./", Issues: ghClient.Issues, Search: ghClient.Search}
-	if err := runScan(ctx, config, sys, influx, &utils); err != nil {
+	utils := newCheckmarxExecuteScanUtilsBundle("./", ghClient)
+	if err := runScan(ctx, config, sys, influx, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
 	}
 	influx.step_data.fields.checkmarx = true
@@ -372,11 +383,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 		// add JSON report to archiving list
 		reports = append(reports, paths...)
 	}
-
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
-
-	reportToInflux(results, influx)
 
 	insecure := false
 	var insecureResults []string
@@ -408,6 +415,9 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 			reports = append(reports, paths...)
 		}
 	}
+
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
+	reportToInflux(results, influx)
 
 	if insecure {
 		if config.VulnerabilityThresholdResult == "FAILURE" {

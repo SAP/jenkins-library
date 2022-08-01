@@ -92,8 +92,10 @@ func newFortifyUtilsBundle(client *github.Client) fortifyUtils {
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
-		Issues:  client.Issues,
-		Search:  client.Search,
+	}
+	if client != nil {
+		utils.Issues = client.Issues
+		utils.Search = client.Search
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -109,7 +111,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
+		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
@@ -238,7 +240,9 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	// Create sourceanalyzer command based on configuration
 	buildID := uuid.New().String()
 	utils.SetDir(config.ModulePath)
-	os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
+	if err := os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm); err != nil {
+		return reports, err
+	}
 
 	if config.UpdateRulePack {
 		err := utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
@@ -318,13 +322,17 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700)
+		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
+			log.Entry().WithError(err).Error("failed to write file")
+		}
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
 		if err != nil {
 			return err, reports
 		}
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700)
+		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
+			log.Entry().WithError(err).Warning("failed to write file")
+		}
 	}
 
 	// Perform audit compliance checks
@@ -524,6 +532,9 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	log.Entry().Info("Analyzing suspicious and exploitable issues")
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Analysis"}, []string{})
 	fetchedGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
+	if err != nil {
+		log.Entry().WithError(err).Errorf("failed to get project issues")
+	}
 
 	suspiciousCount := 0
 	exploitableCount := 0
@@ -849,7 +860,7 @@ func removeDuplicates(contents, separator string) string {
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, buildID, buildLabel, buildProject string) error {
-	var err error = nil
+	var err error
 	// Do special Python related prep
 	pipVersion := "pip3"
 	if config.PythonVersion != "python3" {
@@ -893,10 +904,14 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			context := map[string]string{}
 			cmdTemplate := []string{pipVersion, "install", "--user", "-r", config.PythonRequirementsFile}
 			cmdTemplate = append(cmdTemplate, tokenize(config.PythonRequirementsInstallSuffix)...)
-			executeTemplatedCommand(utils, cmdTemplate, context)
+			if err := executeTemplatedCommand(utils, cmdTemplate, context); err != nil {
+				log.Entry().WithError(err).Error("failed to execute template command")
+			}
 		}
 
-		executeTemplatedCommand(utils, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
+		if err := executeTemplatedCommand(utils, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion}); err != nil {
+			log.Entry().WithError(err).Error("failed to execute template command")
+		}
 
 		config.Translate, err = populatePipTranslate(&config, classpath)
 		if err != nil {

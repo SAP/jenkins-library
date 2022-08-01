@@ -11,6 +11,7 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/pkg/errors"
 )
 
@@ -94,28 +95,45 @@ type VulnerabilityWithRemediation struct {
 
 // Title returns the issue title representation of the contents
 func (v Vulnerability) Title() string {
-	return fmt.Sprintf("%v/%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityWithRemediation.Severity, v.VulnerabilityName, v.Name, v.Version)
+	return fmt.Sprintf("Security Vulnerability %v %v", v.VulnerabilityName, v.Name)
 }
 
 // ToMarkdown returns the markdown representation of the contents
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
-	return []byte(fmt.Sprintf(
-		`**Vulnerability %v**
-| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
-`,
-		v.VulnerabilityWithRemediation.VulnerabilityName,
-		v.VulnerabilityWithRemediation.Severity,
-		v.VulnerabilityWithRemediation.BaseScore,
-		v.VulnerabilityWithRemediation.OverallScore,
-		v.Name,
-		v.Version,
-		v.Description,
-		"",
-		"",
-		"",
-	)), nil
+	vul := reporting.VulnerabilityReport{
+		ArtifactID:        v.Name,
+
+		// no information available about branch and commit, yet
+		Branch:            "",
+		CommitID:          "",
+
+		Description:       v.Description,
+
+		// no information available about direct/indirect dependency, yet
+		//DirectDependency:  ... ,
+
+		// no information available about footer, yet
+		Footer:            "",
+
+		// no information available about group, yet
+		Group:             "",
+
+		// no information available about pipeline name and link, publish date and resolution yet
+		PipelineName:      "",
+		PipelineLink:      "",
+		PublishDate:       "",
+		Resolution:        "",
+
+		Score:             float64(v.VulnerabilityWithRemediation.BaseScore),
+		Severity:          v.VulnerabilityWithRemediation.Severity,
+		Version:           v.Version,
+
+		// no vulnerability link available, yet
+		VulnerabilityLink: "",
+		VulnerabilityName: v.VulnerabilityName,
+	}
+
+	return vul.ToMarkdown()
 }
 
 // ToTxt returns the textual representation of the contents

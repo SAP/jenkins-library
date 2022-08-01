@@ -433,7 +433,6 @@ func TestExecutions(t *testing.T) {
 	type parameterTestData struct {
 		nameOfRun             string
 		config                fortifyExecuteScanOptions
-		expectedError         string
 		expectedReportsLength int
 		expectedReports       []string
 	}

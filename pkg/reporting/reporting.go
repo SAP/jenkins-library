@@ -30,7 +30,7 @@ type VulnerabilityReport struct {
 	Group             string
 	PipelineName      string
 	PipelineLink      string
-	PublishDate       time.Time
+	PublishDate       string
 	Resolution        string
 	Score             float64
 	Severity          string
@@ -63,7 +63,7 @@ Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
 {{if .ArtifactID}}**ArtifactId:** {{ .ArtifactID }}{{- end}}
 {{if .Group}}**Group:** {{ .Group }}{{- end}}
 {{if .Version}}**Version:** {{ .Version }}{{- end}}
-{{if .PublishDate}}**Publishing date:** {{date .PublishDate }}{{- end}}
+{{if .PublishDate}}**Publishing date:** {{.PublishDate }}{{- end}}
 
 ## Description
 

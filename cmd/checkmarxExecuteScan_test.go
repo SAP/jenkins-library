@@ -381,7 +381,7 @@ func TestFilterFileGlob_errorOnPathMatch(t *testing.T) {
 	utilsMock.errorOnPathMatch = true
 
 	result, err := isFileNotMatchingPattern([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, filepath.Join("a", "b", "c"), &fileInfo{}, utilsMock)
-	assert.Equal(t, false, result, fmt.Sprintf("wrong result"))
+	assert.Equal(t, false, result, "wrong result")
 	assert.EqualError(t, err, "Pattern **/node_modules/** could not get executed: error on PathMatch")
 }
 

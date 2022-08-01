@@ -114,8 +114,10 @@ func newWhitesourceUtils(config *ScanOptions, client *github.Client) *whitesourc
 		Client:  &piperhttp.Client{},
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
-		Issues:  client.Issues,
-		Search:  client.Search,
+	}
+	if client != nil {
+		utils.Issues = client.Issues
+		utils.Search = client.Search
 	}
 	// Reroute cmd output to logging framework
 	utils.Stdout(log.Writer())
@@ -136,7 +138,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
+		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	utils := newWhitesourceUtils(&config, client)
 	scan := newWhitesourceScan(&config)

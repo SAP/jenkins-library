@@ -97,8 +97,10 @@ func newDetectUtils(client *github.Client) detectUtils {
 		},
 		Files:  &piperutils.Files{},
 		Client: &piperhttp.Client{},
-		Issues: client.Issues,
-		Search: client.Search,
+	}
+	if client != nil {
+		utils.Issues = client.Issues
+		utils.Search = client.Search
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -117,7 +119,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
+		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	utils := newDetectUtils(client)
 	if err := runDetect(ctx, config, utils, influx); err != nil {
