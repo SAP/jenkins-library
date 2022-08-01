@@ -290,10 +290,6 @@ func TestRunHelmInstall(t *testing.T) {
 	}
 }
 
-func TestMH(t *testing.T) {
-	fmt.Printf("Hello Marcus")
-}
-
 func TestRunHelmUninstall(t *testing.T) {
 	testTable := []struct {
 		config            HelmExecuteOptions
