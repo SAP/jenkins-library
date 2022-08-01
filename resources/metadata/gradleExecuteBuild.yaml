@@ -120,7 +120,7 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/bom.xml"
+          - filePattern: "**/bom-gradle.xml"
             type: sbom
   containers:
     - name: gradle
