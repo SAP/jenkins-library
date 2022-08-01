@@ -98,15 +98,15 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 	}
 
 	vul := reporting.VulnerabilityReport{
-		ArtifactID:        a.Library.ArtifactID,
+		ArtifactID: a.Library.ArtifactID,
 		// no information available about branch and commit, yet
-		Branch:            "",
-		CommitID:          "",
-		Description:       a.Vulnerability.Description,
-		DirectDependency:  a.DirectDependency,
+		Branch:           "",
+		CommitID:         "",
+		Description:      a.Vulnerability.Description,
+		DirectDependency: a.DirectDependency,
 		// no information available about footer, yet
-		Footer:            "",
-		Group:             a.Library.GroupID,
+		Footer: "",
+		Group:  a.Library.GroupID,
 		// no information available about pipeline name and link, yet
 		PipelineName:      "",
 		PipelineLink:      "",

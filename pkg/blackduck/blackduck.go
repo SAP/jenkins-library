@@ -101,32 +101,32 @@ func (v Vulnerability) Title() string {
 // ToMarkdown returns the markdown representation of the contents
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
-		ArtifactID:        v.Name,
+		ArtifactID: v.Name,
 
 		// no information available about branch and commit, yet
-		Branch:            "",
-		CommitID:          "",
+		Branch:   "",
+		CommitID: "",
 
-		Description:       v.Description,
+		Description: v.Description,
 
 		// no information available about direct/indirect dependency, yet
 		//DirectDependency:  ... ,
 
 		// no information available about footer, yet
-		Footer:            "",
+		Footer: "",
 
 		// no information available about group, yet
-		Group:             "",
+		Group: "",
 
 		// no information available about pipeline name and link, publish date and resolution yet
-		PipelineName:      "",
-		PipelineLink:      "",
-		PublishDate:       "",
-		Resolution:        "",
+		PipelineName: "",
+		PipelineLink: "",
+		PublishDate:  "",
+		Resolution:   "",
 
-		Score:             float64(v.VulnerabilityWithRemediation.BaseScore),
-		Severity:          v.VulnerabilityWithRemediation.Severity,
-		Version:           v.Version,
+		Score:    float64(v.VulnerabilityWithRemediation.BaseScore),
+		Severity: v.VulnerabilityWithRemediation.Severity,
+		Version:  v.Version,
 
 		// no vulnerability link available, yet
 		VulnerabilityLink: "",

@@ -74,6 +74,7 @@ Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
 {{.Footer}}
 `
 
+// ToMarkdown creates a vulnerability in markdown format which can be used in GitHub issues
 func (v *VulnerabilityReport) ToMarkdown() ([]byte, error) {
 	funcMap := template.FuncMap{
 		"date": func(t time.Time) string {

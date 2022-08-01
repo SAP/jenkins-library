@@ -56,11 +56,11 @@ type detectUtilsBundle struct {
 	Search *github.SearchService
 }
 
-func(d *detectUtilsBundle) GetIssueService() *github.IssuesService {
+func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
 	return d.Issues
 }
 
-func(d *detectUtilsBundle) GetSearchService() *github.SearchService {
+func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 	return d.Search
 }
 

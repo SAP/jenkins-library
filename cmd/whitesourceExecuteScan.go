@@ -101,11 +101,11 @@ func (w *whitesourceUtilsBundle) Now() time.Time {
 	return time.Now()
 }
 
-func(w *whitesourceUtilsBundle) GetIssueService() *github.IssuesService {
+func (w *whitesourceUtilsBundle) GetIssueService() *github.IssuesService {
 	return w.Issues
 }
 
-func(w *whitesourceUtilsBundle) GetSearchService() *github.SearchService {
+func (w *whitesourceUtilsBundle) GetSearchService() *github.SearchService {
 	return w.Search
 }
 
@@ -588,10 +588,10 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 			issueDetails := make([]reporting.IssueDetail, len(allAlerts))
 			piperutils.CopyAtoB(allAlerts, issueDetails)
 			gh := reporting.GitHub{
-				Owner: &config.Owner,
-				Repository: &config.Repository,
-				Assignees: &config.Assignees,
-				IssueService: utils.GetIssueService(),
+				Owner:         &config.Owner,
+				Repository:    &config.Repository,
+				Assignees:     &config.Assignees,
+				IssueService:  utils.GetIssueService(),
 				SearchService: utils.GetSearchService(),
 			}
 			if err := gh.UploadMultipleReports(ctx, &issueDetails); err != nil {

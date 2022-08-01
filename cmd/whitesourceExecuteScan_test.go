@@ -67,7 +67,7 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 func TestNewWhitesourceUtils(t *testing.T) {
 	t.Parallel()
 	config := ScanOptions{}
-	utils := newWhitesourceUtils(&config, &github.Client{Issues:  &github.IssuesService{}, Search: &github.SearchService{}})
+	utils := newWhitesourceUtils(&config, &github.Client{Issues: &github.IssuesService{}, Search: &github.SearchService{}})
 
 	assert.NotNil(t, utils.Client)
 	assert.NotNil(t, utils.Command)

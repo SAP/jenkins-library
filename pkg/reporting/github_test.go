@@ -32,18 +32,18 @@ func (s *scanReportlMock) ToTxt() string {
 }
 
 type ghServicesMock struct {
-	issues       []*github.Issue
-	createError  error
-	comment *github.IssueComment
+	issues               []*github.Issue
+	createError          error
+	comment              *github.IssueComment
 	createCommmentNumber int
-	createCommentError error
-	editError    error
-	editNumber   int
-	editRequest  *github.IssueRequest
-	searchError  error
-	searchOpts   *github.SearchOptions
-	searchQuery  string
-	searchResult []*github.Issue
+	createCommentError   error
+	editError            error
+	editNumber           int
+	editRequest          *github.IssueRequest
+	searchError          error
+	searchOpts           *github.SearchOptions
+	searchQuery          string
+	searchResult         []*github.Issue
 }
 
 func (g *ghServicesMock) Create(ctx context.Context, owner string, repo string, issueRequest *github.IssueRequest) (*github.Issue, *github.Response, error) {

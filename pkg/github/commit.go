@@ -1,8 +1,8 @@
 package github
 
 import (
-	"github.com/pkg/errors"
 	"github.com/google/go-github/v45/github"
+	"github.com/pkg/errors"
 )
 
 // FetchCommitOptions to configure the lookup
