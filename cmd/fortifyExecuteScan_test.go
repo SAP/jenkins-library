@@ -647,58 +647,25 @@ func TestTriggerFortifyScan(t *testing.T) {
 	})
 }
 
-func TestGetMinSpotChecksPerCategory1(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 100)
-	assert.Equal(t, 10, spotCheckMin)
-}
+func TestGetMinSpotChecksPerCategory(t *testing.T) {
+	testExpectedGetMinSpotChecksPerCategory := func(spotChecksMinUnit string, spotChecksMax int, spotChecksMin int, issuesPerCategory int, spotChecksMinCalculatedExpected int) {
+		testName := fmt.Sprintf("Test GetMinSpotChecksPerCategory for SpotCheckMinimumUnit: %v, SpotCheckMaximum: %v, SpotCheckMinimum: %v, issuesPerCategory: %v", spotChecksMinUnit, spotChecksMax, spotChecksMin, issuesPerCategory)
+		t.Run(testName, func(t *testing.T) {
+			config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: spotChecksMinUnit, SpotCheckMaximum: spotChecksMax, SpotCheckMinimum: spotChecksMin}
+			spotCheckMin := getMinSpotChecksPerCategory(config, issuesPerCategory)
+			assert.Equal(t, spotChecksMinCalculatedExpected, spotCheckMin)
+		})
+	}
 
-func TestGetMinSpotChecksPerCategory2(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 10)
-	assert.Equal(t, 1, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory3(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 8)
-	assert.Equal(t, 1, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory4(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 3)
-	assert.Equal(t, 1, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory5(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 50}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 10)
-	assert.Equal(t, 5, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory6(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 200)
-	assert.Equal(t, 10, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory7(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "percentage", SpotCheckMaximum: 10, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 26)
-	assert.Equal(t, 3, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory8(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "number", SpotCheckMaximum: 0, SpotCheckMinimum: 1}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 10)
-	assert.Equal(t, 1, spotCheckMin)
-}
-
-func TestGetMinSpotChecksPerCategory9(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "number", SpotCheckMaximum: 5, SpotCheckMinimum: 10}
-	spotCheckMin := getMinSpotChecksPerCategory(config, 100)
-	assert.Equal(t, 5, spotCheckMin)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 100, 10)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 8, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 3, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 50, 10, 5)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 200, 10)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 26, 3)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 2)
+	testExpectedGetMinSpotChecksPerCategory("number", 0, 1, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("number", 5, 10, 100, 5)
 }
 
 func TestGenerateAndDownloadQGateReport(t *testing.T) {
