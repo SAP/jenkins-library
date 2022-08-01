@@ -494,7 +494,7 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 }
 
 func TestAnalyseUnauditedIssues(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "number", SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 	ff := fortifyMock{}
 	influx := fortifyExecuteScanInflux{}
 	name := "test"
@@ -549,6 +549,16 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	assert.Equal(t, 11, influx.fortify_data.fields.spotChecksAudited)
 	assert.Equal(t, 1, influx.fortify_data.fields.spotChecksGap)
 	assert.Equal(t, 3, len(spotChecksCountByCategory))
+}
+
+func TestAnalyseUnauditedIssuesWithWrongConfig(t *testing.T) {
+	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "float"}
+	spotChecksCountByCategory := []fortify.SpotChecksAuditCount{}
+	ff := fortifyMock{}
+	auditStatus := map[string]string{}
+	_, _, err := analyseUnauditedIssues(config, &ff, &models.ProjectVersion{}, &models.FilterSet{}, &models.IssueFilterSelectorSet{}, &fortifyExecuteScanInflux{}, auditStatus, &spotChecksCountByCategory)
+	assert.Error(t, err)
+	assert.Equal(t, "Invalid spotCheckMinimumUnit. Please set it as 'percentage' or 'number'.", err.Error())
 }
 
 func TestTriggerFortifyScan(t *testing.T) {
@@ -635,6 +645,30 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "buildTool 'docker' is not supported by this step", err.Error())
 	})
+}
+
+func TestGetMinSpotChecksPerCategory(t *testing.T) {
+	testExpectedGetMinSpotChecksPerCategory := func(spotChecksMinUnit string, spotChecksMax int, spotChecksMin int, issuesPerCategory int, spotChecksMinCalculatedExpected int) {
+		testName := fmt.Sprintf("Test GetMinSpotChecksPerCategory for SpotCheckMinimumUnit: %v, SpotCheckMaximum: %v, SpotCheckMinimum: %v, issuesPerCategory: %v", spotChecksMinUnit, spotChecksMax, spotChecksMin, issuesPerCategory)
+		t.Run(testName, func(t *testing.T) {
+			config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: spotChecksMinUnit, SpotCheckMaximum: spotChecksMax, SpotCheckMinimum: spotChecksMin}
+			spotCheckMin := getMinSpotChecksPerCategory(config, issuesPerCategory)
+			assert.Equal(t, spotChecksMinCalculatedExpected, spotCheckMin)
+		})
+	}
+
+	testExpectedGetMinSpotChecksPerCategory("percentage", 0, 1, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 3, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 8, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 2)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 26, 3)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 100, 10)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 200, 10)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 50, 10, 5)
+
+	testExpectedGetMinSpotChecksPerCategory("number", 0, 1, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("number", 5, 10, 100, 5)
 }
 
 func TestGenerateAndDownloadQGateReport(t *testing.T) {

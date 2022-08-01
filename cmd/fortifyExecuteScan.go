@@ -386,6 +386,11 @@ func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportDa
 
 func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string, spotChecksCountByCategory *[]fortify.SpotChecksAuditCount) (int, []*models.ProjectVersionIssueGroup, error) {
 	log.Entry().Info("Analyzing unaudited issues")
+
+	if config.SpotCheckMinimumUnit != "percentage" && config.SpotCheckMinimumUnit != "number" {
+		return 0, nil, fmt.Errorf("Invalid spotCheckMinimumUnit. Please set it as 'percentage' or 'number'.")
+	}
+
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder"}, nil)
 	fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
 	if err != nil {
@@ -454,6 +459,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 	overallDelta := 0
 	overallIssues := 0
 	overallIssuesAudited := 0
+
 	for _, issueGroup := range spotCheckCategories {
 		group := ""
 		total := 0
@@ -465,9 +471,12 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 		}
 		flagOutput := ""
 
-		if ((total <= config.SpotCheckMinimum || config.SpotCheckMinimum < 0) && audited != total) || (total > config.SpotCheckMinimum && audited < config.SpotCheckMinimum) {
-			currentDelta := config.SpotCheckMinimum - audited
-			if config.SpotCheckMinimum < 0 || config.SpotCheckMinimum > total {
+		minSpotChecksPerCategory := getMinSpotChecksPerCategory(config, total)
+		log.Entry().Debugf("Minimum spot checks for group %v is %v with audit count %v and total issue count %v", group, minSpotChecksPerCategory, audited, total)
+
+		if ((total <= minSpotChecksPerCategory || minSpotChecksPerCategory < 0) && audited != total) || (total > minSpotChecksPerCategory && audited < minSpotChecksPerCategory) {
+			currentDelta := minSpotChecksPerCategory - audited
+			if minSpotChecksPerCategory < 0 || minSpotChecksPerCategory > total {
 				currentDelta = total - audited
 			}
 			if currentDelta > 0 {
@@ -492,6 +501,30 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 	influx.fortify_data.fields.spotChecksGap = overallDelta
 
 	return overallDelta
+}
+
+func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount int) int {
+	if config.SpotCheckMinimumUnit == "percentage" {
+		spotCheckMinimumPercentageValue := int(math.Round(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
+		if spotCheckMinimumPercentageValue == 0 {
+			return 1
+		}
+		return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, spotCheckMinimumPercentageValue)
+	}
+
+	return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, config.SpotCheckMinimum)
+}
+
+func getSpotChecksMinAsPerMaximum(spotCheckMax int, spotCheckMin int) int {
+	if spotCheckMax == 0 {
+		return spotCheckMin
+	}
+
+	if spotCheckMin > spotCheckMax {
+		return spotCheckMax
+	}
+
+	return spotCheckMin
 }
 
 func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (int, []*models.ProjectVersionIssueGroup) {
