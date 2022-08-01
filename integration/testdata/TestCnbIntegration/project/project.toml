@@ -19,7 +19,7 @@ uri = "gcr.io/paketo-buildpacks/ca-certificates:3.2.4"
 uri = "gcr.io/paketo-buildpacks/node-engine:0.14.0"
 
 [[build.buildpacks]]
-uri = "gcr.io/paketo-buildpacks/npm-install:0.10.0"
+uri = "gcr.io/paketo-buildpacks/npm-install:0.10.2"
 
 [[build.buildpacks]]
 uri = "gcr.io/paketo-buildpacks/node-module-bom:0.3.0"
