@@ -91,6 +91,8 @@ func newFortifyUtilsBundle() fortifyUtils {
 const checkString = "<---CHECK FORTIFY---"
 const classpathFileName = "fortify-execute-scan-cp.txt"
 
+var execInPath = exec.LookPath
+
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
@@ -124,11 +126,11 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	_, err := exec.LookPath("fortifyupdate")
+	_, err := execInPath("fortifyupdate")
 	if err != nil {
 		return reports, fmt.Errorf("ERROR , command not found: fortifyupdate")
 	}
-	_, err = exec.LookPath("sourceanalyzer")
+	_, err = execInPath("sourceanalyzer")
 	if err != nil {
 		return reports, fmt.Errorf("ERROR , command not found: sourceanalyzer")
 	}
