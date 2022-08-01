@@ -158,8 +158,6 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	chartPaths := strings.Split(h.config.ChartPath, ",")
 	namespaces := strings.Split(h.config.Namespace, ",")
 
-	fmt.Printf("[MH] before loop: %s\n", strings.Join(deploymentNames, ","))
-
 	for index, _ := range deploymentNames {
 
 		deploymentName := deploymentNames[index]
@@ -212,7 +210,6 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 			helmParams = append(helmParams, h.config.AdditionalParameters...)
 		}
 
-		fmt.Printf("[MH] before runHelmCommand: " + strings.Join(helmParams, ","))
 		if err := h.runHelmCommand(helmParams); err != nil {
 			log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 		}
