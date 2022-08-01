@@ -150,52 +150,73 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
-	helmParams := []string{
-		"upgrade",
-		h.config.DeploymentName,
-	}
+	deploymentNames := strings.Split(h.config.DeploymentName, ",")
+	targetRepoNames := strings.Split(h.config.TargetRepositoryName, ",")
+	targetRepoUrls := strings.Split(h.config.TargetRepositoryURL, ",")
+	targetRepoUsers := strings.Split(h.config.TargetRepositoryUser, ",")
+	targetRepoPasswords := strings.Split(h.config.TargetRepositoryPassword, ",")
+	chartPaths := strings.Split(h.config.ChartPath, ",")
+	namespaces := strings.Split(h.config.Namespace, ",")
 
-	if len(h.config.ChartPath) == 0 {
-		if err := h.runHelmAdd(); err != nil {
-			return fmt.Errorf("failed to add a chart repository: %v", err)
+	fmt.Printf("[MH] before loop: %s\n", strings.Join(deploymentNames, ","))
+
+	for index, _ := range deploymentNames {
+
+		deploymentName := deploymentNames[index]
+		targetRepoName := targetRepoNames[index]
+		targetRepoUrl := targetRepoUrls[index]
+		targetRepoUser := targetRepoUsers[index]
+		targetRepoPassword := targetRepoPasswords[index]
+		chartPath := chartPaths[index]
+		namespace := namespaces[index]
+
+		helmParams := []string{
+			"upgrade",
+			deploymentName,
 		}
-		helmParams = append(helmParams, h.config.TargetRepositoryName)
-	} else {
-		helmParams = append(helmParams, h.config.ChartPath)
+
+		if len(chartPath) == 0 {
+			if err := h.runHelmAddSingleRepo(targetRepoName, targetRepoUrl, targetRepoUser, targetRepoPassword); err != nil {
+				return fmt.Errorf("failed to add a chart repository: %v", err)
+			}
+			helmParams = append(helmParams, targetRepoName)
+		} else {
+			helmParams = append(helmParams, chartPath)
+		}
+
+		if h.verbose {
+			helmParams = append(helmParams, "--debug")
+		}
+
+		for _, v := range h.config.HelmValues {
+			helmParams = append(helmParams, "--values", v)
+		}
+
+		helmParams = append(
+			helmParams,
+			"--install",
+			"--namespace", namespace,
+		)
+
+		if h.config.ForceUpdates {
+			helmParams = append(helmParams, "--force")
+		}
+
+		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
+
+		if !h.config.KeepFailedDeployments {
+			helmParams = append(helmParams, "--atomic")
+		}
+
+		if len(h.config.AdditionalParameters) > 0 {
+			helmParams = append(helmParams, h.config.AdditionalParameters...)
+		}
+
+		fmt.Printf("[MH] before runHelmCommand: " + strings.Join(helmParams, ","))
+		if err := h.runHelmCommand(helmParams); err != nil {
+			log.Entry().WithError(err).Fatal("Helm upgrade call failed")
+		}
 	}
-
-	if h.verbose {
-		helmParams = append(helmParams, "--debug")
-	}
-
-	for _, v := range h.config.HelmValues {
-		helmParams = append(helmParams, "--values", v)
-	}
-
-	helmParams = append(
-		helmParams,
-		"--install",
-		"--namespace", h.config.Namespace,
-	)
-
-	if h.config.ForceUpdates {
-		helmParams = append(helmParams, "--force")
-	}
-
-	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
-
-	if !h.config.KeepFailedDeployments {
-		helmParams = append(helmParams, "--atomic")
-	}
-
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
-	}
-
-	if err := h.runHelmCommand(helmParams); err != nil {
-		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
-	}
-
 	return nil
 }
 
