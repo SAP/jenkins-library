@@ -25,7 +25,7 @@ type VulnerabilityReport struct {
 	Branch            string
 	CommitID          string
 	Description       string
-	DirectDependency  bool
+	DirectDependency  string
 	Footer            string
 	Group             string
 	PipelineName      string
@@ -59,7 +59,7 @@ Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
 
 {{if .Branch}}**Branch:** {{ .Branch }}{{- end}}
 {{if .CommitID}}**CommitId:** {{ .CommitID }}{{- end}}
-{{if .DirectDependency}}**Dependency:** {{if (eq .DirectDependency true)}}direct{{ else }}indirect{{ end }}{{- end}}
+{{if .DirectDependency}}**Dependency:** {{if (eq .DirectDependency "true")}}direct{{ else }}indirect{{ end }}{{- end}}
 {{if .ArtifactID}}**ArtifactId:** {{ .ArtifactID }}{{- end}}
 {{if .Group}}**Group:** {{ .Group }}{{- end}}
 {{if .Version}}**Version:** {{ .Version }}{{- end}}

@@ -103,7 +103,7 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 		Branch:           "",
 		CommitID:         "",
 		Description:      a.Vulnerability.Description,
-		DirectDependency: a.DirectDependency,
+		DirectDependency: fmt.Sprint(a.DirectDependency),
 		// no information available about footer, yet
 		Footer: "",
 		Group:  a.Library.GroupID,

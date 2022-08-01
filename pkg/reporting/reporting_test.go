@@ -25,7 +25,7 @@ func TestVulToMarkdown(t *testing.T) {
 			Branch:            "main",
 			CommitID:          "acb123",
 			Description:       "This is the test description.",
-			DirectDependency:  true,
+			DirectDependency:  "true",
 			Footer:            "This is the test footer",
 			Group:             "the.group",
 			PipelineName:      "thePipelineName",
