@@ -95,8 +95,6 @@ func (h *HelmExecute) runHelmAdd() error {
 	repoUsers := strings.Split(h.config.TargetRepositoryUser, ",")
 	repoPasswords := strings.Split(h.config.TargetRepositoryPassword, ",")
 
-	fmt.Printf("[MH] : names: %s, urls: %s, user: %s, passwd: %s\n", repoNames, repoUrls, repoUsers, repoPasswords)
-
 	// the slices should have the same number of entries TODO: we need to check that
 	// that is only POC: should be done with some kind of map for each repo entry.
 
@@ -105,7 +103,6 @@ func (h *HelmExecute) runHelmAdd() error {
 		repoUrl := repoUrls[index]
 		repoUser := repoUsers[index]
 		repoPassword := repoPasswords[index]
-		fmt.Printf("[MH : ] index: %d : repo: %s, url: %s, user: %s, password: %s\n", index, repoName, repoUrl, repoUser, repoPassword)
 
 		helmParams := []string{
 			"repo",
@@ -130,7 +127,6 @@ func (h *HelmExecute) runHelmAdd() error {
 			helmParams = append(helmParams, "--debug")
 		}
 
-		fmt.Printf("[MH]: helm call: %s", strings.Join(helmParams, ","))
 		if err := h.runHelmCommand(helmParams); err != nil {
 			log.Entry().WithError(err).Fatal("Helm add call failed")
 		}
