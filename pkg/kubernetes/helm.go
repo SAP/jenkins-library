@@ -87,6 +87,8 @@ func (h *HelmExecute) runHelmInit() error {
 	return nil
 }
 
+// this can be removed finally since it is replaced by
+// runHelmAddSingleRepo
 // runHelmAdd is used to add a chart repository
 func (h *HelmExecute) runHelmAdd() error {
 
