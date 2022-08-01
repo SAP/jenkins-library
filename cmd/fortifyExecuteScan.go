@@ -229,7 +229,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 
 	if config.VerifyOnly {
 		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		err, paths := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
+		paths, err := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 		reports = append(reports, paths...)
 		return reports, err
 	}
@@ -306,7 +306,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	}
 
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	err, paths := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
+	paths, err := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
 }
@@ -317,7 +317,7 @@ func classifyErrorOnLookup(err error) {
 	}
 }
 
-func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
+func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
@@ -328,7 +328,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
 		if err != nil {
-			return err, reports
+			return reports, err
 		}
 		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
 			log.Entry().WithError(err).Warning("failed to write file")
@@ -338,14 +338,14 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	// Perform audit compliance checks
 	issueFilterSelectorSet, err := sys.GetIssueFilterSelectorOfProjectVersionByName(projectVersion.ID, []string{"Analysis", "Folder", "Category"}, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID), reports
+		return reports, errors.Wrapf(err, "failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID)
 	}
 	log.Entry().Debugf("initial filter selector set: %v", issueFilterSelectorSet)
 
 	spotChecksCountByCategory := []fortify.SpotChecksAuditCount{}
 	numberOfViolations, issueGroups, err := analyseUnauditedIssues(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus, &spotChecksCountByCategory)
 	if err != nil {
-		return errors.Wrap(err, "failed to analyze unaudited issues"), reports
+		return reports, errors.Wrap(err, "failed to analyze unaudited issues")
 	}
 	numberOfSuspiciousExploitable, issueGroupsSuspiciousExploitable := analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
 	numberOfViolations += numberOfSuspiciousExploitable
@@ -363,7 +363,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	scanReport := fortify.CreateCustomReport(fortifyReportingData, issueGroups)
 	paths, err := fortify.WriteCustomReports(scanReport)
 	if err != nil {
-		return errors.Wrap(err, "failed to write custom reports"), reports
+		return reports, errors.Wrap(err, "failed to write custom reports")
 	}
 	reports = append(reports, paths...)
 
@@ -379,22 +379,22 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 			SearchService: utils.GetSearchService(),
 		}
 		if err := gh.UploadSingleReport(ctx, scanReport); err != nil {
-			return fmt.Errorf("failed to upload scan results into GitHub: %w", err), reports
+			return reports, fmt.Errorf("failed to upload scan results into GitHub: %w", err)
 		}
 	}
 
 	jsonReport := fortify.CreateJSONReport(fortifyReportingData, spotChecksCountByCategory, config.ServerURL)
 	paths, err = fortify.WriteJSONReport(jsonReport)
 	if err != nil {
-		return errors.Wrap(err, "failed to write json report"), reports
+		return reports, errors.Wrap(err, "failed to write json report")
 	}
 	reports = append(reports, paths...)
 
 	if numberOfViolations > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
-		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report"), reports
+		return reports, errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
-	return nil, reports
+	return reports, nil
 }
 
 func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportData {
@@ -1022,9 +1022,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 		scanOptions = append(scanOptions, "-quick")
 	}
 	if len(config.AdditionalScanParameters) > 0 {
-		for _, scanParameter := range config.AdditionalScanParameters {
-			scanOptions = append(scanOptions, scanParameter)
-		}
+		scanOptions = append(scanOptions, config.AdditionalScanParameters...)
 	}
 	if len(buildLabel) > 0 {
 		scanOptions = append(scanOptions, "-build-label", buildLabel)
