@@ -472,7 +472,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 		flagOutput := ""
 
 		minSpotChecksPerCategory := getMinSpotChecksPerCategory(config, total)
-		log.Entry().Debugf("Minimum spot checks for group %v is %v with audit count %v", group, minSpotChecksPerCategory, audited)
+		log.Entry().Debugf("Minimum spot checks for group %v is %v with audit count %v and total issue count %v", group, minSpotChecksPerCategory, audited, total)
 
 		if ((total <= minSpotChecksPerCategory || minSpotChecksPerCategory < 0) && audited != total) || (total > minSpotChecksPerCategory && audited < minSpotChecksPerCategory) {
 			currentDelta := minSpotChecksPerCategory - audited
