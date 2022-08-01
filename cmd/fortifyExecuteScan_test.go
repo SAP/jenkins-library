@@ -70,12 +70,12 @@ func mockExecinPath(exec string) (string, error) {
 	if exec == "fortifyupdate" || exec == "sourceanalyzer" {
 		return "/fortifyupdate", nil
 	}
-	return "", errors.New("Please configure a supported docker image or install Fortify SCA on the system.")
+	return "", errors.New("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 }
 
 func failMockExecinPath(exec string) (string, error) {
 	if exec == "fortifyupdate" || exec == "sourceanalyzer" {
-		return "", errors.New("Please configure a supported docker image or install Fortify SCA on the system.")
+		return "", errors.New("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 	return "/fortifyupdate", nil
 }
@@ -425,7 +425,7 @@ func TestFailFortifyexecinPath(t *testing.T) {
 		execInPath = failMockExecinPath
 		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 		_, err := runFortifyScan(config, &ff, utils, nil, &influx, auditStatus)
-		assert.EqualError(t, err, "Please configure a supported docker image or install Fortify SCA on the system.")
+		assert.EqualError(t, err, "ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 
 	})
 }

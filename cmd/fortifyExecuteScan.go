@@ -128,11 +128,11 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 	_, err := execInPath("fortifyupdate")
 	if err != nil {
-		return reports, fmt.Errorf("Please configure a supported docker image or install Fortify SCA on the system.")
+		return reports, fmt.Errorf("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 	_, err = execInPath("sourceanalyzer")
 	if err != nil {
-		return reports, fmt.Errorf("Please configure a supported docker image or install Fortify SCA on the system.")
+		return reports, fmt.Errorf("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 
 	if config.BuildTool == "maven" && config.InstallArtifacts {
