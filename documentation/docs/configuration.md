@@ -142,7 +142,7 @@ service-key. The environment variable used is: `PIPER_ansHookServiceKey`.
 If Jenkins is used to run "Piper", you can use the Jenkins credential store
 to store the alert notification service service-key as a "Secret Text"
 credential. Provide the credential ID in a custom defaults file
-([as described below](#custom-default-configuration)) as follows:
+([described below](#custom-default-configuration)) as follows:
 
 ```yaml
 hooks:
