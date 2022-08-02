@@ -73,11 +73,17 @@ func mockExecinPath(exec string) (string, error) {
 	return "", errors.New("ERROR , command not found. Please configure a supported docker image or install Fortify SCA on the system.")
 }
 
-func failMockExecinPath(exec string) (string, error) {
-	if exec == "fortifyupdate" || exec == "sourceanalyzer" {
-		return "", errors.New("ERROR , command not found. Please configure a supported docker image or install Fortify SCA on the system.")
+func failMockExecinPathfortifyupdate(exec string) (string, error) {
+	if exec == "fortifyupdate" {
+		return "", errors.New("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 	return "/fortifyupdate", nil
+}
+func failMockExecinPathsourceanalyzer(exec string) (string, error) {
+	if exec == "sourceanalyzer" {
+		return "", errors.New("ERROR , command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/sourceanalyzer", nil
 }
 
 type artifactMock struct {
@@ -422,10 +428,21 @@ func TestFailFortifyexecinPath(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
 		influx := fortifyExecuteScanInflux{}
 		auditStatus := map[string]string{}
-		execInPath = failMockExecinPath
+		execInPath = failMockExecinPathfortifyupdate
 		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 		_, err := runFortifyScan(config, &ff, utils, nil, &influx, auditStatus)
 		assert.EqualError(t, err, "ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+
+	})
+	t.Run("Testing if sourceanalyzer in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathsourceanalyzer
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(config, &ff, utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "ERROR , command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
 
 	})
 }
