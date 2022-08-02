@@ -379,6 +379,11 @@ chown -R ${runAsUser}:${fsGroup} ."""
 
         def includes, excludes
 
+        echo "stashIncludes config: ${config.stashIncludes}"
+        echo "stashExcludes config: ${config.stashExcludes}"
+        echo "stashBack config (includes): ${config.stashIncludes.stashBack}"
+        echo "stashBack config (excludes): ${config.stashExcludes.stashBack}"
+
         if (stashBack) {
             includes = config.stashIncludes.stashBack ?: config.stashIncludes.workspace
             excludes = config.stashExcludes.stashBack ?: config.stashExcludes.workspace
@@ -387,6 +392,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
             excludes = config.stashExcludes.workspace
         }
 
+        echo "stash effective (includes): ${includes}"
+        echo "stash effective (excludes): ${excludes}"
+
         stash(
             name: stashName,
             includes: includes,
@@ -394,6 +402,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
             // 'true' by default due to negative side-effects, but can be overwritten via parameters
             // (as done by artifactPrepareVersion to preserve the .git folder)
             useDefaultExcludes: !config.stashNoDefaultExcludes,
+            allowEmpty: true
         )
         return stashName
     } catch (AbortException | IOException e) {
