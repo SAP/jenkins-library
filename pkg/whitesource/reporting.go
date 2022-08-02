@@ -365,7 +365,7 @@ func CreateCycloneSBOM(buildTool string, coordinates versioning.Coordinates, sca
 	}
 
 	components := []cdx.Component{}
-	var flatUniqueLibrariesMap map[int]Library
+	flatUniqueLibrariesMap := map[int]Library{}
 	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap)
 	flatUniqueLibraries := piperutils.Values(flatUniqueLibrariesMap)
 	for _, lib := range flatUniqueLibraries {

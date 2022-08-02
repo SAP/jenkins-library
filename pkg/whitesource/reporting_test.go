@@ -71,13 +71,14 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		}
 		scan.AppendScannedProject("testProject")
 		alerts := []Alert{
-			{Library: Library{Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
-			{Library: Library{Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
-			{Library: Library{Filename: "vul3"}, Vulnerability: Vulnerability{Score: 6}},
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
+			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"}, Vulnerability: Vulnerability{Score: 6}},
 		}
 
 		libraries := []Library{
-			{Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"},
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}}},
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"},
 		}
 
 		coordinates := versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"}
@@ -91,6 +92,12 @@ func TestCreateCycloneSBOM(t *testing.T) {
 
 		assert.NotNil(t, bom, "BOM was nil")
 		assert.NotEmpty(t, bom.SpecVersion)
+
+		components := *bom.Components
+		assert.Equal(t, 2, len(components))
+		assert.Equal(t, true, components[0].Name == "log4j" || components[0].Name == "commons-lang")
+		assert.Equal(t, true, components[1].Name == "log4j" || components[1].Name == "commons-lang")
+		assert.Equal(t, true, components[0].Name != components[1].Name)
 	})
 }
 
