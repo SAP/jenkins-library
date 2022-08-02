@@ -7,6 +7,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
+
 	"github.com/pkg/errors"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -85,6 +87,19 @@ func (v *VulnerabilityReport) ToMarkdown() ([]byte, error) {
 			return caser.String(s)
 		},
 	}
+
+	// only fill with orchestrator information if orchestrator can be identified properly
+	if provider, err := orchestrator.NewOrchestratorSpecificConfigProvider(); err == nil {
+		// only add information if not yet provided
+		if len(v.CommitID) == 0 {
+			v.CommitID = provider.GetCommit()
+		}
+		if len(v.PipelineLink) == 0 {
+			v.PipelineLink = provider.GetJobURL()
+			v.PipelineName = provider.GetJobName()
+		}
+	}
+
 	md := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(vulnerabilityMdTemplate)
 	if err != nil {
