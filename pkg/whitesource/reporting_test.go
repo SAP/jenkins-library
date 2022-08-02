@@ -1,14 +1,18 @@
 package whitesource
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"testing"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,6 +57,58 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 
 		assert.Contains(t, scanReport.DetailTable.Rows[0].Columns[10].Content, "this is the top fix")
 
+	})
+}
+
+func TestCreateCycloneSBOM(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success case", func(t *testing.T) {
+		config := &ScanOptions{}
+		scan := &Scan{
+			AggregateProjectName: config.ProjectName,
+			ProductVersion:       config.ProductVersion,
+		}
+		scan.AppendScannedProject("testProject")
+		alerts := []Alert{
+			{Library: Library{Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
+			{Library: Library{Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: Library{Filename: "vul3"}, Vulnerability: Vulnerability{Score: 6}},
+		}
+
+		libraries := []Library{
+			{Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"},
+		}
+
+		coordinates := versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"}
+
+		contents, err := CreateCycloneSBOM("maven", coordinates, scan, &libraries, &alerts)
+		assert.NoError(t, err, "unexpected error")
+		buffer := bytes.NewBuffer(contents)
+		decoder := cdx.NewBOMDecoder(buffer, cdx.BOMFileFormatXML)
+		bom := cdx.NewBOM()
+		decoder.Decode(bom)
+
+		assert.NotNil(t, bom, "BOM was nil")
+		assert.NotEmpty(t, bom.SpecVersion)
+	})
+}
+
+func TestWriteCycloneSBOM(t *testing.T) {
+	t.Parallel()
+
+	var utilsMock piperutils.FileUtils
+	utilsMock = &mock.FilesMock{}
+
+	t.Run("success case", func(t *testing.T) {
+		paths, err := WriteCycloneSBOM([]byte{1, 2, 3, 4}, utilsMock)
+		assert.NoError(t, err, "unexpexted error")
+		assert.Equal(t, 1, len(paths))
+		assert.Equal(t, "whitesource/piper_whitesource_sbom.xml", paths[0].Target)
+
+		exists, err := utilsMock.FileExists(paths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, exists)
 	})
 }
 

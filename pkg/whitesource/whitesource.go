@@ -142,11 +142,17 @@ Link: [%v](%v)`,
 
 // Library
 type Library struct {
-	Name       string `json:"name,omitempty"`
-	Filename   string `json:"filename,omitempty"`
-	ArtifactID string `json:"artifactId,omitempty"`
-	GroupID    string `json:"groupId,omitempty"`
-	Version    string `json:"version,omitempty"`
+	KeyUUID      string    `json:"keyUuid,omitempty"`
+	KeyID        int       `json:"keyId,omitempty"`
+	Name         string    `json:"name,omitempty"`
+	Filename     string    `json:"filename,omitempty"`
+	ArtifactID   string    `json:"artifactId,omitempty"`
+	GroupID      string    `json:"groupId,omitempty"`
+	Version      string    `json:"version,omitempty"`
+	Sha1         string    `json:"sha1,omitempty"`
+	LibType      string    `json:"type,omitempty"`
+	Coordinates  string    `json:"coordinates,omitempty"`
+	Dependencies []Library `json:"dependencies,omitempty"`
 }
 
 // Vulnerability defines a vulnerability as returned by WhiteSource
@@ -211,6 +217,7 @@ type Request struct {
 	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
 	ProductApprovers     *Assignment `json:"productApprovers,omitempty"`
 	ProductIntegrators   *Assignment `json:"productIntegrators,omitempty"`
+	IncludeInHouseData   bool        `json:"includeInHouseData,omitempty"`
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -334,6 +341,28 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	}
 
 	return wsResponse.ProjectVitals, nil
+}
+
+// GetProjectHierarchy retrieves the full set of libraries that the project depends on
+func (s *System) GetProjectHierarchy(projectToken string, includeInHouse bool) ([]Library, error) {
+	wsResponse := struct {
+		Libraries []Library `json:"libraries"`
+	}{
+		Libraries: []Library{},
+	}
+
+	req := Request{
+		RequestType:        "getProjectHierarchy",
+		ProductToken:       projectToken,
+		IncludeInHouseData: includeInHouse,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return wsResponse.Libraries, nil
 }
 
 // GetProjectToken returns the project token for a project with a given name

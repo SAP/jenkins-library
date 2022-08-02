@@ -1,10 +1,10 @@
 package whitesource
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -17,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 )
 
@@ -307,8 +308,43 @@ func transformToCdxSeverity(severity string) cdx.Severity {
 	return cdx.SeverityUnknown
 }
 
-func WriteCycloneSBOM(scan *Scan, alerts *[]Alert, utils piperutils.FileUtils) ([]piperutils.Path, error) {
-	ppurl := packageurl.NewPackageURL(packageurl.TypeGeneric, "sap", scan.AggregateProjectName, scan.ProductVersion, nil, "")
+func transformBuildToPurlType(buildType string) string {
+	switch buildType {
+	case "maven":
+		return packageurl.TypeMaven
+	case "npm":
+		return packageurl.TypeNPM
+	case "docker":
+		return packageurl.TypeDocker
+	case "kaniko":
+		return packageurl.TypeDocker
+	case "golang":
+		return packageurl.TypeGolang
+	case "mta":
+		return packageurl.TypeComposer
+	}
+	return packageurl.TypeGeneric
+}
+
+func transformLibToPurlType(libType string) string {
+	// TODO verify and complete, only maven is proven so far
+	switch libType {
+	case "MAVEN_ARTIFACT":
+		return packageurl.TypeMaven
+	case "NODE_ARTIFACT":
+		return packageurl.TypeNPM
+	case "GOLANG_ARTIFACT":
+		return packageurl.TypeGolang
+	case "DOCKER_ARTIFACT":
+		return packageurl.TypeGolang
+	case "UNKNOWN_ARTIFACT":
+		return packageurl.TypeGeneric
+	}
+	return packageurl.TypeGeneric
+}
+
+func CreateCycloneSBOM(buildTool string, coordinates versioning.Coordinates, scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byte, error) {
+	ppurl := packageurl.NewPackageURL(transformBuildToPurlType(buildTool), coordinates.GroupID, coordinates.ArtifactID, coordinates.Version, nil, "")
 	metadata := cdx.Metadata{
 		// Define metadata about the main component
 		// (the component which the BOM will describe)
@@ -329,42 +365,32 @@ func WriteCycloneSBOM(scan *Scan, alerts *[]Alert, utils piperutils.FileUtils) (
 	}
 
 	components := []cdx.Component{}
-	dependencies := []cdx.Dependency{}
-	vulnerabilities := []cdx.Vulnerability{}
-
-	for _, alert := range *alerts {
-		purl := packageurl.NewPackageURL(packageurl.TypeGeneric, alert.Library.GroupID, alert.Library.ArtifactID, alert.Library.Version, nil, "")
-		// Define the components that acme-app ships with
+	var flatUniqueLibrariesMap map[int]Library
+	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap)
+	flatUniqueLibraries := piperutils.Values(flatUniqueLibrariesMap)
+	for _, lib := range flatUniqueLibraries {
+		purl := packageurl.NewPackageURL(transformLibToPurlType(lib.LibType), lib.GroupID, lib.ArtifactID, lib.Version, nil, "")
+		// Define the components that the product ships with
 		// https://cyclonedx.org/use-cases/#inventory
 		component := cdx.Component{
-			BOMRef:     "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0",
+			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
-			Author:     "CycloneDX",
-			Name:       "cyclonedx-go",
-			Version:    "v0.3.0",
-			PackageURL: "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0",
+			Author:     lib.GroupID,
+			Name:       lib.ArtifactID,
+			Version:    lib.Version,
+			PackageURL: purl.ToString(),
 		}
 		components = append(components, component)
+	}
 
-		// Define the dependency graph
-		// https://cyclonedx.org/use-cases/#dependency-graph
-		var dependency cdx.Dependency
-		if alert.DirectDependency {
-			dependency = cdx.Dependency{
-				Ref: ppurl.ToString(),
-				Dependencies: &[]cdx.Dependency{
-					{Ref: "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0"},
-				},
-			}
-		} else {
-			dependency = cdx.Dependency{
-				Ref: "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0",
-			}
-		}
-		dependencies = append(dependencies, dependency)
+	dependencies := []cdx.Dependency{}
+	declareDependency(*ppurl, libraries, &dependencies)
 
+	vulnerabilities := []cdx.Vulnerability{}
+	for _, alert := range *alerts {
 		// Define the vulnerabilities in VEX
 		// https://cyclonedx.org/use-cases/#vulnerability-exploitability
+		purl := packageurl.NewPackageURL(transformLibToPurlType(alert.Library.LibType), alert.Library.GroupID, alert.Library.ArtifactID, alert.Library.Version, nil, "")
 		vuln := cdx.Vulnerability{
 			BOMRef: purl.ToString(),
 			ID:     alert.Vulnerability.Name,
@@ -437,11 +463,63 @@ func WriteCycloneSBOM(scan *Scan, alerts *[]Alert, utils piperutils.FileUtils) (
 	bom.Dependencies = &dependencies
 
 	// Encode the BOM
-	encoder := cdx.NewBOMEncoder(os.Stdout, cdx.BOMFileFormatXML)
+	var outputBytes []byte
+	buffer := bytes.NewBuffer(outputBytes)
+	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
 	encoder.SetPretty(true)
 	if err := encoder.Encode(bom); err != nil {
-		panic(err)
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Path, error) {
+	paths := []piperutils.Path{}
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return paths, errors.Wrapf(err, "failed to create report directory")
 	}
 
-	return nil, nil
+	sbomPath := filepath.Join(ReportsDirectory, "piper_whitesource_sbom.xml")
+
+	// Write file
+	if err := utils.FileWrite(sbomPath, sbom, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return paths, errors.Wrapf(err, "failed to write SARIF file")
+	}
+	paths = append(paths, piperutils.Path{Name: "WhiteSource SBOM file", Target: sbomPath})
+
+	return paths, nil
+}
+
+func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[int]Library) {
+	for _, lib := range *libraries {
+		flatMap := *flatMapRef
+		lookup := flatMap[lib.KeyID]
+		if lookup.KeyID != lib.KeyID {
+			flatMap[lib.KeyID] = lib
+			if len(lib.Dependencies) > 0 {
+				transformToUniqueFlatList(&lib.Dependencies, flatMapRef)
+			}
+		}
+	}
+}
+
+func declareDependency(parentPurl packageurl.PackageURL, dependents *[]Library, collection *[]cdx.Dependency) {
+	localDependencies := []cdx.Dependency{}
+	for _, lib := range *dependents {
+		purl := packageurl.NewPackageURL(transformLibToPurlType(lib.LibType), lib.GroupID, lib.ArtifactID, lib.Version, nil, "")
+		// Define the dependency graph
+		// https://cyclonedx.org/use-cases/#dependency-graph
+		localDependency := cdx.Dependency{Ref: purl.ToString()}
+		localDependencies = append(localDependencies, localDependency)
+
+		if len(lib.Dependencies) > 0 {
+			declareDependency(*purl, &lib.Dependencies, collection)
+		}
+	}
+	dependency := cdx.Dependency{
+		Ref:          parentPurl.ToString(),
+		Dependencies: &localDependencies,
+	}
+	*collection = append(*collection, dependency)
 }
