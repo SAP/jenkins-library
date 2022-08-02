@@ -67,8 +67,8 @@ type fortifyUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
-	Issues *github.IssuesService
-	Search *github.SearchService
+	issues *github.IssuesService
+	search *github.SearchService
 }
 
 func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
@@ -80,11 +80,11 @@ func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.Creat
 }
 
 func (f *fortifyUtilsBundle) GetIssueService() *github.IssuesService {
-	return f.Issues
+	return f.issues
 }
 
 func (f *fortifyUtilsBundle) GetSearchService() *github.SearchService {
-	return f.Search
+	return f.search
 }
 
 func newFortifyUtilsBundle(client *github.Client) fortifyUtils {
@@ -94,8 +94,8 @@ func newFortifyUtilsBundle(client *github.Client) fortifyUtils {
 		Client:  &piperhttp.Client{},
 	}
 	if client != nil {
-		utils.Issues = client.Issues
-		utils.Search = client.Search
+		utils.issues = client.Issues
+		utils.search = client.Search
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())

@@ -62,8 +62,8 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
-	Issues      *github.IssuesService
-	Search      *github.SearchService
+	issues      *github.IssuesService
+	search      *github.SearchService
 }
 
 func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (ws.File, error) {
@@ -102,11 +102,11 @@ func (w *whitesourceUtilsBundle) Now() time.Time {
 }
 
 func (w *whitesourceUtilsBundle) GetIssueService() *github.IssuesService {
-	return w.Issues
+	return w.issues
 }
 
 func (w *whitesourceUtilsBundle) GetSearchService() *github.SearchService {
-	return w.Search
+	return w.search
 }
 
 func newWhitesourceUtils(config *ScanOptions, client *github.Client) *whitesourceUtilsBundle {
@@ -116,8 +116,8 @@ func newWhitesourceUtils(config *ScanOptions, client *github.Client) *whitesourc
 		Files:   &piperutils.Files{},
 	}
 	if client != nil {
-		utils.Issues = client.Issues
-		utils.Search = client.Search
+		utils.issues = client.Issues
+		utils.search = client.Search
 	}
 	// Reroute cmd output to logging framework
 	utils.Stdout(log.Writer())

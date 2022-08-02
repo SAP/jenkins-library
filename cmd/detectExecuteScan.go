@@ -52,16 +52,16 @@ type detectUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
-	Issues *github.IssuesService
-	Search *github.SearchService
+	issues *github.IssuesService
+	search *github.SearchService
 }
 
 func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
-	return d.Issues
+	return d.issues
 }
 
 func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
-	return d.Search
+	return d.search
 }
 
 type blackduckSystem struct {
@@ -99,8 +99,8 @@ func newDetectUtils(client *github.Client) detectUtils {
 		Client: &piperhttp.Client{},
 	}
 	if client != nil {
-		utils.Issues = client.Issues
-		utils.Search = client.Search
+		utils.issues = client.Issues
+		utils.search = client.Search
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())

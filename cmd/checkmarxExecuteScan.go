@@ -43,8 +43,8 @@ type checkmarxExecuteScanUtils interface {
 
 type checkmarxExecuteScanUtilsBundle struct {
 	workspace string
-	Issues    *github.IssuesService
-	Search    *github.SearchService
+	issues    *github.IssuesService
+	search    *github.SearchService
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
@@ -76,11 +76,11 @@ func (c *checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *pipe
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) GetIssueService() *github.IssuesService {
-	return c.Issues
+	return c.issues
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) GetSearchService() *github.SearchService {
-	return c.Search
+	return c.search
 }
 
 func newCheckmarxExecuteScanUtilsBundle(workspace string, client *github.Client) checkmarxExecuteScanUtils {
@@ -88,8 +88,8 @@ func newCheckmarxExecuteScanUtilsBundle(workspace string, client *github.Client)
 		workspace: workspace,
 	}
 	if client != nil {
-		utils.Issues = client.Issues
-		utils.Search = client.Search
+		utils.issues = client.Issues
+		utils.search = client.Search
 	}
 	return &utils
 }

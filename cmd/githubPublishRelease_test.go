@@ -151,7 +151,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 
 	t.Run("Success - subsequent releases & with body", func(t *testing.T) {
 		lastTag := "1.0"
-		lastPublishedAt := github.Timestamp{Time: time.Date(2019, 0o1, 0o1, 0, 0, 0, 0, time.UTC)}
+		lastPublishedAt := github.Timestamp{Time: time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)}
 		ghRepoClient := ghRCMock{
 			createErr: nil,
 			latestRelease: &github.RepositoryRelease{
@@ -263,7 +263,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 
 func TestGetClosedIssuesText(t *testing.T) {
 	ctx := context.Background()
-	publishedAt := github.Timestamp{Time: time.Date(2019, 0o1, 0o1, 0, 0, 0, 0, time.UTC)}
+	publishedAt := github.Timestamp{Time: time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)}
 
 	t.Run("No issues", func(t *testing.T) {
 		ghIssueClient := ghICMock{}
@@ -278,7 +278,7 @@ func TestGetClosedIssuesText(t *testing.T) {
 
 	t.Run("All issues", func(t *testing.T) {
 		ctx := context.Background()
-		publishedAt := github.Timestamp{Time: time.Date(2019, 0o1, 0o1, 0, 0, 0, 0, time.UTC)}
+		publishedAt := github.Timestamp{Time: time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)}
 
 		prHTMLURL := []string{"https://github.com/TEST/test/pull/1", "https://github.com/TEST/test/pull/2"}
 		prTitle := []string{"Pull1", "Pull2"}
