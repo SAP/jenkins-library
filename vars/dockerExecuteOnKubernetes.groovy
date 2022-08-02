@@ -379,10 +379,10 @@ chown -R ${runAsUser}:${fsGroup} ."""
 
         def includes, excludes
 
-        echo "stashIncludes config: ${config.stashIncludes}"
-        echo "stashExcludes config: ${config.stashExcludes}"
-        echo "stashBack config (includes): ${config.stashIncludes.stashBack}"
-        echo "stashBack config (excludes): ${config.stashExcludes.stashBack}"
+        if (config.verbose) {
+            echo "stashIncludes config: ${config.stashIncludes}"
+            echo "stashExcludes config: ${config.stashExcludes}"
+        }
 
         if (stashBack) {
             includes = config.stashIncludes.stashBack ?: config.stashIncludes.workspace
@@ -392,8 +392,10 @@ chown -R ${runAsUser}:${fsGroup} ."""
             excludes = config.stashExcludes.workspace
         }
 
-        echo "stash effective (includes): ${includes}"
-        echo "stash effective (excludes): ${excludes}"
+        if (config.verbose) {
+            echo "stash effective (includes): ${includes}"
+            echo "stash effective (excludes): ${excludes}"
+        }
 
         stash(
             name: stashName,
