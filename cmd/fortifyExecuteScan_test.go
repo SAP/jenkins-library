@@ -62,6 +62,18 @@ func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
 	}
 	return utilsBundle
 }
+func mockExecinPath(exec string) (string, error) {
+	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executable_list {
+		if exec == "fortifyupdate" || exec == "sourceanalyzer" {
+			return "/" + exec, nil
+		} else {
+			err_string := fmt.Sprintf("ERROR , command not found: %s. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return "", errors.New(err_string)
+		}
+	}
+	return "", nil
+}
 
 func failMockExecinPathfortifyupdate(exec string) (string, error) {
 	if exec == "fortifyupdate" {
@@ -502,7 +514,7 @@ func TestExecutions(t *testing.T) {
 			utils := newFortifyTestUtilsBundle()
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
-			execInPath = failMockExecinPathfortifyupdate
+			execInPath = mockExecinPath
 			reports, _ := runFortifyScan(data.config, &ff, utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
