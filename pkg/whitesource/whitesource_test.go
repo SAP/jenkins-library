@@ -55,6 +55,7 @@ func TestGetProductsMetaInfo(t *testing.T) {
 
 	sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 	products, err := sys.GetProductsMetaInfo()
+	assert.NoError(t, err)
 
 	requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
 	assert.NoError(t, err)
@@ -167,6 +168,7 @@ func TestGetProjectsMetaInfo(t *testing.T) {
 
 	sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 	projects, err := sys.GetProjectsMetaInfo("test_product_token")
+	assert.NoError(t, err)
 
 	requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
 	assert.NoError(t, err)

@@ -4,10 +4,14 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
+	"github.com/package-url/packageurl-go"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -283,4 +287,161 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability SARIF file", Target: sarifReportPath})
 
 	return reportPaths, nil
+}
+
+func transformToCdxSeverity(severity string) cdx.Severity {
+	switch severity {
+	case "info":
+		return cdx.SeverityInfo
+	case "low":
+		return cdx.SeverityLow
+	case "medium":
+		return cdx.SeverityMedium
+	case "high":
+		return cdx.SeverityHigh
+	case "critical":
+		return cdx.SeverityCritical
+	case "":
+		return cdx.SeverityNone
+	}
+	return cdx.SeverityUnknown
+}
+
+func WriteCycloneSBOM(scan *Scan, alerts *[]Alert, utils piperutils.FileUtils) ([]piperutils.Path, error) {
+	ppurl := packageurl.NewPackageURL(packageurl.TypeGeneric, "sap", scan.AggregateProjectName, scan.ProductVersion, nil, "")
+	metadata := cdx.Metadata{
+		// Define metadata about the main component
+		// (the component which the BOM will describe)
+		Component: &cdx.Component{
+			BOMRef:  ppurl.ToString(),
+			Type:    cdx.ComponentTypeApplication,
+			Name:    scan.AggregateProjectName,
+			Version: scan.ProductVersion,
+		},
+		// Use properties to include an internal identifier for this BOM
+		// https://cyclonedx.org/use-cases/#properties--name-value-store
+		Properties: &[]cdx.Property{
+			{
+				Name:  "internal:bom-identifier",
+				Value: strings.Join(scan.ScannedProjectNames(), ", "),
+			},
+		},
+	}
+
+	components := []cdx.Component{}
+	dependencies := []cdx.Dependency{}
+	vulnerabilities := []cdx.Vulnerability{}
+
+	for _, alert := range *alerts {
+		purl := packageurl.NewPackageURL(packageurl.TypeGeneric, alert.Library.GroupID, alert.Library.ArtifactID, alert.Library.Version, nil, "")
+		// Define the components that acme-app ships with
+		// https://cyclonedx.org/use-cases/#inventory
+		component := cdx.Component{
+			BOMRef:     "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0",
+			Type:       cdx.ComponentTypeLibrary,
+			Author:     "CycloneDX",
+			Name:       "cyclonedx-go",
+			Version:    "v0.3.0",
+			PackageURL: "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0",
+		}
+		components = append(components, component)
+
+		// Define the dependency graph
+		// https://cyclonedx.org/use-cases/#dependency-graph
+		var dependency cdx.Dependency
+		if alert.DirectDependency {
+			dependency = cdx.Dependency{
+				Ref: ppurl.ToString(),
+				Dependencies: &[]cdx.Dependency{
+					{Ref: "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0"},
+				},
+			}
+		} else {
+			dependency = cdx.Dependency{
+				Ref: "pkg:golang/github.com/CycloneDX/cyclonedx-go@v0.3.0",
+			}
+		}
+		dependencies = append(dependencies, dependency)
+
+		// Define the vulnerabilities in VEX
+		// https://cyclonedx.org/use-cases/#vulnerability-exploitability
+		vuln := cdx.Vulnerability{
+			BOMRef: purl.ToString(),
+			ID:     alert.Vulnerability.Name,
+			Source: &cdx.Source{URL: alert.Vulnerability.URL},
+			Tools: &[]cdx.Tool{
+				{
+					Name:    scan.AgentName,
+					Version: scan.AgentVersion,
+					Vendor:  "Mend",
+					ExternalReferences: &[]cdx.ExternalReference{
+						{
+							URL: "https://www.mend.io/",
+						},
+					},
+				},
+			},
+			Recommendation: alert.Vulnerability.FixResolutionText,
+			Detail:         alert.Vulnerability.Description,
+			Ratings: &[]cdx.VulnerabilityRating{
+				{
+					Score:    &alert.Vulnerability.CVSS3Score,
+					Severity: transformToCdxSeverity(alert.Vulnerability.Severity),
+					Method:   cdx.ScoringMethodCVSSv3,
+				},
+				{
+					Score:    &alert.Vulnerability.Score,
+					Severity: transformToCdxSeverity(alert.Vulnerability.Severity),
+					Method:   cdx.ScoringMethodCVSSv2,
+				},
+			},
+			Advisories: &[]cdx.Advisory{
+				{
+					Title: alert.Vulnerability.TopFix.Vulnerability,
+					URL:   alert.Vulnerability.TopFix.Origin,
+				},
+			},
+			Description: alert.Description,
+			Created:     alert.CreationDate,
+			Published:   alert.Vulnerability.PublishDate,
+			Updated:     alert.ModifiedDate,
+			Affects: &[]cdx.Affects{
+				{
+					Ref: purl.ToString(),
+					Range: &[]cdx.AffectedVersions{
+						{
+							Version: alert.Library.Version,
+							Status:  cdx.VulnerabilityStatus(alert.Status),
+						},
+					},
+				},
+			},
+		}
+		references := []cdx.VulnerabilityReference{}
+		for _, ref := range alert.Vulnerability.References {
+			reference := cdx.VulnerabilityReference{
+				Source: &cdx.Source{Name: ref.Homepage, URL: ref.URL},
+				ID:     ref.GenericPackageIndex,
+			}
+			references = append(references, reference)
+		}
+		vuln.References = &references
+		vulnerabilities = append(vulnerabilities, vuln)
+	}
+
+	// Assemble the BOM
+	bom := cdx.NewBOM()
+	bom.Vulnerabilities = &vulnerabilities
+	bom.Metadata = &metadata
+	bom.Components = &components
+	bom.Dependencies = &dependencies
+
+	// Encode the BOM
+	encoder := cdx.NewBOMEncoder(os.Stdout, cdx.BOMFileFormatXML)
+	encoder.SetPretty(true)
+	if err := encoder.Encode(bom); err != nil {
+		panic(err)
+	}
+
+	return nil, nil
 }
