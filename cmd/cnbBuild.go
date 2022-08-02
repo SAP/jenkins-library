@@ -409,6 +409,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
 	}
 
+	tempdir, err := os.MkdirTemp("", "cnbBuild-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(tempdir)
+	if config.BuildEnvVars == nil {
+		config.BuildEnvVars = map[string]interface{}{}
+	}
+	config.BuildEnvVars["TMPDIR"] = tempdir
+
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, cnbTelemetry.dockerImage, config)
 
@@ -540,8 +550,8 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
 		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
-		defer utils.RemoveAll(buildpacksPath)
-		defer utils.RemoveAll(orderPath)
+		defer func() { _ = utils.RemoveAll(buildpacksPath) }()
+		defer func() { _ = utils.RemoveAll(orderPath) }()
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
