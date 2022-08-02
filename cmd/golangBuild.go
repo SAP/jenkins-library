@@ -34,7 +34,7 @@ const (
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
-	sbomFilename                = "bom.xml"
+	sbomFilename                = "bom-golang.xml"
 	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 	golangciLintVersion         = "v1.46.2"
 )

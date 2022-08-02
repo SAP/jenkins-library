@@ -411,6 +411,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
 	}
 
+	tempdir, err := os.MkdirTemp("", "cnbBuild-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(tempdir)
+	if config.BuildEnvVars == nil {
+		config.BuildEnvVars = map[string]interface{}{}
+	}
+	config.BuildEnvVars["TMPDIR"] = tempdir
+
 	customTelemetryData := cnbBuildTelemetryData{}
 	addConfigTelemetryData(utils, &customTelemetryData, cnbTelemetry.dockerImage, config)
 
