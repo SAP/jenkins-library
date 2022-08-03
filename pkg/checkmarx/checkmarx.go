@@ -192,6 +192,7 @@ type DetailedResult struct {
 // Query - Query Structure
 type Query struct {
 	XMLName xml.Name `xml:"Query"`
+	Name string `xml:"name,attr"`
 	Results []Result `xml:"Result"`
 }
 
