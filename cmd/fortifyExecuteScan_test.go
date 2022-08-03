@@ -22,10 +22,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
@@ -35,26 +34,24 @@ type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
 	getArtifactShouldFail bool
-	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
-	ghCreateIssueError    error
 }
 
-func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (f *fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	panic("not expected to be called in tests")
 }
 
-func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
+func (f *fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
 	if f.getArtifactShouldFail {
 		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
 	}
 	return artifactMock{Coordinates: newCoordinatesMock()}, nil
 }
 
-func (f fortifyTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	if f.ghCreateIssueError != nil {
-		return f.ghCreateIssueError
-	}
-	f.ghCreateIssueOptions = ghCreateIssueOptions
+func (f *fortifyTestUtilsBundle) GetIssueService() *github.IssuesService {
+	return nil
+}
+
+func (cf *fortifyTestUtilsBundle) GetSearchService() *github.SearchService {
 	return nil
 }
 
@@ -77,16 +74,20 @@ func newCoordinatesMock() versioning.Coordinates {
 		Version:    "1.0.0",
 	}
 }
+
 func (a artifactMock) VersioningScheme() string {
 	return "full"
 }
+
 func (a artifactMock) GetVersion() (string, error) {
 	return a.Coordinates.Version, nil
 }
+
 func (a artifactMock) SetVersion(v string) error {
 	a.Coordinates.Version = v
 	return nil
 }
+
 func (a artifactMock) GetCoordinates() (versioning.Coordinates, error) {
 	return a.Coordinates, nil
 }
@@ -100,21 +101,27 @@ type fortifyMock struct {
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
 	return &models.Project{Name: &name, ID: 64}, nil
 }
+
 func (f *fortifyMock) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: id, Name: &name, Project: &models.Project{Name: &projectName}}, nil
 }
+
 func (f *fortifyMock) GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error) {
 	return []*models.Attribute{}, nil
 }
+
 func (f *fortifyMock) SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error) {
 	return attributes, nil
 }
+
 func (f *fortifyMock) CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: 4711, Name: &projectVersionName, Project: &models.Project{Name: &projectName}}, nil
 }
+
 func (f *fortifyMock) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: 4712, Name: &pullRequestName, Project: masterProjectVersion.Project}, nil
 }
+
 func (f *fortifyMock) CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error) {
 	return version, nil
 }
@@ -122,19 +129,24 @@ func (f *fortifyMock) CreateProjectVersion(version *models.ProjectVersion) (*mod
 func (f *fortifyMock) ProjectVersionCopyFromPartial(sourceID, targetID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) ProjectVersionCopyPermissions(sourceID, targetID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
 	name := "Committed"
 	return &models.ProjectVersion{ID: id, Name: &name}, nil
 }
+
 func (f *fortifyMock) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
 	return nil
 }
+
 func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error) {
 	switch id {
 	case 4711:
@@ -198,12 +210,15 @@ func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact
 		return []*models.Artifact{}, nil
 	}
 }
+
 func (f *fortifyMock) GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error) {
 	return &models.FilterSet{}, nil
 }
+
 func (f *fortifyMock) GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error) {
 	return &models.IssueFilterSelectorSet{}, nil
 }
+
 func (f *fortifyMock) GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector {
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {
@@ -214,6 +229,7 @@ func (f *fortifyMock) GetFilterSetByDisplayName(issueFilterSelectorSet *models.I
 	}
 	return &models.IssueFilterSelector{DisplayName: name}
 }
+
 func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
 	if filter == "ET1:abcd" {
 		group := "HTTP Verb tampering"
@@ -260,13 +276,16 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		{ID: &group3, CleanName: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }
+
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
 	return issueFilterSelectorSet
 }
+
 func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
 	suppressed := int32(6)
 	return []*models.IssueStatistics{{SuppressedCount: &suppressed}}, nil
 }
+
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
 		f.Successive = true
@@ -275,31 +294,38 @@ func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTem
 	f.Successive = false
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+
 func (f *fortifyMock) GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error) {
 	exploitable := "Exploitable"
 	friority := "High"
 	hascomments := true
 	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}, {ID: 1112, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
 }
+
 func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	exploitable := "Exploitable"
 	friority := "High"
 	hascomments := true
 	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
 }
+
 func (f *fortifyMock) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
 	comment := "Dummy"
 	return []*models.IssueAuditComment{{Comment: &comment}}, nil
 }
+
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
 	return []byte("abcd"), nil
 }
+
 func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	return []byte("defg"), nil
 }
@@ -364,6 +390,7 @@ func (er *execRunnerMock) Stdout(out io.Writer) {
 func (er *execRunnerMock) Stderr(err io.Writer) {
 	er.currentExecution().errWriter = err
 }
+
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
@@ -383,7 +410,7 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
-		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
+		err := ioutil.WriteFile(path, []byte(classpathMaven), 0o644)
 		if err != nil {
 			return err
 		}
@@ -397,7 +424,7 @@ func TestDetermineArtifact(t *testing.T) {
 		utilsMock := newFortifyTestUtilsBundle()
 		utilsMock.getArtifactShouldFail = true
 
-		_, err := determineArtifact(fortifyExecuteScanOptions{}, utilsMock)
+		_, err := determineArtifact(fortifyExecuteScanOptions{}, &utilsMock)
 		assert.EqualError(t, err, "Unable to get artifact from descriptor : build tool '' not supported")
 	})
 }
@@ -406,7 +433,6 @@ func TestExecutions(t *testing.T) {
 	type parameterTestData struct {
 		nameOfRun             string
 		config                fortifyExecuteScanOptions
-		expectedError         string
 		expectedReportsLength int
 		expectedReports       []string
 	}
@@ -433,11 +459,12 @@ func TestExecutions(t *testing.T) {
 
 	for _, data := range testData {
 		t.Run(data.nameOfRun, func(t *testing.T) {
+			ctx := context.Background()
 			ff := fortifyMock{}
 			utils := newFortifyTestUtilsBundle()
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
-			reports, _ := runFortifyScan(data.config, &ff, utils, nil, &influx, auditStatus)
+			reports, _ := runFortifyScan(ctx, data.config, &ff, &utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
 			}
@@ -578,7 +605,8 @@ func TestTriggerFortifyScan(t *testing.T) {
 			BuildDescriptorFile:      "./pom.xml",
 			AdditionalScanParameters: []string{"-Dtest=property"},
 			Memory:                   "-Xmx4G -Xms2G",
-			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
+			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"},
+		}
 		triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, utils.numExecutions)
@@ -686,8 +714,10 @@ func TestGenerateAndDownloadQGateReport(t *testing.T) {
 	})
 }
 
-var defaultPollingDelay = 10 * time.Second
-var defaultPollingTimeout = 0 * time.Minute
+var (
+	defaultPollingDelay   = 10 * time.Second
+	defaultPollingTimeout = 0 * time.Minute
+)
 
 func verifyScanResultsFinishedUploadingDefaults(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64) error {
 	return verifyScanResultsFinishedUploading(config, sys, projectVersionID, "", &models.FilterSet{},
@@ -957,7 +987,6 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"classpath":""}]`, translate)
 	})
-
 }
 
 func TestPopulatePipTranslate(t *testing.T) {
@@ -997,7 +1026,8 @@ func TestPopulatePipTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{
 			Translate:            `[{"pythonPath":""}]`,
 			Src:                  []string{"./**/*"},
-			PythonAdditionalPath: []string{"./lib", "."}}
+			PythonAdditionalPath: []string{"./lib", "."},
+		}
 		translate, err := populatePipTranslate(&config, "ignored/path")
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")
