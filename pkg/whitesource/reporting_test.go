@@ -67,7 +67,9 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		config := &ScanOptions{}
 		scan := &Scan{
 			AggregateProjectName: config.ProjectName,
+			BuildTool:            "maven",
 			ProductVersion:       config.ProductVersion,
+			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
 		}
 		scan.AppendScannedProject("testProject")
 		alerts := []Alert{
@@ -81,9 +83,7 @@ func TestCreateCycloneSBOM(t *testing.T) {
 			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"},
 		}
 
-		coordinates := versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"}
-
-		contents, err := CreateCycloneSBOM("maven", coordinates, scan, &libraries, &alerts)
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)
 		assert.NoError(t, err, "unexpected error")
 		buffer := bytes.NewBuffer(contents)
 		decoder := cdx.NewBOMDecoder(buffer, cdx.BOMFileFormatXML)

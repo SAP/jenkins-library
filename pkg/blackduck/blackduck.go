@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"

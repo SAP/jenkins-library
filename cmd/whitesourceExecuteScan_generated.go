@@ -27,6 +27,7 @@ type whitesourceExecuteScanOptions struct {
 	AgentParameters                      []string `json:"agentParameters,omitempty"`
 	AgentURL                             string   `json:"agentUrl,omitempty"`
 	AggregateVersionWideReport           bool     `json:"aggregateVersionWideReport,omitempty"`
+	AssessmentFile                       string   `json:"assessmentFile,omitempty"`
 	BuildDescriptorExcludeList           []string `json:"buildDescriptorExcludeList,omitempty"`
 	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty"`
 	BuildTool                            string   `json:"buildTool,omitempty"`
@@ -310,6 +311,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringSliceVar(&stepConfig.AgentParameters, "agentParameters", []string{}, "[NOT IMPLEMENTED] List of additional parameters passed to the Unified Agent command line.")
 	cmd.Flags().StringVar(&stepConfig.AgentURL, "agentUrl", `https://saas.whitesourcesoftware.com/agent`, "URL to the WhiteSource agent endpoint.")
 	cmd.Flags().BoolVar(&stepConfig.AggregateVersionWideReport, "aggregateVersionWideReport", false, "This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion")
+	cmd.Flags().StringVar(&stepConfig.AssessmentFile, "assessmentFile", `hs-assessments.yaml`, "Explicit path to the assessment YAML file.")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Explicit path to the build descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
@@ -428,6 +430,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "assessmentFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `hs-assessments.yaml`,
 					},
 					{
 						Name:        "buildDescriptorExcludeList",
