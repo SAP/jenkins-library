@@ -68,7 +68,7 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.1:makeAggregateBom")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.2")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeBomSerialNumber=true")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeCompileScope=true")
@@ -78,6 +78,7 @@ func TestMavenBuild(t *testing.T) {
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeTestScope=false")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeLicenseText=false")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputFormat=xml")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputName=bom-maven")
 	})
 
 	t.Run("mavenBuild include install and deploy when publish is true", func(t *testing.T) {

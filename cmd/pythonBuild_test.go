@@ -5,27 +5,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type pythonBuildMockUtils struct {
-	t      *testing.T
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
-}
-
-type puthonBuildMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-
-	clientOptions []piperhttp.ClientOptions // set by mock
-	fileUploads   map[string]string         // set by mock
 }
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
@@ -110,6 +99,6 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-bom"), utils.ExecMockRunner.Calls[4].Exec)
-		assert.Equal(t, []string{"--e", "--output", "bom.xml"}, utils.ExecMockRunner.Calls[4].Params)
+		assert.Equal(t, []string{"--e", "--output", "bom-pip.xml"}, utils.ExecMockRunner.Calls[4].Params)
 	})
 }
