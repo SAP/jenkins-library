@@ -88,7 +88,7 @@ func (p *golangBuildReports) persist(stepConfig golangBuildOptions, gcpJsonKeyFi
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/bom-golang.xml", ParamRef: "", StepResultType: "sbom"},
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 	}
@@ -550,7 +550,7 @@ func golangBuildMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/bom-golang.xml", "type": "sbom"},
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 						},
