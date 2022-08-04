@@ -240,32 +240,29 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		prErr, pwErr := io.Pipe()
 		trErr := io.TeeReader(stderr, pwErr)
 		srcErr = prErr
-		wg.Go(func() (err error) {
-			defer func() {
-				dErr := pwOut.Close()
-				if dErr != nil {
-					err = fmt.Errorf("can't close piper writer: %w", dErr)
+		type rw struct {
+			tr io.Reader
+			pw *io.PipeWriter
+		}
+		for _, source := range []rw{
+			{trOut, pwOut},
+			{trErr, pwErr},
+		} {
+			s := source
+			wg.Go(func() (err error) {
+				defer func() {
+					dErr := s.pw.Close()
+					if dErr != nil {
+						err = fmt.Errorf("can't close piper writer: %w", dErr)
+					}
+				}()
+				err = c.scanLog(s.tr)
+				if err != nil {
+					err = fmt.Errorf("can't scan log: %w", err)
 				}
-			}()
-			err = c.scanLog(trOut)
-			if err != nil {
-				err = fmt.Errorf("can't scan log: %w", err)
-			}
-			return
-		})
-		wg.Go(func() (err error) {
-			defer func() {
-				dErr := pwErr.Close()
-				if dErr != nil {
-					err = fmt.Errorf("can't close piper writer: %w", dErr)
-				}
-			}()
-			err = c.scanLog(trErr)
-			if err != nil {
-				err = fmt.Errorf("can't scan log: %w", err)
-			}
-			return nil
-		})
+				return
+			})
+		}
 	}
 	if c.StepName != "" {
 		cl := cumuluslog.NewCumulusLogger(c.StepName)
@@ -295,20 +292,23 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 			return nil, fmt.Errorf("can't write log: %w", err)
 		}
 	}
-	wg.Go(func() error {
-		_, err := piperutils.CopyData(c.stdout, srcOut)
-		if err != nil {
-			return fmt.Errorf("can't copy data: %w", err)
-		}
-		return nil
-	})
-	wg.Go(func() error {
-		_, err := piperutils.CopyData(c.stderr, srcErr)
-		if err != nil {
-			return fmt.Errorf("can't copy data: %w", err)
-		}
-		return nil
-	})
+	type rw struct {
+		std io.Writer
+		src io.ReadCloser
+	}
+	for _, source := range []rw{
+		{c.stdout, srcOut},
+		{c.stderr, srcErr},
+	} {
+		s := source
+		wg.Go(func() error {
+			_, err := piperutils.CopyData(s.std, s.src)
+			if err != nil {
+				return fmt.Errorf("can't copy data: %w", err)
+			}
+			return nil
+		})
+	}
 	err = wg.Wait()
 	if err != nil {
 		return nil, fmt.Errorf("waitgroup error: %w", err)
