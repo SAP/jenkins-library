@@ -901,6 +901,37 @@ func TestEnforceThresholds(t *testing.T) {
 	results["Medium"].(map[string]int)["Issues"] = 10
 	results["Low"].(map[string]int)["Issues"] = 10
 
+	lowPerQuery := map[string]map[string]int{}
+	submap := map[string]int{}
+	submap["Issues"] = 8
+	submap["Confirmed"] = 1
+	submap["NotExploitable"] = 0
+	lowPerQuery["Low_Query_Name_1"] = submap
+	submap = map[string]int{}
+	submap["Issues"] = 100
+	submap["Confirmed"] = 5
+	submap["NotExploitable"] = 5
+	lowPerQuery["Low_Query_Name_2"] = submap
+	results["LowPerQuery"] = lowPerQuery
+
+	t.Run("percentage low violation per query", func(t *testing.T) {
+		t.Parallel()
+
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 0, VulnerabilityThresholdMedium: 0, VulnerabilityThresholdLow: 20, VulnerabilityThresholdEnabled: true, VulnerabilityThresholdLowPerQuery: true, VulnerabilityThresholdLowPerQueryMax: 10}
+		insecure, _, _ := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("percentage low no violation per query", func(t *testing.T) {
+		t.Parallel()
+
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 0, VulnerabilityThresholdMedium: 0, VulnerabilityThresholdLow: 10, VulnerabilityThresholdEnabled: true, VulnerabilityThresholdLowPerQuery: true, VulnerabilityThresholdLowPerQueryMax: 10}
+		insecure, _, _ := enforceThresholds(options, results)
+
+		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
+	})
+
 	t.Run("percentage high violation", func(t *testing.T) {
 		t.Parallel()
 

@@ -818,18 +818,17 @@ func getDetailedResults(config checkmarxExecuteScanOptions, sys checkmarx.System
 		if config.VulnerabilityThresholdLowPerQuery {
 			var lowPerQuery = map[string]map[string]int{}
 			for _, query := range xmlResult.Queries {
-				key := query.Name
-				var submap map[string]int
-				if lowPerQuery[key] == nil {
-					submap = map[string]int{}
-					lowPerQuery[key] = submap
-				} else {
-					submap = lowPerQuery[key]
-				}
-
 				for _, result := range query.Results {
 					if result.Severity != "Low" {
 						continue
+					}
+					key := query.Name
+					var submap map[string]int
+					if lowPerQuery[key] == nil {
+						submap = map[string]int{}
+						lowPerQuery[key] = submap
+					} else {
+						submap = lowPerQuery[key]
 					}
 					submap["Issues"]++
 					auditState := "ToVerify"
