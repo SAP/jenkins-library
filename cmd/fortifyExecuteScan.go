@@ -1005,7 +1005,7 @@ func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath s
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/src/gen/java/cds/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
 	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
