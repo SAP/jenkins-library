@@ -9,7 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config/interpolation"
 	"github.com/SAP/jenkins-library/pkg/log"
-	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 )
@@ -285,7 +285,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 				os.Setenv(envVariable, secretValue)
 				envVariable = vaultCredentialEnvPrefix + convertEnvVar(secretKey) + "_BASE64"
 				log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
-				os.Setenv(envVariable, CredentialUtils.EncodeString(secretValue))
+				os.Setenv(envVariable, piperutils.EncodeString(secretValue))
 				matched = true
 			}
 		}
@@ -303,7 +303,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 					os.Setenv(envVariable, secretValue)
 					envVariable = vaultCredentialEnvPrefixDefault + convertEnvVar(secretKey) + "_BASE64"
 					log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
-					os.Setenv(envVariable, CredentialUtils.EncodeString(secretValue))
+					os.Setenv(envVariable, piperutils.EncodeString(secretValue))
 					matched = true
 				}
 			}
@@ -369,7 +369,8 @@ func RemoveVaultSecretFiles() {
 func createTemporarySecretFile(namePattern string, content string) (string, error) {
 	if VaultSecretFileDirectory == "" {
 		var err error
-		VaultSecretFileDirectory, err = ioutil.TempDir(".", "vault")
+		fileUtils := &piperutils.Files{}
+		VaultSecretFileDirectory, err = fileUtils.TempDir("", "vault")
 		if err != nil {
 			return "", err
 		}
