@@ -1,4 +1,4 @@
-package cumuluslog
+package cumulusurllog
 
 import (
 	"bytes"

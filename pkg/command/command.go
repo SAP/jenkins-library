@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/cumuluslog"
+	"github.com/SAP/jenkins-library/pkg/cumulusurllog"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
@@ -265,7 +265,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		}
 	}
 	if c.StepName != "" {
-		cl := cumuluslog.NewCumulusLogger(c.StepName)
+		cl := cumulusurllog.NewCumulusLogger(c.StepName)
 		for _, source := range []io.ReadCloser{srcOut, srcErr} {
 			s := source
 			wg.Go(func() error {
