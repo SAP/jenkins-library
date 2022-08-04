@@ -189,15 +189,15 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = scan.AgentName
 	tool.Driver.Version = scan.AgentVersion
-	tool.Driver.InformationUri = "https://whitesource.atlassian.net/wiki/spaces/WD/pages/804814917/Unified+Agent+Overview"
+	tool.Driver.InformationUri = "https://mend.io"
 
 	// Handle results/vulnerabilities
 	for i := 0; i < len(*alerts); i++ {
 		alert := (*alerts)[i]
 		result := *new(format.Results)
-		id := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
-		log.Entry().Debugf("Transforming alert %v into SARIF format", id)
-		result.RuleID = id
+		ruleId := alert.Vulnerability.Name
+		log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
+		result.RuleID = ruleId
 		result.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
 		result.RuleIndex = i //Seems very abstract
 		result.Message = new(format.Message)
@@ -208,13 +208,9 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.AnalysisTarget = artLoc
 		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}}}
 		result.Locations = append(result.Locations, location)
-		//TODO add audit and tool related information, maybe fortifyCategory needs to become more general
-		//result.Properties = new(format.SarifProperties)
-		//result.Properties.ToolSeverity
-		//result.Properties.ToolAuditMessage
 
 		sarifRule := *new(format.SarifRule)
-		sarifRule.ID = id
+		sarifRule.ID = ruleId
 		sd := new(format.Message)
 		sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
 		sarifRule.ShortDescription = sd
@@ -232,9 +228,8 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 
 		ruleProp := *new(format.SarifRuleProperties)
 		ruleProp.Tags = append(ruleProp.Tags, alert.Type)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Description)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Library.ArtifactID)
-		ruleProp.Precision = "very-high"
+		ruleProp.Tags = append(ruleProp.Tags, alert.Library.ToPackageURL())
+		ruleProp.SecuritySeverity = consolidateSeverities(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
 		sarifRule.Properties = &ruleProp
 
 		//Finalize: append the result and the rule
@@ -248,23 +243,25 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 }
 
 func transformToLevel(cvss2severity, cvss3severity string) string {
-	switch cvss3severity {
+	cvssseverity := consolidateSeverities(cvss2severity, cvss3severity)
+	switch cvssseverity {
 	case "low":
 		return "warning"
 	case "medium":
 		return "warning"
 	case "high":
 		return "error"
-	}
-	switch cvss2severity {
-	case "low":
-		return "warning"
-	case "medium":
-		return "warning"
-	case "high":
+	case "critical":
 		return "error"
 	}
 	return "none"
+}
+
+func consolidateSeverities(cvss2severity, cvss3severity string) string {
+	if len(cvss3severity) > 0 {
+		return cvss3severity
+	}
+	return cvss2severity
 }
 
 // WriteSarifFile write a JSON sarif format file for upload into e.g. GCP
