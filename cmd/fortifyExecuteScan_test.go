@@ -463,7 +463,7 @@ func TestFailFortifyexecinPath(t *testing.T) {
 		auditStatus := map[string]string{}
 		execInPath = failMockExecinPathfortifyupdate
 		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
-		_, err := runFortifyScan(ctx, config, &ff, utils, nil, &influx, auditStatus)
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
 		assert.EqualError(t, err, "ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 
 	})
@@ -475,7 +475,7 @@ func TestFailFortifyexecinPath(t *testing.T) {
 		auditStatus := map[string]string{}
 		execInPath = failMockExecinPathsourceanalyzer
 		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
-		_, err := runFortifyScan(ctx, config, &ff, utils, nil, &influx, auditStatus)
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
 		assert.EqualError(t, err, "ERROR , command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
 
 	})
@@ -517,7 +517,7 @@ func TestExecutions(t *testing.T) {
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
 			execInPath = mockExecinPath
-			reports, _ := runFortifyScan(ctx, data.config, &ff, utils, nil, &influx, auditStatus)
+			reports, _ := runFortifyScan(ctx, data.config, &ff, &utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
 			}
