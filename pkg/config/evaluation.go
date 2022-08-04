@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -125,10 +126,7 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	}
 
 	if len(s.ConfigKey) > 0 {
-		if configValue := config.Config[s.ConfigKey]; configValue != nil {
-			return true, nil
-		}
-		return false, nil
+		return checkConfigKeyV1(s.ConfigKey, config)
 	}
 
 	if len(s.FilePattern) > 0 {
@@ -192,6 +190,32 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	} else {
 		return true, nil
 	}
+}
+
+func checkConfigKeyV1(configKey string, config StepConfig) (bool, error) {
+	// support for nested key
+	if strings.Contains(configKey, "/") {
+		log.Entry().Debugf("found nested config key %v", configKey)
+		listKeys := strings.Split(configKey, "/")
+		var raw interface{} = config.Config
+		var ok bool
+		lastIndex := len(listKeys) - 1
+		for i, key := range listKeys {
+			currentConfig, casted := raw.(map[string]interface{})
+			if !casted {
+				log.Entry().Errorf("failed to typecast %T", raw)
+				break
+			}
+			if raw, ok = currentConfig[key]; ok && lastIndex == i {
+				return true, nil
+			}
+		}
+	} else {
+		if configValue := config.Config[configKey]; configValue != nil {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
