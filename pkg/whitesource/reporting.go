@@ -330,11 +330,14 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 	metadata := cdx.Metadata{
 		// Define metadata about the main component
 		// (the component which the BOM will describe)
+
+		// TODO check whether we can identify library vs. application
 		Component: &cdx.Component{
 			BOMRef:  ppurl.ToString(),
-			Type:    cdx.ComponentTypeApplication,
-			Name:    scan.AggregateProjectName,
-			Version: scan.ProductVersion,
+			Type:    cdx.ComponentTypeLibrary,
+			Name:    scan.Coordinates.ArtifactID,
+			Group:   scan.Coordinates.GroupID,
+			Version: scan.Coordinates.Version,
 		},
 		// Use properties to include an internal identifier for this BOM
 		// https://cyclonedx.org/use-cases/#properties--name-value-store
