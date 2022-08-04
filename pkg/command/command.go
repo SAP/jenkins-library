@@ -291,6 +291,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		if err != nil {
 			return nil, fmt.Errorf("can't write log: %w", err)
 		}
+		return &execution, nil
 	}
 	type rw struct {
 		std io.Writer
