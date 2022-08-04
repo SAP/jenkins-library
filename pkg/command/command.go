@@ -244,7 +244,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 			defer func() {
 				dErr := pwOut.Close()
 				if dErr != nil {
-					err = fmt.Errorf("can't close piper writer ")
+					err = fmt.Errorf("can't close piper writer: %w", dErr)
 				}
 			}()
 			err = c.scanLog(trOut)
@@ -257,7 +257,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 			defer func() {
 				dErr := pwErr.Close()
 				if dErr != nil {
-					err = fmt.Errorf("can't close piper writer ")
+					err = fmt.Errorf("can't close piper writer: %w", dErr)
 				}
 			}()
 			err = c.scanLog(trErr)
@@ -269,45 +269,31 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 	if c.StepName != "" {
 		cl := cumuluslog.NewCumulusLogger(c.StepName)
-		wg.Go(func() error {
-			var buf bytes.Buffer
-			br := bufio.NewWriter(&buf)
-			_, err := piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
-			if err != nil {
-				return fmt.Errorf("can't copy data: %w", err)
-			}
-			err = br.Flush()
-			if err != nil {
-				return fmt.Errorf("can't flush: %w", err)
-			}
-			cl.Parse(buf)
-			return nil
-		})
-		wg.Go(func() error {
-			var buf bytes.Buffer
-			bw := bufio.NewWriter(&buf)
-			_, err := piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
-			if err != nil {
-				return fmt.Errorf("can't copy data: %w", err)
-			}
-			err = bw.Flush()
-			if err != nil {
-				return fmt.Errorf("can't flush: %w", err)
-			}
-			cl.Parse(buf)
-			return nil
-		})
+		for _, source := range []io.ReadCloser{srcOut, srcErr} {
+			s := source
+			wg.Go(func() error {
+				var buf bytes.Buffer
+				w := bufio.NewWriter(&buf)
+				_, err := piperutils.CopyData(w, s)
+				if err != nil {
+					return fmt.Errorf("can't copy data: %w", err)
+				}
+				err = w.Flush()
+				if err != nil {
+					return fmt.Errorf("can't flush: %w", err)
+				}
+				cl.Parse(buf)
+				return nil
+			})
+		}
 		err = wg.Wait()
 		if err != nil {
 			return nil, fmt.Errorf("waitgroup error: %w", err)
 		}
-		if c.StepName != "" {
-			dErr := cl.WriteURLsLogToJSON()
-			if dErr != nil {
-				err = fmt.Errorf("can't write log: %w", dErr)
-			}
+		err = cl.WriteURLsLogToJSON()
+		if err != nil {
+			return nil, fmt.Errorf("can't write log: %w", err)
 		}
-		return &execution, nil
 	}
 	wg.Go(func() error {
 		_, err := piperutils.CopyData(c.stdout, srcOut)
