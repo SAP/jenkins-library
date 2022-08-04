@@ -645,6 +645,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 	return reportPaths, nil
 }
 
+// read assessments from file and expose them to match alerts and filter them before processing
 func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) *[]format.Assessment {
 	exists, err := utils.FileExists(assessmentFilePath)
 	if err != nil {

@@ -3,6 +3,7 @@ package whitesource
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"testing"
 
@@ -66,6 +67,8 @@ func TestCreateCycloneSBOM(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		config := &ScanOptions{}
 		scan := &Scan{
+			AgentName:            "Mend Unified Agent",
+			AgentVersion:         "3.3.3",
 			AggregateProjectName: config.ProjectName,
 			BuildTool:            "maven",
 			ProductVersion:       config.ProductVersion,
@@ -98,6 +101,38 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		assert.Equal(t, true, components[0].Name == "log4j" || components[0].Name == "commons-lang")
 		assert.Equal(t, true, components[1].Name == "log4j" || components[1].Name == "commons-lang")
 		assert.Equal(t, true, components[0].Name != components[1].Name)
+	})
+
+	t.Run("success - golden", func(t *testing.T) {
+		config := &ScanOptions{ProjectName: "myproduct - 1.3.4", ProductVersion: "1"}
+		scan := &Scan{
+			AgentName:            "Mend Unified Agent",
+			AgentVersion:         "3.3.3",
+			AggregateProjectName: config.ProjectName,
+			BuildTool:            "maven",
+			ProductVersion:       config.ProductVersion,
+			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
+		}
+		scan.AppendScannedProject("testProject")
+		alerts := []Alert{
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1"}, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7.0, Score: 6, Severity: "medium", PublishDate: "01.01.2022"}},
+			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8.0, Severity: "high", PublishDate: "02.01.2022", TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3"}, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6, Severity: "medium", PublishDate: "03.01.2022"}},
+		}
+
+		libraries := []Library{
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}}},
+			{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3", Dependencies: []Library{{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}}},
+		}
+
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)
+		assert.NoError(t, err, "unexpected error")
+
+		goldenFilePath := filepath.Join("testdata", "sbom.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		assert.NoError(t, err)
+
+		assert.Equal(t, string(expected), string(contents))
 	})
 }
 

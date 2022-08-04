@@ -347,9 +347,12 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 	}
 
 	components := []cdx.Component{}
-	flatUniqueLibrariesMap := map[int]Library{}
+	flatUniqueLibrariesMap := map[string]Library{}
 	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap)
 	flatUniqueLibraries := piperutils.Values(flatUniqueLibrariesMap)
+	sort.Slice(flatUniqueLibraries, func(i, j int) bool {
+		return flatUniqueLibraries[i].ToPackageUrl().ToString() < flatUniqueLibraries[j].ToPackageUrl().ToString()
+	})
 	for _, lib := range flatUniqueLibraries {
 		purl := lib.ToPackageUrl()
 		// Define the components that the product ships with
@@ -384,7 +387,8 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 					Vendor:  "Mend",
 					ExternalReferences: &[]cdx.ExternalReference{
 						{
-							URL: "https://www.mend.io/",
+							URL:  "https://www.mend.io/",
+							Type: cdx.ERTypeBuildMeta,
 						},
 					},
 				},
@@ -473,12 +477,13 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 	return paths, nil
 }
 
-func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[int]Library) {
+func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Library) {
 	for _, lib := range *libraries {
+		key := lib.ToPackageUrl().ToString()
 		flatMap := *flatMapRef
-		lookup := flatMap[lib.KeyID]
+		lookup := flatMap[key]
 		if lookup.KeyID != lib.KeyID {
-			flatMap[lib.KeyID] = lib
+			flatMap[key] = lib
 			if len(lib.Dependencies) > 0 {
 				transformToUniqueFlatList(&lib.Dependencies, flatMapRef)
 			}
