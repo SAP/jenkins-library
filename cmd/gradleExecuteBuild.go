@@ -100,8 +100,10 @@ type gradleExecuteBuildUtilsBundle struct {
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 	utils := gradleExecuteBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command: &command.Command{
+			StepName: "gradleExecuteBuild",
+		},
+		Files: &piperutils.Files{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
