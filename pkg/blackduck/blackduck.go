@@ -12,6 +12,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
 )
 
@@ -66,10 +67,15 @@ type Components struct {
 }
 
 type Component struct {
-	Name         string `json:"componentName,omitempty"`
-	Version      string `json:"componentVersionName,omitempty"`
-	PolicyStatus string `json:"policyStatus,omitempty"`
-	Metadata     `json:"_meta,omitempty"`
+	Name                string `json:"componentName,omitempty"`
+	Version             string `json:"componentVersionName,omitempty"`
+	ComponentOriginName string `json:"componentVersionOriginName,omitempty"`
+	PolicyStatus        string `json:"policyStatus,omitempty"`
+	Metadata            `json:"_meta,omitempty"`
+}
+
+func (c Component) ToPackageUrl() *packageurl.PackageURL {
+	return packageurl.NewPackageURL(transformComponentToPurlType(c.ComponentOriginName), "", c.Name, c.Version, nil, "")
 }
 
 type Vulnerabilities struct {
@@ -487,4 +493,13 @@ func (b *Client) authenticationValid(now time.Time) bool {
 func urlPath(fullUrl string) string {
 	theUrl, _ := url.Parse(fullUrl)
 	return theUrl.Path
+}
+
+func transformComponentToPurlType(componentOriginName string) string {
+	// TODO check possible relevant values
+	switch componentOriginName {
+	case "Maven":
+		return packageurl.TypeMaven
+	}
+	return packageurl.TypeGeneric
 }

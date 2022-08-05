@@ -3,6 +3,7 @@ package whitesource
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -192,14 +193,12 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	tool.Driver.InformationUri = "https://mend.io"
 
 	// Handle results/vulnerabilities
-	for i := 0; i < len(*alerts); i++ {
-		alert := (*alerts)[i]
+	collectedRules := []string{}
+	for _, alert := range *alerts {
 		result := *new(format.Results)
 		ruleId := alert.Vulnerability.Name
 		log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
 		result.RuleID = ruleId
-		result.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
-		result.RuleIndex = i //Seems very abstract
 		result.Message = new(format.Message)
 		result.Message.Text = alert.Vulnerability.Description
 		artLoc := new(format.ArtifactLocation)
@@ -208,33 +207,46 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.AnalysisTarget = artLoc
 		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}}}
 		result.Locations = append(result.Locations, location)
-
-		sarifRule := *new(format.SarifRule)
-		sarifRule.ID = ruleId
-		sd := new(format.Message)
-		sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
-		sarifRule.ShortDescription = sd
-		fd := new(format.Message)
-		fd.Text = alert.Vulnerability.Description
-		sarifRule.FullDescription = fd
-		defaultConfig := new(format.DefaultConfiguration)
-		defaultConfig.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
-		sarifRule.DefaultConfiguration = defaultConfig
-		sarifRule.HelpURI = alert.Vulnerability.URL
-		markdown, _ := alert.ToMarkdown()
-		sarifRule.Help = new(format.Help)
-		sarifRule.Help.Text = alert.ToTxt()
-		sarifRule.Help.Markdown = string(markdown)
-
-		ruleProp := *new(format.SarifRuleProperties)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Type)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Library.ToPackageURL())
-		ruleProp.SecuritySeverity = consolidateSeverities(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
-		sarifRule.Properties = &ruleProp
-
-		//Finalize: append the result and the rule
+		partialFingerprints := new(format.PartialFingerprints)
+		partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", alert.Library.ToPackageUrl().ToString(), alert.Vulnerability.Name)))
+		result.PartialFingerprints = *partialFingerprints
+		//append the result
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
-		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+
+		// only create rule on new CVE
+		if !piperutils.ContainsString(collectedRules, ruleId) {
+			collectedRules = append(collectedRules, ruleId)
+
+			sarifRule := *new(format.SarifRule)
+			sarifRule.ID = ruleId
+			sarifRule.Name = alert.Vulnerability.Name
+			sd := new(format.Message)
+			sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
+			sarifRule.ShortDescription = sd
+			fd := new(format.Message)
+			fd.Text = alert.Vulnerability.Description
+			sarifRule.FullDescription = fd
+			defaultConfig := new(format.DefaultConfiguration)
+			defaultConfig.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
+			sarifRule.DefaultConfiguration = defaultConfig
+			sarifRule.HelpURI = alert.Vulnerability.URL
+			markdown, _ := alert.ToMarkdown()
+			sarifRule.Help = new(format.Help)
+			sarifRule.Help.Text = alert.ToTxt()
+			sarifRule.Help.Markdown = string(markdown)
+
+			ruleProp := *new(format.SarifRuleProperties)
+			ruleProp.Tags = append(ruleProp.Tags, alert.Type)
+			ruleProp.Tags = append(ruleProp.Tags, alert.Library.ToPackageUrl().ToString())
+			ruleProp.Tags = append(ruleProp.Tags, alert.Vulnerability.URL)
+			ruleProp.SecuritySeverity = fmt.Sprint(consolidateScores(alert.Vulnerability.Score, alert.Vulnerability.CVSS3Score))
+			ruleProp.Precision = "very-high"
+
+			sarifRule.Properties = &ruleProp
+
+			// append the rule
+			tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+		}
 	}
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool

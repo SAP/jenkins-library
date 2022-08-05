@@ -1,6 +1,7 @@
 package blackduck
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -13,7 +14,13 @@ import (
 )
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
-func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
+func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
+	// create component lookup map
+	componentLookup := map[string]Component{}
+	for _, comp := range components.Items {
+		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
+	}
+
 	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
@@ -30,15 +37,15 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	tool.Driver.InformationUri = "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus"
 
 	// Handle results/vulnerabilities
+	collectedRules := []string{}
 	if vulns != nil && vulns.Items != nil {
-		for i := 0; i < len(vulns.Items); i++ {
-			v := vulns.Items[i]
+		for _, v := range vulns.Items {
+			component := componentLookup[fmt.Sprintf("%v/%v", v.Name, v.Version)]
 			result := *new(format.Results)
-			id := v.Title()
-			log.Entry().Debugf("Transforming alert %v into SARIF format", id)
-			result.RuleID = id
+			ruleId := v.Title()
+			log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
+			result.RuleID = ruleId
 			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
-			result.RuleIndex = i //Seems very abstract
 			result.Message = new(format.Message)
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
 			result.AnalysisTarget = new(format.ArtifactLocation)
@@ -46,35 +53,41 @@ func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 			result.AnalysisTarget.Index = 0
 			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
-			//TODO add audit and tool related information, maybe fortifyCategory needs to become more general
-			//result.Properties = new(format.SarifProperties)
-			//result.Properties.ToolSeverity
-			//result.Properties.ToolAuditMessage
+			partialFingerprints := new(format.PartialFingerprints)
+			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", component.ToPackageUrl().ToString(), v.Title())))
+			result.PartialFingerprints = *partialFingerprints
 
-			sarifRule := *new(format.SarifRule)
-			sarifRule.ID = id
-			sarifRule.ShortDescription = new(format.Message)
-			sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)
-			sarifRule.FullDescription = new(format.Message)
-			sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
-			sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
-			sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
-			sarifRule.HelpURI = ""
-			markdown, _ := v.ToMarkdown()
-			sarifRule.Help = new(format.Help)
-			sarifRule.Help.Text = v.ToTxt()
-			sarifRule.Help.Markdown = string(markdown)
-
-			ruleProp := *new(format.SarifRuleProperties)
-			ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
-			ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.Description)
-			ruleProp.Tags = append(ruleProp.Tags, v.Name)
-			ruleProp.Precision = "very-high"
-			sarifRule.Properties = &ruleProp
-
-			//Finalize: append the result and the rule
+			// append the result
 			sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
-			tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+
+			// only create rule on new CVE
+			if !piperutils.ContainsString(collectedRules, ruleId) {
+				collectedRules = append(collectedRules, ruleId)
+
+				sarifRule := *new(format.SarifRule)
+				sarifRule.ID = ruleId
+				sarifRule.ShortDescription = new(format.Message)
+				sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)
+				sarifRule.FullDescription = new(format.Message)
+				sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
+				sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
+				sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
+				sarifRule.HelpURI = ""
+				markdown, _ := v.ToMarkdown()
+				sarifRule.Help = new(format.Help)
+				sarifRule.Help.Text = v.ToTxt()
+				sarifRule.Help.Markdown = string(markdown)
+
+				ruleProp := *new(format.SarifRuleProperties)
+				ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
+				ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.Description)
+				ruleProp.Tags = append(ruleProp.Tags, v.Name)
+				ruleProp.Precision = "very-high"
+				sarifRule.Properties = &ruleProp
+
+				// append the rule
+				tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+			}
 		}
 	}
 	//Finalize: tool
