@@ -15,15 +15,15 @@ type (
 		Step map[string]u `json:"step"`
 	}
 	u struct {
-		URLs []string `json:"u"`
+		URLs []string `json:"url"`
 	}
 )
 
 const (
-	urlLogFileName = "u-log.json"
+	urlLogFileName = "url-log.json"
 )
 
-type urlLogger struct {
+type URLLogger struct {
 	buf struct {
 		data [][]byte
 		sync.RWMutex
@@ -31,13 +31,16 @@ type urlLogger struct {
 	stepName string
 }
 
-func NewURLLogger(stepName string) *urlLogger {
-	return &urlLogger{stepName: stepName}
+func NewURLLogger(stepName string) *URLLogger {
+	return &URLLogger{stepName: stepName}
 }
 
-func (cl *urlLogger) WriteURLsLogToJSON() error {
+func (cl *URLLogger) WriteURLsLogToJSON() error {
 	cl.buf.Lock()
 	defer cl.buf.Unlock()
+	if len(cl.buf.data) == 0 {
+		return nil
+	}
 	file, err := os.OpenFile(urlLogFileName, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -83,7 +86,7 @@ func (cl *urlLogger) WriteURLsLogToJSON() error {
 	return err
 }
 
-func (cl *urlLogger) Parse(buf bytes.Buffer) {
+func (cl *URLLogger) Parse(buf bytes.Buffer) {
 	cl.buf.Lock()
 	defer cl.buf.Unlock()
 	cl.buf.data = append(cl.buf.data, parseURLs(buf.Bytes())...)

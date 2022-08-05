@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"os/exec"
@@ -91,7 +90,7 @@ func (c *Command) GetStdout() io.Writer {
 	return c.stdout
 }
 
-//GetStderr Return the writer for stderr
+//GetStderr Retursn the writer for stderr
 func (c *Command) GetStderr() io.Writer {
 	return c.stderr
 }
@@ -126,7 +125,7 @@ func (c *Command) RunShell(shell, script string) error {
 
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus, the executable needs to be on the PATH of the current process, and it is not sufficient to alter the PATH on cmd.Env.
+//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	c.prepareOut()
@@ -137,7 +136,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 		cmd.Dir = c.dir
 	}
 
-	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, " "))
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
 	appendEnvironment(cmd, c.env)
 
@@ -151,9 +150,9 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 	return nil
 }
 
-// RunExecutableInBackground runs the specified executable with parameters in the background non-blocking
+// RunExecutableInBackground runs the specified executable with parameters in the background non blocking
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus, the executable needs to be on the PATH of the current process, and it is not sufficient to alter the PATH on cmd.Env.
+//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
 
 	c.prepareOut()
@@ -164,7 +163,7 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 		cmd.Dir = c.dir
 	}
 
-	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, " "))
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
 	appendEnvironment(cmd, c.env)
 
@@ -193,9 +192,9 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 		// When cmd.Env is nil the environment variables from the current
 		// process are also used by the forked process. Our environment variables
 		// should not replace the existing environment, but they should be appended.
-		// Hence, we populate cmd.Env first with the current environment in case we
+		// Hence we populate cmd.Env first with the current environment in case we
 		// find it empty. In case there is already something, we append to that environment.
-		// In that case we assume the current values of `cmd.Env` has either been set up based
+		// In that case we assume the current values of `cmd.Env` has either been setup based
 		// on `os.Environ()` or that was initialized in another way for a good reason.
 		//
 		// In case we have the same environment variable as in the current environment (`os.Environ()`)
@@ -226,8 +225,8 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		return nil, errors.Wrap(err, "starting command failed")
 	}
 
-	execution := execution{cmd: cmd}
-	wg := errgroup.Group{}
+	execution := execution{cmd: cmd, ul: log.NewURLLogger(c.StepName)}
+	execution.wg.Add(2)
 
 	srcOut := stdout
 	srcErr := stderr
@@ -236,86 +235,56 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		prOut, pwOut := io.Pipe()
 		trOut := io.TeeReader(stdout, pwOut)
 		srcOut = prOut
+
 		prErr, pwErr := io.Pipe()
 		trErr := io.TeeReader(stderr, pwErr)
 		srcErr = prErr
-		type rw struct {
-			tr io.Reader
-			pw *io.PipeWriter
-		}
-		for _, source := range []rw{
-			{trOut, pwOut},
-			{trErr, pwErr},
-		} {
-			s := source
-			wg.Go(func() (err error) {
-				defer func() {
-					dErr := s.pw.Close()
-					if dErr != nil {
-						err = fmt.Errorf("can't close piper writer: %w", dErr)
-					}
-				}()
-				err = c.scanLog(s.tr)
-				if err != nil {
-					err = fmt.Errorf("can't scan log: %w", err)
-				}
-				return
-			})
-		}
+
+		execution.wg.Add(2)
+
+		go func() {
+			defer execution.wg.Done()
+			defer pwOut.Close()
+			c.scanLog(trOut)
+		}()
+
+		go func() {
+			defer execution.wg.Done()
+			defer pwErr.Close()
+			c.scanLog(trErr)
+		}()
 	}
-	if c.StepName != "" {
-		cl := log.NewURLLogger(c.StepName)
-		for _, source := range []io.ReadCloser{srcOut, srcErr} {
-			s := source
-			wg.Go(func() error {
-				var buf bytes.Buffer
-				w := bufio.NewWriter(&buf)
-				_, err := piperutils.CopyData(w, s)
-				if err != nil {
-					return fmt.Errorf("can't copy data: %w", err)
-				}
-				err = w.Flush()
-				if err != nil {
-					return fmt.Errorf("can't flush: %w", err)
-				}
-				cl.Parse(buf)
-				return nil
-			})
+
+	go func() {
+		if c.StepName != "" {
+			var buf bytes.Buffer
+			br := bufio.NewWriter(&buf)
+			_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
+			br.Flush()
+			execution.ul.Parse(buf)
+		} else {
+			_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
 		}
-		err = wg.Wait()
-		if err != nil {
-			return nil, fmt.Errorf("waitgroup error: %w", err)
+		execution.wg.Done()
+	}()
+
+	go func() {
+		if c.StepName != "" {
+			var buf bytes.Buffer
+			bw := bufio.NewWriter(&buf)
+			_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
+			bw.Flush()
+			execution.ul.Parse(buf)
+		} else {
+			_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
 		}
-		err = cl.WriteURLsLogToJSON()
-		if err != nil {
-			return nil, fmt.Errorf("can't write log: %w", err)
-		}
-	}
-	type rw struct {
-		std io.Writer
-		src io.ReadCloser
-	}
-	for _, source := range []rw{
-		{c.stdout, srcOut},
-		{c.stderr, srcErr},
-	} {
-		s := source
-		wg.Go(func() error {
-			_, err := piperutils.CopyData(s.std, s.src)
-			if err != nil {
-				return fmt.Errorf("can't copy data: %w", err)
-			}
-			return nil
-		})
-	}
-	err = wg.Wait()
-	if err != nil {
-		return nil, fmt.Errorf("waitgroup error: %w", err)
-	}
+		execution.wg.Done()
+	}()
+
 	return &execution, nil
 }
 
-func (c *Command) scanLog(in io.Reader) error {
+func (c *Command) scanLog(in io.Reader) {
 	scanner := bufio.NewScanner(in)
 	scanner.Split(scanShortLines)
 	for scanner.Scan() {
@@ -323,9 +292,8 @@ func (c *Command) scanLog(in io.Reader) error {
 		c.parseConsoleErrors(line)
 	}
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("failed to scan log: %w", err)
+		log.Entry().WithError(err).Info("failed to scan log file")
 	}
-	return nil
 }
 
 func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -342,7 +310,7 @@ func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err err
 	}
 	if i := bytes.IndexByte(data, '\n'); i >= 0 && i < 32767 {
 		// We have a full newline-terminated line with a size limit
-		//  is required since otherwise scanner would stall
+		// Size limit is required since otherwise scanner would stall
 		return i + 1, data[0:i], nil
 	}
 	// If we're at EOF, we have a final, non-terminated line. Return it.
@@ -386,6 +354,10 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 
 	err = execution.Wait()
 
+	if execution.errCopyStdout != nil || execution.errCopyStderr != nil {
+		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", execution.errCopyStdout, execution.errCopyStderr)
+	}
+
 	if err != nil {
 		// provide fallback to ensure a non 0 exit code in case of an error
 		c.exitCode = 1
@@ -403,7 +375,7 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 
 func (c *Command) prepareOut() {
 
-	//ToDo: check use of MultiWriter instead to always write into os.Stdout and os.Stdin?
+	//ToDo: check use of multiwriter instead to always write into os.Stdout and os.Stdin?
 	//stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
 	//stderr := io.MultiWriter(os.Stderr, &stderrBuf)
 
