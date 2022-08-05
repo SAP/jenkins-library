@@ -129,7 +129,7 @@ func handleArtifactVersion(artifactVersion string) string {
 }
 
 func getDockerImage(utils protecodeUtils, config *protecodeExecuteScanOptions, cachePath string) (string, string, error) {
-	m := regexp.MustCompile(`[\\s@:/]`)
+	m := regexp.MustCompile(`[\s@:/]`)
 
 	tarFileName := fmt.Sprintf("%s.tar", m.ReplaceAllString(config.ScanImage, "-"))
 	tarFilePath, err := filepath.Abs(filepath.Join(cachePath, tarFileName))
