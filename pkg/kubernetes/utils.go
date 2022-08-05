@@ -62,7 +62,7 @@ func NewDeployUtilsBundle(customTLSCertificateLinks []string) DeployUtils {
 					"Error: release * failed, * timed out waiting for the condition",
 				},
 			},
-			StepName: "helm",
+			StepName: "helmExecute",
 		},
 		Files:  &piperutils.Files{},
 		Client: &piperhttp.Client{},
