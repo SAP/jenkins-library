@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -107,6 +108,8 @@ const (
 	classpathFileName = "fortify-execute-scan-cp.txt"
 )
 
+var execInPath = exec.LookPath
+
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
@@ -145,6 +148,13 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executable_list {
+		_, err := execInPath(exec)
+		if err != nil {
+			return reports, fmt.Errorf("ERROR , command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+		}
+	}
 
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
@@ -995,7 +1005,7 @@ func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath s
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/src/gen/java/cds/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
 	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
