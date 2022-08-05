@@ -78,14 +78,14 @@ func TestExecutableRun(t *testing.T) {
 			})
 		})
 
-		t.Run("success case - logs parsing", func(t *testing.T) {
+		t.Run("success case - log parsing", func(t *testing.T) {
 			log.SetErrorCategory(log.ErrorUndefined)
 			ex := Command{stdout: stdout, stderr: stderr, ErrorCategoryMapping: map[string][]string{"config": {"command echo"}}}
 			ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
 			assert.Equal(t, log.ErrorConfiguration, log.GetErrorCategory())
 		})
 
-		t.Run("success case - logs parsing long line", func(t *testing.T) {
+		t.Run("success case - log parsing long line", func(t *testing.T) {
 			log.SetErrorCategory(log.ErrorUndefined)
 			ex := Command{stdout: stdout, stderr: stderr, ErrorCategoryMapping: map[string][]string{"config": {"aaaa"}}}
 			ex.RunExecutable("long", []string{"foo bar", "baz"}...)
