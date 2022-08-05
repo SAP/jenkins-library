@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	"os/exec"
 	"sync"
 )
@@ -11,6 +12,7 @@ type execution struct {
 	wg            sync.WaitGroup
 	errCopyStdout error
 	errCopyStderr error
+	ul            *log.URLLogger
 }
 
 func (execution *execution) Kill() error {
@@ -19,6 +21,7 @@ func (execution *execution) Kill() error {
 
 func (execution *execution) Wait() error {
 	execution.wg.Wait()
+	execution.ul.WriteURLsLogToJSON()
 	return execution.cmd.Wait()
 }
 
