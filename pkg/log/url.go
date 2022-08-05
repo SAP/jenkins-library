@@ -1,4 +1,4 @@
-package cumulusurllog
+package log
 
 import (
 	"bytes"
@@ -12,18 +12,18 @@ import (
 
 type (
 	step struct {
-		Step map[string]url `json:"step"`
+		Step map[string]u `json:"step"`
 	}
-	url struct {
-		URLs []string `json:"url"`
+	u struct {
+		URLs []string `json:"u"`
 	}
 )
 
 const (
-	urlsLogFileName = "url-log.json"
+	urlLogFileName = "u-log.json"
 )
 
-type cumulusLogger struct {
+type urlLogger struct {
 	buf struct {
 		data [][]byte
 		sync.RWMutex
@@ -31,14 +31,14 @@ type cumulusLogger struct {
 	stepName string
 }
 
-func NewCumulusLogger(stepName string) *cumulusLogger {
-	return &cumulusLogger{stepName: stepName}
+func NewURLLogger(stepName string) *urlLogger {
+	return &urlLogger{stepName: stepName}
 }
 
-func (cl *cumulusLogger) WriteURLsLogToJSON() error {
+func (cl *urlLogger) WriteURLsLogToJSON() error {
 	cl.buf.Lock()
 	defer cl.buf.Unlock()
-	file, err := os.OpenFile(urlsLogFileName, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(urlLogFileName, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
@@ -52,7 +52,7 @@ func (cl *cumulusLogger) WriteURLsLogToJSON() error {
 	if err != nil {
 		return fmt.Errorf("can't read from gile: %w", err)
 	}
-	urlsLog := step{make(map[string]url)}
+	urlsLog := step{make(map[string]u)}
 	if len(fileBuf) != 0 {
 		err = json.Unmarshal(fileBuf, &urlsLog)
 		if err != nil {
@@ -67,7 +67,7 @@ func (cl *cumulusLogger) WriteURLsLogToJSON() error {
 	for _, url := range cl.buf.data {
 		urls = append(urls, string(url))
 	}
-	urlsLog.Step[cl.stepName] = url{urls}
+	urlsLog.Step[cl.stepName] = u{urls}
 	encoderBuf := bytes.NewBuffer(fileBuf)
 	jsonEncoder := json.NewEncoder(encoderBuf)
 	jsonEncoder.SetEscapeHTML(false)
@@ -83,7 +83,7 @@ func (cl *cumulusLogger) WriteURLsLogToJSON() error {
 	return err
 }
 
-func (cl *cumulusLogger) Parse(buf bytes.Buffer) {
+func (cl *urlLogger) Parse(buf bytes.Buffer) {
 	cl.buf.Lock()
 	defer cl.buf.Unlock()
 	cl.buf.data = append(cl.buf.data, parseURLs(buf.Bytes())...)
