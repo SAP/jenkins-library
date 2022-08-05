@@ -56,6 +56,7 @@ type pullRequestService interface {
 type fortifyUtils interface {
 	maven.Utils
 	gradle.Utils
+	piperutils.FileUtils
 
 	SetDir(d string)
 	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
@@ -119,7 +120,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(ctx, config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, utils, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
@@ -219,7 +220,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
+	toolRecordFileName, err := createToolRecordFortify(utils, "./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_FORTIFY: Failed to create toolrecord file ...", err)
@@ -1201,8 +1202,8 @@ func getSeparator() string {
 	return ":"
 }
 
-func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
-	record := toolrecord.New(workspace, "fortify", config.ServerURL)
+func createToolRecordFortify(utils fortifyUtils, workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
+	record := toolrecord.New(utils, workspace, "fortify", config.ServerURL)
 	// Project
 	err := record.AddKeyData("project",
 		strconv.FormatInt(projectID, 10),

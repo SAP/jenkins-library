@@ -17,11 +17,11 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 )
 
-//TODO: extract to mock package
+// TODO: extract to mock package
 type mockDownloader struct {
 	shouldFail    bool
 	requestedURL  []string
@@ -92,8 +92,8 @@ func mockGlob(matchesForPatterns map[string][]string) func(pattern string) ([]st
 }
 
 func createTaskReportFile(t *testing.T, workingDir string) {
-	require.NoError(t, os.MkdirAll(filepath.Join(workingDir, ".scannerwork"), 0755))
-	require.NoError(t, ioutil.WriteFile(filepath.Join(workingDir, ".scannerwork", "report-task.txt"), []byte(taskReportContent), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Join(workingDir, ".scannerwork"), 0o755))
+	require.NoError(t, ioutil.WriteFile(filepath.Join(workingDir, ".scannerwork", "report-task.txt"), []byte(taskReportContent), 0o755))
 	require.FileExists(t, filepath.Join(workingDir, ".scannerwork", "report-task.txt"))
 }
 
@@ -175,7 +175,7 @@ func TestRunSonar(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		// test
-		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1")
@@ -183,8 +183,6 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.environment, "SONAR_HOST_URL="+sonarServerURL)
 		assert.Contains(t, sonar.environment, "SONAR_TOKEN=secret-ABC")
 		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts")+" -Djavax.net.ssl.trustStorePassword=changeit")
-		assert.FileExists(t, filepath.Join(sonar.workingDir, "sonarExecuteScan_reports.json"))
-		assert.FileExists(t, filepath.Join(sonar.workingDir, "sonarExecuteScan_links.json"))
 	})
 	t.Run("with custom options", func(t *testing.T) {
 		// init
@@ -203,10 +201,10 @@ func TestRunSonar(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
-			fileUtilsExists = FileUtils.FileExists
+			fileUtilsExists = piperutils.FileExists
 		}()
 		// test
-		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
@@ -235,7 +233,7 @@ func TestRunSonar(t *testing.T) {
 		osStat = mockOsStat(existsMap)
 
 		defer func() {
-			fileUtilsExists = FileUtils.FileExists
+			fileUtilsExists = piperutils.FileExists
 			doublestarGlob = doublestar.Glob
 			osStat = os.Stat
 		}()
@@ -244,7 +242,7 @@ func TestRunSonar(t *testing.T) {
 			PullRequestProvider: "GitHub",
 		}
 		// test
-		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s,%s",
@@ -274,7 +272,7 @@ func TestRunSonar(t *testing.T) {
 		osStat = mockOsStat(existsMap)
 
 		defer func() {
-			fileUtilsExists = FileUtils.FileExists
+			fileUtilsExists = piperutils.FileExists
 			doublestarGlob = doublestar.Glob
 			osStat = os.Stat
 		}()
@@ -284,7 +282,7 @@ func TestRunSonar(t *testing.T) {
 			PullRequestProvider: "GitHub",
 		}
 		// test
-		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.NotContains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s",
@@ -313,10 +311,10 @@ func TestRunSonar(t *testing.T) {
 		defer func() { GeneralConfig.Verbose = false }()
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
-			fileUtilsExists = FileUtils.FileExists
+			fileUtilsExists = piperutils.FileExists
 		}()
 		// test
-		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=mock-project-key")
@@ -430,7 +428,7 @@ func TestSonarLoadScanner(t *testing.T) {
 		osRename = mockOsRename(t, "sonar-scanner-4.6.2.2472-linux", ".sonar-scanner")
 		defer func() {
 			execLookPath = exec.LookPath
-			fileUtilsUnzip = FileUtils.Unzip
+			fileUtilsUnzip = piperutils.Unzip
 			osRename = os.Rename
 		}()
 		// test
@@ -455,7 +453,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 			options:     []string{},
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
-		defer func() { fileUtilsExists = FileUtils.FileExists }()
+		defer func() { fileUtilsExists = piperutils.FileExists }()
 		// test
 		err := loadCertificates([]string{}, &mockClient, &mockRunner)
 		// assert

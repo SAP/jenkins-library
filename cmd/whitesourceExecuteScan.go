@@ -226,7 +226,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 	log.Entry().Info("-----------------------------------------------------")
 
 	paths, err := checkAndReportScanResults(ctx, config, scan, utils, sys, influx)
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, paths, nil)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
@@ -273,7 +273,7 @@ func checkAndReportScanResults(ctx context.Context, config *ScanOptions, scan *w
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordWhitesource("./", config, scan)
+	toolRecordFileName, err := createToolRecordWhitesource(utils, "./", config, scan)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_WHITESOURCE: Failed to create toolrecord file ...", err)
@@ -750,7 +750,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -812,7 +812,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 		return errors.Wrapf(err, "failed to write file: %s", fileName)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -830,8 +830,8 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 
 // create toolrecord file for whitesource
 //
-func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
-	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
+func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
+	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
 	wsUiRoot := "https://saas.whitesourcesoftware.com"
 	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
 	err := record.AddKeyData("product",

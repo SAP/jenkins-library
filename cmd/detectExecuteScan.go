@@ -198,7 +198,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 	// create Toolrecord file
-	toolRecordFileName, toolRecordErr := createToolRecordDetect("./", config, blackduckSystem)
+	toolRecordFileName, toolRecordErr := createToolRecordDetect(utils, "./", config, blackduckSystem)
 	if toolRecordErr != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
@@ -538,7 +538,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	}
 	paths = append(paths, policyReportPaths...)
 
-	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
+	piperutils.PersistReportsAndLinks("detectExecuteScan", "", utils, paths, nil)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
@@ -719,8 +719,8 @@ func isActivePolicyViolation(status string) bool {
 }
 
 // create toolrecord file for detectExecute
-func createToolRecordDetect(workspace string, config detectExecuteScanOptions, sys *blackduckSystem) (string, error) {
-	record := toolrecord.New(workspace, "detectExecute", config.ServerURL)
+func createToolRecordDetect( utils detectUtils, workspace string, config detectExecuteScanOptions, sys *blackduckSystem) (string, error) {
+	record := toolrecord.New(utils, workspace, "detectExecute", config.ServerURL)
 	project, err := sys.Client.GetProject(config.ProjectName)
 	if err != nil {
 		return "", fmt.Errorf("TR_DETECT: GetProject failed %v", err)

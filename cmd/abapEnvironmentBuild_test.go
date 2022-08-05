@@ -15,6 +15,7 @@ import (
 type abapEnvironmentBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*abapbuild.MockClient
+	*mock.FilesMock
 }
 
 func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildUtils {
@@ -22,6 +23,7 @@ func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildUtils {
 	utils := abapEnvironmentBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		MockClient:     &mC,
+		FilesMock: &mock.FilesMock{},
 	}
 	return &utils
 }
@@ -31,6 +33,7 @@ func newAbapEnvironmentBuildTestsUtilsWithClient() abapEnvironmentBuildUtils {
 	utils := abapEnvironmentBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		MockClient:     &mC,
+		FilesMock: &mock.FilesMock{},
 	}
 	return &utils
 }
@@ -43,7 +46,7 @@ func (mB abapEnvironmentBuildMockUtils) GetAbapCommunicationArrangementInfo(opti
 	return cd, nil
 }
 
-func (mB abapEnvironmentBuildMockUtils) publish() {
+func (mB abapEnvironmentBuildMockUtils) publish(utils piperutils.FileUtils) {
 }
 
 func (mB abapEnvironmentBuildMockUtils) GetPollIntervall() time.Duration {
@@ -70,7 +73,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishAllDownloadedResultFiles = true
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
 		finalValues := `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"MyId1","value":"AunitValue1"},{"value_id":"MyId2","value":"AunitValue2"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
 		assert.NoError(t, err)
@@ -87,7 +90,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.AbapSourceClient = "001"
 		utils := newAbapEnvironmentBuildTestsUtilsWithClient()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
 		finalValues := `[{"value_id":"PHASE","value":"AUNIT"},{"value_id":"SUN","value":"SUMMER"}]`
 		assert.NoError(t, err)
@@ -105,7 +108,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishResultFilenames = []string{"SAR_XML"}
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -124,7 +127,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.UseFieldsOfAddonDescriptor = `[{"use":"Name","renameTo":"MyId1"},{"use":"Status","renameTo":"MyId2"}]`
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
 		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
 		err = json.Unmarshal([]byte(finalValues), &expectedValueList)
@@ -146,7 +149,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishResultFilenames = []string{"SAR_XML"}
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
 		assert.Error(t, err)
 	})
@@ -162,7 +165,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		config.PublishAllDownloadedResultFiles = true
 		utils := newAbapEnvironmentBuildTestsUtils()
 		// test
-		err := runAbapEnvironmentBuild(&config, nil, &utils, &cpe)
+		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
 		assert.Error(t, err)
 	})

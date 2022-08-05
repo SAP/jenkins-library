@@ -21,17 +21,18 @@ import (
 type abapEnvironmentBuildUtils interface {
 	command.ExecRunner
 	abaputils.Communication
-	abapbuild.Publish
 	abapbuild.HTTPSendLoader
+	piperutils.FileUtils
 	getMaxRuntime() time.Duration
 	getPollingInterval() time.Duration
-	publish()
+	publish(utils piperutils.FileUtils)
 }
 
 type abapEnvironmentBuildUtilsBundle struct {
 	*command.Command
 	*piperhttp.Client
 	*abaputils.AbapUtils
+	*piperutils.Files
 	maxRuntime      time.Duration
 	pollingInterval time.Duration
 	storePublish    publish
@@ -44,14 +45,14 @@ type publish struct {
 	links     []piperutils.Path
 }
 
-func (p *publish) publish() {
+func (p *publish) publish(utils piperutils.FileUtils) {
 	if p.stepName != "" {
-		abapbuild.PersistReportsAndLinks(p.stepName, p.workspace, p.reports, p.links)
+		piperutils.PersistReportsAndLinks(p.stepName, p.workspace, utils, p.reports, p.links)
 	}
 }
 
-func (aEBUB *abapEnvironmentBuildUtilsBundle) publish() {
-	aEBUB.storePublish.publish()
+func (aEBUB *abapEnvironmentBuildUtilsBundle) publish(utils piperutils.FileUtils) {
+	aEBUB.storePublish.publish(utils)
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) getMaxRuntime() time.Duration {
@@ -94,12 +95,12 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingInterval time
 
 func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
 	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
-	if err := runAbapEnvironmentBuild(&config, telemetryData, &utils, cpe); err != nil {
+	if err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
+func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
 
 	conn := new(abapbuild.Connector)
 	if err := initConnection(conn, config, utils); err != nil {
@@ -113,7 +114,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 
 	finalValues, err := runBuilds(conn, config, utils, valuesList)
 	//files should be published, even if an error occured
-	(*utils).publish()
+	utils.publish(utils)
 	if err != nil {
 		return err
 	}
@@ -125,7 +126,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	return nil
 }
 
-func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, valuesList [][]abapbuild.Value) ([]abapbuild.Value, error) {
+func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, valuesList [][]abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
 	//No addonDescriptor involved
 	if len(valuesList) == 0 {
@@ -170,7 +171,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 	return finalValues, nil
 }
 
-func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils) error {
+func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils) error {
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg
@@ -187,17 +188,17 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 		connConfig.Parameters.Add("sap-client", config.AbapSourceClient)
 	}
 
-	if err := conn.InitBuildFramework(connConfig, *utils, *utils); err != nil {
+	if err := conn.InitBuildFramework(connConfig, utils, utils); err != nil {
 		return err
 	}
 
-	conn.MaxRuntime = (*utils).getMaxRuntime()
-	conn.PollingInterval = (*utils).getPollingInterval()
+	conn.MaxRuntime = utils.getMaxRuntime()
+	conn.PollingInterval = utils.getPollingInterval()
 	return nil
 }
 
 // ***********************************Run Build***************************************************************
-func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, values []abapbuild.Value) ([]abapbuild.Value, error) {
+func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, values []abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
 	var inputValues abapbuild.Values
 	inputValues.Values = values
@@ -272,11 +273,11 @@ func (b *myBuild) Download() error {
 	return nil
 }
 
-func (b *myBuild) Publish(utils *abapEnvironmentBuildUtils) error {
+func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
 	if b.PublishAllDownloadedResultFiles {
-		b.PublishAllDownloadedResults("abapEnvironmentBuild", *utils)
+		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
 	} else {
-		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, *utils); err != nil {
+		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, utils); err != nil {
 			return errors.Wrapf(err, "Error during the publish of the result files %s", b.PublishResultFilenames)
 		}
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -31,6 +31,8 @@ type Toolrecord struct {
 	DisplayName string
 	DisplayURL  string
 
+	fileUtils fileWriteUtils
+
 	// detailed keydata - needs tool-specific parsing
 	Keys []keydataset
 
@@ -42,9 +44,15 @@ type Toolrecord struct {
 	reportFileName string
 }
 
+type fileWriteUtils interface {
+	MkdirAll(path string, perm fs.FileMode) error
+	WriteFile(name string, data []byte, perm fs.FileMode) error
+}
+
 // New - initialize a new toolrecord
-func New(workspace, toolName, toolInstance string) *Toolrecord {
+func New(fileUtils fileWriteUtils, workspace, toolName, toolInstance string) *Toolrecord {
 	tr := Toolrecord{}
+	tr.fileUtils = fileUtils
 
 	tr.RecordVersion = 1
 	tr.ToolName = toolName
@@ -108,7 +116,7 @@ func (tr *Toolrecord) Persist() error {
 	}
 	// create workspace/toolrecord
 	dirPath := filepath.Join(tr.workspace, "toolruns")
-	err := os.MkdirAll(dirPath, os.ModePerm)
+	err := tr.fileUtils.MkdirAll(dirPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
 	}
@@ -126,7 +134,7 @@ func (tr *Toolrecord) Persist() error {
 	if len(file) == 0 {
 		return fmt.Errorf("TR_PERSIST: empty json content")
 	}
-	err = ioutil.WriteFile(tr.GetFileName(), file, 0644)
+	err = tr.fileUtils.WriteFile(tr.GetFileName(), file, 0o644)
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
 	}

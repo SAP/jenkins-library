@@ -26,7 +26,9 @@ type FileUtils interface {
 	Copy(src, dest string) (int64, error)
 	Move(src, dest string) error
 	FileRead(path string) ([]byte, error)
+	ReadFile(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	WriteFile(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
@@ -367,14 +369,24 @@ func Copy(src, dst string) (int64, error) {
 	return Files{}.Copy(src, dst)
 }
 
-// FileRead is a wrapper for ioutil.ReadFile().
+// FileRead is a wrapper for os.ReadFile().
 func (f Files) FileRead(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+	return os.ReadFile(path)
+}
+
+// ReadFile is a wrapper for os.ReadFile() using the same name and syntax.
+func (f Files) ReadFile(path string) ([]byte, error) {
+	return f.FileRead(path)
 }
 
 // FileWrite is a wrapper for ioutil.WriteFile().
 func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(path, content, perm)
+	return os.WriteFile(path, content, perm)
+}
+
+// ReadFile is a wrapper for os.ReadFile() using the same name and syntax.
+func (f Files) WriteFile(path string, content []byte, perm os.FileMode) error {
+	return f.FileWrite(path, content, perm)
 }
 
 // FileRemove is a wrapper for os.Remove().

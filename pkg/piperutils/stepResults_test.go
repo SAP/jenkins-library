@@ -2,7 +2,8 @@ package piperutils
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -10,33 +11,56 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type fileMock struct {
+	fileMap map[string][]byte
+	writeErrors map[string]error
+}
+
+func (f *fileMock) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	if f.writeErrors != nil && f.writeErrors[filename] != nil {
+		return f.writeErrors[filename]
+	}
+	f.fileMap[filename] = data
+	return nil
+}
+
+func (f *fileMock) ReadFile(name string) ([]byte, error) {
+	return f.fileMap[name], nil
+}
+
+func (f *fileMock) FileExists(name string) bool {
+	return f.fileMap[name] != nil
+}
+
 func TestPersistReportAndLinks(t *testing.T) {
-	t.Run("default", func(t *testing.T) {
-		workspace := t.TempDir()
+	workspace := ""
+	t.Run("success - default", func(t *testing.T) {
+		files := fileMock{fileMap: map[string][]byte{}}
 
 		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
 		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
-		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
+		err := PersistReportsAndLinks("checkmarxExecuteScan", workspace, &files, reports, links)
+		assert.NoError(t, err)
 
 		reportsJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_reports.json")
-		assert.FileExists(t, reportsJSONPath)
+		assert.True(t, files.FileExists(reportsJSONPath))
 
 		linksJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_links.json")
-		assert.FileExists(t, linksJSONPath)
+		assert.True(t, files.FileExists(linksJSONPath))
 
 		var reportsLoaded []Path
 		var linksLoaded []Path
-		reportsFileData, err := ioutil.ReadFile(reportsJSONPath)
+		reportsFileData, err := files.ReadFile(reportsJSONPath)
 		reportsDataString := string(reportsFileData)
 		println(reportsDataString)
 		assert.NoError(t, err, "No error expected but got one")
 
-		linksFileData, err := ioutil.ReadFile(linksJSONPath)
+		linksFileData, err := files.ReadFile(linksJSONPath)
 		linksDataString := string(linksFileData)
 		println(linksDataString)
 		assert.NoError(t, err, "No error expected but got one")
-		json.Unmarshal(reportsFileData, &reportsLoaded)
-		json.Unmarshal(linksFileData, &linksLoaded)
+		_ = json.Unmarshal(reportsFileData, &reportsLoaded)
+		_ = json.Unmarshal(linksFileData, &linksLoaded)
 
 		assert.Equal(t, 2, len(reportsLoaded), "wrong number of reports")
 		assert.Equal(t, 1, len(linksLoaded), "wrong number of links")
@@ -49,9 +73,8 @@ func TestPersistReportAndLinks(t *testing.T) {
 		assert.Equal(t, "Weblink", linksLoaded[0].Name, "name value on link 1 has wrong value")
 	})
 
-	t.Run("empty list", func(t *testing.T) {
-		// init
-		workspace := t.TempDir()
+	t.Run("success - empty list", func(t *testing.T) {
+		files := fileMock{fileMap: map[string][]byte{}}
 
 		reportsJSONPath := filepath.Join(workspace, "sonarExecuteScan_reports.json")
 		linksJSONPath := filepath.Join(workspace, "sonarExecuteScan_links.json")
@@ -62,13 +85,42 @@ func TestPersistReportAndLinks(t *testing.T) {
 		require.Empty(t, links)
 
 		// test
-		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links)
+		err := PersistReportsAndLinks("sonarExecuteScan", workspace, &files, reports, links)
 		// assert
+		assert.NoError(t, err)
 		for _, reportFile := range []string{reportsJSONPath, linksJSONPath} {
-			assert.FileExists(t, reportFile)
-			reportsFileData, err := ioutil.ReadFile(reportFile)
+			assert.True(t, files.FileExists(reportFile))
+			reportsFileData, err := files.ReadFile(reportFile)
 			require.NoError(t, err, "No error expected but got one")
 			assert.Equal(t, "[]", string(reportsFileData))
 		}
+	})
+
+	t.Run("failure - write reports", func(t *testing.T) {
+		stepName := "checkmarxExecuteScan"
+		files := fileMock{
+			fileMap: map[string][]byte{}, 
+			writeErrors: map[string]error{filepath.Join(workspace, fmt.Sprintf("%v_reports.json", stepName)): fmt.Errorf("write error")},
+		}
+
+		reports := []Path{{Target: "testFile1.json"}, {Target: "testFile2.json"}}
+		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
+		err := PersistReportsAndLinks(stepName, workspace, &files, reports, links)
+		
+		assert.EqualError(t, err, "failed to write reports.json: write error")
+	})
+
+	t.Run("failure - write links", func(t *testing.T) {
+		stepName := "checkmarxExecuteScan"
+		files := fileMock{
+			fileMap: map[string][]byte{}, 
+			writeErrors: map[string]error{filepath.Join(workspace, fmt.Sprintf("%v_links.json", stepName)): fmt.Errorf("write error")},
+		}
+
+		reports := []Path{{Target: "testFile1.json"}, {Target: "testFile2.json"}}
+		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
+		err := PersistReportsAndLinks(stepName, workspace, &files, reports, links)
+		
+		assert.EqualError(t, err, "failed to write links.json: write error")
 	})
 }
