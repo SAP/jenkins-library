@@ -91,12 +91,15 @@ type Vulnerability struct {
 }
 
 type VulnerabilityWithRemediation struct {
-	VulnerabilityName string  `json:"vulnerabilityName,omitempty"`
-	BaseScore         float32 `json:"baseScore,omitempty"`
-	Severity          string  `json:"severity,omitempty"`
-	RemediationStatus string  `json:"remediationStatus,omitempty"`
-	Description       string  `json:"description,omitempty"`
-	OverallScore      float32 `json:"overallScore,omitempty"`
+	VulnerabilityName      string  `json:"vulnerabilityName,omitempty"`
+	BaseScore              float32 `json:"baseScore,omitempty"`
+	Severity               string  `json:"severity,omitempty"`
+	RemediationStatus      string  `json:"remediationStatus,omitempty"`
+	Description            string  `json:"description,omitempty"`
+	OverallScore           float32 `json:"overallScore,omitempty"`
+	CweID                  string  `json:"cweId,omitempty"`
+	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
+	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
 }
 
 // Title returns the issue title representation of the contents

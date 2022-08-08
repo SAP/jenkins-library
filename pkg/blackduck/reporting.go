@@ -67,7 +67,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 				sarifRule := *new(format.SarifRule)
 				sarifRule.ID = ruleId
 				sarifRule.ShortDescription = new(format.Message)
-				sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Name)
+				sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, component.Name)
 				sarifRule.FullDescription = new(format.Message)
 				sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
 				sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
@@ -80,9 +80,12 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 
 				ruleProp := *new(format.SarifRuleProperties)
 				ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
-				ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.Description)
-				ruleProp.Tags = append(ruleProp.Tags, v.Name)
+				ruleProp.Tags = append(ruleProp.Tags, component.ToPackageUrl().ToString())
+				ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.CweID)
 				ruleProp.Precision = "very-high"
+				ruleProp.Impact = fmt.Sprint(v.VulnerabilityWithRemediation.ImpactSubscore)
+				ruleProp.Probability = fmt.Sprint(v.VulnerabilityWithRemediation.ExploitabilitySubscore)
+				ruleProp.SecuritySeverity = fmt.Sprint(v.OverallScore)
 				sarifRule.Properties = &ruleProp
 
 				// append the rule
