@@ -24,7 +24,6 @@ type abapEnvironmentBuildUtils interface {
 	piperutils.FileUtils
 	getMaxRuntime() time.Duration
 	getPollingInterval() time.Duration
-	// publish(utils piperutils.FileUtils)
 	publish()
 }
 
