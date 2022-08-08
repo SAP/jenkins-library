@@ -97,7 +97,7 @@ func transformLibToPurlType(libType string) string {
 	case "GOLANG_ARTIFACT":
 		return packageurl.TypeGolang
 	case "DOCKER_ARTIFACT":
-		return packageurl.TypeGolang
+		return packageurl.TypeDocker
 	case "UNKNOWN_ARTIFACT":
 		return packageurl.TypeGeneric
 	}

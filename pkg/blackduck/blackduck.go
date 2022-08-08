@@ -70,12 +70,13 @@ type Component struct {
 	Name                string `json:"componentName,omitempty"`
 	Version             string `json:"componentVersionName,omitempty"`
 	ComponentOriginName string `json:"componentVersionOriginName,omitempty"`
+	PrimaryLanguage     string `json:"primaryLanguage,omitempty"`
 	PolicyStatus        string `json:"policyStatus,omitempty"`
 	Metadata            `json:"_meta,omitempty"`
 }
 
 func (c Component) ToPackageUrl() *packageurl.PackageURL {
-	return packageurl.NewPackageURL(transformComponentToPurlType(c.ComponentOriginName), "", c.Name, c.Version, nil, "")
+	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
 }
 
 type Vulnerabilities struct {
@@ -488,7 +489,7 @@ func (b *Client) apiURL(apiEndpoint string) (*url.URL, error) {
 }
 
 func (b *Client) authenticationValid(now time.Time) bool {
-	// //check bearer token timeout
+	// check bearer token timeout
 	expiryTime := b.lastAuthentication.Add(time.Millisecond * time.Duration(b.BearerExpiresInMilliseconds))
 	return now.Sub(expiryTime) < 0
 }
@@ -498,11 +499,17 @@ func urlPath(fullUrl string) string {
 	return theUrl.Path
 }
 
-func transformComponentToPurlType(componentOriginName string) string {
-	// TODO check possible relevant values
-	switch componentOriginName {
-	case "Maven":
+func transformComponentToPurlType(primaryLanguage string) string {
+	// TODO verify possible relevant values
+	switch primaryLanguage {
+	case "Java":
 		return packageurl.TypeMaven
+	case "Javascript":
+		return packageurl.TypeNPM
+	case "Golang":
+		return packageurl.TypeGolang
+	case "Docker":
+		return packageurl.TypeDocker
 	}
 	return packageurl.TypeGeneric
 }
