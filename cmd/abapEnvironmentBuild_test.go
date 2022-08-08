@@ -23,7 +23,7 @@ func newAbapEnvironmentBuildTestsUtils() abapEnvironmentBuildUtils {
 	utils := abapEnvironmentBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		MockClient:     &mC,
-		FilesMock: &mock.FilesMock{},
+		FilesMock:      &mock.FilesMock{},
 	}
 	return &utils
 }
@@ -33,7 +33,7 @@ func newAbapEnvironmentBuildTestsUtilsWithClient() abapEnvironmentBuildUtils {
 	utils := abapEnvironmentBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		MockClient:     &mC,
-		FilesMock: &mock.FilesMock{},
+		FilesMock:      &mock.FilesMock{},
 	}
 	return &utils
 }

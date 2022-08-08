@@ -68,8 +68,7 @@ func TestRunHadolintExecute(t *testing.T) {
 			On("WriteFile", "hadolintExecute_reports.json", mock.Anything, mock.Anything).Return(nil).
 			On("WriteFile", "hadolintExecute_links.json", mock.Anything, mock.Anything).Return(nil)
 
-
-			//m.On("Do", MatchedBy(func(req *http.Request) bool { return req.Host == "example.com" }))
+		//m.On("Do", MatchedBy(func(req *http.Request) bool { return req.Host == "example.com" }))
 		// test
 		err := runHadolint(config, hadolintUtils{
 			HadolintPiperFileUtils: fileMock,

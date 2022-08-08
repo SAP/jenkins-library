@@ -18,7 +18,7 @@ type Path struct {
 }
 
 type fileWriter interface {
-	 WriteFile(filename string, data []byte, perm os.FileMode) error
+	WriteFile(filename string, data []byte, perm os.FileMode) error
 }
 
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
@@ -53,7 +53,7 @@ func PersistReportsAndLinks(stepName, workspace string, files fileWriter, report
 	linkList, err := json.Marshal(&links)
 	if err != nil {
 		return fmt.Errorf("failed to marshall links.json data for archiving: %w", err)
-	} 
+	}
 	if err := files.WriteFile(filepath.Join(workspace, fmt.Sprintf("%v_links.json", stepName)), linkList, 0666); err != nil {
 		return fmt.Errorf("failed to write links.json: %w", err)
 	}

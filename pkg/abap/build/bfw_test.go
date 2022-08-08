@@ -399,10 +399,10 @@ func TestPublishDownloadedResults(t *testing.T) {
 		err := build.PublishDownloadedResults("MyStep", filenames, &files)
 		//assert
 		assert.NoError(t, err)
-		
+
 		assert.True(t, files.HasFile("/MyStep_reports.json"))
 		assert.True(t, files.HasFile("/MyStep_links.json"))
-		
+
 	})
 	t.Run("Try to publish file which was not downloaded", func(t *testing.T) {
 		//arrange

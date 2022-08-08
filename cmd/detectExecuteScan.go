@@ -719,7 +719,7 @@ func isActivePolicyViolation(status string) bool {
 }
 
 // create toolrecord file for detectExecute
-func createToolRecordDetect( utils detectUtils, workspace string, config detectExecuteScanOptions, sys *blackduckSystem) (string, error) {
+func createToolRecordDetect(utils detectUtils, workspace string, config detectExecuteScanOptions, sys *blackduckSystem) (string, error) {
 	record := toolrecord.New(utils, workspace, "detectExecute", config.ServerURL)
 	project, err := sys.Client.GetProject(config.ProjectName)
 	if err != nil {

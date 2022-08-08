@@ -12,7 +12,7 @@ import (
 )
 
 type fileMock struct {
-	fileMap map[string][]byte
+	fileMap     map[string][]byte
 	writeErrors map[string]error
 }
 
@@ -99,28 +99,28 @@ func TestPersistReportAndLinks(t *testing.T) {
 	t.Run("failure - write reports", func(t *testing.T) {
 		stepName := "checkmarxExecuteScan"
 		files := fileMock{
-			fileMap: map[string][]byte{}, 
+			fileMap:     map[string][]byte{},
 			writeErrors: map[string]error{filepath.Join(workspace, fmt.Sprintf("%v_reports.json", stepName)): fmt.Errorf("write error")},
 		}
 
 		reports := []Path{{Target: "testFile1.json"}, {Target: "testFile2.json"}}
 		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
 		err := PersistReportsAndLinks(stepName, workspace, &files, reports, links)
-		
+
 		assert.EqualError(t, err, "failed to write reports.json: write error")
 	})
 
 	t.Run("failure - write links", func(t *testing.T) {
 		stepName := "checkmarxExecuteScan"
 		files := fileMock{
-			fileMap: map[string][]byte{}, 
+			fileMap:     map[string][]byte{},
 			writeErrors: map[string]error{filepath.Join(workspace, fmt.Sprintf("%v_links.json", stepName)): fmt.Errorf("write error")},
 		}
 
 		reports := []Path{{Target: "testFile1.json"}, {Target: "testFile2.json"}}
 		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
 		err := PersistReportsAndLinks(stepName, workspace, &files, reports, links)
-		
+
 		assert.EqualError(t, err, "failed to write links.json: write error")
 	})
 }
