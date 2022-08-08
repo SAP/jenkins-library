@@ -46,15 +46,14 @@ type FileUtils interface {
 }
 
 // Files ...
-type Files struct {
-}
+type Files struct{}
 
 // TempDir creates a temporary directory
 func (f Files) TempDir(dir, pattern string) (name string, err error) {
 	if len(dir) == 0 {
 		// lazy init system temp dir in case it doesn't exist
 		if exists, _ := f.DirExists(os.TempDir()); !exists {
-			f.MkdirAll(os.TempDir(), 0666)
+			f.MkdirAll(os.TempDir(), 0o666)
 		}
 	}
 
@@ -96,9 +95,7 @@ func (f Files) DirExists(path string) (bool, error) {
 
 // Copy ...
 func (f Files) Copy(src, dst string) (int64, error) {
-
 	exists, err := f.FileExists(src)
-
 	if err != nil {
 		return 0, err
 	}
@@ -142,7 +139,7 @@ func (f Files) Move(src, dst string) error {
 	return f.FileRemove(src)
 }
 
-//Chmod is a wrapper for os.Chmod().
+// Chmod is a wrapper for os.Chmod().
 func (f Files) Chmod(path string, mode os.FileMode) error {
 	return os.Chmod(path, mode)
 }
@@ -172,7 +169,6 @@ func (f Files) Chmod(path string, mode os.FileMode) error {
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 func Unzip(src, dest string) ([]string, error) {
-
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -249,7 +245,6 @@ func Untar(src string, dest string, stripComponentLevel int) error {
 
 	if b, err := isFileGzipped(src); err == nil && b {
 		zr, err := gzip.NewReader(file)
-
 		if err != nil {
 			return fmt.Errorf("requires gzip-compressed body: %v", err)
 		}
@@ -303,7 +298,7 @@ func untar(r io.Reader, dir string, level int) (err error) {
 			// write will fail with the same error.
 			dir := filepath.Dir(abs)
 			if !madeDir[dir] {
-				if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
 					return err
 				}
 				madeDir[dir] = true
@@ -323,7 +318,7 @@ func untar(r io.Reader, dir string, level int) (err error) {
 				return fmt.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
 			}
 		case mode.IsDir():
-			if err := os.MkdirAll(abs, 0755); err != nil {
+			if err := os.MkdirAll(abs, 0o755); err != nil {
 				return err
 			}
 			madeDir[abs] = true
@@ -379,7 +374,7 @@ func (f Files) ReadFile(path string) ([]byte, error) {
 	return f.FileRead(path)
 }
 
-// FileWrite is a wrapper for ioutil.WriteFile().
+// FileWrite is a wrapper for os.WriteFile().
 func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
 	return os.WriteFile(path, content, perm)
 }

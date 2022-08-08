@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // Path - struct to serialize paths and some metadata back to the invoker
@@ -28,9 +30,20 @@ func PersistReportsAndLinks(stepName, workspace string, files fileWriter, report
 		links = []Path{}
 	}
 
+	hasMandatoryReport := false
+	for _, report := range reports {
+		if report.Mandatory {
+			hasMandatoryReport = true
+			break
+		}
+	}
+
 	reportList, err := json.Marshal(&reports)
 	if err != nil {
-		return fmt.Errorf("failed to marshall reports.json data for archiving: %w", err)
+		if hasMandatoryReport {
+			return fmt.Errorf("failed to marshall reports.json data for archiving: %w", err)
+		}
+		log.Entry().Errorln("Failed to marshall reports.json data for archiving")
 	}
 
 	if err := files.WriteFile(filepath.Join(workspace, fmt.Sprintf("%v_reports.json", stepName)), reportList, 0666); err != nil {
