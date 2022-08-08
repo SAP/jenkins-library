@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -349,7 +350,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 	}
 
 	xmlReportName := createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
-	results, err := getDetailedResults(sys, xmlReportName, scanID, utils)
+	results, err := getDetailedResults(config, sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
@@ -544,6 +545,8 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	cxHighThreshold := config.VulnerabilityThresholdHigh
 	cxMediumThreshold := config.VulnerabilityThresholdMedium
 	cxLowThreshold := config.VulnerabilityThresholdLow
+	cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
+	cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
 	highValue := results["High"].(map[string]int)["NotFalsePositive"]
 	mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
 	lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
@@ -583,10 +586,28 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 			insecure = true
 			mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
 		}
-		if lowValue < cxLowThreshold {
-			insecure = true
-			lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+		// if the flag is switched on, calculate the Low findings threshold per query
+		if cxLowThresholdPerQuery {
+			lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
+			if lowPerQueryMap != nil {
+				for lowQuery, resultsLowQuery := range lowPerQueryMap {
+					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+					lowOverallPerQuery := resultsLowQuery["Issues"]
+					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
+						insecure = true
+						lowViolation = fmt.Sprintf("<-- query: %v - audited: %v - required: %v ", lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+					}
+
+				}
+			}
+		} else { // calculate the Low findings threshold in total
+			if lowValue < cxLowThreshold {
+				insecure = true
+				lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+			}
 		}
+
 	}
 	if config.VulnerabilityThresholdUnit == "absolute" {
 		unit = " findings"
@@ -727,7 +748,7 @@ func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
+func getDetailedResults(config checkmarxExecuteScanOptions, sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
 	data, err := generateAndDownloadReport(sys, scanID, "XML")
 	if err != nil {
@@ -795,6 +816,52 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int,
 					submap["NotFalsePositive"]++
 				}
 			}
+		}
+
+		// if the flag is switched on, build the list  of Low findings per query
+		if config.VulnerabilityThresholdLowPerQuery {
+			var lowPerQuery = map[string]map[string]int{}
+			for _, query := range xmlResult.Queries {
+				for _, result := range query.Results {
+					if result.Severity != "Low" {
+						continue
+					}
+					key := query.Name
+					var submap map[string]int
+					if lowPerQuery[key] == nil {
+						submap = map[string]int{}
+						lowPerQuery[key] = submap
+					} else {
+						submap = lowPerQuery[key]
+					}
+					submap["Issues"]++
+					auditState := "ToVerify"
+					switch result.State {
+					case "1":
+						auditState = "NotExploitable"
+						break
+					case "2":
+						auditState = "Confirmed"
+						break
+					case "3":
+						auditState = "Urgent"
+						break
+					case "4":
+						auditState = "ProposedNotExploitable"
+						break
+					case "0":
+					default:
+						auditState = "ToVerify"
+						break
+					}
+					submap[auditState]++
+
+					if result.FalsePositive != "True" {
+						submap["NotFalsePositive"]++
+					}
+				}
+			}
+			resultMap["LowPerQuery"] = lowPerQuery
 		}
 	}
 	return resultMap, nil

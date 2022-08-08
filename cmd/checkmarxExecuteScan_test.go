@@ -517,9 +517,19 @@ func TestGetDetailedResults(t *testing.T) {
 				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
 			</Result>
 		</Query>
+
+		<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="Code_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
+			<Result NodeId="10000050005" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="1" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+			<Result NodeId="10000050006" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="2" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+		</Query>
 		</CxXMLResults>`)}
 		dir := t.TempDir()
-		result, err := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, newCheckmarxExecuteScanUtilsMock())
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 100, VulnerabilityThresholdEnabled: true, VulnerabilityThresholdLowPerQuery: true, VulnerabilityThresholdLowPerQueryMax: 10, VulnerabilityThresholdLow: 10}
+		result, err := getDetailedResults(options, sys, filepath.Join(dir, "abc.xml"), 2635, newCheckmarxExecuteScanUtilsMock())
 		assert.NoError(t, err, "error occurred but none expected")
 		assert.Equal(t, "2", result["ProjectId"], "Project ID incorrect")
 		assert.Equal(t, "Project 1", result["ProjectName"], "Project name incorrect")
@@ -527,6 +537,14 @@ func TestGetDetailedResults(t *testing.T) {
 		assert.Equal(t, 2, result["High"].(map[string]int)["NotFalsePositive"], "Number of High NotFalsePositive issues incorrect")
 		assert.Equal(t, 1, result["Medium"].(map[string]int)["Issues"], "Number of Medium issues incorrect")
 		assert.Equal(t, 0, result["Medium"].(map[string]int)["NotFalsePositive"], "Number of Medium NotFalsePositive issues incorrect")
+		assert.Equal(t, 4, result["Low"].(map[string]int)["Issues"], "Number of Low issues incorrect")
+		assert.Equal(t, 0, result["Low"].(map[string]int)["NotFalsePositive"], "Number of Low NotFalsePositive issues incorrect")
+		assert.Equal(t, 2, result["LowPerQuery"].(map[string]map[string]int)["SQL_Injection"]["Issues"], "Number of Low issues (per query 1) incorrect")
+		assert.Equal(t, 1, result["LowPerQuery"].(map[string]map[string]int)["SQL_Injection"]["Urgent"], "Number of Low issues (per query 1) incorrect")
+		assert.Equal(t, 1, result["LowPerQuery"].(map[string]map[string]int)["SQL_Injection"]["ProposedNotExploitable"], "Number of Low issues (per query 1) incorrect")
+		assert.Equal(t, 2, result["LowPerQuery"].(map[string]map[string]int)["Code_Injection"]["Issues"], "Number of Low issues (per query 2) incorrect")
+		assert.Equal(t, 1, result["LowPerQuery"].(map[string]map[string]int)["Code_Injection"]["Confirmed"], "Number of Low issues (per query 2) incorrect")
+		assert.Equal(t, 1, result["LowPerQuery"].(map[string]map[string]int)["Code_Injection"]["NotExploitable"], "Number of Low issues (per query 2) incorrect")
 	})
 
 	t.Run("error on write file", func(t *testing.T) {
@@ -554,7 +572,8 @@ func TestGetDetailedResults(t *testing.T) {
 		dir := t.TempDir()
 		utils := newCheckmarxExecuteScanUtilsMock()
 		utils.errorOnWriteFile = true
-		_, err := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, utils)
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 100, VulnerabilityThresholdEnabled: true, VulnerabilityThresholdLowPerQuery: true, VulnerabilityThresholdLowPerQueryMax: 10, VulnerabilityThresholdLow: 10}
+		_, err := getDetailedResults(options, sys, filepath.Join(dir, "abc.xml"), 2635, utils)
 		assert.EqualError(t, err, "failed to write file: error on WriteFile")
 	})
 }
@@ -885,6 +904,37 @@ func TestEnforceThresholds(t *testing.T) {
 	results["High"].(map[string]int)["Issues"] = 10
 	results["Medium"].(map[string]int)["Issues"] = 10
 	results["Low"].(map[string]int)["Issues"] = 10
+
+	lowPerQuery := map[string]map[string]int{}
+	submap := map[string]int{}
+	submap["Issues"] = 8
+	submap["Confirmed"] = 1
+	submap["NotExploitable"] = 0
+	lowPerQuery["Low_Query_Name_1"] = submap
+	submap = map[string]int{}
+	submap["Issues"] = 100
+	submap["Confirmed"] = 5
+	submap["NotExploitable"] = 5
+	lowPerQuery["Low_Query_Name_2"] = submap
+	results["LowPerQuery"] = lowPerQuery
+
+	t.Run("percentage low violation per query", func(t *testing.T) {
+		t.Parallel()
+
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 0, VulnerabilityThresholdMedium: 0, VulnerabilityThresholdLow: 20, VulnerabilityThresholdEnabled: true, VulnerabilityThresholdLowPerQuery: true, VulnerabilityThresholdLowPerQueryMax: 10}
+		insecure, _, _ := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("percentage low no violation per query", func(t *testing.T) {
+		t.Parallel()
+
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 0, VulnerabilityThresholdMedium: 0, VulnerabilityThresholdLow: 10, VulnerabilityThresholdEnabled: true, VulnerabilityThresholdLowPerQuery: true, VulnerabilityThresholdLowPerQueryMax: 10}
+		insecure, _, _ := enforceThresholds(options, results)
+
+		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
+	})
 
 	t.Run("percentage high violation", func(t *testing.T) {
 		t.Parallel()
