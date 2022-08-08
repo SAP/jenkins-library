@@ -46,7 +46,7 @@ func (mB abapEnvironmentBuildMockUtils) GetAbapCommunicationArrangementInfo(opti
 	return cd, nil
 }
 
-func (mB abapEnvironmentBuildMockUtils) publish(utils piperutils.FileUtils) {
+func (mB abapEnvironmentBuildMockUtils) publish() {
 }
 
 func (mB abapEnvironmentBuildMockUtils) GetPollIntervall() time.Duration {

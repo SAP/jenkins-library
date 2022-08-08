@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
-
 	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
@@ -25,7 +24,8 @@ type abapEnvironmentBuildUtils interface {
 	piperutils.FileUtils
 	getMaxRuntime() time.Duration
 	getPollingInterval() time.Duration
-	publish(utils piperutils.FileUtils)
+	// publish(utils piperutils.FileUtils)
+	publish()
 }
 
 type abapEnvironmentBuildUtilsBundle struct {
@@ -51,8 +51,8 @@ func (p *publish) publish(utils piperutils.FileUtils) {
 	}
 }
 
-func (aEBUB *abapEnvironmentBuildUtilsBundle) publish(utils piperutils.FileUtils) {
-	aEBUB.storePublish.publish(utils)
+func (aEBUB *abapEnvironmentBuildUtilsBundle) publish() {
+	aEBUB.storePublish.publish(aEBUB)
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) getMaxRuntime() time.Duration {
@@ -64,7 +64,7 @@ func (aEBUB *abapEnvironmentBuildUtilsBundle) getPollingInterval() time.Duration
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	//abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
+	// abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
 	if aEBUB.storePublish.stepName == "" {
 		aEBUB.storePublish.stepName = stepName
 		aEBUB.storePublish.workspace = workspace
@@ -101,7 +101,6 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
-
 	conn := new(abapbuild.Connector)
 	if err := initConnection(conn, config, utils); err != nil {
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
@@ -113,8 +112,8 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	}
 
 	finalValues, err := runBuilds(conn, config, utils, valuesList)
-	//files should be published, even if an error occured
-	utils.publish(utils)
+	// files should be published, even if an error occured
+	utils.publish()
 	if err != nil {
 		return err
 	}
@@ -128,7 +127,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 
 func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, valuesList [][]abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
-	//No addonDescriptor involved
+	// No addonDescriptor involved
 	if len(valuesList) == 0 {
 		values, err := generateValuesOnlyFromConfig(config)
 		if err != nil {
@@ -139,7 +138,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 			return finalValues, errors.Wrap(err, "Error during execution of build framework")
 		}
 	} else {
-		//Run several times for each repository in the addonDescriptor
+		// Run several times for each repository in the addonDescriptor
 		var errstrings []string
 		vE := valuesEvaluator{}
 		vE.m = make(map[string]string)
@@ -157,7 +156,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 				errstrings = append(errstrings, err.Error())
 			}
 			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
-			//This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
+			// This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
 			if err := vE.appendValuesIfNotPresent(finalValuesForOneBuild, false); err != nil {
 				errstrings = append(errstrings, err.Error())
 			}
@@ -331,15 +330,15 @@ func removeAddonDescriptorValues(finalValuesFromBuild []abapbuild.Value, valuesF
 func generateValuesWithAddonDescriptor(config *abapEnvironmentBuildOptions, repoValues []abapbuild.Value) ([]abapbuild.Value, error) {
 	var values []abapbuild.Value
 	vE := valuesEvaluator{}
-	//values from config
+	// values from config
 	if err := vE.initialize(config.Values); err != nil {
 		return values, err
 	}
-	//values from addondescriptor
+	// values from addondescriptor
 	if err := vE.appendValuesIfNotPresent(repoValues, true); err != nil {
 		return values, err
 	}
-	//values from commonepipelineEnvironment
+	// values from commonepipelineEnvironment
 	if err := vE.appendStringValuesIfNotPresent(config.CpeValues, false); err != nil {
 		return values, err
 	}
