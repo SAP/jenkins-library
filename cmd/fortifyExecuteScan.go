@@ -153,7 +153,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	for _, exec := range executable_list {
 		_, err := execInPath(exec)
 		if err != nil {
-			return reports, fmt.Errorf("ERROR , command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
 		}
 	}
 
