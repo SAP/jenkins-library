@@ -747,6 +747,8 @@ func TestGetMinSpotChecksPerCategory(t *testing.T) {
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 100, 10)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 200, 10)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 50, 10, 5)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 0, 50, 100, 50)
+	testExpectedGetMinSpotChecksPerCategory("percentage", -10, 50, 100, 50)
 
 	testExpectedGetMinSpotChecksPerCategory("number", 0, 1, 10, 1)
 	testExpectedGetMinSpotChecksPerCategory("number", 5, 10, 100, 5)
