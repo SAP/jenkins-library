@@ -160,9 +160,9 @@ func TestCreateSarifResultFile(t *testing.T) {
 	scan.AgentName = "Some test agent"
 	scan.AgentVersion = "1.2.6"
 	alerts := []Alert{
-		{Library: Library{Filename: "vul1", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
-		{Library: Library{Filename: "vul2", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
-		{Library: Library{Filename: "vul3", ArtifactID: "org.some.lib2"}, Vulnerability: Vulnerability{Score: 6}},
+		{Library: Library{Filename: "vul1", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7.0, Score: 6}},
+		{Library: Library{Filename: "vul2", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+		{Library: Library{Filename: "vul3", ArtifactID: "org.some.lib2"}, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6}},
 	}
 
 	sarif := CreateSarifResultFile(scan, &alerts)
