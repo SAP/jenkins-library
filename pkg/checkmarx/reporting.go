@@ -19,24 +19,31 @@ import (
 )
 
 type CheckmarxReportData struct {
-	ToolName           string `json:"toolName"`
-	ProjectName        string `json:"projectName"`
-	ProjectID          int64  `json:"projectID"`
-	ScanID             int64  `json:"scanID"`
-	TeamName           string `json:"teamName"`
-	TeamPath           string `json:"teamPath"`
-	DeepLink           string `json:"deepLink"`
-	Preset             string `json:"preset"`
-	CheckmarxVersion   string `json:"checkmarxVersion"`
-	ScanType           string `json:"scanType"`
-	HighTotal          int    `json:"highTotal"`
-	HighAudited        int    `json:"highAudited"`
-	MediumTotal        int    `json:"mediumTotal"`
-	MediumAudited      int    `json:"mediumAudited"`
-	LowTotal           int    `json:"lowTotal"`
-	LowAudited         int    `json:"lowAudited"`
-	InformationTotal   int    `json:"informationTotal"`
-	InformationAudited int    `json:"informationAudited"`
+	ToolName           string         `json:"toolName"`
+	ProjectName        string         `json:"projectName"`
+	ProjectID          int64          `json:"projectID"`
+	ScanID             int64          `json:"scanID"`
+	TeamName           string         `json:"teamName"`
+	TeamPath           string         `json:"teamPath"`
+	DeepLink           string         `json:"deepLink"`
+	Preset             string         `json:"preset"`
+	CheckmarxVersion   string         `json:"checkmarxVersion"`
+	ScanType           string         `json:"scanType"`
+	HighTotal          int            `json:"highTotal"`
+	HighAudited        int            `json:"highAudited"`
+	MediumTotal        int            `json:"mediumTotal"`
+	MediumAudited      int            `json:"mediumAudited"`
+	LowTotal           int            `json:"lowTotal"`
+	LowAudited         int            `json:"lowAudited"`
+	InformationTotal   int            `json:"informationTotal"`
+	InformationAudited int            `json:"informationAudited"`
+	LowPerQuery        *[]LowPerQuery `json:"lowPerQuery"`
+}
+
+type LowPerQuery struct {
+	QueryName string `json:"query"`
+	Audited   int    `json:"audited"`
+	Total     int    `json:"total"`
 }
 
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
@@ -159,6 +166,21 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 
 	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Issues"] - data["Information"].(map[string]int)["NotFalsePositive"]
 	checkmarxReportData.InformationTotal = data["Information"].(map[string]int)["Issues"]
+
+	lowPerQueryList := []LowPerQuery{}
+	if _, ok := data["LowPerQuery"]; ok {
+		lowPerQueryMap := data["LowPerQuery"].(map[string]map[string]int)
+		for queryName, resultsLowQuery := range lowPerQueryMap {
+			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+			total := resultsLowQuery["Issues"]
+			lowPerQuery := LowPerQuery{}
+			lowPerQuery.QueryName = queryName
+			lowPerQuery.Audited = audited
+			lowPerQuery.Total = total
+			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
+		}
+	}
+	checkmarxReportData.LowPerQuery = &lowPerQueryList
 
 	return checkmarxReportData
 }

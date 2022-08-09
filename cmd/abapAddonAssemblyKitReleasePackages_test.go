@@ -40,7 +40,8 @@ func TestReleasePackagesStep(t *testing.T) {
 		//assert
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
-		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.NoError(t, err)
 		assert.Equal(t, "R", addonDescriptorFinal.Repositories[0].Status)
 	})
 

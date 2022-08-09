@@ -26,8 +26,7 @@ func TestGradleExecuteBuild_JavaProject_BOMCreation_UsingWrapper(t *testing.T) {
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestGradleIntegration", "java-project"), tempDir)
@@ -87,7 +86,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-gradle.xml")
 }
 
 func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
@@ -99,8 +98,7 @@ func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestGradleIntegration", "java-project-with-bom-plugin"), tempDir)
@@ -160,5 +158,5 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-gradle.xml")
 }

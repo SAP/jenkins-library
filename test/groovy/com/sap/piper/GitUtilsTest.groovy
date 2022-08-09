@@ -138,6 +138,24 @@ class GitUtilsTest extends BasePiperTest {
     }
 
     @Test
+    void testIsMergeCommitTrue() {
+        shellRule.setReturnValue('git rev-parse --verify HEAD^2', 0)
+        assertTrue(gitUtils.isMergeCommit())
+    }
+
+    @Test
+    void testIsMergeCommitFalse() {
+        shellRule.setReturnValue('git rev-parse --verify HEAD^2', 1)
+        assertFalse(gitUtils.isMergeCommit())
+    }
+
+    @Test
+    void testGetGitMergeCommitIdException() {
+        thrown.expect(Exception)
+        gitUtils.getGitMergeCommitId("1")
+    }
+
+    @Test
     void testHandleTestRepository() {
         def result, gitMap, stashName, config = [
             testRepository: 'repoUrl',

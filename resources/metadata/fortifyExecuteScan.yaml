@@ -357,7 +357,7 @@ spec:
         description:
           "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
           If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
-          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*',
+          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*', '**/src/gen/java/cds/**/*',
           '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for
           `buildTool: 'pip'` it is `['./**/*']`."
         scope:
@@ -421,7 +421,7 @@ spec:
         default: true
       - name: convertToSarif
         type: bool
-        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard. Uploaded through Cumulus later on."
+        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard."
         scope:
           - PARAMETERS
           - STAGES
@@ -490,13 +490,39 @@ spec:
       - name: spotCheckMinimum
         type: int
         description:
-          "The minimum number of issues that must be audited per category in the `Spot Checks of each
+          "The minimum number/percentage of issues that must be audited per category in the `Spot Checks of each
           Category` folder to avoid an error being thrown"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: 1
+      - name: spotCheckMinimumUnit
+        type: string
+        description:
+          "The unit for the spotCheckMinimum to apply."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 'number'
+        possibleValues:
+          - number
+          - percentage
+      - name: spotCheckMaximum
+        type: int
+        description:
+          "The maximum number of issues that must be audited per category in the `Spot Checks of each
+          Category` folder to avoid an error being thrown.
+          Note that this flag depends on the result of spotCheckMinimum.
+          For example if spotCheckMinimum percentage value exceeds spotCheckMaximum then
+          spotCheckMaximum will be considerd else spotCheckMinimum is considered.
+          If value is less than one, this flag will be ignored."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 0
       - name: fprDownloadEndpoint
         aliases:
           - name: fortifyFprDownloadEndpoint
