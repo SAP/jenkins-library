@@ -92,12 +92,22 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, 5, reportingData.InformationTotal)
 	assert.Equal(t, 0, reportingData.InformationAudited)
 	assert.Equal(t, 2, len(*reportingData.LowPerQuery))
-	assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[0].QueryName)
-	assert.Equal(t, 0, (*reportingData.LowPerQuery)[0].Audited)
-	assert.Equal(t, 4, (*reportingData.LowPerQuery)[0].Total)
-	assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[1].QueryName)
-	assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Audited)
-	assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Total)
+	if (*reportingData.LowPerQuery)[0].QueryName == "Low_Query_Name_1" {
+		assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[0].QueryName)
+		assert.Equal(t, 0, (*reportingData.LowPerQuery)[0].Audited)
+		assert.Equal(t, 4, (*reportingData.LowPerQuery)[0].Total)
+		assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[1].QueryName)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Audited)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Total)
+	} else {
+		assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[1].QueryName)
+		assert.Equal(t, 0, (*reportingData.LowPerQuery)[1].Audited)
+		assert.Equal(t, 4, (*reportingData.LowPerQuery)[1].Total)
+		assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[0].QueryName)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Audited)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Total)
+	}
+	
 }
 
 func TestJsonReportWithNoLowVulnData(t *testing.T) {
