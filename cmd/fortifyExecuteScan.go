@@ -561,7 +561,7 @@ func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount in
 }
 
 func getSpotChecksMinAsPerMaximum(spotCheckMax int, spotCheckMin int) int {
-	if spotCheckMax == 0 {
+	if spotCheckMax < 1 {
 		return spotCheckMin
 	}
 
