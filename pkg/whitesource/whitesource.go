@@ -408,7 +408,7 @@ func (s *System) GetProjectHierarchy(projectToken string, includeInHouse bool) (
 
 	req := Request{
 		RequestType:        "getProjectHierarchy",
-		ProductToken:       projectToken,
+		ProjectToken:       projectToken,
 		IncludeInHouseData: includeInHouse,
 	}
 
