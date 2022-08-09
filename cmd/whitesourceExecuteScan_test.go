@@ -9,7 +9,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -678,7 +677,8 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "Library Name, Project Name\nmock-library, mock-project\n", asString)
-			assert.NotEmpty(t, piperenv.GetParameter("", "whitesourceExecuteScan_reports.json"))
+			c, _ := utils.ReadFile("/whitesourceExecuteScan_reports.json")
+			assert.NotEmpty(t, c)
 		}
 	})
 }
@@ -707,7 +707,8 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		sheetContents, err := utils.FileRead(reportSheet)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, sheetContents)
-		assert.NotEmpty(t, piperenv.GetParameter("", "whitesourceExecuteScan_reports.json"))
+		c, _ := utils.ReadFile("whitesourceExecuteScan_reports.json")
+		assert.NotEmpty(t, c)
 	})
 }
 

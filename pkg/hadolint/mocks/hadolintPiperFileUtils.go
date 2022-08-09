@@ -47,3 +47,16 @@ func (_m *HadolintPiperFileUtils) FileWrite(filename string, data []byte, perm o
 
 	return r0
 }
+
+func (_m *HadolintPiperFileUtils) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	ret := _m.Called(filename, data, perm)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []byte, os.FileMode) error); ok {
+		r0 = rf(filename, data, perm)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

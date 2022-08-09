@@ -7,17 +7,9 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type mockPublish struct {
-	reports []piperutils.Path
-}
-
-func (mP *mockPublish) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	mP.reports = reports
-}
 
 func testSetup(client piperhttp.Sender, buildID string) Build {
 	conn := new(Connector)
@@ -370,36 +362,26 @@ func TestPublishAllDownloadedResults(t *testing.T) {
 	t.Run("Something was downloaded", func(t *testing.T) {
 		//arrange
 		build := GetMockBuildTestDownloadPublish()
-		mP := mockPublish{}
+		files := mock.FilesMock{}
 		build.Tasks[1].Results[0].SavedFilename = "File1"
 		build.Tasks[1].Results[0].DownloadPath = "Dir1/File1"
 		build.Tasks[1].Results[2].SavedFilename = "File3"
 		build.Tasks[1].Results[2].DownloadPath = "File3"
 		//act
-		build.PublishAllDownloadedResults("MyStep", &mP)
+		build.PublishAllDownloadedResults("MyStep", &files)
 		//assert
-		publishedFiles := []piperutils.Path{
-			{
-				Target:    "Dir1/File1",
-				Name:      "File1",
-				Mandatory: true,
-			},
-			{
-				Target:    "File3",
-				Name:      "File3",
-				Mandatory: true,
-			},
-		}
-		assert.Equal(t, publishedFiles, mP.reports)
+		assert.True(t, files.HasFile("/MyStep_reports.json"))
+		assert.True(t, files.HasFile("/MyStep_links.json"))
 	})
 	t.Run("Nothing was downloaded", func(t *testing.T) {
 		//arrange
 		build := GetMockBuildTestDownloadPublish()
-		mP := mockPublish{}
+		files := mock.FilesMock{}
 		//act
-		build.PublishAllDownloadedResults("MyStep", &mP)
+		build.PublishAllDownloadedResults("MyStep", &files)
 		//assert
-		assert.Equal(t, 0, len(mP.reports))
+		assert.False(t, files.HasFile("/MyStep_reports.json"))
+		assert.False(t, files.HasFile("/MyStep_links.json"))
 	})
 }
 
@@ -408,37 +390,28 @@ func TestPublishDownloadedResults(t *testing.T) {
 	t.Run("Publish downloaded files", func(t *testing.T) {
 		//arrange
 		build := GetMockBuildTestDownloadPublish()
-		mP := mockPublish{}
+		files := mock.FilesMock{}
 		build.Tasks[1].Results[0].SavedFilename = "SuperFile_File1"
 		build.Tasks[1].Results[0].DownloadPath = "Dir1/SuperFile_File1"
 		build.Tasks[1].Results[2].SavedFilename = "File3"
 		build.Tasks[1].Results[2].DownloadPath = "File3"
 		//act
-		err := build.PublishDownloadedResults("MyStep", filenames, &mP)
+		err := build.PublishDownloadedResults("MyStep", filenames, &files)
 		//assert
 		assert.NoError(t, err)
-		publishedFiles := []piperutils.Path{
-			{
-				Target:    "Dir1/SuperFile_File1",
-				Name:      "SuperFile_File1",
-				Mandatory: true,
-			},
-			{
-				Target:    "File3",
-				Name:      "File3",
-				Mandatory: true,
-			},
-		}
-		assert.Equal(t, publishedFiles, mP.reports)
+
+		assert.True(t, files.HasFile("/MyStep_reports.json"))
+		assert.True(t, files.HasFile("/MyStep_links.json"))
+
 	})
 	t.Run("Try to publish file which was not downloaded", func(t *testing.T) {
 		//arrange
 		build := GetMockBuildTestDownloadPublish()
-		mP := mockPublish{}
+		files := mock.FilesMock{}
 		build.Tasks[1].Results[0].SavedFilename = "SuperFile_File1"
 		build.Tasks[1].Results[0].DownloadPath = "Dir1/SuperFile_File1"
 		//act
-		err := build.PublishDownloadedResults("MyStep", filenames, &mP)
+		err := build.PublishDownloadedResults("MyStep", filenames, &files)
 		//assert
 		assert.Error(t, err)
 	})

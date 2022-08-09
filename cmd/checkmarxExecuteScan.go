@@ -7,7 +7,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,6 +35,7 @@ type checkmarxExecuteScanUtils interface {
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
 	PathMatch(pattern, name string) (bool, error)
 	GetWorkspace() string
 	GetIssueService() *github.IssuesService
@@ -56,7 +57,11 @@ func (c *checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
+}
+
+func (c *checkmarxExecuteScanUtilsBundle) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
@@ -345,7 +350,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 	}
 
 	xmlReportName := createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
-	results, err := getDetailedResults(sys, xmlReportName, scanID, utils)
+	results, err := getDetailedResults(config, sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
@@ -366,7 +371,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 	}
 
 	// create toolrecord
-	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
+	toolRecordFileName, err := createToolRecordCx(utils, utils.GetWorkspace(), config, results)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
@@ -416,7 +421,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 		}
 	}
 
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), utils, reports, links)
 	reportToInflux(results, influx)
 
 	if insecure {
@@ -540,6 +545,8 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	cxHighThreshold := config.VulnerabilityThresholdHigh
 	cxMediumThreshold := config.VulnerabilityThresholdMedium
 	cxLowThreshold := config.VulnerabilityThresholdLow
+	cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
+	cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
 	highValue := results["High"].(map[string]int)["NotFalsePositive"]
 	mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
 	lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
@@ -579,10 +586,28 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 			insecure = true
 			mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
 		}
-		if lowValue < cxLowThreshold {
-			insecure = true
-			lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+		// if the flag is switched on, calculate the Low findings threshold per query
+		if cxLowThresholdPerQuery {
+			lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
+			if lowPerQueryMap != nil {
+				for lowQuery, resultsLowQuery := range lowPerQueryMap {
+					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+					lowOverallPerQuery := resultsLowQuery["Issues"]
+					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
+						insecure = true
+						lowViolation = fmt.Sprintf("<-- query: %v - audited: %v - required: %v ", lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+					}
+
+				}
+			}
+		} else { // calculate the Low findings threshold in total
+			if lowValue < cxLowThreshold {
+				insecure = true
+				lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+			}
 		}
+
 	}
 	if config.VulnerabilityThresholdUnit == "absolute" {
 		unit = " findings"
@@ -723,7 +748,7 @@ func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
+func getDetailedResults(config checkmarxExecuteScanOptions, sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
 	data, err := generateAndDownloadReport(sys, scanID, "XML")
 	if err != nil {
@@ -791,6 +816,52 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int,
 					submap["NotFalsePositive"]++
 				}
 			}
+		}
+
+		// if the flag is switched on, build the list  of Low findings per query
+		if config.VulnerabilityThresholdLowPerQuery {
+			var lowPerQuery = map[string]map[string]int{}
+			for _, query := range xmlResult.Queries {
+				for _, result := range query.Results {
+					if result.Severity != "Low" {
+						continue
+					}
+					key := query.Name
+					var submap map[string]int
+					if lowPerQuery[key] == nil {
+						submap = map[string]int{}
+						lowPerQuery[key] = submap
+					} else {
+						submap = lowPerQuery[key]
+					}
+					submap["Issues"]++
+					auditState := "ToVerify"
+					switch result.State {
+					case "1":
+						auditState = "NotExploitable"
+						break
+					case "2":
+						auditState = "Confirmed"
+						break
+					case "3":
+						auditState = "Urgent"
+						break
+					case "4":
+						auditState = "ProposedNotExploitable"
+						break
+					case "0":
+					default:
+						auditState = "ToVerify"
+						break
+					}
+					submap[auditState]++
+
+					if result.FalsePositive != "True" {
+						submap["NotFalsePositive"]++
+					}
+				}
+			}
+			resultMap["LowPerQuery"] = lowPerQuery
 		}
 	}
 	return resultMap, nil
@@ -895,8 +966,8 @@ func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, 
 	return true, nil
 }
 
-func createToolRecordCx(workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
-	record := toolrecord.New(workspace, "checkmarx", config.ServerURL)
+func createToolRecordCx(utils checkmarxExecuteScanUtils, workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
+	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
 	// Todo TeamId - see run_scan()
 	// record.AddKeyData("team", XXX, resultMap["Team"], "")
 	// Project

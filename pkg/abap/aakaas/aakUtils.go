@@ -8,11 +8,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type AakUtils interface {
 	command.ExecRunner
 	abapbuild.HTTPSendLoader
+	piperutils.FileUtils
 	ReadAddonDescriptor(FileName string) (abaputils.AddonDescriptor, error)
 	GetMaxRuntime() time.Duration
 	GetPollingInterval() time.Duration
@@ -21,6 +23,7 @@ type AakUtils interface {
 type AakBundle struct {
 	*command.Command
 	*piperhttp.Client
+	*piperutils.Files
 	maxRuntime      time.Duration
 	pollingInterval time.Duration
 }

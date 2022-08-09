@@ -20,8 +20,8 @@ import (
 var dirContent []byte
 
 const (
-	defaultFileMode os.FileMode = 0644
-	defaultDirMode  os.FileMode = 0755
+	defaultFileMode os.FileMode = 0o644
+	defaultDirMode  os.FileMode = 0o755
 )
 
 type fileInfoMock struct {
@@ -50,7 +50,7 @@ func (p *fileProperties) isDir() bool {
 	return p.content == &dirContent
 }
 
-//FilesMock implements the functions from piperutils.Files with an in-memory file system.
+// FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
 	files            map[string]*fileProperties
 	writtenFiles     []string
@@ -274,6 +274,11 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	return *props.content, nil
 }
 
+// ReadFile can be used as replacement for os.ReadFile in a compatible manner
+func (f *FilesMock) ReadFile(name string) ([]byte, error) {
+	return f.FileRead(name)
+}
+
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
 func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) error {
 	if f.FileWriteError != nil {
@@ -286,6 +291,11 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
+}
+
+// WriteFile can be used as replacement for os.WriteFile in a compatible manner
+func (f *FilesMock) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return f.FileWrite(filename, data, perm)
 }
 
 // RemoveAll is a proxy for FileRemove
@@ -378,7 +388,7 @@ func (f *FilesMock) TempDir(baseDir string, pattern string) (string, error) {
 		tmpDir = fmt.Sprintf("%s/%stest", baseDir, pattern)
 	}
 
-	err := f.MkdirAll(tmpDir, 0755)
+	err := f.MkdirAll(tmpDir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -621,5 +631,5 @@ func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
 }
 
 func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
-	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
 }

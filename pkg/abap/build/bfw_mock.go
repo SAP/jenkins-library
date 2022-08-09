@@ -34,8 +34,7 @@ func (c *ClMock) SetOptions(opts piperhttp.ClientOptions) {}
 // SendRequest : BF Send Fake request
 func (c *ClMock) SendRequest(method string, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	if method == "GET" || method == "POST" {
-		var body []byte
-		body = []byte(fakeResponse(method, url))
+		body := []byte(fakeResponse(method, url))
 		return &http.Response{
 			StatusCode: c.StatusCode,
 			Body:       ioutil.NopCloser(bytes.NewReader(body)),
