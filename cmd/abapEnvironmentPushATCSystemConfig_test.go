@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -53,7 +53,6 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 func TestCheckATCSystemConfigurationFile(t *testing.T) {
 	t.Parallel()
 	t.Run("Check ATC Configuration File - empty", func(t *testing.T) {
-
 		errExpected := "pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: atcSystemConfig.json)"
 		var parsedConfigurationJsonExpected parsedConfigJsonWithExpand
 		var atcSystemConfiguartionJsonFileExpected []byte
@@ -71,7 +70,6 @@ func TestHandleHttpResponse(t *testing.T) {
 	t.Parallel()
 
 	t.Run("failiure case: HandleHttpResponse", func(t *testing.T) {
-
 		bodyText := `
 --B772E21DAA42B9571C778276B829D6C20
 Content-Type: multipart/mixed; boundary=B772E21DAA42B9571C778276B829D6C21
@@ -139,13 +137,12 @@ cache-control: no-cache, no-store, must-revalidate
 		}
 		resp.Header.Set("Content-type", "multipart/mixed")
 		err = HandleHttpResponse(resp, err, "Unit Test", con)
-		//inner error expected
+		// inner error expected
 		errExpected := "Outer Response Code: 200 - but at least one Inner response returned StatusCode 4* or 5*. Please check Log for details."
 		assert.Equal(t, errExpected, err.Error())
 	})
 
 	t.Run("success case: HandleHttpResponse", func(t *testing.T) {
-
 		bodyText := `
 --B772E21DAA42B9571C778276B829D6C20
 Content-Type: multipart/mixed; boundary=B772E21DAA42B9571C778276B829D6C21
@@ -221,7 +218,6 @@ func TestBuildATCSystemConfigBatchRequest(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base & 1 Priority", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -250,7 +246,7 @@ Content-Type: application/json
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -280,11 +276,9 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base & 2 Priorities", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -323,7 +317,7 @@ Content-Type: application/json
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -358,11 +352,9 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch Request")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (no existing _priorities)", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -381,7 +373,7 @@ Content-Type: application/json
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -403,11 +395,9 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (empty expand _priorities)", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -426,7 +416,7 @@ Content-Type: application/json
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -450,14 +440,12 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("failure case: BuildATCSystemConfigBatch", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := ``
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -487,14 +475,14 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.NotEqual(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 }
+
 func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	t.Parallel()
 
 	t.Run("run Step Failure - ATC System Configuration File empty", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
@@ -511,19 +499,12 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 		}
 
 		dir := t.TempDir()
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
 
-		defer func() {
-			_ = os.Chdir(oldCWD)
-		}()
-
-		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: filepath.Join(dir, "atcSystemConfig.json")}
 
 		atcSystemConfigFileString := ``
 
-		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := os.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0o644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -535,7 +516,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	})
 
 	t.Run("run Step Failure - ATC System Configuration invalid", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
@@ -552,17 +533,10 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 		}
 
 		dir := t.TempDir()
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
 
-		defer func() {
-			_ = os.Chdir(oldCWD)
-		}()
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: filepath.Join(dir, "atcSystemConfig.json")}
 
-		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
-
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -585,7 +559,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := os.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0o644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -597,7 +571,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	})
 
 	t.Run("run Step Successful - Push ATC System Configuration", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
@@ -614,17 +588,10 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 		}
 
 		dir := t.TempDir()
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
 
-		defer func() {
-			_ = os.Chdir(oldCWD)
-		}()
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: filepath.Join(dir, "atcSystemConfig.json")}
 
-		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
-
-		//valid ATC System Configuration File
+		// valid ATC System Configuration File
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -647,7 +614,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err := ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := os.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0o644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -657,7 +624,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	})
 
 	t.Run("run Step Failure - ATC System Configuration File does not exist", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"

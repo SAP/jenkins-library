@@ -7,7 +7,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -36,6 +35,7 @@ type checkmarxExecuteScanUtils interface {
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
 	PathMatch(pattern, name string) (bool, error)
 	GetWorkspace() string
 	GetIssueService() *github.IssuesService
@@ -57,7 +57,11 @@ func (c *checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
+}
+
+func (c *checkmarxExecuteScanUtilsBundle) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
@@ -367,7 +371,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 	}
 
 	// create toolrecord
-	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
+	toolRecordFileName, err := createToolRecordCx(utils, utils.GetWorkspace(), config, results)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
@@ -417,7 +421,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 		}
 	}
 
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), utils, reports, links)
 	reportToInflux(results, influx)
 
 	if insecure {
@@ -962,8 +966,8 @@ func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, 
 	return true, nil
 }
 
-func createToolRecordCx(workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
-	record := toolrecord.New(workspace, "checkmarx", config.ServerURL)
+func createToolRecordCx(utils checkmarxExecuteScanUtils, workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
+	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
 	// Todo TeamId - see run_scan()
 	// record.AddKeyData("team", XXX, resultMap["Team"], "")
 	// Project
