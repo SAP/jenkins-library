@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -250,6 +251,19 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	}
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
+
+	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
+	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	convInvocProp := new(format.InvocationProperties)
+	convInvocProp.Platform = runtime.GOOS
+	conversion.Invocation.Properties = convInvocProp
+	sarif.Runs[0].Conversion = conversion
 
 	return &sarif
 }

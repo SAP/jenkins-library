@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -38,6 +39,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 
 	// Handle results/vulnerabilities
 	collectedRules := []string{}
+	cweIdsForTaxonomies := []string{}
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
 			component := componentLookup[fmt.Sprintf("%v/%v", v.Name, v.Version)]
@@ -56,6 +58,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			partialFingerprints := new(format.PartialFingerprints)
 			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", component.ToPackageUrl().ToString(), v.Title())))
 			result.PartialFingerprints = *partialFingerprints
+			cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 
 			// append the result
 			sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
@@ -95,6 +98,33 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	}
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
+
+	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
+	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	convInvocProp := new(format.InvocationProperties)
+	convInvocProp.Platform = runtime.GOOS
+	conversion.Invocation.Properties = convInvocProp
+	sarif.Runs[0].Conversion = conversion
+
+	//handle taxonomies
+	//Only one exists apparently: CWE. It is fixed
+	taxonomy := *new(format.Taxonomies)
+	taxonomy.GUID = "25F72D7E-8A92-459D-AD67-64853F788765"
+	taxonomy.Name = "CWE"
+	taxonomy.Organization = "MITRE"
+	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	for key := range cweIdsForTaxonomies {
+		taxa := *new(format.Taxa)
+		taxa.Id = fmt.Sprint(key)
+		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
+	}
+	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
 
 	return &sarif
 }
