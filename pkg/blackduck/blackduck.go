@@ -109,7 +109,7 @@ func (v Vulnerability) Title() string {
 }
 
 // ToMarkdown returns the markdown representation of the contents
-func (v Vulnerability) ToMarkdown() ([]byte, error) {
+func (v Vulnerability) ToMarkdown(component *Component) ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
 		ArtifactID: v.Name,
 
@@ -134,9 +134,10 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 		PublishDate:  "",
 		Resolution:   "",
 
-		Score:    float64(v.VulnerabilityWithRemediation.BaseScore),
-		Severity: v.VulnerabilityWithRemediation.Severity,
-		Version:  v.Version,
+		Score:      float64(v.VulnerabilityWithRemediation.BaseScore),
+		Severity:   v.VulnerabilityWithRemediation.Severity,
+		Version:    v.Version,
+		PackageURL: component.ToPackageUrl().ToString(),
 
 		// no vulnerability link available, yet
 		VulnerabilityLink: "",
@@ -147,13 +148,14 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 }
 
 // ToTxt returns the textual representation of the contents
-func (v Vulnerability) ToTxt() string {
+func (v Vulnerability) ToTxt(component *Component) string {
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
 Base (NVD) Score: %v
 Temporal Score: %v
 Package: %v
 Installed Version: %v
+Package URL: %v
 Description: %v
 Fix Resolution: %v
 Link: [%v](%v)`,
@@ -163,6 +165,7 @@ Link: [%v](%v)`,
 		v.VulnerabilityWithRemediation.OverallScore,
 		v.Name,
 		v.Version,
+		component.ToPackageUrl().ToString(),
 		v.Description,
 		"",
 		"",
