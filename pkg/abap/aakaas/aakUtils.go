@@ -31,6 +31,7 @@ type AakBundle struct {
 func (bundle *AakBundle) GetMaxRuntime() time.Duration {
 	return bundle.maxRuntime
 }
+
 func (bundle *AakBundle) GetPollingInterval() time.Duration {
 	return bundle.pollingInterval
 }
@@ -56,6 +57,7 @@ func NewAakBundle() AakUtils {
 	utils := AakBundle{
 		Command: &command.Command{},
 		Client:  &piperhttp.Client{},
+		Files:   &piperutils.Files{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
