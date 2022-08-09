@@ -97,37 +97,6 @@ func transformLibToPurlType(libType string) string {
 	case "GOLANG_ARTIFACT":
 		return packageurl.TypeGolang
 	case "DOCKER_ARTIFACT":
-		return packageurl.TypeGolang
-	case "UNKNOWN_ARTIFACT":
-		return packageurl.TypeGeneric
-	}
-	return packageurl.TypeGeneric
-}
-
-func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
-	switch cvss3severity {
-	case "low":
-		return "LOW"
-	case "medium":
-		return "MEDIUM"
-	case "high":
-		if cvss3score >= 9 {
-			return "CRITICAL"
-		}
-	}
-	return false, nil
-}
-
-func transformLibToPurlType(libType string) string {
-	// TODO verify and complete, only maven is proven so far
-	switch libType {
-	case "MAVEN_ARTIFACT":
-		return packageurl.TypeMaven
-	case "NODE_ARTIFACT":
-		return packageurl.TypeNPM
-	case "GOLANG_ARTIFACT":
-		return packageurl.TypeGolang
-	case "DOCKER_ARTIFACT":
 		return packageurl.TypeDocker
 	case "UNKNOWN_ARTIFACT":
 		return packageurl.TypeGeneric
