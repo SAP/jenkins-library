@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -613,7 +614,7 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		systemMock.Alerts = []ws.Alert{}
 		influx := whitesourceExecuteScanInflux{}
 
-		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &influx)
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &[]format.Assessment{}, &influx)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
@@ -622,15 +623,29 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 	t.Run("error - some vulnerabilities", func(t *testing.T) {
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{
-			{Vulnerability: ws.Vulnerability{CVSS3Score: 7}},
-			{Vulnerability: ws.Vulnerability{CVSS3Score: 6}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 7, Name: "CVE-2025-001"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Name: "CVE-2025-002"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
 		}
 		influx := whitesourceExecuteScanInflux{}
 
-		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &influx)
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &[]format.Assessment{}, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
 		assert.Equal(t, 1, severeVulnerabilities)
 		assert.Equal(t, 2, len(alerts))
+	})
+
+	t.Run("success - assessed vulnerabilities", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 7, Name: "CVE-2025-001"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Name: "CVE-2025-002"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
+		}
+		influx := whitesourceExecuteScanInflux{}
+
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &[]format.Assessment{{Vulnerability: "CVE-2025-001", Purls: []format.Purl{{Purl: "pkg:/maven/com.sap/test@1.2.3"}}}, {Vulnerability: "CVE-2025-002", Purls: []format.Purl{{Purl: "pkg:/maven/com.sap/test@1.2.3"}}}}, &influx)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, severeVulnerabilities)
+		assert.Equal(t, 0, len(alerts))
 	})
 
 	t.Run("error - WhiteSource failure", func(t *testing.T) {
@@ -638,7 +653,7 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		systemMock.AlertError = fmt.Errorf("failed to read alerts")
 		influx := whitesourceExecuteScanInflux{}
 
-		_, _, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &influx)
+		_, _, err := checkProjectSecurityViolations(&ScanOptions{FailOnSevereVulnerabilities: true}, 7.0, project, systemMock, &[]format.Assessment{}, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project alerts from WhiteSource")
 	})
 }
