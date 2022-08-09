@@ -141,7 +141,7 @@ func (tr *Toolrecord) Persist() error {
 	return nil
 }
 
-// default aggregation for overall displayName and URL
+// GenerateDefaultDisplayData - default aggregation for overall displayName and URL
 // can be overriden by calling SetOverallDisplayData
 func (tr *Toolrecord) GenerateDefaultDisplayData() {
 	displayName := ""
@@ -164,7 +164,7 @@ func (tr *Toolrecord) GenerateDefaultDisplayData() {
 	tr.DisplayURL = displayURL
 }
 
-// Override the default generation for DisplayName & DisplayURL
+// SetOverallDisplayData - override the default generation for DisplayName & DisplayURL
 func (tr *Toolrecord) SetOverallDisplayData(newName, newURL string) {
 	tr.DisplayName = newName
 	tr.DisplayURL = newURL

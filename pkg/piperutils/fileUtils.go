@@ -125,6 +125,7 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	return nBytes, err
 }
 
+// Move will move files from src to dst
 func (f Files) Move(src, dst string) error {
 	if exists, err := f.FileExists(src); err != nil {
 		return err
@@ -234,14 +235,12 @@ func Unzip(src, dest string) ([]string, error) {
 // stripComponentLevel = 2 -> parentFolder/childFolder/someFile.Txt -> someFile.Txt
 // when stripCompenent in 0 the untar will retain the original tar folder structure
 // when stripCompmenet is greater than 0 the expectation is all files must be under that level folder and if not there is a hard check and failure condition
-
 func Untar(src string, dest string, stripComponentLevel int) error {
 	file, err := os.Open(src)
-	defer file.Close()
-
 	if err != nil {
 		return fmt.Errorf("unable to open src: %v", err)
 	}
+	defer file.Close()
 
 	if b, err := isFileGzipped(src); err == nil && b {
 		zr, err := gzip.NewReader(file)
@@ -379,7 +378,7 @@ func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
 	return os.WriteFile(path, content, perm)
 }
 
-// ReadFile is a wrapper for os.ReadFile() using the same name and syntax.
+// WriteFile is a wrapper for os.ReadFile() using the same name and syntax.
 func (f Files) WriteFile(path string, content []byte, perm os.FileMode) error {
 	return f.FileWrite(path, content, perm)
 }
