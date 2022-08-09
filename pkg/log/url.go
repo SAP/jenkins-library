@@ -41,7 +41,7 @@ func (cl *URLLogger) WriteURLsLogToJSON() error {
 	if len(cl.buf.data) == 0 {
 		return nil
 	}
-	file, err := os.OpenFile(urlLogFileName, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(urlLogFileName, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
