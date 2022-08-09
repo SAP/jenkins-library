@@ -77,13 +77,13 @@ func mockExecinPath(exec string) (string, error) {
 
 func failMockExecinPathfortifyupdate(exec string) (string, error) {
 	if exec == "fortifyupdate" {
-		return "", errors.New("ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+		return "", errors.New("Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 	return "/fortifyupdate", nil
 }
 func failMockExecinPathsourceanalyzer(exec string) (string, error) {
 	if exec == "sourceanalyzer" {
-		return "", errors.New("ERROR , command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+		return "", errors.New("Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
 	}
 	return "/sourceanalyzer", nil
 }
@@ -464,7 +464,7 @@ func TestFailFortifyexecinPath(t *testing.T) {
 		execInPath = failMockExecinPathfortifyupdate
 		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
-		assert.EqualError(t, err, "ERROR , command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+		assert.EqualError(t, err, "Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
 
 	})
 	t.Run("Testing if sourceanalyzer in $PATH or not", func(t *testing.T) {
@@ -476,7 +476,7 @@ func TestFailFortifyexecinPath(t *testing.T) {
 		execInPath = failMockExecinPathsourceanalyzer
 		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
-		assert.EqualError(t, err, "ERROR , command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+		assert.EqualError(t, err, "Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
 
 	})
 }
