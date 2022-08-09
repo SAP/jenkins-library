@@ -107,7 +107,7 @@ func TestCreateJSONReport(t *testing.T) {
 		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Audited)
 		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Total)
 	}
-	
+
 }
 
 func TestJsonReportWithNoLowVulnData(t *testing.T) {
