@@ -18,9 +18,7 @@ import (
 	keytool "github.com/SAP/jenkins-library/pkg/java"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -45,8 +43,8 @@ var (
 	sonar sonarSettings
 
 	execLookPath    = exec.LookPath
-	fileUtilsExists = FileUtils.FileExists
-	fileUtilsUnzip  = FileUtils.Unzip
+	fileUtilsExists = piperutils.FileExists
+	fileUtilsUnzip  = piperutils.Unzip
 	osRename        = os.Rename
 	osStat          = os.Stat
 	doublestarGlob  = doublestar.Glob
@@ -95,7 +93,8 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	}
 
 	influx.step_data.fields.sonar = false
-	if err := runSonar(config, downloadClient, &runner, apiClient, influx); err != nil {
+	fileUtils := piperutils.Files{}
+	if err := runSonar(config, downloadClient, &runner, apiClient, &fileUtils, influx); err != nil {
 		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
 			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -105,7 +104,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	influx.step_data.fields.sonar = true
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, utils piperutils.FileUtils, influx *sonarExecuteScanInflux) error {
 	// Set config based on orchestrator-specific environment variables
 	detectParametersFromCI(&config)
 
@@ -168,7 +167,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		sonar.options = append(sonar.options, config.Options...)
 	}
 
-	sonar.options = SliceUtils.PrefixIfNeeded(SliceUtils.Trim(sonar.options), "-D")
+	sonar.options = piperutils.PrefixIfNeeded(piperutils.Trim(sonar.options), "-D")
 
 	log.Entry().
 		WithField("command", sonar.binary).
@@ -194,13 +193,13 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return nil
 	}
 	// write links JSON
-	links := []StepResults.Path{
+	links := []piperutils.Path{
 		{
 			Target: taskReport.DashboardURL,
 			Name:   "Sonar Web UI",
 		},
 	}
-	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+	piperutils.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, utils, nil, links)
 
 	if len(config.Token) == 0 {
 		log.Entry().Warn("no measurements are fetched due to missing credentials")
@@ -278,7 +277,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 // isInOptions returns true, if the given property is already provided in config.Options.
 func isInOptions(config sonarExecuteScanOptions, property string) bool {
 	property = strings.TrimSuffix(property, "=")
-	return SliceUtils.ContainsStringPart(config.Options, property)
+	return piperutils.ContainsStringPart(config.Options, property)
 }
 
 func addJavaBinaries() {

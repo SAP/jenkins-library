@@ -58,6 +58,7 @@ require (
 	gopkg.in/ini.v1 v1.66.2
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.8.0
+	mvdan.cc/xurls/v2 v2.4.0
 )
 
 require (

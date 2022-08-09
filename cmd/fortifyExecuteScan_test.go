@@ -1031,7 +1031,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenGradleTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/src/gen/java/cds/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {
