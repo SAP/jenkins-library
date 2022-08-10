@@ -47,7 +47,8 @@ type PullRequestConfig struct {
 
 type ChangeSet struct {
 	CommitId  string
-	timestamp string
+	Timestamp string
+	PrNumber  int
 }
 
 // OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
