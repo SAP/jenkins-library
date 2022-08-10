@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 // Scan stores information about scanned WhiteSource projects (modules).
@@ -16,11 +17,13 @@ type Scan struct {
 	// It does not include the ProductVersion.
 	AggregateProjectName string
 	// ProductVersion is the global version that is used across all Projects (modules) during the scan.
+	BuildTool       string
 	ProductVersion  string
 	scannedProjects map[string]Project
 	scanTimes       map[string]time.Time
 	AgentName       string
 	AgentVersion    string
+	Coordinates     versioning.Coordinates
 }
 
 func (s *Scan) init() {

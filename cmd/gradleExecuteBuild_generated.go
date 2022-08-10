@@ -30,6 +30,7 @@ type gradleExecuteBuildOptions struct {
 	ArtifactVersion    string `json:"artifactVersion,omitempty"`
 	ArtifactGroupID    string `json:"artifactGroupId,omitempty"`
 	ArtifactID         string `json:"artifactId,omitempty"`
+	UseWrapper         bool   `json:"useWrapper,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -42,7 +43,7 @@ func (p *gradleExecuteBuildReports) persist(stepConfig gradleExecuteBuildOptions
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/bom-gradle.xml", ParamRef: "", StepResultType: "sbom"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -114,6 +115,10 @@ func GradleExecuteBuildCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -171,6 +176,7 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactGroupID, "artifactGroupId", os.Getenv("PIPER_artifactGroupId"), "The group of the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The name of the artifact.")
+	cmd.Flags().BoolVar(&stepConfig.UseWrapper, "useWrapper", false, "If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.")
 
 }
 
@@ -305,6 +311,15 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_artifactId"),
 					},
+					{
+						Name:        "useWrapper",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -316,7 +331,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/bom-gradle.xml", "type": "sbom"},
 						},
 					},
 				},

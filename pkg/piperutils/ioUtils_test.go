@@ -8,7 +8,7 @@ import (
 )
 
 func TestCopyData(t *testing.T) {
-	runInTempDir(t, "copying file succeeds small", "dir1", func(t *testing.T) {
+	runInTempDir(t, "copying file succeeds small", func(t *testing.T) {
 		srcName := "testFileSrc"
 		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
@@ -46,7 +46,7 @@ func TestCopyData(t *testing.T) {
 		assert.Equal(t, int64(3), result, "Expected true but got false")
 		assert.Equal(t, data, dataRead, "data written %v is different to data read %v")
 	})
-	runInTempDir(t, "copying file succeeds larger", "dir2", func(t *testing.T) {
+	runInTempDir(t, "copying file succeeds larger", func(t *testing.T) {
 		srcName := "testFile"
 		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
@@ -73,7 +73,7 @@ func TestCopyData(t *testing.T) {
 		assert.NoError(t, err, "Didn't expect error but got one")
 		assert.Equal(t, int64(300), result, "Expected true but got false")
 	})
-	runInTempDir(t, "copying file fails on read", "dir3", func(t *testing.T) {
+	runInTempDir(t, "copying file fails on read", func(t *testing.T) {
 		srcName := "testFileExcl"
 		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
@@ -100,7 +100,7 @@ func TestCopyData(t *testing.T) {
 		assert.Error(t, err, "Expected error but got none")
 		assert.Equal(t, int64(0), result, "Expected true but got false")
 	})
-	runInTempDir(t, "copying file fails on write", "dir4", func(t *testing.T) {
+	runInTempDir(t, "copying file fails on write", func(t *testing.T) {
 		srcName := "testFileExcl"
 		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {

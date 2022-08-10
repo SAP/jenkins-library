@@ -57,6 +57,21 @@ func TestCreateJSONReport(t *testing.T) {
 	submap["NotFalsePositive"] = 5
 	resultMap["Information"] = submap
 
+	lowPerQuery := map[string]map[string]int{}
+	submap = map[string]int{}
+	submap["Issues"] = 4
+	submap["Confirmed"] = 0
+	submap["NotExploitable"] = 0
+	lowPerQuery["Low_Query_Name_1"] = submap
+
+	submap = map[string]int{}
+	submap["Issues"] = 5
+	submap["Confirmed"] = 2
+	submap["NotExploitable"] = 3
+	lowPerQuery["Low_Query_Name_2"] = submap
+
+	resultMap["LowPerQuery"] = lowPerQuery
+
 	reportingData := CreateJSONReport(resultMap)
 	assert.Equal(t, int64(1000005), reportingData.ScanID)
 	assert.Equal(t, "Project 1", reportingData.ProjectName)
@@ -76,6 +91,23 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, 0, reportingData.LowAudited)
 	assert.Equal(t, 5, reportingData.InformationTotal)
 	assert.Equal(t, 0, reportingData.InformationAudited)
+	assert.Equal(t, 2, len(*reportingData.LowPerQuery))
+	if (*reportingData.LowPerQuery)[0].QueryName == "Low_Query_Name_1" {
+		assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[0].QueryName)
+		assert.Equal(t, 0, (*reportingData.LowPerQuery)[0].Audited)
+		assert.Equal(t, 4, (*reportingData.LowPerQuery)[0].Total)
+		assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[1].QueryName)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Audited)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Total)
+	} else {
+		assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[1].QueryName)
+		assert.Equal(t, 0, (*reportingData.LowPerQuery)[1].Audited)
+		assert.Equal(t, 4, (*reportingData.LowPerQuery)[1].Total)
+		assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[0].QueryName)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Audited)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Total)
+	}
+
 }
 
 func TestJsonReportWithNoLowVulnData(t *testing.T) {

@@ -1,14 +1,19 @@
 package whitesource
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"testing"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,6 +58,99 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 
 		assert.Contains(t, scanReport.DetailTable.Rows[0].Columns[10].Content, "this is the top fix")
 
+	})
+}
+
+func TestCreateCycloneSBOM(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success case", func(t *testing.T) {
+		config := &ScanOptions{}
+		scan := &Scan{
+			AgentName:            "Mend Unified Agent",
+			AgentVersion:         "3.3.3",
+			AggregateProjectName: config.ProjectName,
+			BuildTool:            "maven",
+			ProductVersion:       config.ProductVersion,
+			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
+		}
+		scan.AppendScannedProject("testProject")
+		alerts := []Alert{
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
+			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"}, Vulnerability: Vulnerability{Score: 6}},
+		}
+
+		libraries := []Library{
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}}},
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"},
+		}
+
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)
+		assert.NoError(t, err, "unexpected error")
+		buffer := bytes.NewBuffer(contents)
+		decoder := cdx.NewBOMDecoder(buffer, cdx.BOMFileFormatXML)
+		bom := cdx.NewBOM()
+		decoder.Decode(bom)
+
+		assert.NotNil(t, bom, "BOM was nil")
+		assert.NotEmpty(t, bom.SpecVersion)
+
+		components := *bom.Components
+		assert.Equal(t, 2, len(components))
+		assert.Equal(t, true, components[0].Name == "log4j" || components[0].Name == "commons-lang")
+		assert.Equal(t, true, components[1].Name == "log4j" || components[1].Name == "commons-lang")
+		assert.Equal(t, true, components[0].Name != components[1].Name)
+	})
+
+	t.Run("success - golden", func(t *testing.T) {
+		config := &ScanOptions{ProjectName: "myproduct - 1.3.4", ProductVersion: "1"}
+		scan := &Scan{
+			AgentName:            "Mend Unified Agent",
+			AgentVersion:         "3.3.3",
+			AggregateProjectName: config.ProjectName,
+			BuildTool:            "maven",
+			ProductVersion:       config.ProductVersion,
+			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
+		}
+		scan.AppendScannedProject("testProject")
+		alerts := []Alert{
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1"}, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7.0, Score: 6, Severity: "medium", PublishDate: "01.01.2022"}},
+			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8.0, Severity: "high", PublishDate: "02.01.2022", TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3"}, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6, Severity: "medium", PublishDate: "03.01.2022"}},
+		}
+
+		libraries := []Library{
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}}},
+			{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3", Dependencies: []Library{{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}}},
+		}
+
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)
+		assert.NoError(t, err, "unexpected error")
+
+		goldenFilePath := filepath.Join("testdata", "sbom.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		assert.NoError(t, err)
+
+		assert.Equal(t, string(expected), string(contents))
+	})
+}
+
+func TestWriteCycloneSBOM(t *testing.T) {
+	t.Parallel()
+
+	var utilsMock piperutils.FileUtils
+	utilsMock = &mock.FilesMock{}
+
+	t.Run("success case", func(t *testing.T) {
+		paths, err := WriteCycloneSBOM([]byte{1, 2, 3, 4}, utilsMock)
+		assert.NoError(t, err, "unexpexted error")
+		assert.Equal(t, 1, len(paths))
+		assert.Equal(t, "whitesource/piper_whitesource_sbom.xml", paths[0].Target)
+
+		exists, err := utilsMock.FileExists(paths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, exists)
 	})
 }
 

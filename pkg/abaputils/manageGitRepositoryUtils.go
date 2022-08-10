@@ -14,6 +14,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const failureMessageClonePull = "Could not pull the Repository / Software Component "
+
 // PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
 func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
@@ -21,24 +23,23 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	var status string = "R"
 
 	for {
-		pullEntity, responseStatus, err := GetPullStatus(repositoryName, connectionDetails, client)
+		pullEntity, responseStatus, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 		if err != nil {
 			return status, err
 		}
 		status = pullEntity.Status
-		log.Entry().WithField("StatusCode", responseStatus).Info("Pull Status: " + pullEntity.StatusDescription)
+		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
-
+			printTransportLogs := true
 			if serviceContainsNewLogEntities(connectionDetails, client) {
 				PrintLogs(repositoryName, connectionDetails, client)
+				printTransportLogs = false
+			}
+			if pullEntity.Status == "E" {
+				log.SetErrorCategory(log.ErrorUndefined)
+				PrintLegacyLogs(repositoryName, connectionDetails, client, true, printTransportLogs)
 			} else {
-				// Fallback
-				if pullEntity.Status == "E" {
-					log.SetErrorCategory(log.ErrorUndefined)
-					PrintLegacyLogs(repositoryName, connectionDetails, client, true)
-				} else {
-					PrintLegacyLogs(repositoryName, connectionDetails, client, false)
-				}
+				PrintLegacyLogs(repositoryName, connectionDetails, client, false, printTransportLogs)
 			}
 			break
 		}
@@ -78,7 +79,7 @@ func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, clie
 
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
-	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 	if err != nil {
 		return
 	}
@@ -159,10 +160,10 @@ func printLog(logEntry LogResultsV2) {
 }
 
 // PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
-func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool) {
+func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool, includeTransportLog bool) {
 
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
-	entity, _, err := GetPullStatus(repositoryName, connectionDetails, client)
+	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 	if err != nil {
 		return
 	}
@@ -177,12 +178,14 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 
 	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
 	if errorOnSystem {
-		log.Entry().Info("-------------------------")
-		log.Entry().Info("Transport Log")
-		log.Entry().Info("-------------------------")
-		for _, logEntry := range entity.ToTransportLog.Results {
+		if includeTransportLog {
+			log.Entry().Info("-------------------------")
+			log.Entry().Info("Transport Log")
+			log.Entry().Info("-------------------------")
+			for _, logEntry := range entity.ToTransportLog.Results {
 
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+			}
 		}
 
 		log.Entry().Info("-------------------------")
@@ -193,12 +196,14 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 		}
 		log.Entry().Info("-------------------------")
 	} else {
-		log.Entry().Debug("-------------------------")
-		log.Entry().Debug("Transport Log")
-		log.Entry().Debug("-------------------------")
-		for _, logEntry := range entity.ToTransportLog.Results {
+		if includeTransportLog {
+			log.Entry().Debug("-------------------------")
+			log.Entry().Debug("Transport Log")
+			log.Entry().Debug("-------------------------")
+			for _, logEntry := range entity.ToTransportLog.Results {
 
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+			}
 		}
 
 		log.Entry().Debug("-------------------------")
@@ -212,12 +217,15 @@ func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsH
 
 }
 
-func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
+func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
-		return body, resp.Status, err
+		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
+		if resp != nil {
+			status = resp.Status
+		}
+		return body, status, err
 	}
 	defer resp.Body.Close()
 
@@ -225,11 +233,17 @@ func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTT
 	var abapResp map[string]*json.RawMessage
 	bodyText, _ := ioutil.ReadAll(resp.Body)
 
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	marshallError := json.Unmarshal(bodyText, &abapResp)
+	if marshallError != nil {
+		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	if marshallError != nil {
+		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
 
 	if reflect.DeepEqual(PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).Error(failureMessage)
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		var err = errors.New("Request to ABAP System not successful")
 		return body, resp.Status, err
@@ -238,7 +252,7 @@ func GetPullStatus(repositoryName string, connectionDetails ConnectionDetailsHTT
 }
 
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
-func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
+func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -263,6 +277,9 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	}
 	if config.RepositoryName != "" && config.BranchName != "" {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
+	}
+	if config.RepositoryName != "" && !branchRequired {
+		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
@@ -415,6 +432,7 @@ type LogResults struct {
 //RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
 type RepositoriesConfig struct {
 	BranchName      string
+	CommitID        string
 	RepositoryName  string
 	RepositoryNames []string
 	Repositories    string

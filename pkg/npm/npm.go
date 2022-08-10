@@ -13,6 +13,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+const (
+	npmBomFilename = "bom-npm.xml"
+)
+
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
 	Utils   Utils
@@ -70,7 +74,9 @@ type utilsBundle struct {
 // GetExecRunner returns an execRunner if it's not yet initialized
 func (u *utilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
-		u.execRunner = &command.Command{}
+		u.execRunner = &command.Command{
+			StepName: "npmExecuteScripts",
+		}
 		u.execRunner.Stdout(log.Writer())
 		u.execRunner.Stderr(log.Writer())
 	}
@@ -353,15 +359,14 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	if err != nil {
 		return err
 	}
+
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
 			params := []string{
 				"cyclonedx-bom",
 				path,
-				"--include-license-text", "false",
-				"--include-dev", "false", // Include devDependencies
-				"--output", filepath.Join(path, "bom.xml"),
+				"--output", filepath.Join(path, npmBomFilename),
 			}
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {

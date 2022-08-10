@@ -52,7 +52,7 @@ jobs:
       - name: Generate Golang Docs
         run: go run pkg/documentation/generator.go --docuDir=documentation/docs/steps/ --customDefaultFile resources/default_pipeline_environment.yml
 
-      - run: docker pull squidfunk/mkdocs-material:3.0.4
+      - run: docker pull squidfunk/mkdocs-material:8.3.6
 
       - name: Build
         run: |

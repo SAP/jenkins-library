@@ -107,12 +107,20 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactId
+      - name: useWrapper
+        type: bool
+        description: If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
   outputs:
     resources:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/bom.xml"
+          - filePattern: "**/bom-gradle.xml"
             type: sbom
   containers:
     - name: gradle

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -81,9 +80,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 	})
 
 	t.Run("MessageBodyPath, ContentType, and file good (SUCCESS) callIFlowURL", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "")
-		defer os.RemoveAll(dir) // clean up
-		assert.NoError(t, err, "Error when creating temp dir")
+		dir := t.TempDir()
 		//init
 		iFlowServiceKey := `{
 			"oauth": {
@@ -102,11 +99,13 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile(config.MessageBodyPath, []byte("dummycontent1")) //have to add a file here to see in utils
-		ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755)
+		if err := ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755); err != nil {
+			t.Fail()
+		}
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
-		err = callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
+		err := callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
 
 		//assert
 		assert.NoError(t, err)
@@ -147,9 +146,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 	})
 
 	t.Run("nil fileBody (SUCCESS) callIFlowURL", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "")
-		defer os.RemoveAll(dir) // clean up
-		assert.NoError(t, err, "Error when creating temp dir")
+		dir := t.TempDir()
 		//init
 		iFlowServiceKey := `{
 			"oauth": {
@@ -168,11 +165,13 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile(config.MessageBodyPath, []byte(nil)) //have to add a file here to see in utils
-		ioutil.WriteFile(config.MessageBodyPath, []byte(nil), 0755)
+		if err := ioutil.WriteFile(config.MessageBodyPath, []byte(nil), 0755); err != nil {
+			t.Fail()
+		}
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
-		err = callIFlowURL(&config, nil, utils, &httpClient, "")
+		err := callIFlowURL(&config, nil, utils, &httpClient, "")
 
 		//assert
 		assert.NoError(t, err)

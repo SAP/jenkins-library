@@ -81,6 +81,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: assessmentFile
+        type: string
+        description: "Explicit path to the assessment YAML file."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "hs-assessments.yaml"
       - name: buildDescriptorExcludeList
         type: "[]string"
         description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
@@ -209,6 +217,12 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: failOnSevereVulnerabilities
+        type: bool
+        description: Whether to fail the step on severe vulnerabilties or not
+        scope:
+          - PARAMETERS
+        default: true
       - name: includes
         type: "[]string"
         description: List of file path patterns to include in the scan.
