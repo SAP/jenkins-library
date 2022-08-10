@@ -366,8 +366,12 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 		// https://cyclonedx.org/use-cases/#properties--name-value-store
 		Properties: &[]cdx.Property{
 			{
-				Name:  "internal:bom-identifier",
-				Value: strings.Join(scan.ScannedProjectNames(), ", "),
+				Name:  "internal:ws-product-identifier",
+				Value: scan.ProductToken,
+			},
+			{
+				Name:  "internal:ws-project-identifier",
+				Value: strings.Join(scan.ScannedProjectTokens(), ", "),
 			},
 		},
 	}
