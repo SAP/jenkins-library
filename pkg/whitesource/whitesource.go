@@ -88,6 +88,7 @@ func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
 }
 
 func transformLibToPurlType(libType string) string {
+	log.Entry().Debugf("LibType reported as %v", libType)
 	// TODO verify and complete, only maven is proven so far
 	switch libType {
 	case "MAVEN_ARTIFACT":

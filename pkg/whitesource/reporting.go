@@ -402,6 +402,14 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 		// Define the vulnerabilities in VEX
 		// https://cyclonedx.org/use-cases/#vulnerability-exploitability
 		purl := alert.Library.ToPackageUrl()
+		advisories := []cdx.Advisory{}
+		for _, fix := range alert.Vulnerability.AllFixes {
+			advisory := cdx.Advisory{
+				Title: fix.Message,
+				URL:   alert.Vulnerability.TopFix.URL,
+			}
+			advisories = append(advisories, advisory)
+		}
 		vuln := cdx.Vulnerability{
 			BOMRef: purl.ToString(),
 			ID:     alert.Vulnerability.Name,
@@ -420,7 +428,7 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 				},
 			},
 			Recommendation: alert.Vulnerability.FixResolutionText,
-			Detail:         alert.Vulnerability.Description,
+			Detail:         alert.Vulnerability.URL,
 			Ratings: &[]cdx.VulnerabilityRating{
 				{
 					Score:    &alert.Vulnerability.CVSS3Score,
@@ -433,13 +441,8 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 					Method:   cdx.ScoringMethodCVSSv2,
 				},
 			},
-			Advisories: &[]cdx.Advisory{
-				{
-					Title: alert.Vulnerability.TopFix.Vulnerability,
-					URL:   alert.Vulnerability.TopFix.Origin,
-				},
-			},
-			Description: alert.Description,
+			Advisories:  &advisories,
+			Description: alert.Vulnerability.Description,
 			Created:     alert.CreationDate,
 			Published:   alert.Vulnerability.PublishDate,
 			Updated:     alert.ModifiedDate,
