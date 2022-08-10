@@ -149,11 +149,11 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
-	for _, exec := range executable_list {
+	executableList := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executableList {
 		_, err := execInPath(exec)
 		if err != nil {
-			return reports, fmt.Errorf("ERROR , command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
 		}
 	}
 
@@ -561,7 +561,7 @@ func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount in
 }
 
 func getSpotChecksMinAsPerMaximum(spotCheckMax int, spotCheckMin int) int {
-	if spotCheckMax == 0 {
+	if spotCheckMax < 1 {
 		return spotCheckMin
 	}
 
@@ -1118,9 +1118,9 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 			author = prList[0].GetUser().GetLogin()
 		}
 		return number, author, nil
-	} else {
-		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
+
+	log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	return number, author, err
 }
 
