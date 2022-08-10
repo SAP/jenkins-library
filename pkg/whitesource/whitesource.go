@@ -93,7 +93,7 @@ func transformLibToPurlType(libType string) string {
 	switch libType {
 	case "MAVEN_ARTIFACT":
 		return packageurl.TypeMaven
-	case "NODE_ARTIFACT":
+	case "javascript/Node.js":
 		return packageurl.TypeNPM
 	case "GOLANG_ARTIFACT":
 		return packageurl.TypeGolang
