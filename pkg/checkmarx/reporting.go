@@ -161,10 +161,10 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 	checkmarxReportData.MediumAudited = data["Medium"].(map[string]int)["Issues"] - data["Medium"].(map[string]int)["NotFalsePositive"]
 	checkmarxReportData.MediumTotal = data["Medium"].(map[string]int)["Issues"]
 
-	checkmarxReportData.LowAudited = data["Low"].(map[string]int)["Issues"] - data["Low"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.LowAudited = data["Low"].(map[string]int)["Confirmed"] + data["Low"].(map[string]int)["NotExploitable"]
 	checkmarxReportData.LowTotal = data["Low"].(map[string]int)["Issues"]
 
-	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Issues"] - data["Information"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Confirmed"] + data["Information"].(map[string]int)["NotExploitable"]
 	checkmarxReportData.InformationTotal = data["Information"].(map[string]int)["Issues"]
 
 	lowPerQueryList := []LowPerQuery{}
