@@ -113,12 +113,10 @@ func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
 				}
 				changeSetList = append(changeSetList, tmpChangeSet)
 			}
-
-			return changeSetList
 		}
-	}
-	return []ChangeSet{}
 
+	}
+	return changeSetList
 }
 
 // GetLog returns the logfile from the current job as byte object
@@ -206,14 +204,15 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		log.Entry().WithError(err).Debugf("could not parse apiInformation")
 		return "Unknown"
 	}
-	for _, child := range jsonParsed.S("actions").Children() {
+
+	for _, child := range jsonParsed.Path("actions").Children() {
 		class := child.S("_class")
-		if class.String() == "\"hudson.model.CauseAction\"" {
-			for _, val := range child.S("causes").Children() {
+		if class.Data().(string) == "hudson.model.CauseAction" {
+			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")
-				if subclass.String() == "\"hudson.model.Cause$UserIdCause\"" {
+				if subclass.Data().(string) == "hudson.model.Cause$UserIdCause" {
 					return "Manual"
-				} else if subclass.String() == "\"hudson.triggers.TimerTrigger$TimerTriggerCause\"" {
+				} else if subclass.Data().(string) == "hudson.triggers.TimerTrigger$TimerTriggerCause" {
 					return "Schedule"
 				} else {
 					return "Unknown"
@@ -222,6 +221,20 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		}
 
 	}
+
+	//for _, child := range jsonParsed.Path("changeSets").Children() {
+	//	if child.Path("kind").Data().(string) == "git" {
+	//		for _, item := range child.S("items").Children() {
+	//			tmpChangeSet := ChangeSet{
+	//				CommitId:  item.Path("commitId").Data().(string),
+	//				timestamp: item.Path("timestamp").String(),
+	//			}
+	//			changeSetList = append(changeSetList, tmpChangeSet)
+	//		}
+	//
+	//		return changeSetList
+	//	}
+	//}
 
 	return "Unknown"
 }
