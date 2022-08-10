@@ -582,18 +582,18 @@ func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
 		{
 			name: "success",
 			want: []ChangeSet{
-				{CommitId: "987654321", timestamp: "1655057520000"},
-				{CommitId: "123456789", timestamp: "1656057520000"},
+				{CommitId: "987654321", Timestamp: "1655057520000"},
+				{CommitId: "123456789", Timestamp: "1656057520000"},
 			},
 			testChangeSet: changeSetTwo,
 		},
 		{
 			name: "success multiple",
 			want: []ChangeSet{
-				{CommitId: "987654321", timestamp: "1655057520000"},
-				{CommitId: "123456789", timestamp: "1656057520000"},
-				{CommitId: "456789123", timestamp: "1659948036000"},
-				{CommitId: "654717777", timestamp: "1660053494000"},
+				{CommitId: "987654321", Timestamp: "1655057520000"},
+				{CommitId: "123456789", Timestamp: "1656057520000"},
+				{CommitId: "456789123", Timestamp: "1659948036000"},
+				{CommitId: "654717777", Timestamp: "1660053494000"},
 			},
 			testChangeSet: changeSetMultiple,
 		},

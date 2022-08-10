@@ -109,7 +109,7 @@ func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
 			for _, item := range child.S("items").Children() {
 				tmpChangeSet := ChangeSet{
 					CommitId:  item.Path("commitId").Data().(string),
-					timestamp: item.Path("timestamp").String(),
+					Timestamp: item.Path("timestamp").String(),
 				}
 				changeSetList = append(changeSetList, tmpChangeSet)
 			}
