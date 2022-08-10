@@ -7,7 +7,8 @@
       <version>1.3.4</version>
     </component>
     <properties>
-      <property name="internal:bom-identifier">testProject - 1</property>
+      <property name="internal:ws-product-identifier">productToken-123</property>
+      <property name="internal:ws-project-identifier">projectToken-567</property>
     </properties>
   </metadata>
   <components>
@@ -55,8 +56,8 @@
       <references></references>
       <ratings>
         <rating>
-          <score>0</score>
-          <severity>medium</severity>
+          <score>7</score>
+          <severity>high</severity>
           <method>CVSSv3</method>
         </rating>
         <rating>
@@ -65,11 +66,7 @@
           <method>CVSSv2</method>
         </rating>
       </ratings>
-      <advisories>
-        <advisory>
-          <url></url>
-        </advisory>
-      </advisories>
+      <advisories></advisories>
       <published>01.01.2022</published>
       <tools>
         <tool>
@@ -101,21 +98,17 @@
       <references></references>
       <ratings>
         <rating>
-          <score>0</score>
+          <score>8</score>
           <severity>high</severity>
           <method>CVSSv3</method>
         </rating>
         <rating>
-          <score>6</score>
-          <severity>high</severity>
+          <score>0</score>
+          <severity>none</severity>
           <method>CVSSv2</method>
         </rating>
       </ratings>
-      <advisories>
-        <advisory>
-          <url></url>
-        </advisory>
-      </advisories>
+      <advisories></advisories>
       <published>02.01.2022</published>
       <tools>
         <tool>
@@ -148,7 +141,7 @@
       <ratings>
         <rating>
           <score>0</score>
-          <severity>medium</severity>
+          <severity>none</severity>
           <method>CVSSv3</method>
         </rating>
         <rating>
@@ -157,11 +150,7 @@
           <method>CVSSv2</method>
         </rating>
       </ratings>
-      <advisories>
-        <advisory>
-          <url></url>
-        </advisory>
-      </advisories>
+      <advisories></advisories>
       <published>03.01.2022</published>
       <tools>
         <tool>

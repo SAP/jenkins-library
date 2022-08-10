@@ -108,21 +108,29 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		scan := &Scan{
 			AgentName:            "Mend Unified Agent",
 			AgentVersion:         "3.3.3",
+			scannedProjects:      map[string]Project{"testProject": {Name: "testProject", Token: "projectToken-567"}},
 			AggregateProjectName: config.ProjectName,
 			BuildTool:            "maven",
 			ProductVersion:       config.ProductVersion,
+			ProductToken:         "productToken-123",
 			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
 		}
 		scan.AppendScannedProject("testProject")
+
+		lib3 := Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}
+		lib4 := Library{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "MAVEN_ARTIFACT", Filename: "novul"}
+		lib1 := Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1", Dependencies: []Library{lib3}}
+		lib2 := Library{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3", Dependencies: []Library{lib4}}
+
 		alerts := []Alert{
-			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1"}, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7.0, Score: 6, Severity: "medium", PublishDate: "01.01.2022"}},
-			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8.0, Severity: "high", PublishDate: "02.01.2022", TopFix: Fix{Message: "this is the top fix"}}},
-			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3"}, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6, Severity: "medium", PublishDate: "03.01.2022"}},
+			{Library: lib1, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7, Score: 6, CVSS3Severity: "high", Severity: "medium", PublishDate: "01.01.2022"}},
+			{Library: lib3, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8, CVSS3Severity: "high", PublishDate: "02.01.2022", TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: lib2, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6, Severity: "medium", PublishDate: "03.01.2022"}},
 		}
 
 		libraries := []Library{
-			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}}},
-			{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3", Dependencies: []Library{{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}}},
+			lib1,
+			lib2,
 		}
 
 		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)

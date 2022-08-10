@@ -414,6 +414,8 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 			}
 			advisories = append(advisories, advisory)
 		}
+		cvss3Score := alert.Vulnerability.CVSS3Score
+		cvssScore := alert.Vulnerability.Score
 		vuln := cdx.Vulnerability{
 			BOMRef: purl.ToString(),
 			ID:     alert.Vulnerability.Name,
@@ -435,12 +437,12 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 			Detail:         alert.Vulnerability.URL,
 			Ratings: &[]cdx.VulnerabilityRating{
 				{
-					Score:    &alert.Vulnerability.CVSS3Score,
+					Score:    &cvss3Score,
 					Severity: transformToCdxSeverity(alert.Vulnerability.CVSS3Severity),
 					Method:   cdx.ScoringMethodCVSSv3,
 				},
 				{
-					Score:    &alert.Vulnerability.Score,
+					Score:    &cvssScore,
 					Severity: transformToCdxSeverity(alert.Vulnerability.Severity),
 					Method:   cdx.ScoringMethodCVSSv2,
 				},

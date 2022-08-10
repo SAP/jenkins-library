@@ -90,7 +90,7 @@ func (s *Scan) ScannedProjects() []Project {
 
 // ScannedProjectNames returns a sorted list of all scanned project names
 func (s *Scan) ScannedProjectNames() []string {
-	projectNames := []string{}
+	var projectNames []string
 	for _, project := range s.ScannedProjects() {
 		projectNames = append(projectNames, project.Name)
 	}
@@ -102,9 +102,11 @@ func (s *Scan) ScannedProjectNames() []string {
 
 // ScannedProjectTokens returns a sorted list of all scanned project's tokens
 func (s *Scan) ScannedProjectTokens() []string {
-	projectTokens := []string{}
+	var projectTokens []string
 	for _, project := range s.ScannedProjects() {
-		projectTokens = append(projectTokens, project.Token)
+		if len(project.Token) > 0 {
+			projectTokens = append(projectTokens, project.Token)
+		}
 	}
 	// Sorting helps the list become stable across pipeline runs (and in the unit tests),
 	// as the order in which we travers map keys is not deterministic.
