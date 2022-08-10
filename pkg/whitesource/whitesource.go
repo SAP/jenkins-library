@@ -91,16 +91,16 @@ func transformLibToPurlType(libType string) string {
 	log.Entry().Debugf("LibType reported as %v", libType)
 	// TODO verify and complete, only maven is proven so far
 	switch libType {
-	case "MAVEN_ARTIFACT":
+	case "Java":
 		return packageurl.TypeMaven
 	case "javascript/Node.js":
 		return packageurl.TypeNPM
-	case "GOLANG_ARTIFACT":
+	case "GO":
 		return packageurl.TypeGolang
-	case "DOCKER_ARTIFACT":
+	case "Docker":
 		return packageurl.TypeDocker
-	case "UNKNOWN_ARTIFACT":
-		return packageurl.TypeGeneric
+	case "Python":
+		return packageurl.TypePyPi
 	}
 	return packageurl.TypeGeneric
 }

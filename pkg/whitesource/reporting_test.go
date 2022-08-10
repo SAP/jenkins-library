@@ -117,10 +117,10 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		}
 		scan.AppendScannedProject("testProject")
 
-		lib3 := Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "MAVEN_ARTIFACT", Filename: "vul2"}
-		lib4 := Library{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "MAVEN_ARTIFACT", Filename: "novul"}
-		lib1 := Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "MAVEN_ARTIFACT", Filename: "vul1", Dependencies: []Library{lib3}}
-		lib2 := Library{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "MAVEN_ARTIFACT", Filename: "vul3", Dependencies: []Library{lib4}}
+		lib3 := Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "Java", Filename: "vul2"}
+		lib4 := Library{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "Java", Filename: "novul"}
+		lib1 := Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "Java", Filename: "vul1", Dependencies: []Library{lib3}}
+		lib2 := Library{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "Java", Filename: "vul3", Dependencies: []Library{lib4}}
 
 		alerts := []Alert{
 			{Library: lib1, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7, Score: 6, CVSS3Severity: "high", Severity: "medium", PublishDate: "01.01.2022"}},
