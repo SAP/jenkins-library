@@ -113,11 +113,9 @@ func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
 				}
 				changeSetList = append(changeSetList, tmpChangeSet)
 			}
-
-			return changeSetList
 		}
 	}
-	return []ChangeSet{}
+	return changeSetList
 
 }
 
