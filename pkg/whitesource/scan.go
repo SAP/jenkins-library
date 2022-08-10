@@ -90,7 +90,7 @@ func (s *Scan) ScannedProjects() []Project {
 
 // ScannedProjectNames returns a sorted list of all scanned project names
 func (s *Scan) ScannedProjectNames() []string {
-	var projectNames []string
+	projectNames := []string{}
 	for _, project := range s.ScannedProjects() {
 		projectNames = append(projectNames, project.Name)
 	}
@@ -102,7 +102,7 @@ func (s *Scan) ScannedProjectNames() []string {
 
 // ScannedProjectTokens returns a sorted list of all scanned project's tokens
 func (s *Scan) ScannedProjectTokens() []string {
-	var projectTokens []string
+	projectTokens := []string{}
 	for _, project := range s.ScannedProjects() {
 		if len(project.Token) > 0 {
 			projectTokens = append(projectTokens, project.Token)
