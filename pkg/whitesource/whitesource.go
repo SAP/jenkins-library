@@ -93,10 +93,14 @@ func transformLibToPurlType(libType string) string {
 	switch strings.ToLower(libType) {
 	case "java":
 		return packageurl.TypeMaven
+	case "maven_artifact":
+		return packageurl.TypeMaven
 	case "javascript/node.js":
 		return packageurl.TypeNPM
 	case "javascript/bower":
 		return "bower"
+	case "node_packaged_module":
+		return packageurl.TypeNPM
 	case "go":
 		return packageurl.TypeGolang
 	case "python":

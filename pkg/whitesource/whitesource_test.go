@@ -411,7 +411,10 @@ func TestGetProjectHierarchy(t *testing.T) {
 				}
 			]
 		}
-	]
+	],
+	"warningMessages":[
+      "Invalid input: orgToken"
+    ]
 }`,
 	}
 
