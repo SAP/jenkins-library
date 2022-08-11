@@ -28,6 +28,7 @@ type VulnerabilityReport struct {
 	DirectDependency  string
 	Footer            string
 	Group             string
+	PackageURL        string
 	PipelineName      string
 	PipelineLink      string
 	PublishDate       string
@@ -63,6 +64,7 @@ Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
 {{if .ArtifactID}}**ArtifactId:** {{ .ArtifactID }}{{- end}}
 {{if .Group}}**Group:** {{ .Group }}{{- end}}
 {{if .Version}}**Version:** {{ .Version }}{{- end}}
+{{if .PackageURL}}**Package URL:** {{ .PackageURL }}{{- end}}
 {{if .PublishDate}}**Publishing date:** {{.PublishDate }}{{- end}}
 
 ## Description

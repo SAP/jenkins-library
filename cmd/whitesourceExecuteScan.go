@@ -133,6 +133,7 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	return &ws.Scan{
 		AggregateProjectName: config.ProjectName,
 		ProductVersion:       config.Version,
+		BuildTool:            config.BuildTool,
 	}
 }
 
@@ -351,6 +352,8 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if err := resolveAggregateProjectToken(config, sys); err != nil {
 		return errors.Wrap(err, "error resolving aggregate project token")
 	}
+
+	scan.ProductToken = config.ProductToken
 
 	return scan.UpdateProjects(config.ProductToken, sys)
 }
