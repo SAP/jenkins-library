@@ -50,6 +50,8 @@ func TestCreateJSONReport(t *testing.T) {
 	submap = map[string]int{}
 	submap["Issues"] = 2
 	submap["NotFalsePositive"] = 2
+	submap["Confirmed"] = 1
+	submap["NotExploitable"] = 1
 	resultMap["Low"] = submap
 
 	submap = map[string]int{}
@@ -88,7 +90,7 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, 4, reportingData.MediumTotal)
 	assert.Equal(t, 4, reportingData.MediumAudited)
 	assert.Equal(t, 2, reportingData.LowTotal)
-	assert.Equal(t, 0, reportingData.LowAudited)
+	assert.Equal(t, 2, reportingData.LowAudited)
 	assert.Equal(t, 5, reportingData.InformationTotal)
 	assert.Equal(t, 0, reportingData.InformationAudited)
 	assert.Equal(t, 2, len(*reportingData.LowPerQuery))
@@ -151,11 +153,6 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 	resultMap["Medium"] = submap
 
 	submap = map[string]int{}
-	submap["Issues"] = 5
-	submap["NotFalsePositive"] = 5
-	resultMap["Information"] = submap
-
-	submap = map[string]int{}
 	submap["Issues"] = 2
 	submap["NotFalsePositive"] = 1
 	resultMap["Information"] = submap
@@ -178,5 +175,5 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 	assert.Equal(t, 0, reportingData.LowTotal)
 	assert.Equal(t, 0, reportingData.LowAudited)
 	assert.Equal(t, 2, reportingData.InformationTotal)
-	assert.Equal(t, 1, reportingData.InformationAudited)
+	assert.Equal(t, 0, reportingData.InformationAudited)
 }
