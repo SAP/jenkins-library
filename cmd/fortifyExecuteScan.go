@@ -550,10 +550,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 
 func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount int) int {
 	if config.SpotCheckMinimumUnit == "percentage" {
-		spotCheckMinimumPercentageValue := int(math.Round(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
-		if spotCheckMinimumPercentageValue == 0 {
-			return 1
-		}
+		spotCheckMinimumPercentageValue := int(math.Ceil(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
 		return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, spotCheckMinimumPercentageValue)
 	}
 
