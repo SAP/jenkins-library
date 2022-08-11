@@ -592,6 +592,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 			}
 			// collect all libraries detected in all related projects and errors
 			if libraries, err := sys.GetProjectHierarchy(project.Token, true); err != nil {
+				log.Entry().Debugf("Collected %v libraries for project %v", len(libraries), project.Name)
 				allLibraries = append(allLibraries, libraries...)
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
