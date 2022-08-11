@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -126,7 +125,8 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	}
 
 	if len(s.ConfigKey) > 0 {
-		return checkConfigKeyV1(s.ConfigKey, config)
+		configKey := strings.Split(s.ConfigKey, "/")
+		return checkConfigKeyV1(config.Config, configKey)
 	}
 
 	if len(s.FilePattern) > 0 {
@@ -192,33 +192,16 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	}
 }
 
-func checkConfigKeyV1(configKey string, config StepConfig) (bool, error) {
-	// support for nested key
-	if strings.Contains(configKey, "/") {
-		log.Entry().Debugf("found nested config key %v", configKey)
-		listKeys := strings.Split(configKey, "/")
-		var currentConfig interface{} = config.Config
-		var ok bool
-		lastIndex := len(listKeys) - 1
-		for i, key := range listKeys {
-			castedCurrentConfig, casted := currentConfig.(map[string]interface{})
-			if !casted {
-				break
-			}
-			if currentConfig, ok = castedCurrentConfig[key]; ok && lastIndex == i {
-				return true, nil
-			} else {
-				if currentConfig == nil && lastIndex > i {
-					return false, nil
-				}
-			}
-		}
-	} else {
-		if configValue := config.Config[configKey]; configValue != nil {
-			return true, nil
-		}
+func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, error) {
+	value, valueFound := config[configKey[0]]
+	if len(configKey) == 1 {
+		return valueFound, nil
 	}
-	return false, nil
+	castedValue, casted := value.(map[string]interface{})
+	if !casted {
+		return false, nil
+	}
+	return checkConfigKeyV1(castedValue, configKey[1:])
 }
 
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
