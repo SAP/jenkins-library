@@ -43,7 +43,7 @@ type FortifyReportData struct {
 }
 
 type SpotChecksAuditCount struct {
-	Audited int    `json:"spotChecksCategories"`
+	Audited int    `json:"audited"`
 	Total   int    `json:"total"`
 	Type    string `json:"type"`
 }

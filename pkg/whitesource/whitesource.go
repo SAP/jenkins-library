@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
 )
 
@@ -62,6 +64,44 @@ func (a Alert) Title() string {
 		return fmt.Sprintf("Security Vulnerability %v %v", a.Vulnerability.Name, a.Library.ArtifactID)
 	}
 	return fmt.Sprintf("%v %v %v ", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
+}
+
+func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
+	localPurl := a.Library.ToPackageUrl().ToString()
+	for _, assessment := range *assessments {
+		if assessment.Vulnerability == a.Vulnerability.Name {
+			for _, purl := range assessment.Purls {
+				assessmentPurl, err := purl.ToPackageUrl()
+				assessmentPurlStr := assessmentPurl.ToString()
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					log.Entry().WithError(err).Errorf("assessment from file ignored due to invalid packageUrl '%s'", purl)
+					return false, err
+				}
+				if assessmentPurlStr == localPurl {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+func transformLibToPurlType(libType string) string {
+	// TODO verify and complete, only maven is proven so far
+	switch libType {
+	case "MAVEN_ARTIFACT":
+		return packageurl.TypeMaven
+	case "NODE_ARTIFACT":
+		return packageurl.TypeNPM
+	case "GOLANG_ARTIFACT":
+		return packageurl.TypeGolang
+	case "DOCKER_ARTIFACT":
+		return packageurl.TypeGolang
+	case "UNKNOWN_ARTIFACT":
+		return packageurl.TypeGeneric
+	}
+	return packageurl.TypeGeneric
 }
 
 func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
@@ -152,11 +192,22 @@ Link: [%v](%v)`,
 
 // Library
 type Library struct {
-	Name       string `json:"name,omitempty"`
-	Filename   string `json:"filename,omitempty"`
-	ArtifactID string `json:"artifactId,omitempty"`
-	GroupID    string `json:"groupId,omitempty"`
-	Version    string `json:"version,omitempty"`
+	KeyUUID      string    `json:"keyUuid,omitempty"`
+	KeyID        int       `json:"keyId,omitempty"`
+	Name         string    `json:"name,omitempty"`
+	Filename     string    `json:"filename,omitempty"`
+	ArtifactID   string    `json:"artifactId,omitempty"`
+	GroupID      string    `json:"groupId,omitempty"`
+	Version      string    `json:"version,omitempty"`
+	Sha1         string    `json:"sha1,omitempty"`
+	LibType      string    `json:"type,omitempty"`
+	Coordinates  string    `json:"coordinates,omitempty"`
+	Dependencies []Library `json:"dependencies,omitempty"`
+}
+
+// ToPackageUrl constructs and returns the package URL of the library
+func (l Library) ToPackageUrl() *packageurl.PackageURL {
+	return packageurl.NewPackageURL(transformLibToPurlType(l.LibType), l.GroupID, l.ArtifactID, l.Version, nil, "")
 }
 
 // Vulnerability defines a vulnerability as returned by WhiteSource
@@ -221,6 +272,7 @@ type Request struct {
 	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
 	ProductApprovers     *Assignment `json:"productApprovers,omitempty"`
 	ProductIntegrators   *Assignment `json:"productIntegrators,omitempty"`
+	IncludeInHouseData   bool        `json:"includeInHouseData,omitempty"`
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -344,6 +396,28 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	}
 
 	return wsResponse.ProjectVitals, nil
+}
+
+// GetProjectHierarchy retrieves the full set of libraries that the project depends on
+func (s *System) GetProjectHierarchy(projectToken string, includeInHouse bool) ([]Library, error) {
+	wsResponse := struct {
+		Libraries []Library `json:"libraries"`
+	}{
+		Libraries: []Library{},
+	}
+
+	req := Request{
+		RequestType:        "getProjectHierarchy",
+		ProjectToken:       projectToken,
+		IncludeInHouseData: includeInHouse,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return wsResponse.Libraries, nil
 }
 
 // GetProjectToken returns the project token for a project with a given name

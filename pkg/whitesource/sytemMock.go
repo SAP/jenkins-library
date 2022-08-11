@@ -124,6 +124,11 @@ func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library,
 	return m.Libraries, nil
 }
 
+// GetProjectHierarchy returns the libraries stored in the SystemMock.
+func (m *SystemMock) GetProjectHierarchy(projectToken string, inHouse bool) ([]Library, error) {
+	return m.Libraries, nil
+}
+
 // NewSystemMockWithProjectName returns a pointer to a new instance of SystemMock using a project with a defined name.
 func NewSystemMockWithProjectName(lastUpdateDate, projectName string) *SystemMock {
 	mockLibrary := Library{

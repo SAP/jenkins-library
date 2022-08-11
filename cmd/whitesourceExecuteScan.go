@@ -16,6 +16,7 @@ import (
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -46,6 +47,7 @@ type whitesource interface {
 	GetProjectAlerts(projectToken string) ([]ws.Alert, error)
 	GetProjectAlertsByType(projectToken, alertType string) ([]ws.Alert, error)
 	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
+	GetProjectHierarchy(projectToken string, includeInHouse bool) ([]ws.Library, error)
 }
 
 type whitesourceUtils interface {
@@ -226,7 +228,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 	log.Entry().Info("-----------------------------------------------------")
 
 	paths, err := checkAndReportScanResults(ctx, config, scan, utils, sys, influx)
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, paths, nil)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
@@ -273,7 +275,7 @@ func checkAndReportScanResults(ctx context.Context, config *ScanOptions, scan *w
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordWhitesource("./", config, scan)
+	toolRecordFileName, err := createToolRecordWhitesource(utils, "./", config, scan)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_WHITESOURCE: Failed to create toolrecord file ...", err)
@@ -323,6 +325,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 		if err != nil {
 			return errors.Wrap(err, "failed to get build artifact description")
 		}
+		scan.Coordinates = coordinates
 
 		if len(config.Version) > 0 {
 			log.Entry().Infof("Resolving product version from default provided '%s' with versioning '%s'", config.Version, config.VersioningModel)
@@ -562,22 +565,31 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 			"as floating point number: %w", config.CvssSeverityLimit, err)
 	}
 
+	// inhale assessments from file system
+	assessments := readAssessmentsFromFile(config.AssessmentFile, utils)
+
 	if config.ProjectToken != "" {
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, influx); err != nil {
+		if _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
 			return reportPaths, err
 		}
 	} else {
 		vulnerabilitiesCount := 0
 		var errorsOccured []string
 		allAlerts := []ws.Alert{}
+		allLibraries := []ws.Library{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, influx); err != nil {
+			if vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
 				allAlerts = append(allAlerts, alerts...)
 				vulnerabilitiesCount += vulCount
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
+			}
+			// collect all libraries detected in all related projects and errors
+			if libraries, err := sys.GetProjectHierarchy(project.Token, true); err != nil {
+				allLibraries = append(allLibraries, libraries...)
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
 		}
@@ -613,6 +625,16 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		}
 		reportPaths = append(reportPaths, paths...)
 
+		sbom, err := ws.CreateCycloneSBOM(scan, &allLibraries, &allAlerts)
+		if err != nil {
+			errorsOccured = append(errorsOccured, fmt.Sprint(err))
+		}
+		paths, err = ws.WriteCycloneSBOM(sbom, utils)
+		if err != nil {
+			errorsOccured = append(errorsOccured, fmt.Sprint(err))
+		}
+		reportPaths = append(reportPaths, paths...)
+
 		if len(errorsOccured) > 0 {
 			if vulnerabilitiesCount > 0 {
 				log.SetErrorCategory(log.ErrorCompliance)
@@ -623,12 +645,47 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 	return reportPaths, nil
 }
 
+// read assessments from file and expose them to match alerts and filter them before processing
+func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) *[]format.Assessment {
+	exists, err := utils.FileExists(assessmentFilePath)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.Entry().Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
+	}
+	assessmentFile, err := utils.Open(assessmentFilePath)
+	if exists && err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.Entry().Errorf("unable to open assessment file at '%s'", assessmentFilePath)
+	}
+	assessments := &[]format.Assessment{}
+	if exists {
+		defer assessmentFile.Close()
+		assessments, err = format.ReadAssessments(assessmentFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			log.Entry().Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
+		}
+	}
+	return assessments
+}
+
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
+func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, assessments *[]format.Assessment, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
 		return 0, alerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
+	}
+
+	// filter alerts related to existing assessments
+	filteredAlerts := []ws.Alert{}
+	if len(*assessments) > 0 {
+		for _, alert := range alerts {
+			if result, err := alert.ContainedIn(assessments); err == nil && result == false {
+				filteredAlerts = append(filteredAlerts, alert)
+			}
+		}
+		alerts = filteredAlerts
 	}
 
 	severeVulnerabilities, nonSevereVulnerabilities := ws.CountSecurityVulnerabilities(&alerts, cvssSeverityLimit)
@@ -750,7 +807,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -812,7 +869,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 		return errors.Wrapf(err, "failed to write file: %s", fileName)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -830,8 +887,8 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 
 // create toolrecord file for whitesource
 //
-func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
-	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
+func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
+	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
 	wsUiRoot := "https://saas.whitesourcesoftware.com"
 	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
 	err := record.AddKeyData("product",

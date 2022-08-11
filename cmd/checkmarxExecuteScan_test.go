@@ -321,6 +321,10 @@ func (c *checkmarxExecuteScanUtilsMock) WriteFile(filename string, data []byte, 
 	return ioutil.WriteFile(filename, data, perm)
 }
 
+func (c *checkmarxExecuteScanUtilsMock) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
+}
+
 func (c *checkmarxExecuteScanUtilsMock) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
 	if c.errorOnFileInfoHeader {
 		return nil, fmt.Errorf("error on FileInfoHeader")

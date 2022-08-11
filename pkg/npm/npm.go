@@ -74,7 +74,9 @@ type utilsBundle struct {
 // GetExecRunner returns an execRunner if it's not yet initialized
 func (u *utilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
-		u.execRunner = &command.Command{}
+		u.execRunner = &command.Command{
+			StepName: "npmExecuteScripts",
+		}
 		u.execRunner.Stdout(log.Writer())
 		u.execRunner.Stderr(log.Writer())
 	}
