@@ -5,6 +5,7 @@
       <group>com.sap</group>
       <name>myproduct</name>
       <version>1.3.4</version>
+      <purl>pkg:maven/com.sap/myproduct@1.3.4</purl>
     </component>
     <properties>
       <property name="internal:ws-product-identifier">productToken-123</property>

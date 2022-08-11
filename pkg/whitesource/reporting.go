@@ -356,11 +356,12 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 
 		// TODO check whether we can identify library vs. application
 		Component: &cdx.Component{
-			BOMRef:  ppurl.ToString(),
-			Type:    cdx.ComponentTypeLibrary,
-			Name:    scan.Coordinates.ArtifactID,
-			Group:   scan.Coordinates.GroupID,
-			Version: scan.Coordinates.Version,
+			BOMRef:     ppurl.ToString(),
+			Type:       cdx.ComponentTypeLibrary,
+			Name:       scan.Coordinates.ArtifactID,
+			Group:      scan.Coordinates.GroupID,
+			Version:    scan.Coordinates.Version,
+			PackageURL: ppurl.ToString(),
 		},
 		// Use properties to include an internal identifier for this BOM
 		// https://cyclonedx.org/use-cases/#properties--name-value-store

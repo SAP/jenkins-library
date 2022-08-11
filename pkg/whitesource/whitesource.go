@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
@@ -89,18 +90,25 @@ func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
 
 func transformLibToPurlType(libType string) string {
 	log.Entry().Debugf("LibType reported as %v", libType)
-	// TODO verify and complete, only maven is proven so far
-	switch libType {
-	case "Java":
+	switch strings.ToLower(libType) {
+	case "java":
 		return packageurl.TypeMaven
-	case "javascript/Node.js":
+	case "javascript/node.js":
 		return packageurl.TypeNPM
-	case "GO":
+	case "javascript/bower":
+		return "bower"
+	case "go":
 		return packageurl.TypeGolang
-	case "Docker":
-		return packageurl.TypeDocker
-	case "Python":
+	case "python":
 		return packageurl.TypePyPi
+	case "debian":
+		return packageurl.TypeDebian
+	case "docker":
+		return packageurl.TypeDocker
+	case "source library":
+		return "src"
+	case ".net":
+		return packageurl.TypeNuget
 	}
 	return packageurl.TypeGeneric
 }
