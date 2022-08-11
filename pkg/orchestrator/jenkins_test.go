@@ -268,6 +268,35 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 				]
 				}`)
 
+	apiJSONPullRequest := []byte(`{
+				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				"actions": [ {
+					    "_class": "hudson.model.CauseAction",
+					    "causes": [
+						{
+						    "_class": "jenkins.branch.BranchEventCause",
+						    "shortDescription": "Pull request #1511 opened"
+						}
+					    ]
+					}]
+				}`)
+
+	apiJSONResourceTrigger := []byte(`{
+				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				"actions": [ {
+					    "_class": "hudson.model.CauseAction",
+					    "causes": [
+							{
+							    "_class": "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause",
+							    "shortDescription": "Started by upstream project \"dummy/dummy/PR-1234\" build number 42",
+							    "upstreamBuild": 24,
+							    "upstreamProject": "dummy/dummy/PR-1234",
+							    "upstreamUrl": "job/dummy/job/dummy/job/PR-1234/"
+							}
+						    ]
+					}]
+				}`)
+
 	apiJSONUnknown := []byte(`{
 				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
 				"actions": [{
@@ -298,6 +327,16 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			name:           "Scheduled trigger",
 			apiInformation: apiJsonSchedule,
 			want:           "Schedule",
+		},
+		{
+			name:           "PullRequest trigger",
+			apiInformation: apiJSONPullRequest,
+			want:           "PullRequest", // ResourceTrigger
+		},
+		{
+			name:           "PullRequest trigger",
+			apiInformation: apiJSONResourceTrigger,
+			want:           "ResourceTrigger",
 		},
 		{
 			name:           "Unknown",

@@ -193,6 +193,9 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 
 //GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
+	// BuildReasons are unified with AzureDevOps build reasons,see
+	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
+	// ResourceTrigger, PullRequest, Manual, IndividualCI, Schedule
 	j.fetchAPIInformation()
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
@@ -214,6 +217,10 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 					return "Manual"
 				} else if subclass.Data().(string) == "hudson.triggers.TimerTrigger$TimerTriggerCause" {
 					return "Schedule"
+				} else if subclass.Data().(string) == "jenkins.branch.BranchEventCause" {
+					return "PullRequest"
+				} else if subclass.Data().(string) == "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause" {
+					return "ResourceTrigger"
 				} else {
 					return "Unknown"
 				}
