@@ -893,7 +893,6 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 }
 
 // create toolrecord file for whitesource
-//
 func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
 	wsUiRoot := "https://saas.whitesourcesoftware.com"
