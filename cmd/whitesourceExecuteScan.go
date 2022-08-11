@@ -585,17 +585,20 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		allLibraries := []ws.Library{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
-				allAlerts = append(allAlerts, alerts...)
-				vulnerabilitiesCount += vulCount
+			vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx)
+			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
+			allAlerts = append(allAlerts, alerts...)
+			vulnerabilitiesCount += vulCount
+
 			// collect all libraries detected in all related projects and errors
-			if libraries, err := sys.GetProjectHierarchy(project.Token, true); err != nil {
-				log.Entry().Debugf("Collected %v libraries for project %v", len(libraries), project.Name)
-				allLibraries = append(allLibraries, libraries...)
+			libraries, err := sys.GetProjectHierarchy(project.Token, true)
+			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
+			log.Entry().Debugf("Collected %v libraries for project %v", len(libraries), project.Name)
+			allLibraries = append(allLibraries, libraries...)
 		}
 		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
 
