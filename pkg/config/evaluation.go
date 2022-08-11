@@ -203,11 +203,14 @@ func checkConfigKeyV1(configKey string, config StepConfig) (bool, error) {
 		for i, key := range listKeys {
 			currentConfig, casted := raw.(map[string]interface{})
 			if !casted {
-				log.Entry().Errorf("failed to typecast %T", raw)
 				break
 			}
 			if raw, ok = currentConfig[key]; ok && lastIndex == i {
 				return true, nil
+			} else {
+				if raw == nil && lastIndex > i {
+					return false, nil
+				}
 			}
 		}
 	} else {
