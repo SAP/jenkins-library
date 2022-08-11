@@ -7,7 +7,5 @@ void call(Map parameters = [:]) {
     List credentials = [
         [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_token']]
     ]
-    script.commonPipelineEnvironment.git.headCommitID = ""
-    echo "Making it empty ${script.commonPipelineEnvironment.git.headCommitID}"
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
