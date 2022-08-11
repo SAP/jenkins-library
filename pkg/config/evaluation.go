@@ -197,18 +197,18 @@ func checkConfigKeyV1(configKey string, config StepConfig) (bool, error) {
 	if strings.Contains(configKey, "/") {
 		log.Entry().Debugf("found nested config key %v", configKey)
 		listKeys := strings.Split(configKey, "/")
-		var raw interface{} = config.Config
+		var currentConfig interface{} = config.Config
 		var ok bool
 		lastIndex := len(listKeys) - 1
 		for i, key := range listKeys {
-			currentConfig, casted := raw.(map[string]interface{})
+			castedCurrentConfig, casted := currentConfig.(map[string]interface{})
 			if !casted {
 				break
 			}
-			if raw, ok = currentConfig[key]; ok && lastIndex == i {
+			if currentConfig, ok = castedCurrentConfig[key]; ok && lastIndex == i {
 				return true, nil
 			} else {
-				if raw == nil && lastIndex > i {
+				if currentConfig == nil && lastIndex > i {
 					return false, nil
 				}
 			}
