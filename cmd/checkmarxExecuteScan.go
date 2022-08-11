@@ -596,9 +596,12 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
 					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
 						insecure = true
-						lowViolation = fmt.Sprintf("<-- query: %v - audited: %v - required: %v ", lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+						msgSeperator := "|"
+						if lowViolation == "" {
+							msgSeperator = "<--"
+						}
+						lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
 					}
-
 				}
 			}
 		} else { // calculate the Low findings threshold in total
@@ -630,25 +633,25 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
 	if len(highViolation) > 0 {
 		insecureResults = append(insecureResults, highText)
+		log.Entry().Error(highText)
 	} else {
 		neutralResults = append(neutralResults, highText)
+		log.Entry().Info(highText)
 	}
 	if len(mediumViolation) > 0 {
 		insecureResults = append(insecureResults, mediumText)
+		log.Entry().Error(mediumText)
 	} else {
 		neutralResults = append(neutralResults, mediumText)
+		log.Entry().Info(mediumText)
 	}
 	if len(lowViolation) > 0 {
 		insecureResults = append(insecureResults, lowText)
+		log.Entry().Error(lowText)
 	} else {
 		neutralResults = append(neutralResults, lowText)
+		log.Entry().Info(lowText)
 	}
-
-	log.Entry().Infoln("")
-	log.Entry().Info(highText)
-	log.Entry().Info(mediumText)
-	log.Entry().Info(lowText)
-	log.Entry().Infoln("")
 
 	return insecure, insecureResults, neutralResults
 }
