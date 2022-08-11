@@ -981,6 +981,12 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	separator := getSeparator()
 
+	pythonVerion := 2
+	if config.PythonVersion == "python3" {
+		pythonVerion = 3
+	}
+
+	translateList[0]["pythonVersion"] = pythonVerion
 	translateList[0]["pythonPath"] = classpath + separator +
 		getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
 	translateList[0]["src"] = getSuppliedOrDefaultListAsString(
@@ -1166,6 +1172,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		}
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
+		}
+		if len(t["pythonVerion"]) > 0 {
+			options = append(options, "-python-version", t["pythonVerion"])
 		}
 
 	default:

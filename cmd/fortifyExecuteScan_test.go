@@ -1049,18 +1049,18 @@ func TestPopulatePipTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{PythonAdditionalPath: []string{"./lib", "."}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
-		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","src":"./**/*"}]`,
+		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","pythonVersion":2,"src":"./**/*"}]`,
 			separator, separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
 	})
 
 	t.Run("Src without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{Src: []string{"./**/*.py"}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python3", Src: []string{"./**/*.py"}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","src":"./**/*.py"}]`,
+			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","pythonVersion":3,"src":"./**/*.py"}]`,
 			separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
@@ -1071,7 +1071,7 @@ func TestPopulatePipTranslate(t *testing.T) {
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","src":"./**/*"}]`,
+			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","pythonVersion":2,"src":"./**/*"}]`,
 			separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
