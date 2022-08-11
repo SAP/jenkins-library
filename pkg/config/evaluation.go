@@ -193,12 +193,12 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 }
 
 func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, error) {
-	value, valueFound := config[configKey[0]]
+	value, ok := config[configKey[0]]
 	if len(configKey) == 1 {
-		return valueFound, nil
+		return ok, nil
 	}
-	castedValue, casted := value.(map[string]interface{})
-	if !casted {
+	castedValue, ok := value.(map[string]interface{})
+	if !ok {
 		return false, nil
 	}
 	return checkConfigKeyV1(castedValue, configKey[1:])
