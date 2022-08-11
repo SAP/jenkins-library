@@ -396,6 +396,7 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 			Name:       lib.ArtifactID,
 			Version:    lib.Version,
 			PackageURL: purl.ToString(),
+			Hashes:     &[]cdx.Hash{{Algorithm: cdx.HashAlgoSHA1, Value: lib.Sha1}},
 		}
 		components = append(components, component)
 	}
