@@ -7,7 +7,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -36,6 +35,7 @@ type checkmarxExecuteScanUtils interface {
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
 	PathMatch(pattern, name string) (bool, error)
 	GetWorkspace() string
 	GetIssueService() *github.IssuesService
@@ -57,7 +57,11 @@ func (c *checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
+}
+
+func (c *checkmarxExecuteScanUtilsBundle) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
@@ -367,7 +371,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 	}
 
 	// create toolrecord
-	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
+	toolRecordFileName, err := createToolRecordCx(utils, utils.GetWorkspace(), config, results)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
@@ -417,7 +421,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 		}
 	}
 
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), utils, reports, links)
 	reportToInflux(results, influx)
 
 	if insecure {
@@ -592,9 +596,12 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
 					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
 						insecure = true
-						lowViolation = fmt.Sprintf("<-- query: %v - audited: %v - required: %v ", lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+						msgSeperator := "|"
+						if lowViolation == "" {
+							msgSeperator = "<--"
+						}
+						lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
 					}
-
 				}
 			}
 		} else { // calculate the Low findings threshold in total
@@ -626,25 +633,25 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
 	if len(highViolation) > 0 {
 		insecureResults = append(insecureResults, highText)
+		log.Entry().Error(highText)
 	} else {
 		neutralResults = append(neutralResults, highText)
+		log.Entry().Info(highText)
 	}
 	if len(mediumViolation) > 0 {
 		insecureResults = append(insecureResults, mediumText)
+		log.Entry().Error(mediumText)
 	} else {
 		neutralResults = append(neutralResults, mediumText)
+		log.Entry().Info(mediumText)
 	}
 	if len(lowViolation) > 0 {
 		insecureResults = append(insecureResults, lowText)
+		log.Entry().Error(lowText)
 	} else {
 		neutralResults = append(neutralResults, lowText)
+		log.Entry().Info(lowText)
 	}
-
-	log.Entry().Infoln("")
-	log.Entry().Info(highText)
-	log.Entry().Info(mediumText)
-	log.Entry().Info(lowText)
-	log.Entry().Infoln("")
 
 	return insecure, insecureResults, neutralResults
 }
@@ -962,8 +969,8 @@ func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, 
 	return true, nil
 }
 
-func createToolRecordCx(workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
-	record := toolrecord.New(workspace, "checkmarx", config.ServerURL)
+func createToolRecordCx(utils checkmarxExecuteScanUtils, workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
+	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
 	// Todo TeamId - see run_scan()
 	// record.AddKeyData("team", XXX, resultMap["Team"], "")
 	// Project

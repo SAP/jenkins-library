@@ -57,6 +57,7 @@ type pullRequestService interface {
 type fortifyUtils interface {
 	maven.Utils
 	gradle.Utils
+	piperutils.FileUtils
 
 	SetDir(d string)
 	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
@@ -122,7 +123,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(ctx, config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, utils, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
@@ -148,11 +149,11 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
-	for _, exec := range executable_list {
+	executableList := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executableList {
 		_, err := execInPath(exec)
 		if err != nil {
-			return reports, fmt.Errorf("ERROR , command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
 		}
 	}
 
@@ -229,7 +230,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
+	toolRecordFileName, err := createToolRecordFortify(utils, "./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_FORTIFY: Failed to create toolrecord file ...", err)
@@ -549,10 +550,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 
 func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount int) int {
 	if config.SpotCheckMinimumUnit == "percentage" {
-		spotCheckMinimumPercentageValue := int(math.Round(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
-		if spotCheckMinimumPercentageValue == 0 {
-			return 1
-		}
+		spotCheckMinimumPercentageValue := int(math.Ceil(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
 		return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, spotCheckMinimumPercentageValue)
 	}
 
@@ -560,7 +558,7 @@ func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount in
 }
 
 func getSpotChecksMinAsPerMaximum(spotCheckMax int, spotCheckMin int) int {
-	if spotCheckMax == 0 {
+	if spotCheckMax < 1 {
 		return spotCheckMin
 	}
 
@@ -1117,9 +1115,9 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 			author = prList[0].GetUser().GetLogin()
 		}
 		return number, author, nil
-	} else {
-		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
+
+	log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	return number, author, err
 }
 
@@ -1211,8 +1209,8 @@ func getSeparator() string {
 	return ":"
 }
 
-func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
-	record := toolrecord.New(workspace, "fortify", config.ServerURL)
+func createToolRecordFortify(utils fortifyUtils, workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
+	record := toolrecord.New(utils, workspace, "fortify", config.ServerURL)
 	// Project
 	err := record.AddKeyData("project",
 		strconv.FormatInt(projectID, 10),
