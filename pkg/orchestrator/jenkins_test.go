@@ -331,10 +331,10 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 		{
 			name:           "PullRequest trigger",
 			apiInformation: apiJSONPullRequest,
-			want:           "PullRequest", // ResourceTrigger
+			want:           "PullRequest",
 		},
 		{
-			name:           "PullRequest trigger",
+			name:           "ResourceTrigger trigger",
 			apiInformation: apiJSONResourceTrigger,
 			want:           "ResourceTrigger",
 		},
