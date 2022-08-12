@@ -971,6 +971,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
+func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pythonVersion string) error {
+	if pythonVersion == "python2" {
+		translateOptions["pythonVersion"] = "2"
+	} else if pythonVersion == "python3" {
+		translateOptions["pythonVersion"] = "3"
+	} else {
+		return fmt.Errorf("Invalid pythonVersion '%s'. Please set a valid pythonVersion.", pythonVersion)
+	}
+
+	return nil
+}
+
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
 	if len(config.Translate) > 0 {
 		return config.Translate, nil
@@ -978,12 +990,11 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	var translateList []map[string]interface{}
 	translateList = append(translateList, make(map[string]interface{}))
-
 	separator := getSeparator()
 
-	translateList[0]["pythonVersion"] = 2
-	if config.PythonVersion == "python3" {
-		translateList[0]["pythonVersion"] = 3
+	err := appendPythonVersionToTranslate(translateList[0], config.PythonVersion)
+	if err != nil {
+		return "", err
 	}
 
 	translateList[0]["pythonPath"] = classpath + separator +
@@ -1172,8 +1183,8 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
 		}
-		if len(t["pythonVerion"]) > 0 {
-			options = append(options, "-python-version", t["pythonVerion"])
+		if len(t["pythonVersion"]) > 0 {
+			options = append(options, "-python-version", t["pythonVersion"])
 		}
 
 	default:

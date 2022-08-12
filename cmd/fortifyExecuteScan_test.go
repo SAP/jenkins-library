@@ -701,7 +701,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"install", "--user"}, utils.executions[2].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[3].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-python-version", "2", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[4].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[4].parameters)
@@ -1046,13 +1046,19 @@ func TestPopulateMavenTranslate(t *testing.T) {
 
 func TestPopulatePipTranslate(t *testing.T) {
 	t.Run("PythonAdditionalPath without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{PythonAdditionalPath: []string{"./lib", "."}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python2", PythonAdditionalPath: []string{"./lib", "."}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
-		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","pythonVersion":2,"src":"./**/*"}]`,
+		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","pythonVersion":"2","src":"./**/*"}]`,
 			separator, separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
+	})
+
+	t.Run("Invalid python version", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonVersion: "python4", PythonAdditionalPath: []string{"./lib", "."}}
+		_, err := populatePipTranslate(&config, "")
+		assert.Error(t, err)
 	})
 
 	t.Run("Src without translate", func(t *testing.T) {
@@ -1060,18 +1066,18 @@ func TestPopulatePipTranslate(t *testing.T) {
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","pythonVersion":3,"src":"./**/*.py"}]`,
+			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","pythonVersion":"3","src":"./**/*.py"}]`,
 			separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
 	})
 
 	t.Run("Exclude without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{Exclude: []string{"./**/tests/**/*"}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python3", Exclude: []string{"./**/tests/**/*"}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","pythonVersion":2,"src":"./**/*"}]`,
+			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","pythonVersion":"3","src":"./**/*"}]`,
 			separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
