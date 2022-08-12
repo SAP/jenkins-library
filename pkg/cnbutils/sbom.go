@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/anchore/stereoscope/pkg/image"
 	"github.com/anchore/syft/syft"
 	"github.com/anchore/syft/syft/linux"
 	"github.com/anchore/syft/syft/pkg"
@@ -67,8 +66,12 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 			},
 		}
 	}
-
-	bom.Source.ImageMetadata = source.NewImageMetadata(image.NewImage(remoteImage, "/tmp"), "")
+	imageMetaData, err := extractImageMetaData(remoteImage)
+	if err != nil {
+		return err
+	}
+	bom.Source.ImageMetadata = *imageMetaData
+	bom.Source.ImageMetadata.UserInput = img
 
 	log.Entry().Debugf("updated source.ImageMetadata: %#v", bom.Source.ImageMetadata)
 
@@ -161,4 +164,39 @@ func readBOMFromLayer(img v1.Image, layerDiffSHA string) (*sbom.SBOM, error) {
 	}
 
 	return nil, errors.New("no sbom file found")
+}
+
+func extractImageMetaData(img v1.Image) (*source.ImageMetadata, error) {
+	imageDigest, err := img.Digest()
+	if err != nil {
+		return nil, err
+	}
+
+	imageMediaType, err := img.MediaType()
+	if err != nil {
+		return nil, err
+	}
+
+	imageSize, err := img.Size()
+	if err != nil {
+		return nil, err
+	}
+
+	imageRawManifest, err := img.RawManifest()
+	if err != nil {
+		return nil, err
+	}
+
+	imageRawConfig, err := img.RawConfigFile()
+	if err != nil {
+		return nil, err
+	}
+
+	return &source.ImageMetadata{
+		ID:          imageDigest.String(),
+		Size:        imageSize,
+		MediaType:   string(imageMediaType),
+		RawConfig:   imageRawConfig,
+		RawManifest: imageRawManifest,
+	}, nil
 }

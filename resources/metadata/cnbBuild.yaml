@@ -258,7 +258,7 @@ spec:
             param: custom/buildSettingsInfo
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
         scope:
           - GENERAL
           - STEPS
