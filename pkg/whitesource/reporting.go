@@ -379,8 +379,9 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 
 	components := []cdx.Component{}
 	flatUniqueLibrariesMap := map[string]Library{}
-	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap)
+	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap, 1)
 	flatUniqueLibraries := piperutils.Values(flatUniqueLibrariesMap)
+	log.Entry().Debugf("Got %v unique libraries in condensed flat list", len(flatUniqueLibraries))
 	sort.Slice(flatUniqueLibraries, func(i, j int) bool {
 		return flatUniqueLibraries[i].ToPackageUrl().ToString() < flatUniqueLibraries[j].ToPackageUrl().ToString()
 	})
@@ -395,6 +396,7 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 			Name:       lib.ArtifactID,
 			Version:    lib.Version,
 			PackageURL: purl.ToString(),
+			Hashes:     &[]cdx.Hash{{Algorithm: cdx.HashAlgoSHA1, Value: lib.Sha1}},
 		}
 		components = append(components, component)
 	}
@@ -513,7 +515,8 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 	return paths, nil
 }
 
-func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Library) {
+func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Library, level int) {
+	log.Entry().Debugf("Got %v libraries reported on level %v", len(*libraries), level)
 	for _, lib := range *libraries {
 		key := lib.ToPackageUrl().ToString()
 		flatMap := *flatMapRef
@@ -521,7 +524,7 @@ func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Libr
 		if lookup.KeyID != lib.KeyID {
 			flatMap[key] = lib
 			if len(lib.Dependencies) > 0 {
-				transformToUniqueFlatList(&lib.Dependencies, flatMapRef)
+				transformToUniqueFlatList(&lib.Dependencies, flatMapRef, level+1)
 			}
 
 		}
