@@ -10,6 +10,7 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/package-url/packageurl-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -295,6 +296,32 @@ func TestGetProductName(t *testing.T) {
 	assert.Equal(t, "Test Product", productName)
 }
 
+func TestTransformLibToPurlType(t *testing.T) {
+	tt := []struct {
+		libType  string
+		expected string
+	}{
+		{libType: "Java", expected: packageurl.TypeMaven},
+		{libType: "MAVEN_ARTIFACT", expected: packageurl.TypeMaven},
+		{libType: "javascript/Node.js", expected: packageurl.TypeNPM},
+		{libType: "node_packaged_module", expected: packageurl.TypeNPM},
+		{libType: "javascript/bower", expected: "bower"},
+		{libType: "go", expected: packageurl.TypeGolang},
+		{libType: "go_package", expected: packageurl.TypeGolang},
+		{libType: "python", expected: packageurl.TypePyPi},
+		{libType: "python_package", expected: packageurl.TypePyPi},
+		{libType: "debian", expected: packageurl.TypeDebian},
+		{libType: "debian_package", expected: packageurl.TypeDebian},
+		{libType: "docker", expected: packageurl.TypeDocker},
+		{libType: ".net", expected: packageurl.TypeNuget},
+		{libType: "dot_net_resource", expected: packageurl.TypeNuget},
+	}
+
+	for i, test := range tt {
+		assert.Equalf(t, test.expected, transformLibToPurlType(test.libType), "run %v failed", i)
+	}
+}
+
 func TestGetProjectHierarchy(t *testing.T) {
 	myTestClient := whitesourceMockClient{
 		responseBody: `{
@@ -411,7 +438,10 @@ func TestGetProjectHierarchy(t *testing.T) {
 				}
 			]
 		}
-	]
+	],
+	"warningMessages":[
+      "Invalid input: orgToken"
+    ]
 }`,
 	}
 
