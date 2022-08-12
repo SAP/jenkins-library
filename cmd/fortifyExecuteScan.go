@@ -977,7 +977,7 @@ func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pyt
 	} else if pythonVersion == "python3" {
 		translateOptions["pythonVersion"] = "3"
 	} else {
-		return fmt.Errorf("Invalid pythonVersion '%s'. Please set a valid pythonVersion.", pythonVersion)
+		return fmt.Errorf("Invalid pythonVersion '%s'. Possible values for pythonVersion are 'python2' and 'python3'. ", pythonVersion)
 	}
 
 	return nil
