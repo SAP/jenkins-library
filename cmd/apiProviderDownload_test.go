@@ -20,7 +20,7 @@ func apiProviderDownloadMockUtilsBundle() *apiProviderDownloadTestUtilsBundle {
 	return &utilsBundle
 }
 
-// Successful API Provider download cases
+//Successful API Provider download cases
 func TestApiProviderDownloadSuccess(t *testing.T) {
 	t.Parallel()
 	t.Run("Successful Download of API Provider", func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestApiProviderDownloadSuccess(t *testing.T) {
 	})
 }
 
-// API Provider download failure cases
+//API Provider download failure cases
 func TestApiProviderDownloadFailure(t *testing.T) {
 	t.Parallel()
 
