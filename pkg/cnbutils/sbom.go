@@ -1,8 +1,14 @@
 package cnbutils
 
 import (
+	"archive/tar"
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/anchore/stereoscope/pkg/image"
@@ -11,6 +17,7 @@ import (
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/anchore/syft/syft/source"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 var cycloneDxXML = syft.FormatByID(syft.CycloneDxXMLFormatID)
@@ -38,19 +45,32 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 		return err
 	}
 
-	bom := &sbom.SBOM{
-		Artifacts: sbom.Artifacts{
-			PackageCatalog: pkg.NewCatalog(),
-			LinuxDistribution: &linux.Release{
-				Name:    imgConfig.OS,
-				Version: imgConfig.OSVersion,
-				Variant: imgConfig.Variant,
+	layerSHA, exists := imgConfig.Config.Labels["io.buildpacks.base.sbom"]
+	var bom *sbom.SBOM
+	if exists {
+		log.Entry().Debug("found SBOM layer")
+		bom, err = readBOMFromLayer(remoteImage, layerSHA)
+		if err != nil {
+			return err
+		}
+		log.Entry().Debugf("initial source.ImageMetadata: %#v", bom.Source.ImageMetadata)
+	} else {
+		log.Entry().Debug("SBOM layer not found, creating a new one")
+		bom = &sbom.SBOM{
+			Artifacts: sbom.Artifacts{
+				PackageCatalog: pkg.NewCatalog(),
+				LinuxDistribution: &linux.Release{
+					Name:    imgConfig.OS,
+					Version: imgConfig.OSVersion,
+					Variant: imgConfig.Variant,
+				},
 			},
-		},
-		Source: source.Metadata{
-			ImageMetadata: source.NewImageMetadata(image.NewImage(remoteImage, "/tmp"), ""),
-		},
+		}
 	}
+
+	bom.Source.ImageMetadata = source.NewImageMetadata(image.NewImage(remoteImage, "/tmp"), "")
+
+	log.Entry().Debugf("updated source.ImageMetadata: %#v", bom.Source.ImageMetadata)
 
 	for _, syftFile := range syftFiles {
 		log.Entry().Debugf("reading Syft SBOM file %q", syftFile)
@@ -88,4 +108,57 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 	}
 
 	return nil
+}
+
+func readBOMFromLayer(img v1.Image, layerDiffSHA string) (*sbom.SBOM, error) {
+	layerDiffDigest, err := v1.NewHash(layerDiffSHA)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse layer sha %q", layerDiffSHA)
+	}
+
+	allLayers, _ := img.Layers()
+	log.Entry().Debug("image layers:")
+	for _, l := range allLayers {
+		ld, _ := l.DiffID()
+		log.Entry().Debug(ld.String())
+	}
+
+	log.Entry().Debugf("looking for the layer %q", layerDiffDigest.String())
+
+	sbomLayer, err := img.LayerByDiffID(layerDiffDigest)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed get layer %q", layerDiffDigest)
+	}
+
+	rc, err := sbomLayer.Uncompressed()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get uncompressed reader")
+	}
+
+	tr := tar.NewReader(rc)
+	sbomRegex := regexp.MustCompile(`cnb/sbom/[a-z0-9]+\.syft\.json`)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read tar content")
+		}
+
+		log.Entry().Debugf("checking SBOM layer file %q", hdr.Name)
+		if sbomRegex.Match([]byte(hdr.Name)) {
+			log.Entry().Debugf("file %q matches the regex", hdr.Name)
+			buf := &bytes.Buffer{}
+			_, err = io.Copy(buf, tr)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to read SBOM file from the layer")
+			}
+
+			bom, _, err := syft.Decode(buf)
+			return bom, errors.Wrap(err, "failed to decode SBOM file")
+		}
+	}
+
+	return nil, errors.New("no sbom file found")
 }

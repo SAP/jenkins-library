@@ -3,5 +3,6 @@ general:
   collectTelemetryData: false
 steps:
   cnbBuild:
+    createBOM: true
     buildEnvVars:
       BP_NODE_VERSION: 16

@@ -3,6 +3,7 @@ general:
   collectTelemetryData: false
 steps:
   cnbBuild:
+    createBOM: true
     bindings:
       maven-settings:
         type: maven

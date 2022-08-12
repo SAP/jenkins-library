@@ -88,7 +88,7 @@ func TestProjectDescriptor(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--createBOM", "true", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Dockerfile doesn't match include pattern, ignoring")
