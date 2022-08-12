@@ -125,10 +125,8 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	}
 
 	if len(s.ConfigKey) > 0 {
-		if configValue := config.Config[s.ConfigKey]; configValue != nil {
-			return true, nil
-		}
-		return false, nil
+		configKey := strings.Split(s.ConfigKey, "/")
+		return checkConfigKeyV1(config.Config, configKey)
 	}
 
 	if len(s.FilePattern) > 0 {
@@ -192,6 +190,18 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	} else {
 		return true, nil
 	}
+}
+
+func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, error) {
+	value, ok := config[configKey[0]]
+	if len(configKey) == 1 {
+		return ok, nil
+	}
+	castedValue, ok := value.(map[string]interface{})
+	if !ok {
+		return false, nil
+	}
+	return checkConfigKeyV1(castedValue, configKey[1:])
 }
 
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
