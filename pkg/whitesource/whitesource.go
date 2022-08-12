@@ -92,22 +92,32 @@ func transformLibToPurlType(libType string) string {
 	log.Entry().Debugf("LibType reported as %v", libType)
 	switch strings.ToLower(libType) {
 	case "java":
+		fallthrough
+	case "maven_artifact":
 		return packageurl.TypeMaven
 	case "javascript/node.js":
+		fallthrough
+	case "node_packaged_module":
 		return packageurl.TypeNPM
 	case "javascript/bower":
 		return "bower"
 	case "go":
+		fallthrough
+	case "go_package":
 		return packageurl.TypeGolang
 	case "python":
+		fallthrough
+	case "python_package":
 		return packageurl.TypePyPi
 	case "debian":
+		fallthrough
+	case "debian_package":
 		return packageurl.TypeDebian
 	case "docker":
 		return packageurl.TypeDocker
-	case "source library":
-		return "src"
 	case ".net":
+		fallthrough
+	case "dot_net_resource":
 		return packageurl.TypeNuget
 	}
 	return packageurl.TypeGeneric
