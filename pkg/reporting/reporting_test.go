@@ -35,6 +35,7 @@ func TestVulToMarkdown(t *testing.T) {
 			Score:             7.8,
 			Severity:          "high",
 			Version:           "1.2.3",
+			PackageURL:        "pkg:generic/the.group/theArtifact@1.2.3",
 			VulnerabilityLink: "https://the.link/to/the/vulnerability",
 			VulnerabilityName: "CVE-Test-001",
 		}

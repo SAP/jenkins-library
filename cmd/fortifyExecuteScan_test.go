@@ -62,6 +62,31 @@ func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
 	}
 	return utilsBundle
 }
+func mockExecinPath(exec string) (string, error) {
+	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executable_list {
+		if exec == "fortifyupdate" || exec == "sourceanalyzer" {
+			return "/" + exec, nil
+		} else {
+			err_string := fmt.Sprintf("ERROR , command not found: %s. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return "", errors.New(err_string)
+		}
+	}
+	return "", nil
+}
+
+func failMockExecinPathfortifyupdate(exec string) (string, error) {
+	if exec == "fortifyupdate" {
+		return "", errors.New("Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/fortifyupdate", nil
+}
+func failMockExecinPathsourceanalyzer(exec string) (string, error) {
+	if exec == "sourceanalyzer" {
+		return "", errors.New("Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/sourceanalyzer", nil
+}
 
 type artifactMock struct {
 	Coordinates versioning.Coordinates
@@ -429,6 +454,33 @@ func TestDetermineArtifact(t *testing.T) {
 	})
 }
 
+func TestFailFortifyexecinPath(t *testing.T) {
+	t.Run("Testing if fortifyupdate in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		ctx := context.Background()
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathfortifyupdate
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+
+	})
+	t.Run("Testing if sourceanalyzer in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		ctx := context.Background()
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathsourceanalyzer
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+
+	})
+}
+
 func TestExecutions(t *testing.T) {
 	type parameterTestData struct {
 		nameOfRun             string
@@ -464,6 +516,7 @@ func TestExecutions(t *testing.T) {
 			utils := newFortifyTestUtilsBundle()
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
+			execInPath = mockExecinPath
 			reports, _ := runFortifyScan(ctx, data.config, &ff, &utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
@@ -689,11 +742,13 @@ func TestGetMinSpotChecksPerCategory(t *testing.T) {
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 3, 1)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 8, 1)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 10, 1)
-	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 2)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 3)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 26, 3)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 100, 10)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 200, 10)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 50, 10, 5)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 0, 50, 100, 50)
+	testExpectedGetMinSpotChecksPerCategory("percentage", -10, 50, 100, 50)
 
 	testExpectedGetMinSpotChecksPerCategory("number", 0, 1, 10, 1)
 	testExpectedGetMinSpotChecksPerCategory("number", 5, 10, 100, 5)
@@ -978,7 +1033,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenGradleTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/src/gen/java/cds/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {

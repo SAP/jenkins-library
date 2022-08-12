@@ -34,15 +34,16 @@ func abapEnvironmentRunAUnitTest(config abapEnvironmentRunAUnitTestOptions, tele
 	}
 
 	client := piperhttp.Client{}
+	utils := piperutils.Files{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentRunAUnitTest(&config, telemetryData, &autils, &client)
+	err := runAbapEnvironmentRunAUnitTest(&config, telemetryData, &autils, &client, &utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, utils piperutils.FileUtils) error {
 	var details abaputils.ConnectionDetailsHTTP
 	subOptions := convertAUnitOptions(config)
 	details, err := com.GetAbapCommunicationArrangementInfo(subOptions, "")
@@ -62,7 +63,7 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 		resp, err = triggerAUnitrun(*config, details, client)
 	}
 	if err == nil {
-		err = fetchAndPersistAUnitResults(resp, details, client, config.AUnitResultsFileName, config.GenerateHTML)
+		err = fetchAndPersistAUnitResults(resp, details, client, utils, config.AUnitResultsFileName, config.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -134,7 +135,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	return subOptions
 }
 
-func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
+func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, aunitResultFileName string, generateHTML bool) error {
 	var err error
 	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
@@ -151,7 +152,7 @@ func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.Connecti
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = persistAUnitResult(body, aunitResultFileName, generateHTML)
+		err = persistAUnitResult(utils, body, aunitResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling AUnit result failed: %w", err)
@@ -344,7 +345,7 @@ func getAUnitResults(requestType string, details abaputils.ConnectionDetailsHTTP
 	return req, err
 }
 
-func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bool) (err error) {
+func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing AUnit result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -396,7 +397,7 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 	}
 	//Persist findings afterwards
 	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
-	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
+	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", utils, reports, nil)
 	return nil
 }
 
