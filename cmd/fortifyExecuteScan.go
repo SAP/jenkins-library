@@ -981,12 +981,11 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	separator := getSeparator()
 
-	pythonVerion := 2
+	translateList[0]["pythonVersion"] = 2
 	if config.PythonVersion == "python3" {
-		pythonVerion = 3
+		translateList[0]["pythonVersion"] = 3
 	}
 
-	translateList[0]["pythonVersion"] = pythonVerion
 	translateList[0]["pythonPath"] = classpath + separator +
 		getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
 	translateList[0]["src"] = getSuppliedOrDefaultListAsString(
