@@ -36,6 +36,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	var err error
 
 	client := piperhttp.Client{}
+	fileUtils := piperutils.Files{}
 	cookieJar, _ := cookiejar.New(nil)
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar: cookieJar,
@@ -62,7 +63,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCRun(options, details, &client)
 	}
 	if err == nil {
-		err = fetchAndPersistATCResults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
+		err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -71,7 +72,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
+func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, atcResultFileName string, generateHTML bool) error {
 	var err error
 	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
@@ -88,7 +89,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = logAndPersistATCResult(body, atcResultFileName, generateHTML)
+		err = logAndPersistATCResult(utils, body, atcResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -202,7 +203,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML bool) error {
+func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool) error {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -241,7 +242,7 @@ func logAndPersistATCResult(body []byte, atcResultFileName string, generateHTML 
 				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
 			}
 		}
-		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
+		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", utils, reports, nil)
 	}
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)

@@ -15,14 +15,20 @@ import (
 func TestCreateSarifResultFile(t *testing.T) {
 	alerts := []Vulnerability{
 		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456543", Severity: "Critical", Description: "Some vulnerability that can be exploited by peeling the glue off.", BaseScore: 9.8, OverallScore: 10}},
-		{Name: "test2", Version: "1.2.4", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456542", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
-		{Name: "test3", Version: "1.2.5", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456541", Severity: "Medium", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
+		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456542", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
+		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456541", Severity: "Medium", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
 	}
 	vulns := Vulnerabilities{
 		Items: alerts,
 	}
+	components := []Component{
+		{Name: "test1", Version: "1.2.3", ComponentOriginName: "Maven"},
+	}
+	componentList := Components{
+		Items: components,
+	}
 
-	sarif := CreateSarifResultFile(&vulns)
+	sarif := CreateSarifResultFile(&vulns, &componentList)
 
 	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json", sarif.Schema)
 	assert.Equal(t, "2.1.0", sarif.Version)

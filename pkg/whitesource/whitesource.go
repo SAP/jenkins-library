@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
 )
 
@@ -64,25 +67,61 @@ func (a Alert) Title() string {
 	return fmt.Sprintf("%v %v %v ", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
 }
 
-func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
-	switch cvss3severity {
-	case "low":
-		return "LOW"
-	case "medium":
-		return "MEDIUM"
-	case "high":
-		if cvss3score >= 9 {
-			return "CRITICAL"
+func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
+	localPurl := a.Library.ToPackageUrl().ToString()
+	for _, assessment := range *assessments {
+		if assessment.Vulnerability == a.Vulnerability.Name {
+			for _, purl := range assessment.Purls {
+				assessmentPurl, err := purl.ToPackageUrl()
+				assessmentPurlStr := assessmentPurl.ToString()
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					log.Entry().WithError(err).Errorf("assessment from file ignored due to invalid packageUrl '%s'", purl)
+					return false, err
+				}
+				if assessmentPurlStr == localPurl {
+					return true, nil
+				}
+			}
 		}
-		return "HIGH"
 	}
-	switch cvss2severity {
+	return false, nil
+}
+
+func transformLibToPurlType(libType string) string {
+	log.Entry().Debugf("LibType reported as %v", libType)
+	switch strings.ToLower(libType) {
+	case "java":
+		return packageurl.TypeMaven
+	case "javascript/node.js":
+		return packageurl.TypeNPM
+	case "javascript/bower":
+		return "bower"
+	case "go":
+		return packageurl.TypeGolang
+	case "python":
+		return packageurl.TypePyPi
+	case "debian":
+		return packageurl.TypeDebian
+	case "docker":
+		return packageurl.TypeDocker
+	case "source library":
+		return "src"
+	case ".net":
+		return packageurl.TypeNuget
+	}
+	return packageurl.TypeGeneric
+}
+
+func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
+	cvssseverity := consolidateSeverities(cvss2severity, cvss3severity)
+	switch cvssseverity {
 	case "low":
 		return "LOW"
 	case "medium":
 		return "MEDIUM"
 	case "high":
-		if cvss2score >= 9 {
+		if cvss3score >= 9 || cvss2score >= 9 {
 			return "CRITICAL"
 		}
 		return "HIGH"
@@ -92,10 +131,7 @@ func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score flo
 
 // ToMarkdown returns the markdown representation of the contents
 func (a Alert) ToMarkdown() ([]byte, error) {
-	score := a.Vulnerability.CVSS3Score
-	if score == 0 {
-		score = a.Vulnerability.Score
-	}
+	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 
 	vul := reporting.VulnerabilityReport{
 		ArtifactID: a.Library.ArtifactID,
@@ -115,6 +151,7 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 		Score:             score,
 		Severity:          consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score),
 		Version:           a.Library.Version,
+		PackageURL:        a.Library.ToPackageUrl().ToString(),
 		VulnerabilityLink: a.Vulnerability.URL,
 		VulnerabilityName: a.Vulnerability.Name,
 	}
@@ -124,25 +161,22 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 
 // ToTxt returns the textual representation of the contents
 func (a Alert) ToTxt() string {
-	score := a.Vulnerability.CVSS3Score
-	if score == 0 {
-		score = a.Vulnerability.Score
-	}
+	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
 Base (NVD) Score: %v
-Temporal Score: %v
 Package: %v
 Installed Version: %v
+Package URL: %v
 Description: %v
 Fix Resolution: %v
 Link: [%v](%v)`,
 		a.Vulnerability.Name,
 		a.Vulnerability.Severity,
 		score,
-		score,
 		a.Library.ArtifactID,
 		a.Library.Version,
+		a.Library.ToPackageUrl().ToString(),
 		a.Vulnerability.Description,
 		a.Vulnerability.TopFix.FixResolution,
 		a.Vulnerability.Name,
@@ -150,13 +184,32 @@ Link: [%v](%v)`,
 	)
 }
 
+func consolidateScores(cvss2score, cvss3score float64) float64 {
+	score := cvss3score
+	if score == 0 {
+		score = cvss2score
+	}
+	return score
+}
+
 // Library
 type Library struct {
-	Name       string `json:"name,omitempty"`
-	Filename   string `json:"filename,omitempty"`
-	ArtifactID string `json:"artifactId,omitempty"`
-	GroupID    string `json:"groupId,omitempty"`
-	Version    string `json:"version,omitempty"`
+	KeyUUID      string    `json:"keyUuid,omitempty"`
+	KeyID        int       `json:"keyId,omitempty"`
+	Name         string    `json:"name,omitempty"`
+	Filename     string    `json:"filename,omitempty"`
+	ArtifactID   string    `json:"artifactId,omitempty"`
+	GroupID      string    `json:"groupId,omitempty"`
+	Version      string    `json:"version,omitempty"`
+	Sha1         string    `json:"sha1,omitempty"`
+	LibType      string    `json:"type,omitempty"`
+	Coordinates  string    `json:"coordinates,omitempty"`
+	Dependencies []Library `json:"dependencies,omitempty"`
+}
+
+// ToPackageUrl constructs and returns the package URL of the library
+func (l Library) ToPackageUrl() *packageurl.PackageURL {
+	return packageurl.NewPackageURL(transformLibToPurlType(l.LibType), l.GroupID, l.ArtifactID, l.Version, nil, "")
 }
 
 // Vulnerability defines a vulnerability as returned by WhiteSource
@@ -221,6 +274,7 @@ type Request struct {
 	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
 	ProductApprovers     *Assignment `json:"productApprovers,omitempty"`
 	ProductIntegrators   *Assignment `json:"productIntegrators,omitempty"`
+	IncludeInHouseData   bool        `json:"includeInHouseData,omitempty"`
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -344,6 +398,28 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	}
 
 	return wsResponse.ProjectVitals, nil
+}
+
+// GetProjectHierarchy retrieves the full set of libraries that the project depends on
+func (s *System) GetProjectHierarchy(projectToken string, includeInHouse bool) ([]Library, error) {
+	wsResponse := struct {
+		Libraries []Library `json:"libraries"`
+	}{
+		Libraries: []Library{},
+	}
+
+	req := Request{
+		RequestType:        "getProjectHierarchy",
+		ProjectToken:       projectToken,
+		IncludeInHouseData: includeInHouse,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return wsResponse.Libraries, nil
 }
 
 // GetProjectToken returns the project token for a project with a given name

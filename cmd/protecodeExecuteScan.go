@@ -268,7 +268,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	}
 
 	// create toolrecord file
-	toolRecordFileName, err := createToolRecordProtecode("./", config, productID, webuiURL)
+	toolRecordFileName, err := createToolRecordProtecode(utils, "./", config, productID, webuiURL)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_PROTECODE: Failed to create toolrecord file ...", err)
@@ -276,7 +276,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
-	piperutils.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
+	piperutils.PersistReportsAndLinks("protecodeExecuteScan", "", utils, reports, links)
 
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
 		log.SetErrorCategory(log.ErrorCompliance)
@@ -418,8 +418,8 @@ func getProcessedVersion(config *protecodeExecuteScanOptions) string {
 
 // create toolrecord file for protecode
 // todo: check if group and product names can be retrieved
-func createToolRecordProtecode(workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
-	record := toolrecord.New(workspace, "protecode", config.ServerURL)
+func createToolRecordProtecode(utils protecodeUtils, workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
+	record := toolrecord.New(utils, workspace, "protecode", config.ServerURL)
 	groupURL := config.ServerURL + "/#/groups/" + config.Group
 	err := record.AddKeyData("group",
 		config.Group,
