@@ -90,6 +90,7 @@ type PartialFingerprints struct {
 	FortifyInstanceID       string `json:"fortifyInstanceID,omitempty"`
 	CheckmarxSimilarityID   string `json:"checkmarxSimilarityID,omitempty"`
 	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
+	PackageURLPlusCVEHash   string `json:"packageUrlPlusCveHash,omitempty"`
 }
 
 // SarifProperties adding additional information/context to the finding

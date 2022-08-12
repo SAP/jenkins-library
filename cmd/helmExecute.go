@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
@@ -52,6 +54,11 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 
 	if len(helmConfig.PublishVersion) == 0 {
 		helmConfig.PublishVersion = artifactInfo.Version
+	}
+
+	err = parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("failed to parse/render template: %v", err)
 	}
 
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
@@ -115,6 +122,48 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 	if config.Publish {
 		if err := helmExecutor.RunHelmPublish(); err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
+		}
+	}
+
+	return nil
+}
+
+// parseAndRenderCPETemplate allows to parse and render a template which contains references to the CPE
+func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
+	cpe := piperenv.CPEMap{}
+	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))
+	if err != nil {
+		return fmt.Errorf("failed to load values from commonPipelineEnvironment: %v", err)
+	}
+
+	valueFiles := []string{}
+	defaultValueFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
+	defaultValueFileExists, err := utils.FileExists(defaultValueFile)
+	if err != nil {
+		return err
+	}
+
+	if defaultValueFileExists {
+		valueFiles = append(valueFiles, defaultValueFile)
+	} else {
+		if len(config.HelmValues) == 0 {
+			return fmt.Errorf("no value file to proccess, please provide value file(s)")
+		}
+	}
+	valueFiles = append(valueFiles, config.HelmValues...)
+
+	for _, valueFile := range valueFiles {
+		cpeTemplate, err := utils.FileRead(valueFile)
+		if err != nil {
+			return fmt.Errorf("failed to read file: %v", err)
+		}
+		generated, err := cpe.ParseTemplate(string(cpeTemplate))
+		if err != nil {
+			return fmt.Errorf("failed to parse template: %v", err)
+		}
+		err = utils.FileWrite(valueFile, generated.Bytes(), 0700)
+		if err != nil {
+			return fmt.Errorf("failed to update file: %v", err)
 		}
 	}
 

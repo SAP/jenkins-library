@@ -86,7 +86,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-gradle.xml")
 }
 
 func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
@@ -158,5 +158,5 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-gradle.xml")
 }

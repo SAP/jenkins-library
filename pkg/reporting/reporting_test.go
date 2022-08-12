@@ -1,11 +1,53 @@
 package reporting
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestVulToMarkdown(t *testing.T) {
+	t.Parallel()
+	t.Run("success - empty", func(t *testing.T) {
+		t.Parallel()
+		vulReport := VulnerabilityReport{}
+		_, err := vulReport.ToMarkdown()
+		assert.NoError(t, err)
+	})
+
+	t.Run("success - filled", func(t *testing.T) {
+		t.Parallel()
+		vulReport := VulnerabilityReport{
+			ArtifactID:        "theArtifact",
+			Branch:            "main",
+			CommitID:          "acb123",
+			Description:       "This is the test description.",
+			DirectDependency:  "true",
+			Footer:            "This is the test footer",
+			Group:             "the.group",
+			PipelineName:      "thePipelineName",
+			PipelineLink:      "https://the.link.to.the.pipeline",
+			PublishDate:       "2022-06-30",
+			Resolution:        "This is the test resolution.",
+			Score:             7.8,
+			Severity:          "high",
+			Version:           "1.2.3",
+			PackageURL:        "pkg:generic/the.group/theArtifact@1.2.3",
+			VulnerabilityLink: "https://the.link/to/the/vulnerability",
+			VulnerabilityName: "CVE-Test-001",
+		}
+		goldenFilePath := filepath.Join("testdata", "markdownVulnerability.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		assert.NoError(t, err)
+
+		res, err := vulReport.ToMarkdown()
+		assert.NoError(t, err)
+		assert.Equal(t, string(expected), string(res))
+	})
+}
 
 func TestToHTML(t *testing.T) {
 	t.Run("empty table", func(t *testing.T) {
