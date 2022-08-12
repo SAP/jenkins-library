@@ -3,6 +3,7 @@ package cnbutils
 import (
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -25,12 +26,6 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 	if dockerConfigFile != "" {
 		os.Setenv("DOCKER_CONFIG", filepath.Dir(dockerConfigFile))
 		defer os.Unsetenv("DOCKER_CONFIG")
-	}
-
-	log.Entry().Debugf("search for sbom file using the pattern %s", pattern)
-	syftFiles, err := utils.Glob(pattern)
-	if err != nil {
-		return err
 	}
 
 	log.Entry().Debugf("reading remote image %s", img)
@@ -72,8 +67,13 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 	}
 	bom.Source.ImageMetadata = *imageMetaData
 	bom.Source.ImageMetadata.UserInput = img
-
 	log.Entry().Debugf("updated source.ImageMetadata: %#v", bom.Source.ImageMetadata)
+
+	log.Entry().Debugf("search for sbom file using the pattern %s", pattern)
+	syftFiles, err := utils.Glob(pattern)
+	if err != nil {
+		return err
+	}
 
 	for _, syftFile := range syftFiles {
 		log.Entry().Debugf("reading Syft SBOM file %q", syftFile)
@@ -93,6 +93,7 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 		}
 	}
 
+	//TODO: testability
 	outFile, err := filepath.Abs(output)
 	if err != nil {
 		return err
@@ -104,6 +105,7 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 	}
 	defer out.Close()
 
+	fmt.Printf("*** saving %q ***", outFile)
 	log.Entry().Debugf("saving CycloneDX SBOM file to %q", outFile)
 	err = cycloneDxXML.Encode(out, *bom)
 	if err != nil {
@@ -117,13 +119,6 @@ func readBOMFromLayer(img v1.Image, layerDiffSHA string) (*sbom.SBOM, error) {
 	layerDiffDigest, err := v1.NewHash(layerDiffSHA)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse layer sha %q", layerDiffSHA)
-	}
-
-	allLayers, _ := img.Layers()
-	log.Entry().Debug("image layers:")
-	for _, l := range allLayers {
-		ld, _ := l.DiffID()
-		log.Entry().Debug(ld.String())
 	}
 
 	log.Entry().Debugf("looking for the layer %q", layerDiffDigest.String())
