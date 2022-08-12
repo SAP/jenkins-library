@@ -17,24 +17,36 @@
       <author>apache-commons</author>
       <name>commons-lang</name>
       <version>2.4.30</version>
+      <hashes>
+        <hash alg="SHA-1"></hash>
+      </hashes>
       <purl>pkg:maven/apache-commons/commons-lang@2.4.30</purl>
     </component>
     <component bom-ref="pkg:maven/apache-commons/commons-lang@3.15" type="library">
       <author>apache-commons</author>
       <name>commons-lang</name>
       <version>3.15</version>
+      <hashes>
+        <hash alg="SHA-1"></hash>
+      </hashes>
       <purl>pkg:maven/apache-commons/commons-lang@3.15</purl>
     </component>
     <component bom-ref="pkg:maven/apache-logging/log4j@1.14" type="library">
       <author>apache-logging</author>
       <name>log4j</name>
       <version>1.14</version>
+      <hashes>
+        <hash alg="SHA-1"></hash>
+      </hashes>
       <purl>pkg:maven/apache-logging/log4j@1.14</purl>
     </component>
     <component bom-ref="pkg:maven/apache-logging/log4j@3.25" type="library">
       <author>apache-logging</author>
       <name>log4j</name>
       <version>3.25</version>
+      <hashes>
+        <hash alg="SHA-1"></hash>
+      </hashes>
       <purl>pkg:maven/apache-logging/log4j@3.25</purl>
     </component>
   </components>
