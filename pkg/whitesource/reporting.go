@@ -381,7 +381,7 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 	flatUniqueLibrariesMap := map[string]Library{}
 	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap, 1)
 	flatUniqueLibraries := piperutils.Values(flatUniqueLibrariesMap)
-	log.Entry().Debugf("Got %v unique libraries in condensed flat list")
+	log.Entry().Debugf("Got %v unique libraries in condensed flat list", len(flatUniqueLibraries))
 	sort.Slice(flatUniqueLibraries, func(i, j int) bool {
 		return flatUniqueLibraries[i].ToPackageUrl().ToString() < flatUniqueLibraries[j].ToPackageUrl().ToString()
 	})
