@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"archive/zip"
+	"context"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,9 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"encoding/json"
-	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -26,67 +26,101 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
+
+	"github.com/google/go-github/v45/github"
 )
 
 type checkmarxExecuteScanUtils interface {
-	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
 	PathMatch(pattern, name string) (bool, error)
 	GetWorkspace() string
+	GetIssueService() *github.IssuesService
+	GetSearchService() *github.SearchService
 }
 
 type checkmarxExecuteScanUtilsBundle struct {
 	workspace string
+	issues    *github.IssuesService
+	search    *github.SearchService
 }
 
-func (checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
+func (c *checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
 	return doublestar.PathMatch(pattern, name)
 }
 
-func (b checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
-	return b.workspace
+func (c *checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
+	return c.workspace
 }
 
-func (checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+func (c *checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return os.WriteFile(filename, data, perm)
 }
 
-func (checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
+func (c *checkmarxExecuteScanUtilsBundle) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
+}
+
+func (c *checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
 	return zip.FileInfoHeader(fi)
 }
 
-func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
+func (c *checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(name)
 }
 
-func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
+func (c *checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 	return os.Open(name)
 }
 
-func (checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
+func (c *checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
 	return piperGithub.CreateIssue(ghCreateIssueOptions)
+}
+
+func (c *checkmarxExecuteScanUtilsBundle) GetIssueService() *github.IssuesService {
+	return c.issues
+}
+
+func (c *checkmarxExecuteScanUtilsBundle) GetSearchService() *github.SearchService {
+	return c.search
+}
+
+func newCheckmarxExecuteScanUtilsBundle(workspace string, client *github.Client) checkmarxExecuteScanUtils {
+	utils := checkmarxExecuteScanUtilsBundle{
+		workspace: workspace,
+	}
+	if client != nil {
+		utils.issues = client.Issues
+		utils.search = client.Search
+	}
+	return &utils
 }
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
 	client.SetOptions(options)
+	// TODO provide parameter for trusted certs
+	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	if err != nil {
+		log.Entry().WithError(err).Warning("Failed to get GitHub client")
+	}
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
 	influx.step_data.fields.checkmarx = false
-	utils := checkmarxExecuteScanUtilsBundle{workspace: "./"}
-	if err := runScan(config, sys, influx, utils); err != nil {
+	utils := newCheckmarxExecuteScanUtilsBundle("./", ghClient)
+	if err := runScan(ctx, config, sys, influx, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
 	}
 	influx.step_data.fields.checkmarx = true
 }
 
-func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func runScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
 		readTeamID, err := loadTeamIDByTeamName(config, sys, teamID)
@@ -114,7 +148,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 		}
 	}
 
-	err = uploadAndScan(config, sys, project, influx, utils)
+	err = uploadAndScan(ctx, config, sys, project, influx, utils)
 	if err != nil {
 		return errors.Wrap(err, "scan, upload, and result validation returned an error")
 	}
@@ -240,13 +274,13 @@ func zipWorkspaceFiles(filterPattern string, utils checkmarxExecuteScanUtils) (*
 	return zipFile, nil
 }
 
-func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func uploadAndScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	previousScans, err := sys.GetScans(project.ID)
 	if err != nil && config.VerifyOnly {
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
 	}
 	if len(previousScans) > 0 && config.VerifyOnly {
-		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, influx, utils)
+		err := verifyCxProjectCompliance(ctx, config, sys, previousScans[0].ID, influx, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return errors.Wrapf(err, "project %v not compliant", project.Name)
@@ -280,12 +314,12 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			incremental = false
 		}
 
-		return triggerScan(config, sys, project, incremental, influx, utils)
+		return triggerScan(ctx, config, sys, project, incremental, influx, utils)
 	}
 	return nil
 }
 
-func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func triggerScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	scan, err := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
 	if err != nil {
 		return errors.Wrapf(err, "cannot scan project %v", project.Name)
@@ -298,10 +332,10 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 	}
 
 	log.Entry().Debugln("Scan finished")
-	return verifyCxProjectCompliance(config, sys, scan.ID, influx, utils)
+	return verifyCxProjectCompliance(ctx, config, sys, scan.ID, influx, utils)
 }
 
-func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
 		pdfReportName := createReportName(utils.GetWorkspace(), "CxSASTReport_%v.pdf")
@@ -316,7 +350,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 
 	xmlReportName := createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
-	results, err := getDetailedResults(sys, xmlReportName, scanID, utils)
+	results, err := getDetailedResults(config, sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
@@ -337,7 +371,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 
 	// create toolrecord
-	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
+	toolRecordFileName, err := createToolRecordCx(utils, utils.GetWorkspace(), config, results)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
@@ -354,11 +388,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		// add JSON report to archiving list
 		reports = append(reports, paths...)
 	}
-
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
-
-	reportToInflux(results, influx)
 
 	insecure := false
 	var insecureResults []string
@@ -370,8 +400,14 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 
 		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
-			err := reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, utils)
-			if err != nil {
+			gh := reporting.GitHub{
+				Owner:         &config.Owner,
+				Repository:    &config.Repository,
+				Assignees:     &config.Assignees,
+				IssueService:  utils.GetIssueService(),
+				SearchService: utils.GetSearchService(),
+			}
+			if err := gh.UploadSingleReport(ctx, scanReport); err != nil {
 				return fmt.Errorf("failed to upload scan results into GitHub: %w", err)
 			}
 		}
@@ -384,6 +420,9 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 			reports = append(reports, paths...)
 		}
 	}
+
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), utils, reports, links)
+	reportToInflux(results, influx)
 
 	if insecure {
 		if config.VulnerabilityThresholdResult == "FAILURE" {
@@ -496,7 +535,7 @@ func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID i
 		return errors.Wrap(err, "failed to download the report")
 	}
 	log.Entry().Debugf("Saving report to file %v...", reportFileName)
-	return utils.WriteFile(reportFileName, report, 0700)
+	return utils.WriteFile(reportFileName, report, 0o700)
 }
 
 func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
@@ -506,6 +545,8 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	cxHighThreshold := config.VulnerabilityThresholdHigh
 	cxMediumThreshold := config.VulnerabilityThresholdMedium
 	cxLowThreshold := config.VulnerabilityThresholdLow
+	cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
+	cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
 	highValue := results["High"].(map[string]int)["NotFalsePositive"]
 	mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
 	lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
@@ -545,10 +586,31 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 			insecure = true
 			mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
 		}
-		if lowValue < cxLowThreshold {
-			insecure = true
-			lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+		// if the flag is switched on, calculate the Low findings threshold per query
+		if cxLowThresholdPerQuery {
+			lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
+			if lowPerQueryMap != nil {
+				for lowQuery, resultsLowQuery := range lowPerQueryMap {
+					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+					lowOverallPerQuery := resultsLowQuery["Issues"]
+					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
+						insecure = true
+						msgSeperator := "|"
+						if lowViolation == "" {
+							msgSeperator = "<--"
+						}
+						lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+					}
+				}
+			}
+		} else { // calculate the Low findings threshold in total
+			if lowValue < cxLowThreshold {
+				insecure = true
+				lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+			}
 		}
+
 	}
 	if config.VulnerabilityThresholdUnit == "absolute" {
 		unit = " findings"
@@ -571,25 +633,25 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
 	if len(highViolation) > 0 {
 		insecureResults = append(insecureResults, highText)
+		log.Entry().Error(highText)
 	} else {
 		neutralResults = append(neutralResults, highText)
+		log.Entry().Info(highText)
 	}
 	if len(mediumViolation) > 0 {
 		insecureResults = append(insecureResults, mediumText)
+		log.Entry().Error(mediumText)
 	} else {
 		neutralResults = append(neutralResults, mediumText)
+		log.Entry().Info(mediumText)
 	}
 	if len(lowViolation) > 0 {
 		insecureResults = append(insecureResults, lowText)
+		log.Entry().Error(lowText)
 	} else {
 		neutralResults = append(neutralResults, lowText)
+		log.Entry().Info(lowText)
 	}
-
-	log.Entry().Infoln("")
-	log.Entry().Info(highText)
-	log.Entry().Info(mediumText)
-	log.Entry().Info(lowText)
-	log.Entry().Infoln("")
 
 	return insecure, insecureResults, neutralResults
 }
@@ -689,14 +751,14 @@ func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
+func getDetailedResults(config checkmarxExecuteScanOptions, sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
 	data, err := generateAndDownloadReport(sys, scanID, "XML")
 	if err != nil {
 		return resultMap, errors.Wrap(err, "failed to download xml report")
 	}
 	if len(data) > 0 {
-		err = utils.WriteFile(reportFileName, data, 0700)
+		err = utils.WriteFile(reportFileName, data, 0o700)
 		if err != nil {
 			return resultMap, errors.Wrap(err, "failed to write file")
 		}
@@ -757,6 +819,52 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int,
 					submap["NotFalsePositive"]++
 				}
 			}
+		}
+
+		// if the flag is switched on, build the list  of Low findings per query
+		if config.VulnerabilityThresholdLowPerQuery {
+			var lowPerQuery = map[string]map[string]int{}
+			for _, query := range xmlResult.Queries {
+				for _, result := range query.Results {
+					if result.Severity != "Low" {
+						continue
+					}
+					key := query.Name
+					var submap map[string]int
+					if lowPerQuery[key] == nil {
+						submap = map[string]int{}
+						lowPerQuery[key] = submap
+					} else {
+						submap = lowPerQuery[key]
+					}
+					submap["Issues"]++
+					auditState := "ToVerify"
+					switch result.State {
+					case "1":
+						auditState = "NotExploitable"
+						break
+					case "2":
+						auditState = "Confirmed"
+						break
+					case "3":
+						auditState = "Urgent"
+						break
+					case "4":
+						auditState = "ProposedNotExploitable"
+						break
+					case "0":
+					default:
+						auditState = "ToVerify"
+						break
+					}
+					submap[auditState]++
+
+					if result.FalsePositive != "True" {
+						submap["NotFalsePositive"]++
+					}
+				}
+			}
+			resultMap["LowPerQuery"] = lowPerQuery
 		}
 	}
 	return resultMap, nil
@@ -861,8 +969,8 @@ func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, 
 	return true, nil
 }
 
-func createToolRecordCx(workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
-	record := toolrecord.New(workspace, "checkmarx", config.ServerURL)
+func createToolRecordCx(utils checkmarxExecuteScanUtils, workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
+	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
 	// Todo TeamId - see run_scan()
 	// record.AddKeyData("team", XXX, resultMap["Team"], "")
 	// Project

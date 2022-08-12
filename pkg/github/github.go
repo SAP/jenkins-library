@@ -8,7 +8,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -38,7 +38,7 @@ type CreateIssueOptions struct {
 	TrustedCerts   []string `json:"trustedCerts,omitempty"`
 }
 
-//NewClient creates a new GitHub client using an OAuth token for authentication
+// NewClient creates a new GitHub client using an OAuth token for authentication
 func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
 	httpClient := piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{
@@ -83,7 +83,6 @@ func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) error {
 }
 
 func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) error {
-
 	issue := github.IssueRequest{
 		Title: &ghCreateIssueOptions.Title,
 	}
