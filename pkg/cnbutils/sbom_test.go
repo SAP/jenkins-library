@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -32,7 +31,7 @@ func (ul *uncompressedLayer) DiffID() (v1.Hash, error) {
 
 // Uncompressed implements partial.UncompressedLayer
 func (ul *uncompressedLayer) Uncompressed() (io.ReadCloser, error) {
-	return ioutil.NopCloser(bytes.NewBuffer(ul.content)), nil
+	return io.NopCloser(bytes.NewBuffer(ul.content)), nil
 }
 
 // MediaType returns the media type of the layer
@@ -95,18 +94,22 @@ func TestMergeSBOMFiles(t *testing.T) {
 	mockUtils.ReturnImage = fakeImg
 	mockUtils.RemoteImageInfo = fakeImg
 
-	//TODO: not found in test
-	sbom1, err := os.ReadFile("testdata/sbom1.xml")
+	sbom1, err := os.ReadFile("testdata/sbom1.syft.json")
 	assert.NoError(t, err)
-	mockUtils.FilesMock.AddFile("/layer/1/sbom.xml", sbom1)
-	sbom2, err := os.ReadFile("testdata/sbom2.xml")
+	mockUtils.FilesMock.AddFile("/layer/1/sbom.syft.json", sbom1)
+	sbom2, err := os.ReadFile("testdata/sbom2.syft.json")
 	assert.NoError(t, err)
-	mockUtils.FilesMock.AddFile("/layer/2/sbom.xml", sbom2)
+	mockUtils.FilesMock.AddFile("/layer/2/sbom.syft.json", sbom2)
 
-	err = cnbutils.MergeSBOMFiles("/layer/**/sbom.xml", "sbom.xml", "imageName", "", mockUtils)
+	err = cnbutils.MergeSBOMFiles("layer/**/sbom.syft.json", "sbom.xml", "imageName", "", mockUtils)
 	assert.NoError(t, err)
 
-	exists, err := mockUtils.FilesMock.FileExists("sbom.xml")
+	exists, err := mockUtils.FileExists("/sbom.xml")
 	assert.NoError(t, err)
 	assert.True(t, exists)
+
+	content, err := mockUtils.ReadFile("/sbom.xml")
+	assert.NoError(t, err)
+
+	assert.Equal(t, "CheckForAllComponents", string(content))
 }

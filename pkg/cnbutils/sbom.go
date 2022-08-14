@@ -93,8 +93,7 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 		}
 	}
 
-	//TODO: testability
-	outFile, err := filepath.Abs(output)
+	outFile, err := utils.Abs(output)
 	if err != nil {
 		return err
 	}
