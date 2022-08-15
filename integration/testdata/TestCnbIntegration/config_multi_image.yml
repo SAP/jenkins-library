@@ -3,7 +3,6 @@ general:
   collectTelemetryData: false
 steps:
   cnbBuild:
-    createBOM: true
     containerRegistryUrl: localhost:5000
     containerImageTag: latest
     multipleImages:

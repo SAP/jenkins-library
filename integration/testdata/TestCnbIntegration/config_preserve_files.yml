@@ -5,7 +5,6 @@ steps:
   cnbBuild:
     containerRegistryUrl: localhost:5000
     containerImageTag: latest
-    createBOM: true
     path: project
     preserveFiles:
     - "node_modules/base"
