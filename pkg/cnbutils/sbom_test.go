@@ -111,5 +111,8 @@ func TestMergeSBOMFiles(t *testing.T) {
 	content, err := mockUtils.ReadFile("/sbom.xml")
 	assert.NoError(t, err)
 
-	assert.Equal(t, "CheckForAllComponents", string(content))
+	assert.Contains(t, string(content), "base-files")
+	assert.Contains(t, string(content), "operating-system")
+	assert.Contains(t, string(content), "component1")
+	assert.Contains(t, string(content), "component2")
 }
