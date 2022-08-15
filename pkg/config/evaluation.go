@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -105,7 +104,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 }
 
 func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils, stepName string, envRootPath string) (bool, error) {
-	log.Entry().Infof("Reporting live from evaluateV1 with stepName %v", stepName)
+
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
 	if s.Config != nil {
@@ -132,7 +131,6 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 
 	if len(s.FilePattern) > 0 {
 		files, err := utils.Glob(s.FilePattern)
-		fmt.Printf("Files %v...errr %v", files, err)
 		if err != nil {
 			return false, errors.Wrap(err, "failed to check filePattern condition")
 		}
@@ -205,6 +203,7 @@ func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, 
 	}
 	return checkConfigKeyV1(castedValue, configKey[1:])
 }
+
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
 func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
 	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error)) error {
