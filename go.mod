@@ -7,7 +7,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.0
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/anchore/stereoscope v0.0.0-20220803153229-c55b13fee7e4
 	github.com/anchore/syft v0.53.4
 	github.com/antchfx/htmlquery v1.2.4
 	github.com/aws/aws-sdk-go-v2/config v1.15.10
@@ -101,6 +100,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190620160927-9418d7b0cd0f // indirect
 	github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb // indirect
 	github.com/anchore/packageurl-go v0.1.1-0.20220428202044-a072fa3cb6d7 // indirect
+	github.com/anchore/stereoscope v0.0.0-20220803153229-c55b13fee7e4 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/antchfx/xpath v1.2.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
