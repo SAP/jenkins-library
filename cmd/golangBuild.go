@@ -137,9 +137,19 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
+		if err := utils.DownloadFile("", "", http.Header{}, []*http.Cookie{}); err != nil {
+			
+		}
+
+		if err := utils.ExtractTarGz(nil); err != nil {
+
+		}
+
+		/*
 		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
+		*/
 	}
 
 	failedTests := false
