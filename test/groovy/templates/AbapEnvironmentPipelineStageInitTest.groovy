@@ -10,6 +10,8 @@ import util.JenkinsStepRule
 import util.PipelineWhenException
 import org.junit.rules.ExpectedException
 import util.Rules
+import util.JenkinsShellCallRule
+import com.sap.piper.PiperGoUtils
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -21,6 +23,7 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     private List stepsCalled = []
     private List activeStages = []
     private ExpectedException thrown = new ExpectedException()
+    private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
@@ -28,12 +31,16 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
         .around(readYamlRule)
         .around(thrown)
         .around(jsr)
+        .around(shellCallRule)
 
     @Before
     void init()  {
         binding.variables.env.STAGE_NAME = 'Init'
+        PiperGoUtils.metaClass { unstashPiperBin = { println "" } }
 
         helper.registerAllowedMethod('deleteDir', [], null)
+        helper.registerAllowedMethod("writeFile", [Map.class], null)
+        helper.registerAllowedMethod("readJSON", [Map.class],null)
 
         helper.registerAllowedMethod('setupCommonPipelineEnvironment', [Map.class], { m ->
             stepsCalled.add('setupCommonPipelineEnvironment')
@@ -54,7 +61,7 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
             stepsCalled('activateStage')
             activeStages.add(m)
         })
-
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
         nullScript.prepareDefaultValues(script: nullScript)
     }
 
@@ -62,6 +69,8 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     void testStageConfigurationToggleFalse() {
         jsr.step.abapEnvironmentPipelineStageInit(script: nullScript, skipCheckout: false)
         assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'checkout'))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
+
     }
 
     @Test
@@ -74,12 +83,15 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
         )
         assertThat(stepsCalled, not(hasItems('checkout')))
         assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment'))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
+
     }
 
     @Test
     void testSkipCheckoutToggleNull() {
         jsr.step.abapEnvironmentPipelineStageInit(script: nullScript,  skipCheckout: null)
         assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'checkout'))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
     }
 
     @Test
