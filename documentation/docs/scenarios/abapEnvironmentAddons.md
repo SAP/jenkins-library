@@ -138,9 +138,9 @@ Please refer to the [configuration page](../pipelines/abapEnvironment/configurat
 #### ATC
 
 !!! caution ""
-    We recommend to configure the add-on build pipeline with a __quality gate to block any priority 1 ATC findings__.
+    We recommend to configure the add-on build pipeline with a __quality gate to block any error and warning ATC findings__.
 
-    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` and `[threshold: 1, type: 'TOTAL_NORMAL', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
 
     Created delivery packages for an add-on product version are final, so to fix any errors in these packages, another add-on product version would have to be built.
     ATC findings should be resolved during development as early as possible, e.g. [during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html) and by using an additional pipeline configured for the [Continuous Testing on SAP BTP, ABAP Environment scenario](abapEnvironmentTest.md).
