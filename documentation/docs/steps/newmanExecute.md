@@ -46,6 +46,19 @@ If the following error occurs during the pipeline run, the `newmanRunCommand` is
 
 Referencing `newmanEnvironment` and `newmanGlobals` in the runOptions is redundant now. Both parameters are added to runCommand using `newmanEnvironment` and `newmanGlobals` from config  when configured and not referenced by go templating using `"--environment", "{{`{{.Config.NewmanEnvironment}}`}}"` and `"--globals", "{{`{{.Config.NewmanGlobals}}`}}"` as shown above.
 
+## Passing Credentials
+
+If you need to pass additional credentials you can do so via environment
+variables. This is done via templating in the `runOptions`, as per this example:
+
+```yaml
+runOptions: [
+    "run", "{{.NewmanCollection}}",
+    "--environment", "{{.Config.NewmanEnvironment}}",
+    "--env-var", "username={{getenv \"PIPER_TESTCREDENTIAL_USERNAME\"}}",
+    "--env-var", "password={{getenv \"PIPER_TESTCREDENTIAL_PASSWORD\"}}"
+```
+
 ## Example
 
 Pipeline step:

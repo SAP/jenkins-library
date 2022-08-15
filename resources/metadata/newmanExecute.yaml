@@ -25,7 +25,7 @@ spec:
           - STEPS
         type: string
       - name: runOptions
-        description: The newman command that will be executed inside the docker container.
+        description: The newman command that will be executed inside the docker container. Env vars can be passed via template as in "{{getenv MY_ENV_VAR}}".
         scope:
           - PARAMETERS
           - STAGES
