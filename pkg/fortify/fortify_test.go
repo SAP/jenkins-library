@@ -1343,6 +1343,7 @@ func TestCreateJSONReport(t *testing.T) {
 		fortifyReportData := FortifyReportData{CorporateAudited: 30, CorporateTotal: 30, AuditAllTotal: 1, AuditAllAudited: 1, ProjectVersionID: 4999}
 		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
 		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
 		assert.Equal(t, 1, jsonReport.AuditAllAudited)
 		assert.Equal(t, 1, jsonReport.AuditAllTotal)
 		assert.Equal(t, 30, jsonReport.CorporateAudited)
@@ -1358,6 +1359,7 @@ func TestCreateJSONReport(t *testing.T) {
 		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
 		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
 		assert.Equal(t, false, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, false, jsonReport.IsSpotChecksPerCategoryAudited)
 	})
 
 	t.Run("no spot checks audited", func(t *testing.T) {
@@ -1365,5 +1367,42 @@ func TestCreateJSONReport(t *testing.T) {
 		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
 		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
 		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited passed spotchecks test 1", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 10, Total: 100, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited failed spotchecks test 2", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 3, Total: 100, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, false, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited failed spotchecks test 3", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 9, Total: 200, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, false, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited passed spotchecks test 4", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 10, Total: 200, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
 	})
 }
