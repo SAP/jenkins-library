@@ -175,6 +175,9 @@ spec:
           - STAGES
           - STEPS
         default: python3
+        possibleValues:
+          - python3
+          - python2
       - name: uploadResults
         type: bool
         description: "Whether results shall be uploaded or not"

@@ -225,13 +225,18 @@ func githubPublishReleaseMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
-						Name:        "commitish",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `master`,
+						Name: "commitish",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "git/headCommitId",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   `master`,
 					},
 					{
 						Name:        "excludeLabels",
