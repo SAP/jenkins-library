@@ -1,6 +1,7 @@
 package templates
 
 import org.junit.Before
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -30,6 +31,7 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         .around(shellCallRule)
         .around(jlr)
         .around(jsr)
+    private Object unstashPiperBin;
     @Before
     void init()  {
 
@@ -45,10 +47,15 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
                     return [].toArray()
             }
         })
+        unstashPiperBin = PiperGoUtils.metaClass.unstashPiperBin
         PiperGoUtils.metaClass { unstashPiperBin = { println "" } }
         helper.registerAllowedMethod("writeFile", [Map.class], null)
     }
 
+   @After
+   void rollback() {
+        PiperGoUtils.metaClass.unstashPiperBin = unstashPiperBin
+   }
 
     @Test
     void testVerboseOption() {
