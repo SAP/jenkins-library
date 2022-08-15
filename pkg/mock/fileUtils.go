@@ -611,7 +611,7 @@ func (f *FilesMock) OpenFile(path string, flag int, perm os.FileMode) (*FileMock
 		content: *properties.content,
 	}
 
-	if flag&os.O_TRUNC != 0 {
+	if flag&os.O_TRUNC != 0 || flag&os.O_CREATE != 0 {
 		file.content = []byte{}
 		properties.content = &file.content
 	}
