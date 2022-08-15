@@ -1,6 +1,7 @@
 package templates
 
 import org.junit.Before
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -24,6 +25,7 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     private List activeStages = []
     private ExpectedException thrown = new ExpectedException()
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
+    private Object unstashPiperBin;
 
     @Rule
     public RuleChain rules = Rules
@@ -33,9 +35,14 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
         .around(jsr)
         .around(shellCallRule)
 
+    @After
+    void rollback(){
+        PiperGoUtils.metaClass.unstashPiperBin = unstashPiperBin
+    }
     @Before
     void init()  {
         binding.variables.env.STAGE_NAME = 'Init'
+        unstashPiperBin = PiperGoUtils.metaClass.unstashPiperBin
         PiperGoUtils.metaClass { unstashPiperBin = { println "" } }
 
         helper.registerAllowedMethod('deleteDir', [], null)
