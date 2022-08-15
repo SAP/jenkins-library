@@ -13,8 +13,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/anchore/syft/syft"
-	"github.com/anchore/syft/syft/linux"
-	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/anchore/syft/syft/source"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -40,27 +38,18 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 	}
 
 	layerSHA, exists := imgConfig.Config.Labels["io.buildpacks.base.sbom"]
-	var bom *sbom.SBOM
-	if exists {
-		log.Entry().Debug("found SBOM layer")
-		bom, err = readBOMFromLayer(remoteImage, layerSHA)
-		if err != nil {
-			return err
-		}
-		log.Entry().Debugf("initial source.ImageMetadata: %#v", bom.Source.ImageMetadata)
-	} else {
-		log.Entry().Debug("SBOM layer not found, creating a new one")
-		bom = &sbom.SBOM{
-			Artifacts: sbom.Artifacts{
-				PackageCatalog: pkg.NewCatalog(),
-				LinuxDistribution: &linux.Release{
-					Name:    imgConfig.OS,
-					Version: imgConfig.OSVersion,
-					Variant: imgConfig.Variant,
-				},
-			},
-		}
+	if !exists {
+		return fmt.Errorf("image %q does not contain label \"io.buildpacks.base.sbom\"", img)
 	}
+
+	var bom *sbom.SBOM
+	log.Entry().Debug("found SBOM layer")
+	bom, err = readBOMFromLayer(remoteImage, layerSHA)
+	if err != nil {
+		return err
+	}
+	log.Entry().Debugf("initial source.ImageMetadata: %#v", bom.Source.ImageMetadata)
+
 	imageMetaData, err := extractImageMetaData(remoteImage)
 	if err != nil {
 		return err

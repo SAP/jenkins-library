@@ -627,7 +627,7 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		err = cnbutils.MergeSBOMFiles("/layers/sbom/launch/**/sbom.syft.json", bomFilename, imageName, dockerConfigFile, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrap(err, "failed to merge image SBoM(s)")
+			return errors.Wrap(err, "failed to create SBoM file")
 		}
 	}
 
