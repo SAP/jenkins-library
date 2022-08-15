@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -56,6 +57,7 @@ type pullRequestService interface {
 type fortifyUtils interface {
 	maven.Utils
 	gradle.Utils
+	piperutils.FileUtils
 
 	SetDir(d string)
 	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
@@ -107,6 +109,8 @@ const (
 	classpathFileName = "fortify-execute-scan-cp.txt"
 )
 
+var execInPath = exec.LookPath
+
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
@@ -119,7 +123,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(ctx, config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, utils, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
@@ -145,6 +149,13 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+	executableList := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executableList {
+		_, err := execInPath(exec)
+		if err != nil {
+			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+		}
+	}
 
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
@@ -219,7 +230,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
+	toolRecordFileName, err := createToolRecordFortify(utils, "./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_FORTIFY: Failed to create toolrecord file ...", err)
@@ -539,10 +550,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 
 func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount int) int {
 	if config.SpotCheckMinimumUnit == "percentage" {
-		spotCheckMinimumPercentageValue := int(math.Round(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
-		if spotCheckMinimumPercentageValue == 0 {
-			return 1
-		}
+		spotCheckMinimumPercentageValue := int(math.Ceil(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
 		return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, spotCheckMinimumPercentageValue)
 	}
 
@@ -550,7 +558,7 @@ func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount in
 }
 
 func getSpotChecksMinAsPerMaximum(spotCheckMax int, spotCheckMin int) int {
-	if spotCheckMax == 0 {
+	if spotCheckMax < 1 {
 		return spotCheckMin
 	}
 
@@ -963,6 +971,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
+func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pythonVersion string) error {
+	if pythonVersion == "python2" {
+		translateOptions["pythonVersion"] = "2"
+	} else if pythonVersion == "python3" {
+		translateOptions["pythonVersion"] = "3"
+	} else {
+		return fmt.Errorf("Invalid pythonVersion '%s'. Possible values for pythonVersion are 'python2' and 'python3'. ", pythonVersion)
+	}
+
+	return nil
+}
+
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
 	if len(config.Translate) > 0 {
 		return config.Translate, nil
@@ -970,8 +990,12 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	var translateList []map[string]interface{}
 	translateList = append(translateList, make(map[string]interface{}))
-
 	separator := getSeparator()
+
+	err := appendPythonVersionToTranslate(translateList[0], config.PythonVersion)
+	if err != nil {
+		return "", err
+	}
 
 	translateList[0]["pythonPath"] = classpath + separator +
 		getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
@@ -995,7 +1019,7 @@ func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath s
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/src/gen/java/cds/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
 	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
@@ -1107,9 +1131,9 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 			author = prList[0].GetUser().GetLogin()
 		}
 		return number, author, nil
-	} else {
-		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
+
+	log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	return number, author, err
 }
 
@@ -1159,6 +1183,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
 		}
+		if len(t["pythonVersion"]) > 0 {
+			options = append(options, "-python-version", t["pythonVersion"])
+		}
 
 	default:
 		return options
@@ -1201,8 +1228,8 @@ func getSeparator() string {
 	return ":"
 }
 
-func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
-	record := toolrecord.New(workspace, "fortify", config.ServerURL)
+func createToolRecordFortify(utils fortifyUtils, workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
+	record := toolrecord.New(utils, workspace, "fortify", config.ServerURL)
 	// Project
 	err := record.AddKeyData("project",
 		strconv.FormatInt(projectID, 10),

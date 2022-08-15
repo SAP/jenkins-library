@@ -26,7 +26,9 @@ type FileUtils interface {
 	Copy(src, dest string) (int64, error)
 	Move(src, dest string) error
 	FileRead(path string) ([]byte, error)
+	ReadFile(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	WriteFile(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
@@ -44,15 +46,14 @@ type FileUtils interface {
 }
 
 // Files ...
-type Files struct {
-}
+type Files struct{}
 
 // TempDir creates a temporary directory
 func (f Files) TempDir(dir, pattern string) (name string, err error) {
 	if len(dir) == 0 {
 		// lazy init system temp dir in case it doesn't exist
 		if exists, _ := f.DirExists(os.TempDir()); !exists {
-			f.MkdirAll(os.TempDir(), 0666)
+			f.MkdirAll(os.TempDir(), 0o666)
 		}
 	}
 
@@ -94,9 +95,7 @@ func (f Files) DirExists(path string) (bool, error) {
 
 // Copy ...
 func (f Files) Copy(src, dst string) (int64, error) {
-
 	exists, err := f.FileExists(src)
-
 	if err != nil {
 		return 0, err
 	}
@@ -126,6 +125,7 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	return nBytes, err
 }
 
+// Move will move files from src to dst
 func (f Files) Move(src, dst string) error {
 	if exists, err := f.FileExists(src); err != nil {
 		return err
@@ -140,7 +140,7 @@ func (f Files) Move(src, dst string) error {
 	return f.FileRemove(src)
 }
 
-//Chmod is a wrapper for os.Chmod().
+// Chmod is a wrapper for os.Chmod().
 func (f Files) Chmod(path string, mode os.FileMode) error {
 	return os.Chmod(path, mode)
 }
@@ -170,7 +170,6 @@ func (f Files) Chmod(path string, mode os.FileMode) error {
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 func Unzip(src, dest string) ([]string, error) {
-
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -236,18 +235,15 @@ func Unzip(src, dest string) ([]string, error) {
 // stripComponentLevel = 2 -> parentFolder/childFolder/someFile.Txt -> someFile.Txt
 // when stripCompenent in 0 the untar will retain the original tar folder structure
 // when stripCompmenet is greater than 0 the expectation is all files must be under that level folder and if not there is a hard check and failure condition
-
 func Untar(src string, dest string, stripComponentLevel int) error {
 	file, err := os.Open(src)
-	defer file.Close()
-
 	if err != nil {
 		return fmt.Errorf("unable to open src: %v", err)
 	}
+	defer file.Close()
 
 	if b, err := isFileGzipped(src); err == nil && b {
 		zr, err := gzip.NewReader(file)
-
 		if err != nil {
 			return fmt.Errorf("requires gzip-compressed body: %v", err)
 		}
@@ -301,7 +297,7 @@ func untar(r io.Reader, dir string, level int) (err error) {
 			// write will fail with the same error.
 			dir := filepath.Dir(abs)
 			if !madeDir[dir] {
-				if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
 					return err
 				}
 				madeDir[dir] = true
@@ -321,7 +317,7 @@ func untar(r io.Reader, dir string, level int) (err error) {
 				return fmt.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
 			}
 		case mode.IsDir():
-			if err := os.MkdirAll(abs, 0755); err != nil {
+			if err := os.MkdirAll(abs, 0o755); err != nil {
 				return err
 			}
 			madeDir[abs] = true
@@ -367,14 +363,24 @@ func Copy(src, dst string) (int64, error) {
 	return Files{}.Copy(src, dst)
 }
 
-// FileRead is a wrapper for ioutil.ReadFile().
+// FileRead is a wrapper for os.ReadFile().
 func (f Files) FileRead(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+	return os.ReadFile(path)
 }
 
-// FileWrite is a wrapper for ioutil.WriteFile().
+// ReadFile is a wrapper for os.ReadFile() using the same name and syntax.
+func (f Files) ReadFile(path string) ([]byte, error) {
+	return f.FileRead(path)
+}
+
+// FileWrite is a wrapper for os.WriteFile().
 func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(path, content, perm)
+	return os.WriteFile(path, content, perm)
+}
+
+// WriteFile is a wrapper for os.ReadFile() using the same name and syntax.
+func (f Files) WriteFile(path string, content []byte, perm os.FileMode) error {
+	return f.FileWrite(path, content, perm)
 }
 
 // FileRemove is a wrapper for os.Remove().
