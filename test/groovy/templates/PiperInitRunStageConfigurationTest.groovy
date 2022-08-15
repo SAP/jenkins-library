@@ -46,13 +46,13 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
             }
         })
         PiperGoUtils.metaClass { unstashPiperBin = { println "" } }
+        helper.registerAllowedMethod("writeFile", [Map.class], null)
     }
 
 
     @Test
     void testVerboseOption() {
         shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
-         helper.registerAllowedMethod("writeFile", [Map.class], null)
          helper.registerAllowedMethod("readJSON", [Map.class], { m ->
                      if (m.containsValue(".pipeline/stage_out.json")) {
                          return ["testStage1":false]
@@ -87,11 +87,34 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
     }
 
+    @Test(expected = Exception.class)
+    void testPiperShFailed() {
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 1)
+        helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+            if (m.containsValue(".pipeline/stage_out.json")) {
+                return ["Integration":true, "Acceptance":true]
+            } else {
+                if (m.containsValue(".pipeline/step_out.json")) {
+                    return  [ Integration: [test: true], Acceptance: [test: true]]
+                }
+                return [:]
+            }
+        })
+
+        helper.registerAllowedMethod("findFiles", [Map.class], { map -> [].toArray() })
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
+        )
+    }
+    
     @Test
     void testPiperInitDefault() {
 
         shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
-        helper.registerAllowedMethod("writeFile", [Map.class], null)
+
         helper.registerAllowedMethod("readJSON", [Map.class], { m ->
             if (m.containsValue(".pipeline/stage_out.json")) {
                 return ["Integration":true, "Acceptance":true]
@@ -130,7 +153,6 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
     @Test
     void testConditionOnlyProductiveBranchOnNonProductiveBranch() {
         shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
-        helper.registerAllowedMethod("writeFile", [Map.class], null)
         helper.registerAllowedMethod("readJSON", [Map.class], { m ->
                     if (m.containsValue(".pipeline/stage_out.json")) {
                         return ["testStage1":true]
@@ -180,7 +202,6 @@ stages:
 
     @Test
     void testConditionOnlyProductiveBranchOnProductiveBranch() {
-        helper.registerAllowedMethod("writeFile", [Map.class], null)
         helper.registerAllowedMethod("readJSON", [Map.class], { m ->
                     if (m.containsValue(".pipeline/stage_out.json")) {
                         return ["testStage1":true]
@@ -232,7 +253,6 @@ stages:
     @Test
     void testStageExtensionExists() {
         shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
-        helper.registerAllowedMethod("writeFile", [Map.class], null)
         helper.registerAllowedMethod("readJSON", [Map.class], { m ->
                     if (m.containsValue(".pipeline/stage_out.json")) {
                         return ["testStage1":false, "testStage2":false, "testStage3":false, "testStage4":false, "testStage5":false]
