@@ -1,13 +1,12 @@
-spec:
-  stages:
-    - name: Init
-    - name: Initial Checks
-    - name: Prepare System
-    - name: AUnit
-    - name: ATC
-    - name: Clone Repositories
-    - name: Build
-    - name: Integration Tests
-    - name: Confirm
-    - name: Publish
-    - name: Post
+stages:
+  - name: Init
+  - name: Initial Checks
+  - name: Prepare System
+  - name: AUnit
+  - name: ATC
+  - name: Clone Repositories
+  - name: Build
+  - name: Integration Tests
+  - name: Confirm
+  - name: Publish
+  - name: Post
