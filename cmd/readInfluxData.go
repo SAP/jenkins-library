@@ -55,7 +55,7 @@ func runReadInfluxData(fileUtils piperutils.FileUtils, out io.Writer) error {
 	for _, fileName := range files {
 		parts := strings.Split(strings.TrimPrefix(fileName, influxDataPath), "/")
 		if len(parts) != 3 {
-			log.Entry().Debugf("skipping to read %v", fileName)
+			log.Entry().Infof("skipping to read %v", fileName)
 			continue
 		}
 		theMeasurement := parts[0]
@@ -63,7 +63,7 @@ func runReadInfluxData(fileUtils piperutils.FileUtils, out io.Writer) error {
 		theName := parts[2]
 		var theValue interface{}
 
-		log.Entry().Debugf("reading %v", fileName)
+		log.Entry().Infof("reading %v", fileName)
 
 		fileContent, err := fileUtils.FileRead(fileName)
 		if err != nil {
