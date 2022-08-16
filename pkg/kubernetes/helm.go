@@ -379,7 +379,7 @@ func (h *HelmExecute) RunHelmDependency() error {
 	return nil
 }
 
-//RunHelmPublish is used to upload a chart to a registry
+// RunHelmPublish is used to upload a chart to a registry
 func (h *HelmExecute) RunHelmPublish() error {
 	err := h.runHelmInit()
 	if err != nil {

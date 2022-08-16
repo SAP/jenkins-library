@@ -191,7 +191,7 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
-//GetBuildReason returns the build reason of the current build
+// GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
 	j.fetchAPIInformation()
 	marshal, err := json.Marshal(j.apiInformation)

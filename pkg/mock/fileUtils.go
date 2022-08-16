@@ -63,7 +63,7 @@ type FilesMock struct {
 	FileWriteError   error
 	FileWriteErrors  map[string]error
 	ExtractFileNames []string
-	ExtractError error
+	ExtractError     error
 }
 
 func (f *FilesMock) init() {

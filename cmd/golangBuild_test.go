@@ -239,8 +239,8 @@ go 1.17`
 
 	t.Run("success - create BOM", func(t *testing.T) {
 		config := golangBuildOptions{
-			CreateBOM:           true,
-			TargetArchitectures: []string{"linux,amd64"},
+			CreateBOM:            true,
+			TargetArchitectures:  []string{"linux,amd64"},
 			CycloneDXDownloadURL: "https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.2.0/cyclonedx-gomod_1.2.0_darwin_arm64.tar.gz",
 		}
 		utils := newGolangBuildTestsUtils()
