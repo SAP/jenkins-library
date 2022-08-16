@@ -54,13 +54,13 @@ func TestRunReadInfluxData(t *testing.T) {
 		assert.Equal(t, expectedJSON, b.String())
 	})
 
-	t.Run("failure - invalid file path", func(t *testing.T) {
+	t.Run("success - ignoring invalid file path", func(t *testing.T) {
 		fileUtils := mock.FilesMock{}
 		fileUtils.AddFile(".pipeline/influx/step_data/field1", []byte("value1"))
 		var b bytes.Buffer
 		err := runReadInfluxData(&fileUtils, &b)
 
-		assert.EqualError(t, err, "invalid influx file path: .pipeline/influx/step_data/field1")
+		assert.NoError(t, err)
 	})
 
 	t.Run("failure - readFile", func(t *testing.T) {

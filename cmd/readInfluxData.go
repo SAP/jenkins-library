@@ -55,7 +55,8 @@ func runReadInfluxData(fileUtils piperutils.FileUtils, out io.Writer) error {
 	for _, fileName := range files {
 		parts := strings.Split(strings.TrimPrefix(fileName, influxDataPath), "/")
 		if len(parts) != 3 {
-			return fmt.Errorf("invalid influx file path: %v", fileName)
+			log.Entry().Infof("skipping to read %v", fileName)
+			continue
 		}
 		theMeasurement := parts[0]
 		theType := parts[1]
