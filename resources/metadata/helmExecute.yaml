@@ -56,7 +56,8 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
+        description: Defines the chart path for helm.
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
