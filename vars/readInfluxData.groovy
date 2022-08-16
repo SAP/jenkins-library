@@ -8,7 +8,7 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     String piperGoPath = parameters?.piperGoPath ?: './piper'
-    def output = script.sh(returnStdout: true, script: "${piperGoPath} readInfluxData")
+    def output = script.sh(returnStdout: true, script: "${piperGoPath} readInfluxData${parameters.verbose?' --verbose':''}")
 
     InfluxData.readFromJson(script, output)
 }
