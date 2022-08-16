@@ -13,16 +13,16 @@ import (
 func TestRunReadInfluxData(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success - no data", func(t *testing.T){
+	t.Run("success - no data", func(t *testing.T) {
 		fileUtils := mock.FilesMock{}
 		var b bytes.Buffer
 		err := runReadInfluxData(&fileUtils, &b)
-	
+
 		assert.NoError(t, err)
 		assert.Equal(t, "{}\n", b.String())
 	})
 
-	t.Run("success - with data", func(t *testing.T){
+	t.Run("success - with data", func(t *testing.T) {
 		fileUtils := mock.FilesMock{}
 		fileUtils.AddFile(".pipeline/influx/step_data/fields/field1", []byte("value1"))
 		fileUtils.AddFile(".pipeline/influx/step_data/fields/field2", []byte("true"))
@@ -54,31 +54,31 @@ func TestRunReadInfluxData(t *testing.T) {
 		assert.Equal(t, expectedJSON, b.String())
 	})
 
-	t.Run("failure - invalid file path", func(t *testing.T){
+	t.Run("failure - invalid file path", func(t *testing.T) {
 		fileUtils := mock.FilesMock{}
 		fileUtils.AddFile(".pipeline/influx/step_data/field1", []byte("value1"))
 		var b bytes.Buffer
 		err := runReadInfluxData(&fileUtils, &b)
-	
+
 		assert.EqualError(t, err, "invalid influx file path: .pipeline/influx/step_data/field1")
 	})
 
-	t.Run("failure - readFile", func(t *testing.T){
+	t.Run("failure - readFile", func(t *testing.T) {
 		fileUtils := mock.FilesMock{}
 		fileUtils.AddFile(".pipeline/influx/step_data/fields/field1", []byte("value1"))
 		fileUtils.FileReadErrors = map[string]error{".pipeline/influx/step_data/fields/field1": fmt.Errorf("read error")}
 		var b bytes.Buffer
 		err := runReadInfluxData(&fileUtils, &b)
-	
+
 		assert.EqualError(t, err, "failed to read file: read error")
 	})
 
-	t.Run("failure - unmarshal value", func(t *testing.T){
+	t.Run("failure - unmarshal value", func(t *testing.T) {
 		fileUtils := mock.FilesMock{}
 		fileUtils.AddFile(".pipeline/influx/step_data/fields/field1.json", []byte("{value1"))
 		var b bytes.Buffer
 		err := runReadInfluxData(&fileUtils, &b)
-	
+
 		assert.Contains(t, fmt.Sprint(err), "failed to unmarshal json content of influx data file .pipeline/influx/step_data/fields/field1.json: ")
 	})
 }

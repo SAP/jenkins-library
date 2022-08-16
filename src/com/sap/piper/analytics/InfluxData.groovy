@@ -40,7 +40,7 @@ class InfluxData implements Serializable{
     }
 
     public static void readFromJson(script, theJson) {
-        influxData = script.readJSON(text: theJson)
+        def influxData = script.readJSON(text: theJson)
 
         influxData.fields?.each({measurement, mValue ->
             mValue?.each({field, value ->
