@@ -23,7 +23,7 @@ func ReadPipelineEnv() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			err := runReadPipelineEnv()
 			if err != nil {
-				log.Entry().Fatalf("error when writing reading Pipeline environment: %v", err)
+				log.Entry().Fatalf("error when reading Pipeline environment: %v", err)
 			}
 		},
 	}

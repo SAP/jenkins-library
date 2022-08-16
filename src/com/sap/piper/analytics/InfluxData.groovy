@@ -39,6 +39,21 @@ class InfluxData implements Serializable{
         instance = null
     }
 
+    public static void readFromJson(script, theJson) {
+        influxData = script.readJSON(text: theJson)
+
+        influxData.fields?.each({measurement, mValue ->
+            mValue?.each({field, value ->
+                addField(measurement, field, value)
+            })
+        })
+        influxData.tags?.each({measurement, mValue ->
+            mValue?.each({tag, value ->
+                addTag(measurement, tag, value)
+            })
+        })
+    }
+
     public static void readFromDisk(script) {
         script.echo "Transfer Influx data"
         def pathPrefix = '.pipeline/influx/'
