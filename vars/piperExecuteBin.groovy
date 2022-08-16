@@ -89,7 +89,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         try {
                             readInfluxData(script: script, piperGoPath: piperGoPath)
                         } catch (err) {
-                            InfluxData.readFromJson(script, theJson)
+                            InfluxData.readFromDisk(script)
                         }
                         stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                     }
