@@ -228,7 +228,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.CoverageFormat, "coverageFormat", `html`, "Defines the format of the coverage repository.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
-	cmd.Flags().StringVar(&stepConfig.CycloneDXDownloadURL, "cycloneDXDownloadUrl", `https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.2.0/cyclonedx-gomod_1.2.0_darwin_arm64.tar.gz`, "Download url for CycloneDX gomod tool")
+	cmd.Flags().StringVar(&stepConfig.CycloneDXDownloadURL, "cycloneDXDownloadUrl", `https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.3.0/cyclonedx-gomod_1.3.0_linux_amd64.tar.gz`, "Download url for CycloneDX gomod tool")
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
 	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the build result or output directory as per `go build` documentation.")
@@ -331,7 +331,7 @@ func golangBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.2.0/cyclonedx-gomod_1.2.0_darwin_arm64.tar.gz`,
+						Default:     `https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.3.0/cyclonedx-gomod_1.3.0_linux_amd64.tar.gz`,
 					},
 					{
 						Name:        "excludeGeneratedFromCoverage",

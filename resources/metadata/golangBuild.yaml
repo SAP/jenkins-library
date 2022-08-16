@@ -73,7 +73,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        default: https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.2.0/cyclonedx-gomod_1.2.0_darwin_arm64.tar.gz
+        default: https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.3.0/cyclonedx-gomod_1.3.0_linux_amd64.tar.gz
       - name: excludeGeneratedFromCoverage
         type: bool
         description: "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode)."
