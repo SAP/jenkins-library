@@ -205,6 +205,7 @@ public class CommonStepsTest extends BasePiperTest{
         'transportRequestUploadRFC', //implementing new golang pattern without fields
         'writePipelineEnv', //implementing new golang pattern without fields
         'readPipelineEnv', //implementing new golang pattern without fields
+        'readInfluxData', //implementing new golang pattern without fields
         'transportRequestUploadCTS', //implementing new golang pattern without fields
         'isChangeInDevelopment', //implementing new golang pattern without fields
         'golangBuild', //implementing new golang pattern without fields
