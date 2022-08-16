@@ -30,12 +30,12 @@ type Product struct {
 	FileName  string `json:"name,omitempty"`
 }
 
-//ResultData holds the information about the protecode result
+// ResultData holds the information about the protecode result
 type ResultData struct {
 	Result Result `json:"results,omitempty"`
 }
 
-//Result holds the detail information about the protecode result
+// Result holds the detail information about the protecode result
 type Result struct {
 	ProductID  int         `json:"product_id,omitempty"`
 	ReportURL  string      `json:"report_url,omitempty"`
@@ -43,26 +43,26 @@ type Result struct {
 	Components []Component `json:"components,omitempty"`
 }
 
-//Component the protecode component information
+// Component the protecode component information
 type Component struct {
 	Vulns []Vulnerability `json:"vulns,omitempty"`
 }
 
-//Vulnerability the protecode vulnerability information
+// Vulnerability the protecode vulnerability information
 type Vulnerability struct {
 	Exact  bool     `json:"exact,omitempty"`
 	Vuln   Vuln     `json:"vuln,omitempty"`
 	Triage []Triage `json:"triage,omitempty"`
 }
 
-//Vuln holds the inforamtion about the vulnerability
+// Vuln holds the inforamtion about the vulnerability
 type Vuln struct {
 	Cve        string  `json:"cve,omitempty"`
 	Cvss       float64 `json:"cvss,omitempty"`
 	Cvss3Score string  `json:"cvss3_score,omitempty"`
 }
 
-//Triage holds the triaging information
+// Triage holds the triaging information
 type Triage struct {
 	ID          int    `json:"id,omitempty"`
 	VulnID      string `json:"vuln_id,omitempty"`
@@ -76,7 +76,7 @@ type Triage struct {
 	User        User   `json:"user,omitempty"`
 }
 
-//User holds the user information
+// User holds the user information
 type User struct {
 	ID        int    `json:"id,omitempty"`
 	Email     string `json:"email,omitempty"`
@@ -85,7 +85,7 @@ type User struct {
 	Username  string `json:"username,omitempty"`
 }
 
-//Protecode ist the protecode client which is used by the step
+// Protecode ist the protecode client which is used by the step
 type Protecode struct {
 	serverURL string
 	client    piperHttp.Uploader
@@ -101,7 +101,7 @@ func makeProtecode(opts Options) Protecode {
 	return ret
 }
 
-//Options struct which can be used to configure the Protecode struct
+// Options struct which can be used to configure the Protecode struct
 type Options struct {
 	ServerURL string
 	Duration  time.Duration
@@ -110,7 +110,7 @@ type Options struct {
 	Logger    *logrus.Entry
 }
 
-//SetOptions setter function to set the internal properties of the protecode
+// SetOptions setter function to set the internal properties of the protecode
 func (pc *Protecode) SetOptions(options Options) {
 	pc.serverURL = options.ServerURL
 	pc.client = &piperHttp.Client{}
@@ -126,7 +126,7 @@ func (pc *Protecode) SetOptions(options Options) {
 	pc.client.SetOptions(httpOptions)
 }
 
-//SetHttpClient setter function to set the http client
+// SetHttpClient setter function to set the http client
 func (pc *Protecode) SetHttpClient(client piperHttp.Uploader) {
 	pc.client = client
 }
@@ -430,7 +430,7 @@ func scanInProgress(status string) bool {
 	return status != statusReady && status != statusFailed
 }
 
-//PollForResult polls the protecode scan for the result scan
+// PollForResult polls the protecode scan for the result scan
 func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) ResultData {
 
 	var response ResultData

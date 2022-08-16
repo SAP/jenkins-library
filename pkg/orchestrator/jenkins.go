@@ -191,7 +191,7 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
-//GetBuildReason returns the build reason of the current build
+// GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
 	// BuildReasons are unified with AzureDevOps build reasons,see
 	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services

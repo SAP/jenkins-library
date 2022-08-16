@@ -99,7 +99,7 @@ func (bundle *AakBundleMock) ReadAddonDescriptor(FileName string) (abaputils.Add
 	return addonDescriptor, err
 }
 
-//*****************************other client mock *******************************
+// *****************************other client mock *******************************
 type AakBundleMockNewMC struct {
 	*mock.ExecMockRunner
 	*abapbuild.MockClient

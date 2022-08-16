@@ -6,7 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-//ObjectSet in form of packages and software components to be checked
+// ObjectSet in form of packages and software components to be checked
 type ObjectSet struct {
 	PackageNames       []Package            `json:"packages,omitempty"`
 	SoftwareComponents []SoftwareComponents `json:"softwarecomponents,omitempty"`
@@ -16,7 +16,7 @@ type ObjectSet struct {
 	Set                []Set                `json:"set,omitempty"`
 }
 
-//MultiPropertySet that can possibly contain any subsets/object of the OSL
+// MultiPropertySet that can possibly contain any subsets/object of the OSL
 type MultiPropertySet struct {
 	Type                  string                 `json:"type,omitempty"`
 	PackageNames          []Package              `json:"packages,omitempty"`
@@ -33,7 +33,7 @@ type MultiPropertySet struct {
 	SourceSystems         []SourceSystem         `json:"sourcesystems,omitempty"`
 }
 
-//Set
+// Set
 type Set struct {
 	Type          string          `json:"type,omitempty"`
 	Set           []Set           `json:"set,omitempty"`
@@ -44,89 +44,89 @@ type Set struct {
 	ObjectTypeSet []ObjectTypeSet `json:"objecttype,omitempty"`
 }
 
-//PackageSet in form of packages to be checked
+// PackageSet in form of packages to be checked
 type PackageSet struct {
 	Name               string `json:"name,omitempty"`
 	IncludeSubpackages *bool  `json:"includesubpackages,omitempty"`
 }
 
-//FlatObjectSet
+// FlatObjectSet
 type FlatObjectSet struct {
 	Name string `json:"name,omitempty"`
 	Type string `json:"type,omitempty"`
 }
 
-//ComponentSet in form of software components to be checked
+// ComponentSet in form of software components to be checked
 type ComponentSet struct {
 	Name string `json:"name,omitempty"`
 }
 
-//TransportSet in form of transports to be checked
+// TransportSet in form of transports to be checked
 type TransportSet struct {
 	Number string `json:"number,omitempty"`
 }
 
-//ObjectTypeSet
+// ObjectTypeSet
 type ObjectTypeSet struct {
 	Name string `json:"name,omitempty"`
 }
 
-//Package for MPS
+// Package for MPS
 type Package struct {
 	Name string `json:"name,omitempty"`
 }
 
-//Packagetree for MPS
+// Packagetree for MPS
 type PackageTree struct {
 	Name string `json:"name,omitempty"`
 }
 
-//ObjectTypeGroup
+// ObjectTypeGroup
 type ObjectTypeGroup struct {
 	Name string `json:"name,omitempty"`
 }
 
-//ObjectType
+// ObjectType
 type ObjectType struct {
 	Name string `json:"name,omitempty"`
 }
 
-//Owner
+// Owner
 type Owner struct {
 	Name string `json:"name,omitempty"`
 }
 
-//ReleaseState
+// ReleaseState
 type ReleaseState struct {
 	Value string `json:"value,omitempty"`
 }
 
-//Version
+// Version
 type Version struct {
 	Value string `json:"value,omitempty"`
 }
 
-//ApplicationComponent
+// ApplicationComponent
 type ApplicationComponent struct {
 	Name string `json:"name,omitempty"`
 }
 
-//SoftwareComponents
+// SoftwareComponents
 type SoftwareComponents struct {
 	Name string `json:"name,omitempty"`
 }
 
-//TransportLayer
+// TransportLayer
 type TransportLayer struct {
 	Name string `json:"name,omitempty"`
 }
 
-//Language
+// Language
 type Language struct {
 	Value string `json:"value,omitempty"`
 }
 
-//SourceSystem
+// SourceSystem
 type SourceSystem struct {
 	Name string `json:"name,omitempty"`
 }

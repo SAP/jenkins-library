@@ -553,7 +553,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	return &models.IssueFilterSelectorSet{GroupBySet: groupingList, FilterBySet: filterList}
 }
 
-//GetFilterSetByDisplayName returns the set identified by the provided name or nil
+// GetFilterSetByDisplayName returns the set identified by the provided name or nil
 func (sys *SystemInstance) GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector {
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {

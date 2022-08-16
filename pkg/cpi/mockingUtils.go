@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
+// GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
 	switch functionName {
 	case "IntegrationArtifactDeploy", "PositiveAndUnDeployIntegrationDesigntimeArtifact":
@@ -75,7 +75,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	}
 }
 
-//GetEmptyHTTPResponseBodyAndErrorNil -Empty http respose body
+// GetEmptyHTTPResponseBodyAndErrorNil -Empty http respose body
 func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 202,
@@ -84,7 +84,7 @@ func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	return &res, nil
 }
 
-//GetParameterKeyMissingResponseBody -Parameter key missing http respose body
+// GetParameterKeyMissingResponseBody -Parameter key missing http respose body
 func GetParameterKeyMissingResponseBody() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 404,
@@ -99,7 +99,7 @@ func GetParameterKeyMissingResponseBody() (*http.Response, error) {
 	return &res, errors.New("Not found - either wrong version for the given Id or wrong parameter key")
 }
 
-//GetNegativeCaseHTTPResponseBodyAndErrorNil -Negative case http respose body
+// GetNegativeCaseHTTPResponseBodyAndErrorNil -Negative case http respose body
 func GetNegativeCaseHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 400,
@@ -114,7 +114,7 @@ func GetNegativeCaseHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	return &res, nil
 }
 
-//GetIntegrationArtifactGetMplStatusCommandMockResponse -Provide http respose body
+// GetIntegrationArtifactGetMplStatusCommandMockResponse -Provide http respose body
 func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*http.Response, error) {
 	if testType == "Positive" {
 		res := http.Response{
@@ -161,7 +161,7 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 	return &res, errors.New("Unable to get integration flow MPL status, Response Status code:400")
 }
 
-//GetIntegrationArtifactGetServiceEndpointCommandMockResponse -Provide http respose body
+// GetIntegrationArtifactGetServiceEndpointCommandMockResponse -Provide http respose body
 func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType string) (*http.Response, error) {
 	if testCaseType == "PositiveAndGetetIntegrationArtifactGetServiceResBody" {
 		return GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody()
@@ -179,7 +179,7 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType st
 	return &res, errors.New("Unable to get integration flow service endpoint, Response Status code:400")
 }
 
-//TriggerIntegrationTestMockResponse
+// TriggerIntegrationTestMockResponse
 func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, error) {
 	if testCaseType == "Positive" {
 		return &http.Response{
@@ -199,7 +199,7 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 	return &res, errors.New("Unable to trigger integration test, Response Status code:400")
 }
 
-//GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody -Provide http respose body for positive case
+// GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody -Provide http respose body for positive case
 func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Response, error) {
 
 	resp := http.Response{
@@ -238,7 +238,7 @@ func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Respo
 	return &resp, nil
 }
 
-//GetRespBodyHTTPStatusOK -Provide http respose body for Http StatusOK
+// GetRespBodyHTTPStatusOK -Provide http respose body for Http StatusOK
 func GetRespBodyHTTPStatusOK() (*http.Response, error) {
 
 	resp := http.Response{
@@ -248,7 +248,7 @@ func GetRespBodyHTTPStatusOK() (*http.Response, error) {
 	return &resp, nil
 }
 
-//GetRespBodyHTTPStatusCreated -Provide http respose body for Http StatusOK
+// GetRespBodyHTTPStatusCreated -Provide http respose body for Http StatusOK
 func GetRespBodyHTTPStatusCreated() (*http.Response, error) {
 
 	resp := http.Response{
@@ -258,7 +258,7 @@ func GetRespBodyHTTPStatusCreated() (*http.Response, error) {
 	return &resp, nil
 }
 
-//GetRespBodyHTTPStatusServiceNotFound -Provide http respose body for Http URL not Found
+// GetRespBodyHTTPStatusServiceNotFound -Provide http respose body for Http URL not Found
 func GetRespBodyHTTPStatusServiceNotFound() (*http.Response, error) {
 
 	resp := http.Response{
@@ -268,7 +268,7 @@ func GetRespBodyHTTPStatusServiceNotFound() (*http.Response, error) {
 	return &resp, errors.New("Integration Package not found")
 }
 
-//GetRespBodyHTTPStatusServiceErrorResponse -Provide http respose body for server error
+// GetRespBodyHTTPStatusServiceErrorResponse -Provide http respose body for server error
 func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
 
 	resp := http.Response{
@@ -278,25 +278,25 @@ func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
 	return &resp, errors.New("401 Unauthorized")
 }
 
-//IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
+// IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
 func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Response, error) {
 
 	return GetMockResponseByTestTypeAndMockFunctionName("IntegrationArtifactDownloadCommandMockResponse", testType)
 }
 
-//GetIntegrationDesigntimeArtifactMockResponse -Provide http respose body
+// GetIntegrationDesigntimeArtifactMockResponse -Provide http respose body
 func GetIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Response, error) {
 
 	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationDesigntimeArtifactMockResponse", testType)
 }
 
-//IntegrationDesigntimeArtifactUpdateMockResponse -Provide http respose body
+// IntegrationDesigntimeArtifactUpdateMockResponse -Provide http respose body
 func IntegrationDesigntimeArtifactUpdateMockResponse(testType string) (*http.Response, error) {
 
 	return GetMockResponseByTestTypeAndMockFunctionName("IntegrationDesigntimeArtifactUpdateMockResponse", testType)
 }
 
-//GetMockResponseByTestTypeAndMockFunctionName - Get mock response by testtype and mock function name
+// GetMockResponseByTestTypeAndMockFunctionName - Get mock response by testtype and mock function name
 func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType string) (*http.Response, error) {
 
 	response, error := GetPositiveCaseResponseByTestType(testType)
@@ -348,7 +348,7 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 	return response, error
 }
 
-//NegtiveResForIntegrationArtifactGenericCommandMockResponse -Nagative Case http response body
+// NegtiveResForIntegrationArtifactGenericCommandMockResponse -Nagative Case http response body
 func NegtiveResForIntegrationArtifactGenericCommandMockResponse(message string) (*http.Response, error) {
 
 	res := http.Response{
@@ -364,7 +364,7 @@ func NegtiveResForIntegrationArtifactGenericCommandMockResponse(message string) 
 	return &res, errors.New(message)
 }
 
-//UpdateIntegrationDesigntimeArtifactMockResponse -Provide http respose body
+// UpdateIntegrationDesigntimeArtifactMockResponse -Provide http respose body
 func UpdateIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Response, error) {
 
 	response, error := GetRespBodyHTTPStatusCreated()
@@ -386,7 +386,7 @@ func UpdateIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Res
 	return response, error
 }
 
-//IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody -Provide http respose body for positive case
+// IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody -Provide http respose body for positive case
 func IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody() (*http.Response, error) {
 	header := make(http.Header)
 	headerValue := "attachment; filename=flow1.zip"
@@ -399,7 +399,7 @@ func IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody() (*http
 	return &resp, nil
 }
 
-//GetPositiveCaseResponseByTestType - get postive response by test case type
+// GetPositiveCaseResponseByTestType - get postive response by test case type
 func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) {
 	switch testType {
 	case "PositiveAndGetetIntegrationArtifactDownloadResBody":
@@ -423,7 +423,7 @@ func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) 
 	}
 }
 
-//GetCPIFunctionNameByURLCheck - get postive response by test case type
+// GetCPIFunctionNameByURLCheck - get postive response by test case type
 func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 	switch url {
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='1.0.4')":
@@ -445,7 +445,7 @@ func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 	}
 }
 
-//GetFunctionNameByTestTypeAndMethod -get function name by test tyep
+// GetFunctionNameByTestTypeAndMethod -get function name by test tyep
 func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 
 	switch testType {
@@ -486,7 +486,7 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 	return ""
 }
 
-//GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody -Get Function Name
+// GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody -Get Function Name
 func GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody(method string) string {
 	if method == "GET" {
 		return "IntegrationDesigntimeArtifactUpdate"
@@ -497,7 +497,7 @@ func GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody(method
 	return ""
 }
 
-//GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody -Get Function Name
+// GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody -Get Function Name
 func GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody(method string) string {
 	if method == "GET" {
 		return "GetIntegrationDesigntimeArtifact"
@@ -508,19 +508,19 @@ func GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody(method
 	return ""
 }
 
-//GetIntegrationArtifactDeployStatusMockResponse -Provide http respose body
+// GetIntegrationArtifactDeployStatusMockResponse -Provide http respose body
 func GetIntegrationArtifactDeployStatusMockResponse(testType string) (*http.Response, error) {
 
 	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployStatusMockResponse", testType)
 }
 
-//GetIntegrationArtifactDeployErrorDetailsMockResponse -Provide http respose body
+// GetIntegrationArtifactDeployErrorDetailsMockResponse -Provide http respose body
 func GetIntegrationArtifactDeployErrorDetailsMockResponse(testType string) (*http.Response, error) {
 
 	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployErrorDetailsMockResponse", "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody")
 }
 
-//GetIntegrationArtifactDeployStatusMockResponseBody -Provide http respose body
+// GetIntegrationArtifactDeployStatusMockResponseBody -Provide http respose body
 func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error) {
 
 	resp := http.Response{
@@ -530,7 +530,7 @@ func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error
 	return &resp, nil
 }
 
-//GetIntegrationArtifactDeployStatusErrorMockResponseBody -Provide http respose body
+// GetIntegrationArtifactDeployStatusErrorMockResponseBody -Provide http respose body
 func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, error) {
 
 	resp := http.Response{
@@ -540,7 +540,7 @@ func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, 
 	return &resp, nil
 }
 
-//GetIntegrationArtifactDeployStatusPayload -Get Payload
+// GetIntegrationArtifactDeployStatusPayload -Get Payload
 func GetIntegrationArtifactDeployStatusPayload(status string) string {
 
 	jsonByte := []byte(`{
@@ -565,7 +565,7 @@ func GetIntegrationArtifactDeployStatusPayload(status string) string {
 	return strings.Replace(string(jsonByte), "StatusValue", status, 1)
 }
 
-//GetIntegrationArtifactDeployErrorStatusMockResponseBody -Provide http respose body
+// GetIntegrationArtifactDeployErrorStatusMockResponseBody -Provide http respose body
 func GetIntegrationArtifactDeployErrorStatusMockResponseBody() (*http.Response, error) {
 
 	resp := http.Response{
