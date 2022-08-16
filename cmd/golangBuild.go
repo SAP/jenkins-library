@@ -33,7 +33,6 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom-golang.xml"
 	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 	golangciLintVersion         = "latest"
@@ -150,6 +149,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		if err != nil {
 			return fmt.Errorf("failed to open downloaded cyclonedx-gomod.tar.gz: %w", err)
 		}
+		defer r.Close()
 		if err := utils.ExtractTarGz(r, dir); err != nil {
 			return fmt.Errorf("failed to extract %v: %w", targetFile, err)
 		}
