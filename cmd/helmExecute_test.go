@@ -34,6 +34,7 @@ func newHelmMockUtilsBundle() helmMockUtilsBundle {
 func TestRunHelmUpgrade(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
 		methodError    error
@@ -59,7 +60,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUpgrade").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -71,6 +72,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 func TestRunHelmLint(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
 		expectedConfig []string
@@ -97,7 +99,7 @@ func TestRunHelmLint(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmLint").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -109,6 +111,7 @@ func TestRunHelmLint(t *testing.T) {
 func TestRunHelmInstall(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
 		expectedConfig []string
@@ -135,7 +138,7 @@ func TestRunHelmInstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmInstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -147,6 +150,7 @@ func TestRunHelmInstall(t *testing.T) {
 func TestRunHelmTest(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
 		methodError    error
@@ -172,7 +176,7 @@ func TestRunHelmTest(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmTest").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -184,6 +188,7 @@ func TestRunHelmTest(t *testing.T) {
 func TestRunHelmUninstall(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
 		methodError    error
@@ -209,7 +214,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUninstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -221,6 +226,7 @@ func TestRunHelmUninstall(t *testing.T) {
 func TestRunHelmDependency(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
 		methodError    error
@@ -246,7 +252,7 @@ func TestRunHelmDependency(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmDependency").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -258,8 +264,10 @@ func TestRunHelmDependency(t *testing.T) {
 func TestRunHelmPush(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmExecuteOptions
+		methodString   string
 		methodError    error
 		expectedErrStr string
 	}{
@@ -267,7 +275,8 @@ func TestRunHelmPush(t *testing.T) {
 			config: helmExecuteOptions{
 				HelmCommand: "publish",
 			},
-			methodError: nil,
+			methodString: "https://my.target.repository",
+			methodError:  nil,
 		},
 		{
 			config: helmExecuteOptions{
@@ -281,9 +290,9 @@ func TestRunHelmPush(t *testing.T) {
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmPublish").Return(testCase.methodError)
+			helmExecute.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -295,6 +304,7 @@ func TestRunHelmPush(t *testing.T) {
 func TestRunHelmDefaultCommand(t *testing.T) {
 	t.Parallel()
 
+	cpe := helmExecuteCommonPipelineEnvironment{}
 	testTable := []struct {
 		config             helmExecuteOptions
 		methodLintError    error
@@ -340,7 +350,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			helmExecute.On("RunHelmDependency").Return(testCase.methodPackageError)
 			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
 
-			err := runHelmExecute(testCase.config, helmExecute)
+			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
