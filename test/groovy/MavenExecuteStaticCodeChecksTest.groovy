@@ -93,7 +93,6 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
 
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[shellCallRule.shell.size() -2], is('./piper mavenExecuteStaticCodeChecks'))
         assertTrue(spotBugsStepCalled)
         assertTrue(pmdParserStepCalled)
         assertThat(ReportAggregator.instance.staticCodeScans, hasItems("Findbugs Static Code Checks", "PMD Static Code Checks"))
@@ -114,7 +113,6 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
 
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[shellCallRule.shell.size() -2], is('./piper mavenExecuteStaticCodeChecks'))
         assertFalse(spotBugsStepCalled)
         assertFalse(pmdParserStepCalled)
         assertTrue(ReportAggregator.instance.staticCodeScans.isEmpty())
