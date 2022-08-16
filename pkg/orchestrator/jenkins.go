@@ -114,9 +114,9 @@ func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
 				changeSetList = append(changeSetList, tmpChangeSet)
 			}
 		}
+
 	}
 	return changeSetList
-
 }
 
 // GetLog returns the logfile from the current job as byte object
@@ -193,6 +193,9 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 
 //GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
+	// BuildReasons are unified with AzureDevOps build reasons,see
+	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
+	// ResourceTrigger, PullRequest, Manual, IndividualCI, Schedule
 	j.fetchAPIInformation()
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
@@ -204,15 +207,20 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		log.Entry().WithError(err).Debugf("could not parse apiInformation")
 		return "Unknown"
 	}
-	for _, child := range jsonParsed.S("actions").Children() {
+
+	for _, child := range jsonParsed.Path("actions").Children() {
 		class := child.S("_class")
-		if class.String() == "\"hudson.model.CauseAction\"" {
-			for _, val := range child.S("causes").Children() {
+		if class.Data().(string) == "hudson.model.CauseAction" {
+			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")
-				if subclass.String() == "\"hudson.model.Cause$UserIdCause\"" {
+				if subclass.Data().(string) == "hudson.model.Cause$UserIdCause" {
 					return "Manual"
-				} else if subclass.String() == "\"hudson.triggers.TimerTrigger$TimerTriggerCause\"" {
+				} else if subclass.Data().(string) == "hudson.triggers.TimerTrigger$TimerTriggerCause" {
 					return "Schedule"
+				} else if subclass.Data().(string) == "jenkins.branch.BranchEventCause" {
+					return "PullRequest"
+				} else if subclass.Data().(string) == "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause" {
+					return "ResourceTrigger"
 				} else {
 					return "Unknown"
 				}
@@ -220,7 +228,6 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		}
 
 	}
-
 	return "Unknown"
 }
 
