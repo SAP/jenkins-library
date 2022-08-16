@@ -62,6 +62,8 @@ type FilesMock struct {
 	FileReadErrors   map[string]error
 	FileWriteError   error
 	FileWriteErrors  map[string]error
+	ExtractFileNames []string
+	ExtractError error
 }
 
 func (f *FilesMock) init() {
@@ -632,4 +634,14 @@ func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
 
 func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
 	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
+}
+
+func (f *FilesMock) ExtractTarGz(gzipStream io.Reader, root string) error {
+	if f.ExtractError != nil {
+		return f.ExtractError
+	}
+	for _, file := range f.ExtractFileNames {
+		f.AddFile(filepath.Join(root, file), []byte("test content"))
+	}
+	return nil
 }

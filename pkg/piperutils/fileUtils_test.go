@@ -1,7 +1,6 @@
 package piperutils
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,7 +19,7 @@ func TestFileExists(t *testing.T) {
 		assert.False(t, result)
 	})
 	runInTempDir(t, "testing file returns true", func(t *testing.T) {
-		file, err := ioutil.TempFile("", "testFile")
+		file, err := os.CreateTemp("", "testFile")
 		assert.NoError(t, err)
 		result, err := FileExists(file.Name())
 		assert.NoError(t, err)
@@ -53,7 +52,7 @@ func TestDirExists(t *testing.T) {
 func TestCopy(t *testing.T) {
 	runInTempDir(t, "copying file succeeds", func(t *testing.T) {
 		file := "testFile"
-		err := ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
+		err := os.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
 		if err != nil {
 			t.Fatal("Failed to create temporary workspace directory")
 		}
@@ -145,4 +144,24 @@ func TestExcludeFiles(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, filtered, 0)
 	})
+}
+
+func TestExtractTarGz(t *testing.T) {
+	r, err := os.Open("testdata/test.tar.gz")
+	assert.NoError(t, err)
+	defer r.Close()
+
+	dir := t.TempDir()
+
+	files := Files{}
+	err = files.ExtractTarGz(r, dir)
+	assert.NoError(t, err)
+
+	exists, err := files.FileExists(filepath.Join(dir, "test", "test.txt"))
+	assert.NoError(t, err)
+	assert.True(t, exists)
+
+	content, err := files.ReadFile(filepath.Join(dir, "test", "test.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, "test\n", string(content))
 }

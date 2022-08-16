@@ -35,11 +35,14 @@ func TestCopyData(t *testing.T) {
 		}
 
 		result, err := CopyData(dst, src)
+		assert.NoError(t, err)
 		src.Close()
 		dst.Close()
 		dst, err = os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
+		assert.NoError(t, err)
 		dataRead := make([]byte, 3)
-		dst.Read(dataRead)
+		_, err = dst.Read(dataRead)
+		assert.NoError(t, err)
 		dst.Close()
 
 		assert.NoError(t, err, "Didn't expect error but got one")
@@ -58,7 +61,9 @@ func TestCopyData(t *testing.T) {
 		}
 		_, err = src.Write(data)
 		src.Close()
+		assert.NoError(t, err)
 		src, err = os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
+		assert.NoError(t, err)
 
 		dstName := "testFile2"
 		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
@@ -84,8 +89,10 @@ func TestCopyData(t *testing.T) {
 			data[i] = byte(i)
 		}
 		_, err = src.Write(data)
+		assert.NoError(t, err)
 		src.Close()
 		src, err = os.OpenFile(srcName, os.O_WRONLY, 0700)
+		assert.NoError(t, err)
 
 		dstName := "testFile2"
 		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
@@ -111,8 +118,10 @@ func TestCopyData(t *testing.T) {
 			data[i] = byte(i)
 		}
 		_, err = src.Write(data)
+		assert.NoError(t, err)
 		src.Close()
 		src, err = os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
+		assert.NoError(t, err)
 
 		dstName := "testFileExclus"
 		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
@@ -121,6 +130,7 @@ func TestCopyData(t *testing.T) {
 		}
 		dst.Close()
 		dst, err = os.OpenFile(dstName, os.O_RDONLY, 0700)
+		assert.NoError(t, err)
 
 		result, err := CopyData(dst, src)
 		src.Close()

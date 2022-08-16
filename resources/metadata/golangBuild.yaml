@@ -66,6 +66,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: cycloneDXDownloadUrl
+        type: string
+        description: Download url for CycloneDX gomod tool
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.2.0/cyclonedx-gomod_1.2.0_darwin_arm64.tar.gz
       - name: excludeGeneratedFromCoverage
         type: bool
         description: "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode)."

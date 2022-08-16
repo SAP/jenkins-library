@@ -136,20 +136,27 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	var cycloneExecutable string
 	if config.CreateBOM {
-		if err := utils.DownloadFile("", "", http.Header{}, []*http.Cookie{}); err != nil {
-			
+		dir, err := utils.TempDir("", "")
+		if err != nil {
+			return fmt.Errorf("failed to create temporary directory: %w", err)
 		}
-
-		if err := utils.ExtractTarGz(nil); err != nil {
-
+		targetFile := filepath.Join(dir, "cyclonedx-gomod.tar.gz")
+		if err := utils.DownloadFile(config.CycloneDXDownloadURL, targetFile, http.Header{}, []*http.Cookie{}); err != nil {
+			return fmt.Errorf("failed to download CycloneDX go tooling: %w", err)
 		}
-
-		/*
-		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
-			return fmt.Errorf("failed to install pre-requisite: %w", err)
+		r, err := utils.Open(targetFile)
+		if err != nil {
+			return fmt.Errorf("failed to open downloaded cyclonedx-gomod.tar.gz: %w", err)
 		}
-		*/
+		if err := utils.ExtractTarGz(r, dir); err != nil {
+			return fmt.Errorf("failed to extract %v: %w", targetFile, err)
+		}
+		cycloneExecutable = filepath.Join(dir, "cyclonedx-gomod")
+		if err := utils.Chmod(cycloneExecutable, 0777); err != nil {
+			return fmt.Errorf("failed to change permissions on %v: %w", cycloneExecutable, err)
+		}
 	}
 
 	failedTests := false
@@ -202,7 +209,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreation(utils, sbomFilename); err != nil {
+		if err := runBOMCreation(utils, sbomFilename, cycloneExecutable); err != nil {
 			return err
 		}
 	}
@@ -576,8 +583,8 @@ func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern
 	return privateModules, nil
 }
 
-func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
+func runBOMCreation(utils golangBuildUtils, outputFilename, cycloneExecutable string) error {
+	if err := utils.RunExecutable(cycloneExecutable, "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil

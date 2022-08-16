@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +42,7 @@ type FileUtils interface {
 	CurrentTime(format string) string
 	Open(name string) (io.ReadWriteCloser, error)
 	Create(name string) (io.ReadWriteCloser, error)
+	ExtractTarGz(gzipStream io.Reader, root string) error 
 }
 
 // Files ...
@@ -57,7 +57,7 @@ func (f Files) TempDir(dir, pattern string) (name string, err error) {
 		}
 	}
 
-	return ioutil.TempDir(dir, pattern)
+	return os.MkdirTemp(dir, pattern)
 }
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.
@@ -119,7 +119,9 @@ func (f Files) Copy(src, dst string) (int64, error) {
 		return 0, err
 	}
 
-	os.Chmod(dst, stats.Mode())
+	if err := os.Chmod(dst, stats.Mode()); err != nil {
+		return 0, fmt.Errorf("failed to change permissions on %v: %w", dst, err)
+	}
 	defer func() { _ = destination.Close() }()
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
@@ -143,6 +145,45 @@ func (f Files) Move(src, dst string) error {
 // Chmod is a wrapper for os.Chmod().
 func (f Files) Chmod(path string, mode os.FileMode) error {
 	return os.Chmod(path, mode)
+}
+
+func (f Files) ExtractTarGz(gzipStream io.Reader, root string) error {
+	uncompressedStream, err := gzip.NewReader(gzipStream)
+	if err != nil {
+		return err
+	}
+
+	tarReader := tar.NewReader(uncompressedStream)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("extraction failed: %w", err)
+		}
+
+		fullPath := filepath.Join(root, header.Name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := f.MkdirAll(fullPath, 0755); err != nil {
+				return fmt.Errorf("failed to create directory: %w", err)
+			}
+		case tar.TypeReg:
+			outFile, err := f.Create(fullPath)
+			if err != nil {
+				return fmt.Errorf("failed to create file: %w", err)
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return fmt.Errorf("failed to copy content into file: %w", err)
+			}
+			outFile.Close()
+		default:
+			return fmt.Errorf("unknown type: %v in %v", header.Typeflag, fullPath)
+		}
+	}
+	return nil
 }
 
 // Unzip will decompress a zip archive, moving all files and folders
@@ -335,11 +376,10 @@ func untar(r io.Reader, dir string, level int) (err error) {
 // isFileGzipped checks the first 3 bytes of the given file to determine if it is gzipped or not. Returns `true` if the file is gzipped.
 func isFileGzipped(file string) (bool, error) {
 	f, err := os.Open(file)
-	defer f.Close()
-
 	if err != nil {
 		return false, err
 	}
+	defer f.Close()
 
 	b := make([]byte, 3)
 	_, err = io.ReadFull(f, b)

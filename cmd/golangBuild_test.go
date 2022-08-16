@@ -24,6 +24,7 @@ type golangBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
 
+	downloadUrls            []string
 	returnFileUploadStatus  int   // expected to be set upfront
 	returnFileUploadError   error // expected to be set upfront
 	returnFileDownloadError error // expected to be set upfront
@@ -33,6 +34,7 @@ type golangBuildMockUtils struct {
 }
 
 func (g *golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	g.downloadUrls = append(g.downloadUrls, url)
 	if g.returnFileDownloadError != nil {
 		return g.returnFileDownloadError
 	}
@@ -239,20 +241,23 @@ go 1.17`
 		config := golangBuildOptions{
 			CreateBOM:           true,
 			TargetArchitectures: []string{"linux,amd64"},
+			CycloneDXDownloadURL: "https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.2.0/cyclonedx-gomod_1.2.0_darwin_arm64.tar.gz",
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		utils.FilesMock.ExtractFileNames = []string{"cyclonedx-gomod"}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
-		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
-		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom-golang.xml"}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, config.CycloneDXDownloadURL, utils.downloadUrls[0])
+		assert.True(t, utils.HasFile("/tmp/cyclonedx-gomod.tar.gz"))
+		assert.True(t, utils.HasFile("/tmp/cyclonedx-gomod"))
+		assert.Equal(t, 2, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "/tmp/cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom-golang.xml"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[1].Params)
 	})
 
 	t.Run("success - RunLint", func(t *testing.T) {
@@ -297,11 +302,11 @@ go 1.17`
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
+		utils.returnFileDownloadError = fmt.Errorf("download error")
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
-		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
+		assert.EqualError(t, err, "failed to download CycloneDX go tooling: download error")
 	})
 
 	t.Run("failure - test run failure", func(t *testing.T) {
@@ -447,6 +452,7 @@ go 1.17`
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.ExtractFileNames = []string{"cyclonedx-gomod"}
 		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -test -output bom-golang.xml": fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
