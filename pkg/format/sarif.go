@@ -1,5 +1,12 @@
 package format
 
+const AUDIT_REQUIREMENT_GROUP_1_INDEX = 1
+const AUDIT_REQUIREMENT_GROUP_2_INDEX = 2
+const AUDIT_REQUIREMENT_GROUP_3_INDEX = 3
+const AUDIT_REQUIREMENT_GROUP_1_DESC = "Audit All"
+const AUDIT_REQUIREMENT_GROUP_2_DESC = "Spot Check"
+const AUDIT_REQUIREMENT_GROUP_3_DESC = "Optional"
+
 // SARIF format related JSON structs
 type SARIF struct {
 	Schema  string `json:"$schema" default:"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"`
@@ -83,16 +90,14 @@ type PartialFingerprints struct {
 	FortifyInstanceID       string `json:"fortifyInstanceID,omitempty"`
 	CheckmarxSimilarityID   string `json:"checkmarxSimilarityID,omitempty"`
 	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
+	PackageURLPlusCVEHash   string `json:"packageUrlPlusCveHash,omitempty"`
 }
 
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
+	// common
 	RuleGUID              string `json:"ruleGUID,omitempty"`
 	InstanceID            string `json:"instanceID,omitempty"`
-	InstanceSeverity      string `json:"instanceSeverity,omitempty"`
-	Confidence            string `json:"confidence,omitempty"`
-	FortifyCategory       string `json:"fortifyCategory,omitempty"`
-	CheckmarxSimilarityID string `json:"checkmarxSimilarityID,omitempty"`
 	Audited               bool   `json:"audited"`
 	ToolSeverity          string `json:"toolSeverity"`
 	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
@@ -100,6 +105,14 @@ type SarifProperties struct {
 	ToolStateIndex        int    `json:"toolStateIndex"`
 	ToolAuditMessage      string `json:"toolAuditMessage"`
 	UnifiedAuditState     string `json:"unifiedAuditState"`
+	AuditRequirement      string `json:"auditRequirement"`
+	AuditRequirementIndex int    `json:"auditRequirementIndex"`
+
+	// specific
+	InstanceSeverity      string `json:"instanceSeverity"`
+	Confidence            string `json:"confidence"`
+	FortifyCategory       string `json:"fortifyCategory"`
+	CheckmarxSimilarityID string `json:"checkmarxSimilarityID"`
 }
 
 // Tool these structs are relevant to the Tool object

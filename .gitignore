@@ -36,6 +36,7 @@ debug.test
 # piper binary outputs
 .pipeline/commonPipelineEnvironment/
 .pipeline/influx/
+.pipeline/stepReports/
 *errorDetails.json
 *_links.json
 *_reports.json
@@ -45,8 +46,9 @@ ATCResults.xml
 AUnitResults.xml
 ATCResults.html
 AUnitResults.html
+cmd/.pipeline/stepReports/
 cmd/checkmarx/piper_checkmarx_report.json
+cmd/checkmarx/piper_checkmarx_report.html
 cmd/fortify/piper_fortify_report.html
 cmd/fortify/piper_fortify_report.json
-cmd/toolruns/toolrun_malwarescan_20220519143229.json
-cmd/toolruns/toolrun_protecode_20220519143230.json
+cmd/toolruns
