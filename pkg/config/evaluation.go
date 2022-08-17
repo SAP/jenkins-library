@@ -169,14 +169,23 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 			if ok {
 				dataType = "string"
 			}
-			metadata.Spec.Inputs.Parameters = []StepParameters{
-				{Name: stepName,
-					Type:        dataType,
-					ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
-				},
+			dataTypes := []string{dataType}
+			cpeEntry := getCPEEntry(param, value, dataTypes, &metadata, stepName, envRootPath)
+			if cpeEntry[stepName] == value {
+				return true, nil
 			}
-			resourceParams := metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
-			if resourceParams[stepName] == value {
+		}
+		return false, nil
+	}
+
+	if s.CommonPipelineEnvironmentVariableExists != nil {
+
+		var metadata StepData
+		for _, param := range s.CommonPipelineEnvironmentVariableExists {
+
+			dataTypes := []string{"string", "interface"}
+			cpeEntry := getCPEEntry(param, "", dataTypes, &metadata, stepName, envRootPath)
+			if _, ok := cpeEntry[stepName]; ok {
 				return true, nil
 			}
 		}
@@ -190,6 +199,18 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	} else {
 		return true, nil
 	}
+}
+
+func getCPEEntry(param string, value interface{}, dataTypes []string, metadata *StepData, stepName string, envRootPath string) map[string]interface{} {
+
+	for _, dataType := range dataTypes {
+		stepParam := StepParameters{Name: stepName,
+			Type:        dataType,
+			ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
+		}
+		metadata.Spec.Inputs.Parameters = append(metadata.Spec.Inputs.Parameters, stepParam)
+	}
+	return metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
 }
 
 func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, error) {
