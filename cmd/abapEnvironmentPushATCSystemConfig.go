@@ -225,18 +225,14 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 	var batchRequestString string
 
 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
-	var configBaseJson parsedConfigJsonBase
-	err := json.Unmarshal(atcSystemConfiguartionJsonFile, &configBaseJson)
-	if err != nil {
-		return batchRequestString, err
-	}
+	//first remove expansion to priorities to get only "base" Configuration
+	configBaseJsonBody, err := buildParsedATCSystemConfigBaseJsonBody(confUUID, bytes.NewBuffer(atcSystemConfiguartionJsonFile).String())
+
 	var parsedConfigPriorities parsedConfigPriorities
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigPriorities)
 	if err != nil {
 		return batchRequestString, err
 	}
-
-	configBaseJson.ConfUUID = confUUID
 
 	//build the Batch request string
 	contentID := 1
@@ -245,7 +241,6 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 	//now adding opening Changeset as at least config base is to be patched
 	batchRequestString = addChangesetBegin(batchRequestString, contentID)
 
-	configBaseJsonBody, err := json.Marshal(&configBaseJson)
 	if err != nil {
 		return batchRequestString, err
 	}
@@ -267,7 +262,7 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 			batchRequestString = addChangesetBegin(batchRequestString, contentID)
 
 			//now PATCH command for priority
-			batchRequestString = addPatchSinglePriorityChangeset(batchRequestString, confUUID, priorityLine.Test, priorityLine.MessageId, priorityJsonBody)
+			batchRequestString = addPatchSinglePriorityChangeset(batchRequestString, confUUID, priorityLine.Test, priorityLine.MessageId, string(priorityJsonBody))
 
 		}
 	}
@@ -281,7 +276,34 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 
 }
 
-func addPatchConfigBaseChangeset(inputString string, confUUID string, configBaseJsonBody []byte) string {
+func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguartionJsonFile string) (string, error) {
+
+	var i interface{}
+	var outputString string = ``
+
+	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {
+		log.Entry().Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile, err)
+		return outputString, err
+	}
+	if m, ok := i.(map[string]interface{}); ok {
+		delete(m, "_priorities")
+	}
+
+	output, err := json.Marshal(i)
+	if err != nil {
+		log.Entry().Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile, err)
+		return outputString, err
+	}
+	//injecting the configuration ID
+	output = output[1:] // remove leading '{'
+	outputString = string(output)
+	confIDString := `{"conf_id":"` + confUUID + `",`
+	outputString = confIDString + outputString
+
+	return outputString, err
+}
+
+func addPatchConfigBaseChangeset(inputString string, confUUID string, configBaseJsonBody string) string {
 
 	entityIdString := `(root_id='1',conf_id=` + confUUID + `)`
 	newString := addCommandEntityChangeset("PATCH", "configuration", entityIdString, inputString, configBaseJsonBody)
@@ -289,7 +311,7 @@ func addPatchConfigBaseChangeset(inputString string, confUUID string, configBase
 	return newString
 }
 
-func addPatchSinglePriorityChangeset(inputString string, confUUID string, test string, messageId string, priorityJsonBody []byte) string {
+func addPatchSinglePriorityChangeset(inputString string, confUUID string, test string, messageId string, priorityJsonBody string) string {
 
 	entityIdString := `(root_id='1',conf_id=` + confUUID + `,test='` + test + `',message_id='` + messageId + `')`
 	newString := addCommandEntityChangeset("PATCH", "priority", entityIdString, inputString, priorityJsonBody)
@@ -327,7 +349,7 @@ func addEndOfBatch(inputString string) string {
 	return newString
 }
 
-func addCommandEntityChangeset(command string, entity string, entityIdString string, inputString string, jsonBody []byte) string {
+func addCommandEntityChangeset(command string, entity string, entityIdString string, inputString string, jsonBody string) string {
 
 	newString := inputString + `
 ` + command + ` ` + entity + entityIdString + ` HTTP/1.1
@@ -335,7 +357,7 @@ Content-Type: application/json
 
 `
 	if len(jsonBody) > 0 {
-		newString += string(jsonBody) + `
+		newString += jsonBody + `
 `
 	}
 
@@ -505,21 +527,6 @@ type parsedConfigJsonWithExpand struct {
 	ConfUUID      string                 `json:"conf_id"`
 	LastChangedAt time.Time              `json:"last_changed_at"`
 	Priorities    []parsedConfigPriority `json:"_priorities"`
-}
-
-type parsedConfigJsonBase struct {
-	ConfName             string `json:"conf_name"`
-	ConfUUID             string `json:"conf_id"`
-	Checkvariant         string `json:"checkvariant"`
-	PseudoCommentPolicy  string `json:"pseudo_comment_policy"`
-	BlockFindings        string `json:"block_findings"`
-	InformFindings       string `json:"inform_findings"`
-	TransportCheckPolicy string `json:"transport_check_policy"`
-	CheckTasks           bool   `json:"check_tasks"`
-	CheckRequests        bool   `json:"check_requests"`
-	ChechToCs            bool   `json:"check_tocs"`
-	IsDefault            bool   `json:"is_default"`
-	IsProxyVariant       bool   `json:"is_proxy_variant"`
 }
 
 type parsedConfigPriorities struct {
