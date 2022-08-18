@@ -53,10 +53,11 @@ variables. This is done via templating in the `runOptions`, as per this example:
 
 ```yaml
 runOptions: [
-    "run", "{{.NewmanCollection}}",
-    "--environment", "{{.Config.NewmanEnvironment}}",
-    "--env-var", "username={{getenv \"PIPER_TESTCREDENTIAL_USERNAME\"}}",
-    "--env-var", "password={{getenv \"PIPER_TESTCREDENTIAL_PASSWORD\"}}"
+    {{`"run", "{{.NewmanCollection}}",`}}
+    {{`"--environment", "{{.Config.NewmanEnvironment}}",`}}
+    {{`"--env-var", "username={{getenv \"PIPER_TESTCREDENTIAL_USERNAME\"}}",`}}
+    {{`"--env-var", "password={{getenv \"PIPER_TESTCREDENTIAL_PASSWORD\"}}"`}}
+]
 ```
 
 ## Example
