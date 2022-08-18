@@ -120,9 +120,11 @@ func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFi
 
 func newMtaBuildUtilsBundle() mtaBuildUtils {
 	utils := mtaBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Client:  &piperhttp.Client{},
+		Command: &command.Command{
+			StepName: "mtaBuild",
+		},
+		Files:  &piperutils.Files{},
+		Client: &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())

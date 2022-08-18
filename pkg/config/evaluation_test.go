@@ -72,6 +72,12 @@ func TestEvaluateConditionsV1(t *testing.T) {
 								Name:       "step1_3",
 								Conditions: []StepCondition{},
 							},
+							{
+								Name: "step1_4",
+								Conditions: []StepCondition{
+									{ConfigKey: "firstKey/nextKey"},
+								},
+							},
 						},
 					},
 					{
@@ -108,7 +114,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		},
 	}
 	config := Config{Stages: map[string]map[string]interface{}{
-		"Test Stage 1": {"step1_3": false, "testKey": "testVal"},
+		"Test Stage 1": {"step1_3": false, "testKey": "testVal", "firstKey": map[string]interface{}{"nextKey": "dummy"}},
 		"Test Stage 2": {"testKey": "testVal"},
 	}}
 
@@ -116,6 +122,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 1": {
 			"step1_2": true,
 			"step1_3": false,
+			"step1_4": true,
 		},
 		"Test Stage 2": {
 			"step2_1": true,
@@ -287,6 +294,22 @@ func TestEvaluateV1(t *testing.T) {
 			name:          "ConfigKey condition - false",
 			config:        StepConfig{Config: map[string]interface{}{}},
 			stepCondition: StepCondition{ConfigKey: "dockerRegistryUrl"},
+			expected:      false,
+		},
+		{
+			name: "nested ConfigKey condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"cloudFoundry": map[string]interface{}{"space": "dev"},
+			}},
+			stepCondition: StepCondition{ConfigKey: "cloudFoundry/space"},
+			expected:      true,
+		},
+		{
+			name: "nested ConfigKey condition - false",
+			config: StepConfig{Config: map[string]interface{}{
+				"cloudFoundry": map[string]interface{}{"noSpace": "dev"},
+			}},
+			stepCondition: StepCondition{ConfigKey: "cloudFoundry/space"},
 			expected:      false,
 		},
 		{

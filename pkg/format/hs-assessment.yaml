@@ -1,0 +1,7 @@
+ignore:
+  # This is the full set of supported rule fields:
+  - vulnerability: CVE-2008-4318
+    status: notRelevant
+    analysis: mitigated
+    purls:
+      - purl: "pkg:npm/observer@0.3.2"
