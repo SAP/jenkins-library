@@ -227,7 +227,10 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 	//splitting json into configuration base and configuration properties & build a batch request for oData - patch config & patch priorities
 	//first remove expansion to priorities to get only "base" Configuration
 	configBaseJsonBody, err := buildParsedATCSystemConfigBaseJsonBody(confUUID, bytes.NewBuffer(atcSystemConfiguartionJsonFile).String())
-
+	if err != nil {
+		return batchRequestString, err
+	}
+	
 	var parsedConfigPriorities parsedConfigPriorities
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigPriorities)
 	if err != nil {
