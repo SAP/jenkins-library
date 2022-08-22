@@ -34,7 +34,7 @@ func (g *GitHub) UploadSingleReport(ctx context.Context, scanReport IssueDetail)
 	title := scanReport.Title()
 	markdownReport, _ := scanReport.ToMarkdown()
 
-	log.Entry().Debugf("Creating/updating GitHub issue with title %v in org %v and repo %v", title, g.Owner, g.Repository)
+	log.Entry().Debugf("Creating/updating GitHub issue with title %v in org %v and repo %v", title, &g.Owner, &g.Repository)
 	if err := g.createIssueOrUpdateIssueComment(ctx, title, string(markdownReport)); err != nil {
 		return fmt.Errorf("failed to upload results for '%v' into GitHub issue: %w", title, err)
 	}

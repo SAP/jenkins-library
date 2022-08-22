@@ -16,19 +16,19 @@ import (
 func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundle()
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, &utils, cpe); err != nil {
+	if err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, utils aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, utils); err != nil {
 		return err
 	}
 
 	log.Entry().Infof("Reading Product Version Information from addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
-	addonDescriptor, err := (*utils).ReadAddonDescriptor(config.AddonDescriptorFileName)
+	addonDescriptor, err := utils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
 		return err
 	}
@@ -57,8 +57,10 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	var filesToPublish []piperutils.Path
 	log.Entry().Infof("Add %s to be published", config.AddonDescriptorFileName)
 	filesToPublish = append(filesToPublish, piperutils.Path{Target: config.AddonDescriptorFileName, Name: "AddonDescriptor", Mandatory: true})
-	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapAddonAssemblyKitCheckPV", "", filesToPublish, nil)
+	log.Entry().Infof("Publishing %v files", len(filesToPublish))
+	if err := piperutils.PersistReportsAndLinks("abapAddonAssemblyKitCheckPV", "", utils, filesToPublish, nil); err != nil {
+		log.Entry().WithError(err).Error("failed to persist report information")
+	}
 
 	return nil
 }

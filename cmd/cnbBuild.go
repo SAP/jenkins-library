@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -129,9 +130,11 @@ func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.Bui
 
 func newCnbBuildUtils() cnbutils.BuildUtils {
 	utils := cnbBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Client:  &docker.Client{},
+		Command: &command.Command{
+			StepName: "cnbBuild",
+		},
+		Files:  &piperutils.Files{},
+		Client: &docker.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -366,6 +369,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	cnbTelemetry.dockerImage = dockerImage
 
 	cnbBuildConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
 		DockerImage:       dockerImage,
 		BuildSettingsInfo: config.BuildSettingsInfo,
 	}
@@ -616,6 +620,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 	commonPipelineEnvironment.container.imageDigest = digest
 	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
+
+	if config.CreateBOM {
+		bomFilename := fmt.Sprintf("bom-%s-%s.xml", targetImage.ContainerImageName, strings.TrimLeft(digest, "sha256:"))
+		imageName := fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag)
+		err = cnbutils.MergeSBOMFiles("/layers/sbom/launch/**/sbom.syft.json", bomFilename, imageName, dockerConfigFile, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrap(err, "failed to create SBoM file")
+		}
+	}
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != pathEnumArchive {
