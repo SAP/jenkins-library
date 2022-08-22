@@ -288,7 +288,7 @@ void handleErrorDetails(String stepName, Closure body) {
     }
 }
 
-static boolean checkIfStepActive(Map parameters = [:],Script script, String piperGoPath, String stageConfig, String stepOutputFile, String stageOutputFile, String stage, String step) {
+static boolean checkIfStepActive(Map parameters = [:], Script script, String piperGoPath, String stageConfig, String stepOutputFile, String stageOutputFile, String stage, String step) {
     def utils = parameters.juStabUtils ?: new Utils()
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
     piperGoUtils.unstashPiperBin()
