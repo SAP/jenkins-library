@@ -172,21 +172,18 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return false, nil
 	}
 
-	if s.CommonPipelineEnvironmentVariableExists != nil {
-
+	if len(s.CommonPipelineEnvironmentVariableExists) > 0 {
 		var metadata StepData
-		for _, param := range s.CommonPipelineEnvironmentVariableExists {
-
-			// check CPE for both a string and non-string value
-			cpeEntry := getCPEEntry(param, "", &metadata, stepName, envRootPath)
-			if len(cpeEntry) == 0 {
-				cpeEntry = getCPEEntry(param, nil, &metadata, stepName, envRootPath)
-			}
-
-			if _, ok := cpeEntry[stepName]; ok {
-				return true, nil
-			}
+		// check CPE for both a string and non-string value
+		cpeEntry := getCPEEntry(s.CommonPipelineEnvironmentVariableExists, "", &metadata, stepName, envRootPath)
+		if len(cpeEntry) == 0 {
+			cpeEntry = getCPEEntry(s.CommonPipelineEnvironmentVariableExists, nil, &metadata, stepName, envRootPath)
 		}
+
+		if _, ok := cpeEntry[stepName]; ok {
+			return true, nil
+		}
+
 		return false, nil
 	}
 

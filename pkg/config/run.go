@@ -75,7 +75,7 @@ type StepCondition struct {
 	Inactive                                bool                     `json:"inactive,omitempty"`
 	NpmScript                               string                   `json:"npmScript,omitempty"`
 	CommonPipelineEnvironment               map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
-	CommonPipelineEnvironmentVariableExists []string                 `json:"commonPipelineEnvironmentVariableExists,omitempty"`
+	CommonPipelineEnvironmentVariableExists string                   `json:"commonPipelineEnvironmentVariableExists,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
