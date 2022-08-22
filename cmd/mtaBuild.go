@@ -283,7 +283,7 @@ func runMtaBuild(config mtaBuildOptions,
 				mtarArtifactName := mtarName
 
 				// only trim the .mtar suffix from the mtarName
-				if strings.HasPrefix(mtarArtifactName, ".mtar") {
+				if strings.HasSuffix(mtarArtifactName, ".mtar") {
 					mtarArtifactName = strings.TrimSuffix(mtarArtifactName, ".mtar")
 				}
 
