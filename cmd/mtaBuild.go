@@ -364,7 +364,11 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils
 
 		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
 
-		mtarName = mtaID + ".mtar"
+		// there can be cases where the mtaId itself has the value com.myComapany.mtar , adding an extra .mtar causes .mtar.mtar
+		if !strings.HasSuffix(mtaID, ".mtar") {
+			mtarName = mtaID + ".mtar"
+		}
+
 	}
 
 	return mtarName, nil
