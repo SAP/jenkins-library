@@ -282,6 +282,10 @@ func runMtaBuild(config mtaBuildOptions,
 
 				mtarArtifactName := mtarName
 
+				if strings.HasSuffix(mtarArtifactName, ".mtar") {
+					mtarArtifactName = strings.TrimSuffix(mtarArtifactName, ".mtar")
+				}
+
 				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
 				commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
