@@ -205,18 +205,18 @@ func TestGetProjectConfigFile(t *testing.T) {
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
-			dir, err := ioutil.TempDir("", "")
-			defer os.RemoveAll(dir) // clean up
-			assert.NoError(t, err)
+			dir := t.TempDir()
 
 			if len(test.filesAvailable) > 0 {
 				configFolder := filepath.Join(dir, filepath.Dir(test.filesAvailable[0]))
-				err = os.MkdirAll(configFolder, 0700)
+				err := os.MkdirAll(configFolder, 0700)
 				assert.NoError(t, err)
 			}
 
 			for _, file := range test.filesAvailable {
-				ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700)
+				if err := ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
+					t.Fail()
+				}
 			}
 
 			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))
@@ -346,7 +346,7 @@ bar: 42
 		stepConfig["foo"] = "entry"
 
 		// Test
-		stepConfig = checkTypes(stepConfig, options)
+		_ = checkTypes(stepConfig, options)
 
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")

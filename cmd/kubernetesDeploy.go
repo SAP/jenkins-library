@@ -295,7 +295,9 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		tmpFolder := getTempDirForKubeCtlJSON()
 		defer os.RemoveAll(tmpFolder) // clean up
 		jsonData, _ := json.Marshal(dockerRegistrySecretData)
-		ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777)
+		if err := ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777); err != nil {
+			log.Entry().WithError(err).Warning("failed to write secret")
+		}
 
 		kubeSecretApplyParams := []string{"apply", "-f", filepath.Join(tmpFolder, "secret.json")}
 		if err := utils.RunExecutable("kubectl", kubeSecretApplyParams...); err != nil {

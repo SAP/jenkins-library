@@ -23,7 +23,7 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		var autils = abaputils.AbapUtils{
+		autils := abaputils.AbapUtils{
 			Exec: execRunner,
 		}
 		var con abaputils.ConnectionDetailsHTTP
@@ -37,7 +37,7 @@ func TestHostConfig(t *testing.T) {
 		}
 	})
 	t.Run("No host/ServiceKey configuration", func(t *testing.T) {
-		//Testing without CfOrg parameter
+		// Testing without CfOrg parameter
 		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
@@ -51,17 +51,13 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		var autils = abaputils.AbapUtils{
+		autils := abaputils.AbapUtils{
 			Exec: execRunner,
 		}
 
 		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-		//Testing without ABAP Host
-		config = abaputils.AbapEnvironmentOptions{
-			Username: "testUser",
-			Password: "testPassword",
-		}
+
 		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
@@ -80,7 +76,7 @@ func TestHostConfig(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 		execRunner := &mock.ExecMockRunner{}
-		var autils = abaputils.AbapUtils{
+		autils := abaputils.AbapUtils{
 			Exec: execRunner,
 		}
 		var con abaputils.ConnectionDetailsHTTP
@@ -191,6 +187,7 @@ func TestGetHTTPResponseATCRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getHTTPResponseATCRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if err == nil {
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -213,6 +210,7 @@ func TestGetResultATCRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getResultATCRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if err == nil {
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -223,16 +221,12 @@ func TestGetResultATCRun(t *testing.T) {
 
 func TestParseATCResult(t *testing.T) {
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test get result ATC run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
@@ -248,50 +242,42 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test get result ATC run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
 	})
 	t.Run("failure case: html response", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "test get result ATC run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
-		err = logAndPersistATCResult(body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
@@ -308,7 +294,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
-
 		expectedObjectSet := "<obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"testSoftwareComponent\"/><obj:softwarecomponent value=\"testSoftwareComponent2\"/></obj:softwarecomponents><obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages></obj:objectSet>"
 
 		config := ATCConfiguration{
@@ -333,7 +318,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
-
 		expectedObjectSet := `<obj:objectSet><obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages></obj:objectSet>`
 
 		var err error
@@ -356,7 +340,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
-
 		expectedObjectSet := `<obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents></obj:objectSet>`
 
 		config := ATCConfiguration{
@@ -379,7 +362,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 }
 
 func TestGenerateHTMLDocument(t *testing.T) {
-	//Failure case is not needed --> all failing cases would be depended on parsedXML *Result which is covered in TestParseATCResult
+	// Failure case is not needed --> all failing cases would be depended on parsedXML *Result which is covered in TestParseATCResult
 	t.Run("success case: html response", func(t *testing.T) {
 		expectedResult := "<!DOCTYPE html><html lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>ATC Results</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style=\"text-align:left;font-size:large\">ATC Results</h1><table style=\"width:100%\"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr><tr style=\"background-color: rgba(227,85,0)\"><td>error</td><td>testFile2</td><td>testMessage</td><td style=\"text-align:center\">1</td><td>sourceTester</td></tr><tr style=\"background-color: rgba(255,175,0, 0.75)\"><td>warning</td><td>testFile</td><td>testMessage2</td><td style=\"text-align:center\">2</td><td>sourceTester</td></tr><tr style=\"background-color: rgba(255,175,0, 0.2)\"><td>info</td><td>testFile</td><td>testMessage1</td><td style=\"text-align:center\">1</td><td>sourceTester</td></tr></table></body></html>"
 
@@ -407,24 +390,18 @@ func TestGenerateHTMLDocument(t *testing.T) {
 }
 
 func TestResolveConfiguration(t *testing.T) {
-
 	t.Run("resolve atcConfig-yml with ATC Set", func(t *testing.T) {
-
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents><obj:packages><obj:package value=\"Z_TEST\" includeSubpackages=\"false\"/><obj:package value=\"Z_TEST_TREE\" includeSubpackages=\"true\"/></obj:packages></obj:objectSet></atc:runparameters>"
 		config := abapEnvironmentRunATCCheckOptions{
 			AtcConfig: "atc.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "atcDir")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `checkvariant: MY_TEST
@@ -439,31 +416,25 @@ atcobjects:
     - name: /DMO/SWC
 `
 
-		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, expectedBodyString, bodyString)
 		}
-
 	})
 
 	t.Run("resolve atcConfig-yml with OSL", func(t *testing.T) {
-
 		config := abapEnvironmentRunATCCheckOptions{
 			AtcConfig: "atc.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "atcDir")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `checkvariant: MY_TEST
@@ -481,7 +452,7 @@ objectset:
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:package name=\"Z_TEST_TREE\" includeSubpackages=\"true\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></atc:runparameters>"
 
-		err = ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -490,22 +461,17 @@ objectset:
 	})
 
 	t.Run("resolve repo-yml", func(t *testing.T) {
-
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"ABAP_CLOUD_DEVELOPMENT_DEFAULT\"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value=\"Z_TEST\"/><obj:softwarecomponent value=\"/DMO/SWC\"/></obj:softwarecomponents></obj:objectSet></atc:runparameters>"
 		config := abapEnvironmentRunATCCheckOptions{
 			Repositories: "repo.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `repositories:
@@ -513,17 +479,15 @@ objectset:
   - name: /DMO/SWC
 `
 
-		err = ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, expectedBodyString, bodyString)
 		}
-
 	})
 
 	t.Run("Missing config files", func(t *testing.T) {
-
 		config := abapEnvironmentRunATCCheckOptions{
 			AtcConfig: "atc.yml",
 		}
@@ -531,16 +495,13 @@ objectset:
 		bodyString, err := buildATCRequestBody(config)
 		assert.Equal(t, "Could not find atc.yml", err.Error())
 		assert.Equal(t, "", bodyString)
-
 	})
 
 	t.Run("Config file not specified", func(t *testing.T) {
-
 		config := abapEnvironmentRunATCCheckOptions{}
 
 		bodyString, err := buildATCRequestBody(config)
 		assert.Equal(t, "No configuration provided - please provide either an ATC configuration file or a repository configuration file", err.Error())
 		assert.Equal(t, "", bodyString)
-
 	})
 }

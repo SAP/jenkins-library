@@ -41,8 +41,7 @@ func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 }
 
 func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
-	var maxRetries int
-	maxRetries = -1
+	maxRetries := -1
 	cookieJar, cookieErr := cookiejar.New(nil)
 	repoState := repoStateExists
 	branchRollbackRequired := false

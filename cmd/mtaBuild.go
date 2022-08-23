@@ -120,9 +120,11 @@ func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFi
 
 func newMtaBuildUtilsBundle() mtaBuildUtils {
 	utils := mtaBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Client:  &piperhttp.Client{},
+		Command: &command.Command{
+			StepName: "mtaBuild",
+		},
+		Files:  &piperutils.Files{},
+		Client: &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -435,7 +437,9 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 		return err
 	}
 
-	utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
+	if err := utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644); err != nil {
+		return fmt.Errorf("failed to write %v: %w", mtaYamlFile, err)
+	}
 	log.Entry().Infof("\"%s\" created.", mtaYamlFile)
 
 	return nil
@@ -471,7 +475,9 @@ func generateMta(id, applicationName, version string) (string, error) {
 	props := properties{ID: id, ApplicationName: applicationName, Version: version}
 
 	var script bytes.Buffer
-	tmpl.Execute(&script, props)
+	if err := tmpl.Execute(&script, props); err != nil {
+		log.Entry().Warningf("failed to execute template: %v", err)
+	}
 	return script.String(), nil
 }
 

@@ -17,7 +17,7 @@ type HelmExecutor interface {
 	RunHelmInstall() error
 	RunHelmUninstall() error
 	RunHelmTest() error
-	RunHelmPublish() error
+	RunHelmPublish() (string, error)
 	RunHelmDependency() error
 }
 
@@ -184,6 +184,10 @@ func (h *HelmExecute) RunHelmLint() error {
 	helmParams := []string{
 		"lint",
 		h.config.ChartPath,
+	}
+
+	for _, v := range h.config.HelmValues {
+		helmParams = append(helmParams, "--values", v)
 	}
 
 	if h.verbose {
@@ -376,19 +380,19 @@ func (h *HelmExecute) RunHelmDependency() error {
 }
 
 //RunHelmPublish is used to upload a chart to a registry
-func (h *HelmExecute) RunHelmPublish() error {
+func (h *HelmExecute) RunHelmPublish() (string, error) {
 	err := h.runHelmInit()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
+		return "", fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	err = h.runHelmPackage()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
+		return "", fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	if len(h.config.TargetRepositoryURL) == 0 {
-		return fmt.Errorf("there's no target repository for helm chart publishing configured")
+		return "", fmt.Errorf("there's no target repository for helm chart publishing configured")
 	}
 
 	repoClientOptions := piperhttp.ClientOptions{
@@ -415,14 +419,14 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	response, err := h.utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 	if err != nil {
-		return fmt.Errorf("couldn't upload artifact: %w", err)
+		return "", fmt.Errorf("couldn't upload artifact: %w", err)
 	}
 
 	if !(response.StatusCode == 200 || response.StatusCode == 201) {
-		return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+		return "", fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 	}
 
-	return nil
+	return targetURL, nil
 }
 
 func (h *HelmExecute) runHelmCommand(helmParams []string) error {

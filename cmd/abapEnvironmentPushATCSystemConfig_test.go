@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -50,11 +50,26 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 	})
 }
 
+func TestCheckATCSystemConfigurationFile(t *testing.T) {
+	t.Parallel()
+	t.Run("Check ATC Configuration File - empty", func(t *testing.T) {
+		errExpected := "pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: atcSystemConfig.json)"
+		var parsedConfigurationJsonExpected parsedConfigJsonWithExpand
+		var atcSystemConfiguartionJsonFileExpected []byte
+
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
+
+		parsedConfigurationJson, atcSystemConfiguartionJsonFile, err := checkATCSystemConfigurationFile(&config)
+		assert.Equal(t, errExpected, err.Error())
+		assert.Equal(t, parsedConfigurationJson, parsedConfigurationJsonExpected)
+		assert.Equal(t, atcSystemConfiguartionJsonFile, atcSystemConfiguartionJsonFileExpected)
+	})
+}
+
 func TestHandleHttpResponse(t *testing.T) {
 	t.Parallel()
 
 	t.Run("failiure case: HandleHttpResponse", func(t *testing.T) {
-
 		bodyText := `
 --B772E21DAA42B9571C778276B829D6C20
 Content-Type: multipart/mixed; boundary=B772E21DAA42B9571C778276B829D6C21
@@ -72,7 +87,7 @@ Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
 		
-{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
+{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
@@ -122,13 +137,12 @@ cache-control: no-cache, no-store, must-revalidate
 		}
 		resp.Header.Set("Content-type", "multipart/mixed")
 		err = HandleHttpResponse(resp, err, "Unit Test", con)
-		//inner error expected
+		// inner error expected
 		errExpected := "Outer Response Code: 200 - but at least one Inner response returned StatusCode 4* or 5*. Please check Log for details."
 		assert.Equal(t, errExpected, err.Error())
 	})
 
 	t.Run("success case: HandleHttpResponse", func(t *testing.T) {
-
 		bodyText := `
 --B772E21DAA42B9571C778276B829D6C20
 Content-Type: multipart/mixed; boundary=B772E21DAA42B9571C778276B829D6C21
@@ -146,7 +160,7 @@ Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
 		
-{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
+{"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
@@ -204,7 +218,6 @@ func TestBuildATCSystemConfigBatchRequest(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base & 1 Priority", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -217,7 +230,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset
 Content-Type: application/http
@@ -233,15 +246,17 @@ Content-Type: application/json
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
-			"is_default": false,
-			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -259,11 +274,9 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base & 2 Priorities", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -276,7 +289,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset
 Content-Type: application/http
@@ -302,15 +315,17 @@ Content-Type: application/json
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
-			"is_default": false,
-			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,	
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -333,11 +348,9 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch Request")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (no existing _priorities)", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -350,21 +363,23 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset--
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
-			"is_default": false,
-			"is_proxy_variant": false
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true
 		}
 		`
 
@@ -374,11 +389,9 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
 	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (empty expand _priorities)", func(t *testing.T) {
-
 		batchATCSystemConfigFileExpected := `
 --request-separator
 Content-Type: multipart/mixed;boundary=changeset
@@ -391,21 +404,23 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset--
 
 --request-separator--`
 
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
-			"is_default": false,
-			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 			]
 		}
@@ -417,22 +432,62 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 
-	t.Run("failure case: BuildATCSystemConfigBatch", func(t *testing.T) {
+	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (empty expand _priorities) - Settings Global", func(t *testing.T) {
+		batchATCSystemConfigFileExpected := `
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
 
-		batchATCSystemConfigFileExpected := ``
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 1
 
-		//no Configuration name supplied
+PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
+Content-Type: application/json
+
+{"conf_id":"4711","block_findings":"0","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"G"}
+
+--changeset--
+
+--request-separator--`
+
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
 			"pseudo_comment_policy": "MK",
 			"block_findings": "0",
 			"inform_findings": "1",
-			"is_default": false,
-			"is_proxy_variant": false,
+			"transport_check_policy": "G",
+			"_priorities": [
+			]
+		}
+		`
+
+		confUUID := "4711"
+		batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(confUUID, []byte(atcSystemConfigFileString))
+		if err != nil {
+			t.Fatal("Failed to Build ATC System Config Batch")
+		}
+		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
+	})
+
+	t.Run("failure case: BuildATCSystemConfigBatch", func(t *testing.T) {
+		batchATCSystemConfigFileExpected := ``
+
+		// no Configuration name supplied
+		atcSystemConfigFileString := `{
+			"conf_name": "UNITTEST_PIPERSTEP",
+			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+			"pseudo_comment_policy": "MK",
+			"block_findings": "0",
+			"inform_findings": "1",
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -450,14 +505,14 @@ Content-Type: application/json
 			t.Fatal("Failed to Build ATC System Config Batch")
 		}
 		assert.NotEqual(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
-
 	})
 }
+
 func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	t.Parallel()
 
 	t.Run("run Step Failure - ATC System Configuration File empty", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
@@ -473,24 +528,13 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
+		dir := t.TempDir()
 
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: filepath.Join(dir, "atcSystemConfig.json")}
 
 		atcSystemConfigFileString := ``
 
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := os.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0o644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -502,7 +546,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	})
 
 	t.Run("run Step Failure - ATC System Configuration invalid", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
@@ -518,22 +562,11 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
+		dir := t.TempDir()
 
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: filepath.Join(dir, "atcSystemConfig.json")}
 
-		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
-
-		//no Configuration name supplied
+		// no Configuration name supplied
 		atcSystemConfigFileString := `{
 			"conf_name": "",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -542,6 +575,10 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			"inform_findings": "1",
 			"is_default": false,
 			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -552,7 +589,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := os.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0o644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -564,7 +601,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	})
 
 	t.Run("run Step Successful - Push ATC System Configuration", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
@@ -580,22 +617,11 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		dir, err := ioutil.TempDir("", "test dir for test file with ATC System Configuration")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
+		dir := t.TempDir()
 
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
+		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: filepath.Join(dir, "atcSystemConfig.json")}
 
-		config := abapEnvironmentPushATCSystemConfigOptions{AtcSystemConfigFilePath: "atcSystemConfig.json"}
-
-		//valid ATC System Configuration File
+		// valid ATC System Configuration File
 		atcSystemConfigFileString := `{
 			"conf_name": "UNITTEST_PIPERSTEP",
 			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
@@ -604,6 +630,10 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			"inform_findings": "1",
 			"is_default": false,
 			"is_proxy_variant": false,
+			"transport_check_policy": "C",
+			"check_tasks": true,
+			"check_requests": false,
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_SOMECLASS",
@@ -614,7 +644,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 			]
 		}
 		`
-		err = ioutil.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0644)
+		err := os.WriteFile(config.AtcSystemConfigFilePath, []byte(atcSystemConfigFileString), 0o644)
 		if err != nil {
 			t.Fatal("Failed to write File: " + config.AtcSystemConfigFilePath)
 		}
@@ -624,7 +654,7 @@ func TestRunAbapEnvironmentPushATCSystemConfig(t *testing.T) {
 	})
 
 	t.Run("run Step Failure - ATC System Configuration File does not exist", func(t *testing.T) {
-		var autils = abaputils.AUtilsMock{}
+		autils := abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"

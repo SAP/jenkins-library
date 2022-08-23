@@ -49,16 +49,12 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 			ServiceManifest: "customManifest.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -77,7 +73,7 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 		  plan:   "testPlan"`
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("customManifest.yml", manifestFileStringBody, 0644)
+		err := ioutil.WriteFile("customManifest.yml", manifestFileStringBody, 0644)
 
 		err = runAbapEnvironmentCreateSystem(&config, nil, cf, u)
 		if assert.NoError(t, err) {
@@ -110,16 +106,12 @@ func TestManifestGeneration(t *testing.T) {
 			AddonDescriptorFileName:        "addon.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		addonYML := `addonProduct: myProduct
@@ -129,7 +121,7 @@ repositories:
 `
 
 		addonYMLBytes := []byte(addonYML)
-		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+		err := ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
 
 		expectedResult := `create-services:
 - broker: testService
@@ -165,16 +157,12 @@ repositories:
 			IncludeAddon:                   true,
 		}
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		addonYML := `addonProduct: myProduct
@@ -184,7 +172,7 @@ repositories:
 `
 
 		addonYMLBytes := []byte(addonYML)
-		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+		err := ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
 
 		expectedResult := `create-services:
 - broker: testService
@@ -219,16 +207,12 @@ repositories:
 			AddonDescriptorFileName:        "addon.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		addonYML := `addonProduct: myProduct
@@ -238,7 +222,7 @@ repositories:
 `
 
 		addonYMLBytes := []byte(addonYML)
-		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+		err := ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
 
 		expectedResult := `create-services:
 - broker: testService
@@ -274,16 +258,12 @@ repositories:
 			IncludeAddon:                   true,
 		}
 
-		dir, err := ioutil.TempDir("", "test variable substitution")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		addonYML := `addonProduct: myProduct
@@ -293,7 +273,7 @@ repositories:
 `
 
 		addonYMLBytes := []byte(addonYML)
-		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+		err := ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
 
 		expectedResult := `create-services:
 - broker: testService

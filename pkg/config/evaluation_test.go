@@ -72,6 +72,12 @@ func TestEvaluateConditionsV1(t *testing.T) {
 								Name:       "step1_3",
 								Conditions: []StepCondition{},
 							},
+							{
+								Name: "step1_4",
+								Conditions: []StepCondition{
+									{ConfigKey: "firstKey/nextKey"},
+								},
+							},
 						},
 					},
 					{
@@ -108,7 +114,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		},
 	}
 	config := Config{Stages: map[string]map[string]interface{}{
-		"Test Stage 1": {"step1_3": false, "testKey": "testVal"},
+		"Test Stage 1": {"step1_3": false, "testKey": "testVal", "firstKey": map[string]interface{}{"nextKey": "dummy"}},
 		"Test Stage 2": {"testKey": "testVal"},
 	}}
 
@@ -116,6 +122,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 1": {
 			"step1_2": true,
 			"step1_3": false,
+			"step1_4": true,
 		},
 		"Test Stage 2": {
 			"step2_1": true,
@@ -290,6 +297,22 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      false,
 		},
 		{
+			name: "nested ConfigKey condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"cloudFoundry": map[string]interface{}{"space": "dev"},
+			}},
+			stepCondition: StepCondition{ConfigKey: "cloudFoundry/space"},
+			expected:      true,
+		},
+		{
+			name: "nested ConfigKey condition - false",
+			config: StepConfig{Config: map[string]interface{}{
+				"cloudFoundry": map[string]interface{}{"noSpace": "dev"},
+			}},
+			stepCondition: StepCondition{ConfigKey: "cloudFoundry/space"},
+			expected:      false,
+		},
+		{
 			name:          "FilePattern condition - true",
 			config:        StepConfig{Config: map[string]interface{}{}},
 			stepCondition: StepCondition{FilePattern: "**/conf.js"},
@@ -379,15 +402,10 @@ func TestEvaluateV1(t *testing.T) {
 	filesMock.AddFile("my.postman_collection.json", []byte("{}"))
 	filesMock.AddFile("package.json", []byte(packageJson))
 
-	dir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal("Failed to create temporary directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
-	err = os.MkdirAll(cpeDir, 0700)
+	err := os.MkdirAll(cpeDir, 0700)
 	if err != nil {
 		t.Fatal("Failed to create sub directory")
 	}

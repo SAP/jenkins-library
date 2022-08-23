@@ -22,6 +22,7 @@ const hadolintCommand = "hadolint"
 type HadolintPiperFileUtils interface {
 	FileExists(filename string) (bool, error)
 	FileWrite(filename string, data []byte, perm os.FileMode) error
+	WriteFile(filename string, data []byte, perm os.FileMode) error
 }
 
 // HadolintClient abstracts http.Client
@@ -105,14 +106,16 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	// thus check stdout first if a report was created
 	if output := outputBuffer.String(); len(output) > 0 {
 		log.Entry().WithField("report", output).Debug("Report created")
-		utils.FileWrite(config.ReportFile, []byte(output), 0666)
+		if err := utils.FileWrite(config.ReportFile, []byte(output), 0666); err != nil {
+			log.Entry().WithError(err).Warningf("failed to write report %v", config.ReportFile)
+		}
 	} else if err != nil {
 		// if stdout is empty a processing issue occured
 		return errors.Wrap(err, errorBuffer.String())
 	}
 	//TODO: mock away in tests
 	// persist report information
-	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
+	piperutils.PersistReportsAndLinks("hadolintExecute", "./", utils, []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
 	return nil
 }
 

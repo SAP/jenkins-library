@@ -70,7 +70,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * Sets the build version.
      * @possibleValues `true`, `false`
      */
-    'artifactPrepareVersion'
+    'artifactPrepareVersion',
+    /**
+     * Retrieve transport request from git commit history.
+     * @possibleValues `true`, `false`
+     */
+    'transportRequestReqIDFromGit'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
@@ -124,7 +129,6 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
-
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
@@ -171,6 +175,7 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.buildTool)
             .withMandatoryProperty('buildTool')
             .use()
+
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
@@ -247,6 +252,10 @@ void call(Map parameters = [:]) {
                 prepareVersionParams.dockerImage = ""
             }
             artifactPrepareVersion prepareVersionParams
+        }
+
+        if (config.transportRequestReqIDFromGit) {
+            transportRequestReqIDFromGit(script: script)
         }
         pipelineStashFilesBeforeBuild script: script
     }

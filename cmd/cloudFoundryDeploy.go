@@ -443,7 +443,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
 		}
 
-		return []string{"--smoke-test", fmt.Sprintf("%s", filepath.Join(pwd, smokeTestScript))}, nil
+		return []string{"--smoke-test", filepath.Join(pwd, smokeTestScript)}, nil
 	}
 	return []string{}, nil
 }
@@ -912,9 +912,7 @@ func findMtar() (string, error) {
 
 	if len(mtars) > 1 {
 		sMtars := []string{}
-		for _, mtar := range mtars {
-			sMtars = append(sMtars, mtar)
-		}
+		sMtars = append(sMtars, mtars...)
 		return "", fmt.Errorf("Found multiple mtar files matching pattern '%s' (%s), please specify file via parameter 'mtarPath'", pattern, strings.Join(sMtars, ","))
 	}
 

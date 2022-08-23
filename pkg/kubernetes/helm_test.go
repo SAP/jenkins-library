@@ -185,6 +185,15 @@ func TestRunHelmLint(t *testing.T) {
 				{Exec: "helm", Params: []string{"lint", "."}},
 			},
 		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:  ".",
+				HelmValues: []string{"./values_1.yaml", "./values_2.yaml"},
+			},
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"lint", ".", "--values", "./values_1.yaml", "--values", "./values_2.yaml"}},
+			},
+		},
 	}
 
 	for i, testCase := range testTable {
@@ -497,9 +506,10 @@ func TestRunHelmPublish(t *testing.T) {
 			stdout:  log.Writer(),
 		}
 
-		err := helmExecute.RunHelmPublish()
+		targetURL, err := helmExecute.RunHelmPublish()
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.FileUploads))
+			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", targetURL)
 			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", utils.FileUploads["test_helm_chart-1.2.3.tgz"])
 		}
 	})
