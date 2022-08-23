@@ -13,6 +13,7 @@ import org.junit.rules.ExpectedException
 import util.Rules
 import util.JenkinsShellCallRule
 import com.sap.piper.PiperGoUtils
+import com.sap.piper.Utils
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -35,8 +36,14 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
         .around(jsr)
         .around(shellCallRule)
 
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+    }
+
     @Before
     void init()  {
+        Utils.metaClass.unstash = { def n -> ["dummy"] }
         binding.variables.env.STAGE_NAME = 'Init'
 
         helper.registerAllowedMethod('deleteDir', [], null)
