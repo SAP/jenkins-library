@@ -1,7 +1,6 @@
 package templates
 
 import org.junit.Before
-import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -23,6 +22,7 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     private ExpectedException thrown = new ExpectedException()
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
+    private PiperGoUtils piperGoUtils = new PiperGoUtils(utils) { void unstashPiperBin() { }}
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
@@ -31,7 +31,6 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         .around(shellCallRule)
         .around(jlr)
         .around(jsr)
-    private Object unstashPiperBin;
     @Before
     void init()  {
 
@@ -47,15 +46,8 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
                     return [].toArray()
             }
         })
-        unstashPiperBin = PiperGoUtils.metaClass.unstashPiperBin
-        PiperGoUtils.metaClass { unstashPiperBin = { println "" } }
         helper.registerAllowedMethod("writeFile", [Map.class], null)
     }
-
-   @After
-   void rollback() {
-        PiperGoUtils.metaClass.unstashPiperBin = unstashPiperBin
-   }
 
     @Test
     void testVerboseOption() {
@@ -84,6 +76,7 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
@@ -113,6 +106,7 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
     }
@@ -148,6 +142,7 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
@@ -199,6 +194,7 @@ stages:
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'testDefault.yml',
             productiveBranch: 'master'
         )
@@ -249,6 +245,7 @@ stages:
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'testDefault.yml',
             productiveBranch: 'test'
         )
@@ -324,6 +321,7 @@ steps: {}
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'testDefault.yml'
         )
 
