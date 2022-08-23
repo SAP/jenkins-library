@@ -21,7 +21,9 @@ func TestRunHadolintExecute(t *testing.T) {
 		}
 
 		fileMock.
-			On("FileExists", config.ConfigurationFile).Return(false, nil)
+			On("FileExists", config.ConfigurationFile).Return(false, nil).
+			On("WriteFile", "hadolintExecute_reports.json", mock.Anything, mock.Anything).Return(nil).
+			On("WriteFile", "hadolintExecute_links.json", mock.Anything, mock.Anything).Return(nil)
 
 		// test
 		err := runHadolint(config, hadolintUtils{
@@ -62,7 +64,11 @@ func TestRunHadolintExecute(t *testing.T) {
 			// checks if config exists before downloading
 			On("FileExists", config.ConfigurationFile).Return(false, nil).Once().
 			// checks again but config is now downloaded
-			On("FileExists", config.ConfigurationFile).Return(true, nil)
+			On("FileExists", config.ConfigurationFile).Return(true, nil).
+			On("WriteFile", "hadolintExecute_reports.json", mock.Anything, mock.Anything).Return(nil).
+			On("WriteFile", "hadolintExecute_links.json", mock.Anything, mock.Anything).Return(nil)
+
+		//m.On("Do", MatchedBy(func(req *http.Request) bool { return req.Host == "example.com" }))
 		// test
 		err := runHadolint(config, hadolintUtils{
 			HadolintPiperFileUtils: fileMock,

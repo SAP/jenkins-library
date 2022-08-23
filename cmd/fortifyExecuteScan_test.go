@@ -22,10 +22,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
@@ -35,26 +34,24 @@ type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
 	getArtifactShouldFail bool
-	ghCreateIssueOptions  *piperGithub.CreateIssueOptions
-	ghCreateIssueError    error
 }
 
-func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (f *fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	panic("not expected to be called in tests")
 }
 
-func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
+func (f *fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
 	if f.getArtifactShouldFail {
 		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
 	}
 	return artifactMock{Coordinates: newCoordinatesMock()}, nil
 }
 
-func (f fortifyTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	if f.ghCreateIssueError != nil {
-		return f.ghCreateIssueError
-	}
-	f.ghCreateIssueOptions = ghCreateIssueOptions
+func (f *fortifyTestUtilsBundle) GetIssueService() *github.IssuesService {
+	return nil
+}
+
+func (cf *fortifyTestUtilsBundle) GetSearchService() *github.SearchService {
 	return nil
 }
 
@@ -64,6 +61,31 @@ func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
 		FilesMock:      &mock.FilesMock{},
 	}
 	return utilsBundle
+}
+func mockExecinPath(exec string) (string, error) {
+	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executable_list {
+		if exec == "fortifyupdate" || exec == "sourceanalyzer" {
+			return "/" + exec, nil
+		} else {
+			err_string := fmt.Sprintf("ERROR , command not found: %s. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return "", errors.New(err_string)
+		}
+	}
+	return "", nil
+}
+
+func failMockExecinPathfortifyupdate(exec string) (string, error) {
+	if exec == "fortifyupdate" {
+		return "", errors.New("Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/fortifyupdate", nil
+}
+func failMockExecinPathsourceanalyzer(exec string) (string, error) {
+	if exec == "sourceanalyzer" {
+		return "", errors.New("Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/sourceanalyzer", nil
 }
 
 type artifactMock struct {
@@ -77,16 +99,20 @@ func newCoordinatesMock() versioning.Coordinates {
 		Version:    "1.0.0",
 	}
 }
+
 func (a artifactMock) VersioningScheme() string {
 	return "full"
 }
+
 func (a artifactMock) GetVersion() (string, error) {
 	return a.Coordinates.Version, nil
 }
+
 func (a artifactMock) SetVersion(v string) error {
 	a.Coordinates.Version = v
 	return nil
 }
+
 func (a artifactMock) GetCoordinates() (versioning.Coordinates, error) {
 	return a.Coordinates, nil
 }
@@ -100,21 +126,27 @@ type fortifyMock struct {
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
 	return &models.Project{Name: &name, ID: 64}, nil
 }
+
 func (f *fortifyMock) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: id, Name: &name, Project: &models.Project{Name: &projectName}}, nil
 }
+
 func (f *fortifyMock) GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error) {
 	return []*models.Attribute{}, nil
 }
+
 func (f *fortifyMock) SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error) {
 	return attributes, nil
 }
+
 func (f *fortifyMock) CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: 4711, Name: &projectVersionName, Project: &models.Project{Name: &projectName}}, nil
 }
+
 func (f *fortifyMock) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: 4712, Name: &pullRequestName, Project: masterProjectVersion.Project}, nil
 }
+
 func (f *fortifyMock) CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error) {
 	return version, nil
 }
@@ -122,19 +154,24 @@ func (f *fortifyMock) CreateProjectVersion(version *models.ProjectVersion) (*mod
 func (f *fortifyMock) ProjectVersionCopyFromPartial(sourceID, targetID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) ProjectVersionCopyPermissions(sourceID, targetID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
 	name := "Committed"
 	return &models.ProjectVersion{ID: id, Name: &name}, nil
 }
+
 func (f *fortifyMock) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
 	return nil
 }
+
 func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error) {
 	switch id {
 	case 4711:
@@ -198,12 +235,15 @@ func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact
 		return []*models.Artifact{}, nil
 	}
 }
+
 func (f *fortifyMock) GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error) {
 	return &models.FilterSet{}, nil
 }
+
 func (f *fortifyMock) GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error) {
 	return &models.IssueFilterSelectorSet{}, nil
 }
+
 func (f *fortifyMock) GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector {
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {
@@ -214,6 +254,7 @@ func (f *fortifyMock) GetFilterSetByDisplayName(issueFilterSelectorSet *models.I
 	}
 	return &models.IssueFilterSelector{DisplayName: name}
 }
+
 func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
 	if filter == "ET1:abcd" {
 		group := "HTTP Verb tampering"
@@ -260,13 +301,16 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		{ID: &group3, CleanName: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }
+
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
 	return issueFilterSelectorSet
 }
+
 func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
 	suppressed := int32(6)
 	return []*models.IssueStatistics{{SuppressedCount: &suppressed}}, nil
 }
+
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
 		f.Successive = true
@@ -275,31 +319,38 @@ func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTem
 	f.Successive = false
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
+
 func (f *fortifyMock) GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error) {
 	exploitable := "Exploitable"
 	friority := "High"
 	hascomments := true
 	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}, {ID: 1112, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
 }
+
 func (f *fortifyMock) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	exploitable := "Exploitable"
 	friority := "High"
 	hascomments := true
 	return []*models.ProjectVersionIssue{{ID: 1111, Audited: true, PrimaryTag: &exploitable, HasComments: &hascomments, Friority: &friority}}, nil
 }
+
 func (f *fortifyMock) GetIssueComments(parentId int64) ([]*models.IssueAuditComment, error) {
 	comment := "Dummy"
 	return []*models.IssueAuditComment{{Comment: &comment}}, nil
 }
+
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
+
 func (f *fortifyMock) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
 	return []byte("abcd"), nil
 }
+
 func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	return []byte("defg"), nil
 }
@@ -364,6 +415,7 @@ func (er *execRunnerMock) Stdout(out io.Writer) {
 func (er *execRunnerMock) Stderr(err io.Writer) {
 	er.currentExecution().errWriter = err
 }
+
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
@@ -383,7 +435,7 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
-		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
+		err := ioutil.WriteFile(path, []byte(classpathMaven), 0o644)
 		if err != nil {
 			return err
 		}
@@ -397,8 +449,35 @@ func TestDetermineArtifact(t *testing.T) {
 		utilsMock := newFortifyTestUtilsBundle()
 		utilsMock.getArtifactShouldFail = true
 
-		_, err := determineArtifact(fortifyExecuteScanOptions{}, utilsMock)
+		_, err := determineArtifact(fortifyExecuteScanOptions{}, &utilsMock)
 		assert.EqualError(t, err, "Unable to get artifact from descriptor : build tool '' not supported")
+	})
+}
+
+func TestFailFortifyexecinPath(t *testing.T) {
+	t.Run("Testing if fortifyupdate in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		ctx := context.Background()
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathfortifyupdate
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+
+	})
+	t.Run("Testing if sourceanalyzer in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		ctx := context.Background()
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathsourceanalyzer
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+
 	})
 }
 
@@ -406,7 +485,6 @@ func TestExecutions(t *testing.T) {
 	type parameterTestData struct {
 		nameOfRun             string
 		config                fortifyExecuteScanOptions
-		expectedError         string
 		expectedReportsLength int
 		expectedReports       []string
 	}
@@ -433,11 +511,13 @@ func TestExecutions(t *testing.T) {
 
 	for _, data := range testData {
 		t.Run(data.nameOfRun, func(t *testing.T) {
+			ctx := context.Background()
 			ff := fortifyMock{}
 			utils := newFortifyTestUtilsBundle()
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
-			reports, _ := runFortifyScan(data.config, &ff, utils, nil, &influx, auditStatus)
+			execInPath = mockExecinPath
+			reports, _ := runFortifyScan(ctx, data.config, &ff, &utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
 			}
@@ -494,7 +574,7 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 }
 
 func TestAnalyseUnauditedIssues(t *testing.T) {
-	config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "number", SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 	ff := fortifyMock{}
 	influx := fortifyExecuteScanInflux{}
 	name := "test"
@@ -551,6 +631,16 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	assert.Equal(t, 3, len(spotChecksCountByCategory))
 }
 
+func TestAnalyseUnauditedIssuesWithWrongConfig(t *testing.T) {
+	config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: "float"}
+	spotChecksCountByCategory := []fortify.SpotChecksAuditCount{}
+	ff := fortifyMock{}
+	auditStatus := map[string]string{}
+	_, _, err := analyseUnauditedIssues(config, &ff, &models.ProjectVersion{}, &models.FilterSet{}, &models.IssueFilterSelectorSet{}, &fortifyExecuteScanInflux{}, auditStatus, &spotChecksCountByCategory)
+	assert.Error(t, err)
+	assert.Equal(t, "Invalid spotCheckMinimumUnit. Please set it as 'percentage' or 'number'.", err.Error())
+}
+
 func TestTriggerFortifyScan(t *testing.T) {
 	t.Run("maven", func(t *testing.T) {
 		dir := t.TempDir()
@@ -568,7 +658,8 @@ func TestTriggerFortifyScan(t *testing.T) {
 			BuildDescriptorFile:      "./pom.xml",
 			AdditionalScanParameters: []string{"-Dtest=property"},
 			Memory:                   "-Xmx4G -Xms2G",
-			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
+			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"},
+		}
 		triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, utils.numExecutions)
@@ -610,7 +701,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"install", "--user"}, utils.executions[2].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[3].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-python-version", "2", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[4].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[4].parameters)
@@ -637,6 +728,32 @@ func TestTriggerFortifyScan(t *testing.T) {
 	})
 }
 
+func TestGetMinSpotChecksPerCategory(t *testing.T) {
+	testExpectedGetMinSpotChecksPerCategory := func(spotChecksMinUnit string, spotChecksMax int, spotChecksMin int, issuesPerCategory int, spotChecksMinCalculatedExpected int) {
+		testName := fmt.Sprintf("Test GetMinSpotChecksPerCategory for SpotCheckMinimumUnit: %v, SpotCheckMaximum: %v, SpotCheckMinimum: %v, issuesPerCategory: %v", spotChecksMinUnit, spotChecksMax, spotChecksMin, issuesPerCategory)
+		t.Run(testName, func(t *testing.T) {
+			config := fortifyExecuteScanOptions{SpotCheckMinimumUnit: spotChecksMinUnit, SpotCheckMaximum: spotChecksMax, SpotCheckMinimum: spotChecksMin}
+			spotCheckMin := getMinSpotChecksPerCategory(config, issuesPerCategory)
+			assert.Equal(t, spotChecksMinCalculatedExpected, spotCheckMin)
+		})
+	}
+
+	testExpectedGetMinSpotChecksPerCategory("percentage", 0, 1, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 3, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 8, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 3)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 26, 3)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 100, 10)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 200, 10)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 50, 10, 5)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 0, 50, 100, 50)
+	testExpectedGetMinSpotChecksPerCategory("percentage", -10, 50, 100, 50)
+
+	testExpectedGetMinSpotChecksPerCategory("number", 0, 1, 10, 1)
+	testExpectedGetMinSpotChecksPerCategory("number", 5, 10, 100, 5)
+}
+
 func TestGenerateAndDownloadQGateReport(t *testing.T) {
 	ffMock := fortifyMock{Successive: false}
 	config := fortifyExecuteScanOptions{ReportTemplateID: 18, ReportType: "PDF"}
@@ -652,8 +769,10 @@ func TestGenerateAndDownloadQGateReport(t *testing.T) {
 	})
 }
 
-var defaultPollingDelay = 10 * time.Second
-var defaultPollingTimeout = 0 * time.Minute
+var (
+	defaultPollingDelay   = 10 * time.Second
+	defaultPollingTimeout = 0 * time.Minute
+)
 
 func verifyScanResultsFinishedUploadingDefaults(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64) error {
 	return verifyScanResultsFinishedUploading(config, sys, projectVersionID, "", &models.FilterSet{},
@@ -914,7 +1033,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenGradleTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/src/gen/java/cds/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {
@@ -923,37 +1042,42 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"classpath":""}]`, translate)
 	})
-
 }
 
 func TestPopulatePipTranslate(t *testing.T) {
 	t.Run("PythonAdditionalPath without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{PythonAdditionalPath: []string{"./lib", "."}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python2", PythonAdditionalPath: []string{"./lib", "."}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
-		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","src":"./**/*"}]`,
+		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","pythonVersion":"2","src":"./**/*"}]`,
 			separator, separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
 	})
 
+	t.Run("Invalid python version", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonVersion: "python4", PythonAdditionalPath: []string{"./lib", "."}}
+		_, err := populatePipTranslate(&config, "")
+		assert.Error(t, err)
+	})
+
 	t.Run("Src without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{Src: []string{"./**/*.py"}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python3", Src: []string{"./**/*.py"}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","src":"./**/*.py"}]`,
+			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","pythonVersion":"3","src":"./**/*.py"}]`,
 			separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
 	})
 
 	t.Run("Exclude without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{Exclude: []string{"./**/tests/**/*"}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python3", Exclude: []string{"./**/tests/**/*"}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","src":"./**/*"}]`,
+			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","pythonVersion":"3","src":"./**/*"}]`,
 			separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
@@ -963,7 +1087,8 @@ func TestPopulatePipTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{
 			Translate:            `[{"pythonPath":""}]`,
 			Src:                  []string{"./**/*"},
-			PythonAdditionalPath: []string{"./lib", "."}}
+			PythonAdditionalPath: []string{"./lib", "."},
+		}
 		translate, err := populatePipTranslate(&config, "ignored/path")
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")

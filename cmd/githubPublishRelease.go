@@ -10,7 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -30,7 +30,7 @@ type githubIssueClient interface {
 }
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
-	//TODO provide parameter for trusted certs
+	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, config.UploadURL, []string{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
@@ -43,13 +43,12 @@ func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *tel
 }
 
 func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient, ghIssueClient githubIssueClient) error {
-
 	var publishedAt github.Timestamp
 
 	lastRelease, resp, err := ghRepoClient.GetLatestRelease(ctx, config.Owner, config.Repository)
 	if err != nil {
 		if resp != nil && resp.StatusCode == 404 {
-			//no previous release found -> first release
+			// no previous release found -> first release
 			config.AddDeltaToLastRelease = false
 			log.Entry().Debug("This is the first release.")
 		} else {
@@ -59,7 +58,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 	publishedAt = lastRelease.GetPublishedAt()
 	log.Entry().Debugf("Previous GitHub release published: '%v'", publishedAt)
 
-	//updating assets only supported on latest release
+	// updating assets only supported on latest release
 	if len(config.AssetPath) > 0 && config.Version == "latest" {
 		return uploadReleaseAsset(ctx, lastRelease.GetID(), config, ghRepoClient)
 	} else if len(config.AssetPathList) > 0 && config.Version == "latest" {
@@ -147,7 +146,7 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 func getReleaseDeltaText(config *githubPublishReleaseOptions, lastRelease *github.RepositoryRelease) string {
 	releaseDeltaText := ""
 
-	//add delta link to previous release
+	// add delta link to previous release
 	releaseDeltaText += "\n**Changes**\n"
 	releaseDeltaText += fmt.Sprintf(
 		"[%v...%v](%v/%v/%v/compare/%v...%v)\n",
@@ -174,7 +173,6 @@ func uploadReleaseAssetList(ctx context.Context, releaseID int64, config *github
 }
 
 func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient) error {
-
 	assets, _, err := ghRepoClient.ListReleaseAssets(ctx, config.Owner, config.Repository, releaseID, &github.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Failed to get list of release assets.")
@@ -187,7 +185,7 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPubl
 		}
 	}
 	if assetID != 0 {
-		//asset needs to be deleted first since API does not allow for replacement
+		// asset needs to be deleted first since API does not allow for replacement
 		_, err := ghRepoClient.DeleteReleaseAsset(ctx, config.Owner, config.Repository, assetID)
 		if err != nil {
 			return errors.Wrap(err, "Failed to delete release asset.")
@@ -227,7 +225,7 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPubl
 }
 
 func isExcluded(issue *github.Issue, excludeLabels []string) bool {
-	//issue.Labels[0].GetName()
+	// issue.Labels[0].GetName()
 	for _, ex := range excludeLabels {
 		for _, l := range issue.Labels {
 			if ex == l.GetName() {

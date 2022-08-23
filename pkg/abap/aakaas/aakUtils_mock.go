@@ -9,12 +9,14 @@ import (
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
 type AakBundleMock struct {
 	*mock.ExecMockRunner
 	*abaputils.ClientMock
+	*mock.FilesMock
 	maxRuntime time.Duration
 }
 
@@ -23,6 +25,7 @@ func NewAakBundleMock() *AakBundleMock {
 		ExecMockRunner: &mock.ExecMockRunner{},
 		ClientMock:     &abaputils.ClientMock{},
 		maxRuntime:     1 * time.Second,
+		FilesMock:      &mock.FilesMock{},
 	}
 	return &utils
 }
@@ -104,6 +107,7 @@ func (bundle *AakBundleMock) ReadAddonDescriptor(FileName string) (abaputils.Add
 type AakBundleMockNewMC struct {
 	*mock.ExecMockRunner
 	*abapbuild.MockClient
+	*piperutils.Files
 	maxRuntime time.Duration
 }
 

@@ -119,6 +119,9 @@ spec:
           - name: dockerImageName
         type: string
         description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        mandatoryIf:
+          - name: containerMultiImageBuild
+            value: true
         scope:
           - GENERAL
           - PARAMETERS

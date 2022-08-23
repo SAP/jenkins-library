@@ -252,7 +252,7 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/bom.xml"
+          - filePattern: "**/bom-golang.xml"
             type: sbom
           - filePattern: "**/TEST-*.xml"
             type: junit
