@@ -27,6 +27,14 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+      - name: atcStepFailOnServerity
+        type: string
+        description: Severity Level, for which the step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false  
       - name: repositories
         type: string
         description: Specifies a YAML file containing the repositories configuration
