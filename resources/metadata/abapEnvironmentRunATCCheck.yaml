@@ -29,7 +29,7 @@ spec:
         mandatory: false
       - name: atcStepFailOnServerity
         type: string
-        description: Severity Level, for which the step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run
+        description: Severity Level, for which the step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run (possible values - error, warning, info)
         scope:
           - PARAMETERS
           - STAGES
