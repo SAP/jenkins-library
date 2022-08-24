@@ -40,8 +40,9 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         helper.registerAllowedMethod('abapEnvironmentAssembleConfirm', [Map.class], {m -> stepsCalled.add('abapEnvironmentAssembleConfirm')})
         helper.registerAllowedMethod('abapAddonAssemblyKitCreateTargetVector', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitCreateTargetVector')})
         helper.registerAllowedMethod('abapAddonAssemblyKitPublishTargetVector', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitPublishTargetVector')})
+        helper.registerAllowedMethod('abapEnvironmentCreateTag', [Map.class], {m -> stepsCalled.add('abapEnvironmentCreateTag')})
     }
-    
+
     @Test
     void testAbapEnvironmentRunTestsWithoutHost() {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
@@ -56,7 +57,8 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
                                             'abapAddonAssemblyKitReleasePackages',
                                             'abapEnvironmentAssembleConfirm',
                                             'abapAddonAssemblyKitCreateTargetVector',
-                                            'abapAddonAssemblyKitPublishTargetVector'))
+                                            'abapAddonAssemblyKitPublishTargetVector',
+                                            'abapEnvironmentCreateTag'))
     }
 
     @Test
@@ -72,7 +74,8 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
                                             'abapAddonAssemblyKitReleasePackages',
                                             'abapEnvironmentAssembleConfirm',
                                             'abapAddonAssemblyKitCreateTargetVector',
-                                            'abapAddonAssemblyKitPublishTargetVector'))
+                                            'abapAddonAssemblyKitPublishTargetVector',
+                                            'abapEnvironmentCreateTag'))
         assertThat(stepsCalled, not(hasItems('cloudFoundryCreateServiceKey')))
     }
 

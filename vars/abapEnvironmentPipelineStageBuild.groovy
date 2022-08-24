@@ -52,6 +52,10 @@ void call(Map parameters = [:]) {
         abapEnvironmentAssembleConfirm script: parameters.script
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
+        try {
+            abapEnvironmentCreateTag script: parameters.script
+        } catch (e) {
+            echo 'Tag creation failed: ' + e.message
+        }
     }
-
 }
