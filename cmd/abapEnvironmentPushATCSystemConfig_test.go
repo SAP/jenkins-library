@@ -230,7 +230,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset
 Content-Type: application/http
@@ -257,8 +257,6 @@ Content-Type: application/json
 			"check_tasks": true,
 			"check_requests": false,
 			"check_tocs": true,
-			"is_default": false,
-			"is_proxy_variant": false,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -291,7 +289,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset
 Content-Type: application/http
@@ -327,9 +325,7 @@ Content-Type: application/json
 			"transport_check_policy": "C",
 			"check_tasks": true,
 			"check_requests": false,
-			"check_tocs": true,
-			"is_default": false,
-			"is_proxy_variant": false,		
+			"check_tocs": true,	
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -367,7 +363,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset--
 
@@ -383,9 +379,7 @@ Content-Type: application/json
 			"transport_check_policy": "C",
 			"check_tasks": true,
 			"check_requests": false,
-			"check_tocs": true,
-			"is_default": false,
-			"is_proxy_variant": false
+			"check_tocs": true
 		}
 		`
 
@@ -410,7 +404,7 @@ Content-ID: 1
 PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
 Content-Type: application/json
 
-{"conf_name":"UNITTEST_PIPERSTEP","conf_id":"4711","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","pseudo_comment_policy":"MK","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false}
+{"conf_id":"4711","block_findings":"0","check_requests":false,"check_tasks":true,"check_tocs":true,"checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"C"}
 
 --changeset--
 
@@ -427,8 +421,46 @@ Content-Type: application/json
 			"check_tasks": true,
 			"check_requests": false,
 			"check_tocs": true,
-			"is_default": false,
-			"is_proxy_variant": false,
+			"_priorities": [
+			]
+		}
+		`
+
+		confUUID := "4711"
+		batchATCSystemConfigFile, err := buildATCSystemConfigBatchRequest(confUUID, []byte(atcSystemConfigFileString))
+		if err != nil {
+			t.Fatal("Failed to Build ATC System Config Batch")
+		}
+		assert.Equal(t, batchATCSystemConfigFileExpected, batchATCSystemConfigFile)
+	})
+
+	t.Run("success case: BuildATCSystemConfigBatch - Config Base only (empty expand _priorities) - Settings Global", func(t *testing.T) {
+		batchATCSystemConfigFileExpected := `
+--request-separator
+Content-Type: multipart/mixed;boundary=changeset
+
+--changeset
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: 1
+
+PATCH configuration(root_id='1',conf_id=4711) HTTP/1.1
+Content-Type: application/json
+
+{"conf_id":"4711","block_findings":"0","checkvariant":"SAP_CLOUD_PLATFORM_ATC_DEFAULT","conf_name":"UNITTEST_PIPERSTEP","inform_findings":"1","pseudo_comment_policy":"MK","transport_check_policy":"G"}
+
+--changeset--
+
+--request-separator--`
+
+		// no Configuration name supplied
+		atcSystemConfigFileString := `{
+			"conf_name": "UNITTEST_PIPERSTEP",
+			"checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
+			"pseudo_comment_policy": "MK",
+			"block_findings": "0",
+			"inform_findings": "1",
+			"transport_check_policy": "G",
 			"_priorities": [
 			]
 		}
@@ -456,8 +488,6 @@ Content-Type: application/json
 			"check_tasks": true,
 			"check_requests": false,
 			"check_tocs": true,
-			"is_default": false,
-			"is_proxy_variant": false,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
