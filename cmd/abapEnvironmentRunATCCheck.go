@@ -233,11 +233,11 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 				if !failStep {
 					failStep = checkStepFailing(t.Severity, failOnSeverityLevel)
-				}			  
+				}
 			}
 		}
 		if failStep {
-			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + failOnSeverityLevel + "'")
+			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnServerity Option - '" + failOnSeverityLevel + "'")
 		}
 		if generateHTML {
 			htmlString := generateHTMLDocument(parsedXML)
