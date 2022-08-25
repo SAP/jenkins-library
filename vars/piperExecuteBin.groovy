@@ -295,17 +295,17 @@ static boolean checkIfStepActive(Map parameters = [:], Script script, String pip
     def utils = parameters.juStabUtils ?: new Utils()
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
     def flags = "--stageConfig ${stageConfig} --useV1"
-    if (!stage || !step) {
-        stage = "_"
-        step = "_"
-    }
-    flags += " --stage ${stage} --step ${step}"
     if (stageOutputFile) {
         flags += " --stageOutputFile ${stageOutputFile}"
     }
     if (stepOutputFile) {
         flags += " --stepOutputFile ${stepOutputFile}"
     }
+    if (!stage || !step) {
+        stage = "_"
+        step = "_"
+    }
+    flags += " --stage ${stage} --step ${step}"
     piperGoUtils.unstashPiperBin()
     def returnCode = script.sh(returnStatus: true, script: "${piperGoPath} checkIfStepActive ${flags}")
     return (returnCode == 0)
