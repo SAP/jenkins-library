@@ -322,12 +322,13 @@ type AbapBinding struct {
 
 // ClientMock contains information about the client mock
 type ClientMock struct {
-	Token       string
-	Body        string
-	BodyList    []string
-	StatusCode  int
-	Error       error
-	NilResponse bool
+	Token              string
+	Body               string
+	BodyList           []string
+	StatusCode         int
+	Error              error
+	NilResponse        bool
+	ErrorInsteadOfDump bool
 }
 
 // SetOptions sets clientOptions for a client mock
@@ -344,6 +345,9 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	if c.Body != "" {
 		body = []byte(c.Body)
 	} else {
+		if c.ErrorInsteadOfDump && len(c.BodyList) == 0 {
+			return nil, errors.New("No more bodies in the list")
+		}
 		bodyString := c.BodyList[len(c.BodyList)-1]
 		c.BodyList = c.BodyList[:len(c.BodyList)-1]
 		body = []byte(bodyString)
