@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -270,8 +271,8 @@ func TestParseATCResult(t *testing.T) {
 		doFailOnSeverityLevel := "error"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr, err)
-	})	
+		assert.Equal(t, expErr.Error(), err.Error())
+	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
@@ -297,8 +298,8 @@ func TestParseATCResult(t *testing.T) {
 		doFailOnSeverityLevel := "warning"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr, err)
-	})	
+		assert.Equal(t, expErr.Error(), err.Error())
+	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity info", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
@@ -324,8 +325,8 @@ func TestParseATCResult(t *testing.T) {
 		doFailOnSeverityLevel := "info"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr, err)
-	})	
+		assert.Equal(t, expErr.Error(), err.Error())
+	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only errors", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
@@ -351,8 +352,8 @@ func TestParseATCResult(t *testing.T) {
 		doFailOnSeverityLevel := "warning"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr, err)
-	})	
+		assert.Equal(t, expErr.Error(), err.Error())
+	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity info - only errors", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
@@ -378,8 +379,8 @@ func TestParseATCResult(t *testing.T) {
 		doFailOnSeverityLevel := "info"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr, err)
-	})	
+		assert.Equal(t, expErr.Error(), err.Error())
+	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only warnings", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
@@ -405,8 +406,8 @@ func TestParseATCResult(t *testing.T) {
 		doFailOnSeverityLevel := "info"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr, err)
-	})				
+		assert.Equal(t, expErr.Error(), err.Error())
+	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
