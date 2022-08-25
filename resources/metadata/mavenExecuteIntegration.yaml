@@ -95,7 +95,19 @@ spec:
         default: false
         aliases:
           - name: maven/logSuccessfulMavenTransfers
-
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/requirement.mapping"
+            type: requirement-mapping
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/integration-test/*.xml"
+            type: integration-test
+          - filePattern: "**/jacoco.xml"
+            type: jacoco-coverage
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

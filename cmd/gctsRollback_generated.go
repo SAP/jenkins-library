@@ -25,7 +25,7 @@ type gctsRollbackOptions struct {
 	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty"`
 }
 
-// GctsRollbackCommand Perfoms roll back of one (default) or several commit(s)
+// GctsRollbackCommand Perfoms a rollback of one (default) or several commits
 func GctsRollbackCommand() *cobra.Command {
 	const STEP_NAME = "gctsRollback"
 
@@ -38,10 +38,10 @@ func GctsRollbackCommand() *cobra.Command {
 
 	var createGctsRollbackCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Perfoms roll back of one (default) or several commit(s)",
-		Long: `This step performs a rollback of commit(s) in a local ABAP system repository. If a <commit> parameter is specified, it will be used as the target commit for the rollback.
-If no <commit> parameter is specified and the remote repository domain is 'github.com', the last commit with status 'success' will be used for the rollback. Otherwise,
-gctsRollback will rollback to the previously active commit in the local repository.`,
+		Short: "Perfoms a rollback of one (default) or several commits",
+		Long: `This step performs a rollback of commits in a local ABAP repository. If a ` + "`" + `commit` + "`" + ` parameter is specified, it will be used as the target commit for the rollback.
+If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote repository domain is 'github.com', the last commit with the status 'success' will be used for the rollback. Otherwise,
+` + "`" + `gctsRollback` + "`" + ` will roll back to the previously active commit in the local repository.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -71,6 +71,10 @@ gctsRollback will rollback to the previously active commit in the local reposito
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
@@ -119,12 +123,12 @@ gctsRollback will rollback to the previously active commit in the local reposito
 }
 
 func addGctsRollbackFlags(cmd *cobra.Command, stepConfig *gctsRollbackOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the ABAP system")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the ABAP system")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User that authenticates to the ABAP system. **Note** - Don't provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password of the ABAP user that authenticates to the ABAP system. **Note** - Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format '<protocol>://<host>:<port>'")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Protocol and host of the ABAP system, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
-	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "Specifies the commit to deploy")
+	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "Specifies the target commit for the rollback")
 	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "GitHub personal access token with at least read permissions for the remote repository")
 
 	cmd.MarkFlagRequired("username")
@@ -140,12 +144,12 @@ func gctsRollbackMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gctsRollback",
 			Aliases:     []config.Alias{},
-			Description: "Perfoms roll back of one (default) or several commit(s)",
+			Description: "Perfoms a rollback of one (default) or several commits",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the rollback", Type: "jenkins"},
+					{Name: "abapCredentialsId", Description: "ID taken from the Jenkins credentials store containing user name and password of the user that authenticates to the ABAP system on which you want to execute the rollback.", Type: "jenkins"},
 					{Name: "githubPersonalAccessTokenId", Description: "GitHub personal access token with at least read permissions for the remote repository", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{

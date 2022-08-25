@@ -79,6 +79,15 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: abapSourceClient
+        description: Specifies the client of the SAP Cloud Platform ABAP Environment system, use only in combination with host
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: username
         type: string
         description: User
@@ -107,7 +116,7 @@ spec:
           - STEPS
       - name: values
         type: string
-        description: Input values for the build framework
+        description: Input values for the build framework, please enter in the format '[{"value_id":"Id1","value":"value1"},{"value_id":"Id2","value":"value2"}]'
         scope:
           - PARAMETERS
           - STAGES
@@ -125,7 +134,7 @@ spec:
       - name: downloadResultFilenames
         type: "[]string"
         mandatory: false
-        description: Only the specified files are downloaded, downloadAllResultFiles is true, this parameter is ignored
+        description: Only the specified files are downloaded. If downloadAllResultFiles is true, this parameter is ignored
         scope:
           - PARAMETERS
           - STAGES
@@ -183,7 +192,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: pollingIntervallInSeconds
+      - name: pollingIntervalInSeconds
         type: int
         description: wait time in seconds till next status request in the backend system
         mandatory: true
@@ -208,6 +217,42 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/buildValues
+      - name: useFieldsOfAddonDescriptor
+        type: string
+        description: use fields of the addonDescriptor in the cpe as input values. Please enter in the format '[{"use":"Name","renameTo":"SWC"}]'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: conditionOnAddonDescriptor
+        type: string
+        description: normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions.
+                     Please enter in the format '[{"field":"Status","operator":"==","value":"P"}]'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: stopOnFirstError
+        type: bool
+        default: false
+        description: If false, it does not stop if an error occured for one repository in the addonDescriptor, but continues with the next repository. However the step is marked as failed in the end if an error occured.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
   outputs:
     resources:
       - name: commonPipelineEnvironment

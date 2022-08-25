@@ -2,6 +2,9 @@ package versioning
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -27,19 +30,31 @@ type Artifact interface {
 
 // Options define build tool specific settings in order to properly retrieve e.g. the version / coordinates of an artifact
 type Options struct {
-	ProjectSettingsFile string
-	DockerImage         string
-	GlobalSettingsFile  string
-	M2Path              string
-	VersionSource       string
-	VersionSection      string
-	VersionField        string
-	VersioningScheme    string
+	ProjectSettingsFile  string
+	DockerImage          string
+	GlobalSettingsFile   string
+	M2Path               string
+	VersionSource        string
+	VersionSection       string
+	VersionField         string
+	VersioningScheme     string
+	HelmUpdateAppVersion bool
 }
 
 // Utils defines the versioning operations for various build tools
 type Utils interface {
-	maven.Utils
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(e string, p ...string) error
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Glob(pattern string) (matches []string, err error)
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
+	FileRemove(path string) error
 }
 
 type mvnRunner struct{}
@@ -89,11 +104,12 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		artifact = &Gradle{
 			path:         buildDescriptorFilePath,
 			versionField: opts.VersionField,
+			utils:        utils,
 		}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt", "go.mod"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"go.mod", "VERSION", "version.txt"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
@@ -105,6 +121,12 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			break
 		default:
 			artifact = &Versionfile{path: buildDescriptorFilePath}
+		}
+	case "helm":
+		artifact = &HelmChart{
+			path:             buildDescriptorFilePath,
+			utils:            utils,
+			updateAppVersion: opts.HelmUpdateAppVersion,
 		}
 	case "maven":
 		if len(buildDescriptorFilePath) == 0 {

@@ -32,7 +32,7 @@ func CheckStepActiveCommand() *cobra.Command {
 	var checkStepActiveCmd = &cobra.Command{
 		Use:   "checkIfStepActive",
 		Short: "Checks if a step is active in a defined stage.",
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRun: func(cmd *cobra.Command, _ []string) {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -54,6 +54,13 @@ func CheckStepActiveCommand() *cobra.Command {
 }
 
 func checkIfStepActive(utils piperutils.FileUtils) error {
+	// make the stageName the leading parameter
+	if len(checkStepActiveOptions.stageName) == 0 && GeneralConfig.StageName != "" {
+		checkStepActiveOptions.stageName = GeneralConfig.StageName
+	}
+	if checkStepActiveOptions.stageName == "" {
+		return errors.New("stage name must not be empty")
+	}
 	var pConfig config.Config
 
 	// load project config and defaults
@@ -68,14 +75,14 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	}
 	defer stageConfigFile.Close()
 
-	runSteps := map[string]map[string]bool{}
-	runStages := map[string]bool{}
+	var runSteps map[string]map[string]bool
+	var runStages map[string]bool
 
 	// load and evaluate step conditions
 	if checkStepActiveOptions.v1Active {
 		runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
 		runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
-		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils)
+		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
@@ -139,8 +146,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
-	cmd.MarkFlagRequired("step")
-	cmd.MarkFlagRequired("stage")
+	_ = cmd.MarkFlagRequired("step")
 }
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {

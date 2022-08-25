@@ -18,6 +18,10 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
+const (
+	mvnBomFilename = "bom-maven"
+)
+
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
 
@@ -43,15 +47,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var defines []string
 	var goals []string
 
-	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
-
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.1:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.2",
 			"-DincludeBomSerialNumber=true",
@@ -62,9 +64,12 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			"-DincludeTestScope=false",
 			"-DincludeLicenseText=false",
 			"-DoutputFormat=xml",
+			"-DoutputName=" + mvnBomFilename,
 		}
 		defines = append(defines, createBOMConfig...)
 	}
+
+	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
 
 	if config.Verify {
 		goals = append(goals, "verify")
@@ -85,9 +90,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
+	}
+
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mavenBuild"
-	dockerImage, err := getDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
 	}
@@ -125,7 +134,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			}
 
 			downloadClient := &piperhttp.Client{}
-			runner := &command.Command{}
+			runner := &command.Command{
+				StepName: "mavenBuild",
+			}
 			fileUtils := &piperutils.Files{}
 			if len(config.CustomTLSCertificateLinks) > 0 {
 				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
@@ -181,13 +192,17 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		return errors.Wrap(err, "Could not find the existing java cacerts")
 	}
 
-	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "mavenCaCerts")
+	trustStore := filepath.Join(".pipeline", "mavenCaCerts")
 
 	log.Entry().Infof("copying java cacerts : %s to new cacerts : %s", existingJavaCaCerts, trustStore)
 	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
 
 	if fileUtilserr != nil {
 		return errors.Wrap(err, "Could not copy existing cacerts into new cacerts location ")
+	}
+
+	if err := fileUtils.Chmod(trustStore, 0666); err != nil {
+		return errors.Wrap(err, "unable to provide correct permission to trust store")
 	}
 
 	log.Entry().Infof("using trust store %s", trustStore)
@@ -232,14 +247,6 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
 	return nil
-}
-
-func getWorkingDirForTrustStore() string {
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Entry().WithError(err).WithField("path", workingDir).Debug("Retrieving of work directory failed")
-	}
-	return workingDir
 }
 
 func getTempDirForCertFile() string {

@@ -111,6 +111,31 @@ type Project struct {
 	Link               Link               `json:"link"`
 }
 
+// ScanSettings - scan settings at project level
+type ScanSettings struct {
+	Project             ProjectLink             `json:"project"`
+	Preset              PresetLink              `json:"preset"`
+	EngineConfiguration EngineConfigurationLink `json:"engineConfiguration" `
+}
+
+// ProjectLink - project link found in ScanSettings response
+type ProjectLink struct {
+	ProjectID int  `json:"id"`
+	Link      Link `json:"link"`
+}
+
+// PresetLink - preset link found in ScanSettings response
+type PresetLink struct {
+	PresetID int  `json:"id"`
+	Link     Link `json:"link"`
+}
+
+// EngineConfigurationLink - engine configuration link found in ScanSettings response
+type EngineConfigurationLink struct {
+	EngineConfigurationID int  `json:"id"`
+	Link                  Link `json:"link"`
+}
+
 // Team - Team Structure
 type Team struct {
 	ID       json.RawMessage `json:"id"`
@@ -134,6 +159,10 @@ type SourceSettingsLink struct {
 	Type string `json:"type"`
 	Rel  string `json:"rel"`
 	URI  string `json:"uri"`
+}
+
+type ShortDescription struct {
+	Text string `json:"shortDescription"`
 }
 
 //DetailedResult - DetailedResult Structure
@@ -163,6 +192,7 @@ type DetailedResult struct {
 // Query - Query Structure
 type Query struct {
 	XMLName xml.Name `xml:"Query"`
+	Name    string   `xml:"name,attr"`
 	Results []Result `xml:"Result"`
 }
 
@@ -188,7 +218,7 @@ type System interface {
 	FilterPresetByName(presets []Preset, presetName string) Preset
 	FilterPresetByID(presets []Preset, presetID int) Preset
 	FilterProjectByName(projects []Project, projectName string) Project
-	FilterTeamByName(teams []Team, teamName string) Team
+	FilterTeamByName(teams []Team, teamName string) (Team, error)
 	FilterTeamByID(teams []Team, teamID json.RawMessage) Team
 	DownloadReport(reportID int) ([]byte, error)
 	GetReportStatus(reportID int) (ReportStatusResponse, error)
@@ -206,6 +236,7 @@ type System interface {
 	GetProjectByID(projectID int) (Project, error)
 	GetProjectsByNameAndTeam(projectName, teamID string) ([]Project, error)
 	GetProjects() ([]Project, error)
+	GetShortDescription(scanID int, pathID int) (ShortDescription, error)
 	GetTeams() []Team
 }
 
@@ -476,6 +507,23 @@ func (sys *SystemInstance) GetPresets() []Preset {
 // UpdateProjectConfiguration updates the configuration of the project addressed by projectID
 func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
 	engineConfigID, _ := strconv.Atoi(engineConfigurationID)
+
+	var projectScanSettings ScanSettings
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scanSettings/%v", projectID), nil, header)
+	if err != nil {
+		// if an error happens, try to update the config anyway
+		sys.logger.Warnf("Failed to fetch scan settings of project %v: %s", projectID, err)
+	} else {
+		// Check if the current project config needs to be updated
+		json.Unmarshal(data, &projectScanSettings)
+		if projectScanSettings.Preset.PresetID == presetID && projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID {
+			sys.logger.Debugf("Project configuration does not need to be updated")
+			return nil
+		}
+	}
+
 	jsonData := map[string]interface{}{
 		"projectId":             projectID,
 		"presetId":              presetID,
@@ -487,12 +535,11 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 		return errors.Wrapf(err, "error marshalling project data")
 	}
 
-	header := http.Header{}
-	header.Set("Content-Type", "application/json")
 	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		return errors.Wrapf(err, "request to checkmarx system failed")
 	}
+	sys.logger.Debugf("Project configuration updated")
 
 	return nil
 }
@@ -611,6 +658,20 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 	return response, nil
 }
 
+// GetShortDescription returns the short description for an issue with a scanID and pathID
+func (sys *SystemInstance) GetShortDescription(scanID int, pathID int) (ShortDescription, error) {
+	var shortDescription ShortDescription
+
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v/results/%v/shortDescription", scanID, pathID), nil, nil)
+	if err != nil {
+		sys.logger.Errorf("Failed to get short description for scanID %v and pathID %v: %s", scanID, pathID, err)
+		return shortDescription, err
+	}
+
+	json.Unmarshal(data, &shortDescription)
+	return shortDescription, nil
+}
+
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
 func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 	header := http.Header{}
@@ -623,13 +684,13 @@ func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 }
 
 // FilterTeamByName filters a team by its name
-func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team {
+func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) (Team, error) {
 	for _, team := range teams {
 		if team.FullName == teamName || team.FullName == strings.ReplaceAll(teamName, `\`, `/`) {
-			return team
+			return team, nil
 		}
 	}
-	return Team{}
+	return Team{}, errors.New("Failed to find team with name " + teamName)
 }
 
 // FilterTeamByID filters a team by its ID

@@ -3,16 +3,28 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
-	"text/template"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/goget"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/SAP/jenkins-library/pkg/multiarch"
+	"github.com/SAP/jenkins-library/pkg/versioning"
+
+	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 const (
@@ -21,14 +33,22 @@ const (
 	golangIntegrationTestOutput = "TEST-integration.xml"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
+	sbomFilename                = "bom-golang.xml"
+	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+	golangciLintVersion         = "latest"
 )
 
 type golangBuildUtils interface {
 	command.ExecRunner
+	goget.Client
 
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
+	piperutils.FileUtils
+	piperhttp.Uploader
+
+	getDockerImageValue(stepName string) (string, error)
+	GetExitCode() int
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -39,6 +59,10 @@ type golangBuildUtils interface {
 type golangBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	piperhttp.Uploader
+	httpClient *piperhttp.Client
+
+	goget.Client
 
 	// Embed more structs as necessary to implement methods or interfaces you add to golangBuildUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
@@ -46,10 +70,35 @@ type golangBuildUtilsBundle struct {
 	// golangBuildUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newGolangBuildUtils() golangBuildUtils {
+func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return g.httpClient.DownloadFile(url, filename, header, cookies)
+}
+
+func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
+	return GetDockerImageValue(stepName)
+}
+
+func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
+	httpClientOptions := piperhttp.ClientOptions{}
+
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		httpClientOptions.TransportSkipVerification = false
+		httpClientOptions.TrustedCerts = config.CustomTLSCertificateLinks
+	}
+
+	httpClient := piperhttp.Client{}
+	httpClient.SetOptions(httpClientOptions)
+
 	utils := golangBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command: &command.Command{
+			StepName: "golangBuild",
+		},
+		Files:    &piperutils.Files{},
+		Uploader: &httpClient,
+		Client: &goget.ClientImpl{
+			HTTPClient: &httpClient,
+		},
+		httpClient: &httpClient,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -57,24 +106,38 @@ func newGolangBuildUtils() golangBuildUtils {
 	return &utils
 }
 
-func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData) {
+func golangBuild(config golangBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *golangBuildCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newGolangBuildUtils()
+	utils := newGolangBuildUtils(config)
 
 	// Error situations will be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runGolangBuild(&config, telemetryData, utils)
+	err := runGolangBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("execution of golang build failed")
 	}
 }
 
-func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomData, utils golangBuildUtils) error {
+func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomData, utils golangBuildUtils, commonPipelineEnvironment *golangBuildCommonPipelineEnvironment) error {
+	goModFile, err := readGoModFile(utils) // returns nil if go.mod doesnt exist
+	if err != nil {
+		return err
+	}
+
+	if err = prepareGolangEnvironment(config, goModFile, utils); err != nil {
+		return err
+	}
 
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
 		if err := utils.RunExecutable("go", "install", golangTestsumPackage); err != nil {
+			return fmt.Errorf("failed to install pre-requisite: %w", err)
+		}
+	}
+
+	if config.CreateBOM {
+		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -108,19 +171,186 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		return fmt.Errorf("some tests failed")
 	}
 
+	if config.RunLint {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+
+		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
+			return err
+		}
+
+		// hardcode those for now
+		lintSettings := map[string]string{
+			"reportStyle":      "checkstyle", // readable by Sonar
+			"reportOutputPath": "golangci-lint-report.xml",
+			"additionalParams": "",
+		}
+
+		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
+			return err
+		}
+	}
+
+	if config.CreateBOM {
+		if err := runBOMCreation(utils, sbomFilename); err != nil {
+			return err
+		}
+	}
+
 	ldflags := ""
 
 	if len(config.LdflagsTemplate) > 0 {
-		var err error
-		ldflags, err = prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
+		ldf, err := prepareLdflags(config, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
+		ldflags = (*ldf).String()
 		log.Entry().Infof("ldflags from template: '%v'", ldflags)
 	}
 
-	for _, architecture := range config.TargetArchitectures {
-		err := runGolangBuildPerArchitecture(config, utils, ldflags, architecture)
+	var binaries []string
+	platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
+
+	if err != nil {
+		return err
+	}
+
+	for _, platform := range platforms {
+		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
+
+		if err != nil {
+			return err
+		}
+
+		if len(binaryNames) > 0 {
+			binaries = append(binaries, binaryNames...)
+		}
+	}
+
+	log.Entry().Debugf("creating build settings information...")
+	stepName := "golangBuild"
+	dockerImage, err := utils.getDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	buildConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
+		Publish:           config.Publish,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+		DockerImage:       dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&buildConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
+	if config.Publish {
+		if len(config.TargetRepositoryURL) == 0 {
+			return fmt.Errorf("there's no target repository for binary publishing configured")
+		}
+
+		artifactVersion := config.ArtifactVersion
+
+		if len(artifactVersion) == 0 {
+			artifactOpts := versioning.Options{
+				VersioningScheme: "library",
+			}
+
+			artifact, err := versioning.GetArtifact("golang", "", &artifactOpts, utils)
+
+			if err != nil {
+				return err
+			}
+
+			artifactVersion, err = artifact.GetVersion()
+
+			if err != nil {
+				return err
+			}
+		}
+
+		if goModFile == nil {
+			return fmt.Errorf("go.mod file not found")
+		} else if goModFile.Module == nil {
+			return fmt.Errorf("go.mod doesn't declare a module path")
+		}
+
+		repoClientOptions := piperhttp.ClientOptions{
+			Username:     config.TargetRepositoryUser,
+			Password:     config.TargetRepositoryPassword,
+			TrustedCerts: config.CustomTLSCertificateLinks,
+		}
+
+		utils.SetOptions(repoClientOptions)
+
+		var binaryArtifacts piperenv.Artifacts
+		for _, binary := range binaries {
+
+			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, artifactVersion, binary)
+
+			separator := "/"
+
+			if strings.HasSuffix(config.TargetRepositoryURL, "/") {
+				separator = ""
+			}
+
+			targetURL := fmt.Sprintf("%s%s%s", config.TargetRepositoryURL, separator, targetPath)
+
+			log.Entry().Infof("publishing artifact: %s", targetURL)
+
+			response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
+
+			if err != nil {
+				return fmt.Errorf("couldn't upload artifact: %w", err)
+			}
+
+			if !(response.StatusCode == 200 || response.StatusCode == 201) {
+				return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+			}
+
+			binaryArtifacts = append(binaryArtifacts, piperenv.Artifact{
+				Name: binary,
+			})
+		}
+		commonPipelineEnvironment.custom.artifacts = binaryArtifacts
+
+	}
+
+	return nil
+}
+
+func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils) error {
+	// configure truststore
+	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
+
+	if config.PrivateModules == "" {
+		return nil
+	}
+
+	if config.PrivateModulesGitToken == "" {
+		return fmt.Errorf("please specify a token for fetching private git modules")
+	}
+
+	// pass private repos to go process
+	os.Setenv("GOPRIVATE", config.PrivateModules)
+
+	repoURLs, err := lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, utils)
+
+	if err != nil {
+		return err
+	}
+
+	// configure credentials git shall use for pulling repos
+	for _, repoURL := range repoURLs {
+		if match, _ := regexp.MatchString("(?i)^https?://", repoURL); !match {
+			continue
+		}
+
+		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
+
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
 		if err != nil {
 			return err
 		}
@@ -201,7 +431,50 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (string, error) {
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
+	installationScript := "./install.sh"
+	err := utils.DownloadFile(golangciLintURL, installationScript, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to download golangci-lint: %w", err)
+	}
+
+	err = utils.Chmod(installationScript, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = utils.RunExecutable(installationScript, "-b", golangciLintDir, golangciLintVersion)
+	if err != nil {
+		return fmt.Errorf("failed to install golangci-lint: %w", err)
+	}
+
+	return nil
+}
+
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
+	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+	var outputBuffer bytes.Buffer
+	utils.Stdout(&outputBuffer)
+	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	if err != nil && utils.GetExitCode() != 1 {
+		return fmt.Errorf("running golangci-lint failed: %w", err)
+	}
+
+	log.Entry().Infof("lint report: \n" + outputBuffer.String())
+	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
+	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
+	if err != nil {
+		return fmt.Errorf("writing golangci-lint report failed: %w", err)
+	}
+
+	if utils.GetExitCode() == 1 {
+		return fmt.Errorf("golangci-lint found issues, see report above")
+	}
+
+	return nil
+}
+
+func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootPath string) (*bytes.Buffer, error) {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(envRootPath, "commonPipelineEnvironment"))
 	if err != nil {
@@ -209,60 +482,148 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	}
 
 	log.Entry().Debugf("ldflagsTemplate in use: %v", config.LdflagsTemplate)
-	tmpl, err := template.New("ldflags").Parse(config.LdflagsTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse ldflagsTemplate '%v': %w", config.LdflagsTemplate, err)
-	}
-
-	ldflagsParams := struct {
-		CPE map[string]interface{}
-	}{
-		CPE: map[string]interface{}(cpe),
-	}
-	var generatedLdflags bytes.Buffer
-	err = tmpl.Execute(&generatedLdflags, ldflagsParams)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute ldflagsTemplate '%v': %w", config.LdflagsTemplate, err)
-	}
-
-	return generatedLdflags.String(), nil
+	return cpe.ParseTemplate(config.LdflagsTemplate)
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, utils golangBuildUtils, ldflags, architecture string) error {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
+	var binaryNames []string
+
 	envVars := os.Environ()
-	goos, goarch := splitTargetArchitecture(architecture)
-	envVars = append(envVars, fmt.Sprintf("GOOS=%v", goos), fmt.Sprintf("GOARCH=%v", goarch))
+	envVars = append(envVars, fmt.Sprintf("GOOS=%v", architecture.OS), fmt.Sprintf("GOARCH=%v", architecture.Arch))
 
 	if !config.CgoEnabled {
 		envVars = append(envVars, "CGO_ENABLED=0")
 	}
 	utils.SetEnv(envVars)
 
-	buildOptions := []string{"build"}
+	buildOptions := []string{"build", "-trimpath"}
+
 	if len(config.Output) > 0 {
-		fileExtension := ""
-		if goos == "windows" {
-			fileExtension = ".exe"
+		if len(config.Packages) > 1 {
+			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorBuild)
+				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
+			}
+			buildOptions = append(buildOptions, "-o", outputDir)
+			binaryNames = append(binaryNames, binaries...)
+		} else {
+			fileExtension := ""
+			if architecture.OS == "windows" {
+				fileExtension = ".exe"
+			}
+			binaryName := fmt.Sprintf("%s-%s.%s%s", strings.TrimRight(config.Output, string(os.PathSeparator)), architecture.OS, architecture.Arch, fileExtension)
+			buildOptions = append(buildOptions, "-o", binaryName)
+			binaryNames = append(binaryNames, binaryName)
 		}
-		buildOptions = append(buildOptions, "-o", fmt.Sprintf("%v-%v.%v%v", config.Output, goos, goarch, fileExtension))
+	} else {
+		// use default name in case no name is defined via Output
+		binaryName := path.Base(goModFile.Module.Mod.Path)
+		binaryNames = append(binaryNames, binaryName)
 	}
 	buildOptions = append(buildOptions, config.BuildFlags...)
-	buildOptions = append(buildOptions, config.Packages...)
 	if len(ldflags) > 0 {
 		buildOptions = append(buildOptions, "-ldflags", ldflags)
 	}
+	buildOptions = append(buildOptions, config.Packages...)
 
 	if err := utils.RunExecutable("go", buildOptions...); err != nil {
 		log.Entry().Debugf("buildOptions: %v", buildOptions)
 		log.SetErrorCategory(log.ErrorBuild)
-		return fmt.Errorf("failed to run build for %v.%v: %w", goos, goarch, err)
+		return nil, fmt.Errorf("failed to run build for %v.%v: %w", architecture.OS, architecture.Arch, err)
+	}
+
+	return binaryNames, nil
+}
+
+// lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
+func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, utils golangBuildUtils) ([]string, error) {
+	if globPattern == "" {
+		return []string{}, nil
+	}
+
+	if goModFile == nil {
+		return nil, fmt.Errorf("couldn't find go.mod file")
+	} else if goModFile.Require == nil {
+		return []string{}, nil // no modules referenced, nothing to do
+	}
+
+	privateModules := []string{}
+
+	for _, goModule := range goModFile.Require {
+		if !module.MatchPrefixPatterns(globPattern, goModule.Mod.Path) {
+			continue
+		}
+
+		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
+
+		if err != nil {
+			return nil, err
+		}
+
+		privateModules = append(privateModules, repo)
+	}
+	return privateModules, nil
+}
+
+func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
+		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
 }
 
-func splitTargetArchitecture(architecture string) (string, string) {
-	// architecture expected to be in format os,arch due to possibleValues check of step
+func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
+	modFilePath := "go.mod"
 
-	architectureParts := strings.Split(architecture, ",")
-	return architectureParts[0], architectureParts[1]
+	if modFileExists, err := utils.FileExists(modFilePath); err != nil {
+		return nil, err
+	} else if !modFileExists {
+		return nil, nil
+	}
+
+	modFileContent, err := utils.FileRead(modFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return modfile.Parse(modFilePath, modFileContent, nil)
+}
+
+func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform) ([]string, string, error) {
+	var binaries []string
+	outDir := fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(out, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
+
+	for _, pkg := range packages {
+		ok, err := isMainPackage(utils, pkg)
+		if err != nil {
+			return nil, "", err
+		}
+
+		if ok {
+			fileExt := ""
+			if architecture.OS == "windows" {
+				fileExt = ".exe"
+			}
+			binaries = append(binaries, filepath.Join(outDir, filepath.Base(pkg)+fileExt))
+		}
+	}
+
+	return binaries, outDir, nil
+}
+
+func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
+	outBuffer := bytes.NewBufferString("")
+	utils.Stdout(outBuffer)
+	utils.Stderr(outBuffer)
+	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
+	if err != nil {
+		return false, err
+	}
+
+	if outBuffer.String() != "main" {
+		return false, nil
+	}
+
+	return true, nil
 }

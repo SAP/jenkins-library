@@ -13,6 +13,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+const (
+	npmBomFilename = "bom-npm.xml"
+)
+
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
 	Utils   Utils
@@ -26,7 +30,7 @@ type Executor interface {
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
-	PublishAllPackages(packageJSONFiles []string, registry, username, password string) error
+	PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error
 	SetNpmRegistries() error
 	CreateBOM(packageJSONFiles []string) error
 }
@@ -57,11 +61,7 @@ type ExecRunner interface {
 
 // Utils interface for mocking
 type Utils interface {
-	Chdir(path string) error
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	Getwd() (string, error)
-	Glob(pattern string) (matches []string, err error)
+	piperutils.FileUtils
 
 	GetExecRunner() ExecRunner
 }
@@ -74,7 +74,9 @@ type utilsBundle struct {
 // GetExecRunner returns an execRunner if it's not yet initialized
 func (u *utilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
-		u.execRunner = &command.Command{}
+		u.execRunner = &command.Command{
+			StepName: "npmExecuteScripts",
+		}
 		u.execRunner.Stdout(log.Writer())
 		u.execRunner.Stderr(log.Writer())
 	}
@@ -357,37 +359,15 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	if err != nil {
 		return err
 	}
+
 	if len(packageJSONFiles) > 0 {
-		path := filepath.Dir(packageJSONFiles[0])
-		createBOMConfig := []string{
-			// https://github.com/CycloneDX/cyclonedx-node-module does not contain schema parameter hence bom creation fails
-			//"--schema", "1.2", // Target schema version
-			"--include-license-text", "false",
-			"--include-dev", "false", // Include devDependencies
-			"--output", "bom.xml",
-		}
-
-		params := []string{
-			"cyclonedx-bom",
-			path,
-		}
-		params = append(params, createBOMConfig...)
-		// Generate BOM from first package.json
-		err := execRunner.RunExecutable("npx", params...)
-		if err != nil {
-			return err
-		}
-
-		// Merge BOM(s) into the current BOM
-		for _, packageJSONFile := range packageJSONFiles[1:] {
+		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
-			params = []string{
+			params := []string{
 				"cyclonedx-bom",
 				path,
-				"--append",
-				"bom.xml",
+				"--output", filepath.Join(path, npmBomFilename),
 			}
-			params = append(params, createBOMConfig...)
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {
 				return err

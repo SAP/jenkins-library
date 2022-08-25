@@ -20,6 +20,8 @@ type abapEnvironmentPullGitRepoOptions struct {
 	Password          string   `json:"password,omitempty"`
 	RepositoryNames   []string `json:"repositoryNames,omitempty"`
 	Repositories      string   `json:"repositories,omitempty"`
+	RepositoryName    string   `json:"repositoryName,omitempty"`
+	CommitID          string   `json:"commitID,omitempty"`
 	Host              string   `json:"host,omitempty"`
 	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string   `json:"cfOrg,omitempty"`
@@ -29,7 +31,7 @@ type abapEnvironmentPullGitRepoOptions struct {
 	IgnoreCommit      bool     `json:"ignoreCommit,omitempty"`
 }
 
-// AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
+// AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP BTP ABAP Environment system
 func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentPullGitRepo"
 
@@ -42,11 +44,11 @@ func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 
 	var createAbapEnvironmentPullGitRepoCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
-		Long: `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
+		Short: "Pulls a git repository to a SAP BTP ABAP Environment system",
+		Long: `Pulls a git repository (Software Component) to a SAP BTP ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+* The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -77,6 +79,10 @@ Please provide either of the following options:
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
@@ -127,9 +133,11 @@ Please provide either of the following options:
 func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvironmentPullGitRepoOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
-	cmd.Flags().StringSliceVar(&stepConfig.RepositoryNames, "repositoryNames", []string{}, "Specifies a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringSliceVar(&stepConfig.RepositoryNames, "repositoryNames", []string{}, "Specifies a list of Repositories (Software Components) on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a repository (Software Component) on the SAP BTP ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.CommitID, "commitID", os.Getenv("PIPER_commitID"), "Specifies a commitID of the repository, configured via \"repositoryName\" on the SAP BTP ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
@@ -147,12 +155,12 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentPullGitRepo",
 			Aliases:     []config.Alias{},
-			Description: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
+			Description: "Pulls a git repository to a SAP BTP ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the BTP ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -202,6 +210,24 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_repositories"),
+					},
+					{
+						Name:        "repositoryName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repositoryName"),
+					},
+					{
+						Name:        "commitID",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_commitID"),
 					},
 					{
 						Name:        "host",

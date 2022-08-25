@@ -58,7 +58,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	return nil
 }
 
-//take the product part from CPE and the repositories part from the YAML file
+// take the product part from CPE and the repositories part from the YAML file
 func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptorFromCPE.Repositories = addonDescriptor.Repositories
 	return addonDescriptorFromCPE
@@ -69,6 +69,7 @@ func (c *componentVersion) initCV(repo abaputils.Repository, conn abapbuild.Conn
 	c.Name = repo.Name
 	c.VersionYAML = repo.VersionYAML
 	c.CommitID = repo.CommitID
+	c.UseClassicCTS = repo.UseClassicCTS
 }
 
 func (c *componentVersion) copyFieldsToRepo(initialRepo *abaputils.Repository) {
@@ -93,8 +94,9 @@ func (c *componentVersion) validate() error {
 	c.SpLevel = jCV.ComponentVersion.SpLevel
 	c.PatchLevel = jCV.ComponentVersion.PatchLevel
 	log.Entry().Infof("Resolved version %s, splevel %s, patchlevel %s", c.Version, c.SpLevel, c.PatchLevel)
+	log.Entry().Infof("Using cCTS %t", c.UseClassicCTS)
 
-	if c.CommitID == "" {
+	if !c.UseClassicCTS && c.CommitID == "" {
 		return fmt.Errorf("CommitID missing in repo '%s' of the addon.yml", c.Name)
 	}
 
@@ -107,10 +109,11 @@ type jsonComponentVersion struct {
 
 type componentVersion struct {
 	abapbuild.Connector
-	Name        string `json:"Name"`
-	VersionYAML string
-	Version     string `json:"Version"`
-	SpLevel     string `json:"SpLevel"`
-	PatchLevel  string `json:"PatchLevel"`
-	CommitID    string
+	Name          string `json:"Name"`
+	VersionYAML   string
+	Version       string `json:"Version"`
+	SpLevel       string `json:"SpLevel"`
+	PatchLevel    string `json:"PatchLevel"`
+	UseClassicCTS bool
+	CommitID      string
 }

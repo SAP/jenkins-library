@@ -32,13 +32,14 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	}
 
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
+	utils := piperutils.Files{}
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &utils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, utils piperutils.FileUtils, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	connBuild := new(abapbuild.Connector)
 	if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
 		return errConBuild
@@ -71,7 +72,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 
 	log.Entry().Infof("Publishing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", utils, filesToPublish, nil)
 
 	var reposBackToCPE []abaputils.Repository
 	for _, b := range builds {
@@ -127,7 +128,9 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 		case <-timeout:
 			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
-			br.build.Get()
+			if err := br.build.Get(); err != nil {
+				return err
+			}
 			if !br.build.IsFinished() {
 				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollInterval)
 			} else {
@@ -138,8 +141,8 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 }
 
 func (br *buildWithRepository) start() error {
-	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.Namespace == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
-		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename")
+	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
+		return errors.New("Parameters missing. Please provide software component name, version, sp-level, packagetype and packagename")
 	}
 	valuesInput := abapbuild.Values{
 		Values: []abapbuild.Value{
@@ -152,10 +155,6 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.Name + "." + br.repo.Version + "." + br.repo.SpLevel,
 			},
 			{
-				ValueID: "NAMESPACE",
-				Value:   br.repo.Namespace,
-			},
-			{
 				ValueID: "PACKAGE_TYPE",
 				Value:   br.repo.PackageType,
 			},
@@ -164,6 +163,16 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.PackageName,
 			},
 		},
+	}
+	if br.repo.Namespace != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "NAMESPACE",
+				Value: br.repo.Namespace})
+	}
+	if br.repo.UseClassicCTS {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "useClassicCTS",
+				Value: "true"})
 	}
 	if br.repo.PredecessorCommitID != "" {
 		valuesInput.Values = append(valuesInput.Values,
@@ -180,7 +189,11 @@ func (br *buildWithRepository) start() error {
 			abapbuild.Value{ValueID: "SSDC_EXPORT_LANGUAGE_VECTOR",
 				Value: br.repo.GetAakAasLanguageVector()})
 	}
-
+	if br.repo.AdditionalPiecelist != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "ADDITIONAL_PIECELIST",
+				Value: br.repo.AdditionalPiecelist})
+	}
 	phase := "BUILD_" + br.repo.PackageType
 	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
 	return br.build.Start(phase, valuesInput)
@@ -228,7 +241,11 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
 			buildFailed = true
 		}
-		builds[i].build.PrintLogs()
+		if builds[i].build.BuildID != "" {
+			if err := builds[i].build.PrintLogs(); err != nil {
+				return err
+			}
+		}
 	}
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
@@ -248,6 +265,7 @@ func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvir
 	connConfig.Password = config.Password
 	connConfig.AddonDescriptor = config.AddonDescriptor
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+	connConfig.CertificateNames = config.CertificateNames
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {

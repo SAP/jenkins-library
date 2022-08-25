@@ -2,60 +2,134 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/stretchr/testify/assert"
+
+	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 type golangBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+
+	returnFileUploadStatus  int   // expected to be set upfront
+	returnFileUploadError   error // expected to be set upfront
+	returnFileDownloadError error // expected to be set upfront
+
+	clientOptions []piperhttp.ClientOptions // set by mock
+	fileUploads   map[string]string         // set by mock
 }
 
-func newGolangBuildTestsUtils() golangBuildMockUtils {
+func (g *golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if g.returnFileDownloadError != nil {
+		return g.returnFileDownloadError
+	}
+	g.AddFile(filename, []byte("content"))
+	return nil
+}
+
+func (g *golangBuildMockUtils) GetRepositoryURL(module string) (string, error) {
+	return fmt.Sprintf("https://%s.git", module), nil
+}
+
+func (g *golangBuildMockUtils) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (g *golangBuildMockUtils) SetOptions(options piperhttp.ClientOptions) {
+	g.clientOptions = append(g.clientOptions, options)
+}
+
+func (g *golangBuildMockUtils) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	g.fileUploads[file] = url
+
+	response := http.Response{
+		StatusCode: g.returnFileUploadStatus,
+	}
+
+	return &response, g.returnFileUploadError
+}
+
+func (g *golangBuildMockUtils) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
+	return g.UploadRequest(http.MethodPut, url, file, fieldName, header, cookies, uploadType)
+}
+
+func (g *golangBuildMockUtils) Upload(data piperhttp.UploadRequestData) (*http.Response, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (g *golangBuildMockUtils) getDockerImageValue(stepName string) (string, error) {
+	return "golang:latest", nil
+}
+
+func newGolangBuildTestsUtils() *golangBuildMockUtils {
 	utils := golangBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
+		// clientOptions:  []piperhttp.ClientOptions{},
+		fileUploads: map[string]string{},
 	}
-	return utils
+	return &utils
 }
 
 func TestRunGolangBuild(t *testing.T) {
+	cpe := golangBuildCommonPipelineEnvironment{}
+	modTestFile := `module private.example.com/test
+
+require (
+		example.com/public/module v1.0.0
+		private1.example.com/private/repo v0.1.0
+		private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
+
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
 		}
+
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - tests & ldflags", func(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests:            true,
 			LdflagsTemplate:     "test",
+			Packages:            []string{"package/foo"},
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build", "-ldflags", "test"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
 	t.Run("success - tests with coverage", func(t *testing.T) {
@@ -65,9 +139,10 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"tool", "cover", "-html", coverageFile, "-o", "coverage.html"}, utils.ExecMockRunner.Calls[2].Params)
@@ -79,19 +154,133 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"build"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
-	t.Run("failure - install pre-requisites", func(t *testing.T) {
+	t.Run("success - simple publish", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures: []string{"linux,amd64"},
+			Publish:             true,
+			TargetRepositoryURL: "https://my.target.repository.local/",
+			ArtifactVersion:     "1.0.0",
+		}
+
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, "test", cpe.custom.artifacts[0].Name)
+	})
+
+	t.Run("success - publishes binaries", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			ArtifactVersion:          "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+			assert.Equal(t, []string{"build", "-trimpath", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+
+			assert.Equal(t, 1, len(utils.fileUploads))
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
+		}
+	})
+
+	t.Run("success - publishes binaries (when TargetRepositoryURL ends with slash)", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local/",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			ArtifactVersion:          "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 200
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+			assert.Equal(t, []string{"build", "-trimpath", "-o", "testBin-linux.amd64"}, utils.ExecMockRunner.Calls[0].Params)
+
+			assert.Equal(t, 1, len(utils.fileUploads))
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/testBin-linux.amd64", utils.fileUploads["testBin-linux.amd64"])
+		}
+	})
+
+	t.Run("success - create BOM", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM:           true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom-golang.xml"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - RunLint", func(t *testing.T) {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+
+		config := golangBuildOptions{
+			RunLint: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile("go.mod", []byte(modTestFile))
+		telemetry := telemetry.CustomData{}
+		err := runGolangBuild(&config, &telemetry, utils, &cpe)
+		assert.NoError(t, err)
+
+		b, err := utils.FileRead("install.sh")
+		assert.NoError(t, err)
+
+		assert.Equal(t, []byte("content"), b)
+		assert.Equal(t, "./install.sh", utils.Calls[0].Exec)
+		assert.Equal(t, []string{"-b", golangciLintDir, golangciLintVersion}, utils.Calls[0].Params)
+		assert.Equal(t, binaryPath, utils.Calls[1].Exec)
+		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[1].Params)
+
+	})
+
+	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests: true,
 		}
@@ -99,7 +288,19 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"go install gotest.tools/gotestsum": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
+	})
+
+	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
 	})
 
@@ -111,7 +312,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"gotestsum --junitfile": fmt.Errorf("test failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "running tests failed - junit result missing: test failure")
 	})
 
@@ -125,7 +326,7 @@ func TestRunGolangBuild(t *testing.T) {
 		utils.AddFile(coverageFile, []byte("some content"))
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "some tests failed")
 	})
 
@@ -138,8 +339,8 @@ func TestRunGolangBuild(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
-		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.Contains(t, fmt.Sprint(err), "failed to parse cpe template")
 	})
 
 	t.Run("failure - build failure", func(t *testing.T) {
@@ -148,11 +349,142 @@ func TestRunGolangBuild(t *testing.T) {
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runGolangBuild(&config, &telemetryData, utils)
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: build failure")
+	})
+
+	t.Run("failure - publish - no target repository defined", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures: []string{"linux,amd64"},
+			Output:              "testBin",
+			Publish:             true,
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "there's no target repository for binary publishing configured")
+	})
+
+	t.Run("failure - publish - no go.mod file found", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			ArtifactVersion:          "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "go.mod file not found")
+	})
+
+	t.Run("failure - publish - go.mod file without module path", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			ArtifactVersion:          "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(""))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "go.mod doesn't declare a module path")
+	})
+
+	t.Run("failure - publish - no artifactVersion set", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "no build descriptor available, supported: [go.mod VERSION version.txt]")
+	})
+
+	t.Run("failure - publish - received unexpected status code", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:      []string{"linux,amd64"},
+			Output:                   "testBin",
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			ArtifactVersion:          "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 500
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "couldn't upload artifact, received status code 500")
+	})
+
+	t.Run("failure - create BOM", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM:           true,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -test -output bom-golang.xml": fmt.Errorf("BOM creation failure")}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
+	})
+
+	t.Run("failure - RunLint: retrieveGolangciLint failed", func(t *testing.T) {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+
+		config := golangBuildOptions{
+			RunLint: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile("go.mod", []byte(modTestFile))
+		utils.ShouldFailOnCommand = map[string]error{
+			fmt.Sprintf("./install.sh -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("installation err"),
+		}
+		telemetry := telemetry.CustomData{}
+		err := runGolangBuild(&config, &telemetry, utils, &cpe)
+		assert.EqualError(t, err, "failed to install golangci-lint: installation err")
+	})
+
+	t.Run("failure - RunLint: runGolangciLint failed", func(t *testing.T) {
+		goPath := os.Getenv("GOPATH")
+		golangciLintDir := filepath.Join(goPath, "bin")
+		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+
+		config := golangBuildOptions{
+			RunLint: true,
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile("go.mod", []byte(modTestFile))
+		utils.ShouldFailOnCommand = map[string]error{fmt.Sprintf("%s run --out-format checkstyle", binaryPath): fmt.Errorf("err")}
+		telemetry := telemetry.CustomData{}
+		err := runGolangBuild(&config, &telemetry, utils, &cpe)
+		assert.EqualError(t, err, "running golangci-lint failed: err")
 	})
 }
 
@@ -344,11 +676,9 @@ func TestReportGolangTestCoverage(t *testing.T) {
 
 func TestPrepareLdflags(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "")
-	defer os.RemoveAll(dir) // clean up
-	assert.NoError(t, err, "Error when creating temp dir")
+	dir := t.TempDir()
 
-	err = os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
+	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
 	err = ioutil.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
@@ -359,14 +689,14 @@ func TestPrepareLdflags(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		result, err := prepareLdflags(&config, utils, dir)
 		assert.NoError(t, err)
-		assert.Equal(t, "-X version=1.2.3", result)
+		assert.Equal(t, "-X version=1.2.3", (*result).String())
 	})
 
 	t.Run("error - template parsing", func(t *testing.T) {
 		config := golangBuildOptions{LdflagsTemplate: "-X version={{ .CPE.artifactVersion "}
 		utils := newGolangBuildTestsUtils()
 		_, err := prepareLdflags(&config, utils, dir)
-		assert.Contains(t, fmt.Sprint(err), "failed to parse ldflagsTemplate")
+		assert.Contains(t, fmt.Sprint(err), "failed to parse cpe template")
 	})
 }
 
@@ -378,9 +708,10 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{}
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Greater(t, len(utils.Env), 3)
 		assert.Contains(t, utils.Env, "CGO_ENABLED=0")
@@ -388,6 +719,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, utils.Env, "GOARCH=amd64")
 		assert.Equal(t, utils.Calls[0].Exec, "go")
 		assert.Equal(t, utils.Calls[0].Params[0], "build")
+		assert.Equal(t, binaryName[0], "testBinary")
 	})
 
 	t.Run("success - custom params", func(t *testing.T) {
@@ -395,15 +727,18 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{BuildFlags: []string{"--flag1", "val1", "--flag2", "val2"}, Output: "testBin", Packages: []string{"./test/.."}}
 		utils := newGolangBuildTestsUtils()
 		ldflags := "-X test=test"
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-linux.amd64")
 		assert.Contains(t, utils.Calls[0].Params, "./test/..")
 		assert.Contains(t, utils.Calls[0].Params, "-ldflags")
 		assert.Contains(t, utils.Calls[0].Params, "-X test=test")
+		assert.Len(t, binaryNames, 1)
+		assert.Contains(t, binaryNames, "testBin-linux.amd64")
 	})
 
 	t.Run("success - windows", func(t *testing.T) {
@@ -411,12 +746,86 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		config := golangBuildOptions{Output: "testBin"}
 		utils := newGolangBuildTestsUtils()
 		ldflags := ""
-		architecture := "windows,amd64"
+		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-windows.amd64.exe")
+		assert.Len(t, binaryNames, 1)
+		assert.Contains(t, binaryNames, "testBin-windows.amd64.exe")
+	})
+
+	t.Run("success - multiple main packages (linux)", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} package/foo": "main",
+			"go list -f {{ .Name }} package/bar": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		assert.NoError(t, err)
+		assert.Contains(t, utils.Calls[0].Params, "list")
+		assert.Contains(t, utils.Calls[0].Params, "package/foo")
+		assert.Contains(t, utils.Calls[1].Params, "list")
+		assert.Contains(t, utils.Calls[1].Params, "package/bar")
+
+		assert.Len(t, binaryNames, 2)
+		assert.Contains(t, binaryNames, "test-linux-amd64/foo")
+		assert.Contains(t, binaryNames, "test-linux-amd64/bar")
+	})
+
+	t.Run("success - multiple main packages (windows)", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} package/foo": "main",
+			"go list -f {{ .Name }} package/bar": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		assert.NoError(t, err)
+		assert.Contains(t, utils.Calls[0].Params, "list")
+		assert.Contains(t, utils.Calls[0].Params, "package/foo")
+		assert.Contains(t, utils.Calls[1].Params, "list")
+		assert.Contains(t, utils.Calls[1].Params, "package/bar")
+
+		assert.Len(t, binaryNames, 2)
+		assert.Contains(t, binaryNames, "test-windows-amd64/foo.exe")
+		assert.Contains(t, binaryNames, "test-windows-amd64/bar.exe")
+	})
+
+	t.Run("success - multiple mixed packages", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} package/foo": "main",
+			"go list -f {{ .Name }} package/bar": "bar",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		assert.NoError(t, err)
+		assert.Contains(t, utils.Calls[0].Params, "list")
+		assert.Contains(t, utils.Calls[0].Params, "package/foo")
+		assert.Contains(t, utils.Calls[1].Params, "list")
+		assert.Contains(t, utils.Calls[1].Params, "package/bar")
+
+		assert.Len(t, binaryNames, 1)
+		assert.Contains(t, binaryNames, "test-linux-amd64/foo")
 	})
 
 	t.Run("execution error", func(t *testing.T) {
@@ -425,10 +834,291 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		utils := newGolangBuildTestsUtils()
 		utils.ShouldFailOnCommand = map[string]error{"go build": fmt.Errorf("execution error")}
 		ldflags := ""
-		architecture := "linux,amd64"
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		err := runGolangBuildPerArchitecture(&config, utils, ldflags, architecture)
+		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
 
+}
+
+func TestPrepareGolangEnvironment(t *testing.T) {
+	modTestFile := `
+module private.example.com/m
+
+require (
+        example.com/public/module v1.0.0
+        private1.example.com/private/repo v0.1.0
+        private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
+
+	type expectations struct {
+		envVars          []string
+		commandsExecuted [][]string
+	}
+	tests := []struct {
+		name           string
+		modFileContent string
+		globPattern    string
+		gitToken       string
+		expect         expectations
+	}{
+		{
+			name:           "success - does nothing if privateModules is not set",
+			modFileContent: modTestFile,
+			globPattern:    "",
+			gitToken:       "secret",
+			expect:         expectations{},
+		},
+		{
+			name:           "success - goprivate is set and authentication properly configured",
+			modFileContent: modTestFile,
+			globPattern:    "*.example.com",
+			gitToken:       "secret",
+			expect: expectations{
+				envVars: []string{"GOPRIVATE=*.example.com"},
+				commandsExecuted: [][]string{
+					{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
+					{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+
+			goModFile, _ := modfile.Parse("go.mod", []byte(tt.modFileContent), nil)
+
+			config := golangBuildOptions{}
+			config.PrivateModules = tt.globPattern
+			config.PrivateModulesGitToken = tt.gitToken
+
+			err := prepareGolangEnvironment(&config, goModFile, utils)
+
+			if assert.NoError(t, err) {
+				assert.Subset(t, os.Environ(), tt.expect.envVars)
+				assert.Equal(t, len(tt.expect.commandsExecuted), len(utils.Calls))
+
+				for i, expectedCommand := range tt.expect.commandsExecuted {
+					assert.Equal(t, expectedCommand[0], utils.Calls[i].Exec)
+					assert.Equal(t, expectedCommand[1:], utils.Calls[i].Params)
+				}
+			}
+		})
+	}
+}
+
+func TestLookupGolangPrivateModulesRepositories(t *testing.T) {
+	t.Parallel()
+
+	modTestFile := `
+module private.example.com/m
+
+require (
+	example.com/public/module v1.0.0
+	private1.example.com/private/repo v0.1.0
+	private2.example.com/another/repo v0.2.0
+)
+
+go 1.17`
+
+	type expectations struct {
+		repos        []string
+		errorMessage string
+	}
+	tests := []struct {
+		name           string
+		modFileContent string
+		globPattern    string
+		expect         expectations
+	}{
+		{
+			name:           "Does nothing if glob pattern is empty",
+			modFileContent: modTestFile,
+			expect: expectations{
+				repos: []string{},
+			},
+		},
+		{
+			name:           "Does nothing if there is no go.mod file",
+			globPattern:    "private.example.com",
+			modFileContent: "",
+			expect: expectations{
+				repos: []string{},
+			},
+		},
+		{
+			name:           "Detects all private repos using a glob pattern",
+			modFileContent: modTestFile,
+			globPattern:    "*.example.com",
+			expect: expectations{
+				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
+			},
+		},
+		{
+			name:           "Detects all private repos",
+			modFileContent: modTestFile,
+			globPattern:    "private1.example.com,private2.example.com",
+			expect: expectations{
+				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
+			},
+		},
+		{
+			name:           "Detects a dedicated repo",
+			modFileContent: modTestFile,
+			globPattern:    "private2.example.com",
+			expect: expectations{
+				repos: []string{"https://private2.example.com/another/repo.git"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+
+			goModFile, _ := modfile.Parse("", []byte(tt.modFileContent), nil)
+
+			repos, err := lookupGolangPrivateModulesRepositories(goModFile, tt.globPattern, utils)
+
+			if tt.expect.errorMessage == "" {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expect.repos, repos)
+			} else {
+				assert.EqualError(t, err, tt.expect.errorMessage)
+			}
+		})
+	}
+}
+
+func TestRunGolangciLint(t *testing.T) {
+	t.Parallel()
+
+	goPath := os.Getenv("GOPATH")
+	golangciLintDir := filepath.Join(goPath, "bin")
+	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+	lintSettings := map[string]string{
+		"reportStyle":      "checkstyle",
+		"reportOutputPath": "golangci-lint-report.xml",
+		"additionalParams": "",
+	}
+
+	tt := []struct {
+		name                string
+		shouldFailOnCommand map[string]error
+		fileWriteError      error
+		exitCode            int
+		expectedCommand     []string
+		expectedErr         error
+	}{
+		{
+			name:                "success",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - failed to run golangci-lint",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
+		},
+		{
+			name:                "failure - failed to write golangci-lint report",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
+		},
+		{
+			name:                "failure - failed with ExitCode == 1",
+			shouldFailOnCommand: map[string]error{},
+			exitCode:            1,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
+		},
+	}
+
+	for i, test := range tt {
+		i, test := i, test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			utils := newGolangBuildTestsUtils()
+			utils.ShouldFailOnCommand = test.shouldFailOnCommand
+			utils.FileWriteError = test.fileWriteError
+			utils.ExitCode = test.exitCode
+			err := runGolangciLint(utils, golangciLintDir, lintSettings)
+
+			if test.expectedErr == nil {
+				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
+				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
+			} else {
+				assert.EqualError(t, err, test.expectedErr.Error())
+			}
+		})
+	}
+}
+
+func TestRetrieveGolangciLint(t *testing.T) {
+	t.Parallel()
+
+	goPath := os.Getenv("GOPATH")
+	golangciLintDir := filepath.Join(goPath, "bin")
+
+	tt := []struct {
+		name                string
+		shouldFailOnCommand map[string]error
+		downloadErr         error
+		expectedCommand     []string
+		expectedErr         error
+	}{
+		{
+			name:                "success",
+			shouldFailOnCommand: map[string]error{},
+			downloadErr:         nil,
+			expectedCommand:     []string{"./install.sh", "-b", golangciLintDir, golangciLintVersion},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - failed to download golangci-lint",
+			shouldFailOnCommand: map[string]error{},
+			downloadErr:         fmt.Errorf("download err"),
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("failed to download golangci-lint: download err"),
+		},
+		{
+			name:                "failure - failed to install golangci-lint with sh error",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("./install.sh -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("installation err")},
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("failed to install golangci-lint: installation err"),
+		},
+	}
+
+	for i, test := range tt {
+		i, test := i, test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			utils := newGolangBuildTestsUtils()
+			utils.ShouldFailOnCommand = test.shouldFailOnCommand
+			utils.returnFileDownloadError = test.downloadErr
+			err := retrieveGolangciLint(utils, golangciLintDir)
+
+			if test.expectedErr == nil {
+				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
+				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
+			} else {
+				assert.EqualError(t, err, test.expectedErr.Error())
+			}
+		})
+	}
 }

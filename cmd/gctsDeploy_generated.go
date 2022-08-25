@@ -25,7 +25,7 @@ type gctsDeployOptions struct {
 	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
 	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
 	VSID                string                 `json:"vSID,omitempty"`
-	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT"`
+	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT GITHUB GITLAB"`
 	Branch              string                 `json:"branch,omitempty"`
 	Scope               string                 `json:"scope,omitempty"`
 	Rollback            bool                   `json:"rollback,omitempty"`
@@ -79,6 +79,10 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())

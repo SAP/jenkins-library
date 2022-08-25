@@ -100,6 +100,10 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -248,7 +252,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cmclient", Image: "ppiper/cm-client"},
+				{Name: "cmclient", Image: "ppiper/cm-client:3.0.0.0"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

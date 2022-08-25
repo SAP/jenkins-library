@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // can be execute with go test -tags=integration ./integration/...
 
 package main
@@ -110,16 +112,15 @@ func copyFile(source, target string) error {
 	return os.Chmod(target, sourceInfo.Mode())
 }
 
-func createTmpDir(prefix string) (string, error) {
-	dirName := os.TempDir()
-	tmpDir, err := filepath.EvalSymlinks(dirName)
+// createTmpDir calls t.TempDir() and returns the path name after the evaluation
+// of any symbolic links.
+//
+// On Docker for Mac, t.TempDir() returns e.g.
+// /var/folders/bl/wbxjgtzx7j5_mjsmfr3ynlc00000gp/T/<the-test-name>/001
+func createTmpDir(t *testing.T) (string, error) {
+	tmpDir, err := filepath.EvalSymlinks(t.TempDir())
 	if err != nil {
 		return "", err
 	}
-	tmpDir = filepath.Clean(tmpDir)
-	path, err := ioutil.TempDir(tmpDir, prefix)
-	if err != nil {
-		return "", err
-	}
-	return path, nil
+	return tmpDir, nil
 }

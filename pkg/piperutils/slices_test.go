@@ -29,6 +29,18 @@ func TestContainsString(t *testing.T) {
 	assert.False(t, ContainsString(stringList, "baz"))
 }
 
+func TestFindString(t *testing.T) {
+	var stringList []string
+	assert.Equal(t, -1, FindString(stringList, "test"))
+	assert.Equal(t, -1, FindString(stringList, ""))
+
+	stringList = append(stringList, "", "foo", "bar", "foo")
+	assert.Equal(t, 0, FindString(stringList, ""))
+	assert.Equal(t, 2, FindString(stringList, "bar"))
+	assert.Equal(t, 1, FindString(stringList, "foo"))
+	assert.Equal(t, -1, FindString(stringList, "baz"))
+}
+
 func TestRemoveAll(t *testing.T) {
 	t.Parallel()
 	t.Run("empty array", func(t *testing.T) {
@@ -139,5 +151,14 @@ func TestUniqueStrings(t *testing.T) {
 	unique := UniqueStrings([]string{"abc", "xyz", "123", "abc"})
 	if assert.Len(t, unique, 3) {
 		assert.Subset(t, []string{"123", "abc", "xyz"}, unique)
+	}
+}
+
+func TestCopyAtoB(t *testing.T) {
+	src := []string{"abc", "xyz", "123", "abc"}
+	target := make([]string, 4)
+	CopyAtoB(src, target)
+	if assert.Len(t, target, 4) {
+		assert.EqualValues(t, src, target)
 	}
 }

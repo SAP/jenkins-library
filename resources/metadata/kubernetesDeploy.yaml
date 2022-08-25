@@ -43,6 +43,9 @@ spec:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins credentials ID containing the github token.
+        type: jenkins
     resources:
       - name: deployDescriptor
         type: stash
@@ -70,7 +73,58 @@ spec:
         aliases:
           - name: k8sAppTemplate
         type: string
-        description: 'Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.'
+        description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).
+        longDescription: |
+          There are two supported ways for the template rendering:
+
+          1. For a deployments using single image, you can use a placeholder `<image-name>`, which will be replaced with the image GUN.
+          ```
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: app
+            labels:
+              app: app
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: app
+            template:
+              metadata:
+                labels:
+                  app: app
+              spec:
+                containers:
+                - name: app
+                  image: <image-name>
+          ```
+
+          2. Helm styled templates, with the support for multi-image deployments.
+
+          ```
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: app
+            labels:
+              app: app
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: app
+            template:
+              metadata:
+                labels:
+                  app: app
+              spec:
+                containers:
+                - name: app-1
+                  image: "{{ .Values.image.repository}}:{{ .Values.image.tag }}"
+                - name: app-2
+                  image: "{{ .Values.image.app_2.repository}}:{{ .Values.image.app_2.tag }}"
+          ```
         scope:
           - PARAMETERS
           - STAGES
@@ -84,6 +138,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/localHelmChartPath
       - name: containerRegistryPassword
         description: Password for container registry access - typically provided by the CI/CD environment.
         type: string
@@ -96,6 +153,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
       - name: containerImageName
@@ -147,6 +206,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: containerRegistrySecret
@@ -223,15 +284,79 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: valuesMapping
+        type: "map[string]interface{}"
+        longDescription: |
+          Mapping of values provided by Piper onto custom paths in format `[custom-path]: [piper-value]`
+
+          Example:
+          ```yaml
+          valuesMapping:
+            subchart.image.tag:        image.debug.tag
+            subchart.image.repository: image.debug.repository
+            subchart.image.pullsecret: secret.dockerconfigjson
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
       - name: image
         aliases:
           - name: deployImage
         type: string
         description: Full name of the image to be deployed.
+        deprecationMessage: This parameter is deprecated, please use [containerImageName](#containerimagename) and [containerImageTag](#containerimagetag)
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
-        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageNames
+        type: "[]string"
+        description: List of names of the images to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNames
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageNameTags
+        type: "[]string"
+        description: List of full names (registry and tag) of the images to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: imageDigests
+        type: "[]string"
+        description: List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageDigests
         scope:
           - PARAMETERS
           - STAGES
@@ -254,6 +379,24 @@ spec:
       - name: keepFailedDeployments
         type: bool
         description: Defines whether a failed deployment will be purged
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: runHelmTests
+        type: bool
+        description: Defines whether or not to run helm tests against the recently deployed release
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: showTestLogs
+        type: bool
+        description: Defines whether to print the pod logs after running helm tests
         default: false
         scope:
           - GENERAL
@@ -341,8 +484,43 @@ spec:
         possibleValues:
           - apply
           - replace
+      - name: setupScript
+        type: string
+        description: HTTP location of setup script
+        longDescription: |
+          For helm-based deploymens only!
+          HTTP location of setup script.
+          The script will be downloaded from a GitHub location using the `githubToken` and executed before the installation of the helm package.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: verificationScript
+        type: string
+        description: HTTP location of verification script
+        longDescription: |
+          For helm-based deploymens only!
+          HTTP location of verification script.
+          The script will be downloaded from a GitHub location using the `githubToken` and executed after installation of the helm package.
+          It can be used to verify if all required artifacts are ready before progressing with for example `helmTest` using the step option `runHelmTests: true`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: teardownScript
+        type: string
+        description: HTTP location of teardown script
+        longDescription: |
+          For helm-based deploymens only!
+          HTTP location of setup script.
+          The script will be downloaded from a GitHub location using the `githubToken` and executed at the end of the step.
+          This can for example be used in order to remove a temporary namespace which was created for the test.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.4.1
+    - image: dtzar/helm-kubectl:3.9.0
       workingDir: /config
       options:
         - name: -u

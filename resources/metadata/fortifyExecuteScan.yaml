@@ -5,7 +5,7 @@ metadata:
     This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
     The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
-    and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+    and Java plus Maven / Gradle or alternatively Python installed into it for being able to perform any scans.
     !!! hint "Scanning MTA projects"
         Build type `maven` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. `java/**/src/main/java/**/*`.
 
@@ -44,6 +44,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
@@ -167,6 +175,9 @@ spec:
           - STAGES
           - STEPS
         default: python3
+        possibleValues:
+          - python3
+          - python2
       - name: uploadResults
         type: bool
         description: "Whether results shall be uploaded or not"
@@ -218,6 +229,19 @@ spec:
           - STAGES
           - STEPS
         default: ./setup.py
+      - name: buildDescriptorFile
+        type: string
+        conditions:
+          - conditionRef: strings-equal
+            params:
+              - name: buildTool
+                value: gradle
+        description: "Path to the build descriptor file addressing the module/folder to be scanned."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ./build.gradle
       - name: commitId
         description: "Set the Git commit ID for identifying artifacts throughout the scan."
         resourceRef:
@@ -255,6 +279,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -267,6 +292,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -334,7 +360,7 @@ spec:
         description:
           "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
           If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
-          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*',
+          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*', '**/src/gen/java/cds/**/*',
           '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for
           `buildTool: 'pip'` it is `['./**/*']`."
         scope:
@@ -378,7 +404,7 @@ spec:
           - STAGES
           - STEPS
         default: ["./lib", "."]
-        deprecated: true
+        deprecationMessage: this is deprecated
       - name: artifactUrl
         type: string
         description:
@@ -396,6 +422,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: convertToSarif
+        type: bool
+        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: fprUploadEndpoint
         aliases:
           - name: fortifyFprUploadEndpoint
@@ -459,13 +493,39 @@ spec:
       - name: spotCheckMinimum
         type: int
         description:
-          "The minimum number of issues that must be audited per category in the `Spot Checks of each
+          "The minimum number/percentage of issues that must be audited per category in the `Spot Checks of each
           Category` folder to avoid an error being thrown"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: 1
+      - name: spotCheckMinimumUnit
+        type: string
+        description:
+          "The unit for the spotCheckMinimum to apply."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 'number'
+        possibleValues:
+          - number
+          - percentage
+      - name: spotCheckMaximum
+        type: int
+        description:
+          "The maximum number of issues that must be audited per category in the `Spot Checks of each
+          Category` folder to avoid an error being thrown.
+          Note that this flag depends on the result of spotCheckMinimum.
+          For example if spotCheckMinimum percentage value exceeds spotCheckMaximum then
+          spotCheckMaximum will be considerd else spotCheckMinimum is considered.
+          If value is less than one, this flag will be ignored."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 0
       - name: fprDownloadEndpoint
         aliases:
           - name: fortifyFprDownloadEndpoint
@@ -541,7 +601,7 @@ spec:
         default: '.*Merge pull request #(\\d+) from.*'
       - name: buildTool
         type: string
-        description: "Scan type used for the step which can be `'maven'`, `'pip'`"
+        description: "Scan type used for the step which can be `'maven'`, `'pip'` or `'gradle'`"
         scope:
           - GENERAL
           - PARAMETERS
@@ -597,6 +657,21 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: createResultIssue
+        type: bool
+        description: Activate creation of a result issue in GitHub.
+        longDescription: |
+          Whether the step creates a GitHub issue containing the scan results in the originating repo.
+          Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - image: ""
   outputs:
@@ -610,6 +685,8 @@ spec:
                 type: bool
           - name: fortify_data
             fields:
+              - name: projectID
+                type: int64
               - name: projectName
               - name: projectVersion
               - name: projectVersionId
@@ -636,3 +713,18 @@ spec:
                 type: int
               - name: suppressed
                 type: int
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/*.PDF"
+            type: fortify
+          - filePattern: "**/*.fpr"
+            type: fortify
+          - filePattern: "**/fortify-scan.*"
+            type: fortify
+          - filePattern: "**/toolrun_fortify_*.json"
+            type: fortify
+          - filePattern: "**/piper_fortify_report.json"
+            type: fortify
+          - filePattern: "**/piper_fortify_report.html"
+            type: fortify

@@ -7,41 +7,12 @@ import (
 	"net/url"
 
 	"github.com/Jeffail/gabs/v2"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-type integrationArtifactGetMplStatusUtils interface {
-	command.ExecRunner
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The integrationArtifactGetMplStatusUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-type integrationArtifactGetMplStatusUtilsBundle struct {
-	*command.Command
-
-	// Embed more structs as necessary to implement methods or interfaces you add to integrationArtifactGetMplStatusUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// integrationArtifactGetMplStatusUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newIntegrationArtifactGetMplStatusUtils() integrationArtifactGetMplStatusUtils {
-	utils := integrationArtifactGetMplStatusUtilsBundle{
-		Command: &command.Command{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
 
 func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
@@ -135,7 +106,7 @@ func runIntegrationArtifactGetMplStatus(
 	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", mplStatusResp.StatusCode)
 }
 
-//getIntegrationArtifactMPLError - Get integration artifact MPL error details
+// getIntegrationArtifactMPLError - Get integration artifact MPL error details
 func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment, mplID string, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)

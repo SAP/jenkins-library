@@ -1,11 +1,11 @@
 metadata:
   name: abapEnvironmentPullGitRepo
-  description: Pulls a git repository to a SAP Cloud Platform ABAP Environment system
+  description: Pulls a git repository to a SAP BTP ABAP Environment system
   longDescription: |
-    Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
+    Pulls a git repository (Software Component) to a SAP BTP ABAP Environment system.
     Please provide either of the following options:
 
-    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+    * The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
     * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
@@ -13,7 +13,7 @@ spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        description: Jenkins credentials ID containing user and password to authenticate to the BTP ABAP Environment system or the Cloud Foundry API
         type: jenkins
         aliases:
           - name: cfCredentialsId
@@ -47,7 +47,7 @@ spec:
             param: password
       - name: repositoryNames
         type: "[]string"
-        description: Specifies a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
+        description: Specifies a list of Repositories (Software Components) on the SAP BTP ABAP Environment system
         scope:
           - PARAMETERS
           - STAGES
@@ -60,9 +60,23 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: repositoryName
+        type: string
+        description: Specifies a repository (Software Component) on the SAP BTP ABAP Environment system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: commitID
+        type: string
+        description: Specifies a commitID of the repository, configured via "repositoryName" on the SAP BTP ABAP Environment system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: host
         type: string
-        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        description: Specifies the host address of the SAP BTP ABAP Environment system
         scope:
           - PARAMETERS
           - STAGES

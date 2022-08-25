@@ -16,32 +16,42 @@ import (
 )
 
 type kubernetesDeployOptions struct {
-	AdditionalParameters       []string `json:"additionalParameters,omitempty"`
-	APIServer                  string   `json:"apiServer,omitempty"`
-	AppTemplate                string   `json:"appTemplate,omitempty"`
-	ChartPath                  string   `json:"chartPath,omitempty"`
-	ContainerRegistryPassword  string   `json:"containerRegistryPassword,omitempty"`
-	ContainerImageName         string   `json:"containerImageName,omitempty"`
-	ContainerImageTag          string   `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL       string   `json:"containerRegistryUrl,omitempty"`
-	ContainerRegistryUser      string   `json:"containerRegistryUser,omitempty"`
-	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
-	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
-	DeploymentName             string   `json:"deploymentName,omitempty"`
-	DeployTool                 string   `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
-	ForceUpdates               bool     `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                 []string `json:"helmValues,omitempty"`
-	Image                      string   `json:"image,omitempty"`
-	IngressHosts               []string `json:"ingressHosts,omitempty"`
-	KeepFailedDeployments      bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                 string   `json:"kubeConfig,omitempty"`
-	KubeContext                string   `json:"kubeContext,omitempty"`
-	KubeToken                  string   `json:"kubeToken,omitempty"`
-	Namespace                  string   `json:"namespace,omitempty"`
-	TillerNamespace            string   `json:"tillerNamespace,omitempty"`
-	DockerConfigJSON           string   `json:"dockerConfigJSON,omitempty"`
-	DeployCommand              string   `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
+	AdditionalParameters       []string               `json:"additionalParameters,omitempty"`
+	APIServer                  string                 `json:"apiServer,omitempty"`
+	AppTemplate                string                 `json:"appTemplate,omitempty"`
+	ChartPath                  string                 `json:"chartPath,omitempty"`
+	ContainerRegistryPassword  string                 `json:"containerRegistryPassword,omitempty"`
+	ContainerImageName         string                 `json:"containerImageName,omitempty"`
+	ContainerImageTag          string                 `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL       string                 `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser      string                 `json:"containerRegistryUser,omitempty"`
+	ContainerRegistrySecret    string                 `json:"containerRegistrySecret,omitempty"`
+	CreateDockerRegistrySecret bool                   `json:"createDockerRegistrySecret,omitempty"`
+	DeploymentName             string                 `json:"deploymentName,omitempty"`
+	DeployTool                 string                 `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
+	ForceUpdates               bool                   `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds      int                    `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                 []string               `json:"helmValues,omitempty"`
+	ValuesMapping              map[string]interface{} `json:"valuesMapping,omitempty"`
+	GithubToken                string                 `json:"githubToken,omitempty"`
+	Image                      string                 `json:"image,omitempty"`
+	ImageNames                 []string               `json:"imageNames,omitempty"`
+	ImageNameTags              []string               `json:"imageNameTags,omitempty"`
+	ImageDigests               []string               `json:"imageDigests,omitempty"`
+	IngressHosts               []string               `json:"ingressHosts,omitempty"`
+	KeepFailedDeployments      bool                   `json:"keepFailedDeployments,omitempty"`
+	RunHelmTests               bool                   `json:"runHelmTests,omitempty"`
+	ShowTestLogs               bool                   `json:"showTestLogs,omitempty"`
+	KubeConfig                 string                 `json:"kubeConfig,omitempty"`
+	KubeContext                string                 `json:"kubeContext,omitempty"`
+	KubeToken                  string                 `json:"kubeToken,omitempty"`
+	Namespace                  string                 `json:"namespace,omitempty"`
+	TillerNamespace            string                 `json:"tillerNamespace,omitempty"`
+	DockerConfigJSON           string                 `json:"dockerConfigJSON,omitempty"`
+	DeployCommand              string                 `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
+	SetupScript                string                 `json:"setupScript,omitempty"`
+	VerificationScript         string                 `json:"verificationScript,omitempty"`
+	TeardownScript             string                 `json:"teardownScript,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -94,6 +104,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			}
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
+			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.KubeToken)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
@@ -107,6 +118,10 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
@@ -157,7 +172,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for \"helm install\" or \"kubectl apply\" command.")
 	cmd.Flags().StringVar(&stepConfig.APIServer, "apiServer", os.Getenv("PIPER_apiServer"), "Defines the Url of the API Server of the Kubernetes cluster.")
-	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml). Within this file `image` needs to be set as `image: <image-name>` for the image to be overwritten with other parameters.")
+	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
@@ -171,9 +186,16 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
+
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNames, "imageNames", []string{}, "List of names of the images to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageDigests, "imageDigests", []string{}, "List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`")
 	cmd.Flags().StringSliceVar(&stepConfig.IngressHosts, "ingressHosts", []string{}, "(Deprecated) List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().BoolVar(&stepConfig.KeepFailedDeployments, "keepFailedDeployments", false, "Defines whether a failed deployment will be purged")
+	cmd.Flags().BoolVar(&stepConfig.RunHelmTests, "runHelmTests", false, "Defines whether or not to run helm tests against the recently deployed release")
+	cmd.Flags().BoolVar(&stepConfig.ShowTestLogs, "showTestLogs", false, "Defines whether to print the pod logs after running helm tests")
 	cmd.Flags().StringVar(&stepConfig.KubeConfig, "kubeConfig", os.Getenv("PIPER_kubeConfig"), "Defines the path to the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeToken, "kubeToken", os.Getenv("PIPER_kubeToken"), "Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.")
@@ -181,10 +203,13 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", `.pipeline/docker/config.json`, "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`.")
+	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "HTTP location of setup script")
+	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
+	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
-	cmd.MarkFlagRequired("image")
+	cmd.Flags().MarkDeprecated("image", "This parameter is deprecated, please use [containerImageName](#containerimagename) and [containerImageTag](#containerimagetag)")
 }
 
 // retrieve step metadata
@@ -202,6 +227,7 @@ func kubernetesDeployMetadata() config.StepData {
 					{Name: "kubeTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).", Type: "jenkins", Aliases: []config.Alias{{Name: "k8sTokenCredentialsId", Deprecated: true}}},
 					{Name: "dockerCredentialsId", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
+					{Name: "githubTokenCredentialsId", Description: "Jenkins credentials ID containing the github token.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
@@ -235,13 +261,18 @@ func kubernetesDeployMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_appTemplate"),
 					},
 					{
-						Name:        "chartPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmChartPath"}},
-						Default:     os.Getenv("PIPER_chartPath"),
+						Name: "chartPath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/localHelmChartPath",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "helmChartPath"}},
+						Default:   os.Getenv("PIPER_chartPath"),
 					},
 					{
 						Name: "containerRegistryPassword",
@@ -250,6 +281,11 @@ func kubernetesDeployMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
 							},
 
 							{
@@ -307,6 +343,11 @@ func kubernetesDeployMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
 							},
 
 							{
@@ -384,6 +425,34 @@ func kubernetesDeployMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
+						Name:        "valuesMapping",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name: "githubToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "access_token"}},
+						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
 						Name: "image",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -391,11 +460,54 @@ func kubernetesDeployMetadata() config.StepData {
 								Param: "container/imageNameTag",
 							},
 						},
+						Scope:              []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:               "string",
+						Mandatory:          false,
+						Aliases:            []config.Alias{{Name: "deployImage"}},
+						Default:            os.Getenv("PIPER_image"),
+						DeprecationMessage: "This parameter is deprecated, please use [containerImageName](#containerimagename) and [containerImageTag](#containerimagetag)",
+					},
+					{
+						Name: "imageNames",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNames",
+							},
+						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "deployImage"}},
-						Default:   os.Getenv("PIPER_image"),
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "imageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "imageDigests",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageDigests",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
 					},
 					{
 						Name:        "ingressHosts",
@@ -408,6 +520,24 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "keepFailedDeployments",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "runHelmTests",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "showTestLogs",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
@@ -505,10 +635,37 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `apply`,
 					},
+					{
+						Name:        "setupScript",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_setupScript"),
+					},
+					{
+						Name:        "verificationScript",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_verificationScript"),
+					},
+					{
+						Name:        "teardownScript",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_teardownScript"),
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.4.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
+				{Image: "dtzar/helm-kubectl:3.9.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
 				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
 				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
 			},

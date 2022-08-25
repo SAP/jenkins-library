@@ -1,4 +1,4 @@
-FROM golang:1.15 AS build-env
+FROM golang:1.18 AS build-env
 COPY . /build
 WORKDIR /build
 

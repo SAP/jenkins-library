@@ -18,6 +18,7 @@ import (
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	ErrorCategoryMapping map[string][]string
+	StepName             string
 	dir                  string
 	stdin                io.Reader
 	stdout               io.Writer
@@ -63,6 +64,10 @@ func (c *Command) SetEnv(env []string) {
 // AppendEnv appends environment variables to be used for execution
 func (c *Command) AppendEnv(env []string) {
 	c.env = append(c.env, env...)
+}
+
+func (c *Command) GetOsEnv() []string {
+	return os.Environ()
 }
 
 // Stdin ..
@@ -220,7 +225,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		return nil, errors.Wrap(err, "starting command failed")
 	}
 
-	execution := execution{cmd: cmd}
+	execution := execution{cmd: cmd, ul: log.NewURLLogger(c.StepName)}
 	execution.wg.Add(2)
 
 	srcOut := stdout
@@ -251,12 +256,28 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	go func() {
-		_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
+		if c.StepName != "" {
+			var buf bytes.Buffer
+			br := bufio.NewWriter(&buf)
+			_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
+			br.Flush()
+			execution.ul.Parse(buf)
+		} else {
+			_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
+		}
 		execution.wg.Done()
 	}()
 
 	go func() {
-		_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
+		if c.StepName != "" {
+			var buf bytes.Buffer
+			bw := bufio.NewWriter(&buf)
+			_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
+			bw.Flush()
+			execution.ul.Parse(buf)
+		} else {
+			_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
+		}
 		execution.wg.Done()
 	}()
 

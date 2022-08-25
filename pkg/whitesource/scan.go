@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 // Scan stores information about scanned WhiteSource projects (modules).
@@ -16,9 +17,14 @@ type Scan struct {
 	// It does not include the ProductVersion.
 	AggregateProjectName string
 	// ProductVersion is the global version that is used across all Projects (modules) during the scan.
+	BuildTool       string
+	ProductToken    string
 	ProductVersion  string
 	scannedProjects map[string]Project
 	scanTimes       map[string]time.Time
+	AgentName       string
+	AgentVersion    string
+	Coordinates     versioning.Coordinates
 }
 
 func (s *Scan) init() {
@@ -92,6 +98,20 @@ func (s *Scan) ScannedProjectNames() []string {
 	// as the order in which we travers map keys is not deterministic.
 	sort.Strings(projectNames)
 	return projectNames
+}
+
+// ScannedProjectTokens returns a sorted list of all scanned project's tokens
+func (s *Scan) ScannedProjectTokens() []string {
+	projectTokens := []string{}
+	for _, project := range s.ScannedProjects() {
+		if len(project.Token) > 0 {
+			projectTokens = append(projectTokens, project.Token)
+		}
+	}
+	// Sorting helps the list become stable across pipeline runs (and in the unit tests),
+	// as the order in which we travers map keys is not deterministic.
+	sort.Strings(projectTokens)
+	return projectTokens
 }
 
 // ScanTime returns the time at which the respective WhiteSource Project was scanned, or the the

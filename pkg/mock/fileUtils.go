@@ -4,7 +4,10 @@
 package mock
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -18,8 +21,8 @@ import (
 var dirContent []byte
 
 const (
-	defaultFileMode os.FileMode = 0644
-	defaultDirMode  os.FileMode = 0755
+	defaultFileMode os.FileMode = 0o644
+	defaultDirMode  os.FileMode = 0o755
 )
 
 type fileInfoMock struct {
@@ -48,7 +51,7 @@ func (p *fileProperties) isDir() bool {
 	return p.content == &dirContent
 }
 
-//FilesMock implements the functions from piperutils.Files with an in-memory file system.
+// FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
 	files            map[string]*fileProperties
 	writtenFiles     []string
@@ -112,6 +115,17 @@ func (f *FilesMock) AddDir(path string) {
 // AddDirWithMode establishes the existence of a virtual directory.
 func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
 	f.associateContent(path, &dirContent, mode)
+}
+
+// SHA256 returns a random SHA256
+func (f *FilesMock) SHA256(path string) (string, error) {
+	hash := sha256.New()
+	return fmt.Sprintf("%x", string(hash.Sum(nil))), nil
+}
+
+// CurrentTime returns the current time as a fixed value
+func (f *FilesMock) CurrentTime(format string) string {
+	return "20220102-150405"
 }
 
 func (f *FilesMock) associateContent(path string, content *[]byte, mode os.FileMode) {
@@ -228,6 +242,21 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	return int64(len(*props.content)), nil
 }
 
+// Move moves a file to the given destination
+func (f *FilesMock) Move(src, dst string) error {
+	if exists, err := f.FileExists(src); err != nil {
+		return err
+	} else if !exists {
+		return fmt.Errorf("file doesn't exist: %s", src)
+	}
+
+	if _, err := f.Copy(src, dst); err != nil {
+		return err
+	}
+
+	return f.FileRemove(src)
+}
+
 // FileRead returns the content previously associated with the given path via AddFile(), or an error if no
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
@@ -246,6 +275,11 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	return *props.content, nil
 }
 
+// ReadFile can be used as replacement for os.ReadFile in a compatible manner
+func (f *FilesMock) ReadFile(name string) ([]byte, error) {
+	return f.FileRead(name)
+}
+
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
 func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) error {
 	if f.FileWriteError != nil {
@@ -258,6 +292,11 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
+}
+
+// WriteFile can be used as replacement for os.WriteFile in a compatible manner
+func (f *FilesMock) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return f.FileWrite(filename, data, perm)
 }
 
 // RemoveAll is a proxy for FileRemove
@@ -339,14 +378,18 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 }
 
 // TempDir create a temp-styled directory in the in-memory, so that this path is established to exist.
-func (f *FilesMock) TempDir(_, pattern string) (string, error) {
-	tmpDir := "/tmp/test"
-
-	if pattern != "" {
-		tmpDir = fmt.Sprintf("/tmp/%stest", pattern)
+func (f *FilesMock) TempDir(baseDir string, pattern string) (string, error) {
+	if len(baseDir) == 0 {
+		baseDir = "/tmp"
 	}
 
-	err := f.MkdirAll(tmpDir, 0755)
+	tmpDir := baseDir
+
+	if pattern != "" {
+		tmpDir = fmt.Sprintf("%s/%stest", baseDir, pattern)
+	}
+
+	err := f.MkdirAll(tmpDir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -498,11 +541,17 @@ func (f *FilesMock) Symlink(oldname, newname string) error {
 }
 
 // FileMock can be used in places where a io.Closer, io.StringWriter or io.Writer is expected.
-// It is the concrete type returned from FilesMock.Open()
+// It is the concrete type returned from FilesMock.OpenFile()
 type FileMock struct {
 	absPath string
 	files   *FilesMock
 	content []byte
+	buf     io.Reader
+}
+
+// Reads the content of the mock
+func (f *FileMock) Read(b []byte) (n int, err error) {
+	return f.buf.Read(b)
 }
 
 // Close mocks freeing the associated OS resources.
@@ -538,11 +587,11 @@ func (f *FileMock) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// Open mimics the behavior os.Open(), but it cannot return an instance of the os.File struct.
+// OpenFile mimics the behavior os.OpenFile(), but it cannot return an instance of the os.File struct.
 // Instead, it returns a pointer to a FileMock instance, which implements a number of the same methods as os.File.
 // The flag parameter is checked for os.O_CREATE and os.O_APPEND and behaves accordingly.
-func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, error) {
-	if f.files == nil && flag&os.O_CREATE == 0 {
+func (f *FilesMock) OpenFile(path string, flag int, perm os.FileMode) (*FileMock, error) {
+	if (f.files == nil || !f.HasFile(path)) && flag&os.O_CREATE == 0 {
 		return nil, fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	f.init()
@@ -553,20 +602,29 @@ func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, er
 	}
 	if !exists && flag&os.O_CREATE != 0 {
 		f.associateContentAbs(absPath, &[]byte{}, perm)
-		properties, _ = f.files[absPath]
+		properties = f.files[absPath]
 	}
 
 	file := FileMock{
 		absPath: absPath,
 		files:   f,
-		content: []byte{},
+		content: *properties.content,
 	}
 
-	if flag&os.O_APPEND != 0 {
-		file.content = *properties.content
-	} else if flag&os.O_TRUNC != 0 {
+	if flag&os.O_TRUNC != 0 || flag&os.O_CREATE != 0 {
+		file.content = []byte{}
 		properties.content = &file.content
 	}
 
+	file.buf = bytes.NewBuffer(file.content)
+
 	return &file, nil
+}
+
+func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
+	return f.OpenFile(name, os.O_RDONLY, 0)
+}
+
+func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
+	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
 }

@@ -14,24 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type abapEnvironmentRunAUnitTestMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAbapEnvironmentRunAUnitTestTestsUtils() abapEnvironmentRunAUnitTestMockUtils {
-	utils := abapEnvironmentRunAUnitTestMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
-
 func TestBuildAUnitRequestBody(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Test AUnit test run body with no data", func(t *testing.T) {
-
 		t.Parallel()
 
 		var config abapEnvironmentRunAUnitTestOptions
@@ -69,16 +55,15 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
-
+			ObjectSet: abaputils.ObjectSet{
 				Type: "testSet",
-				Set: []Set{
+				Set: []abaputils.Set{
 					{
 						Type: "testSet",
-						Set: []Set{
+						Set: []abaputils.Set{
 							{
 								Type: "testAUnitFlatObjectSet",
-								FlatObjectSet: []AUnitFlatObjectSet{
+								FlatObjectSet: []abaputils.FlatObjectSet{
 									{
 										Name: "TestCLAS",
 										Type: "CLAS",
@@ -86,20 +71,24 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 									{
 										Name: "TestINTF",
 										Type: "INTF",
-									}},
+									},
+								},
 							},
 							{
 								Type: "testAUnitObjectTypeSet",
-								ObjectTypeSet: []AUnitObjectTypeSet{
+								ObjectTypeSet: []abaputils.ObjectTypeSet{
 									{
 										Name: "TestObjectType",
-									}},
-							}},
-					}},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -132,10 +121,10 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
+			ObjectSet: abaputils.ObjectSet{
 				Type: "multiPropertySet",
-				MultiPropertySet: MultiPropertySet{
-					SoftwareComponents: []SoftwareComponents{
+				MultiPropertySet: abaputils.MultiPropertySet{
+					SoftwareComponents: []abaputils.SoftwareComponents{
 						{
 							Name: "testComponent1",
 						},
@@ -147,7 +136,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -180,10 +169,10 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
+			ObjectSet: abaputils.ObjectSet{
 				Type: "",
-				MultiPropertySet: MultiPropertySet{
-					SoftwareComponents: []SoftwareComponents{
+				MultiPropertySet: abaputils.MultiPropertySet{
+					SoftwareComponents: []abaputils.SoftwareComponents{
 						{
 							Name: "testComponent1",
 						},
@@ -195,7 +184,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -228,13 +217,13 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 					Long:   new(bool),
 				},
 			},
-			ObjectSet: ObjectSet{
-				PackageNames: []AUnitPackage{{
+			ObjectSet: abaputils.ObjectSet{
+				PackageNames: []abaputils.Package{{
 					Name: "testPackage1",
 				}, {
 					Name: "testPackage2",
 				}},
-				SoftwareComponents: []SoftwareComponents{{
+				SoftwareComponents: []abaputils.SoftwareComponents{{
 					Name: "testComponent1",
 				}, {
 					Name: "testComponent2",
@@ -242,7 +231,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 			},
 		}
 
-		objectSetString := buildAUnitObjectSetString(config)
+		objectSetString := abaputils.BuildOSLString(config.ObjectSet)
 		optionsString := buildAUnitOptionsString(config)
 
 		assert.Equal(t, expectedoptionsString, optionsString)
@@ -253,37 +242,34 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 		t.Parallel()
 
 		expectedoptionsString := `<aunit:options><aunit:measurements type="none"/><aunit:scope ownTests="true" foreignTests="true"/><aunit:riskLevel harmless="true" dangerous="true" critical="true"/><aunit:duration short="true" medium="true" long="true"/></aunit:options>`
-		config := AUnitConfig{Title: "Test", Context: "Test",
-			ObjectSet: ObjectSet{
-				PackageNames: []AUnitPackage{{
+		config := AUnitConfig{
+			Title: "Test", Context: "Test",
+			ObjectSet: abaputils.ObjectSet{
+				PackageNames: []abaputils.Package{{
 					Name: "testPackage1",
 				}},
-				SoftwareComponents: []SoftwareComponents{{
+				SoftwareComponents: []abaputils.SoftwareComponents{{
 					Name: "testComponent1",
 				}},
-			}}
+			},
+		}
 
 		optionsString := buildAUnitOptionsString(config)
 		assert.Equal(t, expectedoptionsString, optionsString)
 	})
 
 	t.Run("Config with repository-yml", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitResultsFileName: "aUnitResults.xml",
 			Repositories:         "repositories.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		repositories := `repositories:
@@ -291,7 +277,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
     branch: main
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"AUnit Test Run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:softwareComponent name=\"/DMO/REPO\"/></osl:objectSet></aunit:run>"
-		err = ioutil.WriteFile(config.Repositories, []byte(repositories), 0644)
+		err := ioutil.WriteFile(config.Repositories, []byte(repositories), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -300,22 +286,17 @@ func TestBuildAUnitRequestBody(t *testing.T) {
 	})
 
 	t.Run("Config with aunitconfig-yml", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitResultsFileName: "aUnitResults.xml",
 			AUnitConfig:          "aunit.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -327,7 +308,7 @@ objectset:
   - name: /DMO/SWC
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -336,22 +317,17 @@ objectset:
 	})
 
 	t.Run("Config with aunitconfig-yml mps", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitResultsFileName: "aUnitResults.xml",
 			AUnitConfig:          "aunit.yml",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -365,7 +341,7 @@ objectset:
       - name: /DMO/SWC
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -374,7 +350,6 @@ objectset:
 	})
 
 	t.Run("No AUnit config file - expect no panic", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig: "aunit.yml",
 		}
@@ -384,7 +359,6 @@ objectset:
 	})
 
 	t.Run("No Repo config file - expect no panic", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			Repositories: "repo.yml",
 		}
@@ -395,9 +369,7 @@ objectset:
 }
 
 func TestTriggerAUnitrun(t *testing.T) {
-
 	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
 			AUnitResultsFileName: "aUnitResults.xml",
@@ -414,16 +386,12 @@ func TestTriggerAUnitrun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -448,7 +416,7 @@ objectset:
   - name: Z_TEST
 `
 
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			_, err := triggerAUnitrun(config, con, client)
 			assert.Equal(t, nil, err)
@@ -456,7 +424,6 @@ objectset:
 	})
 
 	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
-
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
 			AUnitResultsFileName: "aUnitResults.xml",
@@ -472,16 +439,12 @@ objectset:
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 
-		dir, err := ioutil.TempDir("", "test parse AUnit yaml config2")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		yamlBody := `title: My AUnit run
@@ -507,7 +470,7 @@ objectset:
       - name: Z_TEST_SC
 `
 
-		err = ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0644)
+		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			_, err := triggerAUnitrun(config, con, client)
 			assert.Equal(t, nil, err)
@@ -519,49 +482,23 @@ func TestParseAUnitResult(t *testing.T) {
 	t.Parallel()
 
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
-
-		dir, err := ioutil.TempDir("", "test get result AUnit test run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
 		bodyString := `<?xml version="1.0" encoding="utf-8"?><testsuites title="My AUnit run" system="TST" client="100" executedBy="TESTUSER" time="000.000" timestamp="2021-01-01T00:00:00Z" failures="2" errors="2" skipped="0" asserts="0" tests="2"><testsuite name="" tests="2" failures="2" errors="0" skipped="0" asserts="0" package="testpackage" timestamp="2021-01-01T00:00:00ZZ" time="0.000" hostname="test"><testcase classname="test" name="execute" time="0.000" asserts="2"><failure message="testMessage1" type="Assert Failure">Test1</failure><failure message="testMessage2" type="Assert Failure">Test2</failure></testcase></testsuite></testsuites>`
 		body := []byte(bodyString)
-		err = persistAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
 	t.Run("succes case: test parsing empty AUnit run XML result", func(t *testing.T) {
-
-		dir, err := ioutil.TempDir("", "test get result AUnit test run")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
-		err = persistAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
-
 		var bodyString string
 		body := []byte(bodyString)
-
-		err := persistAUnitResult(body, "AUnitResults.xml", false)
+		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false)
 		assert.EqualError(t, err, "Parsing AUnit result failed: Body is empty, can't parse empty body")
 	})
 }
@@ -582,10 +519,12 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err = buf.ReadFrom(resp.Body)
+			assert.NoError(t, err)
 			newStr := buf.String()
 			assert.Equal(t, "AUnit test result body", newStr)
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -609,16 +548,17 @@ func TestGetResultAUnitRun(t *testing.T) {
 			URL:      "https://api.endpoint.com/Entity/",
 		}
 		resp, err := getAUnitResults("GET", con, []byte(client.Body), client)
+		assert.EqualError(t, err, "Getting AUnit run results failed: Test fail")
 		defer resp.Body.Close()
-		if assert.EqualError(t, err, "Getting AUnit run results failed: Test fail") {
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
-			newStr := buf.String()
-			assert.Equal(t, "AUnit test result body", newStr)
-			assert.Equal(t, int64(0), resp.ContentLength)
-			assert.Equal(t, 400, resp.StatusCode)
-			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
-		}
+
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(resp.Body)
+		assert.NoError(t, err)
+		newStr := buf.String()
+		assert.Equal(t, "AUnit test result body", newStr)
+		assert.Equal(t, int64(0), resp.ContentLength)
+		assert.Equal(t, 400, resp.StatusCode)
+		assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 	})
 }
 
@@ -626,7 +566,6 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 	t.Parallel()
 
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
-
 		t.Parallel()
 
 		tokenExpected := "myToken"
@@ -686,7 +625,6 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 		resp, err := pollAUnitRun(con, []byte(client.Body), client)
 		if assert.Equal(t, nil, err) {
 			assert.Equal(t, "/sap/bc/adt/api/abapunit/results/test", resp)
-
 		}
 	})
 
@@ -725,10 +663,12 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 		}
 		fmt.Println("Body:" + string([]byte(client.Body)))
 		resp, err := getHTTPResponseAUnitRun("GET", con, []byte(client.Body), client)
+		assert.NoError(t, err)
 		defer resp.Body.Close()
 		if assert.Equal(t, nil, err) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
+			_, err = buf.ReadFrom(resp.Body)
+			assert.NoError(t, err)
 			newStr := buf.String()
 			assert.Equal(t, "HTTP response test", newStr)
 			assert.Equal(t, int64(0), resp.ContentLength)
@@ -738,9 +678,7 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 }
 
 func TestGenerateHTMLDocumentAUnit(t *testing.T) {
-
 	t.Run("Test empty XML Result", func(t *testing.T) {
-
 		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit Results</h1><table><tr><th>Run title</th><td style="padding-right: 20px"></td><th>System</th><td style="padding-right: 20px"></td><th>Client</th><td style="padding-right: 20px"></td><th>ExecutedBy</th><td style="padding-right: 20px"></td><th>Duration</th><td style="padding-right: 20px">s</td><th>Timestamp</th><td style="padding-right: 20px"></td></tr><tr><th>Failures</th><td style="padding-right: 20px"></td><th>Errors</th><td style="padding-right: 20px"></td><th>Skipped</th><td style="padding-right: 20px"></td><th>Asserts</th><td style="padding-right: 20px"></td><th>Tests</th><td style="padding-right: 20px"></td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr><td colspan="5"><b>There are no AUnit findings to be displayed</b></td></tr></table></body></html>`
 
 		result := AUnitResult{}
@@ -751,7 +689,6 @@ func TestGenerateHTMLDocumentAUnit(t *testing.T) {
 	})
 
 	t.Run("Test AUnit XML Result", func(t *testing.T) {
-
 		expectedString := `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>AUnit Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">AUnit Results</h1><table><tr><th>Run title</th><td style="padding-right: 20px">Test title</td><th>System</th><td style="padding-right: 20px">Test system</td><th>Client</th><td style="padding-right: 20px">000</td><th>ExecutedBy</th><td style="padding-right: 20px">CC00000</td><th>Duration</th><td style="padding-right: 20px">0.15s</td><th>Timestamp</th><td style="padding-right: 20px">2021-00-00T00:00:00Z</td></tr><tr><th>Failures</th><td style="padding-right: 20px">4</td><th>Errors</th><td style="padding-right: 20px">4</td><th>Skipped</th><td style="padding-right: 20px">4</td><th>Asserts</th><td style="padding-right: 20px">12</td><th>Tests</th><td style="padding-right: 20px">12</td></tr></table><br><table style="width:100%; border: 1px solid black""><tr style="border: 1px solid black"><th style="border: 1px solid black">Severity</th><th style="border: 1px solid black">File</th><th style="border: 1px solid black">Message</th><th style="border: 1px solid black">Type</th><th style="border: 1px solid black">Text</th></tr><tr style="background-color: grey"><td colspan="5"><b>Testcase: my_test for class ZCL_my_test</b></td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage</td><td style="border: 1px solid black">Assert Error</td><td style="border: 1px solid black">testError</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage2</td><td style="border: 1px solid black">Assert Error2</td><td style="border: 1px solid black">testError2</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage</td><td style="border: 1px solid black">Assert Failure</td><td style="border: 1px solid black">testFailure</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testMessage2</td><td style="border: 1px solid black">Assert Failure2</td><td style="border: 1px solid black">testFailure2</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testSkipped</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test</td><td style="border: 1px solid black">testSkipped2</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped2</td></tr><tr style="background-color: grey"><td colspan="5"><b>Testcase: my_test2 for class ZCL_my_test2</b></td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test2</td><td style="border: 1px solid black">testMessage3</td><td style="border: 1px solid black">Assert Error3</td><td style="border: 1px solid black">testError3</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test2</td><td style="border: 1px solid black">testMessage4</td><td style="border: 1px solid black">Assert Error4</td><td style="border: 1px solid black">testError4</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test2</td><td style="border: 1px solid black">testMessage5</td><td style="border: 1px solid black">Assert Failure5</td><td style="border: 1px solid black">testFailure5</td></tr><tr style="background-color: rgba(227,85,0)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test2</td><td style="border: 1px solid black">testMessage6</td><td style="border: 1px solid black">Assert Failure6</td><td style="border: 1px solid black">testFailure6</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test2</td><td style="border: 1px solid black">testSkipped7</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped7</td></tr><tr style="background-color: rgba(255,175,0, 0.2)"><td style="border: 1px solid black">Failure</td><td style="border: 1px solid black">ZCL_my_test2</td><td style="border: 1px solid black">testSkipped8</td><td style="border: 1px solid black">-</td><td style="border: 1px solid black">testSkipped8</td></tr></table></body></html>`
 
 		result := AUnitResult{
@@ -918,5 +855,4 @@ func TestGenerateHTMLDocumentAUnit(t *testing.T) {
 		fmt.Println(resultString)
 		assert.Equal(t, expectedString, resultString)
 	})
-
 }

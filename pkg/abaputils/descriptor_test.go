@@ -26,6 +26,7 @@ func TestAddonDescriptorNew(t *testing.T) {
 		assert.Equal(t, "JEK8S273S", addonDescriptor.Repositories[1].CommitID)
 		assert.Equal(t, "FR", addonDescriptor.Repositories[1].Languages[2])
 		assert.Equal(t, `ISO-DEENFR`, addonDescriptor.Repositories[1].GetAakAasLanguageVector())
+		assert.Equal(t, true, addonDescriptor.Repositories[1].UseClassicCTS)
 	})
 
 	t.Run("getRepositoriesInBuildScope", func(t *testing.T) {
@@ -59,21 +60,18 @@ repositories:
      languages:
         - DE
         - EN
-        - FR`
+        - FR
+     useClassicCTS: true`
 
 func TestReadAddonDescriptor(t *testing.T) {
 	t.Run("Test: success case", func(t *testing.T) {
 
-		dir, err := ioutil.TempDir("", "test read addon descriptor")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		file, _ := os.Create("filename.yaml")
@@ -123,16 +121,12 @@ func TestReadAddonDescriptor(t *testing.T) {
 		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
 		expectedRepositoryList := AddonDescriptor{Repositories: []Repository{{}, {}}}
 
-		dir, err := ioutil.TempDir("", "test abap utils")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -140,7 +134,7 @@ func TestReadAddonDescriptor(t *testing.T) {
       - repo: 'testRepo'
       - repo: 'testRepo2'`
 
-		err = ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+		err := ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
 		assert.NoError(t, err)
 
 		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")

@@ -35,7 +35,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'legacyConfigSettings',
     /**
-     * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases
+     * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases to a fixed branch name.
      */
     'productiveBranch',
     /**
@@ -65,7 +65,18 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'verbose'
 ]
-@Field STAGE_STEP_KEYS = []
+@Field STAGE_STEP_KEYS = [
+    /**
+     * Sets the build version.
+     * @possibleValues `true`, `false`
+     */
+    'artifactPrepareVersion',
+    /**
+     * Retrieve transport request from git commit history.
+     * @possibleValues `true`, `false`
+     */
+    'transportRequestReqIDFromGit'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -118,7 +129,6 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
-
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
@@ -165,6 +175,7 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.buildTool)
             .withMandatoryProperty('buildTool')
             .use()
+
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
@@ -220,6 +231,11 @@ void call(Map parameters = [:]) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
+
+            config.artifactPrepareVersion = true
+        }
+
+        if (config.artifactPrepareVersion) {
             Map prepareVersionParams = [script: script]
             if (config.inferBuildTool) {
                 prepareVersionParams.buildTool = buildTool
@@ -236,6 +252,10 @@ void call(Map parameters = [:]) {
                 prepareVersionParams.dockerImage = ""
             }
             artifactPrepareVersion prepareVersionParams
+        }
+
+        if (config.transportRequestReqIDFromGit) {
+            transportRequestReqIDFromGit(script: script)
         }
         pipelineStashFilesBeforeBuild script: script
     }

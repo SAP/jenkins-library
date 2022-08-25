@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,9 +12,11 @@ import (
 	"testing"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +25,15 @@ type detectTestUtilsBundle struct {
 	downloadedFiles map[string]string // src, dest
 	*mock.ShellMockRunner
 	*mock.FilesMock
+	customEnv []string
+}
+
+func (d *detectTestUtilsBundle) GetIssueService() *github.IssuesService {
+	return nil
+}
+
+func (d *detectTestUtilsBundle) GetSearchService() *github.SearchService {
+	return nil
 }
 
 type httpMockClient struct {
@@ -56,7 +68,7 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 		responseBodyForURL: map[string]string{
 			"https://my.blackduck.system/api/tokens/authenticate":                                                                               authContent,
 			"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                   projectContent,
-			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions":                                            projectVersionContent,
+			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                         projectVersionContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?limit=999&offset=0":                                 componentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components?limit=999&offset=0":                  vulnerabilitiesContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?filter=policyCategory%3Alicense&limit=999&offset=0": componentsContent,
@@ -162,11 +174,13 @@ func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
 }
 
 func (c *detectTestUtilsBundle) SetOptions(piperhttp.ClientOptions) {
+}
 
+func (c *detectTestUtilsBundle) GetOsEnv() []string {
+	return c.customEnv
 }
 
 func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-
 	if c.expectedError != nil {
 		return c.expectedError
 	}
@@ -175,6 +189,10 @@ func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header
 		c.downloadedFiles = make(map[string]string)
 	}
 	c.downloadedFiles[url] = filename
+	return nil
+}
+
+func (w *detectTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
 	return nil
 }
 
@@ -190,9 +208,29 @@ func TestRunDetect(t *testing.T) {
 	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+
+		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect7.sh"], "detect.sh")
+		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
+		assert.NoError(t, err)
+		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
+		assert.Equal(t, expectedScript, utilsMock.Calls[0])
+	})
+
+	t.Run("success case detect 6", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		utilsMock := newDetectTestUtilsBundle()
+		utilsMock.AddFile("detect.sh", []byte(""))
+		options := detectExecuteScanOptions{
+			CustomEnvironmentVariables: []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"},
+		}
+		err := runDetect(ctx, options, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -202,35 +240,32 @@ func TestRunDetect(t *testing.T) {
 		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
-	//Creation of report is covered in the test case for postScanChecks
-	/*
-		t.Run("success case - with report", func(t *testing.T) {
-			t.Parallel()
-			utilsMock := newDetectTestUtilsBundle()
-			utilsMock.AddFile("detect.sh", []byte(""))
-			utilsMock.AddFile("my_BlackDuck_RiskReport.pdf", []byte(""))
-			err := runDetect(detectExecuteScanOptions{FailOn: []string{"BLOCKER"}}, utilsMock, &detectExecuteScanInflux{})
 
-			assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-			assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-			assert.NoError(t, err)
-			assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-			assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-			expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" --detect.policy.check.fail.on.severities=BLOCKER \"--detect.code.location.name=''\" --detect.source.path='.'"
-			assert.Equal(t, expectedScript, utilsMock.Calls[0])
+	t.Run("success case detect 6 from OS env", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		utilsMock := newDetectTestUtilsBundle()
+		utilsMock.AddFile("detect.sh", []byte(""))
+		utilsMock.customEnv = []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"}
+		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
-			content, err := utilsMock.FileRead("blackduck-ip.json")
-			assert.NoError(t, err)
-			assert.Contains(t, string(content), `"policyViolations":0`)
-		})
-	*/
+		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
+		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
+		assert.NoError(t, err)
+		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
+		assert.Equal(t, expectedScript, utilsMock.Calls[0])
+	})
+
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
 		assert.Equal(t, utilsMock.ExitCode, 3)
 		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -238,10 +273,11 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("maven parameters", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.CurrentDir = "root_folder"
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{
+		err := runDetect(ctx, detectExecuteScanOptions{
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
@@ -574,7 +610,6 @@ func TestAddDetectArgs(t *testing.T) {
 
 // Testing exit code mapping method
 func TestExitCodeMapping(t *testing.T) {
-
 	cases := []struct {
 		exitCode int
 		expected string
@@ -594,10 +629,11 @@ func TestExitCodeMapping(t *testing.T) {
 func TestPostScanChecksAndReporting(t *testing.T) {
 	t.Parallel()
 	t.Run("Reporting after scan", func(t *testing.T) {
+		ctx := context.Background()
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		utils := newDetectTestUtilsBundle()
 		sys := newBlackduckMockSystem(config)
-		err := postScanChecksAndReporting(config, &detectExecuteScanInflux{}, utils, &sys)
+		err := postScanChecksAndReporting(ctx, config, &detectExecuteScanInflux{}, utils, &sys)
 
 		assert.EqualError(t, err, "License Policy Violations found")
 		content, err := utils.FileRead("blackduck-ip.json")
@@ -616,8 +652,21 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.True(t, isMajorVulnerability(v))
+	})
+	t.Run("Case Ignored Components", func(t *testing.T) {
+		vr := bd.VulnerabilityWithRemediation{
+			OverallScore: 7.5,
+			Severity:     "HIGH",
+		}
+		v := bd.Vulnerability{
+			Name:                         "",
+			VulnerabilityWithRemediation: vr,
+			Ignored:                      true,
+		}
+		assert.False(t, isMajorVulnerability(v))
 	})
 	t.Run("Case False", func(t *testing.T) {
 		vr := bd.VulnerabilityWithRemediation{
@@ -627,6 +676,7 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.False(t, isMajorVulnerability(v))
 	})

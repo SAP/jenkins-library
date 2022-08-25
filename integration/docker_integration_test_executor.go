@@ -4,8 +4,10 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -14,6 +16,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/magiconair/properties/assert"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -25,7 +30,7 @@ import (
 // Please note that so far this was only tested with debian/ubuntu based containers.
 //
 // Non-exhaustive list of assumptions those functions make:
-// - Bash is available in the container
+// - the following commands are available in the container: sh, chown, sleep
 // - If the option TestDir is not provided, the test project must be in the container image  in the directory /project
 
 // IntegrationTestDockerExecRunnerBundle is used to construct an instance of IntegrationTestDockerExecRunner
@@ -38,6 +43,7 @@ type IntegrationTestDockerExecRunnerBundle struct {
 	Environment map[string]string
 	Setup       []string
 	Network     string
+	ExecNoLogin bool
 }
 
 // IntegrationTestDockerExecRunner keeps the state of an instance of a docker runner
@@ -52,6 +58,7 @@ type IntegrationTestDockerExecRunner struct {
 	Setup         []string
 	Network       string
 	ContainerName string
+	ExecNoLogin   bool
 }
 
 func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBundle) IntegrationTestDockerExecRunner {
@@ -66,6 +73,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		Environment:   bundle.Environment,
 		Setup:         bundle.Setup,
 		Network:       bundle.Network,
+		ExecNoLogin:   bundle.ExecNoLogin,
 		ContainerName: containerName,
 	}
 
@@ -102,8 +110,10 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	}
 
 	if testRunner.Mounts != nil {
+		wd, _ := os.Getwd()
 		for src, dst := range testRunner.Mounts {
-			params = append(params, "-v", fmt.Sprintf("%s:%s", src, dst))
+			localSrc := path.Join(wd, src)
+			params = append(params, "-v", fmt.Sprintf("%s:%s", localSrc, dst))
 		}
 	}
 
@@ -117,7 +127,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		t.Fatalf("Starting test container has failed %s", err)
 	}
 
-	if len(bundle.TestDir) > 0 {
+	if len(bundle.TestDir) > 0 && testRunner.User != "" {
 		err = testRunner.Runner.RunExecutable("docker", "exec", "-u=root", testRunner.ContainerName, "chown", "-R", testRunner.User, "/project")
 		if err != nil {
 			t.Fatalf("Chown /project has failed %s", err)
@@ -125,7 +135,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	}
 
 	for _, scriptLine := range testRunner.Setup {
-		err := testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/bash", "-c", scriptLine)
+		err := testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/sh", "-c", scriptLine)
 		if err != nil {
 			t.Fatalf("Running setup script in test container has failed %s", err)
 		}
@@ -159,7 +169,7 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 	if err != nil {
 		t.Fatalf("Making command wrapper in container executable has failed %s", err)
 	}
-	err = testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/bash", "/piper-wrapper", "/piper", "version")
+	err = testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/sh", "/piper-wrapper", "/piper", "version")
 	if err != nil {
 		t.Fatalf("Running piper failed. "+
 			"Please check that '%s' is the correct binary, and is compiled for this configuration: 'GOOS=linux GOARCH=amd64'. Error text: %s", localPiper, err)
@@ -167,34 +177,99 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "/piper-wrapper", "/piper", command}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh"}
+
+	if !d.ExecNoLogin {
+		args = append(args, "-l")
+	}
+
+	args = append(args, "/piper-wrapper", "/piper", command)
 	args = append(args, parameters...)
-	return d.Runner.RunExecutable("docker", args...)
+	err := d.Runner.RunExecutable("docker", args...)
+	if err != nil {
+		stdOut, err := d.getPiperOutput()
+		return errors.Wrapf(err, "piper output: \n%s", stdOut.String())
+	}
+	return err
 }
 
 func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "-c", script}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh"}
+
+	if !d.ExecNoLogin {
+		args = append(args, "-l")
+	}
+
+	args = append(args, "-c", script)
 	return d.Runner.RunExecutable("docker", args...)
 }
 
+func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, want string) {
+	buffer, err := d.getPiperOutput()
+	if err != nil {
+		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
+	}
+
+	if strings.Contains(buffer.String(), want) {
+		assert.Equal(t, buffer.String(), want, "Unexpected command output")
+	}
+}
+
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want string) {
-	buffer := new(bytes.Buffer)
-	d.Runner.Stdout(buffer)
-	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
-	d.Runner.Stdout(log.Writer())
+	buffer, err := d.getPiperOutput()
 	if err != nil {
 		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
 	}
 
 	if !strings.Contains(buffer.String(), want) {
-		t.Fatalf("Assertion has failed. Expected output %s in command output.\n%s", want, buffer.String())
+		assert.Equal(t, buffer.String(), want, "Unexpected command output")
 	}
+}
+
+func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error) {
+	buffer := new(bytes.Buffer)
+	d.Runner.Stdout(buffer)
+	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
+	d.Runner.Stdout(log.Writer())
+	return buffer, err
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want string) {
 	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", want)
 	if err != nil {
 		t.Fatalf("Assertion has failed. Expected file %s to exist in container. %s", want, err)
+	}
+}
+
+func (d *IntegrationTestDockerExecRunner) assertFileContentEquals(t *testing.T, fileWant string, contentWant string) {
+	d.assertHasFile(t, fileWant)
+
+	buffer := new(bytes.Buffer)
+	d.Runner.Stdout(buffer)
+	err := d.Runner.RunExecutable("docker", "cp", d.ContainerName+":/"+fileWant, "-")
+	if err != nil {
+		t.Fatalf("Copy file has failed. Expected file %s to exist in container. %s", fileWant, err)
+	}
+
+	tarReader := tar.NewReader(buffer)
+	header, err := tarReader.Next()
+	if err == io.EOF {
+		t.Fatal("Empty tar received")
+	}
+	if err != nil {
+		t.Fatalf("Cant read tar: %s", err)
+	}
+	if header.Typeflag != tar.TypeReg {
+		t.Fatalf("Expected a file, but received %c", header.Typeflag)
+	}
+	str := new(bytes.Buffer)
+	_, err = io.Copy(str, tarReader)
+	if err != nil {
+		t.Fatalf("unable to get tar file content: %s", err)
+	}
+
+	if !strings.Contains(str.String(), contentWant) {
+		assert.Equal(t, str.String(), contentWant, fmt.Sprintf("Unexpected content of file '%s'", fileWant))
 	}
 }
 

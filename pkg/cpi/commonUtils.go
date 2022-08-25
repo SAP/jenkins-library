@@ -30,6 +30,7 @@ type HttpCPIUtils interface {
 //HTTPUploadUtils for CPI
 type HTTPUploadUtils interface {
 	HandleHTTPFileUploadResponse() error
+	HandleHTTPGetRequestResponse() (string, error)
 }
 
 //TokenParameters struct
@@ -172,8 +173,9 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 	if response == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
+	responseCode := response.StatusCode
 
-	if response.StatusCode == http.StatusOK {
+	if (responseCode == http.StatusOK) || (responseCode == http.StatusCreated) {
 		log.Entry().
 			WithField("Created Artifact", httpFileUploadRequestParameters.FilePath).
 			Info(httpFileUploadRequestParameters.SuccessMessage)
@@ -188,4 +190,33 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody))
 	}
 	return errors.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
+}
+
+// HandleHTTPGetRequestResponse - Handle the GET Request response data
+func (httpGetRequestParameters HttpFileUploadRequestParameters) HandleHTTPGetRequestResponse() (string, error) {
+	response := httpGetRequestParameters.Response
+	httpErr := httpGetRequestParameters.HTTPErr
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
+
+	if response == nil {
+		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+	if response.StatusCode == http.StatusOK {
+		responseBody, readErr := ioutil.ReadAll(response.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", response.StatusCode)
+		}
+		return string(responseBody), nil
+	}
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(response.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
+		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpGetRequestParameters.HTTPMethod, httpGetRequestParameters.HTTPURL, string(responseBody))
+	}
+	return "", errors.Errorf("%s, Response Status code: %v", httpGetRequestParameters.ErrMessage, response.StatusCode)
 }

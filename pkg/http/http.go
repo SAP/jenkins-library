@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
@@ -45,6 +43,7 @@ type Client struct {
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
 	trustedCerts              []string
+	fileUtils                 piperutils.FileUtils
 }
 
 // ClientOptions defines the options to be set on the client
@@ -71,11 +70,14 @@ type ClientOptions struct {
 	TrustedCerts              []string
 }
 
-// TransportWrapper is a wrapper for central logging capabilities
+// TransportWrapper is a wrapper for central round trip capabilities
 type TransportWrapper struct {
 	Transport                http.RoundTripper
 	doLogRequestBodyOnDebug  bool
 	doLogResponseBodyOnDebug bool
+	username                 string
+	password                 string
+	token                    string
 }
 
 // UploadRequestData encapsulates the parameters for calling uploader.Upload()
@@ -111,6 +113,15 @@ type Uploader interface {
 	Upload(data UploadRequestData) (*http.Response, error)
 }
 
+// fileUtils lazy initializes the utils
+func (c *Client) getFileUtils() piperutils.FileUtils {
+	if c.fileUtils == nil {
+		c.fileUtils = &piperutils.Files{}
+	}
+
+	return c.fileUtils
+}
+
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies, uploadType)
@@ -118,7 +129,8 @@ func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header,
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
 func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
-	fileHandle, err := os.Open(file)
+	fileHandle, err := c.getFileUtils().Open(file)
+
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
 	}
@@ -178,10 +190,13 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 			return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
 		}
 		err = bodyWriter.Close()
+		if err != nil {
+			log.Entry().Warn("failed to close writer on request body")
+		}
 
 		request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
 		if err != nil {
-			c.logger.Debugf("New %v request to %v", data.Method, data.URL)
+			c.logger.Debugf("new %v request to %v", data.Method, data.URL)
 			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
 		}
 
@@ -194,7 +209,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	}
 }
 
-// SendRequest sends an http request with a defined method
+// SendRequest sends a http request with a defined method
 //
 // On error, any Response can be ignored and the Response.Body
 // does not need to be closed.
@@ -207,7 +222,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	return c.Send(request)
 }
 
-// Send sends an http request
+// Send sends a http request
 func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	httpClient := c.initialize()
 	response, err := httpClient.Do(request)
@@ -244,6 +259,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 	}
 	c.cookieJar = options.CookieJar
 	c.trustedCerts = options.TrustedCerts
+	c.fileUtils = &piperutils.Files{}
+}
+
+// SetFileUtils can be used to overwrite the default file utils
+func (c *Client) SetFileUtils(fileUtils piperutils.FileUtils) {
+	c.fileUtils = fileUtils
 }
 
 // StandardClient returns a stdlib *http.Client which respects the custom settings.
@@ -270,13 +291,16 @@ func (c *Client) initialize() *http.Client {
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+		token:                    c.token,
+		username:                 c.username,
+		password:                 c.password,
 	}
 
-	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
+	if len(c.trustedCerts) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
 		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
+			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
 		}
 	} else {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
@@ -293,6 +317,14 @@ func (c *Client) initialize() *http.Client {
 		retryClient.RetryMax = c.maxRetries
 		if !c.useDefaultTransport {
 			retryClient.HTTPClient.Transport = transport
+		} else {
+			retryClient.HTTPClient.Transport = &TransportWrapper{
+				Transport:                retryClient.HTTPClient.Transport,
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				token:                    c.token,
+				username:                 c.username,
+				password:                 c.password}
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "connection reset")) {
@@ -325,18 +357,35 @@ type contextKey struct {
 }
 
 var contextKeyRequestStart = &contextKey{"RequestStart"}
+var authHeaderKey = "Authorization"
 
 // RoundTrip is the core part of this module and implements http.RoundTripper.
-// Executes HTTP request with request/response logging.
+// Executes HTTP requests with request/response logging.
 func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
 	req = req.WithContext(ctx)
 
+	handleAuthentication(req, t.username, t.password, t.token)
+
 	t.logRequest(req)
+
 	resp, err := t.Transport.RoundTrip(req)
+
 	t.logResponse(resp)
 
 	return resp, err
+}
+
+func handleAuthentication(req *http.Request, username, password, token string) {
+	// Handle authentication if not done already
+	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
+		req.SetBasicAuth(username, password)
+		log.Entry().Debug("Using Basic Authentication ****/****")
+	}
+	if len(token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
+		req.Header.Add(authHeaderKey, token)
+		log.Entry().Debug("Using Token Authentication ****")
+	}
 }
 
 func (t *TransportWrapper) logRequest(req *http.Request) {
@@ -344,8 +393,12 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug {
-		log.Entry().Debugf("body: %v", transformBody(req.Body))
+	if t.doLogRequestBodyOnDebug && req.Body != nil {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		log.Entry().Debugf("body: %v", transformBody(tee))
+		req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
 }
@@ -358,8 +411,11 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		} else {
 			log.Entry().Debugf("<-- response %v %v", resp.StatusCode, resp.Request.URL)
 		}
-		if t.doLogResponseBodyOnDebug {
-			log.Entry().Debugf("body: %v", transformBody(resp.Body))
+		if t.doLogResponseBodyOnDebug && resp.Body != nil {
+			var buf bytes.Buffer
+			tee := io.TeeReader(resp.Body, &buf)
+			log.Entry().Debugf("body: %v", transformBody(tee))
+			resp.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
@@ -381,9 +437,9 @@ func transformHeaders(header http.Header) http.Header {
 			// Since
 			//   1.) The auth header type itself might serve as a vector for an
 			//       intrusion
-			//   2.) We cannot make assumtions about the structure of the auth
+			//   2.) We cannot make assumptions about the structure of the auth
 			//       header value since that depends on the type, e.g. several tokens
-			//       where only some of the tokens define the secret
+			//       where only some tokens define the secret
 			// we hide the full auth header value anyway in order to be on the
 			// save side.
 			value = []string{"<set>"}
@@ -401,7 +457,7 @@ func transformCookies(cookies []*http.Cookie) string {
 	return result
 }
 
-func transformBody(body io.ReadCloser) string {
+func transformBody(body io.Reader) string {
 	if body == nil {
 		return ""
 	}
@@ -424,19 +480,10 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if cookies != nil {
-		for _, cookie := range cookies {
-			request.AddCookie(cookie)
-		}
-	}
+	handleAuthentication(request, c.username, c.password, c.token)
 
-	if len(c.username) > 0 || len(c.password) > 0 {
-		request.SetBasicAuth(c.username, c.password)
-		c.logger.Debug("Using Basic Authentication ****/****")
-	}
-
-	if len(c.token) > 0 {
-		request.Header.Add("Authorization", c.token)
+	for _, cookie := range cookies {
+		request.AddCookie(cookie)
 	}
 
 	return request, nil
@@ -474,23 +521,45 @@ func (c *Client) applyDefaults() {
 func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) error {
 
 	trustStoreDir, err := getWorkingDirForTrustStore()
-	fileUtils := &piperutils.Files{}
 	if err != nil {
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
+	// Get the SystemCertPool, continue with an empty pool on error
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		log.Entry().Debugf("Caught error on store lookup %v", err)
+	}
+
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	*transport = TransportWrapper{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: c.transportTimeout,
+			}).DialContext,
+			ResponseHeaderTimeout: c.transportTimeout,
+			ExpectContinueTimeout: c.transportTimeout,
+			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+				RootCAs:            rootCAs,
+			},
+		},
+		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+		token:                    c.token,
+		username:                 c.username,
+		password:                 c.password,
+	}
 
 	for _, certificate := range c.trustedCerts {
-		rootCAs, _ := x509.SystemCertPool()
-
-		if rootCAs == nil {
-			rootCAs = x509.NewCertPool()
-		}
-
 		filename := path.Base(certificate)
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
-		if exists, _ := fileUtils.FileExists(target); !exists {
+		if exists, _ := c.getFileUtils().FileExists(target); !exists {
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			request, err := http.NewRequest("GET", certificate, nil)
 			if err != nil {
@@ -512,82 +581,45 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				defer response.Body.Close()
 				parent := filepath.Dir(target)
 				if len(parent) > 0 {
-					if err = os.MkdirAll(parent, 0775); err != nil {
+					if err = c.getFileUtils().MkdirAll(parent, 0777); err != nil {
 						return err
 					}
 				}
-				fileHandler, err := os.Create(target)
+				fileHandler, err := c.getFileUtils().Create(target)
 				if err != nil {
 					return errors.Wrapf(err, "unable to create file %v", filename)
 				}
 				defer fileHandler.Close()
 
-				_, err = io.Copy(fileHandler, response.Body)
+				numWritten, err := io.Copy(fileHandler, response.Body)
 				if err != nil {
 					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 				}
+				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
-				// Get the SystemCertPool, continue with an empty pool on error
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+					return errors.Wrapf(err, "failed to read cert file %v", certificate)
 				}
-
 				// Append our cert to the system pool
-				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-					log.Entry().Infof("cert not appended to root ca %v", certificate)
-					return fmt.Errorf("cert not appended to root ca %v", certificate)
+				ok := rootCAs.AppendCertsFromPEM(certs)
+				if !ok {
+					return errors.Errorf("failed to append %v to root CA store", certificate)
 				}
-
-				*transport = TransportWrapper{
-					Transport: &http.Transport{
-						DialContext: (&net.Dialer{
-							Timeout: c.transportTimeout,
-						}).DialContext,
-						ResponseHeaderTimeout: c.transportTimeout,
-						ExpectContinueTimeout: c.transportTimeout,
-						TLSHandshakeTimeout:   c.transportTimeout,
-						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: false,
-							RootCAs:            rootCAs,
-						},
-					},
-					doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
-				}
-
 				log.Entry().Infof("%v appended to root CA successfully", certificate)
-
 			} else {
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
 			}
 		} else {
-			log.Entry().Infof("existing certs found, appending to rootCA")
+			log.Entry().Infof("existing certificate file %v found, appending it to rootCA", target)
 			certs, err := ioutil.ReadFile(target)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+				return errors.Wrapf(err, "failed to read cert file %v", certificate)
 			}
-
 			// Append our cert to the system pool
-			if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-				log.Entry().Infof("cert not appended to root ca %v", certificate)
-			}
-
-			*transport = TransportWrapper{
-				Transport: &http.Transport{
-					DialContext: (&net.Dialer{
-						Timeout: c.transportTimeout,
-					}).DialContext,
-					ResponseHeaderTimeout: c.transportTimeout,
-					ExpectContinueTimeout: c.transportTimeout,
-					TLSHandshakeTimeout:   c.transportTimeout,
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: false,
-						RootCAs:            rootCAs,
-					},
-				},
-				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
-				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+			ok := rootCAs.AppendCertsFromPEM(certs)
+			if !ok {
+				return errors.Errorf("failed to append %v to root CA store", certificate)
 			}
 			log.Entry().Infof("%v appended to root CA successfully", certificate)
 		}
@@ -596,18 +628,21 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	return nil
 }
 
+// TrustStoreDirectory default truststore location
+const TrustStoreDirectory = ".pipeline/trustStore"
+
 func getWorkingDirForTrustStore() (string, error) {
 	fileUtils := &piperutils.Files{}
-	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
-		err := fileUtils.MkdirAll(".pipeline/trustStore", 0777)
+	if exists, _ := fileUtils.DirExists(TrustStoreDirectory); !exists {
+		err := fileUtils.MkdirAll(TrustStoreDirectory, 0777)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create trust store directory")
 		}
 	}
-	return ".pipeline/trustStore", nil
+	return TrustStoreDirectory, nil
 }
 
-// ParseHTTPResponseBodyXML parses a XML http response into a given interface
+// ParseHTTPResponseBodyXML parses an XML http response into a given interface
 func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 	if resp == nil {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")

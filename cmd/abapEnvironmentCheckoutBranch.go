@@ -66,7 +66,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	err = checkCheckoutBranchRepositoryConfiguration(*options)
 
 	if err == nil {
-		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: options.BranchName, RepositoryName: options.RepositoryName, Repositories: options.Repositories})
+		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: options.BranchName, RepositoryName: options.RepositoryName, Repositories: options.Repositories}, true)
 	}
 	if err == nil {
 		err = checkoutBranches(repositories, connectionDetails, client, pollIntervall)
@@ -74,7 +74,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	if err != nil {
 		return fmt.Errorf("Something failed during the checkout: %w", err)
 	}
-	log.Entry().Info("-------------------------")
+	log.Entry().Infof("-------------------------")
 	log.Entry().Info("All branches were checked out successfully")
 	return nil
 }
@@ -86,7 +86,6 @@ func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDet
 		if err != nil {
 			break
 		}
-		finishCheckoutLogs(repo.Branch, repo.Name)
 	}
 	return err
 }
@@ -132,8 +131,12 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	if errRead != nil {
 		return uriConnectionDetails, err
 	}
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return uriConnectionDetails, err
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return uriConnectionDetails, err
+	}
 
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", branchName).Error("Could not switch to specified branch")
@@ -141,8 +144,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 
-	expandLog := "?$expand=to_Execution_log,to_Transport_log"
-	uriConnectionDetails.URL = body.Metadata.URI + expandLog
+	uriConnectionDetails.URL = body.Metadata.URI
 	return uriConnectionDetails, nil
 }
 
@@ -191,15 +193,15 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 
 func startCheckoutLogs(branchName string, repositoryName string) {
 	log.Entry().Infof("Starting to switch branch to branch '%v' on repository '%v'", branchName, repositoryName)
-	log.Entry().Info("--------------------------------")
+	log.Entry().Infof("-------------------------")
 	log.Entry().Info("Start checkout branch: " + branchName)
-	log.Entry().Info("--------------------------------")
+	log.Entry().Infof("-------------------------")
 }
 
 func finishCheckoutLogs(branchName string, repositoryName string) {
-	log.Entry().Info("--------------------------------")
+	log.Entry().Infof("-------------------------")
 	log.Entry().Infof("Checkout of branch %v on repository %v was successful", branchName, repositoryName)
-	log.Entry().Info("--------------------------------")
+	log.Entry().Infof("-------------------------")
 }
 
 func convertCheckoutConfig(config *abapEnvironmentCheckoutBranchOptions) abaputils.AbapEnvironmentOptions {

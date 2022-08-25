@@ -5,6 +5,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"path/filepath"
 	"time"
 
@@ -13,8 +15,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
-	"reflect"
-	"strings"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -33,21 +33,23 @@ type testStepOptions struct {
 type testStepReports struct {
 }
 
-func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
-	if GeneralConfig.GCSBucketId == "" {
+func (p *testStepReports) persist(stepConfig testStepOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "test-report_*.json", ParamRef: "", StepResultType: ""},
 		{FilePattern: "report1", ParamRef: "", StepResultType: "general"},
 	}
 	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: GeneralConfig.GCPJsonKeyFilePath, Modified: false},
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
 	}
 	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
+        	return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
@@ -60,7 +62,7 @@ func (p *testStepReports) persist(stepConfig sonarExecuteScanOptions) {
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, GeneralConfig.GCSFolderPath, GeneralConfig.GCSBucketId, GeneralConfig.GCSSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -185,6 +187,10 @@ func TestStepCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(piperOsCmd.GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -200,7 +206,7 @@ func TestStepCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				reports.persist(stepConfig)
+				reports.persist(stepConfig,piperOsCmd.GeneralConfig.GCPJsonKeyFilePath,piperOsCmd.GeneralConfig.GCSBucketId,piperOsCmd.GeneralConfig.GCSFolderPath,piperOsCmd.GeneralConfig.GCSSubFolder)
 				commonPipelineEnvironment.persist(piperOsCmd.GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(piperOsCmd.GeneralConfig.EnvRootPath, "influxTest")
 				config.RemoveVaultSecretFiles()
@@ -240,6 +246,7 @@ func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 	cmd.Flags().StringVar(&stepConfig.Param3, "param3", os.Getenv("PIPER_param3"), "param3 description")
 
 	cmd.MarkFlagRequired("param0")
+	cmd.Flags().MarkDeprecated("param1", "use param3 instead")
 }
 
 // retrieve step metadata
@@ -274,6 +281,7 @@ func testStepMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "oldparam1", Deprecated: true},},
 						Default:   os.Getenv("PIPER_param1"),
+						DeprecationMessage: "use param3 instead",
 					},
 					{
 						Name:      "param2",

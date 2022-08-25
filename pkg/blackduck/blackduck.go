@@ -11,8 +11,13 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
 )
+
+// ReportsDirectory defines the subfolder for the Blackduck reports which are generated
+const ReportsDirectory = "blackduck"
 
 const (
 	HEADER_PROJECT_DETAILS_V4 = "application/vnd.blackducksoftware.project-detail-4+json"
@@ -62,10 +67,16 @@ type Components struct {
 }
 
 type Component struct {
-	Name         string `json:"componentName,omitempty"`
-	Version      string `json:"componentVersionName,omitempty"`
-	PolicyStatus string `json:"policyStatus,omitempty"`
-	Metadata     `json:"_meta,omitempty"`
+	Name                string `json:"componentName,omitempty"`
+	Version             string `json:"componentVersionName,omitempty"`
+	ComponentOriginName string `json:"componentVersionOriginName,omitempty"`
+	PrimaryLanguage     string `json:"primaryLanguage,omitempty"`
+	PolicyStatus        string `json:"policyStatus,omitempty"`
+	Metadata            `json:"_meta,omitempty"`
+}
+
+func (c Component) ToPackageUrl() *packageurl.PackageURL {
+	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
 }
 
 type Vulnerabilities struct {
@@ -76,16 +87,90 @@ type Vulnerabilities struct {
 type Vulnerability struct {
 	Name                         string `json:"componentName,omitempty"`
 	Version                      string `json:"componentVersionName,omitempty"`
+	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 }
 
 type VulnerabilityWithRemediation struct {
-	VulnerabilityName string  `json:"vulnerabilityName,omitempty"`
-	BaseScore         float32 `json:"baseScore,omitempty"`
-	Severity          string  `json:"severity,omitempty"`
-	RemediationStatus string  `json:"remediationStatus,omitempty"`
-	Description       string  `json:"description,omitempty"`
-	OverallScore      float32 `json:"overallScore,omitempty"`
+	VulnerabilityName      string  `json:"vulnerabilityName,omitempty"`
+	BaseScore              float32 `json:"baseScore,omitempty"`
+	Severity               string  `json:"severity,omitempty"`
+	RemediationStatus      string  `json:"remediationStatus,omitempty"`
+	Description            string  `json:"description,omitempty"`
+	OverallScore           float32 `json:"overallScore,omitempty"`
+	CweID                  string  `json:"cweId,omitempty"`
+	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
+	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
+}
+
+// Title returns the issue title representation of the contents
+func (v Vulnerability) Title() string {
+	return fmt.Sprintf("Security Vulnerability %v %v", v.VulnerabilityName, v.Name)
+}
+
+// ToMarkdown returns the markdown representation of the contents
+func (v Vulnerability) ToMarkdown(component *Component) ([]byte, error) {
+	vul := reporting.VulnerabilityReport{
+		ArtifactID: v.Name,
+
+		// no information available about branch and commit, yet
+		Branch:   "",
+		CommitID: "",
+
+		Description: v.Description,
+
+		// no information available about direct/indirect dependency, yet
+		//DirectDependency:  ... ,
+
+		// no information available about footer, yet
+		Footer: "",
+
+		// no information available about group, yet
+		Group: "",
+
+		// no information available about pipeline name and link, publish date and resolution yet
+		PipelineName: "",
+		PipelineLink: "",
+		PublishDate:  "",
+		Resolution:   "",
+
+		Score:      float64(v.VulnerabilityWithRemediation.BaseScore),
+		Severity:   v.VulnerabilityWithRemediation.Severity,
+		Version:    v.Version,
+		PackageURL: component.ToPackageUrl().ToString(),
+
+		// no vulnerability link available, yet
+		VulnerabilityLink: "",
+		VulnerabilityName: v.VulnerabilityName,
+	}
+
+	return vul.ToMarkdown()
+}
+
+// ToTxt returns the textual representation of the contents
+func (v Vulnerability) ToTxt(component *Component) string {
+	return fmt.Sprintf(`Vulnerability %v
+Severity: %v
+Base (NVD) Score: %v
+Temporal Score: %v
+Package: %v
+Installed Version: %v
+Package URL: %v
+Description: %v
+Fix Resolution: %v
+Link: [%v](%v)`,
+		v.VulnerabilityName,
+		v.Severity,
+		v.VulnerabilityWithRemediation.BaseScore,
+		v.VulnerabilityWithRemediation.OverallScore,
+		v.Name,
+		v.Version,
+		component.ToPackageUrl().ToString(),
+		v.Description,
+		"",
+		"",
+		"",
+	)
 }
 
 type PolicyStatus struct {
@@ -172,7 +257,9 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 		}
 	}
 
-	respBody, err := b.sendRequest("GET", versionPath, map[string]string{}, nil, headers)
+	//While sending a request to 'versions', get all 100 versions from that project by setting limit=100
+	//More than 100 project versions is currently not supported/recommended by Blackduck
+	respBody, err := b.sendRequest("GET", versionPath, map[string]string{"offset": "0", "limit": "100"}, nil, headers)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project version '%v:%v'", projectName, projectVersion)
 	}
@@ -405,7 +492,7 @@ func (b *Client) apiURL(apiEndpoint string) (*url.URL, error) {
 }
 
 func (b *Client) authenticationValid(now time.Time) bool {
-	// //check bearer token timeout
+	// check bearer token timeout
 	expiryTime := b.lastAuthentication.Add(time.Millisecond * time.Duration(b.BearerExpiresInMilliseconds))
 	return now.Sub(expiryTime) < 0
 }
@@ -413,4 +500,19 @@ func (b *Client) authenticationValid(now time.Time) bool {
 func urlPath(fullUrl string) string {
 	theUrl, _ := url.Parse(fullUrl)
 	return theUrl.Path
+}
+
+func transformComponentToPurlType(primaryLanguage string) string {
+	// TODO verify possible relevant values
+	switch primaryLanguage {
+	case "Java":
+		return packageurl.TypeMaven
+	case "Javascript":
+		return packageurl.TypeNPM
+	case "Golang":
+		return packageurl.TypeGolang
+	case "Docker":
+		return packageurl.TypeDocker
+	}
+	return packageurl.TypeGeneric
 }

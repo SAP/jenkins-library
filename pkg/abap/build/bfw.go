@@ -177,7 +177,7 @@ func (b *Build) Start(phase string, inputValues Values) error {
 
 	body, err := b.Connector.Post("/builds", importBody)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Start of build failed: "+string(body))
 	}
 
 	var jBuild jsonBuild
@@ -440,7 +440,7 @@ func (b *Build) DownloadResults(filenames []string, basePath string, filenamePre
 }
 
 // PublishAllDownloadedResults : publishes all build artefacts which were downloaded before
-func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
+func (b *Build) PublishAllDownloadedResults(stepname string, utils piperutils.FileUtils) {
 	var filesToPublish []piperutils.Path
 	for i_task := range b.Tasks {
 		for i_result := range b.Tasks[i_task].Results {
@@ -451,12 +451,14 @@ func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
 		}
 	}
 	if len(filesToPublish) > 0 {
-		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		if err := piperutils.PersistReportsAndLinks(stepname, "", utils, filesToPublish, nil); err != nil {
+			log.Entry().WithError(err).Error("failed to persist reports")
+		}
 	}
 }
 
 // PublishDownloadedResults : Publishes build artefacts specified in filenames
-func (b *Build) PublishDownloadedResults(stepname string, filenames []string, publish Publish) error {
+func (b *Build) PublishDownloadedResults(stepname string, filenames []string, utils piperutils.FileUtils) error {
 	var filesToPublish []piperutils.Path
 	for i := range filenames {
 		result, err := b.GetResult(filenames[i])
@@ -472,7 +474,9 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string, pu
 		}
 	}
 	if len(filesToPublish) > 0 {
-		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		if err := piperutils.PersistReportsAndLinks(stepname, "", utils, filesToPublish, nil); err != nil {
+			log.Entry().WithError(err).Error("failed to persist reports")
+		}
 	}
 	return nil
 }
@@ -562,7 +566,9 @@ func (vs Values) String() string {
 	for _, value := range vs.Values {
 		returnString = returnString + value.String() + ",\n"
 	}
-	returnString = returnString[:len(returnString)-2] //removes last ,
+	if len(returnString) > 0 {
+		returnString = returnString[:len(returnString)-2] //removes last ,
+	}
 	return returnString
 }
 
@@ -591,13 +597,4 @@ func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 		tasks = append(tasks, append_task)
 	}
 	return tasks, nil
-}
-
-// *****************publish *******************************
-type Publish interface {
-	PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path)
-}
-
-func PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	piperutils.PersistReportsAndLinks(stepName, workspace, reports, links)
 }
