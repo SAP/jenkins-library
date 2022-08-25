@@ -242,9 +242,171 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.Equal(t, nil, err)
 	})
+	t.Run("succes case: test parsing example XML result - Fail on Severity error", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="info">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="warning">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "error"
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
+		assert.Equal(t, expErr, err)
+	})	
+	t.Run("succes case: test parsing example XML result - Fail on Severity warning", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="info">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="warning">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "warning"
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
+		assert.Equal(t, expErr, err)
+	})	
+	t.Run("succes case: test parsing example XML result - Fail on Severity info", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="info">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="warning">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "info"
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
+		assert.Equal(t, expErr, err)
+	})	
+	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only errors", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="error">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="error">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "warning"
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
+		assert.Equal(t, expErr, err)
+	})	
+	t.Run("succes case: test parsing example XML result - Fail on Severity info - only errors", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="error">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="error">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "info"
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
+		assert.Equal(t, expErr, err)
+	})	
+	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only warnings", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="warning">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="warning">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="warning">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "info"
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to '" + doFailOnSeverityLevel + "'")
+		assert.Equal(t, expErr, err)
+	})				
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
@@ -257,14 +419,14 @@ func TestParseATCResult(t *testing.T) {
 		<checkstyle>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
 	})
 	t.Run("failure case: html response", func(t *testing.T) {
@@ -277,7 +439,7 @@ func TestParseATCResult(t *testing.T) {
 		}()
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
-		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false)
+		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }

@@ -27,14 +27,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-      - name: atcStepFailOnServerity
-        type: string
-        description: Severity Level, for which the step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run (possible values - error, warning, info)
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false  
       - name: repositories
         type: string
         description: Specifies a YAML file containing the repositories configuration
@@ -153,6 +145,14 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
+      - name: failOnServerity
+        type: string
+        description: Specifies the Severity Level, for which the ATC step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run (possible values - error, warning, info)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false  
   containers:
     - name: cf
       image: ppiper/cf-cli:7
