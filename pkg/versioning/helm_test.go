@@ -165,6 +165,21 @@ func TestHelmChartSetVersion(t *testing.T) {
 		assert.Equal(t, "1.2.4", helmChart.metadata.AppVersion)
 	})
 
+	t.Run("success case - update app version (semver2)", func(t *testing.T) {
+		fileUtils := newVersioningMockUtils()
+
+		helmChart := HelmChart{
+			utils:            fileUtils,
+			path:             "testchart/Chart.yaml",
+			metadata:         chart.Metadata{Version: "1.2.3"},
+			updateAppVersion: true,
+		}
+
+		err := helmChart.SetVersion("1.2.4-abc+123")
+		assert.NoError(t, err)
+		assert.Equal(t, "1.2.4-abc_123", helmChart.metadata.AppVersion)
+	})
+
 	t.Run("error case - init failed with missing chart", func(t *testing.T) {
 		fileUtils := newVersioningMockUtils()
 
