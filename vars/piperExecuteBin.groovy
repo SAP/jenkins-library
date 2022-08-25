@@ -288,10 +288,19 @@ void handleErrorDetails(String stepName, Closure body) {
     }
 }
 
-static boolean checkIfStepActive(Map parameters = [:], Script script, String piperGoPath, String stageConfig, String stepOutputFile, String stageOutputFile, String stage, String step) {
+static boolean checkIfStepActive(Map parameters = [:], Script script, String piperGoPath, String stageConfig = "", String stepOutputFile = "", String stageOutputFile = "", String stage = "", String step = "") {
     def utils = parameters.juStabUtils ?: new Utils()
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
+    def flags = "--stageConfig ${stageConfig} --useV1"
+    if (!stage || !step) {
+        stage = "_"
+        step = "_"
+    }
+    flags += " --stage ${stage} --step ${step}"
+    if (stepOutputFile && step) {
+        flags += " --stageOutputFile ${stageOutputFile} --stepOutputFile ${stepOutputFile}"
+    }
     piperGoUtils.unstashPiperBin()
-    def returnCode = script.sh(returnStatus: true, script: "${piperGoPath} checkIfStepActive --stageConfig ${stageConfig} --useV1 --stageOutputFile ${stageOutputFile} --stepOutputFile ${stepOutputFile} --stage ${stage} --step ${step}")
+    def returnCode = script.sh(returnStatus: true, script: "${piperGoPath} checkIfStepActive ${flags}")
     return (returnCode == 0)
 }
