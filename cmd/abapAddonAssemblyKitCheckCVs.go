@@ -58,7 +58,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	return nil
 }
 
-// take the product part from CPE and the repositories part from the YAML file
+//take the product part from CPE and the repositories part from the YAML file
 func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptorFromCPE.Repositories = addonDescriptor.Repositories
 	return addonDescriptorFromCPE

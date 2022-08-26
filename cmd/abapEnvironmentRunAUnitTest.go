@@ -436,7 +436,7 @@ func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString strin
 //	Object Set Structure
 //
 
-// AUnitConfig object for parsing yaml config of software components and packages
+//AUnitConfig object for parsing yaml config of software components and packages
 type AUnitConfig struct {
 	Title     string              `json:"title,omitempty"`
 	Context   string              `json:"context,omitempty"`
@@ -444,7 +444,7 @@ type AUnitConfig struct {
 	ObjectSet abaputils.ObjectSet `json:"objectset,omitempty"`
 }
 
-// AUnitOptions in form of packages and software components to be checked
+//AUnitOptions in form of packages and software components to be checked
 type AUnitOptions struct {
 	Measurements string    `json:"measurements,omitempty"`
 	Scope        Scope     `json:"scope,omitempty"`
@@ -452,20 +452,20 @@ type AUnitOptions struct {
 	Duration     Duration  `json:"duration,omitempty"`
 }
 
-// Scope in form of packages and software components to be checked
+//Scope in form of packages and software components to be checked
 type Scope struct {
 	OwnTests     *bool `json:"owntests,omitempty"`
 	ForeignTests *bool `json:"foreigntests,omitempty"`
 }
 
-// RiskLevel in form of packages and software components to be checked
+//RiskLevel in form of packages and software components to be checked
 type RiskLevel struct {
 	Harmless  *bool `json:"harmless,omitempty"`
 	Dangerous *bool `json:"dangerous,omitempty"`
 	Critical  *bool `json:"critical,omitempty"`
 }
 
-// Duration in form of packages and software components to be checked
+//Duration in form of packages and software components to be checked
 type Duration struct {
 	Short  *bool `json:"short,omitempty"`
 	Medium *bool `json:"medium,omitempty"`
@@ -476,7 +476,7 @@ type Duration struct {
 //	AUnit Run Structure
 //
 
-// AUnitRun Object for parsing XML
+//AUnitRun Object for parsing XML
 type AUnitRun struct {
 	XMLName    xml.Name   `xml:"run"`
 	Title      string     `xml:"title,attr"`
@@ -487,24 +487,24 @@ type AUnitRun struct {
 	Link       AUnitLink  `xml:"link"`
 }
 
-// Progress of AUnit run
+//Progress of AUnit run
 type Progress struct {
 	Status     string `xml:"status,attr"`
 	Percentage string `xml:"percentage,attr"`
 }
 
-// ExecutedBy User
+//ExecutedBy User
 type ExecutedBy struct {
 	User string `xml:"user,attr"`
 }
 
-// Time run was started and finished
+//Time run was started and finished
 type Time struct {
 	Started string `xml:"started,attr"`
 	Ended   string `xml:"ended,attr"`
 }
 
-// AUnitLink containing result locations
+//AUnitLink containing result locations
 type AUnitLink struct {
 	Href string `xml:"href,attr"`
 	Rel  string `xml:"rel,attr"`

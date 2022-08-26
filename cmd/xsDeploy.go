@@ -473,7 +473,7 @@ func copyFileFromPwdToHome(xsSessionFile string, fileUtils piperutils.FileUtils)
 	return nil
 }
 
-// GetAction ...
+//GetAction ...
 func (a Action) GetAction() (string, error) {
 	switch a {
 	case Resume, Abort, Retry:
@@ -483,7 +483,7 @@ func (a Action) GetAction() (string, error) {
 
 }
 
-// GetDeployCommand ...
+//GetDeployCommand ...
 func (m DeployMode) GetDeployCommand() (string, error) {
 
 	switch m {

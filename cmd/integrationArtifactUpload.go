@@ -81,7 +81,7 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	return errors.Errorf("Failed to check integration flow availability, Response Status code: %v", iFlowStatusResp.StatusCode)
 }
 
-// UploadIntegrationArtifact - Upload new integration artifact
+//UploadIntegrationArtifact - Upload new integration artifact
 func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "POST"
 	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts", apiHost)
@@ -119,7 +119,7 @@ func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 	return errors.Errorf("Failed to create Integration Flow artefact, Response Status code: %v", uploadIflowStatusResp.StatusCode)
 }
 
-// UpdateIntegrationArtifact - Update existing integration artifact
+//UpdateIntegrationArtifact - Update existing integration artifact
 func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "PUT"
 	header := make(http.Header)
@@ -156,7 +156,7 @@ func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 	return errors.Errorf("Failed to update Integration Flow artefact, Response Status code: %v", updateIflowStatusResp.StatusCode)
 }
 
-// GetJSONPayloadAsByteArray -return http payload as byte array
+//GetJSONPayloadAsByteArray -return http payload as byte array
 func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
 	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {

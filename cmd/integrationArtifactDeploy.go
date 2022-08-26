@@ -111,7 +111,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	return errors.Errorf("integration flow deployment failed, response Status code: %v", deployResp.StatusCode)
 }
 
-// pollIFlowDeploymentStatus - Poll the integration flow deployment status, return status or error details
+//pollIFlowDeploymentStatus - Poll the integration flow deployment status, return status or error details
 func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) error {
 
 	if retryCount <= 0 {
@@ -148,7 +148,7 @@ func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeploy
 	return nil
 }
 
-// GetHTTPErrorMessage - Return HTTP failure message
+//GetHTTPErrorMessage - Return HTTP failure message
 func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, statusURL string) (string, error) {
 	responseBody, readErr := ioutil.ReadAll(response.Body)
 	if readErr != nil {
@@ -158,7 +158,7 @@ func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, sta
 	return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, statusURL, responseBody)
 }
 
-// getIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
+//getIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
 func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
@@ -197,7 +197,7 @@ func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 	return "", errors.Errorf("failed to get Integration Flow artefact runtime status, response Status code: %v", deployStatusResp.StatusCode)
 }
 
-// getIntegrationArtifactDeployError - Get integration artifact deploy error details
+//getIntegrationArtifactDeployError - Get integration artifact deploy error details
 func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
