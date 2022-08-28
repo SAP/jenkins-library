@@ -165,7 +165,7 @@ func TestHelmChartSetVersion(t *testing.T) {
 		assert.Equal(t, "1.2.4", helmChart.metadata.AppVersion)
 	})
 
-	t.Run("success case - update app version (semver2)", func(t *testing.T) {
+	t.Run("success case - update app version: '+' is being replaced with '_' (semver2)", func(t *testing.T) {
 		fileUtils := newVersioningMockUtils()
 
 		helmChart := HelmChart{
@@ -175,9 +175,10 @@ func TestHelmChartSetVersion(t *testing.T) {
 			updateAppVersion: true,
 		}
 
-		err := helmChart.SetVersion("1.2.4-abc+123")
+		// '+' is being replaced with '_' since k8s does not allow a plus sign in labels
+		err := helmChart.SetVersion("1.2.4-2022+123")
 		assert.NoError(t, err)
-		assert.Equal(t, "1.2.4-abc_123", helmChart.metadata.AppVersion)
+		assert.Equal(t, "1.2.4-2022_123", helmChart.metadata.AppVersion)
 	})
 
 	t.Run("error case - init failed with missing chart", func(t *testing.T) {
