@@ -385,6 +385,18 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      false,
 		},
 		{
+			name:          "CommonPipelineEnvironmentVariableExists - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{PipelineEnvironmentFilled: "custom/myCpeTrueFile"},
+			expected:      true,
+		},
+		{
+			name:          "CommonPipelineEnvironmentVariableExists - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{PipelineEnvironmentFilled: "custom/notMyCpeTrueFile"},
+			expected:      false,
+		},
+		{
 			name:     "No condition - true",
 			config:   StepConfig{Config: map[string]interface{}{}},
 			expected: true,
@@ -405,11 +417,12 @@ func TestEvaluateV1(t *testing.T) {
 	dir := t.TempDir()
 
 	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
-	err := os.MkdirAll(cpeDir, 0700)
+	err := os.MkdirAll(filepath.Join(cpeDir, "custom"), 0700)
 	if err != nil {
-		t.Fatal("Failed to create sub directory")
+		t.Fatal("Failed to create sub directories")
 	}
 	ioutil.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "custom", "myCpeTrueFile"), []byte("myTrueValue"), 0700)
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
