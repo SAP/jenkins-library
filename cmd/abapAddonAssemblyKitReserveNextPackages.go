@@ -59,10 +59,10 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	}
 
 	log.Entry().Info("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-	log.Entry().Infof("┃ %-30v ┃ %-20v ┃ %-6v ┃ %-10v ┃ %-40v ┃ %-40v ┃", "Software Component", "Package", "Status", "Namespace", "CommitID (from addon.yml)", "PredecessorCommitID (from AAKaaS)")
+	log.Entry().Infof("┃ %-30v ┃ %-20v ┃ %-5v ┃ %-6v ┃ %-10v ┃ %-40v ┃ %-40v ┃", "Software Component", "Package Name", "Type", "Status", "Namespace", "CommitID (from addon.yml)", "PredecessorCommitID (from AAKaaS)")
 	log.Entry().Info("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━╋━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
 	for i := range packagesWithRepos {
-		log.Entry().Infof("┃ %-30v ┃ %-20v ┃ %-6v ┃ %-10v ┃ %-40v ┃ %-40v ┃", packagesWithRepos[i].Repo.Name, packagesWithRepos[i].Package.PackageName, packagesWithRepos[i].Package.Status, packagesWithRepos[i].Package.Namespace, packagesWithRepos[i].Repo.CommitID, packagesWithRepos[i].Package.PredecessorCommitID)
+		log.Entry().Infof("┃ %-30v ┃ %-20v ┃ %-5v ┃ %-6v ┃ %-10v ┃ %-40v ┃ %-40v ┃", packagesWithRepos[i].Repo.Name, packagesWithRepos[i].Package.PackageName, packagesWithRepos[i].Package.Type, packagesWithRepos[i].Package.Status, packagesWithRepos[i].Package.Namespace, packagesWithRepos[i].Repo.CommitID, packagesWithRepos[i].Package.PredecessorCommitID)
 	}
 	log.Entry().Info("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 
