@@ -58,13 +58,13 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 		return err
 	}
 
-	log.Entry().Info("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+	log.Entry().Info("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
 	log.Entry().Infof("┃ %-30v ┃ %-20v ┃ %-5v ┃ %-6v ┃ %-10v ┃ %-40v ┃ %-40v ┃", "Software Component", "Package Name", "Type", "Status", "Namespace", "CommitID (from addon.yml)", "PredecessorCommitID (from AAKaaS)")
-	log.Entry().Info("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━╋━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
+	log.Entry().Info("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━╋━━━━━━━━╋━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
 	for i := range packagesWithRepos {
 		log.Entry().Infof("┃ %-30v ┃ %-20v ┃ %-5v ┃ %-6v ┃ %-10v ┃ %-40v ┃ %-40v ┃", packagesWithRepos[i].Repo.Name, packagesWithRepos[i].Package.PackageName, packagesWithRepos[i].Package.Type, packagesWithRepos[i].Package.Status, packagesWithRepos[i].Package.Namespace, packagesWithRepos[i].Repo.CommitID, packagesWithRepos[i].Package.PredecessorCommitID)
 	}
-	log.Entry().Info("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+	log.Entry().Info("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 
 	log.Entry().Info("... checking and processing provided and received data")
 	addonDescriptor.Repositories, err = checkAndCopyFieldsToRepositories(packagesWithRepos)
