@@ -1,121 +1,128 @@
-stages:
-  Init:
-    stepConditions:
-      slackSendNotification:
-        configKeys:
-          - 'channel'
-  'Pull-Request Voting':
-    stepConditions:
-      sonarExecuteScan:
-        filePattern: '**/sonar-project.properties'
-      mavenExecuteIntegration:
-        filePattern: 'integration-tests/pom.xml'
-      npmExecuteScripts:
-        configKeys:
-          - 'runScripts'
-  Build:
-    stepConditions:
-      sonarExecuteScan:
-        filePattern: '**/sonar-project.properties'
-  'Additional Unit Tests':
-    stepConditions:
-      batsExecuteTests:
-        filePattern: '**/*.bats'
-      karmaExecuteTests:
-        filePattern: '**/karma.conf.js'
-      npmExecuteScripts:
-        configKeys:
-          - 'runScripts'
-  Integration:
-    stepConditions:
-      npmExecuteScripts:
-        configKeys:
-          - 'runScripts'
-      mavenExecuteIntegration:
-        filePattern: 'integration-tests/pom.xml'
-  Acceptance:
-    stepConditions:
-      multicloudDeploy:
-        configKeys:
-          - 'cfTargets'
-          - 'neoTargets'
-      cloudFoundryDeploy:
-        configKeys:
-          - 'cfSpace'
-          - 'cloudFoundry/space'
-      healthExecuteCheck:
-        configKeys:
-          - 'testServerUrl'
-      newmanExecute:
-        filePatternFromConfig: 'newmanCollection'
-        configKeys:
-          - 'testRepository'
-      uiVeri5ExecuteTests:
-        filePattern: '**/conf.js'
-        configKeys:
-          - 'testRepository'
-      npmExecuteEndToEndTests:
-        configKeys:
-          - 'appUrls'
-  Security:
-    stepConditions:
-      checkmarxExecuteScan:
-        configKeys:
-          - 'checkmarxCredentialsId'
-      fortifyExecuteScan:
-        configKeys:
-          - 'fortifyCredentialsId'
-      whitesourceExecuteScan:
-        configKeys:
-          - 'userTokenCredentialsId'
-          - 'whitesource/userTokenCredentialsId'
-          - 'whitesourceUserTokenCredentialsId'
-  Performance:
-    stepConditions:
-      multicloudDeploy:
-        configKeys:
-          - 'cfTargets'
-          - 'neoTargets'
-      gatlingExecuteTests:
-        filePatternFromConfig: 'pomPath'
-        configKeys:
-          - 'appUrls'
-  Compliance: {}
-  Promote:
-    stepConditions:
-      containerPushToRegistry:
-        configKeys:
-          - 'dockerRegistryUrl'
-      nexusUpload:
-        configKeys:
-          - 'url'
-  Release:
-    stepConditions:
-      multicloudDeploy:
-        configKeys:
-          - 'cfTargets'
-          - 'neoTargets'
-      cloudFoundryDeploy:
-        configKeys:
-          - 'cfSpace'
-          - 'cloudFoundry/space'
-      neoDeploy:
-        configKeys:
-          - 'neo/account'
-      tmsUpload:
-        configKeys:
-          - nodeName
-      healthExecuteCheck:
-        configKeys:
-          - 'testServerUrl'
-      npmExecuteEndToEndTests:
-        configKeys:
-          - 'appUrls'
-      githubPublishRelease:
-        configKeys:
-          - 'githubTokenCredentialsId'
-  'Post Actions':
-    stepConditions:
-      slackSendNotification:
-        configKeys:
-          - 'channel'
+spec:
+  stages:
+     - displayName: Init
+       steps:
+          - name: slackSendNotification
+            conditions:
+              - configKey: 'channel'
+     - displayName: Pull-Request Voting
+       steps:
+          - name: sonarExecuteScan
+            conditions:
+              - filePattern: '**/sonar-project.properties'
+          - name: mavenExecuteIntegration
+            conditions:
+              - filePattern: 'integration-tests/pom.xml'
+          - name: npmExecuteScripts
+            conditions:
+              - configKey: 'runScripts'
+     - displayName: Build
+       steps:
+          - name: sonarExecuteScan
+            conditions:
+              - filePattern: '**/sonar-project.properties'
+     - displayName: Additional Unit Tests
+       steps:
+          - name: batsExecuteTests
+            conditions:
+              - filePattern: '**/*.bats'
+          - name: karmaExecuteTests
+            conditions:
+              - filePattern: '**/karma.conf.js'
+          - name: npmExecuteScripts
+            conditions:
+              - configKey: 'runScripts'
+     - displayName: Integration
+       steps:
+          - name: npmExecuteScripts
+            conditions:
+              - configKey: 'runScripts'
+          - name: mavenExecuteIntegration
+            conditions:
+              - filePattern: 'integration-tests/pom.xml'
+     - displayName: Acceptance
+       steps:
+          - name: multicloudDeploy
+            conditions:
+              - configKey: 'cfTargets'
+              - configKey: 'neoTargets'
+          - name: cloudFoundryDeploy
+            conditions:
+              - configKey: 'cfSpace'
+              - configKey: 'cloudFoundry/space'
+          - name: healthExecuteCheck
+            conditions:
+              - configKey: 'testServerUrl'
+          - name: newmanExecute
+            conditions:
+              - filePatternFromConfig: 'newmanCollection'
+              - configKey: 'testRepository'
+          - name: uiVeri5ExecuteTests
+            conditions:
+              - filePattern: '**/conf.js'
+              - configKey: 'testRepository'
+          - name: npmExecuteEndToEndTests
+            conditions:
+              - configKey: 'appUrls'
+     - displayName: Security
+       steps:
+          - name: checkmarxExecuteScan
+            conditions:
+              - configKey: 'checkmarxCredentialsId'
+          - name: fortifyExecuteScan
+            conditions:
+              - configKey: 'fortifyCredentialsId'
+          - name: whitesourceExecuteScan
+            conditions:
+              - configKey: 'userTokenCredentialsId'
+              - configKey: 'whitesource/userTokenCredentialsId'
+              - configKey: 'whitesourceUserTokenCredentialsId'
+     - displayName: Performance
+       steps:
+          - name: multicloudDeploy
+            conditions:
+              - configKey: 'cfTargets'
+              - configKey: 'neoTargets'
+          - name: gatlingExecuteTests
+            conditions:
+              - filePatternFromConfig: 'pomPath'
+              - configKey: 'appUrls'
+     - displayName: Compliance
+     - displayName: Promote
+       steps:
+          - name: containerPushToRegistry
+            conditions:
+              - configKey: 'dockerRegistryUrl'
+          - name: nexusUpload
+            conditions:
+              - configKey: 'url'
+     - displayName: Release
+       steps:
+          - name: multicloudDeploy
+            conditions:
+              - configKey: 'cfTargets'
+              - configKey: 'neoTargets'
+          - name: cloudFoundryDeploy
+            conditions:
+              - configKey: 'cfSpace'
+              - configKey: 'cloudFoundry/space'
+          - name: neoDeploy
+            conditions:
+              - configKey: 'neo/account'
+          - name: tmsUpload
+            conditions:
+              - configKey: nodeName
+          - name: healthExecuteCheck
+            conditions:
+              - configKey: 'testServerUrl'
+          - name: npmExecuteEndToEndTests
+            conditions:
+              - configKey: 'appUrls'
+          - name: githubPublishRelease
+            conditions:
+              - configKey: 'githubTokenCredentialsId'
+     - displayName: Post Actions
+       steps:
+          - name: slackSendNotification
+            conditions:
+              - configKey: 'channel'
