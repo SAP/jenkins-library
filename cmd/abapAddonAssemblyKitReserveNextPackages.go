@@ -44,7 +44,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	log.Entry().Info("│ Software Component             │ Version              │")
 	log.Entry().Info("├────────────────────────────────┼──────────────────────┤")
 	for i := range addonDescriptor.Repositories {
-		log.Entry().Info("│ %-30v │ %-20v │", addonDescriptor.Repositories[i].Name, addonDescriptor.Repositories[i].VersionYAML)
+		log.Entry().Infof("│ %-30v │ %-20v │", addonDescriptor.Repositories[i].Name, addonDescriptor.Repositories[i].VersionYAML)
 	}
 	log.Entry().Info("╰────────────────────────────────┴──────────────────────╯")
 
@@ -101,10 +101,11 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 				addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
 				if len(pckgWR[i].Package.PredecessorCommitID) < addonYAMLcommitIDLength {
 					checkFailure = errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
-				}
-				packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
-				if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
-					checkFailure = errors.New("CommitID of package " + pckgWR[i].Package.PackageName + " is the same as the one of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
+				} else {
+					packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
+					if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
+						checkFailure = errors.New("CommitID of package " + pckgWR[i].Package.PackageName + " is the same as the one of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
+					}
 				}
 			}
 		}
